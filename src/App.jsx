@@ -250,6 +250,12 @@ const Field = ({ label, children }) => (
 const Input = (props) => (
   <input {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
 );
+// Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
+const Warn = ({ children }) => children ? (
+  <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>⚠ {children}</div>
+) : null;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[0-9+()\s-]{7,}$/;
 const Select = ({ children, ...props }) => (
   <select {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
     {children}
@@ -630,6 +636,7 @@ const Customers = ({
     const end = `${parseInt(start.slice(0,4)) + 2}${start.slice(4)}`; // otomatik +2 yıl
     setForm({
       kalipSayisi: 1, satisYapan: "Altuntaş Makina", name: "", phone: "", email: "",
+      yetkili1Ad: "", yetkili1Tel: "", yetkili2Ad: "", yetkili2Tel: "",
       adres: "", city: "", country: "Türkiye", model: "",
       kaliplar: [{ olcu: "", ad: "" }],
       installDate: start, warrantyEnd: end,
@@ -646,6 +653,8 @@ const Customers = ({
     setForm({
       kalipSayisi: 1, satisYapan: base.satisYapan || (factory?.name || "Altuntaş Makina"),
       name: base.name || "", phone: base.phone || "", email: base.email || "",
+      yetkili1Ad: base.yetkili1Ad || "", yetkili1Tel: base.yetkili1Tel || "",
+      yetkili2Ad: base.yetkili2Ad || "", yetkili2Tel: base.yetkili2Tel || "",
       adres: base.adres || "", city: base.city || "", country: base.country || "Türkiye",
       model: "", kaliplar: [{ olcu: "", ad: "" }],
       installDate: start, warrantyEnd: end,
@@ -663,7 +672,6 @@ const Customers = ({
     setModal({ edit: c }); setModelPicker(false);
   };
   const save = () => {
-    if (!form.name) return;
     if (modal === "add") {
       const { _manualSerial, _stokSerisiz, ...clean } = form;
       bumpId(customers, services);
@@ -1031,10 +1039,33 @@ const Customers = ({
             </Field>
           </div>
 
-          <Field label="Satın Alan"><Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Satın alan firma / kişi" /></Field>
+          <Field label="Satın Alan">
+            <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Satın alan firma / kişi" />
+            <Warn>{!form.name?.trim() ? "Satın alan adı girilmedi" : ""}</Warn>
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Telefon"><Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="0xxx xxx xx xx" /></Field>
-            <Field label="E-posta"><Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" /></Field>
+            <Field label="Yetkili 1 - Ad Soyad"><Input value={form.yetkili1Ad || ""} onChange={e => setForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
+            <Field label="Yetkili 1 - Telefon">
+              <Input value={form.yetkili1Tel || ""} onChange={e => setForm(p => ({ ...p, yetkili1Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
+              <Warn>{form.yetkili1Tel && !PHONE_RE.test(form.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+            </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Yetkili 2 - Ad Soyad"><Input value={form.yetkili2Ad || ""} onChange={e => setForm(p => ({ ...p, yetkili2Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
+            <Field label="Yetkili 2 - Telefon">
+              <Input value={form.yetkili2Tel || ""} onChange={e => setForm(p => ({ ...p, yetkili2Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
+              <Warn>{form.yetkili2Tel && !PHONE_RE.test(form.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+            </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Telefon">
+              <Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="0xxx xxx xx xx" />
+              <Warn>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+            </Field>
+            <Field label="E-posta">
+              <Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
+              <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            </Field>
           </div>
 
           <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
@@ -1305,7 +1336,6 @@ const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, load
   const openEdit = d => { setForm({ ...d }); setModal({ edit: d }); };
   const openFactoryEdit = () => { setForm({ ...factory }); setModal("factory"); };
   const save = () => {
-    if (!form.name) return;
     if (modal === "factory") { setFactory({ ...form }); showToast("Fabrika bilgileri düzenlendi."); }
     else if (modal === "add") { bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Bayi kaydedildi."); }
     else { setDealers(p => p.map(d => d.id === form.id ? form : d)); showToast("Bayi bilgileri düzenlendi."); }
@@ -1415,12 +1445,21 @@ const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, load
 
       {modal && (
         <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}>
-          <Field label="Firma Adı"><Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Bayi firma adı" /></Field>
+          <Field label="Firma Adı">
+            <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Bayi firma adı" />
+            {modal !== "factory" && <Warn>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>}
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="İletişim Kişisi"><Input value={form.contact || ""} onChange={e => setForm(p => ({ ...p, contact: e.target.value }))} placeholder="Ad Soyad" /></Field>
-            <Field label="Telefon"><Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></Field>
+            <Field label="Telefon">
+              <Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+              <Warn>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+            </Field>
           </div>
-          <Field label="E-posta"><Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" /></Field>
+          <Field label="E-posta">
+            <Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
+            <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+          </Field>
           <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
           <CountryCityFields country={form.country} city={form.city}
             onCountry={v => setForm(p => ({ ...p, country: v }))}
@@ -1453,7 +1492,6 @@ const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_M
   const [newOwnerForm, setNewOwnerForm] = useState(null); // 2. el satış formu
 
   const saveNewOwner = () => {
-    if (!newOwnerForm?.name) return;
     setCustomers(p => p.map(c => {
       if (c.id !== newOwnerForm._machineId) return c;
       // Mevcut sahibi geçmişe ekle
@@ -1486,7 +1524,6 @@ const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_M
   };
 
   const saveEdit = () => {
-    if (!editForm?.name) return;
     setCustomers(p => p.map(c => c.id === editForm.id ? editForm : c));
     showToast("Makina bilgileri düzenlendi.");
     setEditForm(null);
@@ -1851,9 +1888,15 @@ const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_M
             Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
             Servis geçmişi ve makina bilgileri korunur. <b>Bu bir 2. el el değişimidir; firmanızın satışı olmadığı için finansa yansımaz.</b>
           </div>
-          <Field label="Yeni Sahip (Satın Alan)"><Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" /></Field>
+          <Field label="Yeni Sahip (Satın Alan)">
+            <Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" />
+            <Warn>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</Warn>
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Telefon"><Input value={newOwnerForm.phone || ""} onChange={e => setNewOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" /></Field>
+            <Field label="Telefon">
+              <Input value={newOwnerForm.phone || ""} onChange={e => setNewOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" />
+              <Warn>{newOwnerForm.phone && !PHONE_RE.test(newOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+            </Field>
             <Field label="Devir Tarihi"><Input type="date" value={newOwnerForm.saleDate || ""} onChange={e => setNewOwnerForm(p => ({ ...p, saleDate: e.target.value }))} /></Field>
           </div>
           <Field label="Adres Satırı"><Input value={newOwnerForm.adres || ""} onChange={e => setNewOwnerForm(p => ({ ...p, adres: e.target.value }))} /></Field>
@@ -1868,7 +1911,7 @@ const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_M
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setNewOwnerForm(null)}>İptal</Btn>
-            <Btn onClick={saveNewOwner} disabled={!newOwnerForm.name}><Icon name="check" size={14} /> Devri Tamamla</Btn>
+            <Btn onClick={saveNewOwner}><Icon name="check" size={14} /> Devri Tamamla</Btn>
           </div>
         </Modal>
       )}
@@ -1876,7 +1919,10 @@ const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_M
       {/* Makina / müşteri düzenleme modalı */}
       {editForm && (
         <Modal title="Makina Bilgilerini Düzenle" onClose={() => setEditForm(null)}>
-          <Field label="Firma Adı"><Input value={editForm.name || ""} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} /></Field>
+          <Field label="Firma Adı">
+            <Input value={editForm.name || ""} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
+            <Warn>{!editForm.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>
+          </Field>
           <Field label="Satış Yapan">
             <Select value={editForm.satisYapan || factory?.name || "Altuntaş Makina"} onChange={e => setEditForm(p => ({ ...p, satisYapan: e.target.value }))}>
               <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
@@ -1936,8 +1982,7 @@ const Services = ({ services, setServices, customers, factory = null, parts = []
   };
   const openEdit = sv => { setForm({ degisenParcalar: [], ...sv }); setCustSearch(""); setModal({ edit: sv }); };
   const save = () => {
-    if (!form.customerId) return;
-    const rec = { ...form, customerId: Number(form.customerId) };
+    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null };
     if (modal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -2274,6 +2319,7 @@ const Services = ({ services, setServices, customers, factory = null, parts = []
                 )}
               </div>
             )}
+            <Warn>{!form.customerId ? "Müşteri seçilmedi" : ""}</Warn>
           </Field>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2370,7 +2416,7 @@ const Services = ({ services, setServices, customers, factory = null, parts = []
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save} disabled={!form.customerId}><Icon name="check" size={14} /> Kaydet</Btn>
+            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
         </Modal>
       )}
@@ -2394,7 +2440,6 @@ const ModelsManager = ({ standardModels, setStandardModels, customModels, setCus
 
   const saveModel = () => {
     const name = (mForm.model || "").trim();
-    if (!name) return;
     if (modelModal.mode === "add") {
       const exists = standardModels.some(m => m.model === name) || customModels.some(m => m.model === name);
       if (!exists) { setCustomModels(p => p.some(m => m.model === name) ? p : [...p, { ...mForm, model: name }]); showToast("Model kaydedildi."); }
@@ -2433,8 +2478,8 @@ const ModelsManager = ({ standardModels, setStandardModels, customModels, setCus
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Model Ekle</Btn>
       </div>
-      {standardModels.map(m => <ModelRow key={"s-" + m.model} m={m} isStd />)}
-      {customModels.map(m => <ModelRow key={"c-" + m.model} m={m} isStd={false} />)}
+      {standardModels.map((m, i) => <ModelRow key={"s-" + m.model + "-" + i} m={m} isStd />)}
+      {customModels.map((m, i) => <ModelRow key={"c-" + m.model + "-" + i} m={m} isStd={false} />)}
       {customModels.length === 0 && (
         <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>Henüz özel model eklenmedi.</div>
       )}
@@ -2449,7 +2494,10 @@ const ModelsManager = ({ standardModels, setStandardModels, customModels, setCus
 
       {modelModal && (
         <Modal title={modelModal.mode === "add" ? "Yeni Model Ekle" : "Modeli Düzenle"} onClose={() => setModelModal(null)}>
-          <Field label="Model Adı"><Input value={mForm.model || ""} onChange={e => setMForm(p => ({ ...p, model: e.target.value }))} placeholder="Örn: AK160_DSC" /></Field>
+          <Field label="Model Adı">
+            <Input value={mForm.model || ""} onChange={e => setMForm(p => ({ ...p, model: e.target.value }))} placeholder="Örn: AK160_DSC" />
+            <Warn>{!(mForm.model || "").trim() ? "Model adı girilmedi" : ""}</Warn>
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Soğutma">
               <Select value={mForm.sogutma || "Soğutmalı"} onChange={e => setMForm(p => ({ ...p, sogutma: e.target.value }))}>
@@ -2462,7 +2510,7 @@ const ModelsManager = ({ standardModels, setStandardModels, customModels, setCus
           <Field label="Kalıp Çapı"><Input value={mForm.kalip || ""} onChange={e => setMForm(p => ({ ...p, kalip: e.target.value }))} placeholder="Örn: 14 cm" /></Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
-            <Btn onClick={saveModel} disabled={!(mForm.model || "").trim()}><Icon name="check" size={14} /> Kaydet</Btn>
+            <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
         </Modal>
       )}
@@ -2476,7 +2524,6 @@ const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) => {
   const [editForm, setEditForm] = useState({});
 
   const add = () => {
-    if (!form.ad.trim()) return;
     bumpId(kalipDefs);
     const yeniId = uid();
     const ad = form.ad.trim();
@@ -2497,6 +2544,7 @@ const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) => {
         <div style={{ flex: "1 1 250px" }}>
           <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 4 }}>Kalıp Adı</div>
           <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
+          <Warn>{!form.ad.trim() ? "Kalıp adı girilmedi" : ""}</Warn>
         </div>
         <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
       </div>
@@ -2549,7 +2597,6 @@ const PartManager = ({ parts = [], setParts, showToast = () => {} }) => {
   const [confirmDel, setConfirmDel] = useState(null);
 
   const add = () => {
-    if (!form.ad.trim()) return;
     const yeniId = Date.now();
     const ad = form.ad.trim();
     setParts(p => p.some(x => x.id === yeniId) ? p : [...p, { id: yeniId, ad }]);
@@ -2568,6 +2615,7 @@ const PartManager = ({ parts = [], setParts, showToast = () => {} }) => {
         <div style={{ flex: "1 1 250px" }}>
           <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 4 }}>Yedek Parça Adı</div>
           <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
+          <Warn>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
         </div>
         <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
       </div>
@@ -3144,7 +3192,7 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
     flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
   };
   const exportCustomers = () => {
-    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Gerçek Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?"];
+    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Gerçek Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rate = appSettings?.kdvRate ?? DEFAULT_KDV_RATE;
     const rows = [head, ...customers.map(c => [
@@ -3155,6 +3203,7 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
       parseMoney(c.fabrikaSatisBedeli), parseMoney(c.faturaBedeli), calcKDV(c.faturali, c.faturaBedeli, rate),
       parseMoney(c.komisyon), parseMoney(c.extraKalipFiyati), parseMoney(c.kalanBorc),
       c.isResale ? "Evet" : "Hayır",
+      c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel,
     ])];
     downloadCSV(rows, "musteriler.csv");
     flash("ok", "Müşteri listesi Excel (CSV) olarak indirildi.");
@@ -3178,6 +3227,7 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
     "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Yurt İçi/İhracat/Faturasız)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Gerçek Satış Bedeli", "Fatura Bedeli",
     "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
     "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
+    "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
   ];
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = () => {
@@ -3217,6 +3267,7 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
         c.serialNo || "",
         c.aciklama || "",
         ...svcCells,
+        c.yetkili1Ad || "", c.yetkili1Tel || "", c.yetkili2Ad || "", c.yetkili2Tel || "",
       ]);
     });
     try {
@@ -3234,7 +3285,8 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
   const downloadTemplate = () => {
     const ornek = ["2", "Altuntaş Makina", "Örnek Gıda A.Ş.", "0532 000 00 00", "Atatürk Cad. No:1", "Türkiye", "İstanbul",
       "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurt İçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
-      "10.01.2025", "Periyodik bakım yapıldı", "05.06.2025", "Bıçak değişti", "", ""];
+      "10.01.2025", "Periyodik bakım yapıldı", "05.06.2025", "Bıçak değişti", "", "",
+      "Ahmet Yılmaz", "0532 111 11 11", "", ""];
     try {
       const ws = XLSX.utils.aoa_to_sheet([IMPORT_HEADERS, ornek]);
       const wb = XLSX.utils.book_new();
@@ -3371,6 +3423,8 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
         faturaBedeli, fabrikaSatisBedeli: gercekBedel || faturaBedeli,
         komisyon: moneyNum(cell(16)), extraKalipFiyati: moneyNum(cell(17)), kalanBorc: moneyNum(cell(18)),
         serialNo, aciklama: cell(20),
+        yetkili1Ad: cell(27) || mevcut?.yetkili1Ad || "", yetkili1Tel: cell(28) || mevcut?.yetkili1Tel || "",
+        yetkili2Ad: cell(29) || mevcut?.yetkili2Ad || "", yetkili2Tel: cell(30) || mevcut?.yetkili2Tel || "",
         // Seri no boşsa "bekliyor" işareti (sonradan girilmesi için hatırlatma)
         ...(serialNo ? { seriNoBekliyor: false } : { seriNoBekliyor: true }),
         ...(mevcut?.isResale ? { isResale: mevcut.isResale, prevOwners: mevcut.prevOwners } : {}),
@@ -4016,7 +4070,6 @@ const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = () => {}
   const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "" }); setModal("add"); };
   const openEdit = s => { setForm({ ...s }); setModal({ edit: s }); };
   const save = () => {
-    if (!form.model) return; // sadece model zorunlu, seri no opsiyonel
     if (modal === "add") { bumpId(stock); const nid = uid(); setStock(p => p.some(s => s.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Stok makinası kaydedildi."); }
     else { setStock(p => p.map(s => s.id === form.id ? form : s)); showToast("Stok makinası düzenlendi."); }
     setModal(null);
@@ -4107,6 +4160,7 @@ const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = () => {}
               <option value="">Model seçin...</option>
               {models.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
             </Select>
+            <Warn>{!form.model ? "Model seçilmedi" : ""}</Warn>
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
