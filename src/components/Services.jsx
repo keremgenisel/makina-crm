@@ -2,6 +2,7 @@ import { useState } from "react";
 import LOGO from "../assets/logo.avif?inline";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES } from "../lib/constants";
 import { today, fmtTR, todayTR, trLower, uid, bumpId, stripAutoPrint, fmtCur, parseMoney } from "../lib/utils";
+import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
 
 export const Services = ({ services, setServices, customers, factory = null, parts = [], showToast = () => {} }) => {
@@ -11,13 +12,13 @@ export const Services = ({ services, setServices, customers, factory = null, par
   const [detail, setDetail] = useState(null); // tıklanan servis kaydı (detay)
 
   const openAdd = () => {
-    setForm({ customerId: "", type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", odendi: false, degisenParcalar: [] });
+    setForm({ customerId: "", type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", odendi: false, degisenParcalar: [], parcaUcreti: "", parcaCurrency: "TRY", parcaGarantiDisi: false, parcaOdendi: false });
     setCustSearch("");
     setModal("add");
   };
-  const openEdit = sv => { setForm({ degisenParcalar: [], ...sv }); setCustSearch(""); setModal({ edit: sv }); };
+  const openEdit = sv => { setForm({ degisenParcalar: [], parcaUcreti: "", parcaCurrency: "TRY", parcaGarantiDisi: false, parcaOdendi: false, ...sv }); setCustSearch(""); setModal({ edit: sv }); };
   const save = () => {
-    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null };
+    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi };
     if (modal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -31,29 +32,26 @@ export const Services = ({ services, setServices, customers, factory = null, par
   const del = id => setConfirmId(id);
   const confirmDel = () => { setServices(p => p.filter(s => s.id !== confirmId)); setConfirmId(null); showToast("Servis kaydı silindi."); };
 
-  const [page, setPage] = useState(1);
-  const [svSearch, setSvSearch] = useState("");
   const [payFilter, setPayFilter] = useState(false); // sadece ödenmemiş ücretli servisler
-  const PER_PAGE = 10;
   // Ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0)
   const ucretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
+  // Değişen parçalar ücretli mi (garanti dışı işaretlenmiş veya garanti yoksa + ücret > 0)
+  const parcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
   // Borçlu mu: ücretli + açıkça ödenmedi (eski kayıtlarda odendi alanı yoksa ödendi sayılır)
-  const borcluMu = (sv) => ucretliMi(sv) && sv.odendi === false;
+  const borcluMu = (sv) => (ucretliMi(sv) && sv.odendi === false) || (parcaUcretliMi(sv) && sv.parcaOdendi === false);
   const odenmemisCount = services.filter(borcluMu).length;
-  const searched = svSearch.trim()
-    ? services.filter(sv => {
-        const cust = customers.find(c => c.id === sv.customerId);
-        const q = trLower(svSearch);
-        return trLower(cust?.name).includes(q) ||
-               trLower(cust?.serialNo).includes(q) ||
-               trLower(cust?.model).includes(q) ||
-               trLower(sv.tech).includes(q) ||
-               trLower(sv.yapilanIsler).includes(q) ||
-               trLower(sv.musteriTalimati).includes(q);
-      })
-    : services;
-  const visibleServices = payFilter ? searched.filter(borcluMu) : searched;
-  const pagedServices = visibleServices.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const { search: svSearch, setSearch: setSvSearch, page, setPage, filtered: visibleServices, paged: pagedServices, perPage: PER_PAGE } = useFilteredList(services, {
+    searchFn: (sv, q) => {
+      const cust = customers.find(c => c.id === sv.customerId);
+      return trLower(cust?.name).includes(q) ||
+             trLower(cust?.serialNo).includes(q) ||
+             trLower(cust?.model).includes(q) ||
+             trLower(sv.tech).includes(q) ||
+             trLower(sv.yapilanIsler).includes(q) ||
+             trLower(sv.musteriTalimati).includes(q);
+    },
+    filterFn: payFilter ? borcluMu : null,
+  });
 
   const typeColor = {
     "İlk Çalıştırma": ["#eff6ff", "#1d4ed8"],
@@ -63,6 +61,9 @@ export const Services = ({ services, setServices, customers, factory = null, par
   };
 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
+  // Garanti içindeyse değişen parçalar varsayılan ücretsizdir; "garanti kapsamı dışı" işaretiyle ücretliye çevrilebilir.
+  const warrantyAktif = !!(selectedCust?.warrantyEnd && selectedCust.warrantyEnd >= today());
+  const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (warrantyAktif && !form.parcaGarantiDisi);
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         trLower(c.name).includes(trLower(custSearch)) ||
@@ -79,6 +80,9 @@ export const Services = ({ services, setServices, customers, factory = null, par
     const ucret = ((sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && sv.servisUcreti)
       ? `${fmtCur(sv.servisUcreti, sv.currency)}${(sv.currency || "TRY") === "TRY" ? " (KDV dahil)" : ""}`
       : "—";
+    const parcaUcret = (!sv.parcaUcretsizMi && sv.parcaUcreti)
+      ? `${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}${(sv.parcaCurrency || "TRY") === "TRY" ? " (KDV dahil)" : ""}`
+      : "—";
 
     const infoRows = [
       ["Firma Adı", cust.name],
@@ -87,10 +91,11 @@ export const Services = ({ services, setServices, customers, factory = null, par
       ["Makina Modeli", cust.model],
       ["Seri Numarası", cust.serialNo],
       ["Servis Türü", sv.type],
-      ["Onarım Yeri", sv.repairPlace],
+      ["Yapılan İşlem", sv.repairPlace],
       ["Servise Giriş Tarihi", fmtTR(sv.date)],
       ["Teknisyen", sv.tech],
       ["Servis Ücreti", ucret],
+      ...(sv.degisenParcalar?.length ? [["Parça Ücreti", parcaUcret]] : []),
     ].map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
 
     const html = `<!DOCTYPE html>
@@ -186,7 +191,7 @@ export const Services = ({ services, setServices, customers, factory = null, par
 
       <div style={{ position: "relative", marginBottom: 12 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
-        <input value={svSearch} onChange={e => { setSvSearch(e.target.value); setPage(1); }}
+        <input value={svSearch} onChange={e => setSvSearch(e.target.value)}
           placeholder="Firma, model, seri no, teknisyen veya işlem ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
@@ -206,7 +211,7 @@ export const Services = ({ services, setServices, customers, factory = null, par
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f8fafc" }}>
-              {["Müşteri", "Makina", "Tür", "Onarım Yeri", "Tarih", "Ödeme", ""].map(h => (
+              {["Müşteri", "Makina", "Tür", "Yapılan İşlem", "Tarih", "Ödeme", ""].map(h => (
                 <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
               ))}
             </tr>
@@ -231,9 +236,9 @@ export const Services = ({ services, setServices, customers, factory = null, par
                   <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748b" }}>{sv.repairPlace || "—"}</td>
                   <td style={{ padding: "13px 16px", fontSize: 13, color: "#64748b" }}>{fmtTR(sv.date)}</td>
                   <td style={{ padding: "13px 16px" }}>
-                    {ucretliMi(sv) ? (
-                      sv.odendi === false
-                        ? <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>Ödenmedi · {fmtCur(sv.servisUcreti, sv.currency)}</span>
+                    {(ucretliMi(sv) || parcaUcretliMi(sv)) ? (
+                      borcluMu(sv)
+                        ? <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>Ödenmedi</span>
                         : <span style={{ fontSize: 11, fontWeight: 700, color: "#15803d", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>Ödendi</span>
                     ) : <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>}
                   </td>
@@ -288,6 +293,15 @@ export const Services = ({ services, setServices, customers, factory = null, par
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>SERVİS ÜCRETİ: </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{fmtCur(detail.servisUcreti, detail.currency)}</span>
                 {(detail.currency || "TRY") === "TRY"
+                  ? <span style={{ fontSize: 11, color: "#065f46", marginLeft: 8, fontWeight: 700 }}>KDV dahil</span>
+                  : <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>}
+              </div>
+            )}
+            {!detail.parcaUcretsizMi && detail.parcaUcreti && (
+              <div style={{ marginBottom: 14, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>PARÇA ÜCRETİ: </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{fmtCur(detail.parcaUcreti, detail.parcaCurrency)}</span>
+                {(detail.parcaCurrency || "TRY") === "TRY"
                   ? <span style={{ fontSize: 11, color: "#065f46", marginLeft: 8, fontWeight: 700 }}>KDV dahil</span>
                   : <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>}
               </div>
@@ -363,7 +377,7 @@ export const Services = ({ services, setServices, customers, factory = null, par
                 {SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}
               </Select>
             </Field>
-            <Field label="Onarım Yeri">
+            <Field label="Yapılan İşlem">
               <Select value={form.repairPlace || "Yerinde Onarım"} onChange={e => setForm(p => ({ ...p, repairPlace: e.target.value }))}>
                 {REPAIR_PLACES.map(t => <option key={t}>{t}</option>)}
               </Select>
@@ -408,7 +422,7 @@ export const Services = ({ services, setServices, customers, factory = null, par
               style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 80, boxSizing: "border-box", fontFamily: "inherit" }} />
           </Field>
 
-          {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim (kayıt amaçlı, ücretsiz) */}
+          {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + ücretlendirme */}
           <Field label="Değişen Parçalar (varsa)">
             {parts.length === 0 ? (
               <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar → Yedek Parça'dan ekleyebilirsiniz.</div>
@@ -436,10 +450,44 @@ export const Services = ({ services, setServices, customers, factory = null, par
                     ))}
                   </div>
                 )}
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>Bu seçim sadece kayıt amaçlıdır, ücretlendirme yapmaz. Ücretli parça satışı için Yedek Parça bölümünü kullanın.</div>
               </>
             )}
           </Field>
+
+          {(form.degisenParcalar || []).length > 0 && (
+            <>
+              {warrantyAktif && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+                  <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#dc2626" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
+                    {form.parcaGarantiDisi ? "Garanti kapsamı dışı (ücretli)" : "Garanti kapsamında — parça ücretsiz verildi"}
+                  </span>
+                </label>
+              )}
+              {!parcaUcretsizMi && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <Field label="Parça Para Birimi">
+                    <Select value={form.parcaCurrency || "TRY"} onChange={e => setForm(p => ({ ...p, parcaCurrency: e.target.value }))}>
+                      <option value="TRY">₺ Türk Lirası</option>
+                      <option value="USD">$ Dolar (USD)</option>
+                      <option value="EUR">€ Euro (EUR)</option>
+                    </Select>
+                  </Field>
+                  <Field label="Parça Ücreti">
+                    <MoneyInput value={form.parcaUcreti} sym={CUR_SYM[form.parcaCurrency || "TRY"]} onChange={v => setForm(p => ({ ...p, parcaUcreti: v }))} />
+                  </Field>
+                </div>
+              )}
+              {!parcaUcretsizMi && parseMoney(form.parcaUcreti) > 0 && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.parcaOdendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.parcaOdendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+                  <input type="checkbox" checked={!!form.parcaOdendi} onChange={e => setForm(p => ({ ...p, parcaOdendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: form.parcaOdendi ? "#15803d" : "#92400e" }}>
+                    {form.parcaOdendi ? "Parça ücreti tahsil edildi (ödendi)" : "Parça ücreti henüz tahsil edilmedi (ödenmedi)"}
+                  </span>
+                </label>
+              )}
+            </>
+          )}
 
           <Field label="Müşteri Talimatı / Açıklama">
             <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}

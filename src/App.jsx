@@ -23,8 +23,8 @@ const TABS = [
   { id: "dealers",   label: "Bayiler",      icon: "store"     },
   { id: "machines",  label: "Makina Geçmişi", icon: "machine"   },
   { id: "stock",     label: "Stok",         icon: "box"       },
-  { id: "services",  label: "Servis",       icon: "service"   },
-  { id: "parts",     label: "Yedek Parça",  icon: "parts"     },
+  { id: "services",  label: "Servis ve Yedek Parça", icon: "service" },
+  { id: "parts",     label: "Extra Kalıp",  icon: "parts"     },
   { id: "finance",   label: "Finans",       icon: "finance"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
@@ -84,8 +84,8 @@ export default function App() {
   const [services,  setServices]  = useState(INIT_SERVICES);
   const [stock,     setStock]     = useState(INIT_STOCK);
   const [notes,     setNotes]     = useState([]); // serbest notlar [{id, content, updatedAt}]
-  const [parts,     setParts]     = useState([]); // yedek parça/aksesuar/kalıp katalogu [{id, ad, kategori, fiyat, currency}]
-  const [partSales, setPartSales] = useState([]); // müşteriye verilen parçalar [{id, customerId, partId, ad, kategori, tarih, ucret, ucretsizMi, currency}]
+  const [parts,     setParts]     = useState([]); // yedek parça tanım kataloğu (Servis ve Yedek Parça → Değişen Parçalar seçimi için) [{id, ad}]
+  const [partSales, setPartSales] = useState([]); // Extra Kalıp sekmesinde verilen/satılan kalıplar [{id, customerId, ad, olcu, tarih, ucret, currency, odendi}]
   const [kalipDefs, setKalipDefs] = useState(INIT_KALIPLAR);
 
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function App() {
         {tab === "services"  && <Services  services={services}  setServices={setServices}  customers={customers} factory={factory} parts={parts} showToast={showToast} />}
         {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
         {tab === "notes"     && <Notes notes={notes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "parts"     && <Parts parts={parts} partSales={partSales} setPartSales={setPartSales} customers={customers} setCustomers={setCustomers} kalipDefs={kalipDefs} showToast={showToast} />}
+        {tab === "parts"     && <Parts partSales={partSales} setPartSales={setPartSales} customers={customers} setCustomers={setCustomers} kalipDefs={kalipDefs} showToast={showToast} />}
         {tab === "settings"  && <Settings  customers={customers} services={services} dealers={dealers} stock={stock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={customModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} notes={notes} setNotes={setNotes} parts={parts} setParts={setParts} partSales={partSales} setPartSales={setPartSales} showToast={showToast} />}
       </div>
     </div>

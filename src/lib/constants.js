@@ -102,8 +102,6 @@ export const BACKUP_SCHEMA_VERSION = 1;
 export const BACKUP_APP_TAG = "altunmak-crm";
 
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];
-export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım"];
-
-export const PART_CATEGORIES = ["Yedek Parça", "Aksesuar", "Kalıp"];
+export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "Fabrika Teslim"];
 
 export const APP_VERSION = "1.1.0";

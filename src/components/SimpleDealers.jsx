@@ -1,22 +1,17 @@
 import { useState } from "react";
-import { trLower, uid, bumpId } from "../lib/utils";
+import { uid, bumpId } from "../lib/utils";
+import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, showToast = () => {} }) => {
-  const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  const [page, setPage] = useState(1);
   const [confirmId, setConfirmId] = useState(null);
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
-  const PER_PAGE = 10;
 
-  const q = trLower(search);
-  const filtered = dealers.filter(d =>
-    trLower(d.name).includes(q) || trLower(d.city).includes(q) ||
-    trLower(d.contact).includes(q) || trLower(d.country).includes(q)
-  );
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
+    searchFields: ["name", "city", "contact", "country"],
+  });
 
   const openAdd  = () => { setForm({ name: "", contact: "", phone: "", email: "", adres: "", country: "Türkiye", city: "", note: "" }); setModal("add"); };
   const openEdit = d => { setForm({ ...d }); setModal({ edit: d }); };
@@ -37,7 +32,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       </div>
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Bayi ara..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Bayi ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
       <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>

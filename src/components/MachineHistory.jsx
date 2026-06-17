@@ -1,14 +1,12 @@
 import { useState } from "react";
 import LOGO from "../assets/logo.avif?inline";
 import { ALTUNMAK_MODELS } from "../lib/constants";
-import { today, fmtTR, todayTR, trLower, kalipText, stripAutoPrint, fmtKalipCapi, normalizeSaleType, fmtCur } from "../lib/utils";
+import { today, fmtTR, todayTR, kalipText, stripAutoPrint, fmtKalipCapi, normalizeSaleType, fmtCur } from "../lib/utils";
+import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, PHONE_RE, Select, Btn, Modal, Pagination, CountryCityFields } from "./ui";
 
 export const MachineHistory = ({ customers, setCustomers, services, models = ALTUNMAK_MODELS, dealers = [], factory = null, geoData = null, loadingGeo = false, showToast = () => {}, parts = [], partSales = [], setPartSales = null }) => {
-  const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(null);
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 10;
   const [editForm, setEditForm] = useState(null); // null | müşteri kopyası
   const [newOwnerForm, setNewOwnerForm] = useState(null); // 2. el satış formu
 
@@ -53,13 +51,9 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
   // Makinası olan müşteriler (model veya seri no girilmiş)
   const machineOwners = customers.filter(c => c.model || c.serialNo);
 
-  const filtered = search.trim()
-    ? machineOwners.filter(c =>
-        trLower(c.name).includes(trLower(search)) ||
-        trLower(c.model).includes(trLower(search)) ||
-        trLower(c.serialNo).includes(trLower(search))
-      )
-    : machineOwners;
+  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(machineOwners, {
+    searchFields: ["name", "model", "serialNo"],
+  });
 
   const selected = customers.find(c => c.id === selectedId);
   const history = selected
@@ -127,14 +121,14 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
     ].map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
 
     const svcRows = history.length === 0
-      ? `<tr><td colspan="4" style="text-align:center">Servis kaydı bulunmuyor.</td></tr>`
+      ? `<tr><td colspan="5" style="text-align:center">Servis kaydı bulunmuyor.</td></tr>`
       : history.map(sv =>
-          `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(sv.type)}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>Değişen parçalar:</b> ${esc(sv.degisenParcalar.join(", "))}` : ""}</td></tr>`
+          `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(sv.type)}</td><td>${esc(sv.repairPlace || "—")}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>Değişen parçalar:</b> ${esc(sv.degisenParcalar.join(", "))}` : ""}</td></tr>`
         ).join("");
 
     const givenParts = (partSales || []).filter(ps => ps.customerId === selected.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
     const partRows = givenParts.map(ps =>
-      `<tr><td>${esc(fmtTR(ps.tarih))}</td><td>${esc(ps.tur)}</td><td>${esc(ps.ad)}${ps.olcu ? ` (${esc(ps.olcu)})` : ""}</td></tr>`
+      `<tr><td>${esc(fmtTR(ps.tarih))}</td><td>${esc(ps.ad)}${ps.olcu ? ` (${esc(ps.olcu)})` : ""}</td></tr>`
     ).join("");
 
     const html = `<!DOCTYPE html>
@@ -162,7 +156,7 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
   <div class="header">
     <div>
       <img src="${LOGO}" alt="Altuntaş Makina" style="height:42px;display:block;margin-bottom:6px" />
-      <div class="sub">Makina Servis Geçmişi Raporu</div>
+      <div class="sub">Makina Servis ve Yedek Parça Geçmişi Raporu</div>
     </div>
     <div class="right">
       <div>Rapor Tarihi: ${todayTR()}</div>
@@ -178,15 +172,15 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
       <tr style="background:#f0fdf4"><td><b>Mevcut</b></td><td><b>${esc(selected.name)}</b></td><td>${esc([selected.city, selected.country].filter(Boolean).join(" / ") || "—")}</td><td>${esc(selected.satisYapan || "—")}</td><td>—</td></tr>
     </tbody>
   </table>` : ""}
-  <h2>SERVİS GEÇMİŞİ (${history.length} kayıt)</h2>
+  <h2>SERVİS VE YEDEK PARÇA GEÇMİŞİ (${history.length} kayıt)</h2>
   <table class="svc">
-    <thead><tr><th>Tarih</th><th>Tür</th><th>Teknisyen</th><th>Açıklama</th></tr></thead>
+    <thead><tr><th>Tarih</th><th>Tür</th><th>Yapılan İşlem</th><th>Teknisyen</th><th>Açıklama</th></tr></thead>
     <tbody>${svcRows}</tbody>
   </table>
   ${givenParts.length > 0 ? `
-  <h2>VERİLEN YEDEK PARÇALAR (${givenParts.length} kayıt)</h2>
+  <h2>EXTRA KALIPLAR (${givenParts.length} kayıt)</h2>
   <table class="svc">
-    <thead><tr><th>Tarih</th><th>Tür</th><th>Parça / Kalıp</th></tr></thead>
+    <thead><tr><th>Tarih</th><th>Kalıp</th></tr></thead>
     <tbody>${partRows}</tbody>
   </table>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
@@ -222,13 +216,13 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
           <div style={{ padding: 14, borderBottom: "1px solid #f1f5f9" }}>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
-              <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+              <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Firma, model veya seri no..."
                 style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
             </div>
           </div>
           <div style={{ maxHeight: 480, overflowY: "auto" }}>
-            {filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE).map(c => (
+            {paged.map(c => (
               <div key={c.id} onClick={() => setSelectedId(c.id)}
                 style={{
                   padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #f1f5f9",

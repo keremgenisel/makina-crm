@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney } from "../lib/utils";
+import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
 export const Customers = ({
@@ -10,13 +11,10 @@ export const Customers = ({
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", kalipDefs = [], showToast = () => {}, kdvRate = DEFAULT_KDV_RATE,
 }) => {
-  const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 10;
 
   const [listFilter, setListFilter] = useState(initialFilter || "all"); // all | warranty | warranty-active | debt | serial-pending
   useEffect(() => { setListFilter(initialFilter || "all"); }, [initialFilter]);
@@ -29,24 +27,16 @@ export const Customers = ({
   const firmCount = {};
   customers.forEach(c => { const k = trLower(c.name); firmCount[k] = (firmCount[k] || 0) + 1; });
 
-  const q = trLower(search);
-  const baseList = listFilter === "warranty"
-    ? customers.filter(c => c.warrantyEnd && c.warrantyEnd < today())
-    : listFilter === "warranty-active"
-    ? customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today())
-    : listFilter === "debt"
-    ? customers.filter(c => parseMoney(c.kalanBorc) > 0)
-    : listFilter === "serial-pending"
-    ? customers.filter(c => c.seriNoBekliyor && !c.serialNo)
-    : customers;
-  const searched = baseList.filter(c =>
-    trLower(c.name).includes(q) ||
-    trLower(c.city).includes(q) ||
-    trLower(c.satisYapan).includes(q) ||
-    trLower(c.contact).includes(q) ||
-    trLower(c.country).includes(q) ||
-    trLower(c.serialNo).includes(q)
-  );
+  const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
+    searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo"],
+    filterFn: c => {
+      if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();
+      if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();
+      if (listFilter === "debt") return parseMoney(c.kalanBorc) > 0;
+      if (listFilter === "serial-pending") return c.seriNoBekliyor && !c.serialNo;
+      return true;
+    },
+  });
   // Gruplama açıksa her firmadan sadece ilk kayıt listede görünür (rozet adediyle)
   // O(n) — Set ile (büyük listelerde findIndex'in O(n^2) donmasını önler)
   const filtered = groupByFirm
@@ -215,7 +205,7 @@ export const Customers = ({
       )}
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={searchPlaceholder}
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
           style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc" }} />
       </div>
       <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>

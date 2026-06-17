@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId } from "../lib/utils";
+import { today, fmtTR, uid, bumpId } from "../lib/utils";
+import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
 
 export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = () => {} }) => {
-  const [search, setSearch] = useState("");
   const [modelFilter, setModelFilter] = useState(null); // tıklanan model kartı
   const [modal, setModal] = useState(null); // null | "add" | {edit}
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 10;
 
-  const q = trLower(search);
-  const filtered = stock.filter(s => {
-    if (modelFilter && s.model !== modelFilter) return false;
-    return trLower(s.model).includes(q) || trLower(s.serialNo).includes(q) || trLower(s.note).includes(q);
+  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(stock, {
+    searchFields: ["model", "serialNo", "note"],
+    filterFn: s => !modelFilter || s.model === modelFilter,
   });
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   // Modele göre grupla (özet kartlar)
   const byModel = {};
@@ -67,7 +63,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
       )}
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Model veya seri no ara..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model veya seri no ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
 

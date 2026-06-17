@@ -89,7 +89,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     flash("ok", "Müşteri listesi Excel (CSV) olarak indirildi.");
   };
   const exportServices = () => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Onarım Yeri", "Tarih", "Teknisyen", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
+    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
       const c = customers.find(x => x.id === s.customerId) || {};
@@ -734,7 +734,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       {settingsTab === "yedekparca" && (
         <Section title="Yedek Parça Tanımları" icon="parts">
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-            Sattığınız yedek parçaları buraya tanımlayın. Bunlar <b>Yedek Parça</b> bölümünde satış/çıkış yaparken listelenir. Fiyat ve para birimi satış sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir.
+            Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar <b>Servis ve Yedek Parça</b> bölümünde "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve <b>Extra Kalıp</b> bölümünde satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} />
         </Section>
