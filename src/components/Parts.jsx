@@ -99,8 +99,8 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
         {sortedSales.length === 0 ? (
           <div style={{ padding: "50px 20px", textAlign: "center", color: "#94a3b8" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔧</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#475569", marginBottom: 4 }}>{lq ? "Eşleşen kayıt yok" : "Henüz kalıp satışı veya çıkışı yok"}</div>
-            <div style={{ fontSize: 13 }}>{lq ? "Farklı bir arama deneyin." : "Extra Kalıp Satışı / Çıkışı butonuyla başlayın."}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#475569", marginBottom: 4 }}>{listSearch.trim() ? "Eşleşen kayıt yok" : "Henüz kalıp satışı veya çıkışı yok"}</div>
+            <div style={{ fontSize: 13 }}>{listSearch.trim() ? "Farklı bir arama deneyin." : "Extra Kalıp Satışı / Çıkışı butonuyla başlayın."}</div>
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
