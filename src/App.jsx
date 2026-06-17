@@ -124,6 +124,15 @@ const bumpId = (...arrays) => {
   });
   nextId = max;
 };
+// ── Yedek dosyası şeması ──────────────────────────────────────────────
+const BACKUP_SCHEMA_VERSION = 1;
+const BACKUP_APP_TAG = "altunmak-crm";
+// Eski yedekler (şema etiketi olmadan alınmış) için: en az bir tanıdık dizi alanı varsa kabul et
+const looksLikeBackup = (data) => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  if (data.app === BACKUP_APP_TAG) return true;
+  return ["customers", "services", "dealers", "stock", "notes", "parts", "partSales"].some((k) => Array.isArray(data[k]));
+};
 // Yazdırma HTML'inden otomatik print script'ini çıkarır (Electron çift diyalog önleme)
 const stripAutoPrint = (html) => {
   const open = html.indexOf("<script>window.onload");
@@ -3507,7 +3516,7 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
 
   // ── Yedek Al ──
   const doBackup = async () => {
-    const data = { version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales };
+    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales };
     try {
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
@@ -3531,7 +3540,9 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
     try {
       if (window.crmStorage?.restore) {
         const data = await window.crmStorage.restore();
-        if (data) setRestoreData(data);
+        if (!data) return;
+        if (!looksLikeBackup(data)) { flash("err", "Seçilen dosya geçerli bir Altunmak CRM yedeği değil."); return; }
+        setRestoreData(data);
       } else {
         // Tarayıcı modu: dosya seçici
         const input = document.createElement("input");
@@ -3542,8 +3553,11 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
           if (!file) return;
           const reader = new FileReader();
           reader.onload = () => {
-            try { setRestoreData(JSON.parse(reader.result)); }
-            catch { flash("err", "Dosya okunamadı — geçerli bir yedek değil."); }
+            let parsed;
+            try { parsed = JSON.parse(reader.result); }
+            catch { flash("err", "Dosya okunamadı — geçerli bir yedek değil."); return; }
+            if (!looksLikeBackup(parsed)) { flash("err", "Seçilen dosya geçerli bir Altunmak CRM yedeği değil."); return; }
+            setRestoreData(parsed);
           };
           reader.readAsText(file);
         };
@@ -3958,6 +3972,11 @@ const Settings = ({ customers, services, dealers, stock, setStock, setCustomers,
             <b>{Array.isArray(restoreData.dealers) ? restoreData.dealers.length : 0} bayi</b>, <b>{Array.isArray(restoreData.services) ? restoreData.services.length : 0} servis kaydı</b>
             {restoreData.exportDate ? ` (${restoreData.exportDate} tarihli)` : ""}.
           </div>
+          {restoreData.schemaVersion > BACKUP_SCHEMA_VERSION && (
+            <div style={{ fontSize: 13, color: "#b45309", fontWeight: 600, marginBottom: 8 }}>
+              ⚠ Bu yedek, bu programın daha yeni bir sürümüyle alınmış. Bazı veriler düzgün yüklenmeyebilir.
+            </div>
+          )}
           <div style={{ fontSize: 13, color: "#dc2626", fontWeight: 600, marginBottom: 20 }}>
             ⚠ Mevcut tüm veriler bu yedekteki verilerle değiştirilecek. Bu işlem geri alınamaz.
           </div>
@@ -4546,7 +4565,7 @@ export default function App() {
     };
     if (isDue()) {
       window.crmStorage
-        .writeBackup(s.backupFolder, { version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs })
+        .writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs })
         .then(ok => { if (ok) setAppSettings(p => ({ ...p, lastBackup: today() })); })
         .catch(() => {});
     }
