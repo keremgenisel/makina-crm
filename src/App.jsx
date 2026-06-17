@@ -2350,9 +2350,7 @@ const Services = ({ services, setServices, customers, factory = null, parts = []
               </Field>
               <Field label="Servis Ücreti">
                 <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
-                {(form.currency || "TRY") === "TRY" ? (
-                  <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "4px 10px", borderRadius: 8 }}>KDV dahil</span>
-                ) : (
+                {(form.currency || "TRY") !== "TRY" && (
                   <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
                 )}
               </Field>
@@ -2940,9 +2938,7 @@ const Parts = ({ parts = [], partSales = [], setPartSales, customers = [], setCu
               </Field>
               <Field label="Fiyat">
                 <MoneyInput value={form.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fiyat: v }))} />
-                {(form.currency || "TRY") === "TRY" ? (
-                  <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "4px 10px", borderRadius: 8 }}>KDV dahil</span>
-                ) : (
+                {(form.currency || "TRY") !== "TRY" && (
                   <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
                 )}
               </Field>
