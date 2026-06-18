@@ -80,12 +80,15 @@ export const Services = ({ services, setServices, customers, factory = null, par
     const cust = customers.find(c => c.id === sv.customerId) || {};
     const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
-    const ucret = ((sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && sv.servisUcreti)
-      ? fmtCur(sv.servisUcreti, sv.currency)
-      : "—";
-    const parcaUcret = (!sv.parcaUcretsizMi && sv.parcaUcreti)
-      ? fmtCur(sv.parcaUcreti, sv.parcaCurrency)
-      : "—";
+    const servisUcretiVar = (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
+    const parcaUcretiVar = !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
+    const ucret = servisUcretiVar ? fmtCur(sv.servisUcreti, sv.currency) : "—";
+    const parcaUcret = parcaUcretiVar ? fmtCur(sv.parcaUcreti, sv.parcaCurrency) : "—";
+    const toplam = (servisUcretiVar && parcaUcretiVar)
+      ? ((sv.currency || "TRY") === (sv.parcaCurrency || "TRY")
+          ? fmtCur(parseMoney(sv.servisUcreti) + parseMoney(sv.parcaUcreti), sv.currency || "TRY")
+          : `${fmtCur(sv.servisUcreti, sv.currency)} + ${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}`)
+      : null;
 
     const infoRows = [
       ["Firma Adı", cust.name],
@@ -99,6 +102,7 @@ export const Services = ({ services, setServices, customers, factory = null, par
       ["Teknisyen", sv.tech],
       ["Servis Ücreti", ucret],
       ...(sv.degisenParcalar?.length ? [["Parça Ücreti", parcaUcret]] : []),
+      ...(toplam ? [["Toplam", toplam]] : []),
     ].map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
 
     const html = `<!DOCTYPE html>
@@ -490,6 +494,21 @@ export const Services = ({ services, setServices, customers, factory = null, par
                 </label>
               )}
             </>
+          )}
+
+          {/* Servis ücreti ve parça ücreti aynı anda varsa toplamı göster */}
+          {parseMoney(form.servisUcreti) > 0 && !parcaUcretsizMi && parseMoney(form.parcaUcreti) > 0 && (
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+              {(form.currency || "TRY") === (form.parcaCurrency || "TRY") ? (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                  Toplam (Servis + Parça): {fmtCur(parseMoney(form.servisUcreti) + parseMoney(form.parcaUcreti), form.currency || "TRY")}
+                </span>
+              ) : (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                  Toplam: {fmtCur(form.servisUcreti, form.currency)} (servis) + {fmtCur(form.parcaUcreti, form.parcaCurrency)} (parça)
+                </span>
+              )}
+            </div>
           )}
 
           <Field label="Müşteri Talimatı / Açıklama">

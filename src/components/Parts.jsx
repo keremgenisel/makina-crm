@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CUR_SYM } from "../lib/constants";
 import { today, trLower, fmtCur, parseMoney } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
 
 export const Parts = ({ partSales = [], setPartSales, customers = [], setCustomers, kalipDefs = [], showToast = () => {} }) => {
   const [form, setForm] = useState(null); // satış formu
@@ -18,7 +18,7 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
   // Borçlu mu: açıkça ödenmedi (eski kayıtlarda odendi yoksa ödendi sayılır)
   const borcluMu = (s) => s.odendi === false;
   const odenmemisCount = partSales.filter(borcluMu).length;
-  const { search: listSearch, setSearch: setListSearch, filtered: sortedSales } = useFilteredList(partSales, {
+  const { search: listSearch, setSearch: setListSearch, page, setPage, filtered: sortedSales, paged: pagedSales, perPage: PER_PAGE } = useFilteredList(partSales, {
     searchFn: (s, q) => {
       const cust = custMap.get(s.customerId);
       return trLower(s.ad).includes(q) || trLower(cust?.name).includes(q) || trLower(cust?.model).includes(q) || trLower(cust?.serialNo).includes(q);
@@ -87,11 +87,11 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
 
       {partSales.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-          <button onClick={() => setPayFilter(false)}
+          <button onClick={() => { setPayFilter(false); setPage(1); }}
             style={{ padding: "7px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "1px solid", borderColor: !payFilter ? "#e85d1a" : "#e2e8f0", background: !payFilter ? "#e85d1a" : "#fff", color: !payFilter ? "#fff" : "#64748b" }}>
             Tümü ({partSales.length})
           </button>
-          <button onClick={() => setPayFilter(true)}
+          <button onClick={() => { setPayFilter(true); setPage(1); }}
             style={{ padding: "7px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "1px solid", borderColor: payFilter ? "#dc2626" : "#e2e8f0", background: payFilter ? "#dc2626" : "#fff", color: payFilter ? "#fff" : "#64748b" }}>
             💰 Ödenmemiş Kalıp Borcu ({odenmemisCount})
           </button>
@@ -115,7 +115,7 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
               </tr>
             </thead>
             <tbody>
-              {sortedSales.map(s => (
+              {pagedSales.map(s => (
                 <tr key={s.id}>
                   <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{fmtTRlocal(s.tarih)}</td>
                   <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{custMakine(s.customerId)}</td>
@@ -141,6 +141,7 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
             </tbody>
           </table>
         )}
+        <Pagination total={sortedSales.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </div>
 
       {confirmDel && (

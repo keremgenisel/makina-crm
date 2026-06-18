@@ -30,7 +30,7 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
         country: newOwnerForm.country || "",
         aciklama: newOwnerForm.aciklama || "",
         isResale: true,            // 2. el devir işareti (finans bunu gelir saymaz)
-        satisYapan: "2. El Devir",
+        satisYapan: newOwnerForm.satanFirma?.trim() || "2. El Devir",
         faturaBedeli: 0,
         fabrikaSatisBedeli: 0,
         komisyon: 0,
@@ -266,7 +266,7 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
                   </span>
                   <Btn small onClick={printReport}><Icon name="print" size={13} /> Yazdır</Btn>
                   <Btn small variant="ghost" onClick={() => setEditForm({ ...selected })}><Icon name="edit" size={13} /> Düzenle</Btn>
-                  <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: selected.id, name: "", satisYapan: "Altuntaş Makina", adres: "", city: "", country: "Türkiye", saleDate: today(), faturali: "Faturalı Yurt İçi", faturaBedeli: "" })}>
+                  <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: selected.id, name: "", satanFirma: selected.name, adres: "", city: "", country: "Türkiye", saleDate: today(), faturali: "Faturalı Yurt İçi", faturaBedeli: "" })}>
                     <Icon name="customers" size={13} /> Yeni Sahip
                   </Btn>
                 </div>
@@ -407,6 +407,16 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
             <Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" />
             <Warn>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</Warn>
           </Field>
+          <Field label="Satan Firma">
+            <Select value="" onChange={e => { if (e.target.value) setNewOwnerForm(p => ({ ...p, satanFirma: e.target.value })); }}>
+              <option value="">Hızlı seç... (veya aşağıya elle yazın)</option>
+              <option value={selected.name}>{selected.name} (Mevcut Sahip)</option>
+              <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
+              {dealers.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+            </Select>
+            <Input value={newOwnerForm.satanFirma || ""} onChange={e => setNewOwnerForm(p => ({ ...p, satanFirma: e.target.value }))}
+              placeholder="Satıcı adı" style={{ marginTop: 6 }} />
+          </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Telefon">
               <Input value={newOwnerForm.phone || ""} onChange={e => setNewOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" />
@@ -439,10 +449,18 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
             <Warn>{!editForm.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>
           </Field>
           <Field label="Satış Yapan">
-            <Select value={editForm.satisYapan || factory?.name || "Altuntaş Makina"} onChange={e => setEditForm(p => ({ ...p, satisYapan: e.target.value }))}>
+            <Select value="" onChange={e => { if (e.target.value) setEditForm(p => ({ ...p, satisYapan: e.target.value })); }}>
+              <option value="">Hızlı seç... (veya aşağıya elle yazın)</option>
               <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
               {dealers.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+              {editForm.prevOwners?.length > 0 && (
+                <option value={editForm.prevOwners[editForm.prevOwners.length - 1].name}>
+                  {editForm.prevOwners[editForm.prevOwners.length - 1].name} (Önceki Sahip)
+                </option>
+              )}
             </Select>
+            <Input value={editForm.satisYapan || ""} onChange={e => setEditForm(p => ({ ...p, satisYapan: e.target.value }))}
+              placeholder="Satıcı adı (müşteri, bayi, fabrika...)" style={{ marginTop: 6 }} />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Model">
