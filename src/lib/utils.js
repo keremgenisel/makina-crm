@@ -1,4 +1,4 @@
-import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG } from "./constants";
+import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES } from "./constants";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -52,18 +52,19 @@ export const fmtKalipCapi = (kc) => {
   return parts.join(" x ");
 };
 
-// Eski "Faturalı"/"Faturasız" değerlerini yeni sisteme çevir (geriye uyumluluk)
+// Eski (3'lü: Faturalı Yurt İçi/Faturalı İhracat/Faturasız, ya da çok eski Faturalı/Faturasız)
+// değerleri yeni 4'lü sisteme çevir (geriye uyumluluk): Faturalı/Faturasız × Yurtiçi/Yurtdışı
 export const normalizeSaleType = (v) => {
+  if (SALE_TYPES.includes(v)) return v; // zaten yeni sistemde
   const t = (v || "").toLocaleLowerCase("tr");
-  if (t.includes("ihracat") || t.includes("ihrac")) return "Faturalı İhracat";
-  if (t.includes("faturasız") || t.includes("faturasiz")) return "Faturasız";
-  if (t.includes("yurt")) return "Faturalı Yurt İçi";
-  if (t.includes("faturalı") || t.includes("faturali")) return "Faturalı Yurt İçi";
-  return v || "Faturalı Yurt İçi";
+  const faturasiz = t.includes("faturasız") || t.includes("faturasiz");
+  const yurtdisi = t.includes("ihracat") || t.includes("ihrac") || t.includes("yurtdışı") || t.includes("yurtdisi") || t.includes("yurt dışı");
+  const taban = faturasiz ? "Faturasız" : "Faturalı";
+  return `${taban} ${yurtdisi ? "Yurtdışı" : "Yurtiçi"}`;
 };
 export const isFaturali = (saleType) => normalizeSaleType(saleType).startsWith("Faturalı");
-export const isYurtIci = (saleType) => normalizeSaleType(saleType) === "Faturalı Yurt İçi";
-// KDV tutarı: sadece Faturalı Yurt İçi'de, fatura bedeli üzerinden hesaplanır
+export const isYurtIci = (saleType) => normalizeSaleType(saleType).endsWith("Yurtiçi");
+// KDV tutarı: sadece Yurtiçi satışlarda, fatura bedeli üzerinden hesaplanır
 export const calcKDV = (saleType, faturaBedeli, rate = DEFAULT_KDV_RATE) => {
   if (!isYurtIci(saleType)) return 0;
   return (parseMoney(faturaBedeli) * (parseFloat(rate) || 0)) / 100;

@@ -7,6 +7,14 @@ import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, 
 import { ServiceForm } from "./ServiceForm";
 import { PartSaleForm } from "./PartSaleForm";
 
+// Satış tipi rozet renkleri — Fatura sütunu ve zaman çizelgesindeki "tip" rozetinde kullanılır
+const SALE_TYPE_STYLE = {
+  "Faturalı Yurtiçi": { bg: "#d1fae5", fg: "#065f46" },
+  "Faturalı Yurtdışı": { bg: "#dbeafe", fg: "#1d4ed8" },
+  "Faturasız Yurtiçi": { bg: "#fef3c7", fg: "#92400e" },
+  "Faturasız Yurtdışı": { bg: "#fde68a", fg: "#7c2d12" },
+};
+
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
@@ -130,7 +138,7 @@ export const Customers = ({
       adres: "", city: "", country: "Türkiye", model: "",
       kaliplar: [],
       installDate: start, warrantyEnd: end,
-      faturali: "Faturalı Yurt İçi", faturaBedeli: "",
+      faturali: "Faturalı Yurtiçi", faturaBedeli: "",
       fabrikaSatisBedeli: "", komisyon: "", extraKalipFiyati: "",
       serialNo: "",
     });
@@ -148,7 +156,7 @@ export const Customers = ({
       adres: base.adres || "", city: base.city || "", country: base.country || "Türkiye",
       model: "", kaliplar: [],
       installDate: start, warrantyEnd: end,
-      faturali: "Faturalı Yurt İçi", faturaBedeli: "",
+      faturali: "Faturalı Yurtiçi", faturaBedeli: "",
       fabrikaSatisBedeli: "", komisyon: "", extraKalipFiyati: "", kalanBorc: "", serialNo: "", aciklama: "",
     });
     setModal("add"); setModelPicker(false);
@@ -642,13 +650,10 @@ export const Customers = ({
                   <td style={{ padding: "13px 16px" }}>
                     {c.faturali ? (() => {
                       const tip = normalizeSaleType(c.faturali);
-                      const stil = tip === "Faturalı Yurt İçi" ? { bg: "#d1fae5", fg: "#065f46" }
-                        : tip === "Faturalı İhracat" ? { bg: "#dbeafe", fg: "#1d4ed8" }
-                        : { bg: "#fef3c7", fg: "#92400e" };
-                      const kisaAd = tip === "Faturalı Yurt İçi" ? "Yurt İçi" : tip === "Faturalı İhracat" ? "İhracat" : "Faturasız";
+                      const stil = SALE_TYPE_STYLE[tip] || { bg: "#f1f5f9", fg: "#475569" };
                       return (
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: stil.bg, color: stil.fg }}>
-                          {kisaAd}{c.faturaBedeli ? ` · ${fmtCur(c.faturaBedeli, c.currency)}` : ""}
+                          {tip}{c.faturaBedeli ? ` · ${fmtCur(c.faturaBedeli, c.currency)}` : ""}
                         </span>
                       );
                     })() : <span style={{ color: "#cbd5e1" }}>—</span>}
@@ -725,7 +730,7 @@ export const Customers = ({
                     ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
                     ["Fabrika Satış Bedeli", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                     ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
-                    ["Extra Kalıp Fiyatı", detailView.extraKalipFiyati ? fmtCur(detailView.extraKalipFiyati, detailView.currency) : ""],
+                    ["Kapora", detailView.extraKalipFiyati ? fmtCur(detailView.extraKalipFiyati, detailView.currency) : ""],
                     ["Kalan Borç", detailView.kalanBorc ? fmtCur(detailView.kalanBorc, detailView.currency) : ""],
                     ["Açıklama", detailView.aciklama],
                   ].filter(([, v]) => v && v !== "—").map(([k, v]) => (
@@ -823,7 +828,7 @@ export const Customers = ({
                               ) : (
                                 <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
                               )}
-                              {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: ev.tip === "Faturalı Yurt İçi" ? "#d1fae5" : ev.tip === "Faturalı İhracat" ? "#dbeafe" : "#fef3c7", color: ev.tip === "Faturalı Yurt İçi" ? "#065f46" : ev.tip === "Faturalı İhracat" ? "#1d4ed8" : "#92400e" }}>{ev.tip === "Faturalı Yurt İçi" ? "Yurt İçi" : ev.tip === "Faturalı İhracat" ? "İhracat" : "Faturasız"}</span>}
+                              {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "#f1f5f9", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "#475569" }}>{ev.tip}</span>}
                               {sv?.tech && <span style={{ fontSize: 12, color: "#64748b" }}>· {sv.tech}</span>}
                               {sv?.repairPlace && <span style={{ fontSize: 11, color: "#94a3b8" }}>· {sv.repairPlace}</span>}
                             </div>
@@ -1160,38 +1165,41 @@ export const Customers = ({
             </Field>
           </div>
 
-          {/* Gerçek Satış Bedeli — finansın asıl bel kemiği */}
-          <Field label="Gerçek Satış Bedeli">
-            <MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} />
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fiilen satıldığı gerçek tutar (finans raporundaki gerçek ciro budur).</div>
-          </Field>
-
-          {/* Fatura Bedeli — faturalı satışlarda */}
-          {isFaturali(form.faturali) && (
-            <Field label="Fatura Bedeli (resmi faturada yazan)">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <MoneyInput value={form.faturaBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, faturaBedeli: v }))} />
-                {normalizeSaleType(form.faturali) === "Faturalı İhracat" && (
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", background: "#dbeafe", padding: "5px 10px", borderRadius: 8, whiteSpace: "nowrap" }}>İHRACAT · KDV YOK</span>
-                )}
-              </div>
-              {/* Otomatik KDV göstergesi — sadece Yurt İçi */}
-              {isYurtIci(form.faturali) && (
-                <div style={{ fontSize: 12, color: "#065f46", background: "#d1fae5", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
-                  KDV (%{kdvRate}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
-                  {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
-                </div>
-              )}
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
-                Gerçek bedelden farklı olabilir (düşük fatura). KDV bu tutar üzerinden hesaplanır.
-              </div>
+          <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr" : "1fr", gap: 12 }}>
+            {/* Gerçek Satış Bedeli — finansın asıl bel kemiği */}
+            <Field label="Gerçek Satış Bedeli">
+              <MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} />
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fiilen satıldığı gerçek tutar (finans raporundaki gerçek ciro budur).</div>
             </Field>
-          )}
+
+            {/* Fatura Bedeli — faturalı satışlarda */}
+            {isFaturali(form.faturali) && (
+              <Field label="Fatura Bedeli (resmi faturada yazan)">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <MoneyInput value={form.faturaBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, faturaBedeli: v }))} />
+                  {normalizeSaleType(form.faturali) === "Faturalı Yurtdışı" && (
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", background: "#dbeafe", padding: "5px 10px", borderRadius: 8, whiteSpace: "nowrap" }}>YURTDIŞI · KDV YOK</span>
+                  )}
+                </div>
+                {/* Otomatik KDV göstergesi — sadece Yurt İçi */}
+                {isYurtIci(form.faturali) && (
+                  <div style={{ fontSize: 12, color: "#065f46", background: "#d1fae5", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
+                    KDV (%{kdvRate}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
+                    {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
+                  </div>
+                )}
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+                  Gerçek bedelden farklı olabilir (düşük fatura). KDV bu tutar üzerinden hesaplanır.
+                </div>
+              </Field>
+            )}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Komisyon"><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></Field>
-            <Field label="Extra Kalıp Fiyatı"><MoneyInput value={form.extraKalipFiyati} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, extraKalipFiyati: v }))} /></Field>
+            <Field label="Kapora"><MoneyInput value={form.extraKalipFiyati} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, extraKalipFiyati: v }))} /></Field>
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Kalan Borç"><MoneyInput value={form.kalanBorc} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, kalanBorc: v }))} /></Field>
 
           <Field label="Seri Numarası">
@@ -1259,6 +1267,7 @@ export const Customers = ({
               );
             })()}
           </Field>
+          </div>
 
           <Field label="Açıklama">
             <textarea value={form.aciklama || ""} onChange={e => setForm(p => ({ ...p, aciklama: e.target.value }))}

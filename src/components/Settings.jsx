@@ -45,7 +45,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     CURRENCIES.forEach(k => { net[k] = gercekCiro[k] + extra[k] + servisUc[k] - komisyon[k]; });
     const kalipAdet = real.reduce((t, c) => t + (Array.isArray(c.kaliplar) ? c.kaliplar.length : (parseInt(c.kalipSayisi, 10) || 0)), 0);
     // Satış tipi kırılımı
-    const tipAdet = { "Faturalı Yurt İçi": 0, "Faturalı İhracat": 0, "Faturasız": 0 };
+    const tipAdet = { "Faturalı Yurtiçi": 0, "Faturalı Yurtdışı": 0, "Faturasız Yurtiçi": 0, "Faturasız Yurtdışı": 0 };
     real.forEach(c => { const t = normalizeSaleType(c.faturali); if (tipAdet[t] != null) tipAdet[t]++; });
     const line = (label, obj) => [label, obj.TRY, obj.USD, obj.EUR];
     const rows = [
@@ -53,9 +53,10 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       [],
       ["Toplam Satılan Makina", real.length],
       ["Toplam Satılan Kalıp", kalipAdet],
-      ["Faturalı Yurt İçi", tipAdet["Faturalı Yurt İçi"]],
-      ["Faturalı İhracat", tipAdet["Faturalı İhracat"]],
-      ["Faturasız", tipAdet["Faturasız"]],
+      ["Faturalı Yurtiçi", tipAdet["Faturalı Yurtiçi"]],
+      ["Faturalı Yurtdışı", tipAdet["Faturalı Yurtdışı"]],
+      ["Faturasız Yurtiçi", tipAdet["Faturasız Yurtiçi"]],
+      ["Faturasız Yurtdışı", tipAdet["Faturasız Yurtdışı"]],
       ["Garanti Dışı Servis Sayısı", services.filter(s => s.type === "Garanti Dışı").length],
       [],
       ["TUTARLAR", "₺ (TL)", "$ (USD)", "€ (EUR)"],
@@ -104,7 +105,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
   // Şablon sütun başlıkları (müşteri bu sıraya uyarlar). Servis için 3 çift tarih/iş.
   const IMPORT_HEADERS = [
     "Kalıp Sayısı", "Satış Yapan", "Satın Alan Firma", "Telefon", "Adres", "Ülke", "Şehir",
-    "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Yurt İçi/İhracat/Faturasız)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Gerçek Satış Bedeli", "Fatura Bedeli",
+    "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Gerçek Satış Bedeli", "Fatura Bedeli",
     "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
     "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
     "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
@@ -164,7 +165,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
 
   const downloadTemplate = () => {
     const ornek = ["2", "Altuntaş Makina", "Örnek Gıda A.Ş.", "0532 000 00 00", "Atatürk Cad. No:1", "Türkiye", "İstanbul",
-      "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurt İçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
+      "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurtiçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
       "10.01.2025", "Periyodik bakım yapıldı", "05.06.2025", "Bıçak değişti", "", "",
       "Ahmet Yılmaz", "0532 111 11 11", "", ""];
     try {
@@ -282,8 +283,8 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       const gercekBedel = moneyNum(cell(14));
       const faturaBedeli = moneyNum(cell(15));
       const serialNo = cell(19);
-      // Satış tipi boşsa: fatura varsa Yurt İçi, yoksa Faturasız (geriye uyumlu tahmin)
-      if (!satisTipi) satisTipi = faturaBedeli > 0 ? "Faturalı Yurt İçi" : "Faturasız";
+      // Satış tipi boşsa: fatura varsa Faturalı Yurtiçi, yoksa Faturasız Yurtiçi (geriye uyumlu tahmin)
+      if (!satisTipi) satisTipi = faturaBedeli > 0 ? "Faturalı Yurtiçi" : "Faturasız Yurtiçi";
       // Mevcut kayıtla eşleştir: önce seri no, sonra firma+model
       let mevcut = null;
       if (serialNo && bySerial.has(trLower(serialNo))) mevcut = bySerial.get(trLower(serialNo));
@@ -812,7 +813,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
           </div>
 
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (en x boy x yükseklik)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Yurt İçi/İhracat/Faturasız)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Gerçek Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
+            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (en x boy x yükseklik)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Gerçek Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
           </div>
         </Section>
       )}

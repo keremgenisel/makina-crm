@@ -94,7 +94,7 @@ export const CURRENCIES = ["TRY", "USD", "EUR"];
 export const CUR_SYM = { TRY: "₺", USD: "$", EUR: "€" };
 
 // ── Satış Tipleri ──
-export const SALE_TYPES = ["Faturalı Yurt İçi", "Faturalı İhracat", "Faturasız"];
+export const SALE_TYPES = ["Faturalı Yurtiçi", "Faturalı Yurtdışı", "Faturasız Yurtiçi", "Faturasız Yurtdışı"];
 export const DEFAULT_KDV_RATE = 20; // varsayılan KDV oranı (%), Ayarlar'dan değiştirilebilir
 
 // ── Yedek dosyası şeması ──────────────────────────────────────────────
