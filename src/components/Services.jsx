@@ -40,9 +40,12 @@ export const Services = ({ services, setServices, customers, factory = null, par
   // Borçlu mu: ücretli + açıkça ödenmedi (eski kayıtlarda odendi alanı yoksa ödendi sayılır)
   const borcluMu = (sv) => (ucretliMi(sv) && sv.odendi === false) || (parcaUcretliMi(sv) && sv.parcaOdendi === false);
   const odenmemisCount = services.filter(borcluMu).length;
+  // id→müşteri haritası: arama sırasında her servis kaydı için customers.find() (O(n×m))
+  // yerine O(1) erişim sağlar — servis/müşteri sayısı büyüdükçe önemli hale gelir.
+  const custMap = new Map(customers.map(c => [c.id, c]));
   const { search: svSearch, setSearch: setSvSearch, page, setPage, filtered: visibleServices, paged: pagedServices, perPage: PER_PAGE } = useFilteredList(services, {
     searchFn: (sv, q) => {
-      const cust = customers.find(c => c.id === sv.customerId);
+      const cust = custMap.get(sv.customerId);
       return trLower(cust?.name).includes(q) ||
              trLower(cust?.serialNo).includes(q) ||
              trLower(cust?.model).includes(q) ||
@@ -78,10 +81,10 @@ export const Services = ({ services, setServices, customers, factory = null, par
     const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
     const ucret = ((sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && sv.servisUcreti)
-      ? `${fmtCur(sv.servisUcreti, sv.currency)}${(sv.currency || "TRY") === "TRY" ? " (KDV dahil)" : ""}`
+      ? fmtCur(sv.servisUcreti, sv.currency)
       : "—";
     const parcaUcret = (!sv.parcaUcretsizMi && sv.parcaUcreti)
-      ? `${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}${(sv.parcaCurrency || "TRY") === "TRY" ? " (KDV dahil)" : ""}`
+      ? fmtCur(sv.parcaUcreti, sv.parcaCurrency)
       : "—";
 
     const infoRows = [
@@ -292,18 +295,18 @@ export const Services = ({ services, setServices, customers, factory = null, par
               <div style={{ marginBottom: 14, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>SERVİS ÜCRETİ: </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{fmtCur(detail.servisUcreti, detail.currency)}</span>
-                {(detail.currency || "TRY") === "TRY"
-                  ? <span style={{ fontSize: 11, color: "#065f46", marginLeft: 8, fontWeight: 700 }}>KDV dahil</span>
-                  : <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>}
+                {(detail.currency || "TRY") !== "TRY" && (
+                  <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>
+                )}
               </div>
             )}
             {!detail.parcaUcretsizMi && detail.parcaUcreti && (
               <div style={{ marginBottom: 14, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>PARÇA ÜCRETİ: </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#dc2626" }}>{fmtCur(detail.parcaUcreti, detail.parcaCurrency)}</span>
-                {(detail.parcaCurrency || "TRY") === "TRY"
-                  ? <span style={{ fontSize: 11, color: "#065f46", marginLeft: 8, fontWeight: 700 }}>KDV dahil</span>
-                  : <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>}
+                {(detail.parcaCurrency || "TRY") !== "TRY" && (
+                  <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8, fontWeight: 700 }}>Yurt dışı</span>
+                )}
               </div>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>

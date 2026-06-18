@@ -1,16 +1,32 @@
 import { useState, useEffect } from "react";
-import { today, fmtTR, parseMoney } from "../lib/utils";
-import { StatCard } from "./ui";
+import { today, fmtTR, fmtCur, parseMoney } from "../lib/utils";
+import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], onGoServices, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoWarrantyActive, onGoSerialPending }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], onGoServices, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoParts, onGoWarrantyActive, onGoSerialPending }) => {
   const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length;
 
   // ── Aksiyon gerektiren uyarılar ──
   const realCustomers = customers.filter(c => !c.isResale);
-  const borcluCount = realCustomers.filter(c => parseMoney(c.kalanBorc) > 0).length;
   const seriNoBekleyenCount = realCustomers.filter(c => c.seriNoBekliyor && !c.serialNo).length;
   // Garantisi hâlâ devam eden (henüz bitmemiş) makineler
   const garantiDevamCount = realCustomers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length;
+
+  // ── Borçlu firmalar — müşteri borcu + servis/parça borcu + Extra Kalıp borcu (3 ayrı kaynak) ──
+  const [showDebtors, setShowDebtors] = useState(false);
+  const borcluMusteriler = realCustomers.filter(c => parseMoney(c.kalanBorc) > 0);
+  const borcluServisler = services.filter(s => {
+    const servisBorclu = (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && parseMoney(s.servisUcreti) > 0 && s.odendi === false;
+    const parcaBorclu = !s.parcaUcretsizMi && parseMoney(s.parcaUcreti) > 0 && s.parcaOdendi === false;
+    return servisBorclu || parcaBorclu;
+  });
+  const borcluKaliplar = partSales.filter(p => p.odendi === false);
+  const borcluFirmaIds = new Set([
+    ...borcluMusteriler.map(c => c.id),
+    ...borcluServisler.map(s => s.customerId),
+    ...borcluKaliplar.map(p => p.customerId),
+  ]);
+  const borcluCount = borcluFirmaIds.size;
+  const custName = (id) => customers.find(c => c.id === id)?.name || "—";
 
   // ── Canlı saat & tarih ──
   const [now, setNow] = useState(new Date());
@@ -49,7 +65,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], onGoServic
       {/* Aksiyon gerektiren uyarılar — her zaman 3 kart, eşit boyut */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          <button onClick={onGoDebtors} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #dc2626", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <button onClick={() => setShowDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #dc2626", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 30, fontWeight: 800, color: "#dc2626", lineHeight: 1, marginBottom: 6 }}>{borcluCount}</div>
               <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu firma</div>
@@ -160,6 +176,90 @@ export const Dashboard = ({ customers, dealers, services, stock = [], onGoServic
           <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a584", fontVariantNumeric: "tabular-nums", letterSpacing: 1, lineHeight: 1.2, marginTop: 4 }}>{tarih}</div>
         </div>
       </div>
+
+      {/* Borçlu Firmalar */}
+      {showDebtors && (
+        <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>
+          <div style={{ maxHeight: 480, overflowY: "auto" }}>
+            {borcluMusteriler.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                  Müşteriler ({borcluMusteriler.length})
+                </div>
+                {borcluMusteriler.map(c => (
+                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{c.name}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(c.kalanBorc, c.currency)}</div>
+                  </div>
+                ))}
+                <button onClick={() => { setShowDebtors(false); onGoDebtors && onGoDebtors(); }}
+                  style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: "4px 0" }}>
+                  Tümünü Gör (Müşteriler) →
+                </button>
+              </div>
+            )}
+
+            {borcluServisler.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                  Servis ve Yedek Parça ({borcluServisler.length})
+                </div>
+                {borcluServisler.map(s => {
+                  const servisBorclu = (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && parseMoney(s.servisUcreti) > 0 && s.odendi === false;
+                  const parcaBorclu = !s.parcaUcretsizMi && parseMoney(s.parcaUcreti) > 0 && s.parcaOdendi === false;
+                  return (
+                    <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{custName(s.customerId)}</div>
+                        <div style={{ fontSize: 11, color: "#94a3b8" }}>{s.type} · {fmtTR(s.date)}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        {servisBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>Servis: {fmtCur(s.servisUcreti, s.currency)}</div>}
+                        {parcaBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>Parça: {fmtCur(s.parcaUcreti, s.parcaCurrency)}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+                <button onClick={() => { setShowDebtors(false); onGoServices && onGoServices(); }}
+                  style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: "4px 0" }}>
+                  Tümünü Gör (Servis ve Yedek Parça) →
+                </button>
+              </div>
+            )}
+
+            {borcluKaliplar.length > 0 && (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                  Extra Kalıp ({borcluKaliplar.length})
+                </div>
+                {borcluKaliplar.map(p => (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{custName(p.customerId)}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {fmtTR(p.tarih)}</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(p.ucret, p.currency)}</div>
+                  </div>
+                ))}
+                <button onClick={() => { setShowDebtors(false); onGoParts && onGoParts(); }}
+                  style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: "4px 0" }}>
+                  Tümünü Gör (Extra Kalıp) →
+                </button>
+              </div>
+            )}
+
+            {borcluCount === 0 && (
+              <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>Borçlu firma yok.</div>
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+            <Btn variant="ghost" onClick={() => setShowDebtors(false)}>Kapat</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

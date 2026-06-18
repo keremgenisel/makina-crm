@@ -383,7 +383,7 @@ export const MachineHistory = ({ customers, setCustomers, services, models = ALT
                           </div>
                         )}
                         {sv && (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && sv.servisUcreti && (
-                          <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 5 }}>Servis Ücreti: {fmtCur(sv.servisUcreti, sv.currency)}{(sv.currency || "TRY") === "TRY" ? " (KDV dahil)" : ""}</div>
+                          <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 5 }}>Servis Ücreti: {fmtCur(sv.servisUcreti, sv.currency)}</div>
                         )}
                       </div>
                     </div>

@@ -9,7 +9,10 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
   const [custSearch, setCustSearch] = useState(""); // müşteri arama
   const [confirmDel, setConfirmDel] = useState(null); // silinecek kayıt
 
-  const custMakine = (id) => { const c = customers.find(x => x.id === id); return c ? `${c.name}${c.model ? " · " + c.model : ""}${c.serialNo ? " · " + c.serialNo : ""}` : "—"; };
+  // id→müşteri haritası: liste filtreleme/render sırasında her satır için customers.find()
+  // (O(n×m)) yerine O(1) erişim sağlar — müşteri sayısı büyüdükçe önemli hale gelir.
+  const custMap = new Map(customers.map(c => [c.id, c]));
+  const custMakine = (id) => { const c = custMap.get(id); return c ? `${c.name}${c.model ? " · " + c.model : ""}${c.serialNo ? " · " + c.serialNo : ""}` : "—"; };
   const fmtTRlocal = (d) => { if (!d) return "—"; const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("tr-TR"); };
   const [payFilter, setPayFilter] = useState(false); // sadece ödenmemiş kalıp borçları
   // Borçlu mu: açıkça ödenmedi (eski kayıtlarda odendi yoksa ödendi sayılır)
@@ -17,7 +20,7 @@ export const Parts = ({ partSales = [], setPartSales, customers = [], setCustome
   const odenmemisCount = partSales.filter(borcluMu).length;
   const { search: listSearch, setSearch: setListSearch, filtered: sortedSales } = useFilteredList(partSales, {
     searchFn: (s, q) => {
-      const cust = customers.find(c => c.id === s.customerId);
+      const cust = custMap.get(s.customerId);
       return trLower(s.ad).includes(q) || trLower(cust?.name).includes(q) || trLower(cust?.model).includes(q) || trLower(cust?.serialNo).includes(q);
     },
     filterFn: payFilter ? borcluMu : null,
