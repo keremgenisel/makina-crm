@@ -9,22 +9,16 @@ import { Icon } from "./components/ui";
 import { Dashboard } from "./components/Dashboard";
 import { Customers } from "./components/Customers";
 import { SimpleDealers } from "./components/SimpleDealers";
-import { MachineHistory } from "./components/MachineHistory";
 import { Stock } from "./components/Stock";
-import { Services } from "./components/Services";
 import { Finance } from "./components/Finance";
 import { Notes } from "./components/Notes";
-import { Parts } from "./components/Parts";
 import { Settings } from "./components/Settings";
 
 const TABS = [
   { id: "dashboard", label: "Anasayfa",     icon: "dashboard" },
   { id: "customers", label: "Müşteriler",   icon: "customers" },
   { id: "dealers",   label: "Bayiler",      icon: "store"     },
-  { id: "machines",  label: "Makina Geçmişi", icon: "machine"   },
   { id: "stock",     label: "Stok",         icon: "box"       },
-  { id: "services",  label: "Servis ve Yedek Parça", icon: "service" },
-  { id: "parts",     label: "Extra Kalıp",  icon: "parts"     },
   { id: "finance",   label: "Finans",       icon: "finance"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
@@ -33,6 +27,7 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [custFilter, setCustFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|warranty|warranty-active|debt|serial-pending
+  const [custDetailId, setCustDetailId] = useState(null); // dashboard'dan belirli bir müşterinin detayını açarak gelme
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRate: DEFAULT_KDV_RATE });
   const [loaded, setLoaded] = useState(false);
@@ -195,7 +190,7 @@ export default function App() {
           {TABS.map(t => {
             const active = tab === t.id;
             return (
-              <button key={t.id} className="nav-btn" onClick={() => { if (t.id === "customers") setCustFilter("all"); setTab(t.id); }} style={{
+              <button key={t.id} className="nav-btn" onClick={() => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } setTab(t.id); }} style={{
                 display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 12px",
                 background: active ? "linear-gradient(90deg, rgba(232,93,26,.26), rgba(232,93,26,.04))" : "transparent",
                 border: "none",
@@ -227,15 +222,12 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={customers} dealers={dealers} services={services} stock={stock} partSales={partSales} onGoServices={() => setTab("services")} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setTab("customers"); }} onGoDealers={() => setTab("dealers")} onGoExpired={() => { setCustFilter("warranty"); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setTab("customers"); }} onGoParts={() => setTab("parts")} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setTab("customers"); }} />}
-        {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} services={services} setServices={setServices} dealers={dealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={stock} setStock={setStock} initialFilter={custFilter} kalipDefs={kalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
+        {tab === "dashboard" && <Dashboard customers={customers} dealers={dealers} services={services} stock={stock} partSales={partSales} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => setTab("dealers")} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
+        {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} services={services} setServices={setServices} dealers={dealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={stock} setStock={setStock} partSales={partSales} setPartSales={setPartSales} parts={parts} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={kalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
         {tab === "dealers" && <SimpleDealers dealers={dealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} showToast={showToast} />}
-        {tab === "machines"  && <MachineHistory customers={customers} setCustomers={setCustomers} services={services} models={allModels} dealers={dealers} factory={factory} geoData={geoData} loadingGeo={loadingGeo} showToast={showToast} parts={parts} partSales={partSales} setPartSales={setPartSales} />}
         {tab === "stock"     && <Stock stock={stock} setStock={setStock} models={allModels} showToast={showToast} />}
-        {tab === "services"  && <Services  services={services}  setServices={setServices}  customers={customers} factory={factory} parts={parts} showToast={showToast} />}
         {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} partSales={partSales} />}
         {tab === "notes"     && <Notes notes={notes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "parts"     && <Parts partSales={partSales} setPartSales={setPartSales} customers={customers} setCustomers={setCustomers} kalipDefs={kalipDefs} showToast={showToast} />}
         {tab === "settings"  && <Settings  customers={customers} services={services} dealers={dealers} stock={stock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={customModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} notes={notes} setNotes={setNotes} parts={parts} setParts={setParts} partSales={partSales} setPartSales={setPartSales} showToast={showToast} />}
       </div>
     </div>

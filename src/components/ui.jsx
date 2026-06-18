@@ -90,9 +90,9 @@ export const StatCard = ({ label, value, sub, color, onClick }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children, wide }) => (
+export const Modal = ({ title, onClose, children, wide, maxWidth }) => (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: wide ? 900 : 520, maxHeight: wide ? "94vh" : "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: wide ? "94vh" : "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>

@@ -734,7 +734,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       {settingsTab === "yedekparca" && (
         <Section title="Yedek Parça Tanımları" icon="parts">
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-            Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar <b>Servis ve Yedek Parça</b> bölümünde "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve <b>Extra Kalıp</b> bölümünde satılır.
+            Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} />
         </Section>

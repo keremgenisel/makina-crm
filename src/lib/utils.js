@@ -103,3 +103,20 @@ export const kalipCount = (c) => {
   const n = parseInt(c?.kalipSayisi, 10);
   return isNaN(n) ? 0 : n;
 };
+
+// ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──
+// Servis ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0)
+export const isServisUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
+// Değişen parçalar ücretli mi (garanti dışı işaretlenmiş veya garanti yoksa + ücret > 0)
+export const isParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
+// Servis kaydı borçlu mu: ücretli + açıkça ödenmedi (eski kayıtlarda odendi yoksa ödendi sayılır)
+export const isServisBorcluMu = (sv) => (isServisUcretliMi(sv) && sv.odendi === false) || (isParcaUcretliMi(sv) && sv.parcaOdendi === false);
+// Extra Kalıp satışı borçlu mu
+export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
+// Bir müşterinin herhangi bir kaynaktan (kalan borç / servis / parça / Extra Kalıp) borcu var mı
+export const customerHasAnyDebt = (customer, services = [], partSales = []) => {
+  if (parseMoney(customer.kalanBorc) > 0) return true;
+  if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s))) return true;
+  if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
+  return false;
+};
