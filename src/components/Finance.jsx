@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CURRENCIES } from "../lib/constants";
+import { CURRENCIES, REPAIR_PLACES } from "../lib/constants";
 import { fmt, fmtCur, parseMoney, kalipCount } from "../lib/utils";
 
 export const Finance = ({ customers, services, dealers = [], partSales = [] }) => {
@@ -35,7 +35,12 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
   // ── ADETLER ──
   const totalMakina = sales.length;
   const totalKalip = sales.reduce((sum, c) => sum + kalipCount(c), 0);
-  const garantiDisiCount = svcInRange.filter(s => s.type === "Garanti Dışı").length;
+  const garantiDisiServisler = svcInRange.filter(s => s.type === "Garanti Dışı");
+  const garantiDisiCount = garantiDisiServisler.length;
+  // Garanti dışı servislerin "Yapılan İşlem" dağılımı (Yerinde Onarım / Fabrikada Onarım / Kargo / Fabrika Teslim)
+  const garantiDisiYapilanIslem = {};
+  REPAIR_PLACES.forEach(t => { garantiDisiYapilanIslem[t] = 0; });
+  garantiDisiServisler.forEach(s => { if (garantiDisiYapilanIslem[s.repairPlace] != null) garantiDisiYapilanIslem[s.repairPlace]++; });
   // İlk kalıp makinayla birlikte gelir (bedava), diğerleri "extra" sayılır. Extra Kalıp sekmesinden
   // satılan kalıplar müşterinin kaliplar listesine de eklendiği için (detay görünümü için), buradan
   // çift sayılmasın diye müşteri başına partSales adedi kaliplar listesinden önce düşülüyor.
@@ -74,13 +79,31 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
   kalipSatisInRange.forEach(p => { kalipSatisi[cur(p.currency)] += parseMoney(p.ucret); });
 
   // Toplam Extra Kalıp Satışı = müşteri formundaki ilk satış fiyatı + Extra Kalıp sekmesindeki satışlar
+  // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
   const toplamExtraKalip = empty3();
   CURRENCIES.forEach(k => { toplamExtraKalip[k] = ilkSatisKalip[k] + kalipSatisi[k]; });
 
-  // Genel Toplam = Gerçek Satış + Servis + Parça + Toplam Extra Kalıp − Komisyon (her döviz ayrı)
+  // Genel Toplam NAKİT BAZLIDIR — sadece gerçekten tahsil edilmiş tutarlar sayılır.
+  // Bir borç "ödendi" işaretlendiği anda Toplam Alacak'tan çıkar, Genel Toplam'a eklenir.
+  const tahsilEdilenSatis = empty3();
+  CURRENCIES.forEach(k => { tahsilEdilenSatis[k] = gercekCiro[k] - musteriBorcu[k]; });
+  const tahsilEdilenServis = empty3();
+  svcInRange.filter(s => (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && s.odendi !== false).forEach(s => {
+    tahsilEdilenServis[cur(s.currency)] += parseMoney(s.servisUcreti);
+  });
+  const tahsilEdilenParca = empty3();
+  svcInRange.filter(s => !s.parcaUcretsizMi && s.parcaOdendi !== false).forEach(s => {
+    tahsilEdilenParca[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti);
+  });
+  const tahsilEdilenKalip = empty3();
+  kalipSatisInRange.filter(p => p.odendi !== false).forEach(p => { tahsilEdilenKalip[cur(p.currency)] += parseMoney(p.ucret); });
+  // İlk satışta girilen kalıp fiyatının kendi ödeme takibi yok, olduğu gibi sayılır
+  const tahsilEdilenExtraKalip = empty3();
+  CURRENCIES.forEach(k => { tahsilEdilenExtraKalip[k] = ilkSatisKalip[k] + tahsilEdilenKalip[k]; });
+
   const genelToplam = empty3();
   CURRENCIES.forEach(k => {
-    genelToplam[k] = gercekCiro[k] + servisUcreti[k] + parcaUcreti[k] + toplamExtraKalip[k] - komisyon[k];
+    genelToplam[k] = tahsilEdilenSatis[k] + tahsilEdilenServis[k] + tahsilEdilenParca[k] + tahsilEdilenExtraKalip[k] - komisyon[k];
   });
 
   // ── TOPLAM ALACAK — müşteri borcu + ödenmemiş servis + ödenmemiş parça + ödenmemiş kalıp ──
@@ -240,7 +263,18 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
         <AdetCard label="Toplam Satılan Kalıp" value={totalKalip} color="#3b82f6" />
         <AdetCard label="Satılan Extra Kalıp Sayısı" value={satilanExtraKalipSayisi} color="#db2777" />
         <AdetCard label="Satılan Yedek Parça Sayısı" value={satilanYedekParcaSayisi} color="#0ea5e9" />
-        <AdetCard label="Garanti Dışı Servis" value={garantiDisiCount} color="#ef4444" />
+        <div style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderTop: "3px solid #ef4444" }}>
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 6 }}>Garanti Dışı Servis</div>
+          <div style={{ fontSize: 30, fontWeight: 800, color: "#ef4444", marginBottom: 8 }}>{garantiDisiCount}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {REPAIR_PLACES.map(t => (
+              <div key={t} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b" }}>
+                <span>{t}:</span>
+                <span style={{ fontWeight: 700, color: "#0f172a" }}>{garantiDisiYapilanIslem[t]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* PARA KARTLARI */}
@@ -263,7 +297,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
           {CURRENCIES.some(k => k !== "TRY" && (genelToplam[k] || 0) !== 0) && rates && (
             <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 6 }}>≈ {fmt(toTL(genelToplam))} (yaklaşık TL karşılığı)</div>
           )}
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 8 }}>Gerçek Satış + Servis + Parça + Extra Kalıp − Komisyon</div>
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 8 }}>Tahsil edilen: Satış + Servis + Parça + Extra Kalıp − Komisyon</div>
         </div>
         <div style={{ background: "linear-gradient(135deg, #7c2d12, #9a3412)", borderRadius: 14, padding: "22px 26px", color: "#fff" }}>
           <div style={{ fontSize: 13, color: "#fed7aa", fontWeight: 600, marginBottom: 6 }}>TOPLAM ALACAK</div>

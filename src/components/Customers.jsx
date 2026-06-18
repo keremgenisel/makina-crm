@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import LOGO from "../assets/logo.avif?inline";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, todayTR, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipText, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, stripAutoPrint, customerHasAnyDebt } from "../lib/utils";
+import { today, todayTR, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, kalipText, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, stripAutoPrint, customerHasAnyDebt } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 import { ServiceForm } from "./ServiceForm";
@@ -573,6 +573,8 @@ export const Customers = ({
                 { h: "Ülke / Şehir", key: null },
                 { h: "Model", key: "model" },
                 { h: "Seri No", key: null },
+                { h: "Kalıp Sayısı", key: null },
+                { h: "Makina Kalıp Çapı", key: null },
                 { h: "Garanti Bitiş", key: "warranty" },
                 { h: "Fatura", key: null },
                 { h: "", key: null },
@@ -627,6 +629,8 @@ export const Customers = ({
                         ? <span style={{ fontFamily: "inherit", fontSize: 10, fontWeight: 800, background: "#fef3c7", color: "#b45309", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⏳ seri no bekliyor</span>
                         : "—"}
                   </td>
+                  <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569", textAlign: "center" }}>{kalipCount(c) || "—"}</td>
+                  <td style={{ padding: "13px 16px", fontSize: 12, color: "#475569" }}>{fmtKalipCapi(c.kalipCapi) || "—"}</td>
                   <td style={{ padding: "13px 16px" }}>
                     {c.warrantyEnd
                       ? <span style={{ fontSize: 11, fontWeight: 600, color: warrantyOk ? (warrantySoon ? "#d97706" : "#059669") : "#dc2626", display: "inline-flex", alignItems: "center", gap: 6 }}>

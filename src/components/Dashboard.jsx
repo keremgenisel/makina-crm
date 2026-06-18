@@ -103,7 +103,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             .sort((a, b) => (b.installDate || "").localeCompare(a.installDate || ""))
             .slice(0, 5)
             .map(c => (
-              <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
+                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
                   <div style={{ fontSize: 12, color: "#64748b" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
@@ -126,7 +129,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             .map(sv => {
             const cust = customers.find(x => x.id === sv.customerId);
             return (
-              <div key={sv.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div key={sv.id} onClick={() => goToCustomer(sv.customerId)} title="Müşteri detayını aç"
+                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{cust?.name || "—"}</div>
                   <div style={{ fontSize: 12, color: "#64748b" }}>{cust?.model ? `${cust.model} · ` : ""}{sv.type}</div>
