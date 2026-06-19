@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { CURRENCIES, REPAIR_PLACES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCount, calcCiro } from "../lib/utils";
+import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
+import { fmt, fmtCur, parseMoney, kalipCount, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
 
 export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE }) => {
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
@@ -35,12 +35,6 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
   // ── ADETLER ──
   const totalMakina = sales.length;
   const totalKalip = sales.reduce((sum, c) => sum + kalipCount(c), 0);
-  const garantiDisiServisler = svcInRange.filter(s => s.type === "Garanti Dışı");
-  const garantiDisiCount = garantiDisiServisler.length;
-  // Garanti dışı servislerin "Yapılan İşlem" dağılımı (Yerinde Onarım / Fabrikada Onarım / Kargo / Fabrika Teslim)
-  const garantiDisiYapilanIslem = {};
-  REPAIR_PLACES.forEach(t => { garantiDisiYapilanIslem[t] = 0; });
-  garantiDisiServisler.forEach(s => { if (garantiDisiYapilanIslem[s.repairPlace] != null) garantiDisiYapilanIslem[s.repairPlace]++; });
   // Satıştaki ilk kaliplar listesi extra sayılmaz; Extra Kalıp sadece kendi sekmesinden takip edilir.
   const satilanExtraKalipSayisi = kalipSatisInRange.length;
   const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
@@ -50,27 +44,62 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
   const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY"); // eski kayıtlar TRY
   const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
   const komisyon = empty3(), toplamCiro = empty3();
+  // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
+  const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
   sales.forEach(c => {
     const k = cur(c.currency);
     const gercek = parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli); // gerçek bedel yoksa faturaya düş
     gercekCiro[k] += gercek;
     toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
     komisyon[k] += parseMoney(c.komisyon);
+    kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
   });
   const servisUcreti = empty3();
   svcInRange.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
-    servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti);
+    const kdv = calcKDV(s.faturaTipi, s.servisUcreti, kdvRate);
+    servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
+    kdvServis[cur(s.currency)] += kdv;
   });
   const parcaUcreti = empty3();
   svcInRange.forEach(s => {
-    if (!s.parcaUcretsizMi) parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti);
+    if (!s.parcaUcretsizMi) {
+      const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, kdvRate);
+      parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+      kdvParca[cur(s.parcaCurrency)] += kdv;
+    }
   });
   const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
-  kalipSatisInRange.forEach(p => { kalipSatisi[cur(p.currency)] += parseMoney(p.ucret); });
+  kalipSatisInRange.forEach(p => {
+    const kdv = calcKDV(p.faturaTipi, p.ucret, kdvRate);
+    kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
+    kdvKalip[cur(p.currency)] += kdv;
+  });
 
-  // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar
+  // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar (KDV dahil)
   // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
   const toplamExtraKalip = kalipSatisi;
+
+  // ── 3 büyük özet kartı ──
+  const sumObj = (...objs) => {
+    const r = empty3();
+    objs.forEach(o => CURRENCIES.forEach(k => { r[k] += o[k] || 0; }));
+    return r;
+  };
+  const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
+  const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvKalip); // dönem bazlı KDV toplamı
+
+  // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
+  const alacak = empty3();
+  customers.forEach(c => { alacak[cur(c.currency)] += Math.max(parseMoney(c.kalanBorc), 0); });
+  services.filter(isServisBorcluMu).forEach(s => {
+    const servisVar = isServisUcretliMi(s) ? parseMoney(s.servisUcreti) : 0;
+    const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
+    const toplam = servisVar + parcaVar;
+    alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, kdvRate);
+  });
+  partSales.filter(isPartSaleBorcluMu).forEach(p => {
+    alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, kdvRate);
+  });
 
   // Yaklaşık TL karşılığı (Dashboard'daki kur API'si ile)
   const [rates, setRates] = useState(null); // { USD: x, EUR: y } → 1 birim kaç TL
@@ -110,16 +139,14 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
   });
   const modelRows = Object.entries(byModel).sort((a, b) => b[1].gelir - a[1].gelir);
 
-  // ── SATICI/BAYİ BAZLI KIRILIM (gelir/komisyon ≈ TL karşılığı) ──
+  // ── SATICI/BAYİ BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
   const bySeller = {};
   sales.forEach(c => {
     const k = c.satisYapan || "Belirtilmemiş";
-    if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0, komisyon: 0 };
+    if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0 };
     bySeller[k].adet += 1;
     const g = empty3(); g[cur(c.currency)] = parseMoney(c.faturaBedeli);
-    const ko = empty3(); ko[cur(c.currency)] = parseMoney(c.komisyon);
     bySeller[k].gelir += toTL(g);
-    bySeller[k].komisyon += toTL(ko);
   });
   const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].gelir - a[1].gelir);
 
@@ -149,21 +176,28 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       <div style={{ fontSize: 30, fontWeight: 800, color }}>{value}</div>
     </div>
   );
-  // Çok-dövizli kart: her dövizi ayrı satır + yaklaşık TL karşılığı
-  const MultiCard = ({ label, obj, color, sub }) => {
+  // Çok-dövizli kart: her dövizi ayrı satır + yaklaşık TL karşılığı.
+  // size="large" → sayfanın en üstündeki 3 özet kartı için daha büyük/öne çıkan görünüm.
+  const MultiCard = ({ label, obj, color, sub, size = "normal" }) => {
+    const large = size === "large";
     const nonzero = CURRENCIES.filter(k => (obj[k] || 0) !== 0);
     const showCur = nonzero.length ? nonzero : ["TRY"];
     const hasFx = nonzero.some(k => k !== "TRY");
     return (
-      <div style={{ background: "#fff", borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
-        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      <div style={{
+        background: large ? "linear-gradient(135deg,#fff,#fff7ed)" : "#fff",
+        borderRadius: 12, padding: large ? "22px 24px" : "16px 20px",
+        boxShadow: large ? "0 4px 14px rgba(0,0,0,.10)" : "0 1px 4px rgba(0,0,0,.08)",
+        borderTop: large ? `4px solid ${color || "#e85d1a"}` : undefined,
+      }}>
+        <div style={{ fontSize: large ? 14 : 12, color: "#64748b", fontWeight: 700, marginBottom: large ? 8 : 6 }}>{label}</div>
         {showCur.map(k => (
-          <div key={k} style={{ fontSize: 20, fontWeight: 800, color: color || "#0f172a", lineHeight: 1.25 }}>{fmtCur(obj[k] || 0, k)}</div>
+          <div key={k} style={{ fontSize: large ? 34 : 20, fontWeight: 800, color: color || "#0f172a", lineHeight: 1.25 }}>{fmtCur(obj[k] || 0, k)}</div>
         ))}
         {hasFx && rates && (
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
+          <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
         )}
-        {sub && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: large ? 6 : 3 }}>{sub}</div>}
       </div>
     );
   };
@@ -199,6 +233,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
         Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{rangeLabels[range]}</b> · {totalMakina} satış kaydı
       </div>
 
+      {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
+        <MultiCard label="Toplam Ciromuz" obj={toplamCiromuz} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV dahil)" size="large" />
+        <MultiCard label="Toplam Alacağımız" obj={alacak} color="#dc2626" sub="Tüm zamanlar — güncel bakiye" size="large" />
+        <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
+      </div>
+
       {/* ADET KARTLARI */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 28 }}>
@@ -206,28 +247,16 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
         <AdetCard label="Toplam Satılan Kalıp" value={totalKalip} color="#3b82f6" />
         <AdetCard label="Satılan Extra Kalıp Sayısı" value={satilanExtraKalipSayisi} color="#db2777" />
         <AdetCard label="Satılan Yedek Parça Sayısı" value={satilanYedekParcaSayisi} color="#0ea5e9" />
-        <div style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderTop: "3px solid #ef4444" }}>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 6 }}>Garanti Dışı Servis</div>
-          <div style={{ fontSize: 30, fontWeight: 800, color: "#ef4444", marginBottom: 8 }}>{garantiDisiCount}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {REPAIR_PLACES.map(t => (
-              <div key={t} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b" }}>
-                <span>{t}:</span>
-                <span style={{ fontWeight: 700, color: "#0f172a" }}>{garantiDisiYapilanIslem[t]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* PARA KARTLARI */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Gelir & Tahsilat</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
-        <MultiCard label="Toplam Ciro" obj={toplamCiro} color="#0d9488" sub="Fabrika Satış Bedeli + KDV + Komisyon" />
-        <MultiCard label="Toplam Servis Ücreti" obj={servisUcreti} color="#f59e0b" sub="Garanti dışı servisler" />
-        <MultiCard label="Toplam Parça Ücreti" obj={parcaUcreti} color="#0ea5e9" sub="Servis — değişen parçalar" />
-        <MultiCard label="Toplam Extra Kalıp Satışı" obj={toplamExtraKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları" />
+        <MultiCard label="Toplam Fabrika Satış Bedeli Cirosu" obj={toplamCiro} color="#0d9488" sub="Fabrika Satış Bedeli + KDV + Komisyon" />
+        <MultiCard label="Toplam Servis Ücreti Cirosu" obj={servisUcreti} color="#f59e0b" sub="Garanti dışı servisler (KDV dahil)" />
+        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcreti} color="#0ea5e9" sub="Servis — değişen parçalar (KDV dahil)" />
+        <MultiCard label="Toplam Extra Kalıp Satış Cirosu" obj={toplamExtraKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV dahil)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
       </div>
 
@@ -269,17 +298,16 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
           <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı <span style={{ fontWeight: 400, color: "#94a3b8" }}>(≈ TL)</span></div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "#f8fafc" }}>
-              {["Satış Yapan", "Adet", "Komisyon"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+              {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {sellerRows.map(([k, v]) => (
                 <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
-                  <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: "#dc2626" }}>{fmt(v.komisyon)}</td>
                 </tr>
               ))}
-              {sellerRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
+              {sellerRows.length === 0 && <tr><td colSpan={2} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
             </tbody>
           </table>
         </div>
