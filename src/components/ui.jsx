@@ -39,7 +39,7 @@ export const Field = ({ label, children }) => (
   </div>
 );
 export const Input = (props) => (
-  <input {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
+  <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
 );
 // Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
 export const Warn = ({ children }) => children ? (

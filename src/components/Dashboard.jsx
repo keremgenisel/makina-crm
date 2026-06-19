@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { today, fmtTR, fmtCur, parseMoney, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
@@ -16,13 +16,15 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const borcluMusteriler = realCustomers.filter(c => parseMoney(c.kalanBorc) > 0);
   const borcluServisler = services.filter(isServisBorcluMu);
   const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
-  const borcluFirmaIds = new Set([
-    ...borcluMusteriler.map(c => c.id),
-    ...borcluServisler.map(s => s.customerId),
-    ...borcluKaliplar.map(p => p.customerId),
-  ]);
-  const borcluCount = borcluFirmaIds.size;
   const custName = (id) => customers.find(c => c.id === id)?.name || "—";
+  // Aynı firmanın birden çok makinası (customer kaydı) veya birden çok servis/parça borcu
+  // olabilir — bunlar farklı "firma" sayılmasın diye firma adına (case-insensitive) göre tekilleştir.
+  const borcluFirmaKeys = new Set([
+    ...borcluMusteriler.map(c => trLower(c.name)),
+    ...borcluServisler.map(s => trLower(custName(s.customerId))),
+    ...borcluKaliplar.map(p => trLower(custName(p.customerId))),
+  ]);
+  const borcluCount = borcluFirmaKeys.size;
   const goToCustomer = (id) => { setShowDebtors(false); onGoCustomerDetail && onGoCustomerDetail(id); };
 
   // ── Canlı saat & tarih ──
@@ -211,7 +213,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 </div>
                 {borcluServisler.map(s => {
                   const servisBorclu = isServisUcretliMi(s) && s.odendi === false;
-                  const parcaBorclu = isParcaUcretliMi(s) && s.parcaOdendi === false;
+                  const parcaBorclu = isParcaUcretliMi(s) && s.odendi === false;
                   return (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
                       style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}

@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney } from "../lib/utils";
+import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
+import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSave, onCancel }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
   const [custSearch, setCustSearch] = useState("");
 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const warrantyAktif = !!(selectedCust?.warrantyEnd && selectedCust.warrantyEnd >= today());
   const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (warrantyAktif && !form.parcaGarantiDisi);
+  const parcaUcretiToplam = (form.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
+  const svUcretliTipi = form.type === "Garanti Dışı" || form.type === "Periyodik Bakım";
+  const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         trLower(c.name).includes(trLower(custSearch)) ||
@@ -86,8 +89,13 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
         <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
         <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
       </div>
-      {(form.type === "Garanti Dışı" || form.type === "Periyodik Bakım") && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <Field label="Fatura Tipi">
+        <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+          {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+        </Select>
+      </Field>
+      {(svUcretliTipi || !parcaUcretsizMi) && (
+        <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>
           <Field label="Para Birimi">
             <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
               <option value="TRY">₺ Türk Lirası</option>
@@ -95,23 +103,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
               <option value="EUR">€ Euro (EUR)</option>
             </Select>
           </Field>
-          <Field label="Servis Ücreti">
-            <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
-            {(form.currency || "TRY") !== "TRY" && (
-              <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
-            )}
-          </Field>
+          {svUcretliTipi && (
+            <Field label="Servis Ücreti">
+              <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
+              {(form.currency || "TRY") !== "TRY" && (
+                <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+              )}
+            </Field>
+          )}
         </div>
-      )}
-
-      {/* Ödeme durumu — sadece ücretli servislerde */}
-      {(form.type === "Garanti Dışı" || form.type === "Periyodik Bakım") && parseMoney(form.servisUcreti) > 0 && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "#15803d" : "#92400e" }}>
-            {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
-          </span>
-        </label>
       )}
 
       <Field label="Yapılan İşler / Parça Değişimleri">
@@ -120,35 +120,22 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
           style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 80, boxSizing: "border-box", fontFamily: "inherit" }} />
       </Field>
 
-      {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + ücretlendirme */}
+      {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
         {parts.length === 0 ? (
           <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar → Yedek Parça'dan ekleyebilirsiniz.</div>
         ) : (
-          <>
-            <Select value="" onChange={e => {
-              const ad = e.target.value;
-              if (ad && !(form.degisenParcalar || []).includes(ad)) {
-                setForm(p => ({ ...p, degisenParcalar: [...(p.degisenParcalar || []), ad] }));
-              }
-            }}>
-              <option value="">+ Parça ekle...</option>
-              {parts.filter(p => !(form.degisenParcalar || []).includes(p.ad)).map(p => (
-                <option key={p.id} value={p.ad}>{p.ad}</option>
-              ))}
-            </Select>
-            {(form.degisenParcalar || []).length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                {form.degisenParcalar.map(ad => (
-                  <span key={ad} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 16, padding: "4px 10px" }}>
-                    {ad}
-                    <button onClick={() => setForm(p => ({ ...p, degisenParcalar: p.degisenParcalar.filter(x => x !== ad) }))}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#1d4ed8", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
+          <Select value="" onChange={e => {
+            const ad = e.target.value;
+            if (ad && !(form.degisenParcalar || []).some(p => parcaAdi(p) === ad)) {
+              setForm(p => ({ ...p, degisenParcalar: [...(p.degisenParcalar || []), { ad, fiyat: "" }] }));
+            }
+          }}>
+            <option value="">+ Parça ekle...</option>
+            {parts.filter(p => !(form.degisenParcalar || []).some(x => parcaAdi(x) === p.ad)).map(p => (
+              <option key={p.id} value={p.ad}>{p.ad}</option>
+            ))}
+          </Select>
         )}
       </Field>
 
@@ -162,43 +149,61 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
               </span>
             </label>
           )}
-          {!parcaUcretsizMi && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="Parça Para Birimi">
-                <Select value={form.parcaCurrency || "TRY"} onChange={e => setForm(p => ({ ...p, parcaCurrency: e.target.value }))}>
-                  <option value="TRY">₺ Türk Lirası</option>
-                  <option value="USD">$ Dolar (USD)</option>
-                  <option value="EUR">€ Euro (EUR)</option>
-                </Select>
-              </Field>
-              <Field label="Parça Ücreti">
-                <MoneyInput value={form.parcaUcreti} sym={CUR_SYM[form.parcaCurrency || "TRY"]} onChange={v => setForm(p => ({ ...p, parcaUcreti: v }))} />
-              </Field>
-            </div>
-          )}
-          {!parcaUcretsizMi && parseMoney(form.parcaUcreti) > 0 && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.parcaOdendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.parcaOdendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-              <input type="checkbox" checked={!!form.parcaOdendi} onChange={e => setForm(p => ({ ...p, parcaOdendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: form.parcaOdendi ? "#15803d" : "#92400e" }}>
-                {form.parcaOdendi ? "Parça ücreti tahsil edildi (ödendi)" : "Parça ücreti henüz tahsil edilmedi (ödenmedi)"}
-              </span>
-            </label>
-          )}
+          <Field label={`Seçilen Parçalar (${form.degisenParcalar.length})`}>
+            {form.degisenParcalar.map((p, i) => {
+              const ad = parcaAdi(p);
+              return (
+                <div key={ad} style={{ display: "grid", gridTemplateColumns: parcaUcretsizMi ? "1fr 36px" : "1fr 140px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{ad}</span>
+                  {!parcaUcretsizMi && (
+                    <MoneyInput value={typeof p === "string" ? "" : p.fiyat} sym={CUR_SYM[form.currency || "TRY"]}
+                      onChange={v => setForm(prev => {
+                        const arr = [...prev.degisenParcalar];
+                        arr[i] = { ad, fiyat: v };
+                        return { ...prev, degisenParcalar: arr };
+                      })} />
+                  )}
+                  <button type="button" title="Bu parçayı kaldır"
+                    onClick={() => setForm(prev => ({ ...prev, degisenParcalar: prev.degisenParcalar.filter((_, idx) => idx !== i) }))}
+                    style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+                </div>
+              );
+            })}
+          </Field>
         </>
       )}
 
-      {/* Servis ücreti ve parça ücreti aynı anda varsa toplamı göster */}
-      {parseMoney(form.servisUcreti) > 0 && !parcaUcretsizMi && parseMoney(form.parcaUcreti) > 0 && (
+      {/* Ödeme durumu — servis ve parça ücreti tek ortak toggle ile yönetilir */}
+      {ucretliVarMi && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "#15803d" : "#92400e" }}>
+            {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
+          </span>
+        </label>
+      )}
+
+      {/* Servis ücreti + parça ücretleri toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}
+      {ucretliVarMi && (
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
-          {(form.currency || "TRY") === (form.parcaCurrency || "TRY") ? (
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
-              Toplam (Servis + Parça): {fmtCur(parseMoney(form.servisUcreti) + parseMoney(form.parcaUcreti), form.currency || "TRY")}
-            </span>
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
-              Toplam: {fmtCur(form.servisUcreti, form.currency)} (servis) + {fmtCur(form.parcaUcreti, form.parcaCurrency)} (parça)
-            </span>
-          )}
+          {(() => {
+            const parcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
+            const cur = form.currency || "TRY";
+            const toplam = parseMoney(form.servisUcreti) + (parcaVar ? parcaUcretiToplam : 0);
+            const kdv = calcKDV(form.faturaTipi, toplam, kdvRate);
+            return (
+              <>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                  Toplam (Servis + Parça): {fmtCur(toplam, cur)}
+                </span>
+                {kdv > 0 && (
+                  <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
+                    KDV (%{kdvRate}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

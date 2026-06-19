@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { CURRENCIES, DEFAULT_KDV_RATE, BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../lib/constants";
-import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount } from "../lib/utils";
+import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount } from "../lib/utils";
 import { Icon, Btn, Modal } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
 
-export const Settings = ({ customers, services, dealers, stock, setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, showToast = () => {} }) => {
+export const Settings = ({ customers, services, dealers, stock, setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {} }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
@@ -25,15 +25,15 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
     const e3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
     const rate = appSettings?.kdvRate ?? DEFAULT_KDV_RATE;
-    const gercekCiro = e3(), faturaliTutar = e3(), kdv = e3(), komisyon = e3(), extra = e3(), alacak = e3(), servisUc = e3();
+    const gercekCiro = e3(), toplamCiro = e3(), faturaliTutar = e3(), kdv = e3(), komisyon = e3(), extra = e3(), alacak = e3(), servisUc = e3();
     real.forEach(c => {
       const k = cur(c.currency);
       const tip = normalizeSaleType(c.faturali);
       gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli);
+      toplamCiro[k] += calcCiro(c, rate);
       if (isFaturali(tip)) faturaliTutar[k] += parseMoney(c.faturaBedeli);
       kdv[k] += calcKDV(tip, c.faturaBedeli, rate);
       komisyon[k] += parseMoney(c.komisyon);
-      extra[k] += parseMoney(c.extraKalipFiyati);
       alacak[k] += parseMoney(c.kalanBorc);
     });
     services.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
@@ -41,6 +41,8 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       servisUc[k] += parseMoney(s.servisUcreti);
       if (k === "TRY") kdv[k] += extractKDV(s.servisUcreti, rate);
     });
+    // Toplam Extra Kalıp Satışı — donmuş extraKalipFiyati yerine canlı Extra Kalıp sekmesi verisi
+    partSales.forEach(p => { extra[cur(p.currency)] += parseMoney(p.ucret); });
     const net = e3();
     CURRENCIES.forEach(k => { net[k] = gercekCiro[k] + extra[k] + servisUc[k] - komisyon[k]; });
     const kalipAdet = real.reduce((t, c) => t + (Array.isArray(c.kaliplar) ? c.kaliplar.length : (parseInt(c.kalipSayisi, 10) || 0)), 0);
@@ -61,6 +63,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       [],
       ["TUTARLAR", "₺ (TL)", "$ (USD)", "€ (EUR)"],
       line("Gerçek Ciro (fiili satış)", gercekCiro),
+      line("Toplam Ciro (Fabrika Bedeli + KDV + Komisyon)", toplamCiro),
       line("Faturalı Tutar (resmi)", faturaliTutar),
       line(`Toplam KDV (%${rate})`, kdv),
       line("Toplam Extra Kalıp Satışı", extra),
@@ -73,7 +76,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
   };
   const exportCustomers = () => {
-    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Gerçek Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
+    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rate = appSettings?.kdvRate ?? DEFAULT_KDV_RATE;
     const rows = [head, ...customers.map(c => [
@@ -105,7 +108,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
   // Şablon sütun başlıkları (müşteri bu sıraya uyarlar). Servis için 3 çift tarih/iş.
   const IMPORT_HEADERS = [
     "Kalıp Sayısı", "Satış Yapan", "Satın Alan Firma", "Telefon", "Adres", "Ülke", "Şehir",
-    "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Gerçek Satış Bedeli", "Fatura Bedeli",
+    "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Fabrika Satış Bedeli", "Fatura Bedeli",
     "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
     "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
     "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
@@ -451,7 +454,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
 
   // ── Yedek Al ──
   const doBackup = async () => {
-    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales };
+    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments };
     try {
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
@@ -515,6 +518,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     if (Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
     if (Array.isArray(restoreData?.parts) && setParts) setParts(restoreData.parts);
     if (Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
+    if (Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
     setRestoreData(null);
     flash("ok", "Yedek başarıyla yüklendi. Veriler geri getirildi.");
   };
@@ -813,7 +817,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
           </div>
 
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (en x boy x yükseklik)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Gerçek Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
+            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (en x boy x yükseklik)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Fabrika Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
           </div>
         </Section>
       )}

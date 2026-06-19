@@ -14,7 +14,8 @@ try {
 }
 
 // ── Türkçe yerel ayar: tarih seçici takvimleri Türkçe görünür ──
-app.commandLine.appendSwitch("lang", "tr-TR");
+// "tr" (bölge kodu olmadan) kullanılır — Chromium'un paketlediği yerel ayar dosyası "tr-TR.pak" değil "tr.pak"
+app.commandLine.appendSwitch("lang", "tr");
 
 let mainWin = null;
 

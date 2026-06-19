@@ -1,13 +1,19 @@
 import { useState } from "react";
-import { CUR_SYM } from "../lib/constants";
-import { today, trLower } from "../lib/utils";
+import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
+import { today, trLower, fmtCur, parseMoney, calcKDV } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal } from "./ui";
 
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
 // detayından "Extra Kalıp Satışı") tarafından paylaşılır, Services/ServiceForm ile aynı desen.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel }) => {
+// Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
+// (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
+// (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
   const [custSearch, setCustSearch] = useState("");
 
+  const isEdit = !!form.id;
+  const kaliplar = form.kaliplar || [];
+  const kaliplarToplam = kaliplar.reduce((s, k) => s + parseMoney(k.fiyat), 0);
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
@@ -64,43 +70,109 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         )}
       </Field>
 
-      <Field label="Kalıp Modeli">
-        <Select value={form.kalipModel || ""} onChange={e => setForm(p => ({ ...p, kalipModel: e.target.value }))}>
-          <option value="">Seçin...</option>
-          {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
-        </Select>
-        {kalipDefs.length === 0 && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>}
-      </Field>
-      <Field label="Kalıp Ölçüsü"><Input value={form.olcu || ""} onChange={e => setForm(p => ({ ...p, olcu: e.target.value }))} placeholder="örn: 55x125 mm" /></Field>
+      {!isEdit && (
+        <Field label="Kalıp Ekle">
+          <Select value="" onChange={e => {
+            const ad = e.target.value;
+            if (ad && !kaliplar.some(k => k.ad === ad)) {
+              setForm(p => ({ ...p, kaliplar: [...(p.kaliplar || []), { ad, olcu: "", fiyat: "" }] }));
+            }
+          }}>
+            <option value="">+ Kalıp ekle...</option>
+            {kalipDefs.filter(k => !kaliplar.some(x => x.ad === k.ad)).map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
+          </Select>
+          {kalipDefs.length === 0 && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>}
+        </Field>
+      )}
+
+      {isEdit && (
+        <Field label="Kalıp Modeli">
+          <Select value={kaliplar[0]?.ad || ""} onChange={e => setForm(p => ({ ...p, kaliplar: [{ ...(p.kaliplar?.[0] || {}), ad: e.target.value }] }))}>
+            <option value="">Seçin...</option>
+            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
+          </Select>
+        </Field>
+      )}
+
+      {kaliplar.length > 0 && (
+        <Field label={isEdit ? "Kalıp Ölçüsü ve Fiyatı" : `Seçilen Kalıplar (${kaliplar.length})`}>
+          {kaliplar.map((k, i) => (
+            <div key={k.ad || i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr" : "1fr 110px 110px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+              {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "#c2410c" }}>{k.ad}</span>}
+              <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm"
+                onChange={e => setForm(prev => {
+                  const arr = [...(prev.kaliplar || [])];
+                  arr[i] = { ...arr[i], olcu: e.target.value };
+                  return { ...prev, kaliplar: arr };
+                })} />
+              <MoneyInput value={k.fiyat} sym={CUR_SYM[form.currency || "TRY"]}
+                onChange={v => setForm(prev => {
+                  const arr = [...(prev.kaliplar || [])];
+                  arr[i] = { ...arr[i], fiyat: v };
+                  return { ...prev, kaliplar: arr };
+                })} />
+              {!isEdit && (
+                <button type="button" title="Bu kalıbı kaldır"
+                  onClick={() => setForm(prev => ({ ...prev, kaliplar: (prev.kaliplar || []).filter((_, idx) => idx !== i) }))}
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+              )}
+            </div>
+          ))}
+        </Field>
+      )}
 
       <Field label="Veriliş Tarihi"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
 
       {selectedCust && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Para Birimi">
-            <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
-              <option value="TRY">₺ Türk Lirası</option>
-              <option value="USD">$ Dolar (USD)</option>
-              <option value="EUR">€ Euro (EUR)</option>
-            </Select>
-          </Field>
-          <Field label="Fiyat">
-            <MoneyInput value={form.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fiyat: v }))} />
-            {(form.currency || "TRY") !== "TRY" && (
-              <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
-            )}
-          </Field>
-        </div>
+        <Field label="Fatura Tipi">
+          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+          </Select>
+        </Field>
+      )}
+
+      {selectedCust && (
+        <Field label="Para Birimi">
+          <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+            <option value="TRY">₺ Türk Lirası</option>
+            <option value="USD">$ Dolar (USD)</option>
+            <option value="EUR">€ Euro (EUR)</option>
+          </Select>
+          {(form.currency || "TRY") !== "TRY" && (
+            <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+          )}
+        </Field>
       )}
 
       {/* Ödeme durumu */}
-      {selectedCust && (
+      {selectedCust && kaliplarToplam > 0 && (
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginTop: 8 }}>
           <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "#15803d" : "#92400e" }}>
             {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
           </span>
         </label>
+      )}
+
+      {/* Kalıp fiyatları toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}
+      {kaliplarToplam > 0 && (
+        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
+          {(() => {
+            const kdv = calcKDV(form.faturaTipi, kaliplarToplam, kdvRate);
+            return (
+              <>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                  Toplam: {fmtCur(kaliplarToplam, form.currency || "TRY")}
+                </span>
+                {kdv > 0 && (
+                  <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
+                    KDV (%{kdvRate}): {fmtCur(kdv, form.currency || "TRY")} · KDV dahil toplam: {fmtCur(kaliplarToplam + kdv, form.currency || "TRY")}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
       )}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>

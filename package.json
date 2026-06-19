@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -41,7 +41,12 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "build/icon.ico",
       "legalTrademarks": "Altuntaş Makina",
       "verifyUpdateCodeSignature": false

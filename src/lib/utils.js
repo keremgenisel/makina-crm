@@ -64,9 +64,9 @@ export const normalizeSaleType = (v) => {
 };
 export const isFaturali = (saleType) => normalizeSaleType(saleType).startsWith("Faturalı");
 export const isYurtIci = (saleType) => normalizeSaleType(saleType).endsWith("Yurtiçi");
-// KDV tutarı: sadece Yurtiçi satışlarda, fatura bedeli üzerinden hesaplanır
+// KDV tutarı: sadece Faturalı Yurtiçi satışlarda, fatura bedeli üzerinden hesaplanır
 export const calcKDV = (saleType, faturaBedeli, rate = DEFAULT_KDV_RATE) => {
-  if (!isYurtIci(saleType)) return 0;
+  if (!isFaturali(saleType) || !isYurtIci(saleType)) return 0;
   return (parseMoney(faturaBedeli) * (parseFloat(rate) || 0)) / 100;
 };
 // KDV DAHİL bir tutarın içindeki KDV'yi ayrıştır (servis ücretleri için).
@@ -104,6 +104,8 @@ export const kalipCount = (c) => {
   const n = parseInt(c?.kalipSayisi, 10);
   return isNaN(n) ? 0 : n;
 };
+// Değişen parça adını güvenle al — eski kayıtlarda düz string, yenilerde {ad, fiyat}
+export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 
 // ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──
 // Servis ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0)
@@ -111,7 +113,7 @@ export const isServisUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.ty
 // Değişen parçalar ücretli mi (garanti dışı işaretlenmiş veya garanti yoksa + ücret > 0)
 export const isParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
 // Servis kaydı borçlu mu: ücretli + açıkça ödenmedi (eski kayıtlarda odendi yoksa ödendi sayılır)
-export const isServisBorcluMu = (sv) => (isServisUcretliMi(sv) && sv.odendi === false) || (isParcaUcretliMi(sv) && sv.parcaOdendi === false);
+export const isServisBorcluMu = (sv) => (isServisUcretliMi(sv) || isParcaUcretliMi(sv)) && sv.odendi === false;
 // Extra Kalıp satışı borçlu mu
 export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
 // Bir müşterinin herhangi bir kaynaktan (kalan borç / servis / parça / Extra Kalıp) borcu var mı
@@ -121,3 +123,14 @@ export const customerHasAnyDebt = (customer, services = [], partSales = []) => {
   if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
   return false;
 };
+// Ciro (gizli ara değer — hiçbir formda ayrı bir alan olarak gösterilmez, sadece Kalan Borç'u türetmek için kullanılır)
+export const calcCiro = (customer, kdvRate = DEFAULT_KDV_RATE) => {
+  const kdv = calcKDV(customer.faturali, customer.faturaBedeli, kdvRate);
+  return parseMoney(customer.fabrikaSatisBedeli) + kdv + parseMoney(customer.komisyon);
+};
+// Bir makinaya (customerId) yapılmış tüm ödemelerin toplamı
+export const sumPayments = (customerId, payments = []) =>
+  payments.filter(p => p.customerId === customerId).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
+// Kalan Borç = Ciro - (o makinaya yapılan tüm ödemelerin toplamı)
+export const calcKalanBorc = (customer, payments = [], kdvRate = DEFAULT_KDV_RATE) =>
+  calcCiro(customer, kdvRate) - sumPayments(customer.id, payments);

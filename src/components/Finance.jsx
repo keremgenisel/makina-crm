@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { CURRENCIES, REPAIR_PLACES } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCount } from "../lib/utils";
+import { CURRENCIES, REPAIR_PLACES, DEFAULT_KDV_RATE } from "../lib/constants";
+import { fmt, fmtCur, parseMoney, kalipCount, calcCiro } from "../lib/utils";
 
-export const Finance = ({ customers, services, dealers = [], partSales = [] }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE }) => {
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -41,31 +41,21 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
   const garantiDisiYapilanIslem = {};
   REPAIR_PLACES.forEach(t => { garantiDisiYapilanIslem[t] = 0; });
   garantiDisiServisler.forEach(s => { if (garantiDisiYapilanIslem[s.repairPlace] != null) garantiDisiYapilanIslem[s.repairPlace]++; });
-  // İlk kalıp makinayla birlikte gelir (bedava), diğerleri "extra" sayılır. Extra Kalıp sekmesinden
-  // satılan kalıplar müşterinin kaliplar listesine de eklendiği için (detay görünümü için), buradan
-  // çift sayılmasın diye müşteri başına partSales adedi kaliplar listesinden önce düşülüyor.
-  const partSalesCountByCustomer = {};
-  partSales.forEach(p => { partSalesCountByCustomer[p.customerId] = (partSalesCountByCustomer[p.customerId] || 0) + 1; });
-  const musterilerdenExtraKalip = sales.reduce((sum, c) => {
-    const extraKalipTabAdedi = partSalesCountByCustomer[c.id] || 0;
-    const ilkSatisKaliplari = Math.max(kalipCount(c) - extraKalipTabAdedi, 0);
-    return sum + Math.max(ilkSatisKaliplari - 1, 0);
-  }, 0);
-  const satilanExtraKalipSayisi = musterilerdenExtraKalip + kalipSatisInRange.length;
+  // Satıştaki ilk kaliplar listesi extra sayılmaz; Extra Kalıp sadece kendi sekmesinden takip edilir.
+  const satilanExtraKalipSayisi = kalipSatisInRange.length;
   const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
 
   // ── PARA (TUTAR) — para birimi başına ayrı topla ──
   const empty3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
   const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY"); // eski kayıtlar TRY
-  const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro) — Genel Toplam'a girer, kendi kartı yok
-  const komisyon = empty3(), ilkSatisKalip = empty3(), musteriBorcu = empty3();
+  const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
+  const komisyon = empty3(), toplamCiro = empty3();
   sales.forEach(c => {
     const k = cur(c.currency);
     const gercek = parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli); // gerçek bedel yoksa faturaya düş
     gercekCiro[k] += gercek;
+    toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
     komisyon[k] += parseMoney(c.komisyon);
-    ilkSatisKalip[k] += parseMoney(c.extraKalipFiyati); // ilk makina satışında girilen kalıp fiyatı — bilgi amaçlı, toplama girmez
-    musteriBorcu[k] += parseMoney(c.kalanBorc);
   });
   const servisUcreti = empty3();
   svcInRange.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
@@ -78,51 +68,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
   const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
   kalipSatisInRange.forEach(p => { kalipSatisi[cur(p.currency)] += parseMoney(p.ucret); });
 
-  // Toplam Extra Kalıp Satışı = müşteri formundaki ilk satış fiyatı + Extra Kalıp sekmesindeki satışlar
+  // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar
   // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
-  const toplamExtraKalip = empty3();
-  CURRENCIES.forEach(k => { toplamExtraKalip[k] = ilkSatisKalip[k] + kalipSatisi[k]; });
-
-  // Genel Toplam NAKİT BAZLIDIR — sadece gerçekten tahsil edilmiş tutarlar sayılır.
-  // Bir borç "ödendi" işaretlendiği anda Toplam Alacak'tan çıkar, Genel Toplam'a eklenir.
-  const tahsilEdilenSatis = empty3();
-  CURRENCIES.forEach(k => { tahsilEdilenSatis[k] = gercekCiro[k] - musteriBorcu[k]; });
-  const tahsilEdilenServis = empty3();
-  svcInRange.filter(s => (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && s.odendi !== false).forEach(s => {
-    tahsilEdilenServis[cur(s.currency)] += parseMoney(s.servisUcreti);
-  });
-  const tahsilEdilenParca = empty3();
-  svcInRange.filter(s => !s.parcaUcretsizMi && s.parcaOdendi !== false).forEach(s => {
-    tahsilEdilenParca[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti);
-  });
-  const tahsilEdilenKalip = empty3();
-  kalipSatisInRange.filter(p => p.odendi !== false).forEach(p => { tahsilEdilenKalip[cur(p.currency)] += parseMoney(p.ucret); });
-  // İlk satışta girilen kalıp fiyatının kendi ödeme takibi yok, olduğu gibi sayılır
-  const tahsilEdilenExtraKalip = empty3();
-  CURRENCIES.forEach(k => { tahsilEdilenExtraKalip[k] = ilkSatisKalip[k] + tahsilEdilenKalip[k]; });
-
-  const genelToplam = empty3();
-  CURRENCIES.forEach(k => {
-    genelToplam[k] = tahsilEdilenSatis[k] + tahsilEdilenServis[k] + tahsilEdilenParca[k] + tahsilEdilenExtraKalip[k] - komisyon[k];
-  });
-
-  // ── TOPLAM ALACAK — müşteri borcu + ödenmemiş servis + ödenmemiş parça + ödenmemiş kalıp ──
-  const odenmemisServis = empty3();
-  svcInRange.forEach(s => {
-    const ucretliMi = (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && parseMoney(s.servisUcreti) > 0;
-    if (ucretliMi && s.odendi === false) odenmemisServis[cur(s.currency)] += parseMoney(s.servisUcreti);
-  });
-  const odenmemisParca = empty3();
-  svcInRange.forEach(s => {
-    const parcaUcretliMi = !s.parcaUcretsizMi && parseMoney(s.parcaUcreti) > 0;
-    if (parcaUcretliMi && s.parcaOdendi === false) odenmemisParca[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti);
-  });
-  const odenmemisKalip = empty3();
-  kalipSatisInRange.forEach(p => { if (p.odendi === false) odenmemisKalip[cur(p.currency)] += parseMoney(p.ucret); });
-  const toplamAlacak = empty3();
-  CURRENCIES.forEach(k => {
-    toplamAlacak[k] = musteriBorcu[k] + odenmemisServis[k] + odenmemisParca[k] + odenmemisKalip[k];
-  });
+  const toplamExtraKalip = kalipSatisi;
 
   // Yaklaşık TL karşılığı (Dashboard'daki kur API'si ile)
   const [rates, setRates] = useState(null); // { USD: x, EUR: y } → 1 birim kaç TL
@@ -150,11 +98,6 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
       if (rates.EUR) sum += (obj.EUR || 0) * rates.EUR;
     }
     return sum;
-  };
-  // Bir tutar nesnesini "₺X · $Y · €Z" formatında, sadece sıfır olmayanları göster
-  const showMulti = (obj) => {
-    const parts = CURRENCIES.filter(k => (obj[k] || 0) !== 0).map(k => fmtCur(obj[k], k));
-    return parts.length ? parts.join("  ·  ") : fmtCur(0, "TRY");
   };
   // ── MODEL BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
   const byModel = {};
@@ -281,44 +224,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [] }) =
       <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Gelir & Tahsilat</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
+        <MultiCard label="Toplam Ciro" obj={toplamCiro} color="#0d9488" sub="Fabrika Satış Bedeli + KDV + Komisyon" />
         <MultiCard label="Toplam Servis Ücreti" obj={servisUcreti} color="#f59e0b" sub="Garanti dışı servisler" />
         <MultiCard label="Toplam Parça Ücreti" obj={parcaUcreti} color="#0ea5e9" sub="Servis — değişen parçalar" />
-        <MultiCard label="Toplam Extra Kalıp Satışı" obj={toplamExtraKalip} color="#db2777" sub="İlk satış + Extra Kalıp sekmesi" />
+        <MultiCard label="Toplam Extra Kalıp Satışı" obj={toplamExtraKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
-      </div>
-
-      {/* GENEL TOPLAM + TOPLAM ALACAK */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14, marginBottom: 28 }}>
-        <div style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", borderRadius: 14, padding: "22px 26px", color: "#fff" }}>
-          <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginBottom: 6 }}>GENEL TOPLAM</div>
-          {(CURRENCIES.filter(k => (genelToplam[k] || 0) !== 0).length ? CURRENCIES.filter(k => (genelToplam[k] || 0) !== 0) : ["TRY"]).map(k => (
-            <div key={k} style={{ fontSize: 30, fontWeight: 800, color: "#4ade80", lineHeight: 1.2 }}>{fmtCur(genelToplam[k] || 0, k)}</div>
-          ))}
-          {CURRENCIES.some(k => k !== "TRY" && (genelToplam[k] || 0) !== 0) && rates && (
-            <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 6 }}>≈ {fmt(toTL(genelToplam))} (yaklaşık TL karşılığı)</div>
-          )}
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 8 }}>Tahsil edilen: Satış + Servis + Parça + Extra Kalıp − Komisyon</div>
-        </div>
-        <div style={{ background: "linear-gradient(135deg, #7c2d12, #9a3412)", borderRadius: 14, padding: "22px 26px", color: "#fff" }}>
-          <div style={{ fontSize: 13, color: "#fed7aa", fontWeight: 600, marginBottom: 6 }}>TOPLAM ALACAK</div>
-          {(CURRENCIES.filter(k => (toplamAlacak[k] || 0) !== 0).length ? CURRENCIES.filter(k => (toplamAlacak[k] || 0) !== 0) : ["TRY"]).map(k => (
-            <div key={k} style={{ fontSize: 24, fontWeight: 800, color: "#fdba74", lineHeight: 1.2 }}>{fmtCur(toplamAlacak[k] || 0, k)}</div>
-          ))}
-          {CURRENCIES.some(k => k !== "TRY" && (toplamAlacak[k] || 0) !== 0) && rates && (
-            <div style={{ fontSize: 11, color: "#fdba74", opacity: .8, marginTop: 6 }}>≈ {fmt(toTL(toplamAlacak))} (yaklaşık)</div>
-          )}
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.15)", display: "flex", flexDirection: "column", gap: 3 }}>
-            {[["Müşteri Borcu", musteriBorcu], ["Servis", odenmemisServis], ["Parça", odenmemisParca], ["Extra Kalıp", odenmemisKalip]]
-              .filter(([, obj]) => CURRENCIES.some(k => (obj[k] || 0) !== 0))
-              .map(([label, obj]) => (
-                <div key={label} style={{ fontSize: 11, color: "#fed7aa", display: "flex", justifyContent: "space-between", gap: 10 }}>
-                  <span style={{ opacity: .85 }}>{label}</span>
-                  <span style={{ fontWeight: 700 }}>{showMulti(obj)}</span>
-                </div>
-              ))}
-          </div>
-          <div style={{ fontSize: 11, color: "#fdba74", opacity: .7, marginTop: 8 }}>Tahsil edilecek tutar</div>
-        </div>
       </div>
 
       {/* AYLIK TREND */}

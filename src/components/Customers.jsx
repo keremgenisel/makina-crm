@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import LOGO from "../assets/logo.avif?inline";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, todayTR, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, kalipText, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, stripAutoPrint, customerHasAnyDebt } from "../lib/utils";
+import { today, todayTR, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, kalipText, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, stripAutoPrint, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 import { ServiceForm } from "./ServiceForm";
@@ -18,7 +18,7 @@ const SALE_TYPE_STYLE = {
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
-  partSales = [], setPartSales = null, parts = [],
+  partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRate = DEFAULT_KDV_RATE,
@@ -38,6 +38,10 @@ export const Customers = ({
   const [svModal, setSvModal] = useState(null); // null | "add" | { edit: sv } — servis talebi ekle/düzenle
   const [svForm, setSvForm] = useState({});
   const [pkForm, setPkForm] = useState(null); // null | Extra Kalıp satışı ekle/düzenle formu
+  const [paymentForm, setPaymentForm] = useState(null); // null | Kapora/Ödeme ekle/düzenle formu
+  const [confirmDeletePaymentId, setConfirmDeletePaymentId] = useState(null); // silmeden önce onay bekleyen ödeme id'si
+  const [confirmDeleteServiceId, setConfirmDeleteServiceId] = useState(null); // silmeden önce onay bekleyen servis kaydı id'si
+  const [confirmDeletePartSaleId, setConfirmDeletePartSaleId] = useState(null); // silmeden önce onay bekleyen Extra Kalıp kaydı id'si
   const isCustomerTab = isCustomer; // hibrit özellikler yalnızca müşteriler sekmesinde
   // detailView'ı id üzerinden canlı türet — devir/düzenleme sonrası anlık güncel kalsın
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
@@ -60,13 +64,31 @@ export const Customers = ({
       const tColor = { "İlk Çalıştırma": "#1d4ed8", "Garanti İçi": "#16a34a", "Garanti Dışı": "#dc2626", "Periyodik Bakım": "#c2410c" }[sv.type] || "#94a3b8";
       ev.push({ kind: "service", date: sv.date, color: tColor, title: sv.type, sv });
     });
-    (partSales || []).filter(ps => ps.customerId === detailView.id).forEach(ps => {
-      const kalip = ps.tur === "Kalıp";
+    // Kalıp tipi satışlar aynı satışta (savePartSale'in tek çağrısında) birden çok kayıt olarak
+    // oluşturulabiliyor — bunlar batchId ile bağlı, zaman çizelgesinde TEK olay olarak gösterilir.
+    const kalipGroups = {};
+    (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur === "Kalıp").forEach(ps => {
+      const key = ps.batchId || ps.id;
+      (kalipGroups[key] = kalipGroups[key] || []).push(ps);
+    });
+    Object.values(kalipGroups).forEach(psList => {
+      psList.sort((a, b) => a.id - b.id);
+      ev.push({ kind: "part", date: psList[0].tarih, color: "#c2410c", title: "Kalıp Verildi", psList });
+    });
+    (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
       ev.push({
-        kind: "part", date: ps.tarih, color: kalip ? "#c2410c" : "#0891b2",
-        title: kalip ? "Kalıp Verildi" : "Yedek Parça Verildi",
+        kind: "part", date: ps.tarih, color: "#0891b2",
+        title: "Yedek Parça Verildi",
         desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · garanti kapsamında (ücretsiz)" : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
         ps,
+      });
+    });
+    (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
+      ev.push({
+        kind: "payment", date: p.tarih, color: "#0d9488",
+        title: "Kapora/Ödeme",
+        desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${p.not ? " · " + p.not : ""}`,
+        payment: p,
       });
     });
     if (detailView.warrantyEnd) {
@@ -81,6 +103,11 @@ export const Customers = ({
   })();
   const detailModelInfo = detailView ? models.find(m => m.model === detailView.model) : null;
   const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= today();
+  const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
+  const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRate) : 0;
+  // Extra Kalıp Satışı'ndan eklenen kalıplar her zaman listenin sonuna eklenir (savePartSale) —
+  // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
+  const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
 
   // Firma adına göre makina sayısı (aynı isimli kayıtlar = aynı firma)
   const firmCount = {};
@@ -139,7 +166,7 @@ export const Customers = ({
       kaliplar: [],
       installDate: start, warrantyEnd: end,
       faturali: "Faturalı Yurtiçi", faturaBedeli: "",
-      fabrikaSatisBedeli: "", komisyon: "", extraKalipFiyati: "",
+      fabrikaSatisBedeli: "", komisyon: "", _ilkOdeme: "",
       serialNo: "",
     });
     setModal("add"); setModelPicker(false);
@@ -157,7 +184,7 @@ export const Customers = ({
       model: "", kaliplar: [],
       installDate: start, warrantyEnd: end,
       faturali: "Faturalı Yurtiçi", faturaBedeli: "",
-      fabrikaSatisBedeli: "", komisyon: "", extraKalipFiyati: "", kalanBorc: "", serialNo: "", aciklama: "",
+      fabrikaSatisBedeli: "", komisyon: "", _ilkOdeme: "", kalanBorc: "", serialNo: "", aciklama: "",
     });
     setModal("add"); setModelPicker(false);
   };
@@ -171,12 +198,17 @@ export const Customers = ({
   };
   const save = () => {
     if (modal === "add") {
-      const { _manualSerial, _stokSerisiz, ...clean } = form;
-      bumpId(customers, services);
+      const { _manualSerial, _stokSerisiz, _ilkOdeme, ...clean } = form;
+      bumpId(customers, services, partSales, payments);
       const newId = uid();
       // Seri no boşsa "bekliyor" işaretle (stoktan seri no'suz seçilse de, hiç girilmese de)
       if (!clean.serialNo) clean.seriNoBekliyor = true;
+      const ilkOdemeTutari = parseMoney(_ilkOdeme);
+      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRate) - ilkOdemeTutari;
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
+      if (ilkOdemeTutari > 0 && setPayments) {
+        setPayments(p => [{ id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: ilkOdemeTutari, currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)" }, ...p]);
+      }
       // Stoktan düşme:
       if (setStock) {
         if (_stokSerisiz) {
@@ -193,9 +225,10 @@ export const Customers = ({
       }
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {
-      const { _manualSerial, _stokSerisiz, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdeme, ...clean } = form;
       // Düzenlemede seri no girildiyse "bekliyor" işaretini kaldır
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
+      clean.kalanBorc = calcKalanBorc(clean, payments, kdvRate);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
       showToast("Müşteri bilgileri düzenlendi.");
     }
@@ -208,6 +241,11 @@ export const Customers = ({
     setCustomers(p => p.filter(x => x.id !== confirmId));
     // Silinen müşterinin servis kayıtları da silinsin
     if (setServices) setServices(p => p.filter(s => s.customerId !== confirmId));
+    // Silinen müşterinin Extra Kalıp satışı kayıtları da silinsin — yoksa customerId'si artık var olmayan
+    // bir müşteriye işaret eden "öksüz" kayıtlar olarak partSales'te kalıp Dashboard'daki Borçlu Firmalar'da sonsuza dek görünür
+    if (setPartSales) setPartSales(p => p.filter(x => x.customerId !== confirmId));
+    // Silinen müşterinin ödeme (Kapora/Ödeme) kayıtları da silinsin
+    if (setPayments) setPayments(p => p.filter(x => x.customerId !== confirmId));
     // Silinen müşterinin makinası stoğa geri dönsün (model + seri no varsa ve stokta yoksa)
     if (c && setStock && c.model && c.serialNo) {
       setStock(p => {
@@ -223,13 +261,24 @@ export const Customers = ({
 
   // Müşteri detayından servis talebi ekleme/düzenleme — Services.jsx'teki ile aynı ServiceForm'u kullanır
   const openAddService = () => {
-    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", odendi: false, degisenParcalar: [], parcaUcreti: "", parcaCurrency: "TRY", parcaGarantiDisi: false, parcaOdendi: false });
+    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
     setSvModal("add");
   };
-  const openEditService = sv => { setSvForm({ degisenParcalar: [], parcaUcreti: "", parcaCurrency: "TRY", parcaGarantiDisi: false, parcaOdendi: false, ...sv }); setSvModal({ edit: sv }); };
+  const openEditService = sv => {
+    // Eski kayıtlarda değişen parçalar düz string'ti (tek lump Parça Ücreti'ne sahip) — şimdi her
+    // parçanın kendi fiyatı var. Eski bir kaydı açarken lump tutarı parçalara eşit bölüp {ad,fiyat}'a çeviriyoruz.
+    const eski = (sv.degisenParcalar || []).some(p => typeof p === "string");
+    const degisenParcalar = eski
+      ? sv.degisenParcalar.map(ad => ({ ad, fiyat: sv.degisenParcalar.length ? parseMoney(sv.parcaUcreti) / sv.degisenParcalar.length : 0 }))
+      : (sv.degisenParcalar || []);
+    const cust = customers.find(c => c.id === sv.customerId);
+    setSvForm({ degisenParcalar: [], parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
+    setSvModal({ edit: sv });
+  };
   const saveService = (parcaUcretsizMi) => {
     if (!setServices) return;
-    const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi };
+    const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
+    const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaCurrency: svForm.currency };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -244,42 +293,111 @@ export const Customers = ({
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
   const toggleServisOdendi = (sv) => setServices && setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: !s.odendi } : s));
-  const toggleParcaOdendi = (sv) => setServices && setServices(p => p.map(s => s.id === sv.id ? { ...s, parcaOdendi: !s.parcaOdendi } : s));
+  const deleteService = (id) => {
+    if (!setServices) return;
+    setServices(p => p.filter(s => s.id !== id));
+    showToast("Servis kaydı silindi.");
+  };
 
   // Müşteri detayından Extra Kalıp satışı ekleme/düzenleme — Parts.jsx ile aynı PartSaleForm'u kullanır
   const openAddPartSale = () => {
-    setPkForm({ customerId: detailView.id, kalipModel: "", olcu: "", fiyat: "", currency: "TRY", tarih: today(), odendi: false });
+    setPkForm({ customerId: detailView.id, kaliplar: [], currency: "TRY", tarih: today(), odendi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
   };
   const openEditPartSale = (ps) => {
+    const cust = customers.find(c => c.id === ps.customerId);
     setPkForm({
       id: ps.id, customerId: ps.customerId,
-      kalipModel: ps.ad || "", olcu: ps.olcu || "", tarih: ps.tarih || today(),
-      currency: ps.currency || "TRY", fiyat: ps.ucret || "", odendi: !!ps.odendi,
+      kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: ps.ucret || "" }],
+      tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
+      faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
     });
   };
   const savePartSale = () => {
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
-    if (!selectedCust || !setPartSales || !pkForm.kalipModel) return;
-    const fields = {
-      customerId: selectedCust.id, tur: "Kalıp", ad: pkForm.kalipModel,
-      olcu: pkForm.olcu || "", tarih: pkForm.tarih || today(),
-      currency: pkForm.currency || "TRY", ucret: parseMoney(pkForm.fiyat), ucretsizMi: false,
-      odendi: !!pkForm.odendi,
+    const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
+    if (!selectedCust || !setPartSales || satirlar.length === 0) return;
+    const ortak = {
+      customerId: selectedCust.id, tur: "Kalıp", tarih: pkForm.tarih || today(),
+      currency: pkForm.currency || "TRY", ucretsizMi: false,
+      odendi: !!pkForm.odendi, faturaTipi: pkForm.faturaTipi,
     };
     if (pkForm.id) {
+      const k = satirlar[0];
+      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat) };
       setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields } : x));
+      // KALIPLAR rozetlerindeki denormalize kopyayı da güncelle — yoksa eski ad/ölçü orada kalır
+      setCustomers(p => p.map(c => c.id === selectedCust.id
+        ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
+        : c));
       showToast("Kayıt güncellendi.");
     } else {
-      const nid = Date.now();
-      setPartSales(p => p.some(x => x.id === nid) ? p : [...p, { id: nid, ...fields }]);
+      const batchId = uid();
+      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat) }));
+      setPartSales(p => [...p, ...yeniKayitlar]);
+      // partSaleId ile bağlanır — silme/düzenlemede bu denormalize kopyayı bulup senkronlamak için
       setCustomers(p => p.map(c => c.id === selectedCust.id
-        ? { ...c, kaliplar: [...(c.kaliplar || []), { ad: pkForm.kalipModel, olcu: pkForm.olcu || "" }], kalipSayisi: (c.kaliplar || []).length + 1 }
+        ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
         : c));
-      showToast("Kalıp verildi (ücretli).");
+      showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
     }
     setPkForm(null);
   };
   const togglePartSaleOdendi = (ps) => setPartSales && setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: !x.odendi } : x));
+  const deletePartSale = (id) => {
+    if (!setPartSales) return;
+    const ps = partSales.find(x => x.id === id);
+    setPartSales(p => p.filter(x => x.id !== id));
+    // Kalıp tipi satışsa KALIPLAR rozetlerindeki denormalize kopyasını da kaldır — yoksa silinen kayıt orada kalmaya devam eder
+    if (ps?.tur === "Kalıp") {
+      setCustomers(p => p.map(c => {
+        if (c.id !== ps.customerId) return c;
+        const kaliplar = (c.kaliplar || []).filter(k => k.partSaleId !== id);
+        return { ...c, kaliplar, kalipSayisi: kaliplar.length };
+      }));
+    }
+    showToast("Extra Kalıp kaydı silindi.");
+  };
+
+  // Müşteri detayından Kapora/Ödeme ekleme/düzenleme — tarihli ödeme geçmişi, Kalan Borç bundan türetilir
+  const openAddPayment = () => {
+    setPaymentForm({ customerId: detailView.id, tarih: today(), tutar: "", currency: detailView.currency || "TRY", not: "" });
+  };
+  const openEditPayment = (p) => {
+    setPaymentForm({ id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "" });
+  };
+  // payments değiştiğinde customer.kalanBorc (stored alan) da güncellenmeli — yoksa liste/Borçlu
+  // Firmalar gibi customer.kalanBorc'u doğrudan okuyan yerler eski/yanlış değeri göstermeye devam eder.
+  const syncKalanBorc = (customerId, newPayments) => {
+    setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRate) } : c));
+  };
+  const savePayment = () => {
+    if (!setPayments || !paymentForm || parseMoney(paymentForm.tutar) <= 0) return;
+    const fields = {
+      customerId: Number(paymentForm.customerId), tarih: paymentForm.tarih || today(),
+      tutar: parseMoney(paymentForm.tutar), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
+    };
+    let newPayments;
+    if (paymentForm.id) {
+      newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
+      showToast("Ödeme güncellendi.");
+    } else {
+      bumpId(customers, services, partSales, payments);
+      const newId = uid();
+      newPayments = payments.some(x => x.id === newId) ? payments : [{ id: newId, ...fields }, ...payments];
+      showToast("Ödeme kaydedildi.");
+    }
+    setPayments(newPayments);
+    syncKalanBorc(fields.customerId, newPayments);
+    setPaymentForm(null);
+  };
+  const deletePayment = (id) => {
+    if (!setPayments) return;
+    const payment = payments.find(x => x.id === id);
+    const newPayments = payments.filter(x => x.id !== id);
+    setPayments(newPayments);
+    if (payment) syncKalanBorc(payment.customerId, newPayments);
+    showToast("Ödeme silindi.");
+  };
 
   // 2. el devir: mevcut sahibi sahiplik geçmişine taşı, makina kaydını yeni sahibe güncelle
   const saveNewOwner = () => {
@@ -320,11 +438,22 @@ export const Customers = ({
     const parcaUcretiVar = !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
     const ucret = servisUcretiVar ? fmtCur(sv.servisUcreti, sv.currency) : "—";
     const parcaUcret = parcaUcretiVar ? fmtCur(sv.parcaUcreti, sv.parcaCurrency) : "—";
-    const toplam = (servisUcretiVar && parcaUcretiVar)
-      ? ((sv.currency || "TRY") === (sv.parcaCurrency || "TRY")
-          ? fmtCur(parseMoney(sv.servisUcreti) + parseMoney(sv.parcaUcreti), sv.currency || "TRY")
-          : `${fmtCur(sv.servisUcreti, sv.currency)} + ${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}`)
-      : null;
+    const sameCurrency = (sv.currency || "TRY") === (sv.parcaCurrency || sv.currency || "TRY");
+    let toplam = null;
+    if (servisUcretiVar && parcaUcretiVar) {
+      if (sameCurrency) {
+        const toplamTutar = parseMoney(sv.servisUcreti) + parseMoney(sv.parcaUcreti);
+        const kdv = calcKDV(sv.faturaTipi, toplamTutar, kdvRate);
+        toplam = fmtCur(toplamTutar, sv.currency) + (kdv > 0 ? ` (KDV dahil: ${fmtCur(toplamTutar + kdv, sv.currency)})` : "");
+      } else {
+        toplam = `${fmtCur(sv.servisUcreti, sv.currency)} + ${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}`;
+      }
+    } else if (servisUcretiVar || parcaUcretiVar) {
+      const toplamTutar = servisUcretiVar ? parseMoney(sv.servisUcreti) : parseMoney(sv.parcaUcreti);
+      const cur = servisUcretiVar ? sv.currency : sv.parcaCurrency;
+      const kdv = calcKDV(sv.faturaTipi, toplamTutar, kdvRate);
+      toplam = kdv > 0 ? `${fmtCur(toplamTutar, cur)} (KDV dahil: ${fmtCur(toplamTutar + kdv, cur)})` : null;
+    }
 
     const infoRows = [
       ["Firma Adı", cust.name],
@@ -381,7 +510,11 @@ export const Customers = ({
 
   ${sv.degisenParcalar?.length ? `
   <h2>DEĞİŞEN PARÇALAR</h2>
-  <div class="box-area" style="min-height:auto">${esc(sv.degisenParcalar.join(", "))}</div>
+  <div class="box-area" style="min-height:auto">${esc(sv.degisenParcalar.map(p => {
+    const ad = parcaAdi(p);
+    const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
+    return fiyat > 0 ? `${ad} (${fmtCur(fiyat, sv.parcaCurrency)})` : ad;
+  }).join(", "))}</div>
   ` : ""}
 
   <h2>MÜŞTERİ TALİMATI / AÇIKLAMA</h2>
@@ -445,7 +578,7 @@ export const Customers = ({
     const svcRows = detailHistory.length === 0
       ? `<tr><td colspan="5" style="text-align:center">Servis kaydı bulunmuyor.</td></tr>`
       : detailHistory.map(sv =>
-          `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(sv.type)}</td><td>${esc(sv.repairPlace || "—")}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>Değişen parçalar:</b> ${esc(sv.degisenParcalar.join(", "))}` : ""}</td></tr>`
+          `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(sv.type)}</td><td>${esc(sv.repairPlace || "—")}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>Değişen parçalar:</b> ${esc(sv.degisenParcalar.map(parcaAdi).join(", "))}` : ""}</td></tr>`
         ).join("");
 
     const givenParts = (partSales || []).filter(ps => ps.customerId === detailView.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
@@ -730,8 +863,8 @@ export const Customers = ({
                     ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
                     ["Fabrika Satış Bedeli", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                     ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
-                    ["Kapora", detailView.extraKalipFiyati ? fmtCur(detailView.extraKalipFiyati, detailView.currency) : ""],
-                    ["Kalan Borç", detailView.kalanBorc ? fmtCur(detailView.kalanBorc, detailView.currency) : ""],
+                    ["Kapora/Ödeme", detailToplamOdeme ? fmtCur(detailToplamOdeme, detailView.currency) : ""],
+                    ["Kalan Borç", detailKalanBorc ? fmtCur(detailKalanBorc, detailView.currency) : ""],
                     ["Açıklama", detailView.aciklama],
                   ].filter(([, v]) => v && v !== "—").map(([k, v]) => (
                     <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
@@ -745,11 +878,10 @@ export const Customers = ({
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>KALIPLAR ({detailView.kaliplar.length})</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {detailView.kaliplar.map((k, i) => {
-                        // İlk kalıp makinayla bedava gelir; ondan sonraki her kalıp "extra" sayılır (kaynağı fark etmez)
-                        const isExtra = i >= 1;
+                        const extraSatistan = k.partSaleId != null || i >= detailView.kaliplar.length - detailKalipSatisAdedi;
                         return (
-                          <span key={i} title={isExtra ? "Extra kalıp" : ""}
-                            style={{ fontSize: 12, fontWeight: 700, background: isExtra ? "#fee2e2" : "#fff7ed", color: isExtra ? "#991b1b" : "#c2410c", border: `1px solid ${isExtra ? "#fca5a5" : "#fed7aa"}`, borderRadius: 8, padding: "6px 12px" }}>
+                          <span key={i} title={extraSatistan ? "Extra Kalıp Satışı'ndan" : ""}
+                            style={{ fontSize: 12, fontWeight: 700, background: extraSatistan ? "#fee2e2" : "#fff7ed", color: extraSatistan ? "#991b1b" : "#c2410c", border: `1px solid ${extraSatistan ? "#fca5a5" : "#fed7aa"}`, borderRadius: 8, padding: "6px 12px" }}>
                             {[k.olcu, k.ad].filter(Boolean).join(" — ")}
                           </span>
                         );
@@ -789,6 +921,7 @@ export const Customers = ({
                       <span style={{ fontSize: 11, background: "#fff", color: "#64748b", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>
                       <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>
                       <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>
                       <Btn small variant="ghost" onClick={printMachineReport}><Icon name="print" size={12} /> Yazdır</Btn>
@@ -804,6 +937,8 @@ export const Customers = ({
                       const last = i === detailTimelineEvents.length - 1;
                       const sv = ev.sv;
                       const ps = ev.ps;
+                      const psList = ev.psList;
+                      const payment = ev.payment;
                       return (
                         <div key={i} style={{ display: "flex", gap: 14, position: "relative", paddingBottom: last ? 0 : 18 }}>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -821,10 +956,35 @@ export const Customers = ({
                                     style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                                     <Icon name="print" size={11} /> Yazdır
                                   </button>
+                                  <button onClick={() => setConfirmDeleteServiceId(sv.id)} title="Servis kaydını sil"
+                                    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                    <Icon name="trash" size={11} /> Sil
+                                  </button>
                                 </>
-                              ) : ev.kind === "part" && ps?.tur === "Kalıp" ? (
-                                <span onClick={() => openEditPartSale(ps)} title="Düzenlemek için tıklayın"
-                                  style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                              ) : ev.kind === "part" && psList ? (
+                                psList.length === 1 ? (
+                                  <>
+                                    <span onClick={() => openEditPartSale(psList[0])} title="Düzenlemek için tıklayın"
+                                      style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                                    <button onClick={() => setConfirmDeletePartSaleId(psList[0].id)} title="Extra Kalıp kaydını sil"
+                                      style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                      <Icon name="trash" size={11} /> Sil
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
+                                    {ev.title} <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>({psList.length} kalıp)</span>
+                                  </span>
+                                )
+                              ) : ev.kind === "payment" && payment ? (
+                                <>
+                                  <span onClick={() => openEditPayment(payment)} title="Düzenlemek için tıklayın"
+                                    style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                                  <button onClick={() => setConfirmDeletePaymentId(payment.id)} title="Ödemeyi sil"
+                                    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                    <Icon name="trash" size={11} /> Sil
+                                  </button>
+                                </>
                               ) : (
                                 <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
                               )}
@@ -833,12 +993,44 @@ export const Customers = ({
                               {sv?.repairPlace && <span style={{ fontSize: 11, color: "#94a3b8" }}>· {sv.repairPlace}</span>}
                             </div>
                             {ev.desc && <div style={{ fontSize: 12, color: "#64748b", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
-                            {ps?.tur === "Kalıp" && (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
-                                <button onClick={() => togglePartSaleOdendi(ps)}
-                                  style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ps.odendi === false ? "#fecaca" : "#bbf7d0", background: ps.odendi === false ? "#fef2f2" : "#f0fdf4", color: ps.odendi === false ? "#dc2626" : "#15803d" }}>
-                                  {ps.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                                </button>
+                            {psList && (
+                              <div style={{ marginTop: 4 }}>
+                                {psList.map(p => {
+                                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, kdvRate);
+                                  return (
+                                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
+                                      {psList.length > 1 && (
+                                        <span onClick={() => openEditPartSale(p)} title="Düzenlemek için tıklayın"
+                                          style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#fed7aa" }}>
+                                          {p.ad}{p.olcu ? ` (${p.olcu})` : ""}
+                                        </span>
+                                      )}
+                                      <span style={{ fontSize: 12, color: "#64748b" }}>
+                                        {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
+                                        {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")}
+                                      </span>
+                                      <button onClick={() => togglePartSaleOdendi(p)}
+                                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "#fecaca" : "#bbf7d0", background: p.odendi === false ? "#fef2f2" : "#f0fdf4", color: p.odendi === false ? "#dc2626" : "#15803d" }}>
+                                        {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                                      </button>
+                                      {psList.length > 1 && (
+                                        <button onClick={() => setConfirmDeletePartSaleId(p.id)} title="Bu kalıp kaydını sil"
+                                          style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}>
+                                          <Icon name="trash" size={10} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                {psList.length > 1 && (() => {
+                                  const toplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : parseMoney(p.ucret)), 0);
+                                  const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, kdvRate)), 0);
+                                  return (
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8", marginTop: 5 }}>
+                                      Toplam: {fmtCur(toplam, psList[0].currency)}{kdvToplam > 0 ? ` · KDV dahil: ${fmtCur(toplam + kdvToplam, psList[0].currency)}` : ""}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             )}
                             {sv?.yapilanIsler && (
@@ -851,9 +1043,15 @@ export const Customers = ({
                               <div style={{ marginTop: 5 }}>
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Değişen Parçalar</div>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
-                                  {sv.degisenParcalar.map(ad => (
-                                    <span key={ad} style={{ fontSize: 11, fontWeight: 600, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "2px 9px" }}>{ad}</span>
-                                  ))}
+                                  {sv.degisenParcalar.map((p, i) => {
+                                    const ad = parcaAdi(p);
+                                    const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
+                                    return (
+                                      <span key={i} style={{ fontSize: 11, fontWeight: 600, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "2px 9px" }}>
+                                        {ad}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -863,21 +1061,33 @@ export const Customers = ({
                                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.musteriTalimati}</div>
                               </div>
                             )}
-                            {sv && svUcretliMi(sv) && (
+                            {sv && (svUcretliMi(sv) || svParcaUcretliMi(sv)) && (
                               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
-                                <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Servis Ücreti: {fmtCur(sv.servisUcreti, sv.currency)}</span>
+                                {(() => {
+                                  const servisVar = svUcretliMi(sv);
+                                  const parcaVar = svParcaUcretliMi(sv);
+                                  const sameCurrency = !servisVar || !parcaVar || sv.currency === (sv.parcaCurrency || sv.currency);
+                                  if (sameCurrency) {
+                                    const toplam = (servisVar ? parseMoney(sv.servisUcreti) : 0) + (parcaVar ? parseMoney(sv.parcaUcreti) : 0);
+                                    const kdv = calcKDV(sv.faturaTipi, toplam, kdvRate);
+                                    const label = servisVar && parcaVar ? "Servis ve Yedek Parça Ücreti" : servisVar ? "Servis Ücreti" : "Yedek Parça Ücreti";
+                                    return (
+                                      <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>
+                                        {label}: {fmtCur(toplam, sv.currency)}
+                                        {kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <>
+                                      {servisVar && <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Servis Ücreti: {fmtCur(sv.servisUcreti, sv.currency)}</span>}
+                                      {parcaVar && <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Parça Ücreti: {fmtCur(sv.parcaUcreti, sv.parcaCurrency)}</span>}
+                                    </>
+                                  );
+                                })()}
                                 <button onClick={() => toggleServisOdendi(sv)}
                                   style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: sv.odendi === false ? "#fecaca" : "#bbf7d0", background: sv.odendi === false ? "#fef2f2" : "#f0fdf4", color: sv.odendi === false ? "#dc2626" : "#15803d" }}>
                                   {sv.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                                </button>
-                              </div>
-                            )}
-                            {sv && svParcaUcretliMi(sv) && (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
-                                <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Parça Ücreti: {fmtCur(sv.parcaUcreti, sv.parcaCurrency)}</span>
-                                <button onClick={() => toggleParcaOdendi(sv)}
-                                  style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: sv.parcaOdendi === false ? "#fecaca" : "#bbf7d0", background: sv.parcaOdendi === false ? "#fef2f2" : "#f0fdf4", color: sv.parcaOdendi === false ? "#dc2626" : "#15803d" }}>
-                                  {sv.parcaOdendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                                 </button>
                               </div>
                             )}
@@ -948,11 +1158,57 @@ export const Customers = ({
         </Modal>
       )}
 
+      {/* Kapora/Ödeme ekle/düzenle (müşteri detayından) — tarihli ödeme kaydı, Kalan Borç bundan türetilir */}
+      {paymentForm && (
+        <Modal title={paymentForm.id ? "Ödemeyi Düzenle" : "Kapora/Ödeme Ekle"} onClose={() => setPaymentForm(null)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Tarih">
+              <Input type="date" value={paymentForm.tarih || ""} onChange={e => setPaymentForm(p => ({ ...p, tarih: e.target.value }))} />
+            </Field>
+            <Field label="Tutar">
+              <MoneyInput value={paymentForm.tutar} sym={CUR_SYM[paymentForm.currency || "TRY"]} onChange={v => setPaymentForm(p => ({ ...p, tutar: v }))} />
+              <Warn>{parseMoney(paymentForm.tutar) <= 0 ? "Tutar girilmedi" : ""}</Warn>
+            </Field>
+          </div>
+          <Field label="Not (isteğe bağlı)">
+            <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi, nakit..." />
+          </Field>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+            <Btn variant="ghost" onClick={() => setPaymentForm(null)}>İptal</Btn>
+            <Btn onClick={savePayment}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {confirmDeletePaymentId && (
+        <ConfirmDialog
+          message="Bu Kapora/Ödeme kaydı kalıcı olarak silinecek ve Kalan Borç yeniden hesaplanacak."
+          onConfirm={() => { deletePayment(confirmDeletePaymentId); setConfirmDeletePaymentId(null); }}
+          onCancel={() => setConfirmDeletePaymentId(null)}
+        />
+      )}
+
+      {confirmDeleteServiceId && (
+        <ConfirmDialog
+          message="Bu servis kaydı kalıcı olarak silinecek."
+          onConfirm={() => { deleteService(confirmDeleteServiceId); setConfirmDeleteServiceId(null); }}
+          onCancel={() => setConfirmDeleteServiceId(null)}
+        />
+      )}
+
+      {confirmDeletePartSaleId && (
+        <ConfirmDialog
+          message="Bu Extra Kalıp kaydı kalıcı olarak silinecek."
+          onConfirm={() => { deletePartSale(confirmDeletePartSaleId); setConfirmDeletePartSaleId(null); }}
+          onCancel={() => setConfirmDeletePartSaleId(null)}
+        />
+      )}
+
       {/* Servis talebi ekle/düzenle (müşteri detayından) — Services.jsx ile aynı paylaşılan form */}
       {svModal && (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
-          form={svForm} setForm={setSvForm} customers={customers} parts={parts}
+          form={svForm} setForm={setSvForm} customers={customers} parts={parts} kdvRate={kdvRate}
           onSave={saveService} onCancel={() => setSvModal(null)}
         />
       )}
@@ -961,7 +1217,7 @@ export const Customers = ({
       {pkForm && (
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
-          form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs}
+          form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRate={kdvRate}
           onSave={savePartSale} onCancel={() => setPkForm(null)}
         />
       )}
@@ -1088,8 +1344,8 @@ export const Customers = ({
           <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>
             {(form.kaliplar || []).map((k, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: i >= 1 ? "#991b1b" : "#94a3b8", whiteSpace: "nowrap" }}>
-                  {i + 1}.{i >= 1 ? " Extra" : ""}
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  {i + 1}.
                 </span>
                 <Select value={k.ad || ""}
                   onChange={e => setForm(p => {
@@ -1166,10 +1422,10 @@ export const Customers = ({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr" : "1fr", gap: 12 }}>
-            {/* Gerçek Satış Bedeli — finansın asıl bel kemiği */}
-            <Field label="Gerçek Satış Bedeli">
+            {/* Fabrika Satış Bedeli — finansın asıl bel kemiği */}
+            <Field label="Fabrika Satış Bedeli">
               <MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} />
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fiilen satıldığı gerçek tutar (finans raporundaki gerçek ciro budur).</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</div>
             </Field>
 
             {/* Fatura Bedeli — faturalı satışlarda */}
@@ -1196,11 +1452,26 @@ export const Customers = ({
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Komisyon"><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></Field>
-            <Field label="Kapora"><MoneyInput value={form.extraKalipFiyati} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, extraKalipFiyati: v }))} /></Field>
+            {modal === "add" ? (
+              <Field label="İlk Ödeme (Kapora/Ödeme)">
+                <MoneyInput value={form._ilkOdeme} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, _ilkOdeme: v }))} />
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
+              </Field>
+            ) : (
+              <Field label="Kapora/Ödeme">
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
+              </Field>
+            )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Kalan Borç"><MoneyInput value={form.kalanBorc} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, kalanBorc: v }))} /></Field>
+          <Field label="Kalan Borç">
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", padding: "9px 0" }}>
+              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRate) - (modal === "add" ? parseMoney(form._ilkOdeme) : 0), form.currency)}
+            </div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez.</div>
+          </Field>
 
           <Field label="Seri Numarası">
             {(() => {
