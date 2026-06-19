@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, MenuItem } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const sqliteDb = require("./db.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -48,9 +49,27 @@ function saveData(data) {
 }
 
 // ── Veri IPC kanalları ──
-ipcMain.handle("crm:load", () => loadData());
-ipcMain.handle("crm:save", (_e, data) => saveData(data));
-ipcMain.handle("crm:dataPath", () => getDataPath());
+// SQLite (better-sqlite3) aktifse oradan oku/yaz; değilse (geçiş yapılmadıysa/başarısızsa) eski data.json'a düş.
+ipcMain.handle("crm:load", () => {
+  if (!sqliteDb.isActive()) return loadData();
+  try {
+    return sqliteDb.readBlobFromDb();
+  } catch (err) {
+    console.error("SQLite'tan okunamadı:", err);
+    return null;
+  }
+});
+ipcMain.handle("crm:save", (_e, data) => {
+  if (!sqliteDb.isActive()) return saveData(data);
+  try {
+    sqliteDb.writeBlobToDb(data);
+    return true;
+  } catch (err) {
+    console.error("SQLite'a yazılamadı:", err);
+    return false;
+  }
+});
+ipcMain.handle("crm:dataPath", () => (sqliteDb.isActive() ? sqliteDb.getDbPath() : getDataPath()));
 
 ipcMain.handle("crm:backup", async (_e, data) => {
   const date = new Date().toISOString().split("T")[0];
@@ -180,6 +199,11 @@ ipcMain.handle("app:printHtml", async (_e, html) => {
       autoHideMenuBar: true,
       webPreferences: { contextIsolation: true, nodeIntegration: false },
     });
+    // Güvenlik: ana pencereyle aynı şekilde dış navigasyonu ve yeni pencere açmayı engelle
+    previewWin.webContents.on("will-navigate", (e, url) => {
+      if (!url.startsWith("file://")) e.preventDefault();
+    });
+    previewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     const cleanup = () => {
       if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch { /* yoksay */ } tmpFile = null; }
     };
@@ -374,6 +398,7 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    sqliteDb.migrateFromJsonIfNeeded();
     createWindow();
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], rates, ratesErr, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
   const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length;
 
   // ── Aksiyon gerektiren uyarılar ──
@@ -36,29 +36,6 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const saat = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
   const tarih = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
 
-  // ── Döviz kurları (ücretsiz API) ──
-  const [rates, setRates] = useState(null); // { usd, eur }
-  const [ratesErr, setRatesErr] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const fetchRates = async () => {
-      try {
-        const r = await fetch("https://open.er-api.com/v6/latest/USD");
-        const j = await r.json();
-        if (cancelled) return;
-        if (j && j.rates && j.rates.TRY) {
-          const usdTry = j.rates.TRY;
-          const eurTry = j.rates.EUR ? (j.rates.TRY / j.rates.EUR) : null;
-          setRates({ usd: usdTry, eur: eurTry });
-          setRatesErr(false);
-        } else { setRatesErr(true); }
-      } catch { if (!cancelled) setRatesErr(true); }
-    };
-    fetchRates();
-    const t = setInterval(fetchRates, 60 * 60 * 1000); // 1 saatte bir güncelle
-    return () => { cancelled = true; clearInterval(t); };
-  }, []);
-
   return (
     <div>
       {/* Aksiyon gerektiren uyarılar — her zaman 3 kart, eşit boyut */}
@@ -67,21 +44,21 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           <button onClick={() => setShowDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #dc2626", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 30, fontWeight: 800, color: "#dc2626", lineHeight: 1, marginBottom: 6 }}>{borcluCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu firma</div>
+              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu Firma</div>
             </div>
             <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
           </button>
           <button onClick={onGoWarrantyActive} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #16a34a", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 30, fontWeight: 800, color: "#16a34a", lineHeight: 1, marginBottom: 6 }}>{garantiDevamCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Garantisi devam eden</div>
+              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Garantisi Devam Eden</div>
             </div>
             <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
           </button>
           <button onClick={onGoSerialPending} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #0891b2", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 30, fontWeight: 800, color: "#0891b2", lineHeight: 1, marginBottom: 6 }}>{seriNoBekleyenCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Seri no bekleyen</div>
+              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Seri No Bekleyen</div>
             </div>
             <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
           </button>

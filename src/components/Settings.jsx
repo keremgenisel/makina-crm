@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
 import { CURRENCIES, DEFAULT_KDV_RATE, BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../lib/constants";
 import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount } from "../lib/utils";
 import { Icon, Btn, Modal } from "./ui";
@@ -7,7 +6,7 @@ import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
 
-export const Settings = ({ customers, services, dealers, stock, setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {} }) => {
+export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {} }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
@@ -103,6 +102,51 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     downloadCSV(rows, "servis-kayitlari.csv");
     flash("ok", "Servis kayıtları Excel (CSV) olarak indirildi.");
   };
+  const exportDealers = () => {
+    const head = ["Bayi/Firma Adı", "Yetkili", "Telefon", "E-posta", "Adres", "Ülke", "Şehir", "Not"];
+    const rows = [head, ...dealers.map(d => [d.name, d.contact, d.phone, d.email, d.adres, d.country, d.city, d.note])];
+    downloadCSV(rows, "bayiler.csv");
+    flash("ok", "Bayi listesi Excel (CSV) olarak indirildi.");
+  };
+  const exportStock = () => {
+    const head = ["Model", "Seri No", "Stoğa Giriş Tarihi", "Not"];
+    const rows = [head, ...stock.map(s => [s.model, s.serialNo, s.addedDate, s.note])];
+    downloadCSV(rows, "stok.csv");
+    flash("ok", "Stok listesi Excel (CSV) olarak indirildi.");
+  };
+  const exportPartSales = () => {
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?"];
+    const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
+    const rows = [head, ...partSales.map(p => {
+      const c = customers.find(x => x.id === p.customerId) || {};
+      return [c.name, p.tur, p.ad, p.olcu, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
+        parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır"];
+    })];
+    downloadCSV(rows, "extra-kalip-satislari.csv");
+    flash("ok", "Extra Kalıp satışları Excel (CSV) olarak indirildi.");
+  };
+  const exportPayments = () => {
+    const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Not"];
+    const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
+    const rows = [head, ...payments.map(p => {
+      const c = customers.find(x => x.id === p.customerId) || {};
+      return [c.name, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"], parseMoney(p.tutar), p.not];
+    })];
+    downloadCSV(rows, "odemeler.csv");
+    flash("ok", "Ödeme/kapora geçmişi Excel (CSV) olarak indirildi.");
+  };
+  const exportNotes = () => {
+    const head = ["İçerik", "Güncellenme Tarihi"];
+    const rows = [head, ...notes.map(n => [n.content, n.updatedAt])];
+    downloadCSV(rows, "notlar.csv");
+    flash("ok", "Notlar Excel (CSV) olarak indirildi.");
+  };
+  const exportParts = () => {
+    const head = ["Yedek Parça Adı"];
+    const rows = [head, ...parts.map(p => [p.ad])];
+    downloadCSV(rows, "yedek-parca-tanimlari.csv");
+    flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
+  };
 
   // ── İÇE AKTARMA (Excel'den CSV) ──
   // Şablon sütun başlıkları (müşteri bu sıraya uyarlar). Servis için 3 çift tarih/iş.
@@ -114,7 +158,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
   ];
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
-  const exportAllTemplate = () => {
+  const exportAllTemplate = async () => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const fmtD = (iso) => { if (!iso) return ""; const p = String(iso).split("-"); return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : ""; };
     const rows = [IMPORT_HEADERS];
@@ -155,6 +199,7 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
       ]);
     });
     try {
+      const XLSX = await import("xlsx");
       const ws = XLSX.utils.aoa_to_sheet(rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Tüm Kayıtlar");
@@ -166,12 +211,13 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const ornek = ["2", "Altuntaş Makina", "Örnek Gıda A.Ş.", "0532 000 00 00", "Atatürk Cad. No:1", "Türkiye", "İstanbul",
       "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurtiçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
       "10.01.2025", "Periyodik bakım yapıldı", "05.06.2025", "Bıçak değişti", "", "",
       "Ahmet Yılmaz", "0532 111 11 11", "", ""];
     try {
+      const XLSX = await import("xlsx");
       const ws = XLSX.utils.aoa_to_sheet([IMPORT_HEADERS, ornek]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Müşteriler");
@@ -332,11 +378,12 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
     const name = (file.name || "").toLowerCase();
     const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         let rows;
         if (isExcel) {
           // SheetJS ile Excel oku
+          const XLSX = await import("xlsx");
           const data = new Uint8Array(e.target.result);
           // Tarihleri METİN olarak oku (cellDates timezone kaymasına yol açıyordu)
           const wb = XLSX.read(data, { type: "array", cellDates: false });
@@ -783,21 +830,23 @@ export const Settings = ({ customers, services, dealers, stock, setStock, setCus
 
           <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>Finans Özeti</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5 }}>Toplam satış, komisyon, servis geliri, net toplam ve kalan alacak.</div>
-              <Btn onClick={exportFinance}><Icon name="download" size={14} /> Finans Özetini İndir</Btn>
-            </div>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>Müşteri Listesi</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5 }}>Tüm müşteriler, makina ve fatura bilgileriyle ({customers.length} kayıt).</div>
-              <Btn onClick={exportCustomers}><Icon name="download" size={14} /> Müşterileri İndir</Btn>
-            </div>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px" }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>Servis Kayıtları</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5 }}>Tüm servis talepleri ({services.length} kayıt).</div>
-              <Btn onClick={exportServices}><Icon name="download" size={14} /> Servisleri İndir</Btn>
-            </div>
+            {[
+              { title: "Finans Özeti", desc: "Toplam satış, komisyon, servis geliri, net toplam ve kalan alacak.", onClick: exportFinance },
+              { title: "Müşteri Listesi", desc: `Tüm müşteriler, makina ve fatura bilgileriyle (${customers.length} kayıt).`, onClick: exportCustomers },
+              { title: "Servis Kayıtları", desc: `Tüm servis talepleri (${services.length} kayıt).`, onClick: exportServices },
+              { title: "Bayiler", desc: `Tüm bayi/firma kayıtları (${dealers.length} kayıt).`, onClick: exportDealers },
+              { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
+              { title: "Extra Kalıp Satışları", desc: `Sonradan verilen/satılan kalıplar (${partSales.length} kayıt).`, onClick: exportPartSales },
+              { title: "Ödemeler / Kapora", desc: `Tüm kapora/ödeme geçmişi (${payments.length} kayıt).`, onClick: exportPayments },
+              { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
+              { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
+            ].map(card => (
+              <div key={card.title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>{card.title}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5, flex: 1 }}>{card.desc}</div>
+                <Btn onClick={card.onClick}><Icon name="download" size={14} /> İndir</Btn>
+              </div>
+            ))}
           </div>
         </Section>
       )}

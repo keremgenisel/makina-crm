@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { fmt, fmtCur, parseMoney, kalipCount, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
 
-export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE, rates }) => {
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -101,30 +101,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, kdvRate);
   });
 
-  // Yaklaşık TL karşılığı (Dashboard'daki kur API'si ile)
-  const [rates, setRates] = useState(null); // { USD: x, EUR: y } → 1 birim kaç TL
-  useEffect(() => {
-    let cancelled = false;
-    const fetchRates = async () => {
-      try {
-        const r = await fetch("https://open.er-api.com/v6/latest/USD");
-        const j = await r.json();
-        if (cancelled || !j?.rates?.TRY) return;
-        const usdTry = j.rates.TRY;
-        const eurTry = j.rates.EUR ? (j.rates.TRY / j.rates.EUR) : null;
-        setRates({ USD: usdTry, EUR: eurTry });
-      } catch { /* sessiz */ }
-    };
-    fetchRates();
-    const t = setInterval(fetchRates, 60 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(t); };
-  }, []);
+  // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir
   // bir {TRY,USD,EUR} nesnesini TL'ye çevirip topla
   const toTL = (obj) => {
     let sum = obj.TRY || 0;
     if (rates) {
-      if (rates.USD) sum += (obj.USD || 0) * rates.USD;
-      if (rates.EUR) sum += (obj.EUR || 0) * rates.EUR;
+      if (rates.usd) sum += (obj.USD || 0) * rates.usd;
+      if (rates.eur) sum += (obj.EUR || 0) * rates.eur;
     }
     return sum;
   };
@@ -235,8 +218,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Ciromuz" obj={toplamCiromuz} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV dahil)" size="large" />
-        <MultiCard label="Toplam Alacağımız" obj={alacak} color="#dc2626" sub="Tüm zamanlar — güncel bakiye" size="large" />
+        <MultiCard label="Toplam Ciro" obj={toplamCiromuz} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV dahil)" size="large" />
+        <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tüm zamanlar — güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
 
@@ -295,7 +278,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
           </table>
         </div>
         <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>
-          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı <span style={{ fontWeight: 400, color: "#94a3b8" }}>(≈ TL)</span></div>
+          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "#f8fafc" }}>
               {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
