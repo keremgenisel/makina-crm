@@ -1,18 +1,27 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import { Icon, Btn, Modal } from "./ui";
 
-export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
+// App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
+// korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
+export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} }, ref) => {
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState(""); // düzenlenen içerik (kaydet'e kadar geçici)
   const [page, setPage] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState(null); // silme onayı bekleyen not
+  const [pendingAction, setPendingAction] = useState(null); // dirty iken not değiştirme/yeni not isteği bekletilir
   const PER_PAGE = 5;
   const selected = notes.find(n => n.id === selectedId) || null;
   const dirty = selected && draft !== (selected.content || "");
 
+  // Kaydedilmemiş değişiklik varken not değiştirmek/yeni not açmak taslağı sessizce siler —
+  // dirty ise işlemi onaya bağla, değilse direkt uygula
+  const guarded = (action) => { if (dirty) setPendingAction(() => action); else action(); };
+  useImperativeHandle(ref, () => ({ guardNavigation: guarded }));
+
   // Not seçilince taslağı doldur
   const selectNote = (n) => { setSelectedId(n.id); setDraft(n.content || ""); };
+  const requestSelectNote = (n) => { if (n.id !== selectedId) guarded(() => selectNote(n)); };
 
   const baslik = (c) => {
     const first = (c || "").split("\n")[0].trim();
@@ -38,7 +47,7 @@ export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
-  const yeniNot = () => {
+  const createNewNote = () => {
     const nid = Date.now();
     const yeni = { id: nid, content: "", updatedAt: nid };
     setNotes(p => [yeni, ...p]);
@@ -46,6 +55,7 @@ export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
     setDraft("");
     setPage(1); // yeni not en üstte, ilk sayfaya dön
   };
+  const yeniNot = () => guarded(createNewNote);
   const kaydet = () => {
     if (!selected) return;
     setNotes(p => p.map(n => n.id === selected.id ? { ...n, content: draft, updatedAt: Date.now() } : n));
@@ -79,10 +89,13 @@ export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
             ) : paged.map(n => {
               const active = n.id === selectedId;
               return (
-                <div key={n.id} onClick={() => selectNote(n)}
+                <div key={n.id} onClick={() => requestSelectNote(n)}
                   style={{ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: active ? "#fff7ed" : "#fff", borderLeft: active ? "3px solid #e85d1a" : "3px solid transparent", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{baslik(n.content)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
+                      {active && dirty && <span title="Kaydedilmemiş değişiklikler var" style={{ width: 7, height: 7, borderRadius: "50%", background: "#d97706", flexShrink: 0 }} />}
+                      {baslik(n.content)}
+                    </div>
                     <div style={{ fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{onizleme(n.content)}</div>
                     <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 3 }}>{fmtZaman(n.updatedAt)}</div>
                   </div>
@@ -130,6 +143,20 @@ export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
         </div>
       </div>
 
+      {/* Kaydedilmemiş değişiklik varken not değiştirme/yeni not onayı */}
+      {pendingAction && (
+        <Modal title="Kaydedilmemiş Değişiklikler" onClose={() => setPendingAction(null)}>
+          <div style={{ fontSize: 14, color: "#475569", marginBottom: 20, lineHeight: 1.6 }}>
+            Bu nottaki değişiklikleri kaydetmediniz. Devam ederseniz kaydedilmemiş değişiklikler kaybolur.
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <Btn variant="ghost" onClick={() => setPendingAction(null)}>Vazgeç</Btn>
+            <Btn variant="danger" onClick={() => { const action = pendingAction; setPendingAction(null); action(); }}>Kaydetmeden Devam Et</Btn>
+            <Btn onClick={() => { const action = pendingAction; setPendingAction(null); kaydet(); action(); }}><Icon name="check" size={14} /> Kaydet ve Devam Et</Btn>
+          </div>
+        </Modal>
+      )}
+
       {/* Silme onayı */}
       {confirmDelete && (
         <Modal title="Notu Sil" onClose={() => setConfirmDelete(null)}>
@@ -147,5 +174,5 @@ export const Notes = ({ notes = [], setNotes, showToast = () => {} }) => {
       )}
     </div>
   );
-};
+});
 

@@ -26,6 +26,7 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
+  const notesRef = useRef(null); // Notlar'da kaydedilmemiş taslak varken başka sekmeye geçişi onaya bağlamak için
   const [custFilter, setCustFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|warranty|warranty-active|debt|serial-pending
   const [custDetailId, setCustDetailId] = useState(null); // dashboard'dan belirli bir müşterinin detayını açarak gelme
   const [appVersion, setAppVersion] = useState(APP_VERSION);
@@ -238,7 +239,11 @@ export default function App() {
           {TABS.map(t => {
             const active = tab === t.id;
             return (
-              <button key={t.id} className="nav-btn" onClick={() => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } setTab(t.id); }} style={{
+              <button key={t.id} className="nav-btn" onClick={() => {
+                const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } setTab(t.id); };
+                if (tab === "notes" && t.id !== "notes" && notesRef.current) notesRef.current.guardNavigation(go);
+                else go();
+              }} style={{
                 display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 12px",
                 background: active ? "linear-gradient(90deg, rgba(232,93,26,.26), rgba(232,93,26,.04))" : "transparent",
                 border: "none",
@@ -275,7 +280,7 @@ export default function App() {
         {tab === "dealers" && <SimpleDealers dealers={dealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} showToast={showToast} />}
         {tab === "stock"     && <Stock stock={stock} setStock={setStock} models={allModels} showToast={showToast} />}
         {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} partSales={partSales} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
-        {tab === "notes"     && <Notes notes={notes} setNotes={setNotes} showToast={showToast} />}
+        {tab === "notes"     && <Notes ref={notesRef} notes={notes} setNotes={setNotes} showToast={showToast} />}
         {tab === "settings"  && <Settings  customers={customers} services={services} dealers={dealers} stock={stock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={customModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} notes={notes} setNotes={setNotes} parts={parts} setParts={setParts} partSales={partSales} setPartSales={setPartSales} payments={payments} setPayments={setPayments} showToast={showToast} />}
       </div>
     </div>

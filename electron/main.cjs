@@ -19,6 +19,7 @@ try {
 app.commandLine.appendSwitch("lang", "tr");
 
 let mainWin = null;
+let allowCloseWithoutPrompt = false; // güncelleme kurma / kaldırma gibi programatik kapanışlarda uyarıyı atlamak için
 
 // ── Veri dosyası: %APPDATA%/makina-crm/data.json ──
 const getDataPath = () => path.join(app.getPath("userData"), "data.json");
@@ -163,6 +164,7 @@ ipcMain.handle("updater:download", async () => {
 });
 
 ipcMain.handle("updater:install", () => {
+  allowCloseWithoutPrompt = true;
   if (autoUpdater) autoUpdater.quitAndInstall(false, true);
 });
 
@@ -179,6 +181,7 @@ ipcMain.handle("app:uninstall", () => {
     const unins = candidates.find(p => fs.existsSync(p));
     if (!unins) return false;
     spawn(unins, [], { detached: true, stdio: "ignore" }).unref();
+    allowCloseWithoutPrompt = true;
     setTimeout(() => app.quit(), 400);
     return true;
   } catch (err) {
@@ -349,6 +352,20 @@ function createWindow() {
     if (template.length) {
       Menu.buildFromTemplate(template).popup({ window: mainWin });
     }
+  });
+
+  // ── Kapatma uyarısı: çarpıya basınca onay iste ──
+  mainWin.on("close", (e) => {
+    if (allowCloseWithoutPrompt) return;
+    const choice = dialog.showMessageBoxSync(mainWin, {
+      type: "question",
+      buttons: ["Çıkış", "Vazgeç"],
+      defaultId: 1,
+      cancelId: 1,
+      title: "Çıkış",
+      message: "Uygulamadan çıkmak istediğinize emin misiniz?",
+    });
+    if (choice !== 0) e.preventDefault();
   });
 
   mainWin.once("ready-to-show", () => {

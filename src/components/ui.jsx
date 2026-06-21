@@ -52,6 +52,18 @@ export const Select = ({ children, ...props }) => (
     {children}
   </select>
 );
+// Hızlı seç (kayıtlı firmalardan) + serbest yazım — tek değeri tutan input asıl kaynak,
+// Select sadece onu doldurmak için bir kısayol. "Satış Yapan" / "Satan Firma" gibi
+// kayıtlı olmayan bir isim de (örn. özel satılmış önceki sahip) girilebilen alanlarda kullanılır.
+export const PickOrType = ({ value, onChange, options = [], placeholder = "" }) => (
+  <div>
+    <Select value="" onChange={e => { if (e.target.value) onChange(e.target.value); }}>
+      <option value="">Hızlı seç... (veya aşağıya elle yazın)</option>
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </Select>
+    <Input value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ marginTop: 6 }} />
+  </div>
+);
 // Para girişi: değer SAYI olarak tutulur, ekranda binlik ayraçlı + ₺ gösterilir
 export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺" }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);

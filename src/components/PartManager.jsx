@@ -16,13 +16,16 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {} }) => {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ flex: "1 1 250px" }}>
           <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 4 }}>Yedek Parça Adı</div>
           <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
           <Warn>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
         </div>
-        <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
+        <div>
+          <div style={{ fontSize: 12, marginBottom: 4, visibility: "hidden" }}>_</div>
+          <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
+        </div>
       </div>
 
       <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>

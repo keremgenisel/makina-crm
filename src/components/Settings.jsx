@@ -828,26 +828,37 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             </button>
           </div>
 
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
-            {[
-              { title: "Finans Özeti", desc: "Toplam satış, komisyon, servis geliri, net toplam ve kalan alacak.", onClick: exportFinance },
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 14, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
+          {[
+            { group: "Müşteri & Servis", items: [
               { title: "Müşteri Listesi", desc: `Tüm müşteriler, makina ve fatura bilgileriyle (${customers.length} kayıt).`, onClick: exportCustomers },
               { title: "Servis Kayıtları", desc: `Tüm servis talepleri (${services.length} kayıt).`, onClick: exportServices },
-              { title: "Bayiler", desc: `Tüm bayi/firma kayıtları (${dealers.length} kayıt).`, onClick: exportDealers },
-              { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
               { title: "Extra Kalıp Satışları", desc: `Sonradan verilen/satılan kalıplar (${partSales.length} kayıt).`, onClick: exportPartSales },
               { title: "Ödemeler / Kapora", desc: `Tüm kapora/ödeme geçmişi (${payments.length} kayıt).`, onClick: exportPayments },
+            ] },
+            { group: "Finans", items: [
+              { title: "Finans Özeti", desc: "Toplam satış, komisyon, servis geliri, net toplam ve kalan alacak.", onClick: exportFinance },
+            ] },
+            { group: "Diğer", items: [
+              { title: "Bayiler", desc: `Tüm bayi/firma kayıtları (${dealers.length} kayıt).`, onClick: exportDealers },
+              { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
               { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
               { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
-            ].map(card => (
-              <div key={card.title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>{card.title}</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5, flex: 1 }}>{card.desc}</div>
-                <Btn onClick={card.onClick}><Icon name="download" size={14} /> İndir</Btn>
+            ] },
+          ].map(g => (
+            <div key={g.group} style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>{g.group}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
+                {g.items.map(card => (
+                  <div key={card.title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>{card.title}</div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5, flex: 1 }}>{card.desc}</div>
+                    <div style={{ alignSelf: "flex-start" }}><Btn onClick={card.onClick}><Icon name="download" size={14} /> İndir</Btn></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </Section>
       )}
 
