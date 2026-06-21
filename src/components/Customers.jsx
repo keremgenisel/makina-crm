@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType } from "./ui";
@@ -106,6 +106,33 @@ export const Customers = ({
   const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
   const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRate) : 0;
   const detailCiro = detailKalanBorc + detailToplamOdeme; // Toplam Bedel (Ciro) = Kalan Borç + alınan ödemeler
+
+  // Ödenmemiş servis/parça ücreti ve Extra Kalıp satışı borcu — Kalan Borç kartına da yansısın diye
+  // para birimine göre topluyoruz (servis/kalıp farklı para biriminde olabilir, makinanın asıl
+  // para birimiyle (detailView.currency) eşleşmeyenler ayrı satırda gösterilir, yanlışlıkla toplanmaz).
+  // KDV de dahil ediliyor (calcKDV doğrusal olduğu için her tutara kendi fatura tipine göre ayrı ayrı eklenebilir).
+  const detailEkBorcByCur = {};
+  if (detailView) {
+    const ekle = (cur, tutar) => { if (tutar > 0) detailEkBorcByCur[cur] = (detailEkBorcByCur[cur] || 0) + tutar; };
+    services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s)).forEach(s => {
+      if (isServisUcretliMi(s)) {
+        const tutar = parseMoney(s.servisUcreti);
+        ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+      }
+      if (isParcaUcretliMi(s)) {
+        const tutar = parseMoney(s.parcaUcreti);
+        ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+      }
+    });
+    (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
+      const tutar = parseMoney(p.ucret);
+      ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, kdvRate));
+    });
+  }
+  const detailMainCur = detailView?.currency || "TRY";
+  const detailEkBorcAyniPB = detailEkBorcByCur[detailMainCur] || 0; // makinayla aynı para biriminde, doğrudan toplanabilir
+  const detailEkBorcDigerPB = Object.entries(detailEkBorcByCur).filter(([cur]) => cur !== detailMainCur); // farklı PB, ayrı gösterilir
+  const detailKalanBorcToplam = detailKalanBorc + detailEkBorcAyniPB;
   // Extra Kalıp Satışı'ndan eklenen kalıplar her zaman listenin sonuna eklenir (savePartSale) —
   // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
   const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
@@ -626,9 +653,13 @@ export const Customers = ({
               {/* Sağ kutu: bilgiler + sahiplik geçmişi + zaman çizelgesi */}
               <div>
                 {/* Finans özet kartı — Toplam Bedel / Kapora-Ödeme / Kalan Borç tek bakışta öne çıkar.
-                    2. el devirlerde (isResale) fabrikaSatisBedeli sıfırlandığı için detailCiro de 0 olur, kart gizlenir. */}
-                {detailCiro > 0 && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 16 }}>
+                    Kalan Borç, makina satışının kalan bedelini + ödenmemiş servis/parça/Extra Kalıp
+                    ücretlerini (aynı para biriminden olanları) birlikte gösterir.
+                    2. el devirlerde (isResale) fabrikaSatisBedeli sıfırlandığı için detailCiro de 0 olur;
+                    ama o makinaya sonradan ödenmemiş bir servis/Extra Kalıp eklenmişse kart yine gösterilir. */}
+                {(detailCiro > 0 || detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0) && (
+                  <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
                     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px" }}>
                       <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Toplam Bedel</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>{fmtCur(detailCiro, detailView.currency)}</div>
@@ -638,16 +669,28 @@ export const Customers = ({
                       <div style={{ fontSize: 22, fontWeight: 800, color: "#15803d" }}>{fmtCur(detailToplamOdeme, detailView.currency)}</div>
                     </div>
                     <div style={{
-                      background: detailKalanBorc > 0 ? "#fef2f2" : "#f0fdf4",
-                      border: `1px solid ${detailKalanBorc > 0 ? "#fecaca" : "#bbf7d0"}`,
-                      borderTop: `3px solid ${detailKalanBorc > 0 ? "#dc2626" : "#16a34a"}`,
+                      background: detailKalanBorcToplam > 0 ? "#fef2f2" : "#f0fdf4",
+                      border: `1px solid ${detailKalanBorcToplam > 0 ? "#fecaca" : "#bbf7d0"}`,
+                      borderTop: `3px solid ${detailKalanBorcToplam > 0 ? "#dc2626" : "#16a34a"}`,
                       borderRadius: 12, padding: "14px 18px",
                     }}>
-                      <div style={{ fontSize: 11, color: detailKalanBorc > 0 ? "#991b1b" : "#15803d", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Kalan Borç</div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: detailKalanBorc > 0 ? "#dc2626" : "#15803d" }}>
-                        {detailKalanBorc > 0 ? fmtCur(detailKalanBorc, detailView.currency) : "✓ Borç Yok"}
+                      <div style={{ fontSize: 11, color: detailKalanBorcToplam > 0 ? "#991b1b" : "#15803d", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Kalan Borç</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: detailKalanBorcToplam > 0 ? "#dc2626" : "#15803d" }}>
+                        {detailKalanBorcToplam > 0 ? fmtCur(detailKalanBorcToplam, detailView.currency) : "✓ Borç Yok"}
                       </div>
+                      {detailEkBorcAyniPB > 0 && (
+                        <div style={{ fontSize: 10.5, color: "#991b1b", marginTop: 5 }}>
+                          ({fmtCur(Math.max(detailKalanBorc, 0), detailView.currency)} makina + {fmtCur(detailEkBorcAyniPB, detailView.currency)} servis/parça/kalıp)
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  {detailEkBorcDigerPB.length > 0 && (
+                    <div style={{ fontSize: 11.5, color: "#991b1b", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginTop: 10, fontWeight: 600 }}>
+                      ⚠ Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var (yukarıdaki toplama dahil edilmedi):{" "}
+                      {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}
+                    </div>
+                  )}
                   </div>
                 )}
 
