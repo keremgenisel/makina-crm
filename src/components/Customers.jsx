@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate } from "../lib/printTemplates";
@@ -45,106 +45,128 @@ export const Customers = ({
   const isCustomerTab = isCustomer; // hibrit özellikler yalnızca müşteriler sekmesinde
   // detailView'ı id üzerinden canlı türet — devir/düzenleme sonrası anlık güncel kalsın
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
-  const detailHistory = detailView
-    ? services.filter(s => s.customerId === detailView.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    : [];
-  // Birleşik zaman çizelgesi: satış + servisler + parça/kalıp + garanti bitişi (eskiden yeniye)
-  const detailTimelineEvents = (() => {
-    if (!detailView) return [];
-    const ev = [];
-    if (detailView.installDate) {
-      ev.push({
-        kind: "sale", date: detailView.installDate, color: "#16a34a",
-        title: detailView.isResale ? "2. El Devir" : "Satış",
-        tip: normalizeSaleType(detailView.faturali),
-        desc: `${detailView.name}${detailView.fabrikaSatisBedeli ? " · " + fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""}${(detailView.kaliplar || []).length ? " · " + detailView.kaliplar.length + " kalıp" : ""}`,
+  const todayStr = today();
+
+  // Müşteri detayı açıldığında services/partSales/payments üzerinde yapılan tüm taramalar
+  // (zaman çizelgesi, Kalan Borç, ek borç, bekleyen çek) burada toplanıp memoize ediliyor —
+  // detailView/services/partSales/payments değişmediği sürece her render'da tekrarlanmaz.
+  // İç mantık değişmedi, sadece bir useMemo'ya taşındı.
+  const {
+    detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
+    detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
+    detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
+  } = useMemo(() => {
+    const detailHistory = detailView
+      ? services.filter(s => s.customerId === detailView.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      : [];
+    // Birleşik zaman çizelgesi: satış + servisler + parça/kalıp + garanti bitişi (eskiden yeniye)
+    const detailTimelineEvents = (() => {
+      if (!detailView) return [];
+      const ev = [];
+      if (detailView.installDate) {
+        ev.push({
+          kind: "sale", date: detailView.installDate, color: "#16a34a",
+          title: detailView.isResale ? "2. El Devir" : "Satış",
+          tip: normalizeSaleType(detailView.faturali),
+          desc: `${detailView.name}${detailView.fabrikaSatisBedeli ? " · " + fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""}${(detailView.kaliplar || []).length ? " · " + detailView.kaliplar.length + " kalıp" : ""}`,
+        });
+      }
+      detailHistory.forEach(sv => {
+        const tColor = { "İlk Çalıştırma": "#1d4ed8", "Garanti İçi": "#16a34a", "Garanti Dışı": "#dc2626", "Periyodik Bakım": "#c2410c" }[sv.type] || "#94a3b8";
+        ev.push({ kind: "service", date: sv.date, color: tColor, title: sv.type, sv });
+      });
+      // Kalıp tipi satışlar aynı satışta (savePartSale'in tek çağrısında) birden çok kayıt olarak
+      // oluşturulabiliyor — bunlar batchId ile bağlı, zaman çizelgesinde TEK olay olarak gösterilir.
+      const kalipGroups = {};
+      (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur === "Kalıp").forEach(ps => {
+        const key = ps.batchId || ps.id;
+        (kalipGroups[key] = kalipGroups[key] || []).push(ps);
+      });
+      Object.values(kalipGroups).forEach(psList => {
+        psList.sort((a, b) => a.id - b.id);
+        ev.push({ kind: "part", date: psList[0].tarih, color: "#c2410c", title: "Kalıp Verildi", psList });
+      });
+      (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
+        ev.push({
+          kind: "part", date: ps.tarih, color: "#0891b2",
+          title: "Yedek Parça Verildi",
+          desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · garanti kapsamında (ücretsiz)" : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
+          ps,
+        });
+      });
+      (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
+        const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
+        ev.push({
+          kind: "payment", date: p.tarih, color: "#0d9488",
+          title: "Kapora/Ödeme",
+          desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${yontemTxt}${p.not ? " · " + p.not : ""}`,
+          payment: p,
+        });
+      });
+      if (detailView.warrantyEnd) {
+        const dolmus = detailView.warrantyEnd < todayStr;
+        ev.push({
+          kind: "warranty", date: detailView.warrantyEnd, color: dolmus ? "#dc2626" : "#f59e0b",
+          title: dolmus ? "Garanti Süresi Doldu" : "Garanti Bitişi",
+          desc: dolmus ? "Garanti süresi sona erdi" : "Garanti süresi bu tarihte sona erecek",
+        });
+      }
+      return ev.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+    })();
+    const detailModelInfo = detailView ? models.find(m => m.model === detailView.model) : null;
+    const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= todayStr;
+    const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
+    const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRate) : 0;
+    const detailCiro = detailKalanBorc + detailToplamOdeme; // Toplam Bedel (Ciro) = Kalan Borç + alınan ödemeler
+
+    // Ödenmemiş servis/parça ücreti ve Extra Kalıp satışı borcu — Kalan Borç kartına da yansısın diye
+    // para birimine göre topluyoruz (servis/kalıp farklı para biriminde olabilir, makinanın asıl
+    // para birimiyle (detailView.currency) eşleşmeyenler ayrı satırda gösterilir, yanlışlıkla toplanmaz).
+    // KDV de dahil ediliyor (calcKDV doğrusal olduğu için her tutara kendi fatura tipine göre ayrı ayrı eklenebilir).
+    const detailEkBorcByCur = {};
+    if (detailView) {
+      const ekle = (cur, tutar) => { if (tutar > 0) detailEkBorcByCur[cur] = (detailEkBorcByCur[cur] || 0) + tutar; };
+      services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s)).forEach(s => {
+        if (isServisUcretliMi(s)) {
+          const tutar = parseMoney(s.servisUcreti);
+          ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+        }
+        if (isParcaUcretliMi(s)) {
+          const tutar = parseMoney(s.parcaUcreti);
+          ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+        }
+      });
+      (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
+        const tutar = parseMoney(p.ucret);
+        ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, kdvRate));
       });
     }
-    detailHistory.forEach(sv => {
-      const tColor = { "İlk Çalıştırma": "#1d4ed8", "Garanti İçi": "#16a34a", "Garanti Dışı": "#dc2626", "Periyodik Bakım": "#c2410c" }[sv.type] || "#94a3b8";
-      ev.push({ kind: "service", date: sv.date, color: tColor, title: sv.type, sv });
-    });
-    // Kalıp tipi satışlar aynı satışta (savePartSale'in tek çağrısında) birden çok kayıt olarak
-    // oluşturulabiliyor — bunlar batchId ile bağlı, zaman çizelgesinde TEK olay olarak gösterilir.
-    const kalipGroups = {};
-    (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur === "Kalıp").forEach(ps => {
-      const key = ps.batchId || ps.id;
-      (kalipGroups[key] = kalipGroups[key] || []).push(ps);
-    });
-    Object.values(kalipGroups).forEach(psList => {
-      psList.sort((a, b) => a.id - b.id);
-      ev.push({ kind: "part", date: psList[0].tarih, color: "#c2410c", title: "Kalıp Verildi", psList });
-    });
-    (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
-      ev.push({
-        kind: "part", date: ps.tarih, color: "#0891b2",
-        title: "Yedek Parça Verildi",
-        desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · garanti kapsamında (ücretsiz)" : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
-        ps,
-      });
-    });
-    (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
-      const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
-      ev.push({
-        kind: "payment", date: p.tarih, color: "#0d9488",
-        title: "Kapora/Ödeme",
-        desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${yontemTxt}${p.not ? " · " + p.not : ""}`,
-        payment: p,
-      });
-    });
-    if (detailView.warrantyEnd) {
-      const dolmus = detailView.warrantyEnd < today();
-      ev.push({
-        kind: "warranty", date: detailView.warrantyEnd, color: dolmus ? "#dc2626" : "#f59e0b",
-        title: dolmus ? "Garanti Süresi Doldu" : "Garanti Bitişi",
-        desc: dolmus ? "Garanti süresi sona erdi" : "Garanti süresi bu tarihte sona erecek",
-      });
-    }
-    return ev.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
-  })();
-  const detailModelInfo = detailView ? models.find(m => m.model === detailView.model) : null;
-  const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= today();
-  const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
-  const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRate) : 0;
-  const detailCiro = detailKalanBorc + detailToplamOdeme; // Toplam Bedel (Ciro) = Kalan Borç + alınan ödemeler
+    const detailMainCur = detailView?.currency || "TRY";
+    const detailEkBorcAyniPB = detailEkBorcByCur[detailMainCur] || 0; // makinayla aynı para biriminde, doğrudan toplanabilir
+    const detailEkBorcDigerPB = Object.entries(detailEkBorcByCur).filter(([cur]) => cur !== detailMainCur); // farklı PB, ayrı gösterilir
+    const detailKalanBorcToplam = detailKalanBorc + detailEkBorcAyniPB;
+    // Tahsil edilmemiş çek(ler) — Kalan Borç'a henüz dahil olmayan, beklemedeki tutar
+    const detailBekleyenCek = detailView ? sumBekleyenCek(detailView.id, payments) : 0;
+    const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && p.yontem === "Çek" && !p.tahsilEdildi) : [];
+    const detailCekVadesiGecmisVar = detailBekleyenCekler.some(isCekVadesiGecmis);
+    // Extra Kalıp Satışı'ndan eklenen kalıplar her zaman listenin sonuna eklenir (savePartSale) —
+    // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
+    const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
 
-  // Ödenmemiş servis/parça ücreti ve Extra Kalıp satışı borcu — Kalan Borç kartına da yansısın diye
-  // para birimine göre topluyoruz (servis/kalıp farklı para biriminde olabilir, makinanın asıl
-  // para birimiyle (detailView.currency) eşleşmeyenler ayrı satırda gösterilir, yanlışlıkla toplanmaz).
-  // KDV de dahil ediliyor (calcKDV doğrusal olduğu için her tutara kendi fatura tipine göre ayrı ayrı eklenebilir).
-  const detailEkBorcByCur = {};
-  if (detailView) {
-    const ekle = (cur, tutar) => { if (tutar > 0) detailEkBorcByCur[cur] = (detailEkBorcByCur[cur] || 0) + tutar; };
-    services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s)).forEach(s => {
-      if (isServisUcretliMi(s)) {
-        const tutar = parseMoney(s.servisUcreti);
-        ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
-      }
-      if (isParcaUcretliMi(s)) {
-        const tutar = parseMoney(s.parcaUcreti);
-        ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
-      }
-    });
-    (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
-      const tutar = parseMoney(p.ucret);
-      ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, kdvRate));
-    });
-  }
-  const detailMainCur = detailView?.currency || "TRY";
-  const detailEkBorcAyniPB = detailEkBorcByCur[detailMainCur] || 0; // makinayla aynı para biriminde, doğrudan toplanabilir
-  const detailEkBorcDigerPB = Object.entries(detailEkBorcByCur).filter(([cur]) => cur !== detailMainCur); // farklı PB, ayrı gösterilir
-  const detailKalanBorcToplam = detailKalanBorc + detailEkBorcAyniPB;
-  // Tahsil edilmemiş çek(ler) — Kalan Borç'a henüz dahil olmayan, beklemedeki tutar
-  const detailBekleyenCek = detailView ? sumBekleyenCek(detailView.id, payments) : 0;
-  const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && p.yontem === "Çek" && !p.tahsilEdildi) : [];
-  const detailCekVadesiGecmisVar = detailBekleyenCekler.some(isCekVadesiGecmis);
-  // Extra Kalıp Satışı'ndan eklenen kalıplar her zaman listenin sonuna eklenir (savePartSale) —
-  // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
-  const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
+    return {
+      detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
+      detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
+      detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailView, services, partSales, payments, kdvRate, models, todayStr]);
 
-  // Firma adına göre makina sayısı (aynı isimli kayıtlar = aynı firma)
-  const firmCount = {};
-  customers.forEach(c => { const k = trLower(c.name); firmCount[k] = (firmCount[k] || 0) + 1; });
+  // Firma adına göre makina sayısı (aynı isimli kayıtlar = aynı firma) — sadece customers değişince hesaplanır
+  const firmCount = useMemo(() => {
+    const fc = {};
+    customers.forEach(c => { const k = trLower(c.name); fc[k] = (fc[k] || 0) + 1; });
+    return fc;
+  }, [customers]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo"],

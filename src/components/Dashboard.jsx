@@ -1,41 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
-  const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length;
-
-  // ── Aksiyon gerektiren uyarılar ──
-  const realCustomers = customers.filter(c => !c.isResale);
-  const seriNoBekleyenCount = realCustomers.filter(c => c.seriNoBekliyor && !c.serialNo).length;
-  // Garantisi hâlâ devam eden (henüz bitmemiş) makineler
-  const garantiDevamCount = realCustomers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length;
-
-  // ── Borçlu firmalar — müşteri borcu + servis/parça borcu + Extra Kalıp borcu (3 ayrı kaynak) ──
-  // isResale (2. el devir) burada hariç tutulmuyor — devir öncesi ödenmemiş bakiye varsa
-  // Müşteriler sayfasıyla tutarlı olarak burada da borçlu sayılır.
   const [showDebtors, setShowDebtors] = useState(false);
-  const borcluMusteriler = customers.filter(c => parseMoney(c.kalanBorc) > 0);
-  const borcluServisler = services.filter(isServisBorcluMu);
-  const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
-  // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
-  // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
-  const cekRozeti = (customerId) => {
-    const bekleyen = sumBekleyenCek(customerId, payments);
-    if (bekleyen <= 0) return null;
-    const vadesiGecmis = payments.some(p => p.customerId === customerId && isCekVadesiGecmis(p));
-    return vadesiGecmis ? "⚠ Çek Vadesi Geçti" : "🧾 Çek Bekliyor";
-  };
-  const custName = (id) => customers.find(c => c.id === id)?.name || "—";
-  // Aynı firmanın birden çok makinası (customer kaydı) veya birden çok servis/parça borcu
-  // olabilir — bunlar farklı "firma" sayılmasın diye firma adına (case-insensitive) göre tekilleştir.
-  const borcluFirmaKeys = new Set([
-    ...borcluMusteriler.map(c => trLower(c.name)),
-    ...borcluServisler.map(s => trLower(custName(s.customerId))),
-    ...borcluKaliplar.map(p => trLower(custName(p.customerId))),
-  ]);
-  const borcluCount = borcluFirmaKeys.size;
-  const goToCustomer = (id) => { setShowDebtors(false); onGoCustomerDetail && onGoCustomerDetail(id); };
 
   // ── Canlı saat & tarih ──
   const [now, setNow] = useState(new Date());
@@ -45,6 +13,51 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   }, []);
   const saat = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
   const tarih = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
+  const todayStr = today(); // saat her saniye değiştiği için bu da gün değişiminde otomatik güncellenir (memo bağımlılığı)
+
+  // Müşteri/servis/Extra Kalıp dizileri büyüdükçe (binlerce kayıt) bu taramalar her render'da
+  // tekrarlanmasın diye memoize ediliyor — iç mantık aynı, sadece bir useMemo'ya taşındı.
+  const { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, recentSales, recentServices } = useMemo(() => {
+    const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < todayStr).length;
+
+    // ── Aksiyon gerektiren uyarılar ──
+    const realCustomers = customers.filter(c => !c.isResale);
+    const seriNoBekleyenCount = realCustomers.filter(c => c.seriNoBekliyor && !c.serialNo).length;
+    // Garantisi hâlâ devam eden (henüz bitmemiş) makineler
+    const garantiDevamCount = realCustomers.filter(c => c.warrantyEnd && c.warrantyEnd >= todayStr).length;
+
+    // ── Borçlu firmalar — müşteri borcu + servis/parça borcu + Extra Kalıp borcu (3 ayrı kaynak) ──
+    // isResale (2. el devir) burada hariç tutulmuyor — devir öncesi ödenmemiş bakiye varsa
+    // Müşteriler sayfasıyla tutarlı olarak burada da borçlu sayılır.
+    const borcluMusteriler = customers.filter(c => parseMoney(c.kalanBorc) > 0);
+    const borcluServisler = services.filter(isServisBorcluMu);
+    const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
+    const custNameLocal = (id) => customers.find(c => c.id === id)?.name || "—";
+    // Aynı firmanın birden çok makinası (customer kaydı) veya birden çok servis/parça borcu
+    // olabilir — bunlar farklı "firma" sayılmasın diye firma adına (case-insensitive) göre tekilleştir.
+    const borcluFirmaKeys = new Set([
+      ...borcluMusteriler.map(c => trLower(c.name)),
+      ...borcluServisler.map(s => trLower(custNameLocal(s.customerId))),
+      ...borcluKaliplar.map(p => trLower(custNameLocal(p.customerId))),
+    ]);
+    const borcluCount = borcluFirmaKeys.size;
+
+    const recentSales = [...customers].filter(c => c.installDate).sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "")).slice(0, 5);
+    const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+
+    return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, recentSales, recentServices };
+  }, [customers, services, partSales, todayStr]);
+
+  // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
+  // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
+  const cekRozeti = (customerId) => {
+    const bekleyen = sumBekleyenCek(customerId, payments);
+    if (bekleyen <= 0) return null;
+    const vadesiGecmis = payments.some(p => p.customerId === customerId && isCekVadesiGecmis(p));
+    return vadesiGecmis ? "⚠ Çek Vadesi Geçti" : "🧾 Çek Bekliyor";
+  };
+  const custName = (id) => customers.find(c => c.id === id)?.name || "—";
+  const goToCustomer = (id) => { setShowDebtors(false); onGoCustomerDetail && onGoCustomerDetail(id); };
 
   return (
     <div>
@@ -87,11 +100,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         {/* Son Satışlar */}
         <div style={{ background: "#fff", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
           <div style={{ fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>Son Satışlar</div>
-          {[...customers]
-            .filter(c => c.installDate)
-            .sort((a, b) => (b.installDate || "").localeCompare(a.installDate || ""))
-            .slice(0, 5)
-            .map(c => (
+          {recentSales.map(c => (
               <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
                 style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
@@ -106,16 +115,13 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 </div>
               </div>
             ))}
-          {customers.filter(c => c.installDate).length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Henüz satış kaydı yok.</div>}
+          {recentSales.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Henüz satış kaydı yok.</div>}
         </div>
 
         {/* Son Servisler */}
         <div style={{ background: "#fff", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
           <div style={{ fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>Son Servis Talepleri</div>
-          {[...services]
-            .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-            .slice(0, 5)
-            .map(sv => {
+          {recentServices.map(sv => {
             const cust = customers.find(x => x.id === sv.customerId);
             return (
               <div key={sv.id} onClick={() => goToCustomer(sv.customerId)} title="Müşteri detayını aç"

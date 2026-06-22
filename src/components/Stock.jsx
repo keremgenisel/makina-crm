@@ -22,6 +22,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
   const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "" }); setModal("add"); };
   const openEdit = s => { setForm({ ...s }); setModal({ edit: s }); };
   const save = () => {
+    if (!form.model) { showToast("Model seçilmeden kaydedilemez."); return; } // model, stok özet kartlarının gruplama anahtarı — boş geçilemez
     if (modal === "add") { bumpId(stock); const nid = uid(); setStock(p => p.some(s => s.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Stok makinası kaydedildi."); }
     else { setStock(p => p.map(s => s.id === form.id ? form : s)); showToast("Stok makinası düzenlendi."); }
     setModal(null);
@@ -82,7 +83,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
                 <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "#fff7ed", color: "#c2410c", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span></td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "#0f172a" : "#94a3b8", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "#64748b" }}>{fmtTR(s.addedDate)}</td>
-                <td style={{ padding: "13px 16px", fontSize: 12, color: "#64748b", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
+                <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "#64748b", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <Btn small variant="ghost" onClick={() => openEdit(s)}><Icon name="edit" size={12} /></Btn>
@@ -123,7 +124,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+            <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
         </Modal>
       )}

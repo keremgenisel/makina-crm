@@ -1,5 +1,5 @@
-import { useState, forwardRef, useImperativeHandle } from "react";
-import { Icon, Btn, Modal } from "./ui";
+import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import { Icon, Btn, Modal, ConfirmDialog } from "./ui";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
@@ -39,9 +39,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
   };
 
   // En son düzenlenen üstte
-  const sorted = [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const q = search.trim().toLocaleLowerCase("tr");
-  const filtered = q ? sorted.filter(n => (n.content || "").toLocaleLowerCase("tr").includes(q)) : sorted;
+  const filtered = useMemo(() => {
+    const sorted = [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return q ? sorted.filter(n => (n.content || "").toLocaleLowerCase("tr").includes(q)) : sorted;
+  }, [notes, q]);
   // Sayfalama (5'er)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -159,18 +161,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
 
       {/* Silme onayı */}
       {confirmDelete && (
-        <Modal title="Notu Sil" onClose={() => setConfirmDelete(null)}>
-          <div style={{ fontSize: 14, color: "#475569", marginBottom: 8, lineHeight: 1.6 }}>
-            <b style={{ color: "#0f172a" }}>"{baslik(confirmDelete.content)}"</b> notunu silmek istediğinize emin misiniz?
-          </div>
-          <div style={{ fontSize: 13, color: "#dc2626", fontWeight: 600, marginBottom: 20 }}>
-            ⚠ Bu işlem geri alınamaz.
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={() => setConfirmDelete(null)}>Vazgeç</Btn>
-            <Btn variant="danger" onClick={() => sil(confirmDelete.id)}><Icon name="trash" size={14} /> Evet, Sil</Btn>
-          </div>
-        </Modal>
+        <ConfirmDialog
+          message={`"${baslik(confirmDelete.content)}" notu kalıcı olarak silinecek.`}
+          onConfirm={() => sil(confirmDelete.id)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

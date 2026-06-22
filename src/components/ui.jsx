@@ -1,3 +1,4 @@
+import { useId, useEffect, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
 
 export const Icon = ({ name, size = 16 }) => {
@@ -32,12 +33,26 @@ export const Icon = ({ name, size = 16 }) => {
 };
 
 // ── UI Primitives ──────────────────────────────────────────────────────────
-export const Field = ({ label, children }) => (
-  <div style={{ marginBottom: 14 }}>
-    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{label}</label>
-    {children}
-  </div>
-);
+// Erişilebilirlik: label'ı ilk çocuğa (basit bir Input/Select/MoneyInput/textarea ise) htmlFor/id ile
+// bağlar — ekran okuyucu ve "label'a tıkla, input'a odaklan" davranışı için. Karmaşık/çoklu çocuklu
+// Field'lar (PickOrType, PaymentRowsEditor, özel dropdown'lar) bu eşleşmeye girmez, etiketsiz kalır —
+// önceki davranışla aynı, yeni bir regresyon yok.
+const LABELABLE_TYPES = new Set(["input", "select", "textarea"]);
+export const Field = ({ label, children }) => {
+  const autoId = useId();
+  const kids = Children.toArray(children);
+  const [first, ...rest] = kids;
+  const isSimpleComponent = isValidElement(first) && (first.type === Input || first.type === Select || first.type === MoneyInput);
+  const isNativeField = isValidElement(first) && typeof first.type === "string" && LABELABLE_TYPES.has(first.type);
+  const canLabel = (isSimpleComponent || isNativeField) && !first.props.id;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label htmlFor={canLabel ? autoId : undefined} style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{label}</label>
+      {canLabel ? cloneElement(first, { id: autoId }) : first}
+      {rest}
+    </div>
+  );
+};
 export const Input = (props) => (
   <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
 );
@@ -102,7 +117,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
   );
 };
 // Para girişi: değer SAYI olarak tutulur, ekranda binlik ayraçlı + ₺ gösterilir
-export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺" }) => {
+export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);
   const handle = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, ""); // sadece rakam
@@ -110,7 +125,7 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺" }) 
   };
   return (
     <div style={{ position: "relative" }}>
-      <input value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
+      <input id={id} value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
         style={{ width: "100%", padding: "8px 28px 8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc", textAlign: "right", fontWeight: 600 }} />
       <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
     </div>
@@ -139,7 +154,13 @@ export const StatCard = ({ label, value, sub, color, onClick }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) => (
+export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) => {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
     <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -149,9 +170,16 @@ export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) =
       {children}
     </div>
   </div>
-);
+  );
+};
 
-export const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
+export const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+  return (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
     <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.2)", textAlign: "center" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -165,7 +193,8 @@ export const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 
 export const Pagination = ({ total, page, setPage, perPage = 10 }) => {

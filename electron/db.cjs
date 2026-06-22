@@ -76,7 +76,8 @@ CREATE INDEX IF NOT EXISTS idx_partsales_customer ON part_sales(customer_id);
 CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
-  tarih TEXT, tutar REAL, currency TEXT, note TEXT
+  tarih TEXT, tutar REAL, currency TEXT, note TEXT,
+  yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id);
 
@@ -86,6 +87,17 @@ CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL);
 `;
+
+// Daha önce oluşturulmuş bir data.db'ye, şemaya sonradan eklenen sütunları ekler (ALTER TABLE) —
+// CREATE TABLE IF NOT EXISTS zaten var olan tabloları değiştirmediği için, yeni alan eklenince
+// (örn. payments.yontem) mevcut kullanıcıların veritabanı bu fonksiyon olmadan eski şemada kalır.
+function ensureColumns(conn, table, columns) {
+  const existing = new Set(conn.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name));
+  for (const [name, type] of columns) {
+    if (!existing.has(name)) conn.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
+  }
+}
+const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -180,9 +192,9 @@ function populateAll(conn, data) {
 
   if (Array.isArray(data.payments)) {
     conn.prepare(`DELETE FROM payments`).run();
-    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note) VALUES (?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const p of data.payments) {
-      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null);
+      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null);
     }
   }
 
@@ -262,6 +274,7 @@ function migrateFromJsonIfNeeded() {
     db = new Database(dbPath);
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
+    ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
     active = true;
     return;
   }
@@ -375,8 +388,10 @@ function readBlobFromDb() {
   });
 
   const payments = db.prepare(`SELECT * FROM payments`).all().map((row) => {
-    const { customer_id, note, ...rest } = row;
-    return { ...rest, customerId: customer_id, not: note };
+    const { customer_id, note, tahsilEdildi, ...rest } = row;
+    // tahsilEdildi sadece Çek ödemelerinde anlamlı; SQLite'tan 0/1/null gelir, isPaymentReceived/
+    // isCekVadesiGecmis === true ile kıyasladığı için gerçek boolean'a çevrilmesi gerekiyor.
+    return { ...rest, customerId: customer_id, not: note, ...(rest.yontem === "Çek" ? { tahsilEdildi: toBool(tahsilEdildi) } : {}) };
   });
 
   const kalipDefs = db.prepare(`SELECT * FROM kalip_defs`).all();

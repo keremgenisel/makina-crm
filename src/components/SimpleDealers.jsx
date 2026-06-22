@@ -65,15 +65,18 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </td>
             </tr>
             {paged.map(d => (
-              <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "13px 16px", cursor: "pointer" }} onClick={() => setDetailView(d)} title="Tüm bilgileri görüntüle">
+              <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                onClick={() => setDetailView(d)} title="Tüm bilgileri görüntüle"
+                onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "13px 16px" }}>
                   <div style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{d.name}</div>
                   {d.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.adres}</div>}
                 </td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{d.contact || "—"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{d.phone || "—"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13 }}>{d.country && d.city ? `${d.country} / ${d.city}` : d.city || d.country || "—"}</td>
-                <td style={{ padding: "13px 16px" }}>
+                <td style={{ padding: "13px 16px" }} onClick={e => e.stopPropagation()}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <Btn small variant="ghost" onClick={() => openEdit(d)}><Icon name="edit" size={12} /></Btn>
                     <Btn small variant="danger" onClick={() => setConfirmId(d.id)}><Icon name="trash" size={12} /></Btn>

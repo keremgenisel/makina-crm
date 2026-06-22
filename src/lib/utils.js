@@ -29,11 +29,20 @@ export const bumpId = (...arrays) => {
   });
   nextId = max;
 };
-// Eski yedekler (şema etiketi olmadan alınmış) için: en az bir tanıdık dizi alanı varsa kabul et
+// Eski yedekler (şema etiketi olmadan alınmış) için: en az bir tanıdık dizi alanı varsa kabul et.
+// Ayrıca o dizilerin İÇERİĞİNİN de (en azından ilk elemanı) düz birer obje olduğunu doğrular —
+// yoksa "doğru biçimli ama içi bozuk" bir dosya (örn. customers: ["a","b"]) buradan geçip
+// uygulamanın ilerideki bir yerinde (c.name, c.id vb. okurken) açıklanamayan bir çökmeye yol açabilir.
+const BACKUP_ARRAY_FIELDS = ["customers", "services", "dealers", "stock", "notes", "parts", "partSales"];
 export const looksLikeBackup = (data) => {
   if (!data || typeof data !== "object" || Array.isArray(data)) return false;
-  if (data.app === BACKUP_APP_TAG) return true;
-  return ["customers", "services", "dealers", "stock", "notes", "parts", "partSales"].some((k) => Array.isArray(data[k]));
+  const arrayFields = BACKUP_ARRAY_FIELDS.filter((k) => Array.isArray(data[k]));
+  if (data.app === BACKUP_APP_TAG) {
+    // Yine de aynı sağlamlık kontrolünü uygula — uygulama etiketi doğru olsa da dizi içerikleri bozuk olabilir
+    return arrayFields.every((k) => data[k].length === 0 || (typeof data[k][0] === "object" && data[k][0] !== null));
+  }
+  if (arrayFields.length === 0) return false;
+  return arrayFields.every((k) => data[k].length === 0 || (typeof data[k][0] === "object" && data[k][0] !== null));
 };
 // Yazdırma HTML'inden otomatik print script'ini çıkarır (Electron çift diyalog önleme)
 export const stripAutoPrint = (html) => {

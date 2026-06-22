@@ -1,110 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
+
+const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
 export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE, rates }) => {
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const rangeLabels = RANGE_LABELS;
 
-  // Tarih aralığı sınırlarını hesapla
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const inRange = (iso) => {
-    if (!iso) return range === "all";
-    const d = new Date(iso);
-    if (isNaN(d)) return range === "all";
-    if (range === "all") return true;
-    if (range === "thisMonth") return d.getFullYear() === y && d.getMonth() === m;
-    if (range === "thisYear") return d.getFullYear() === y;
-    if (range === "lastYear") return d.getFullYear() === y - 1;
-    if (range === "custom") {
-      if (customStart && iso < customStart) return false;
-      if (customEnd && iso > customEnd) return false;
-      return true;
-    }
-    return true;
-  };
-
-  // Satışları tarihe göre filtrele (installDate baz alınır) — 2. el devir olsa bile orijinal
-  // satışın bedeli/adedi sayılmaya devam eder (isResale finans hesaplarını etkilemiyor)
-  const sales = customers.filter(c => inRange(c.installDate));
-  const svcInRange = services.filter(s => inRange(s.date));
-  const kalipSatisInRange = partSales.filter(p => p.tur === "Kalıp" && inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
-
-  // ── ADETLER ──
-  const totalMakina = sales.length;
-  // Satıştaki ilk kaliplar listesi extra sayılmaz (kalipCountAtSale partSaleId'li satırları hariç tutar) —
-  // yoksa Extra Kalıp Satışı'ndan eklenen kalıp hem burada hem satilanExtraKalipSayisi'de çift sayılırdı.
-  const totalKalip = sales.reduce((sum, c) => sum + kalipCountAtSale(c), 0);
-  const satilanExtraKalipSayisi = kalipSatisInRange.length;
-  const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
-
-  // ── PARA (TUTAR) — para birimi başına ayrı topla ──
-  const empty3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
-  const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY"); // eski kayıtlar TRY
-  const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
-  const komisyon = empty3(), toplamCiro = empty3();
-  // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
-  const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
-  sales.forEach(c => {
-    const k = cur(c.currency);
-    const gercek = parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli); // gerçek bedel yoksa faturaya düş
-    gercekCiro[k] += gercek;
-    toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
-    komisyon[k] += parseMoney(c.komisyon);
-    kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
-  });
-  const servisUcreti = empty3();
-  svcInRange.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
-    const kdv = calcKDV(s.faturaTipi, s.servisUcreti, kdvRate);
-    servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
-    kdvServis[cur(s.currency)] += kdv;
-  });
-  const parcaUcreti = empty3();
-  svcInRange.forEach(s => {
-    if (!s.parcaUcretsizMi) {
-      const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, kdvRate);
-      parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
-      kdvParca[cur(s.parcaCurrency)] += kdv;
-    }
-  });
-  const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
-  kalipSatisInRange.forEach(p => {
-    const kdv = calcKDV(p.faturaTipi, p.ucret, kdvRate);
-    kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
-    kdvKalip[cur(p.currency)] += kdv;
-  });
-
-  // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar (KDV dahil)
-  // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
-  const toplamExtraKalip = kalipSatisi;
-
-  // ── 3 büyük özet kartı ──
-  const sumObj = (...objs) => {
-    const r = empty3();
-    objs.forEach(o => CURRENCIES.forEach(k => { r[k] += o[k] || 0; }));
-    return r;
-  };
-  const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
-  const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvKalip); // dönem bazlı KDV toplamı
-
-  // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
-  const alacak = empty3();
-  customers.forEach(c => { alacak[cur(c.currency)] += Math.max(parseMoney(c.kalanBorc), 0); });
-  services.filter(isServisBorcluMu).forEach(s => {
-    const servisVar = isServisUcretliMi(s) ? parseMoney(s.servisUcreti) : 0;
-    const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
-    const toplam = servisVar + parcaVar;
-    alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, kdvRate);
-  });
-  partSales.filter(isPartSaleBorcluMu).forEach(p => {
-    alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, kdvRate);
-  });
-
-  // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir
-  // bir {TRY,USD,EUR} nesnesini TL'ye çevirip topla
+  // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,
+  // bir {TRY,USD,EUR} nesnesini TL'ye çevirip toplar. Hesaplama dışında render'da da (MultiCard) kullanılıyor.
   const toTL = (obj) => {
     let sum = obj.TRY || 0;
     if (rates) {
@@ -113,46 +20,157 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     }
     return sum;
   };
-  // ── MODEL BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
-  const byModel = {};
-  sales.forEach(c => {
-    const k = c.model || "Belirtilmemiş";
-    if (!byModel[k]) byModel[k] = { adet: 0, gelir: 0 };
-    byModel[k].adet += 1;
-    const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
-    byModel[k].gelir += toTL(o);
-  });
-  const modelRows = Object.entries(byModel).sort((a, b) => b[1].gelir - a[1].gelir);
 
-  // ── SATICI/BAYİ BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
-  const bySeller = {};
-  sales.forEach(c => {
-    const k = c.satisYapan || "Belirtilmemiş";
-    if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0 };
-    bySeller[k].adet += 1;
-    const g = empty3(); g[cur(c.currency)] = parseMoney(c.faturaBedeli);
-    bySeller[k].gelir += toTL(g);
-  });
-  const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].gelir - a[1].gelir);
+  // Tüm ağır hesaplamalar burada toplanıp memoize ediliyor — customers/services/partSales
+  // büyüdükçe (binlerce kayıt) her render'da yeniden hesaplanmasın diye. İç mantık değişmedi,
+  // sadece bir useMemo içine taşındı.
+  const {
+    totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
+    gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
+    toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+  } = useMemo(() => {
+    // Tarih aralığı sınırlarını hesapla
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const inRange = (iso) => {
+      if (!iso) return range === "all";
+      const d = new Date(iso);
+      if (isNaN(d)) return range === "all";
+      if (range === "all") return true;
+      if (range === "thisMonth") return d.getFullYear() === y && d.getMonth() === m;
+      if (range === "thisYear") return d.getFullYear() === y;
+      if (range === "lastYear") return d.getFullYear() === y - 1;
+      if (range === "custom") {
+        if (customStart && iso < customStart) return false;
+        if (customEnd && iso > customEnd) return false;
+        return true;
+      }
+      return true;
+    };
 
-  // ── AYLIK TREND (son 12 ay, satış geliri ≈ TL karşılığı) ──
-  const monthly = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(y, m - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("tr-TR", { month: "short", year: "2-digit" });
-    let gelir = 0;
-    customers.forEach(c => {
-      if (c.installDate && c.installDate.slice(0, 7) === key) {
-        const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
-        gelir += toTL(o);
+    // Satışları tarihe göre filtrele (installDate baz alınır) — 2. el devir olsa bile orijinal
+    // satışın bedeli/adedi sayılmaya devam eder (isResale finans hesaplarını etkilemiyor)
+    const sales = customers.filter(c => inRange(c.installDate));
+    const svcInRange = services.filter(s => inRange(s.date));
+    const kalipSatisInRange = partSales.filter(p => p.tur === "Kalıp" && inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
+
+    // ── ADETLER ──
+    const totalMakina = sales.length;
+    // Satıştaki ilk kaliplar listesi extra sayılmaz (kalipCountAtSale partSaleId'li satırları hariç tutar) —
+    // yoksa Extra Kalıp Satışı'ndan eklenen kalıp hem burada hem satilanExtraKalipSayisi'de çift sayılırdı.
+    const totalKalip = sales.reduce((sum, c) => sum + kalipCountAtSale(c), 0);
+    const satilanExtraKalipSayisi = kalipSatisInRange.length;
+    const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
+
+    // ── PARA (TUTAR) — para birimi başına ayrı topla ──
+    const empty3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
+    const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY"); // eski kayıtlar TRY
+    const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
+    const komisyon = empty3(), toplamCiro = empty3();
+    // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
+    const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
+    sales.forEach(c => {
+      const k = cur(c.currency);
+      const gercek = parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli); // gerçek bedel yoksa faturaya düş
+      gercekCiro[k] += gercek;
+      toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
+      komisyon[k] += parseMoney(c.komisyon);
+      kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
+    });
+    const servisUcreti = empty3();
+    svcInRange.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
+      const kdv = calcKDV(s.faturaTipi, s.servisUcreti, kdvRate);
+      servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
+      kdvServis[cur(s.currency)] += kdv;
+    });
+    const parcaUcreti = empty3();
+    svcInRange.forEach(s => {
+      if (!s.parcaUcretsizMi) {
+        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, kdvRate);
+        parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+        kdvParca[cur(s.parcaCurrency)] += kdv;
       }
     });
-    monthly.push({ label, gelir });
-  }
-  const maxMonthly = Math.max(...monthly.map(x => x.gelir), 1);
+    const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
+    kalipSatisInRange.forEach(p => {
+      const kdv = calcKDV(p.faturaTipi, p.ucret, kdvRate);
+      kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
+      kdvKalip[cur(p.currency)] += kdv;
+    });
 
-  const rangeLabels = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
+    // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar (KDV dahil)
+    // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
+    const toplamExtraKalip = kalipSatisi;
+
+    // ── 3 büyük özet kartı ──
+    const sumObj = (...objs) => {
+      const r = empty3();
+      objs.forEach(o => CURRENCIES.forEach(k => { r[k] += o[k] || 0; }));
+      return r;
+    };
+    const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
+    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvKalip); // dönem bazlı KDV toplamı
+
+    // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
+    const alacak = empty3();
+    customers.forEach(c => { alacak[cur(c.currency)] += Math.max(parseMoney(c.kalanBorc), 0); });
+    services.filter(isServisBorcluMu).forEach(s => {
+      const servisVar = isServisUcretliMi(s) ? parseMoney(s.servisUcreti) : 0;
+      const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
+      const toplam = servisVar + parcaVar;
+      alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, kdvRate);
+    });
+    partSales.filter(isPartSaleBorcluMu).forEach(p => {
+      alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, kdvRate);
+    });
+
+    // ── MODEL BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
+    const byModel = {};
+    sales.forEach(c => {
+      const k = c.model || "Belirtilmemiş";
+      if (!byModel[k]) byModel[k] = { adet: 0, gelir: 0 };
+      byModel[k].adet += 1;
+      const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
+      byModel[k].gelir += toTL(o);
+    });
+    const modelRows = Object.entries(byModel).sort((a, b) => b[1].gelir - a[1].gelir);
+
+    // ── SATICI/BAYİ BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
+    const bySeller = {};
+    sales.forEach(c => {
+      const k = c.satisYapan || "Belirtilmemiş";
+      if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0 };
+      bySeller[k].adet += 1;
+      const g = empty3(); g[cur(c.currency)] = parseMoney(c.faturaBedeli);
+      bySeller[k].gelir += toTL(g);
+    });
+    const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].gelir - a[1].gelir);
+
+    // ── AYLIK TREND (son 12 ay, satış geliri ≈ TL karşılığı) ──
+    const monthly = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(y, m - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("tr-TR", { month: "short", year: "2-digit" });
+      let gelir = 0;
+      customers.forEach(c => {
+        if (c.installDate && c.installDate.slice(0, 7) === key) {
+          const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
+          gelir += toTL(o);
+        }
+      });
+      monthly.push({ label, gelir });
+    }
+    const maxMonthly = Math.max(...monthly.map(x => x.gelir), 1);
+
+    return {
+      totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
+      gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
+      toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates]);
 
   // Excel'e aktar (CSV)
   const AdetCard = ({ label, value, color, icon }) => (
