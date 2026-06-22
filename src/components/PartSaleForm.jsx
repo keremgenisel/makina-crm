@@ -74,12 +74,13 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         <Field label="Kalıp Ekle">
           <Select value="" onChange={e => {
             const ad = e.target.value;
-            if (ad && !kaliplar.some(k => k.ad === ad)) {
+            // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
+            if (ad) {
               setForm(p => ({ ...p, kaliplar: [...(p.kaliplar || []), { ad, olcu: "", fiyat: "" }] }));
             }
           }}>
             <option value="">+ Kalıp ekle...</option>
-            {kalipDefs.filter(k => !kaliplar.some(x => x.ad === k.ad)).map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
+            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
           </Select>
           {kalipDefs.length === 0 && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>}
         </Field>
@@ -97,7 +98,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {kaliplar.length > 0 && (
         <Field label={isEdit ? "Kalıp Ölçüsü ve Fiyatı" : `Seçilen Kalıplar (${kaliplar.length})`}>
           {kaliplar.map((k, i) => (
-            <div key={k.ad || i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr" : "1fr 110px 110px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr" : "1fr 110px 110px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
               {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "#c2410c" }}>{k.ad}</span>}
               <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm"
                 onChange={e => setForm(prev => {

@@ -483,13 +483,8 @@ export const Customers = ({
         city: newOwnerForm.city || "",
         country: newOwnerForm.country || "",
         aciklama: newOwnerForm.aciklama || "",
-        isResale: true,            // 2. el devir işareti (finans bunu gelir saymaz)
+        isResale: true,            // 2. el devir işareti (zaman çizelgesinde "2. El Devir" etiketi için — finans buna bakmıyor, orijinal satış bedeli/adedi sayılmaya devam eder)
         satisYapan: newOwnerForm.satanFirma?.trim() || "2. El Devir",
-        faturaBedeli: 0,
-        fabrikaSatisBedeli: 0,
-        komisyon: 0,
-        extraKalipFiyati: 0,
-        kalanBorc: 0,
       };
     }));
     showToast("Devir tamamlandı. Yeni sahip kaydedildi.");
@@ -720,6 +715,11 @@ export const Customers = ({
                       {detailEkBorcAyniPB > 0 && (
                         <div style={{ fontSize: 10.5, color: "#991b1b", marginTop: 5 }}>
                           ({fmtCur(Math.max(detailKalanBorc, 0), detailView.currency)} makina + {fmtCur(detailEkBorcAyniPB, detailView.currency)} servis/parça/kalıp)
+                        </div>
+                      )}
+                      {detailView.isResale && detailKalanBorcToplam > 0 && detailView.prevOwners?.length > 0 && (
+                        <div style={{ fontSize: 10.5, color: "#991b1b", marginTop: 5, fontStyle: "italic" }}>
+                          Bu borcun bir kısmı/tamamı önceki sahip <b>{detailView.prevOwners[detailView.prevOwners.length - 1].name}</b>'den kalmış olabilir.
                         </div>
                       )}
                     </div>
@@ -1023,8 +1023,15 @@ export const Customers = ({
         <Modal title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
           <div style={{ fontSize: 13, color: "#64748b", background: "#fff7ed", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5 }}>
             Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
-            Servis geçmişi ve makina bilgileri korunur. <b>Bu bir 2. el el değişimidir; firmanızın satışı olmadığı için finansa yansımaz.</b>
+            Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur (Finans'taki toplam ciro ve satış adedinden düşmez).
           </div>
+          {detailView && (detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0) && (
+            <div style={{ fontSize: 13, color: "#991b1b", background: "#fef2f2", border: "1px solid #fecaca", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5, fontWeight: 600 }}>
+              ⚠ Bu makinenin devredilmeden önce{detailKalanBorcToplam > 0 && <> <b>{fmtCur(detailKalanBorcToplam, detailView.currency)}</b></>} ödenmemiş bakiyesi var (makina satışı ve/veya ödenmemiş servis/parça/Extra Kalıp dahil).
+              {detailEkBorcDigerPB.length > 0 && <> Ayrıca farklı para biriminden: {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}.</>}
+              {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
+            </div>
+          )}
           <Field label="Yeni Sahip (Satın Alan)">
             <Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" />
             <Warn>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</Warn>

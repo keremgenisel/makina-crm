@@ -104,6 +104,14 @@ export const kalipCount = (c) => {
   const n = parseInt(c?.kalipSayisi, 10);
   return isNaN(n) ? 0 : n;
 };
+// Sadece satış anında verilen kalıpları sayar (Extra Kalıp Satışı'ndan sonradan eklenen,
+// partSaleId'li satırlar hariç) — Finans'taki "Toplam Satılan Kalıp" ile "Satılan Extra Kalıp"
+// arasında çift sayımı önlemek için. kalipCount'tan farklı olarak burada extra'lar düşülüyor.
+export const kalipCountAtSale = (c) => {
+  if (Array.isArray(c?.kaliplar) && c.kaliplar.length) return c.kaliplar.filter(k => !k.partSaleId).length;
+  const n = parseInt(c?.kalipSayisi, 10);
+  return isNaN(n) ? 0 : n;
+};
 // Değişen parça adını güvenle al — eski kayıtlarda düz string, yenilerde {ad, fiyat}
 export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 

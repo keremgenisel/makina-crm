@@ -127,12 +127,13 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
         ) : (
           <Select value="" onChange={e => {
             const ad = e.target.value;
-            if (ad && !(form.degisenParcalar || []).some(p => parcaAdi(p) === ad)) {
+            // Aynı parça birden fazla kez eklenebilir (örn. 2 adet kesme bıçağı) — her ekleme kendi satırını oluşturur
+            if (ad) {
               setForm(p => ({ ...p, degisenParcalar: [...(p.degisenParcalar || []), { ad, fiyat: "" }] }));
             }
           }}>
             <option value="">+ Parça ekle...</option>
-            {parts.filter(p => !(form.degisenParcalar || []).some(x => parcaAdi(x) === p.ad)).map(p => (
+            {parts.map(p => (
               <option key={p.id} value={p.ad}>{p.ad}</option>
             ))}
           </Select>
@@ -153,7 +154,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
             {form.degisenParcalar.map((p, i) => {
               const ad = parcaAdi(p);
               return (
-                <div key={ad} style={{ display: "grid", gridTemplateColumns: parcaUcretsizMi ? "1fr 36px" : "1fr 140px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: parcaUcretsizMi ? "1fr 36px" : "1fr 140px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{ad}</span>
                   {!parcaUcretsizMi && (
                     <MoneyInput value={typeof p === "string" ? "" : p.fiyat} sym={CUR_SYM[form.currency || "TRY"]}

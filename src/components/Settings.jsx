@@ -20,7 +20,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     a.href = url; a.download = filename; a.click();
   };
   const exportFinance = () => {
-    const real = customers.filter(c => !c.isResale);
+    // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
+    const real = customers;
     const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
     const e3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
     const rate = appSettings?.kdvRate ?? DEFAULT_KDV_RATE;

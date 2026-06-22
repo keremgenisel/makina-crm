@@ -12,8 +12,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const garantiDevamCount = realCustomers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length;
 
   // ── Borçlu firmalar — müşteri borcu + servis/parça borcu + Extra Kalıp borcu (3 ayrı kaynak) ──
+  // isResale (2. el devir) burada hariç tutulmuyor — devir öncesi ödenmemiş bakiye varsa
+  // Müşteriler sayfasıyla tutarlı olarak burada da borçlu sayılır.
   const [showDebtors, setShowDebtors] = useState(false);
-  const borcluMusteriler = realCustomers.filter(c => parseMoney(c.kalanBorc) > 0);
+  const borcluMusteriler = customers.filter(c => parseMoney(c.kalanBorc) > 0);
   const borcluServisler = services.filter(isServisBorcluMu);
   const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için

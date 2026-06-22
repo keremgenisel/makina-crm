@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCount, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
+import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
 
 export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE, rates }) => {
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
@@ -27,15 +27,17 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     return true;
   };
 
-  // Satışları tarihe göre filtrele (installDate baz alınır)
-  const sales = customers.filter(c => !c.isResale && inRange(c.installDate));
+  // Satışları tarihe göre filtrele (installDate baz alınır) — 2. el devir olsa bile orijinal
+  // satışın bedeli/adedi sayılmaya devam eder (isResale finans hesaplarını etkilemiyor)
+  const sales = customers.filter(c => inRange(c.installDate));
   const svcInRange = services.filter(s => inRange(s.date));
-  const kalipSatisInRange = partSales.filter(p => inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
+  const kalipSatisInRange = partSales.filter(p => p.tur === "Kalıp" && inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
 
   // ── ADETLER ──
   const totalMakina = sales.length;
-  const totalKalip = sales.reduce((sum, c) => sum + kalipCount(c), 0);
-  // Satıştaki ilk kaliplar listesi extra sayılmaz; Extra Kalıp sadece kendi sekmesinden takip edilir.
+  // Satıştaki ilk kaliplar listesi extra sayılmaz (kalipCountAtSale partSaleId'li satırları hariç tutar) —
+  // yoksa Extra Kalıp Satışı'ndan eklenen kalıp hem burada hem satilanExtraKalipSayisi'de çift sayılırdı.
+  const totalKalip = sales.reduce((sum, c) => sum + kalipCountAtSale(c), 0);
   const satilanExtraKalipSayisi = kalipSatisInRange.length;
   const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
 
@@ -141,7 +143,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     const label = d.toLocaleDateString("tr-TR", { month: "short", year: "2-digit" });
     let gelir = 0;
     customers.forEach(c => {
-      if (!c.isResale && c.installDate && c.installDate.slice(0, 7) === key) {
+      if (c.installDate && c.installDate.slice(0, 7) === key) {
         const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
         gelir += toTL(o);
       }
