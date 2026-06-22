@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
+import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE, ODEME_YONTEMLERI } from "../lib/constants";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType } from "./ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType, PaymentRowsEditor } from "./ui";
 import { ServiceForm } from "./ServiceForm";
 import { PartSaleForm } from "./PartSaleForm";
 
@@ -84,10 +84,11 @@ export const Customers = ({
       });
     });
     (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
+      const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
       ev.push({
         kind: "payment", date: p.tarih, color: "#0d9488",
         title: "Kapora/Ödeme",
-        desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${p.not ? " · " + p.not : ""}`,
+        desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${yontemTxt}${p.not ? " · " + p.not : ""}`,
         payment: p,
       });
     });
@@ -133,6 +134,10 @@ export const Customers = ({
   const detailEkBorcAyniPB = detailEkBorcByCur[detailMainCur] || 0; // makinayla aynı para biriminde, doğrudan toplanabilir
   const detailEkBorcDigerPB = Object.entries(detailEkBorcByCur).filter(([cur]) => cur !== detailMainCur); // farklı PB, ayrı gösterilir
   const detailKalanBorcToplam = detailKalanBorc + detailEkBorcAyniPB;
+  // Tahsil edilmemiş çek(ler) — Kalan Borç'a henüz dahil olmayan, beklemedeki tutar
+  const detailBekleyenCek = detailView ? sumBekleyenCek(detailView.id, payments) : 0;
+  const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && p.yontem === "Çek" && !p.tahsilEdildi) : [];
+  const detailCekVadesiGecmisVar = detailBekleyenCekler.some(isCekVadesiGecmis);
   // Extra Kalıp Satışı'ndan eklenen kalıplar her zaman listenin sonuna eklenir (savePartSale) —
   // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
   const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
@@ -194,7 +199,7 @@ export const Customers = ({
       kaliplar: [],
       installDate: start, warrantyEnd: end,
       faturali: "Faturalı Yurtiçi", faturaBedeli: "",
-      fabrikaSatisBedeli: "", komisyon: "", _ilkOdeme: "",
+      fabrikaSatisBedeli: "", komisyon: "", _ilkOdemeSatirlari: [],
       serialNo: "",
     });
     setModal("add"); setModelPicker(false);
@@ -212,7 +217,7 @@ export const Customers = ({
       model: "", kaliplar: [],
       installDate: start, warrantyEnd: end,
       faturali: "Faturalı Yurtiçi", faturaBedeli: "",
-      fabrikaSatisBedeli: "", komisyon: "", _ilkOdeme: "", kalanBorc: "", serialNo: "", aciklama: "",
+      fabrikaSatisBedeli: "", komisyon: "", _ilkOdemeSatirlari: [], kalanBorc: "", serialNo: "", aciklama: "",
     });
     setModal("add"); setModelPicker(false);
   };
@@ -226,16 +231,24 @@ export const Customers = ({
   };
   const save = () => {
     if (modal === "add") {
-      const { _manualSerial, _stokSerisiz, _ilkOdeme, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, ...clean } = form;
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       // Seri no boşsa "bekliyor" işaretle (stoktan seri no'suz seçilse de, hiç girilmese de)
       if (!clean.serialNo) clean.seriNoBekliyor = true;
-      const ilkOdemeTutari = parseMoney(_ilkOdeme);
-      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRate) - ilkOdemeTutari;
+      // İlk Ödeme satırları (Nakit/Kredi Kartı/Çek) — tutarı sıfırdan büyük her satır kendi payments
+      // kaydını oluşturur; Kalan Borç'tan sadece "alınmış" sayılanlar (Çek hariç) düşülür.
+      const ilkOdemeSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
+      const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0);
+      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRate) - ilkOdemeAlinanTutar;
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
-      if (ilkOdemeTutari > 0 && setPayments) {
-        setPayments(p => [{ id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: ilkOdemeTutari, currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)" }, ...p]);
+      if (ilkOdemeSatirlari.length > 0 && setPayments) {
+        const yeniOdemeler = ilkOdemeSatirlari.map(r => ({
+          id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: parseMoney(r.tutar),
+          currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit",
+          ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
+        }));
+        setPayments(p => [...yeniOdemeler, ...p]);
       }
       // Stoktan düşme:
       if (setStock) {
@@ -253,7 +266,7 @@ export const Customers = ({
       }
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {
-      const { _manualSerial, _stokSerisiz, _ilkOdeme, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, ...clean } = form;
       // Düzenlemede seri no girildiyse "bekliyor" işaretini kaldır
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRate);
@@ -386,12 +399,17 @@ export const Customers = ({
     showToast("Extra Kalıp kaydı silindi.");
   };
 
-  // Müşteri detayından Kapora/Ödeme ekleme/düzenleme — tarihli ödeme geçmişi, Kalan Borç bundan türetilir
+  // Müşteri detayından Kapora/Ödeme ekleme/düzenleme — tarihli ödeme geçmişi, Kalan Borç bundan türetilir.
+  // Ekleme modu çoklu satır (PaymentRowsEditor — Yöntem+Tutar+Vade), her satır kendi payments kaydını
+  // oluşturur (savePartSale'deki batchId'siz, çoklu-kayıt deseniyle aynı). Düzenleme modu tek satır.
   const openAddPayment = () => {
-    setPaymentForm({ customerId: detailView.id, tarih: today(), tutar: "", currency: detailView.currency || "TRY", not: "" });
+    setPaymentForm({ customerId: detailView.id, tarih: today(), satirlar: [], currency: detailView.currency || "TRY", not: "" });
   };
   const openEditPayment = (p) => {
-    setPaymentForm({ id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "" });
+    setPaymentForm({
+      id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "",
+      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi,
+    });
   };
   // payments değiştiğinde customer.kalanBorc (stored alan) da güncellenmeli — yoksa liste/Borçlu
   // Firmalar gibi customer.kalanBorc'u doğrudan okuyan yerler eski/yanlış değeri göstermeye devam eder.
@@ -399,23 +417,36 @@ export const Customers = ({
     setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRate) } : c));
   };
   const savePayment = () => {
-    if (!setPayments || !paymentForm || parseMoney(paymentForm.tutar) <= 0) return;
-    const fields = {
-      customerId: Number(paymentForm.customerId), tarih: paymentForm.tarih || today(),
-      tutar: parseMoney(paymentForm.tutar), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
-    };
+    if (!setPayments || !paymentForm) return;
+    const customerId = Number(paymentForm.customerId);
     let newPayments;
     if (paymentForm.id) {
+      // Düzenleme: tek satır
+      if (parseMoney(paymentForm.tutar) <= 0) return;
+      const yontem = paymentForm.yontem || "Nakit";
+      const fields = {
+        customerId, tarih: paymentForm.tarih || today(), tutar: parseMoney(paymentForm.tutar),
+        currency: paymentForm.currency || "TRY", not: paymentForm.not || "", yontem,
+        vadeTarihi: yontem === "Çek" ? (paymentForm.vadeTarihi || "") : undefined,
+        tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
+      };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
       showToast("Ödeme güncellendi.");
     } else {
+      // Ekleme: çoklu satır, her satır kendi kaydını oluşturur
+      const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
+      if (satirlar.length === 0) return;
+      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
       bumpId(customers, services, partSales, payments);
-      const newId = uid();
-      newPayments = payments.some(x => x.id === newId) ? payments : [{ id: newId, ...fields }, ...payments];
-      showToast("Ödeme kaydedildi.");
+      const yeniKayitlar = satirlar.map(r => ({
+        id: uid(), ...ortak, tutar: parseMoney(r.tutar), yontem: r.yontem || "Nakit",
+        ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
+      }));
+      newPayments = [...yeniKayitlar, ...payments];
+      showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     }
     setPayments(newPayments);
-    syncKalanBorc(fields.customerId, newPayments);
+    syncKalanBorc(customerId, newPayments);
     setPaymentForm(null);
   };
   const deletePayment = (id) => {
@@ -425,6 +456,14 @@ export const Customers = ({
     setPayments(newPayments);
     if (payment) syncKalanBorc(payment.customerId, newPayments);
     showToast("Ödeme silindi.");
+  };
+  // Çek tahsil edildi/beklemede — servis/parça/Extra Kalıp'taki Ödendi toggle'larıyla aynı desen,
+  // ama ayrıca syncKalanBorc gerektiriyor (çünkü çek, calcKalanBorc'un içindeki sumPayments'a dahil)
+  const toggleCekTahsil = (payment) => {
+    if (!setPayments) return;
+    const newPayments = payments.map(x => x.id === payment.id ? { ...x, tahsilEdildi: !x.tahsilEdildi } : x);
+    setPayments(newPayments);
+    syncKalanBorc(payment.customerId, newPayments);
   };
 
   // 2. el devir: mevcut sahibi sahiplik geçmişine taşı, makina kaydını yeni sahibe güncelle
@@ -657,7 +696,7 @@ export const Customers = ({
                     ücretlerini (aynı para biriminden olanları) birlikte gösterir.
                     2. el devirlerde (isResale) fabrikaSatisBedeli sıfırlandığı için detailCiro de 0 olur;
                     ama o makinaya sonradan ödenmemiş bir servis/Extra Kalıp eklenmişse kart yine gösterilir. */}
-                {(detailCiro > 0 || detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0) && (
+                {(detailCiro > 0 || detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0 || detailBekleyenCek > 0) && (
                   <div style={{ marginBottom: 16 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
                     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px" }}>
@@ -689,6 +728,18 @@ export const Customers = ({
                     <div style={{ fontSize: 11.5, color: "#991b1b", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginTop: 10, fontWeight: 600 }}>
                       ⚠ Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var (yukarıdaki toplama dahil edilmedi):{" "}
                       {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}
+                    </div>
+                  )}
+                  {detailBekleyenCek > 0 && (
+                    <div style={{
+                      fontSize: 11.5, fontWeight: 600, borderRadius: 8, padding: "8px 12px", marginTop: 10,
+                      color: detailCekVadesiGecmisVar ? "#991b1b" : "#92400e",
+                      background: detailCekVadesiGecmisVar ? "#fef2f2" : "#fffbeb",
+                      border: `1px solid ${detailCekVadesiGecmisVar ? "#fecaca" : "#fde68a"}`,
+                    }}>
+                      {detailCekVadesiGecmisVar
+                        ? <>⚠ Vadesi geçti! {fmtCur(detailBekleyenCek, detailMainCur)} çek hâlâ tahsil edilmedi.</>
+                        : <>⏳ {fmtCur(detailBekleyenCek, detailMainCur)} tahsil edilecek çek bekliyor.</>}
                     </div>
                   )}
                   </div>
@@ -828,6 +879,12 @@ export const Customers = ({
                                 <>
                                   <span onClick={() => openEditPayment(payment)} title="Düzenlemek için tıklayın"
                                     style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                                  {payment.yontem === "Çek" && (
+                                    <button onClick={() => toggleCekTahsil(payment)}
+                                      style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: payment.tahsilEdildi ? "#bbf7d0" : "#fde68a", background: payment.tahsilEdildi ? "#f0fdf4" : "#fffbeb", color: payment.tahsilEdildi ? "#15803d" : "#92400e" }}>
+                                      {payment.tahsilEdildi ? "Tahsil Edildi" : "Beklemede · işaretle: Tahsil Edildi"}
+                                    </button>
+                                  )}
                                   <button onClick={() => setConfirmDeletePaymentId(payment.id)} title="Ödemeyi sil"
                                     style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                                     <Icon name="trash" size={11} /> Sil
@@ -1011,17 +1068,45 @@ export const Customers = ({
       {/* Kapora/Ödeme ekle/düzenle (müşteri detayından) — tarihli ödeme kaydı, Kalan Borç bundan türetilir */}
       {paymentForm && (
         <Modal title={paymentForm.id ? "Ödemeyi Düzenle" : "Kapora/Ödeme Ekle"} onClose={() => setPaymentForm(null)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Tarih">
-              <Input type="date" value={paymentForm.tarih || ""} onChange={e => setPaymentForm(p => ({ ...p, tarih: e.target.value }))} />
+          <Field label="Tarih">
+            <Input type="date" value={paymentForm.tarih || ""} onChange={e => setPaymentForm(p => ({ ...p, tarih: e.target.value }))} />
+          </Field>
+          {paymentForm.id ? (
+            // Düzenleme: tek satır — Yöntem/Tutar/(Çek ise) Vade Tarihi + Tahsil Edildi
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: paymentForm.yontem === "Çek" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
+                <Field label="Yöntem">
+                  <Select value={paymentForm.yontem || "Nakit"} onChange={e => setPaymentForm(p => ({ ...p, yontem: e.target.value }))}>
+                    {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+                  </Select>
+                </Field>
+                <Field label="Tutar">
+                  <MoneyInput value={paymentForm.tutar} sym={CUR_SYM[paymentForm.currency || "TRY"]} onChange={v => setPaymentForm(p => ({ ...p, tutar: v }))} />
+                  <Warn>{parseMoney(paymentForm.tutar) <= 0 ? "Tutar girilmedi" : ""}</Warn>
+                </Field>
+                {paymentForm.yontem === "Çek" && (
+                  <Field label="Vade Tarihi">
+                    <Input type="date" value={paymentForm.vadeTarihi || ""} onChange={e => setPaymentForm(p => ({ ...p, vadeTarihi: e.target.value }))} />
+                  </Field>
+                )}
+              </div>
+              {paymentForm.yontem === "Çek" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: paymentForm.tahsilEdildi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${paymentForm.tahsilEdildi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
+                  <input type="checkbox" checked={!!paymentForm.tahsilEdildi} onChange={e => setPaymentForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: paymentForm.tahsilEdildi ? "#15803d" : "#92400e" }}>
+                    {paymentForm.tahsilEdildi ? "Çek tahsil edildi" : "Çek henüz tahsil edilmedi (Kalan Borç'tan düşülmez)"}
+                  </span>
+                </label>
+              )}
+            </>
+          ) : (
+            // Ekleme: çoklu satır — aynı ödeme olayı nakit+kredi kartı+çek karışık girilebilir
+            <Field label="Ödeme Satırları">
+              <PaymentRowsEditor rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]} />
             </Field>
-            <Field label="Tutar">
-              <MoneyInput value={paymentForm.tutar} sym={CUR_SYM[paymentForm.currency || "TRY"]} onChange={v => setPaymentForm(p => ({ ...p, tutar: v }))} />
-              <Warn>{parseMoney(paymentForm.tutar) <= 0 ? "Tutar girilmedi" : ""}</Warn>
-            </Field>
-          </div>
+          )}
           <Field label="Not (isteğe bağlı)">
-            <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi, nakit..." />
+            <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi..." />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setPaymentForm(null)}>İptal</Btn>
@@ -1081,41 +1166,17 @@ export const Customers = ({
       )}
 
       {modal && (
-        <Modal wide title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={() => setModal(null)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Kalıp Sayısı (otomatik)">
-              <div style={{ padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
-                <b style={{ color: "#0f172a", fontSize: 16 }}>{(form.kaliplar || []).length}</b>
-                <span style={{ fontSize: 12 }}>kalıp · aşağıdaki listeden eklenir/silinir</span>
-              </div>
-            </Field>
-            <Field label="Satış Yapan">
-              {modal === "add" ? (
-                // Yeni müşteri/ilk satışta serbest metin yok — sadece Fabrika veya kayıtlı bayilerden seçilir
-                <Select value={form.satisYapan || factory?.name || "Altuntaş Makina"} onChange={e => setForm(p => ({ ...p, satisYapan: e.target.value }))}>
-                  <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
-                  {(dealers || []).map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-                </Select>
-              ) : (
-                <PickOrType
-                  value={form.satisYapan}
-                  onChange={v => setForm(p => ({ ...p, satisYapan: v }))}
-                  placeholder="Satıcı adı (müşteri, bayi, fabrika...)"
-                  options={[
-                    { value: factory?.name || "Altuntaş Makina", label: `${factory?.name || "Altuntaş Makina"} (Fabrika)` },
-                    ...(dealers || []).map(d => ({ value: d.name, label: d.name })),
-                    ...(form.prevOwners?.length > 0
-                      ? [{ value: form.prevOwners[form.prevOwners.length - 1].name, label: `${form.prevOwners[form.prevOwners.length - 1].name} (Önceki Sahip)` }]
-                      : []),
-                  ]}
-                />
-              )}
-            </Field>
+        <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={() => setModal(null)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+            <Icon name="customers" size={15} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Firma Bilgileri</span>
           </div>
 
           <Field label="Satın Alan">
-            <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Satın alan firma / kişi" />
-            <Warn>{!form.name?.trim() ? "Satın alan adı girilmedi" : ""}</Warn>
+            <div style={{ maxWidth: "50%" }}>
+              <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Satın alan firma / kişi" />
+              <Warn>{!form.name?.trim() ? "Satın alan adı girilmedi" : ""}</Warn>
+            </div>
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 1 - Ad Soyad"><Input value={form.yetkili1Ad || ""} onChange={e => setForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
@@ -1148,6 +1209,19 @@ export const Customers = ({
             onCity={v => setForm(p => ({ ...p, city: v }))}
             geoData={geoData} loadingGeo={loadingGeo} />
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+            <Icon name="machine" size={15} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Makina Bilgileri</span>
+          </div>
+
+          <Field label="Kalıp Sayısı (otomatik)">
+            <div style={{ maxWidth: 220, padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+              <b style={{ color: "#0f172a", fontSize: 16 }}>{(form.kaliplar || []).length}</b>
+              <span style={{ fontSize: 12 }}>kalıp · aşağıdaki listeden eklenir/silinir</span>
+            </div>
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Model">
             <div
               onClick={() => setModelPicker(p => !p)}
@@ -1174,17 +1248,84 @@ export const Customers = ({
             )}
           </Field>
 
-          {/* Makina Kalıp Çapı — 3 kutu: çap × boy × arka ölçü */}
+          <Field label="Seri Numarası">
+            {(() => {
+              const stockForModel = (stock && form.model) ? stock.filter(s => s.model === form.model) : [];
+              const serili = stockForModel.filter(s => s.serialNo);       // seri no'lu stok
+              const serisiz = stockForModel.filter(s => !s.serialNo);     // seri no'suz stok
+              // Stok modu: yeni kayıt + model seçili + o modelde stok var → dropdown (+ manuel seçeneği)
+              if (modal === "add" && stock && form.model && stockForModel.length > 0 && !form._manualSerial) {
+                return (
+                  <>
+                    <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
+                      if (e.target.value === "__manual__") {
+                        setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "" }));
+                      } else if (e.target.value === "__serisiz__") {
+                        // Seri no'suz stok seç: seri no boş kalır, satışta o modelden 1 seri no'suz adet düşülür
+                        setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "" }));
+                      } else {
+                        setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value }));
+                      }
+                    }}>
+                      <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
+                      {serili.map(s => <option key={s.id} value={s.serialNo}>{s.serialNo}</option>)}
+                      {serisiz.length > 0 && <option value="__serisiz__">📦 Seri no'suz stoktan düş ({serisiz.length} adet), seri no sonra atanır</option>}
+                      <option value="__manual__">✏️ Manuel gir (stok dışı / eski müşteri)</option>
+                    </Select>
+                    {form._stokSerisiz ? (
+                      <div style={{ fontSize: 11, color: "#d97706", marginTop: 5, fontWeight: 600 }}>
+                        ⚠ Seri no'suz satış yapılıyor, stoktan 1 adet düşülecek. Seri no'yu sonra "Müşteriyi Düzenle" bölümünden girebilirsiniz.
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: "#059669", marginTop: 5, fontWeight: 600 }}>
+                        ✓ Stoktan seçilen seri no satış kaydedilince stoktan otomatik düşülür
+                      </div>
+                    )}
+                  </>
+                );
+              }
+              // Manuel mod / stok yok / düzenleme: serbest metin
+              return (
+                <>
+                  <Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="AK140-2026-001" autoFocus={form._manualSerial} />
+                  {modal === "add" && form._manualSerial && stockForModel.length > 0 && (
+                    <button onClick={() => setForm(p => ({ ...p, _manualSerial: false, serialNo: "" }))}
+                      style={{ marginTop: 5, fontSize: 11, color: "#e85d1a", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
+                      ← Stoktan seçime dön
+                    </button>
+                  )}
+                  {modal === "add" && form._manualSerial && (
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                      Manuel girilen seri no stoktan düşülmez (eski müşteri kaydı için uygundur).
+                    </div>
+                  )}
+                  {modal === "add" && stock && form.model && stockForModel.length === 0 && (
+                    <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>
+                      Bu modelden stokta makina yok, seri no elle girilecek.
+                    </div>
+                  )}
+                  {modal === "add" && stock && !form.model && (
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>
+                      Stoktan seri no seçebilmek için önce yukarıdan <b>Model</b> seçin.
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </Field>
+          </div>
+
+          {/* Makina Kalıp Çapı — 3 kutu: çap × arka ölçü × boy */}
           <Field label="Makina Kalıp Çapı">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Input value={form.kalipCapi?.en || ""} placeholder="Çap"
                 onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), en: e.target.value } }))} />
               <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 16 }}>×</span>
-              <Input value={form.kalipCapi?.boy || ""} placeholder="Boy"
-                onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), boy: e.target.value } }))} />
-              <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 16 }}>×</span>
               <Input value={form.kalipCapi?.yukseklik || ""} placeholder="Arka Ölçü"
                 onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), yukseklik: e.target.value } }))} />
+              <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 16 }}>×</span>
+              <Input value={form.kalipCapi?.boy || ""} placeholder="Boy"
+                onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), boy: e.target.value } }))} />
             </div>
           </Field>
 
@@ -1254,6 +1395,36 @@ export const Customers = ({
             </Field>
           </div>
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+            <Icon name="finance" size={15} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Satış / Finans</span>
+          </div>
+
+          <Field label="Satış Yapan">
+            <div style={{ maxWidth: "50%" }}>
+            {modal === "add" ? (
+              // Yeni müşteri/ilk satışta serbest metin yok — sadece Fabrika veya kayıtlı bayilerden seçilir
+              <Select value={form.satisYapan || factory?.name || "Altuntaş Makina"} onChange={e => setForm(p => ({ ...p, satisYapan: e.target.value }))}>
+                <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
+                {(dealers || []).map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+              </Select>
+            ) : (
+              <PickOrType
+                value={form.satisYapan}
+                onChange={v => setForm(p => ({ ...p, satisYapan: v }))}
+                placeholder="Satıcı adı (müşteri, bayi, fabrika...)"
+                options={[
+                  { value: factory?.name || "Altuntaş Makina", label: `${factory?.name || "Altuntaş Makina"} (Fabrika)` },
+                  ...(dealers || []).map(d => ({ value: d.name, label: d.name })),
+                  ...(form.prevOwners?.length > 0
+                    ? [{ value: form.prevOwners[form.prevOwners.length - 1].name, label: `${form.prevOwners[form.prevOwners.length - 1].name} (Önceki Sahip)` }]
+                    : []),
+                ]}
+              />
+            )}
+            </div>
+          </Field>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Para Birimi">
               <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
@@ -1269,10 +1440,10 @@ export const Customers = ({
             </Field>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr" : "1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
             {/* Fabrika Satış Bedeli — finansın asıl bel kemiği */}
             <Field label="Fabrika Satış Bedeli">
-              <MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} />
+              <div style={{ maxWidth: 220 }}><MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} /></div>
               <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</div>
             </Field>
 
@@ -1280,7 +1451,7 @@ export const Customers = ({
             {isFaturali(form.faturali) && (
               <Field label="Fatura Bedeli (resmi faturada yazan)">
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <MoneyInput value={form.faturaBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, faturaBedeli: v }))} />
+                  <div style={{ maxWidth: 220 }}><MoneyInput value={form.faturaBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, faturaBedeli: v }))} /></div>
                   {normalizeSaleType(form.faturali) === "Faturalı Yurtdışı" && (
                     <span style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", background: "#dbeafe", padding: "5px 10px", borderRadius: 8, whiteSpace: "nowrap" }}>YURTDIŞI · KDV YOK</span>
                   )}
@@ -1297,94 +1468,30 @@ export const Customers = ({
                 </div>
               </Field>
             )}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Komisyon"><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></Field>
-            {modal === "add" ? (
-              <Field label="İlk Ödeme (Kapora/Ödeme)">
-                <MoneyInput value={form._ilkOdeme} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, _ilkOdeme: v }))} />
-                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
-              </Field>
-            ) : (
-              <Field label="Kapora/Ödeme">
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
-                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
-              </Field>
-            )}
+
+            <Field label="Komisyon">
+              <div style={{ maxWidth: 220 }}><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></div>
+            </Field>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {modal === "add" ? (
+            <Field label="İlk Ödeme (Kapora/Ödeme)">
+              <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]} />
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Satış anında alınan kapora varsa girin (nakit, kredi kartı, çek ayrı satırlar olarak). Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
+            </Field>
+          ) : (
+            <Field label="Kapora/Ödeme">
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
+            </Field>
+          )}
+
           <Field label="Kalan Borç">
             <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", padding: "9px 0" }}>
-              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRate) - (modal === "add" ? parseMoney(form._ilkOdeme) : 0), form.currency)}
+              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRate) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0), form.currency)}
             </div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez.</div>
-          </Field>
-
-          <Field label="Seri Numarası">
-            {(() => {
-              const stockForModel = (stock && form.model) ? stock.filter(s => s.model === form.model) : [];
-              const serili = stockForModel.filter(s => s.serialNo);       // seri no'lu stok
-              const serisiz = stockForModel.filter(s => !s.serialNo);     // seri no'suz stok
-              // Stok modu: yeni kayıt + model seçili + o modelde stok var → dropdown (+ manuel seçeneği)
-              if (modal === "add" && stock && form.model && stockForModel.length > 0 && !form._manualSerial) {
-                return (
-                  <>
-                    <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
-                      if (e.target.value === "__manual__") {
-                        setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "" }));
-                      } else if (e.target.value === "__serisiz__") {
-                        // Seri no'suz stok seç: seri no boş kalır, satışta o modelden 1 seri no'suz adet düşülür
-                        setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "" }));
-                      } else {
-                        setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value }));
-                      }
-                    }}>
-                      <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
-                      {serili.map(s => <option key={s.id} value={s.serialNo}>{s.serialNo}</option>)}
-                      {serisiz.length > 0 && <option value="__serisiz__">📦 Seri no'suz stoktan düş ({serisiz.length} adet), seri no sonra atanır</option>}
-                      <option value="__manual__">✏️ Manuel gir (stok dışı / eski müşteri)</option>
-                    </Select>
-                    {form._stokSerisiz ? (
-                      <div style={{ fontSize: 11, color: "#d97706", marginTop: 5, fontWeight: 600 }}>
-                        ⚠ Seri no'suz satış yapılıyor, stoktan 1 adet düşülecek. Seri no'yu sonra "Müşteriyi Düzenle" bölümünden girebilirsiniz.
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: 11, color: "#059669", marginTop: 5, fontWeight: 600 }}>
-                        ✓ Stoktan seçilen seri no satış kaydedilince stoktan otomatik düşülür
-                      </div>
-                    )}
-                  </>
-                );
-              }
-              // Manuel mod / stok yok / düzenleme: serbest metin
-              return (
-                <>
-                  <Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="AK140-2026-001" autoFocus={form._manualSerial} />
-                  {modal === "add" && form._manualSerial && stockForModel.length > 0 && (
-                    <button onClick={() => setForm(p => ({ ...p, _manualSerial: false, serialNo: "" }))}
-                      style={{ marginTop: 5, fontSize: 11, color: "#e85d1a", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
-                      ← Stoktan seçime dön
-                    </button>
-                  )}
-                  {modal === "add" && form._manualSerial && (
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
-                      Manuel girilen seri no stoktan düşülmez (eski müşteri kaydı için uygundur).
-                    </div>
-                  )}
-                  {modal === "add" && stock && form.model && stockForModel.length === 0 && (
-                    <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>
-                      Bu modelden stokta makina yok, seri no elle girilecek.
-                    </div>
-                  )}
-                  {modal === "add" && stock && !form.model && (
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>
-                      Stoktan seri no seçebilmek için önce yukarıdan <b>Model</b> seçin.
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
           </Field>
           </div>
 

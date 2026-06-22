@@ -1,4 +1,4 @@
-import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR } from "../lib/constants";
+import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -64,6 +64,43 @@ export const PickOrType = ({ value, onChange, options = [], placeholder = "" }) 
     <Input value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ marginTop: 6 }} />
   </div>
 );
+// Kapora/Ödeme satırları: PartSaleForm'daki çoklu-kalıp ekleme deseninin genelleştirilmiş hali
+// (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
+// alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
+// (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
+  const satirlar = rows || [];
+  const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
+  const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const satirSil = (i) => onChange(satirlar.filter((_, idx) => idx !== i));
+  const satirEkle = () => onChange([...satirlar, { yontem: "Nakit", tutar: "", vadeTarihi: "" }]);
+  return (
+    <div>
+      {satirlar.map((r, i) => (
+        <div key={i} style={{ display: "grid", gridTemplateColumns: r.yontem === "Çek" ? "1fr 1fr 1fr 36px" : "1fr 1fr 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+          <Select value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
+            {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+          </Select>
+          <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
+          {r.yontem === "Çek" && (
+            <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
+          )}
+          <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+        </div>
+      ))}
+      <button type="button" onClick={satirEkle}
+        style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "#fff7ed", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+        + Satır Ekle
+      </button>
+      {toplam > 0 && (
+        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+          Toplam: {new Intl.NumberFormat("tr-TR").format(toplam)}{sym}
+        </div>
+      )}
+    </div>
+  );
+};
 // Para girişi: değer SAYI olarak tutulur, ekranda binlik ayraçlı + ₺ gösterilir
 export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺" }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);
@@ -102,9 +139,9 @@ export const StatCard = ({ label, value, sub, color, onClick }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children, wide, maxWidth }) => (
+export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) => (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: wide ? "94vh" : "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>

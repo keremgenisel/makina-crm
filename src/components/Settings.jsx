@@ -126,11 +126,18 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     flash("ok", "Extra Kalıp satışları Excel (CSV) olarak indirildi.");
   };
   const exportPayments = () => {
-    const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Not"];
+    const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Yöntem", "Vade Tarihi", "Tahsil Edildi", "Not"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...payments.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
-      return [c.name, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"], parseMoney(p.tutar), p.not];
+      const yontem = p.yontem || "Nakit";
+      const cekMi = yontem === "Çek";
+      return [
+        c.name, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"], parseMoney(p.tutar), yontem,
+        cekMi && p.vadeTarihi ? fmtTR(p.vadeTarihi) : "",
+        cekMi ? (p.tahsilEdildi ? "Evet" : "Hayır") : "",
+        p.not,
+      ];
     })];
     downloadCSV(rows, "odemeler.csv");
     flash("ok", "Ödeme/kapora geçmişi Excel (CSV) olarak indirildi.");

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], rates, ratesErr, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
   const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length;
 
   // ── Aksiyon gerektiren uyarılar ──
@@ -16,6 +16,14 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const borcluMusteriler = realCustomers.filter(c => parseMoney(c.kalanBorc) > 0);
   const borcluServisler = services.filter(isServisBorcluMu);
   const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
+  // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
+  // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
+  const cekRozeti = (customerId) => {
+    const bekleyen = sumBekleyenCek(customerId, payments);
+    if (bekleyen <= 0) return null;
+    const vadesiGecmis = payments.some(p => p.customerId === customerId && isCekVadesiGecmis(p));
+    return vadesiGecmis ? "⚠ Çek Vadesi Geçti" : "🧾 Çek Bekliyor";
+  };
   const custName = (id) => customers.find(c => c.id === id)?.name || "—";
   // Aynı firmanın birden çok makinası (customer kaydı) veya birden çok servis/parça borcu
   // olabilir — bunlar farklı "firma" sayılmasın diye firma adına (case-insensitive) göre tekilleştir.
@@ -168,18 +176,24 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
                   Müşteriler ({borcluMusteriler.length})
                 </div>
-                {borcluMusteriler.map(c => (
-                  <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fef2f2"}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{c.name}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                {borcluMusteriler.map(c => {
+                  const rozet = cekRozeti(c.id);
+                  return (
+                    <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#fef2f2"}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                          {c.name}
+                          {rozet && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: rozet.startsWith("⚠") ? "#fee2e2" : "#fff7ed", color: rozet.startsWith("⚠") ? "#991b1b" : "#c2410c" }}>{rozet}</span>}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(c.kalanBorc, c.currency)}</div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(c.kalanBorc, c.currency)}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

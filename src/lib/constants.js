@@ -104,4 +104,7 @@ export const BACKUP_APP_TAG = "altunmak-crm";
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];
 export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "Fabrika Teslim"];
 
+// ── Kapora/Ödeme Yöntemleri ──
+export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
+
 export const APP_VERSION = "1.1.0";

@@ -128,9 +128,18 @@ export const calcCiro = (customer, kdvRate = DEFAULT_KDV_RATE) => {
   const kdv = calcKDV(customer.faturali, customer.faturaBedeli, kdvRate);
   return parseMoney(customer.fabrikaSatisBedeli) + kdv + parseMoney(customer.komisyon);
 };
-// Bir makinaya (customerId) yapılmış tüm ödemelerin toplamı
+// Bir ödeme "alınmış" mı sayılır: Nakit/Kredi Kartı girildiği anda alınmış sayılır;
+// Çek ise bankada karşılanana kadar (tahsilEdildi elle işaretlenene kadar) sayılmaz.
+// yontem alanı olmayan eski kayıtlar Nakit gibi davranır (geriye dönük uyumluluk).
+export const isPaymentReceived = (p) => p.yontem !== "Çek" || p.tahsilEdildi === true;
+// Bir makinaya (customerId) yapılmış, alınmış sayılan ödemelerin toplamı
 export const sumPayments = (customerId, payments = []) =>
-  payments.filter(p => p.customerId === customerId).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
-// Kalan Borç = Ciro - (o makinaya yapılan tüm ödemelerin toplamı)
+  payments.filter(p => p.customerId === customerId && isPaymentReceived(p)).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
+// Bir müşterinin tahsil edilmemiş çeklerinin toplamı (Kalan Borç'a henüz dahil olmayan, beklemedeki tutar)
+export const sumBekleyenCek = (customerId, payments = []) =>
+  payments.filter(p => p.customerId === customerId && p.yontem === "Çek" && !p.tahsilEdildi).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
+// Tahsil edilmemiş bir çekin vade tarihi geçmiş mi
+export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi && !!p.vadeTarihi && p.vadeTarihi < today();
+// Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı)
 export const calcKalanBorc = (customer, payments = [], kdvRate = DEFAULT_KDV_RATE) =>
   calcCiro(customer, kdvRate) - sumPayments(customer.id, payments);
