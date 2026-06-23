@@ -239,7 +239,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
         <MultiCard label="Toplam Ciro" obj={toplamCiromuz} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV dahil)" size="large" />
-        <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tüm zamanlar — güncel bakiye" size="large" />
+        <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
 
@@ -258,7 +258,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
         <MultiCard label="Toplam Fabrika Satış Bedeli Cirosu" obj={toplamCiro} color="#0d9488" sub="Fabrika Satış Bedeli + KDV + Komisyon" />
         <MultiCard label="Toplam Servis Ücreti Cirosu" obj={servisUcreti} color="#f59e0b" sub="Garanti dışı servisler (KDV dahil)" />
-        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcreti} color="#0ea5e9" sub="Servis — değişen parçalar (KDV dahil)" />
+        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcreti} color="#0ea5e9" sub="Servis kayıtlarındaki değişen parça ücretleri (KDV dahil)" />
         <MultiCard label="Toplam Extra Kalıp Satış Cirosu" obj={toplamExtraKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV dahil)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
       </div>

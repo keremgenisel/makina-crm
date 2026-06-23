@@ -24,6 +24,7 @@ export const Icon = ({ name, size = 16 }) => {
     catalog:    "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z",
     notes:      "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5",
     parts:      "M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z",
+    mail:       "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6",
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,7 +107,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
       ))}
       <button type="button" onClick={satirEkle}
         style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "#fff7ed", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-        + Satır Ekle
+        + Ödeme Ekle
       </button>
       {toplam > 0 && (
         <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>

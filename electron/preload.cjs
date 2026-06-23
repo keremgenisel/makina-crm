@@ -49,3 +49,11 @@ contextBridge.exposeInMainWorld("appUpdater", {
 contextBridge.exposeInMainWorld("appControl", {
   uninstall: () => ipcRenderer.invoke("app:uninstall"),
 });
+
+contextBridge.exposeInMainWorld("appMail", {
+  saveCredentials: (email, appPassword) => ipcRenderer.invoke("mail:saveCredentials", email, appPassword),
+  credentialsStatus: () => ipcRenderer.invoke("mail:credentialsStatus"),
+  clearCredentials: () => ipcRenderer.invoke("mail:clearCredentials"),
+  test: () => ipcRenderer.invoke("mail:test"),
+  send: (payload) => ipcRenderer.invoke("mail:send", payload),
+});

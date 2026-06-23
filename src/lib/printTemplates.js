@@ -3,8 +3,8 @@ import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalip
 
 const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-// Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
-export function printServiceForm(sv, customers, kdvRate) {
+// HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
+export function buildServiceFormHtml(sv, customers, kdvRate) {
   const cust = customers.find(c => c.id === sv.customerId) || {};
   const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
   const servisUcretiVar = (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
@@ -116,6 +116,13 @@ export function printServiceForm(sv, customers, kdvRate) {
 </body>
 </html>`;
 
+  return html;
+}
+
+// Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
+export function printServiceForm(sv, customers, kdvRate) {
+  const html = buildServiceFormHtml(sv, customers, kdvRate);
+  const cust = customers.find(c => c.id === sv.customerId) || {};
   if (window.appPrint) {
     window.appPrint.printHtml(stripAutoPrint(html));
     return;
@@ -131,8 +138,8 @@ export function printServiceForm(sv, customers, kdvRate) {
   }
 }
 
-// Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales) {
+// HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
+export function buildMachineReportHtml(detailView, detailHistory, partSales) {
   const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= today();
   const infoRows = [
     ["Satın Alan", detailView.name],
@@ -214,6 +221,12 @@ export function printMachineReport(detailView, detailHistory, partSales) {
 </body>
 </html>`;
 
+  return html;
+}
+
+// Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
+export function printMachineReport(detailView, detailHistory, partSales) {
+  const html = buildMachineReportHtml(detailView, detailHistory, partSales);
   if (window.appPrint) {
     window.appPrint.printHtml(stripAutoPrint(html));
     return;

@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, Menu, MenuItem } = require("electro
 const path = require("path");
 const fs = require("fs");
 const sqliteDb = require("./db.cjs");
+const mailer = require("./mail.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -242,6 +243,13 @@ ipcMain.handle("app:printHtml", async (_e, html) => {
     }
   });
 });
+
+// ── E-posta (Yandex SMTP) ──
+ipcMain.handle("mail:saveCredentials", (_e, email, appPassword) => mailer.saveCredentials({ email, appPassword }));
+ipcMain.handle("mail:credentialsStatus", () => mailer.getCredentialsStatus());
+ipcMain.handle("mail:clearCredentials", () => mailer.clearCredentials());
+ipcMain.handle("mail:test", () => mailer.testConnection());
+ipcMain.handle("mail:send", (_e, payload) => mailer.sendMail(payload));
 
 function wireUpdaterEvents() {
   if (!autoUpdater) return;

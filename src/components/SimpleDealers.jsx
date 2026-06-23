@@ -24,6 +24,45 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   };
   const confirmDel = () => { setDealers(p => p.filter(d => d.id !== confirmId)); setConfirmId(null); showToast("Bayi silindi."); };
 
+  // ── E-posta gönder (bayiye) — içerik tamamen serbest, ek dosya isteğe bağlı manuel seçilir ──
+  const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, attachmentName, attachmentBase64, attachmentMime }
+  const [mailSendState, setMailSendState] = useState({ state: "idle", error: null }); // idle | sending | error
+  const MAX_ATTACHMENT_MB = 15;
+  const openMailDealer = (d) => {
+    setMailDraft({ to: d.email || "", subject: "", text: "", attachmentName: null, attachmentBase64: null, attachmentMime: null });
+    setMailSendState({ state: "idle", error: null });
+  };
+  const onPickAttachment = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+      setMailSendState({ state: "error", error: `Dosya çok büyük (en fazla ${MAX_ATTACHMENT_MB} MB).` });
+      return;
+    }
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    setMailDraft(p => ({ ...p, attachmentName: file.name, attachmentBase64: window.btoa(binary), attachmentMime: file.type || "application/octet-stream" }));
+  };
+  const sendMailDraft = async () => {
+    if (!window.appMail || !mailDraft) return;
+    if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
+    setMailSendState({ state: "sending", error: null });
+    const res = await window.appMail.send({
+      to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text,
+      attachments: mailDraft.attachmentBase64 ? [{ filename: mailDraft.attachmentName, contentBase64: mailDraft.attachmentBase64, mimeType: mailDraft.attachmentMime }] : [],
+    });
+    if (res?.ok) {
+      setMailSendState({ state: "idle", error: null });
+      setMailDraft(null);
+      showToast("E-posta gönderildi.");
+    } else {
+      setMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
+    }
+  };
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -114,8 +153,57 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             ))}
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            {!detailView._isFactory && (
+              <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
+            )}
             <Btn variant="ghost" onClick={() => setDetailView(null)}>Kapat</Btn>
           </div>
+        </Modal>
+      )}
+
+      {/* Bayiye e-posta gönder — içerik serbest, ek dosya isteğe bağlı manuel seçilir */}
+      {mailDraft && (
+        <Modal title="E-posta Gönder" onClose={() => setMailDraft(null)}>
+          {!window.appMail ? (
+            <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+              Bu özellik yalnızca kurulu uygulamada çalışır.
+            </div>
+          ) : (
+            <>
+              <Field label="Kime">
+                <Input value={mailDraft.to} onChange={e => setMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
+                <Warn>{mailDraft.to && !EMAIL_RE.test(mailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
+              </Field>
+              <Field label="Konu">
+                <Input value={mailDraft.subject} onChange={e => setMailDraft(p => ({ ...p, subject: e.target.value }))} placeholder="Konu" />
+              </Field>
+              <Field label="Mesaj">
+                <textarea value={mailDraft.text} onChange={e => setMailDraft(p => ({ ...p, text: e.target.value }))}
+                  placeholder="Mesajınızı yazın..."
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
+              </Field>
+              <Field label="Ek (isteğe bağlı)">
+                <input type="file" onChange={onPickAttachment}
+                  style={{ fontSize: 13, color: "#475569" }} />
+                {mailDraft.attachmentName && (
+                  <div style={{ fontSize: 12, color: "#0f172a", marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                    📎 {mailDraft.attachmentName}
+                    <button onClick={() => setMailDraft(p => ({ ...p, attachmentName: null, attachmentBase64: null, attachmentMime: null }))}
+                      style={{ border: "none", background: "transparent", color: "#dc2626", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Kaldır</button>
+                  </div>
+                )}
+              </Field>
+              {mailSendState.state === "error" && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 12 }}>✗ {mailSendState.error}</div>
+              )}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <Btn variant="ghost" onClick={() => setMailDraft(null)}>İptal</Btn>
+                <Btn onClick={sendMailDraft} disabled={mailSendState.state === "sending"}>
+                  <Icon name="mail" size={14} /> {mailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
+                </Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
 

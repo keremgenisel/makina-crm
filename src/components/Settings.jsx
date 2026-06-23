@@ -1,10 +1,22 @@
 import { useState, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE, BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../lib/constants";
 import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount } from "../lib/utils";
-import { Icon, Btn, Modal } from "./ui";
+import { Icon, Btn, Modal, Field, Input, Warn, EMAIL_RE } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
+
+// Modül seviyesinde tanımlı — Settings içinde tanımlansaydı her render'da yeni bir komponent
+// referansı oluşur, React onu farklı bir tip sanıp alt ağacı yeniden mount eder (input'lar her
+// tuşa basışta focus kaybeder). Sadece props alıyor, Settings'in içindeki hiçbir şeye ihtiyacı yok.
+const Section = ({ title, icon, children }) => (
+  <div style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 20, maxWidth: 720 }}>
+    <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ color: "#e85d1a" }}><Icon name={icon} size={18} /></span>{title}
+    </div>
+    {children}
+  </div>
+);
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {} }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
@@ -12,14 +24,54 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
 
   // ── Excel'e aktarma (CSV) ──
+  const buildCSV = (rows) => "\uFEFF" + rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
   const downloadCSV = (rows, filename) => {
-    const csv = "\uFEFF" + rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([buildCSV(rows)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = filename; a.click();
   };
-  const exportFinance = () => {
+  const utf8ToBase64 = (str) => {
+    const bytes = new TextEncoder().encode(str);
+    let binary = "";
+    bytes.forEach(b => { binary += String.fromCharCode(b); });
+    return window.btoa(binary);
+  };
+
+  // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
+  const [exportMailDraft, setExportMailDraft] = useState(null); // null | { to, subject, text, attachmentBase64, attachmentFilename, mimeType }
+  const [exportMailSendState, setExportMailSendState] = useState({ state: "idle", error: null });
+  const openExportMailCSV = (rows, filename, label) => {
+    setExportMailDraft({
+      to: "", subject: `${label} — Altuntaş Makina`, text: `Merhaba,\n\n${label} ekte yer almaktadır.\n\nİyi çalışmalar.`,
+      attachmentBase64: utf8ToBase64(buildCSV(rows)), attachmentFilename: filename, mimeType: "text/csv;charset=utf-8",
+    });
+    setExportMailSendState({ state: "idle", error: null });
+  };
+  const openExportMailXLSXBase64 = (base64, filename, label) => {
+    setExportMailDraft({
+      to: "", subject: `${label} — Altuntaş Makina`, text: `Merhaba,\n\n${label} ekte yer almaktadır.\n\nİyi çalışmalar.`,
+      attachmentBase64: base64, attachmentFilename: filename, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    setExportMailSendState({ state: "idle", error: null });
+  };
+  const sendExportMail = async () => {
+    if (!window.appMail || !exportMailDraft) return;
+    if (!EMAIL_RE.test(exportMailDraft.to || "")) { setExportMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
+    setExportMailSendState({ state: "sending", error: null });
+    const res = await window.appMail.send({
+      to: exportMailDraft.to.trim(), subject: exportMailDraft.subject, text: exportMailDraft.text,
+      attachments: [{ filename: exportMailDraft.attachmentFilename, contentBase64: exportMailDraft.attachmentBase64, mimeType: exportMailDraft.mimeType }],
+    });
+    if (res?.ok) {
+      setExportMailSendState({ state: "idle", error: null });
+      setExportMailDraft(null);
+      flash("ok", "E-posta gönderildi.");
+    } else {
+      setExportMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
+    }
+  };
+  const exportFinance = (mode = "download") => {
     // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
     const real = customers;
     const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
@@ -72,10 +124,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       line("NET GENEL TOPLAM", net),
       line("Kalan Alacak / Tahsil Edilecek", alacak),
     ];
+    if (mode === "email") { openExportMailCSV(rows, "finans-ozeti.csv", "Finans Özeti"); return; }
     downloadCSV(rows, "finans-ozeti.csv");
     flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
   };
-  const exportCustomers = () => {
+  const exportCustomers = (mode = "download") => {
     const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rate = appSettings?.kdvRate ?? DEFAULT_KDV_RATE;
@@ -89,10 +142,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       c.isResale ? "Evet" : "Hayır",
       c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel,
     ])];
+    if (mode === "email") { openExportMailCSV(rows, "musteriler.csv", "Müşteri Listesi"); return; }
     downloadCSV(rows, "musteriler.csv");
     flash("ok", "Müşteri listesi Excel (CSV) olarak indirildi.");
   };
-  const exportServices = () => {
+  const exportServices = (mode = "download") => {
     const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
@@ -100,22 +154,25 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       return [c.name, c.model, c.serialNo, s.type, s.repairPlace, s.date, s.tech,
         curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti), s.yapilanIsler, s.musteriTalimati];
     })];
+    if (mode === "email") { openExportMailCSV(rows, "servis-kayitlari.csv", "Servis Kayıtları"); return; }
     downloadCSV(rows, "servis-kayitlari.csv");
     flash("ok", "Servis kayıtları Excel (CSV) olarak indirildi.");
   };
-  const exportDealers = () => {
+  const exportDealers = (mode = "download") => {
     const head = ["Bayi/Firma Adı", "Yetkili", "Telefon", "E-posta", "Adres", "Ülke", "Şehir", "Not"];
     const rows = [head, ...dealers.map(d => [d.name, d.contact, d.phone, d.email, d.adres, d.country, d.city, d.note])];
+    if (mode === "email") { openExportMailCSV(rows, "bayiler.csv", "Bayi Listesi"); return; }
     downloadCSV(rows, "bayiler.csv");
     flash("ok", "Bayi listesi Excel (CSV) olarak indirildi.");
   };
-  const exportStock = () => {
+  const exportStock = (mode = "download") => {
     const head = ["Model", "Seri No", "Stoğa Giriş Tarihi", "Not"];
     const rows = [head, ...stock.map(s => [s.model, s.serialNo, s.addedDate, s.note])];
+    if (mode === "email") { openExportMailCSV(rows, "stok.csv", "Stok Listesi"); return; }
     downloadCSV(rows, "stok.csv");
     flash("ok", "Stok listesi Excel (CSV) olarak indirildi.");
   };
-  const exportPartSales = () => {
+  const exportPartSales = (mode = "download") => {
     const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
@@ -123,10 +180,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       return [c.name, p.tur, p.ad, p.olcu, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
         parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır"];
     })];
+    if (mode === "email") { openExportMailCSV(rows, "extra-kalip-satislari.csv", "Extra Kalıp Satışları"); return; }
     downloadCSV(rows, "extra-kalip-satislari.csv");
     flash("ok", "Extra Kalıp satışları Excel (CSV) olarak indirildi.");
   };
-  const exportPayments = () => {
+  const exportPayments = (mode = "download") => {
     const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Yöntem", "Vade Tarihi", "Tahsil Edildi", "Not"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...payments.map(p => {
@@ -140,18 +198,21 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         p.not,
       ];
     })];
+    if (mode === "email") { openExportMailCSV(rows, "odemeler.csv", "Ödemeler / Kapora"); return; }
     downloadCSV(rows, "odemeler.csv");
     flash("ok", "Ödeme/kapora geçmişi Excel (CSV) olarak indirildi.");
   };
-  const exportNotes = () => {
+  const exportNotes = (mode = "download") => {
     const head = ["İçerik", "Güncellenme Tarihi"];
     const rows = [head, ...notes.map(n => [n.content, n.updatedAt])];
+    if (mode === "email") { openExportMailCSV(rows, "notlar.csv", "Notlar"); return; }
     downloadCSV(rows, "notlar.csv");
     flash("ok", "Notlar Excel (CSV) olarak indirildi.");
   };
-  const exportParts = () => {
+  const exportParts = (mode = "download") => {
     const head = ["Yedek Parça Adı"];
     const rows = [head, ...parts.map(p => [p.ad])];
+    if (mode === "email") { openExportMailCSV(rows, "yedek-parca-tanimlari.csv", "Yedek Parça Tanımları"); return; }
     downloadCSV(rows, "yedek-parca-tanimlari.csv");
     flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
   };
@@ -166,7 +227,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
   ];
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
-  const exportAllTemplate = async () => {
+  const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const fmtD = (iso) => { if (!iso) return ""; const p = String(iso).split("-"); return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : ""; };
     const rows = [IMPORT_HEADERS];
@@ -211,9 +272,15 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       const ws = XLSX.utils.aoa_to_sheet(rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Tüm Kayıtlar");
+      if (mode === "email") {
+        const base64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+        openExportMailXLSXBase64(base64, "tum-kayitlar.xlsx", "Tüm Kayıtlar (Şablon Formatı)");
+        return;
+      }
       XLSX.writeFile(wb, "tum-kayitlar.xlsx");
       flash("ok", `${customers.length} müşteri kaydı şablon formatında indirildi (geri yüklenebilir).`);
     } catch {
+      if (mode === "email") { openExportMailCSV(rows, "tum-kayitlar.csv", "Tüm Kayıtlar (Şablon Formatı)"); return; }
       downloadCSV(rows, "tum-kayitlar.csv");
       flash("ok", "Tüm kayıtlar (CSV) indirildi.");
     }
@@ -469,6 +536,55 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const [askInstall, setAskInstall] = useState(false); // "yüklensin mi?" onay penceresi
   const [confirmUninstall, setConfirmUninstall] = useState(false);
 
+  // ── E-posta (Yandex SMTP) ──
+  const [mailStatus, setMailStatus] = useState({ configured: false, email: "" });
+  const [mailForm, setMailForm] = useState({ email: "", appPassword: "" });
+  const [mailSaving, setMailSaving] = useState(false);
+  const [mailTest, setMailTest] = useState({ state: "idle", error: null }); // idle | testing | ok | error
+  const [confirmClearMail, setConfirmClearMail] = useState(false);
+
+  const loadMailStatus = async () => {
+    if (!window.appMail) return;
+    const s = await window.appMail.credentialsStatus();
+    setMailStatus(s);
+    setMailForm(p => ({ ...p, email: s.email || p.email }));
+  };
+  useEffect(() => { loadMailStatus(); }, []);
+
+  const saveMailCreds = async () => {
+    if (!window.appMail) return;
+    if (!EMAIL_RE.test(mailForm.email || "")) { flash("err", "Geçerli bir e-posta adresi girin."); return; }
+    if (!mailForm.appPassword?.trim()) { flash("err", "Uygulama parolası girilmedi."); return; }
+    setMailSaving(true);
+    const res = await window.appMail.saveCredentials(mailForm.email.trim(), mailForm.appPassword.trim());
+    setMailSaving(false);
+    if (res?.ok) {
+      flash("ok", "E-posta hesabı bağlandı.");
+      setMailForm(p => ({ ...p, appPassword: "" }));
+      setMailTest({ state: "idle", error: null });
+      loadMailStatus();
+    } else {
+      flash("err", res?.error || "Kaydedilemedi.");
+    }
+  };
+
+  const doTestMail = async () => {
+    if (!window.appMail) return;
+    setMailTest({ state: "testing", error: null });
+    const res = await window.appMail.test();
+    setMailTest(res?.ok ? { state: "ok", error: null } : { state: "error", error: res?.error || "Bağlantı doğrulanamadı." });
+  };
+
+  const doClearMail = async () => {
+    if (!window.appMail) return;
+    await window.appMail.clearCredentials();
+    setConfirmClearMail(false);
+    setMailForm({ email: "", appPassword: "" });
+    setMailTest({ state: "idle", error: null });
+    loadMailStatus();
+    flash("ok", "E-posta bağlantısı kaldırıldı.");
+  };
+
   const checkAppUpdate = async () => {
     if (!window.appUpdater) { setAppUpd({ state: "devmode", latest: null, progress: 0, error: null }); return; }
     setAppUpd({ state: "checking", latest: null, progress: 0, error: null });
@@ -578,15 +694,6 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     flash("ok", "Yedek başarıyla yüklendi. Veriler geri getirildi.");
   };
 
-  const Section = ({ title, icon, children }) => (
-    <div style={{ background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 20, maxWidth: 720 }}>
-      <div style={{ fontWeight: 700, fontSize: 16, color: "#0f172a", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ color: "#e85d1a" }}><Icon name={icon} size={18} /></span>{title}
-      </div>
-      {children}
-    </div>
-  );
-
   const [settingsTab, setSettingsTab] = useState("app"); // "app" | "models"
 
   return (
@@ -598,6 +705,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <div style={{ width: 220, flexShrink: 0, minWidth: 200 }}>
           {[
             { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }] },
+            { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }] },
             { grup: "Veri Yönetimi", items: [{ id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }] },
             { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }] },
           ].map(g => (
@@ -818,6 +926,53 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </Section>
       )}
 
+      {settingsTab === "eposta" && (
+        <Section title="E-posta Ayarları (Yandex SMTP)" icon="mail">
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+            Müşteri detayındaki "E-posta Gönder" butonlarının çalışması için buradan Yandex Mail hesabınızı bağlayın.
+            Yandex, normal e-posta şifrenizle SMTP girişine izin vermez — hesabınızda iki adımlı doğrulamayı açıp
+            <b> Hesap → Güvenlik → Uygulama Parolaları</b> bölümünden bu uygulama için özel bir "uygulama parolası"
+            oluşturmanız gerekir. Aşağıya normal şifrenizi değil, o uygulama parolasını girin.
+          </div>
+
+          {!window.appMail ? (
+            <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+              Bu özellik yalnızca kurulu uygulamada çalışır.
+            </div>
+          ) : (
+            <>
+              {mailStatus.configured && (
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "8px 14px", borderRadius: 10, marginBottom: 16, display: "inline-block" }}>
+                  ✓ Bağlı: {mailStatus.email}
+                </div>
+              )}
+              <Field label="Yandex E-posta">
+                <Input value={mailForm.email} onChange={e => setMailForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
+                <Warn>{mailForm.email && !EMAIL_RE.test(mailForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+              </Field>
+              <Field label="Uygulama Parolası">
+                <Input type="password" value={mailForm.appPassword} onChange={e => setMailForm(p => ({ ...p, appPassword: e.target.value }))} placeholder={mailStatus.configured ? "•••••••• (değiştirmek için yeniden girin)" : "Yandex uygulama parolası"} />
+              </Field>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Btn onClick={saveMailCreds} disabled={mailSaving}><Icon name="check" size={14} /> {mailSaving ? "Kaydediliyor..." : "Kaydet"}</Btn>
+                <Btn variant="ghost" onClick={doTestMail} disabled={!mailStatus.configured || mailTest.state === "testing"}>
+                  <Icon name="refresh" size={14} /> {mailTest.state === "testing" ? "Test ediliyor..." : "Bağlantıyı Test Et"}
+                </Btn>
+                {mailStatus.configured && (
+                  <Btn variant="danger" onClick={() => setConfirmClearMail(true)}><Icon name="trash" size={14} /> Bağlantıyı Kaldır</Btn>
+                )}
+              </div>
+              {mailTest.state === "ok" && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#065f46", marginTop: 12 }}>✓ Bağlantı başarılı.</div>
+              )}
+              {mailTest.state === "error" && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginTop: 12 }}>✗ {mailTest.error}</div>
+              )}
+            </>
+          )}
+        </Section>
+      )}
+
       {settingsTab === "export" && (
         <Section title="Dışa Aktar (Excel / CSV)" icon="download">
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 18, lineHeight: 1.6 }}>
@@ -830,10 +985,16 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             <div style={{ fontSize: 12.5, marginBottom: 14, lineHeight: 1.5, opacity: .95 }}>
               Tüm müşteriler ve servis geçmişleri tek Excel dosyasında, <b>içe aktarma şablonuyla aynı sütun düzeninde</b>. Bu dosyayı düzenleyip tekrar İçe Aktar'dan yükleyebilirsiniz. ({customers.length} müşteri)
             </div>
-            <button onClick={exportAllTemplate}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#e85d1a", border: "none" }}>
-              <Icon name="download" size={14} /> Tümünü İndir
-            </button>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button onClick={() => exportAllTemplate("download")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#e85d1a", border: "none" }}>
+                <Icon name="download" size={14} /> Tümünü İndir
+              </button>
+              <button onClick={() => exportAllTemplate("email")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.5)" }}>
+                <Icon name="mail" size={14} /> E-posta Gönder
+              </button>
+            </div>
           </div>
 
           <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 14, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
@@ -861,7 +1022,10 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
                   <div key={card.title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>{card.title}</div>
                     <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5, flex: 1 }}>{card.desc}</div>
-                    <div style={{ alignSelf: "flex-start" }}><Btn onClick={card.onClick}><Icon name="download" size={14} /> İndir</Btn></div>
+                    <div style={{ alignSelf: "flex-start", display: "flex", gap: 8 }}>
+                      <Btn onClick={() => card.onClick("download")}><Icon name="download" size={14} /> İndir</Btn>
+                      <Btn variant="ghost" onClick={() => card.onClick("email")}><Icon name="mail" size={14} /> E-posta</Btn>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -968,6 +1132,54 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             <Btn variant="ghost" onClick={() => setConfirmUninstall(false)}>Vazgeç</Btn>
             <Btn variant="danger" onClick={doUninstall}><Icon name="trash" size={14} /> Evet, Kaldır</Btn>
           </div>
+        </Modal>
+      )}
+
+      {/* E-posta bağlantısını kaldırma onayı */}
+      {confirmClearMail && (
+        <Modal title="E-posta Bağlantısını Kaldır" onClose={() => setConfirmClearMail(false)}>
+          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 20 }}>
+            Kayıtlı Yandex hesabı bilgileri silinecek. "E-posta Gönder" butonları tekrar bağlanana kadar çalışmaz.
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setConfirmClearMail(false)}>Vazgeç</Btn>
+            <Btn variant="danger" onClick={doClearMail}><Icon name="trash" size={14} /> Evet, Kaldır</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Dışa aktarımı e-posta ile gönder — CSV/XLSX içerik otomatik ek olarak eklenir */}
+      {exportMailDraft && (
+        <Modal title="E-posta Gönder" onClose={() => setExportMailDraft(null)}>
+          {!window.appMail ? (
+            <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+              Bu özellik yalnızca kurulu uygulamada çalışır.
+            </div>
+          ) : (
+            <>
+              <Field label="Kime">
+                <Input value={exportMailDraft.to} onChange={e => setExportMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
+                <Warn>{exportMailDraft.to && !EMAIL_RE.test(exportMailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
+              </Field>
+              <Field label="Konu">
+                <Input value={exportMailDraft.subject} onChange={e => setExportMailDraft(p => ({ ...p, subject: e.target.value }))} />
+              </Field>
+              <Field label="Mesaj">
+                <textarea value={exportMailDraft.text} onChange={e => setExportMailDraft(p => ({ ...p, text: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
+              </Field>
+              <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 16 }}>📎 {exportMailDraft.attachmentFilename} otomatik ek olarak gönderilecek.</div>
+              {exportMailSendState.state === "error" && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 12 }}>✗ {exportMailSendState.error}</div>
+              )}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <Btn variant="ghost" onClick={() => setExportMailDraft(null)}>İptal</Btn>
+                <Btn onClick={sendExportMail} disabled={exportMailSendState.state === "sending"}>
+                  <Icon name="mail" size={14} /> {exportMailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
+                </Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
 
