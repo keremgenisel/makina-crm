@@ -46,7 +46,8 @@ CREATE INDEX IF NOT EXISTS idx_kaliplar_customer ON customer_kaliplar(customer_i
 
 CREATE TABLE IF NOT EXISTS dealers (
   id INTEGER PRIMARY KEY,
-  name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT
+  name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT,
+  bayiMi INTEGER, anlasmaliServisMi INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS services (
@@ -54,7 +55,8 @@ CREATE TABLE IF NOT EXISTS services (
   customer_id INTEGER REFERENCES customers(id),
   type TEXT, repairPlace TEXT, date TEXT, tech TEXT, yapilanIsler TEXT, musteriTalimati TEXT,
   servisUcreti REAL, currency TEXT, faturaTipi TEXT, odendi INTEGER,
-  degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER
+  degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
+  islemFirma TEXT, parcaAltuntastanMi INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -98,9 +100,17 @@ function ensureColumns(conn, table, columns) {
   }
 }
 const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
+const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
+const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"]];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
+// bayiMi/parcaAltuntastanMi gibi "alan yoksa varsayılan true" mantığı taşıyan alanlar için: SQL'de
+// NULL ile false birbirine karıştırılmamalı (toInt/toBool ile undefined her zaman false'a düşer ve
+// "tanımsız" durumu kaybolur — eski/dokunulmamış kayıtlar yanlışlıkla false'a sabitlenir). Bu yüzden
+// bu iki alan NULL (tanımsız) / 0 (false) / 1 (true) üç durumunu ayrı ayrı korur.
+const toIntTriState = (v) => (v === undefined || v === null ? null : (v ? 1 : 0));
+const toBoolTriState = (v) => (v === null || v === undefined ? undefined : !!v);
 const json = (v) => (v === undefined ? null : JSON.stringify(v));
 const parseJsonCol = (v, fallback) => {
   if (v === null || v === undefined) return fallback;
@@ -160,9 +170,11 @@ function populateAll(conn, data) {
     conn.prepare(`DELETE FROM services`).run();
     const stmt = conn.prepare(`
       INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati,
-        servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi)
+        servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
+        islemFirma, parcaAltuntastanMi)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati,
-        @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi)
+        @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
+        @islemFirma, @parcaAltuntastanMi)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -171,6 +183,7 @@ function populateAll(conn, data) {
         servisUcreti: s.servisUcreti ?? null, currency: s.currency ?? null, faturaTipi: s.faturaTipi ?? null, odendi: toInt(s.odendi),
         degisenParcalar: json(s.degisenParcalar ?? []), parcaUcretsizMi: toInt(s.parcaUcretsizMi), parcaUcreti: s.parcaUcreti ?? null,
         parcaCurrency: s.parcaCurrency ?? null, parcaGarantiDisi: toInt(s.parcaGarantiDisi),
+        islemFirma: s.islemFirma ?? null, parcaAltuntastanMi: toIntTriState(s.parcaAltuntastanMi),
       });
     }
   }
@@ -200,8 +213,8 @@ function populateAll(conn, data) {
 
   if (Array.isArray(data.dealers)) {
     conn.prepare(`DELETE FROM dealers`).run();
-    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.note ?? null);
+    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note, bayiMi, anlasmaliServisMi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.note ?? null, toIntTriState(d.bayiMi), toInt(d.anlasmaliServisMi));
   }
 
   if (Array.isArray(data.stock)) {
@@ -275,6 +288,8 @@ function migrateFromJsonIfNeeded() {
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
     ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
+    ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
+    ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
     active = true;
     return;
   }
@@ -364,10 +379,14 @@ function readBlobFromDb() {
     kaliplar: kaliplarByCustomer.get(c.id) || [],
   }));
 
-  const dealers = db.prepare(`SELECT * FROM dealers`).all();
+  const dealers = db.prepare(`SELECT * FROM dealers`).all().map((d) => ({
+    ...d,
+    bayiMi: toBoolTriState(d.bayiMi),
+    anlasmaliServisMi: toBool(d.anlasmaliServisMi),
+  }));
 
   const services = db.prepare(`SELECT * FROM services`).all().map((row) => {
-    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, ...rest } = row;
+    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, ...rest } = row;
     return {
       ...rest,
       customerId: customer_id,
@@ -375,6 +394,7 @@ function readBlobFromDb() {
       odendi: toBool(odendi),
       parcaUcretsizMi: toBool(parcaUcretsizMi),
       parcaGarantiDisi: toBool(parcaGarantiDisi),
+      parcaAltuntastanMi: toBoolTriState(parcaAltuntastanMi),
     };
   });
 

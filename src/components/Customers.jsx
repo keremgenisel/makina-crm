@@ -48,6 +48,9 @@ export const Customers = ({
   // detailView'ı id üzerinden canlı türet — devir/düzenleme sonrası anlık güncel kalsın
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
   const todayStr = today();
+  // Anlaşmalı servis ayrımı için: servis ücretinin Altuntaş'a mı yoksa işlemi yapan anlaşmalı
+  // firmaya mı ait olduğunu belirlemek üzere fabrika adı (isServisUcretliMi/isServisBorcluMu/customerHasAnyDebt'e geçilir)
+  const factoryName = factory?.name || "Altuntaş Makina";
 
   // Müşteri detayı açıldığında services/partSales/payments üzerinde yapılan tüm taramalar
   // (zaman çizelgesi, Kalan Borç, ek borç, bekleyen çek) burada toplanıp memoize ediliyor —
@@ -57,7 +60,7 @@ export const Customers = ({
     detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
     detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
     detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
-    detailBorcFromPrevOwner,
+    detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
   } = useMemo(() => {
     const detailHistory = detailView
       ? services.filter(s => s.customerId === detailView.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
@@ -129,8 +132,8 @@ export const Customers = ({
     const detailEkBorcByCur = {};
     if (detailView) {
       const ekle = (cur, tutar) => { if (tutar > 0) detailEkBorcByCur[cur] = (detailEkBorcByCur[cur] || 0) + tutar; };
-      services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s)).forEach(s => {
-        if (isServisUcretliMi(s)) {
+      services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s, factoryName)).forEach(s => {
+        if (isServisUcretliMi(s, factoryName)) {
           const tutar = parseMoney(s.servisUcreti);
           ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
         }
@@ -156,6 +159,32 @@ export const Customers = ({
     // o yüzden kaliplar dizisinin son N elemanı (N = bu müşteriye ait "Kalıp" tipi partSales adedi) extra satıştan gelmiş sayılır.
     const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
 
+    // Toplam Servis / Extra Kalıp özet kutuları — ödenmiş/ödenmemiş ayrımı yapmadan bu makinaya ait
+    // tüm servis (+ değişen parça) ve Extra Kalıp satışı toplamı, KDV hariç + ayrı KDV tutarı
+    // (Finans sayfasındaki kart deseniyle aynı). Sadece makinanın kendi para birimindeki kayıtlar
+    // toplanır (Kalan Borç kartındaki "farklı para birimi" mantığıyla aynı basitleştirme).
+    let detailServisNet = 0, detailServisKdv = 0;
+    let detailExtraKalipNet = 0, detailExtraKalipKdv = 0;
+    if (detailView) {
+      services.filter(s => s.customerId === detailView.id).forEach(s => {
+        if (isServisUcretliMi(s, factoryName) && (s.currency || "TRY") === detailMainCur) {
+          const tutar = parseMoney(s.servisUcreti);
+          detailServisNet += tutar;
+          detailServisKdv += calcKDV(s.faturaTipi, tutar, kdvRate);
+        }
+        if (isParcaUcretliMi(s) && (s.parcaCurrency || s.currency || "TRY") === detailMainCur) {
+          const tutar = parseMoney(s.parcaUcreti);
+          detailServisNet += tutar;
+          detailServisKdv += calcKDV(s.faturaTipi, tutar, kdvRate);
+        }
+      });
+      (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp" && !p.ucretsizMi && (p.currency || "TRY") === detailMainCur).forEach(p => {
+        const tutar = parseMoney(p.ucret);
+        detailExtraKalipNet += tutar;
+        detailExtraKalipKdv += calcKDV(p.faturaTipi, tutar, kdvRate);
+      });
+    }
+
     // Borç önceki sahipten mi kalmış? Makina satış bedeli borcu (kalanBorc) her zaman ilk satıştan
     // (yani son devirden önce) kalır. Servis/parça/Extra Kalıp borcu ise ancak kaydın tarihi son devir
     // tarihinden önceyse önceki sahibe ait sayılır — devirden sonra açılan servis/Extra Kalıp borcu
@@ -163,7 +192,7 @@ export const Customers = ({
     const detailLastTransferDate = detailView?.prevOwners?.length > 0 ? detailView.prevOwners[detailView.prevOwners.length - 1].soldDate : null;
     const detailBorcFromPrevOwner = !!(detailView && detailLastTransferDate && (
       detailKalanBorc > 0 ||
-      services.some(s => s.customerId === detailView.id && isServisBorcluMu(s) && s.date && s.date < detailLastTransferDate) ||
+      services.some(s => s.customerId === detailView.id && isServisBorcluMu(s, factoryName) && s.date && s.date < detailLastTransferDate) ||
       (partSales || []).some(p => p.customerId === detailView.id && isPartSaleBorcluMu(p) && p.tarih && p.tarih < detailLastTransferDate)
     ));
 
@@ -171,10 +200,10 @@ export const Customers = ({
       detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
       detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
       detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
-      detailBorcFromPrevOwner,
+      detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailView, services, partSales, payments, kdvRate, models, todayStr]);
+  }, [detailView, services, partSales, payments, kdvRate, models, todayStr, factoryName]);
 
   // Firma adına göre makina sayısı (aynı isimli kayıtlar = aynı firma) — sadece customers değişince hesaplanır
   const firmCount = useMemo(() => {
@@ -188,7 +217,7 @@ export const Customers = ({
     filterFn: c => {
       if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();
       if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();
-      if (listFilter === "debt") return customerHasAnyDebt(c, services, partSales);
+      if (listFilter === "debt") return customerHasAnyDebt(c, services, partSales, factoryName);
       if (listFilter === "serial-pending") return c.seriNoBekliyor && !c.serialNo;
       return true;
     },
@@ -341,7 +370,7 @@ export const Customers = ({
 
   // Müşteri detayından servis talebi ekleme/düzenleme — Services.jsx'teki ile aynı ServiceForm'u kullanır
   const openAddService = () => {
-    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
+    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", islemFirma: factory?.name || "Altuntaş Makina", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
     setSvModal("add");
   };
   const openEditService = sv => {
@@ -608,7 +637,7 @@ export const Customers = ({
   };
   const openMailServiceForm = (sv) => {
     const cust = customers.find(c => c.id === sv.customerId);
-    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRate));
+    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRate, { forEmail: true }));
     setMailDraft({
       to: cust?.email || "",
       subject: `Servis Formu — ${cust?.name || ""}`,
@@ -617,6 +646,15 @@ export const Customers = ({
       pdfFileName: `servis-formu-${(cust?.serialNo || cust?.name || "kayit").replace(/\s+/g, "-")}.pdf`,
     });
     setMailSendState({ state: "idle", error: null });
+  };
+  // Eki göndermeden önce nasıl görüneceğini göster — printHtml zaten Yazdır/Kapat araç çubuklu bir önizleme penceresi açıyor
+  const previewMailAttachment = () => {
+    if (!mailDraft?.pdfHtml) return;
+    if (window.appPrint) { window.appPrint.printHtml(mailDraft.pdfHtml); return; }
+    const blob = new Blob([mailDraft.pdfHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
   const sendMailDraft = async () => {
     if (!window.appMail || !mailDraft) return;
@@ -643,7 +681,7 @@ export const Customers = ({
           { v: "all", l: "Hepsi", count: customers.length },
           { v: "warranty-active", l: "🟢 Garantisi Devam Eden", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
           { v: "warranty", l: "⚠ Garantisi Bitenler", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
-          ...(isCustomerTab ? [{ v: "debt", l: "₺ Borçlu Firmalar", count: customers.filter(c => customerHasAnyDebt(c, services, partSales)).length }] : []),
+          ...(isCustomerTab ? [{ v: "debt", l: "₺ Borçlu Firmalar", count: customers.filter(c => customerHasAnyDebt(c, services, partSales, factoryName)).length }] : []),
           ...(isCustomerTab ? [{ v: "serial-pending", l: "⏳ Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
         ].map(f => (
           <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
@@ -707,7 +745,7 @@ export const Customers = ({
               const warrantySoon = warrantyOk && c.warrantyEnd <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
               const warrantyColor = !c.warrantyEnd ? "#cbd5e1" : !warrantyOk ? "#dc2626" : warrantySoon ? "#f59e0b" : "#16a34a";
               const hasKalanBorc = parseMoney(c.kalanBorc) > 0;
-              const hasDebt = isCustomerTab && customerHasAnyDebt(c, services, partSales);
+              const hasDebt = isCustomerTab && customerHasAnyDebt(c, services, partSales, factoryName);
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fefce8" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var — detayı görmek için tıklayın") : undefined}>
@@ -760,7 +798,7 @@ export const Customers = ({
                       const stil = SALE_TYPE_STYLE[tip] || { bg: "#f1f5f9", fg: "#475569" };
                       return (
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: stil.bg, color: stil.fg }}>
-                          {tip}{c.faturaBedeli ? ` · ${fmtCur(c.faturaBedeli, c.currency)}` : ""}
+                          {tip}
                         </span>
                       );
                     })() : <span style={{ color: "#cbd5e1" }}>—</span>}
@@ -884,6 +922,8 @@ export const Customers = ({
                     ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
                     ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate), detailView.currency) : ""],
                     ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
+                    ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV (%${kdvRate}): ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
+                    ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV (%${kdvRate}): ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],
                     ["Satış Yapan", detailView.satisYapan],
                     ["Şirket Telefonu", detailView.phone],
                     ["E-posta", detailView.email],
@@ -898,10 +938,11 @@ export const Customers = ({
                     ["Garanti Bitiş", detailView.warrantyEnd ? fmtTR(detailView.warrantyEnd) : ""],
                     ["Para Birimi", detailView.currency && detailView.currency !== "TRY" ? ({USD:"Dolar ($)",EUR:"Euro (€)"}[detailView.currency]) : ""],
                     ["Açıklama", detailView.aciklama],
-                  ].filter(([, v]) => v && v !== "—").map(([k, v]) => (
+                  ].filter(([, v]) => v && v !== "—").map(([k, v, sub]) => (
                     <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
                       <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{k}</div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
+                      {sub && <div style={{ fontSize: 10.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>{sub}</div>}
                     </div>
                   ))}
                 </div>
@@ -1050,6 +1091,11 @@ export const Customers = ({
                                 <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
                               )}
                               {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "#f1f5f9", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "#475569" }}>{ev.tip}</span>}
+                              {sv?.islemFirma && sv.islemFirma !== factoryName && (
+                                <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "#fef3c7", color: "#92400e" }}>
+                                  Anlaşmalı Servis: {sv.islemFirma}
+                                </span>
+                              )}
                               {sv?.tech && <span style={{ fontSize: 12, color: "#64748b" }}>· {sv.tech}</span>}
                               {sv?.repairPlace && <span style={{ fontSize: 11, color: "#94a3b8" }}>· {sv.repairPlace}</span>}
                             </div>
@@ -1200,7 +1246,7 @@ export const Customers = ({
               options={[
                 { value: detailView?.name, label: `${detailView?.name} (Mevcut Sahip)` },
                 { value: factory?.name || "Altuntaş Makina", label: `${factory?.name || "Altuntaş Makina"} (Fabrika)` },
-                ...(dealers || []).map(d => ({ value: d.name, label: d.name })),
+                ...(dealers || []).filter(d => d.bayiMi !== false).map(d => ({ value: d.name, label: d.name })),
               ]}
             />
           </Field>
@@ -1259,7 +1305,7 @@ export const Customers = ({
               placeholder="Satıcı adı"
               options={[
                 { value: factory?.name || "Altuntaş Makina", label: `${factory?.name || "Altuntaş Makina"} (Fabrika)` },
-                ...(dealers || []).map(d => ({ value: d.name, label: d.name })),
+                ...(dealers || []).filter(d => d.bayiMi !== false).map(d => ({ value: d.name, label: d.name })),
               ]}
             />
           </Field>
@@ -1333,11 +1379,17 @@ export const Customers = ({
                 <textarea value={mailDraft.text} onChange={e => setMailDraft(p => ({ ...p, text: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
               </Field>
-              <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 16 }}>📎 {mailDraft.pdfFileName} otomatik ek olarak gönderilecek.</div>
+              <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                📎 {mailDraft.pdfFileName} otomatik ek olarak gönderilecek.
+                <button onClick={previewMailAttachment} type="button"
+                  style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>
+                  Eki Önizle
+                </button>
+              </div>
               {mailSendState.state === "error" && (
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 12 }}>✗ {mailSendState.error}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginTop: 12, marginBottom: 12 }}>✗ {mailSendState.error}</div>
               )}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
                 <Btn variant="ghost" onClick={() => setMailDraft(null)}>İptal</Btn>
                 <Btn onClick={sendMailDraft} disabled={mailSendState.state === "sending"}>
                   <Icon name="mail" size={14} /> {mailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
@@ -1426,7 +1478,7 @@ export const Customers = ({
       {svModal && (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
-          form={svForm} setForm={setSvForm} customers={customers} parts={parts} kdvRate={kdvRate}
+          form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRate={kdvRate}
           onSave={saveService} onCancel={() => setSvModal(null)}
         />
       )}
@@ -1689,7 +1741,7 @@ export const Customers = ({
               // Yeni müşteri/ilk satışta serbest metin yok — sadece Fabrika veya kayıtlı bayilerden seçilir
               <Select value={form.satisYapan || factory?.name || "Altuntaş Makina"} onChange={e => setForm(p => ({ ...p, satisYapan: e.target.value }))}>
                 <option value={factory?.name || "Altuntaş Makina"}>{factory?.name || "Altuntaş Makina"} (Fabrika)</option>
-                {(dealers || []).map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                {(dealers || []).filter(d => d.bayiMi !== false).map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
               </Select>
             ) : (
               <PickOrType
@@ -1698,7 +1750,7 @@ export const Customers = ({
                 placeholder="Satıcı adı (müşteri, bayi, fabrika...)"
                 options={[
                   { value: factory?.name || "Altuntaş Makina", label: `${factory?.name || "Altuntaş Makina"} (Fabrika)` },
-                  ...(dealers || []).map(d => ({ value: d.name, label: d.name })),
+                  ...(dealers || []).filter(d => d.bayiMi !== false).map(d => ({ value: d.name, label: d.name })),
                   ...(form.prevOwners?.length > 0
                     ? [{ value: form.prevOwners[form.prevOwners.length - 1].name, label: `${form.prevOwners[form.prevOwners.length - 1].name} (Önceki Sahip)` }]
                     : []),

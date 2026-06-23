@@ -87,11 +87,13 @@ export const PickOrType = ({ value, onChange, options = [], placeholder = "" }) 
 // öğeye tıklamak onu hemen seçer/ekler, kısa bir "eklendi" onayı gösterir ve paneli kapatır — yeniden
 // eklemek için input'a tekrar tıklanması gerekir (her seçim ayrı, kapanan bir işlem). 150+ öğelik
 // kataloglarda (örn. yedek parça listesi) formun büyümeden kullanılabilmesi için bu davranış önemli.
-export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", limit = 8 }) => {
+export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı." }) => {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(null);
-  const filtered = (q.trim() ? items.filter(it => trLower(getLabel(it)).includes(trLower(q))) : items).slice(0, limit);
+  // Sonuç sayısı sınırlanmıyor — panel zaten scrollable (maxHeight:220, overflowY:auto); eski sabit
+  // limit (8) bazı öğelerin (örn. 150 parçalık listede 8'den sonrası) hiç görünmemesine yol açıyordu.
+  const filtered = q.trim() ? items.filter(it => trLower(getLabel(it)).includes(trLower(q))) : items;
   const pick = (it) => {
     onPick(it);
     setQ("");
@@ -103,7 +105,10 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
     <div style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
         <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
-        <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => { setOpen(true); setJustAdded(null); }} onBlur={() => setOpen(false)}
+        <input value={q} onChange={e => setQ(e.target.value)}
+          onFocus={() => { setOpen(true); setJustAdded(null); }}
+          onClick={() => { setOpen(true); setJustAdded(null); }}
+          onBlur={() => setOpen(false)}
           placeholder={placeholder}
           style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
       </div>
@@ -182,14 +187,14 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id
     </div>
   );
 };
-export const Btn = ({ children, onClick, variant = "primary", small, disabled }) => {
+export const Btn = ({ children, onClick, variant = "primary", small, disabled, title }) => {
   const styles = {
     primary: { background: "#e85d1a", color: "#fff", border: "none" },
     danger:  { background: "#ef4444", color: "#fff", border: "none" },
     ghost:   { background: "transparent", color: "#64748b", border: "1px solid #e2e8f0" },
   };
   return (
-    <button onClick={onClick} disabled={disabled} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1 }}>
+    <button onClick={onClick} disabled={disabled} title={title} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1 }}>
       {children}
     </button>
   );

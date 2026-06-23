@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATE, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, safeStandardModels } from "./lib/utils";
 import { Icon } from "./components/ui";
 import { Dashboard } from "./components/Dashboard";
 import { Customers } from "./components/Customers";
@@ -29,6 +29,7 @@ export default function App() {
   const notesRef = useRef(null); // Notlar'da kaydedilmemiş taslak varken başka sekmeye geçişi onaya bağlamak için
   const [custFilter, setCustFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|warranty|warranty-active|debt|serial-pending
   const [custDetailId, setCustDetailId] = useState(null); // dashboard'dan belirli bir müşterinin detayını açarak gelme
+  const [dealerFilter, setDealerFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|borclu
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRate: DEFAULT_KDV_RATE });
   const [loaded, setLoaded] = useState(false);
@@ -142,7 +143,7 @@ export default function App() {
             if (Array.isArray(data.dealers)) setDealers(data.dealers);
             if (Array.isArray(data.stock)) setStock(data.stock);
             if (Array.isArray(data.kalipDefs)) setKalipDefs(data.kalipDefs);
-            if (Array.isArray(data.standardModels)) setStandardModels(data.standardModels);
+            setStandardModels(safeStandardModels(data.standardModels));
             if (Array.isArray(data.customModels)) setCustomModels(data.customModels);
             if (data.factory) setFactory(f => ({ ...f, ...data.factory }));
             if (Array.isArray(data.services)) setServices(data.services);
@@ -240,7 +241,7 @@ export default function App() {
             const active = tab === t.id;
             return (
               <button key={t.id} className="nav-btn" onClick={() => {
-                const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } setTab(t.id); };
+                const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } if (t.id === "dealers") setDealerFilter("all"); setTab(t.id); };
                 if (tab === "notes" && t.id !== "notes" && notesRef.current) notesRef.current.guardNavigation(go);
                 else go();
               }} style={{
@@ -275,11 +276,11 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={customers} dealers={dealers} services={services} stock={stock} partSales={partSales} payments={payments} rates={rates} ratesErr={ratesErr} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => setTab("dealers")} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
+        {tab === "dashboard" && <Dashboard customers={customers} dealers={dealers} services={services} stock={stock} partSales={partSales} payments={payments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
         {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} services={services} setServices={setServices} dealers={dealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={stock} setStock={setStock} partSales={partSales} setPartSales={setPartSales} parts={parts} payments={payments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={kalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
-        {tab === "dealers" && <SimpleDealers dealers={dealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} showToast={showToast} />}
+        {tab === "dealers" && <SimpleDealers dealers={dealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={services} customers={customers} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
         {tab === "stock"     && <Stock stock={stock} setStock={setStock} models={allModels} showToast={showToast} />}
-        {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} partSales={partSales} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
+        {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} partSales={partSales} factory={factory} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={notes} setNotes={setNotes} showToast={showToast} />}
         {tab === "settings"  && <Settings  customers={customers} services={services} dealers={dealers} stock={stock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={customModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} notes={notes} setNotes={setNotes} parts={parts} setParts={setParts} partSales={partSales} setPartSales={setPartSales} payments={payments} setPayments={setPayments} showToast={showToast} />}
       </div>

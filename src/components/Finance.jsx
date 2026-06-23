@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcCiro, calcKDV, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu } from "../lib/utils";
+import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcCiro, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services, dealers = [], partSales = [], kdvRate = DEFAULT_KDV_RATE, rates }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRate = DEFAULT_KDV_RATE, rates }) => {
+  const factoryName = factory?.name || "Altuntaş Makina";
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -29,6 +30,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
     toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
     toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
+    anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
     kdvMakina, kdvServis, kdvParca, kdvKalip,
   } = useMemo(() => {
     // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
@@ -91,18 +93,35 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       faturaBedeliToplam[k] += parseMoney(c.faturaBedeli);
       kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
     });
+    // Anlaşmalı bir firma yaptıysa servis ücretini müşteri o firmaya öder, Altuntaş'a değil —
+    // bu yüzden bu ciroya hiç dahil edilmez (ücret yine de geçmişte/kayıtta bilgi amaçlı görünür).
     const servisUcreti = empty3();
-    svcInRange.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
+    svcInRange.filter(s => (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && isAltuntasServisi(s, factoryName)).forEach(s => {
       const kdv = calcKDV(s.faturaTipi, s.servisUcreti, kdvRate);
       servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
       kdvServis[cur(s.currency)] += kdv;
     });
+    // isParcaUcretliMi kullanılıyor (ham !parcaUcretsizMi yerine) — anlaşmalı serviste dışarıdan
+    // tedarik edilen parçalara girilen ücret (geçmişte görünsün diye serbestçe girilebilir) burada
+    // hiç sayılmamalı, parça gerçekten Altuntaş'tan alınmadıysa Altuntaş'ın geliri değildir.
+    // Ayrıca isAltuntasServisi kontrolü de var: anlaşmalı firmaya satılan parçalar (Altuntaş'tan
+    // alınmış olsalar da) burada değil, ayrı "Anlaşmalı Servislere Satılan Parça Bedeli" kartında
+    // sayılır — aksi halde aynı satış iki karta birden girip toplamı şişirirdi.
     const parcaUcreti = empty3();
+    // Anlaşmalı servis firmalarına satılan parça bedeli — Toplam Parça Ücreti Bedeli'nden ayrı,
+    // çift sayılmayan bir kırılım (anlaşmalı firma Altuntaş'tan gerçekten parça satın aldıysa, bkz. isAltuntasServisi).
+    const anlasmaliParcaSatisi = empty3();
+    const kdvAnlasmaliParca = empty3();
     svcInRange.forEach(s => {
-      if (!s.parcaUcretsizMi) {
+      if (isParcaUcretliMi(s)) {
         const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, kdvRate);
-        parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
-        kdvParca[cur(s.parcaCurrency)] += kdv;
+        if (isAltuntasServisi(s, factoryName)) {
+          parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+          kdvParca[cur(s.parcaCurrency)] += kdv;
+        } else {
+          anlasmaliParcaSatisi[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+          kdvAnlasmaliParca[cur(s.parcaCurrency)] += kdv;
+        }
       }
     });
     const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
@@ -127,8 +146,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       CURRENCIES.forEach(k => { r[k] = (a[k] || 0) - (b[k] || 0); });
       return r;
     };
-    const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
-    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvKalip); // dönem bazlı KDV toplamı
+    // anlasmaliParcaSatisi/kdvAnlasmaliParca de dahil — Toplam Parça Ücreti Bedeli kartında ayrı
+    // gösteriliyor olması bu satışın Altuntaş cirosu olmadığı anlamına gelmiyor, sadece tahsilatın
+    // müşteriden değil anlaşmalı firmadan yapıldığı anlamına geliyor (bkz. isAltuntasServisi).
+    const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, anlasmaliParcaSatisi, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
+    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvAnlasmaliParca, kdvKalip); // dönem bazlı KDV toplamı
 
     // KDV'siz görünüm: kartların ana rakamı KDV hariç, KDV kartın altında ayrıca gösterilir
     // (Ödenmesi Muhtemel KDV ve Toplam Alacak hariç — ikisi de kapsam dışı, ayrı sebeplerle:
@@ -138,12 +160,16 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     const servisUcretiNet = subObj(servisUcreti, kdvServis);
     const parcaUcretiNet = subObj(parcaUcreti, kdvParca);
     const toplamExtraKalipNet = subObj(kalipSatisi, kdvKalip);
+    const anlasmaliParcaSatisiNet = subObj(anlasmaliParcaSatisi, kdvAnlasmaliParca);
 
     // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
     const alacak = empty3();
     customers.forEach(c => { alacak[cur(c.currency)] += Math.max(parseMoney(c.kalanBorc), 0); });
-    services.filter(isServisBorcluMu).forEach(s => {
-      const servisVar = isServisUcretliMi(s) ? parseMoney(s.servisUcreti) : 0;
+    // Toplam Alacak — kime borçlu olunduğundan bağımsız, Altuntaş'a ödenmemiş her tutar (işçilik
+    // sadece Altuntaş'ın kendi serviysiyse, parça ücreti ise kim yaptıysa yapsın — bkz. isServisBorcluMu'nun
+    // müşteri-odaklı tanımından farklı olarak burada anlaşmalı firmanın üstlendiği parça borcu da dahildir).
+    services.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && s.odendi === false).forEach(s => {
+      const servisVar = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
       const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
       const toplam = servisVar + parcaVar;
       alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, kdvRate);
@@ -196,10 +222,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
       toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
       toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
+      anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
       kdvMakina, kdvServis, kdvParca, kdvKalip,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates]);
+  }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates, factoryName]);
 
   // Excel'e aktar (CSV)
   const AdetCard = ({ label, value, color, icon }) => (
@@ -287,8 +314,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
         <AdetCard label="Toplam Satılan Makina" value={totalMakina} color="#e85d1a" />
         <AdetCard label="Toplam Satılan Kalıp" value={totalKalip + satilanExtraKalipSayisi} color="#3b82f6" />
         <AdetCard label="İlk Satışta Verilen Toplam Kalıp" value={totalKalip} color="#60a5fa" />
-        <AdetCard label="Satılan Extra Kalıp Sayısı" value={satilanExtraKalipSayisi} color="#db2777" />
-        <AdetCard label="Satılan Yedek Parça Sayısı" value={satilanYedekParcaSayisi} color="#0ea5e9" />
+        <AdetCard label="Satılan Extra Kalıp" value={satilanExtraKalipSayisi} color="#db2777" />
+        <AdetCard label="Satılan Yedek Parça" value={satilanYedekParcaSayisi} color="#0ea5e9" />
       </div>
 
       {/* PARA KARTLARI */}
@@ -296,9 +323,10 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
-        <MultiCard label="Toplam Servis Ücreti Cirosu" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
-        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki değişen parça ücretleri (KDV hariç)" />
-        <MultiCard label="Toplam Extra Kalıp Satış Cirosu" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
+        <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
+        <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri (KDV hariç)" />
+        <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç)" />
+        <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
       </div>
 

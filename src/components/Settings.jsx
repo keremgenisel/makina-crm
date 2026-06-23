@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE, BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../lib/constants";
-import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount } from "../lib/utils";
+import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount, safeStandardModels } from "../lib/utils";
 import { Icon, Btn, Modal, Field, Input, Warn, EMAIL_RE, Select } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -22,6 +22,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
+  const [exportTooltip, setExportTooltip] = useState(null); // Dışa Aktar tablosunda üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Excel'e aktarma (CSV) ──
   const buildCSV = (rows) => "\uFEFF" + rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
@@ -159,8 +160,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     flash("ok", "Servis kayıtları Excel (CSV) olarak indirildi.");
   };
   const exportDealers = (mode = "download") => {
-    const head = ["Bayi/Firma Adı", "Yetkili", "Telefon", "E-posta", "Adres", "Ülke", "Şehir", "Not"];
-    const rows = [head, ...dealers.map(d => [d.name, d.contact, d.phone, d.email, d.adres, d.country, d.city, d.note])];
+    const head = ["Bayi/Firma Adı", "Yetkili", "Telefon", "E-posta", "Adres", "Ülke", "Şehir", "Bayi mi", "Anlaşmalı Servis mi", "Not"];
+    const rows = [head, ...dealers.map(d => [d.name, d.contact, d.phone, d.email, d.adres, d.country, d.city, d.bayiMi !== false ? "Evet" : "Hayır", d.anlasmaliServisMi ? "Evet" : "Hayır", d.note])];
     if (mode === "email") { openExportMailCSV(rows, "bayiler.csv", "Bayi Listesi"); return; }
     downloadCSV(rows, "bayiler.csv");
     flash("ok", "Bayi listesi Excel (CSV) olarak indirildi.");
@@ -221,7 +222,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   // Şablon sütun başlıkları (müşteri bu sıraya uyarlar). Servis için 3 çift tarih/iş.
   const IMPORT_HEADERS = [
     "Kalıp Sayısı", "Satış Yapan", "Satın Alan Firma", "Telefon", "Adres", "Ülke", "Şehir",
-    "Model", "Makina Kalıp Çapı (en x boy x yükseklik)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Fabrika Satış Bedeli", "Fatura Bedeli",
+    "Model", "Makina Kalıp Çapı (çap x arka ölçü x boy)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Fabrika Satış Bedeli", "Fatura Bedeli",
     "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
     "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
     "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
@@ -385,12 +386,12 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       const cell = (i) => (r[i] == null ? "" : String(r[i]).trim());
       const name = cell(2);
       if (!name) { errors.push(`Satır ${idx + 2}: Satın Alan Firma boş, atlandı.`); return; }
-      // Makina Kalıp Çapı (index 8): "50 x 80 x 115" → {en, boy, yukseklik}
+      // Makina Kalıp Çapı (index 8): "50 x 80 x 115" → {en, yukseklik, boy} (Çap, Arka Ölçü, Boy)
       const capRaw = cell(8);
       let kalipCapi = undefined;
       if (capRaw) {
         const parts = capRaw.split(/[x×*]/i).map(p => p.trim());
-        kalipCapi = { en: parts[0] || "", boy: parts[1] || "", yukseklik: parts[2] || "" };
+        kalipCapi = { en: parts[0] || "", yukseklik: parts[1] || "", boy: parts[2] || "" };
       }
       // Para birimi (index 9): TL/TRY → TRY, USD/$ → USD, EUR/€ → EUR
       const curRaw = trLower(cell(9));
@@ -688,7 +689,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     if (Array.isArray(restoreData?.stock) && setStock) setStock(restoreData.stock);
     if (Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
     if (Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
-    if (Array.isArray(restoreData?.standardModels)) setStandardModels(restoreData.standardModels);
+    setStandardModels(safeStandardModels(restoreData?.standardModels));
     if (restoreData?.factory) setFactory(restoreData.factory);
     if (Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
     if (Array.isArray(restoreData?.parts) && setParts) setParts(restoreData.parts);
@@ -933,9 +934,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "eposta" && (
         <Section title="E-posta Ayarları (SMTP)" icon="mail">
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-            Müşteri detayındaki "E-posta Gönder" butonlarının çalışması için buradan e-posta hesabınızı bağlayın.
-            Sunucu/port bilgisini e-posta sağlayıcınızdan (veya hosting firmanızdan) alabilirsiniz — genelde
-            "Giden Sunucu (SMTP)" başlığı altında belirtilir. Aşağıya normal e-posta şifrenizi girin.
+            "E-posta Gönder" butonlarının çalışması için e-posta hesabınızı buradan bağlayın.
           </div>
 
           {!window.appMail ? (
@@ -949,10 +948,13 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
                   ✓ Bağlı: {mailStatus.email} ({mailStatus.host}:{mailStatus.port})
                 </div>
               )}
-              <Field label="E-posta">
-                <Input value={mailForm.email} onChange={e => setMailForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-                <Warn>{mailForm.email && !EMAIL_RE.test(mailForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
-              </Field>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+                <Field label="E-posta">
+                  <Input value={mailForm.email} onChange={e => setMailForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
+                  <Warn>{mailForm.email && !EMAIL_RE.test(mailForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+                </Field>
+                <div />
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
                 <Field label="Giden Sunucu (SMTP)">
                   <Input value={mailForm.host} onChange={e => setMailForm(p => ({ ...p, host: e.target.value }))} placeholder="mailbox.servervibe.com" />
@@ -965,9 +967,12 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
                   </Select>
                 </Field>
               </div>
-              <Field label="Şifre">
-                <Input type="password" value={mailForm.appPassword} onChange={e => setMailForm(p => ({ ...p, appPassword: e.target.value }))} placeholder={mailStatus.configured ? "•••••••• (değiştirmek için yeniden girin)" : "E-posta şifresi"} />
-              </Field>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+                <Field label="Şifre">
+                  <Input type="password" value={mailForm.appPassword} onChange={e => setMailForm(p => ({ ...p, appPassword: e.target.value }))} placeholder={mailStatus.configured ? "•••••••• (değiştirmek için yeniden girin)" : "E-posta şifresi"} />
+                </Field>
+                <div />
+              </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Btn onClick={saveMailCreds} disabled={mailSaving}><Icon name="check" size={14} /> {mailSaving ? "Kaydediliyor..." : "Kaydet"}</Btn>
                 <Btn variant="ghost" onClick={doTestMail} disabled={!mailStatus.configured || mailTest.state === "testing"}>
@@ -1032,17 +1037,37 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           ].map(g => (
             <div key={g.group} style={{ marginBottom: 22 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>{g.group}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
-                {g.items.map(card => (
-                  <div key={card.title} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>{card.title}</div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.5, flex: 1 }}>{card.desc}</div>
-                    <div style={{ alignSelf: "flex-start", display: "flex", gap: 8 }}>
-                      <Btn onClick={() => card.onClick("download")}><Icon name="download" size={14} /> İndir</Btn>
-                      <Btn variant="ghost" onClick={() => card.onClick("email")}><Icon name="mail" size={14} /> E-posta</Btn>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    {g.items.map((card, i) => (
+                      <tr key={card.title} style={{ borderBottom: i < g.items.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                        <td style={{ padding: "13px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: "#0f172a" }}>{card.title}</span>
+                            <span
+                              onMouseEnter={() => setExportTooltip(card.title)}
+                              onMouseLeave={() => setExportTooltip(null)}
+                              style={{ cursor: "default", color: "#94a3b8", fontSize: 11, fontWeight: 700, border: "1px solid #cbd5e1", borderRadius: "50%", width: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0, position: "relative" }}>
+                              i
+                              {exportTooltip === card.title && (
+                                <div style={{ position: "absolute", top: "130%", left: 0, background: "#0f172a", color: "#fff", fontSize: 11.5, fontWeight: 500, padding: "7px 11px", borderRadius: 7, width: 220, whiteSpace: "normal", lineHeight: 1.4, zIndex: 20, boxShadow: "0 4px 12px rgba(0,0,0,.25)" }}>
+                                  {card.desc}
+                                </div>
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "13px 16px", width: 1 }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                            <Btn small variant="ghost" onClick={() => card.onClick("download")} title="İndir"><Icon name="download" size={13} /></Btn>
+                            <Btn small variant="ghost" onClick={() => card.onClick("email")} title="E-posta Gönder"><Icon name="mail" size={13} /></Btn>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ))}
@@ -1064,7 +1089,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           </div>
 
           <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (en x boy x yükseklik)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Fabrika Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
+            <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (çap x arka ölçü x boy)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Fabrika Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
           </div>
         </Section>
       )}

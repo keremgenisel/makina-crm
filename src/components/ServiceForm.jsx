@@ -7,12 +7,20 @@ import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } 
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
+  const factoryName = factory?.name || "Altuntaş Makina";
+  const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const warrantyAktif = !!(selectedCust?.warrantyEnd && selectedCust.warrantyEnd >= today());
-  const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (warrantyAktif && !form.parcaGarantiDisi);
+  // İşlemi yapan firma anlaşmalı bir servisse, parçanın Altuntaş'tan mı yoksa dışarıdan mı
+  // tedarik edildiği belirsiz olabilir — varsayılan "Altuntaş'tan alındı" (true). Dışarıdan
+  // tedarik edilse de parça ücreti yine girilebilir (müşteriye ne kadar tahsil edildiği geçmişte
+  // görünsün) — sadece bu tutar Altuntaş'ın gelir/borç hesaplarına hiç girmez (bkz. isParcaUcretliMi).
+  const islemAnlasmali = (form.islemFirma || factoryName) !== factoryName;
+  const parcaAltuntastanMi = !islemAnlasmali || form.parcaAltuntastanMi !== false;
+  const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (parcaAltuntastanMi && warrantyAktif && !form.parcaGarantiDisi);
   const parcaUcretiToplam = (form.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
   const svUcretliTipi = form.type === "Garanti Dışı" || form.type === "Periyodik Bakım";
   const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
@@ -85,6 +93,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
         </Field>
       </div>
 
+      <Field label="İşlemi Yapan Firma">
+        <Select value={form.islemFirma || factoryName} onChange={e => setForm(p => ({ ...p, islemFirma: e.target.value }))}>
+          <option value={factoryName}>{factoryName}</option>
+          {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+        </Select>
+      </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
         <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
@@ -133,7 +147,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
 
       {(form.degisenParcalar || []).length > 0 && (
         <>
-          {warrantyAktif && (
+          {islemAnlasmali && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+              <input type="checkbox" checked={parcaAltuntastanMi} onChange={e => setForm(p => ({ ...p, parcaAltuntastanMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
+                {parcaAltuntastanMi ? "Bu parçalar Altuntaş'tan alındı (Altuntaş'a gelir/borç olarak sayılır)" : "Parçalar dışarıdan tedarik edildi (ücret yine girilebilir, ama Altuntaş'a gelir/borç olarak sayılmaz)"}
+              </span>
+            </label>
+          )}
+          {parcaAltuntastanMi && warrantyAktif && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
               <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#dc2626" }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>

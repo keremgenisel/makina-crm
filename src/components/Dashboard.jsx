@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, onGoStock, onGoCustomers, onGoDealers, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
   const [showDebtors, setShowDebtors] = useState(false);
+  const [showDealerDebtors, setShowDealerDebtors] = useState(false);
+  // Anlaşmalı servis ayrımı için (isServisUcretliMi/isServisBorcluMu'ya geçilir) — bkz. utils.js
+  const factoryName = factory?.name || "Altuntaş Makina";
 
   // ── Canlı saat & tarih ──
   const [now, setNow] = useState(new Date());
@@ -17,7 +20,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
   // Müşteri/servis/Extra Kalıp dizileri büyüdükçe (binlerce kayıt) bu taramalar her render'da
   // tekrarlanmasın diye memoize ediliyor — iç mantık aynı, sadece bir useMemo'ya taşındı.
-  const { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, recentSales, recentServices } = useMemo(() => {
+  const { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices } = useMemo(() => {
     const expiredCount = customers.filter(c => c.warrantyEnd && c.warrantyEnd < todayStr).length;
 
     // ── Aksiyon gerektiren uyarılar ──
@@ -30,7 +33,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     // isResale (2. el devir) burada hariç tutulmuyor — devir öncesi ödenmemiş bakiye varsa
     // Müşteriler sayfasıyla tutarlı olarak burada da borçlu sayılır.
     const borcluMusteriler = customers.filter(c => parseMoney(c.kalanBorc) > 0);
-    const borcluServisler = services.filter(isServisBorcluMu);
+    const borcluServisler = services.filter(s => isServisBorcluMu(s, factoryName));
     const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
     const custNameLocal = (id) => customers.find(c => c.id === id)?.name || "—";
     // Aynı firmanın birden çok makinası (customer kaydı) veya birden çok servis/parça borcu
@@ -42,11 +45,24 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     ]);
     const borcluCount = borcluFirmaKeys.size;
 
+    // ── Borçlu Bayi/Servis — anlaşmalı servis firmalarının üstlendiği ödenmemiş parça borcu
+    // (aynı mantık SimpleDealers.jsx'teki borcMap ile — bkz. isParcaBorcluAnlasmaliFirmaya / utils.js) ──
+    const dealerBorcMap = {};
+    services.forEach(s => {
+      if (!isParcaBorcluAnlasmaliFirmaya(s, factoryName)) return;
+      const name = s.islemFirma;
+      if (!dealerBorcMap[name]) dealerBorcMap[name] = { byCur: {}, records: [] };
+      const curK = s.parcaCurrency || s.currency || "TRY";
+      dealerBorcMap[name].byCur[curK] = (dealerBorcMap[name].byCur[curK] || 0) + parseMoney(s.parcaUcreti);
+      dealerBorcMap[name].records.push(s);
+    });
+    const borcluBayiCount = Object.keys(dealerBorcMap).length;
+
     const recentSales = [...customers].filter(c => c.installDate).sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "")).slice(0, 5);
     const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
 
-    return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, recentSales, recentServices };
-  }, [customers, services, partSales, todayStr]);
+    return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
+  }, [customers, services, partSales, todayStr, factoryName]);
 
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
   // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
@@ -57,17 +73,24 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     return vadesiGecmis ? "⚠ Çek Vadesi Geçti" : "🧾 Çek Bekliyor";
   };
   const custName = (id) => customers.find(c => c.id === id)?.name || "—";
-  const goToCustomer = (id) => { setShowDebtors(false); onGoCustomerDetail && onGoCustomerDetail(id); };
+  const goToCustomer = (id) => { setShowDebtors(false); setShowDealerDebtors(false); onGoCustomerDetail && onGoCustomerDetail(id); };
 
   return (
     <div>
-      {/* Aksiyon gerektiren uyarılar — her zaman 3 kart, eşit boyut */}
+      {/* Aksiyon gerektiren uyarılar — her zaman 4 kart, eşit boyut */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           <button onClick={() => setShowDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #dc2626", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 30, fontWeight: 800, color: "#dc2626", lineHeight: 1, marginBottom: 6 }}>{borcluCount}</div>
               <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu Firma</div>
+            </div>
+            <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
+          </button>
+          <button onClick={() => setShowDealerDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #f59e0b", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: "#f59e0b", lineHeight: 1, marginBottom: 6 }}>{borcluBayiCount}</div>
+              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu Bayi/Servis</div>
             </div>
             <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
           </button>
@@ -211,7 +234,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   Servis ve Yedek Parça ({borcluServisler.length})
                 </div>
                 {borcluServisler.map(s => {
-                  const servisBorclu = isServisUcretliMi(s) && s.odendi === false;
+                  const servisBorclu = isServisUcretliMi(s, factoryName) && s.odendi === false;
                   const parcaBorclu = isParcaUcretliMi(s) && s.odendi === false;
                   return (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
@@ -259,6 +282,43 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             <Btn variant="ghost" onClick={() => setShowDebtors(false)}>Kapat</Btn>
             <Btn onClick={() => { setShowDebtors(false); onGoDebtors && onGoDebtors(); }}>Müşterilerde Görüntüle →</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Borçlu Bayi/Servis — anlaşmalı servis firmalarının üstlendiği ödenmemiş parça borcu */}
+      {showDealerDebtors && (
+        <Modal wide title="Borçlu Bayi/Servis" onClose={() => setShowDealerDebtors(false)}>
+          <div style={{ maxHeight: 480, overflowY: "auto" }}>
+            {Object.entries(dealerBorcMap).length === 0 ? (
+              <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>Borçlu bayi/servis yok.</div>
+            ) : (
+              Object.entries(dealerBorcMap).map(([name, info]) => (
+                <div key={name} style={{ padding: "12px 14px", borderRadius: 10, background: "#fffbeb", border: "1px solid #fde68a", marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{name}</div>
+                    <div>
+                      {Object.entries(info.byCur).filter(([, v]) => v > 0).map(([k, v]) => (
+                        <span key={k} style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(v, k)}</span>
+                      ))}
+                    </div>
+                  </div>
+                  {info.records.map(s => (
+                    <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "5px 0", borderTop: "1px solid #fde68a", cursor: "pointer" }}>
+                      <span style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline", textDecorationColor: "#fde68a" }}>
+                        {custName(s.customerId)} · {fmtTR(s.date)}
+                      </span>
+                      <span style={{ fontWeight: 700, color: "#dc2626" }}>{fmtCur(s.parcaUcreti, s.parcaCurrency || s.currency)}</span>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <Btn variant="ghost" onClick={() => setShowDealerDebtors(false)}>Kapat</Btn>
+            <Btn onClick={() => { setShowDealerDebtors(false); (onGoDealerDebtors || onGoDealers)?.(); }}>Bayilerde Görüntüle →</Btn>
           </div>
         </Modal>
       )}

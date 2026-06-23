@@ -1,4 +1,4 @@
-import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES } from "./constants";
+import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS } from "./constants";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -44,6 +44,10 @@ export const looksLikeBackup = (data) => {
   if (arrayFields.length === 0) return false;
   return arrayFields.every((k) => data[k].length === 0 || (typeof data[k][0] === "object" && data[k][0] !== null));
 };
+// Standart model listesi arayüz üzerinden asla boşaltılamaz (silme butonu yok) — bu yüzden yüklenen/
+// geri yüklenen veride boş bir dizi gelirse bu her zaman bozuk veri ya da başka bir PC'den taşınmış
+// eksik bir yedek demektir, gerçek bir kullanıcı tercihi olamaz. Böyle durumda varsayılanlara dönülür.
+export const safeStandardModels = (loaded) => (Array.isArray(loaded) && loaded.length > 0) ? loaded : ALTUNMAK_MODELS;
 // Yazdırma HTML'inden otomatik print script'ini çıkarır (Electron çift diyalog önleme)
 export const stripAutoPrint = (html) => {
   const open = html.indexOf("<script>window.onload");
@@ -56,7 +60,8 @@ export const fmt = (n) => new Intl.NumberFormat("tr-TR", { style: "currency", cu
 // Makina kalıp çapı nesnesini "50 x 80 x 115" metnine çevir (boş parçalar atlanır)
 export const fmtKalipCapi = (kc) => {
   if (!kc || typeof kc !== "object") return "";
-  const parts = [kc.en, kc.boy, kc.yukseklik].map(x => (x == null ? "" : String(x).trim()));
+  // Sıra: Çap, Arka Ölçü, Boy — Yeni Müşteri formundaki alan sırasıyla aynı (kc.yukseklik = "Arka Ölçü")
+  const parts = [kc.en, kc.yukseklik, kc.boy].map(x => (x == null ? "" : String(x).trim()));
   if (parts.every(p => !p)) return "";
   return parts.join(" x ");
 };
@@ -125,18 +130,35 @@ export const kalipCountAtSale = (c) => {
 export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 
 // ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──
-// Servis ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0)
-export const isServisUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
-// Değişen parçalar ücretli mi (garanti dışı işaretlenmiş veya garanti yoksa + ücret > 0)
-export const isParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
-// Servis kaydı borçlu mu: ücretli + açıkça ödenmedi (eski kayıtlarda odendi yoksa ödendi sayılır)
-export const isServisBorcluMu = (sv) => (isServisUcretliMi(sv) || isParcaUcretliMi(sv)) && sv.odendi === false;
+// Servis Altuntaş Makina'nın kendisi tarafından mı yapıldı (işlemi yapan firma boşsa veya fabrika
+// adıyla eşleşiyorsa evet). Anlaşmalı bir firma seçiliyse hayır — o zaman işçilik ücretini müşteri
+// Altuntaş'a değil o firmaya öder, servis ücreti tamamen bilgi amaçlı bir kayıttır.
+export const isAltuntasServisi = (sv, factoryName = "Altuntaş Makina") => !sv.islemFirma || sv.islemFirma === factoryName;
+// Servis ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0 + Altuntaş'ın kendi servisi)
+export const isServisUcretliMi = (sv, factoryName = "Altuntaş Makina") =>
+  (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0 && isAltuntasServisi(sv, factoryName);
+// Değişen parçalar Altuntaş'a gelir/borç olarak sayılır mı: garanti dışı işaretlenmiş veya garanti
+// yoksa + ücret > 0 + parça gerçekten Altuntaş'tan alınmış (anlaşmalı serviste dışarıdan tedarik
+// edilen parçalar için ücret yine girilebilir ama burada hiç sayılmaz — bkz. ServiceForm.jsx).
+export const isParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0 && sv.parcaAltuntastanMi !== false;
+// Servis kaydından MÜŞTERİNİN borçlu olduğu kısım: işçilik (yalnızca Altuntaş'ın kendi servisiyse —
+// isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı
+// bir firma yaptıysa parça borcu müşteriye değil o firmaya aittir (bkz. isParcaBorcluAnlasmaliFirmaya) —
+// bu yüzden müşteri tarafında hiç görünmez, "ödenmedi" işaretli olsa da.
+export const isServisBorcluMu = (sv, factoryName = "Altuntaş Makina") => {
+  const parcaMusteriyeVar = isParcaUcretliMi(sv) && isAltuntasServisi(sv, factoryName);
+  return (isServisUcretliMi(sv, factoryName) || parcaMusteriyeVar) && sv.odendi === false;
+};
+// Anlaşmalı bir servis firmasının üstlendiği parça borcu (Karar: Seçenek A — parça ücreti gerçek bir
+// Altuntaş satışıdır ama borçlusu müşteri değil, işlemi yapan anlaşmalı firmadır)
+export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makina") =>
+  isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && sv.odendi === false;
 // Extra Kalıp satışı borçlu mu
 export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
 // Bir müşterinin herhangi bir kaynaktan (kalan borç / servis / parça / Extra Kalıp) borcu var mı
-export const customerHasAnyDebt = (customer, services = [], partSales = []) => {
+export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina") => {
   if (parseMoney(customer.kalanBorc) > 0) return true;
-  if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s))) return true;
+  if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s, factoryName))) return true;
   if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
   return false;
 };

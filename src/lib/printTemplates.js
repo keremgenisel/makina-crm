@@ -4,7 +4,9 @@ import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalip
 const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
-export function buildServiceFormHtml(sv, customers, kdvRate) {
+// forEmail: true ise "Teslim Eden"/"Teslim Alan" imza alanları çıkarılır — bunlar fiziksel teslimat sırasında
+// elle imzalanan kutucuklar, e-posta ekinde anlamsız kalıyor.
+export function buildServiceFormHtml(sv, customers, kdvRate, { forEmail = false } = {}) {
   const cust = customers.find(c => c.id === sv.customerId) || {};
   const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
   const servisUcretiVar = (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
@@ -93,7 +95,7 @@ export function buildServiceFormHtml(sv, customers, kdvRate) {
   <h2>MÜŞTERİ TALİMATI / AÇIKLAMA</h2>
   <div class="box-area">${esc(sv.musteriTalimati || "")}</div>
 
-  <table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:none">
+  ${forEmail ? "" : `<table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:none">
     <tr>
       <td style="border:none;width:50%;padding:0 16px 0 0;vertical-align:top">
         <div style="font-size:12px;font-weight:700;margin-bottom:50px">TESLİM EDEN</div>
@@ -104,7 +106,7 @@ export function buildServiceFormHtml(sv, customers, kdvRate) {
         <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">Ad Soyad / İmza / Kaşe</div>
       </td>
     </tr>
-  </table>
+  </table>`}
 
   <div class="terms">
     1- Yukarıda adı ve miktarı belirtilen parçaları tam olarak teslim aldım. Yapılan hizmeti kabul ediyorum.<br>
