@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { trLower } from "../lib/utils";
 
 // KalipManager ve PartManager neredeyse aynı: "ad" alanlı basit bir liste için
 // ekle/satır-içi düzenle/sil akışı. Tek farkları ID üretim stratejisi ve
@@ -10,8 +11,10 @@ export function useSimpleDefList({ items, setItems, genId, showToast = () => {},
   const [confirmDel, setConfirmDel] = useState(null);
 
   const add = () => {
-    const yeniId = genId(items);
     const ad = form.ad.trim();
+    if (!ad) return;
+    if (items.some(x => trLower(x.ad) === trLower(ad))) { showToast(`"${ad}" zaten tanımlı.`, "err"); return; }
+    const yeniId = genId(items);
     setItems(p => p.some(x => x.id === yeniId) ? p : [...p, { id: yeniId, ad }]);
     setForm(emptyForm);
     showToast(addMsg);
@@ -19,7 +22,10 @@ export function useSimpleDefList({ items, setItems, genId, showToast = () => {},
   const startEdit = (item) => { setEditId(item.id); setEditForm({ ad: item.ad }); };
   const cancelEdit = () => setEditId(null);
   const saveEdit = () => {
-    setItems(p => p.map(x => x.id === editId ? { ...x, ad: editForm.ad } : x));
+    const ad = editForm.ad.trim();
+    if (!ad) return;
+    if (items.some(x => x.id !== editId && trLower(x.ad) === trLower(ad))) { showToast(`"${ad}" zaten tanımlı.`, "err"); return; }
+    setItems(p => p.map(x => x.id === editId ? { ...x, ad } : x));
     setEditId(null);
     showToast(editMsg);
   };

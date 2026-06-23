@@ -184,7 +184,7 @@ export const Customers = ({
   }, [customers]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
-    searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo"],
+    searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo", "model"],
     filterFn: c => {
       if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();
       if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();
@@ -1442,7 +1442,7 @@ export const Customers = ({
 
       {confirmId && (
         <ConfirmDialog
-          message={`"${customers.find(c => c.id === confirmId)?.name || ""}" ${delWord} ve bilgileri kalıcı olarak silinecek.`}
+          message={`"${customers.find(c => c.id === confirmId)?.name || ""}" ${delWord} kalıcı olarak silinecek — bu makinaya ait servis kayıtları, Extra Kalıp satışları ve ödeme/kapora kayıtları da birlikte silinir.`}
           onConfirm={confirmDel}
           onCancel={() => setConfirmId(null)}
         />

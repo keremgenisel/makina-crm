@@ -28,6 +28,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
     gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
     toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+    toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
+    kdvMakina, kdvServis, kdvParca, kdvKalip,
   } = useMemo(() => {
     // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
     // (<input type="date"> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
@@ -73,6 +75,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY"); // eski kayıtlar TRY
     const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
     const komisyon = empty3(), toplamCiro = empty3();
+    const faturaBedeliToplam = empty3(); // resmi faturada yazan tutar (KDV hariç — KDV'si kdvMakina'da)
     // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
     const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
     // Faturasız satışlarda fatura bedeli kasıtlı olarak gerçek satış bedelinden daha düşük tutulabiliyor
@@ -85,6 +88,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       gercekCiro[k] += gercek;
       toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
       komisyon[k] += parseMoney(c.komisyon);
+      faturaBedeliToplam[k] += parseMoney(c.faturaBedeli);
       kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
     });
     const servisUcreti = empty3();
@@ -118,8 +122,22 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       objs.forEach(o => CURRENCIES.forEach(k => { r[k] += o[k] || 0; }));
       return r;
     };
+    const subObj = (a, b) => {
+      const r = empty3();
+      CURRENCIES.forEach(k => { r[k] = (a[k] || 0) - (b[k] || 0); });
+      return r;
+    };
     const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
     const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvKalip); // dönem bazlı KDV toplamı
+
+    // KDV'siz görünüm: kartların ana rakamı KDV hariç, KDV kartın altında ayrıca gösterilir
+    // (Ödenmesi Muhtemel KDV ve Toplam Alacak hariç — ikisi de kapsam dışı, ayrı sebeplerle:
+    // ilki zaten KDV'nin kendisi, ikincisi müşterinin kendi kalanBorc'undaki KDV payı ödemeler
+    // ana para/KDV ayrımı yapmadan düşüldüğü için tam doğru ayrıştırılamıyor).
+    const toplamCiromuzNet = subObj(toplamCiromuz, odenmesiMuhtemel);
+    const servisUcretiNet = subObj(servisUcreti, kdvServis);
+    const parcaUcretiNet = subObj(parcaUcreti, kdvParca);
+    const toplamExtraKalipNet = subObj(kalipSatisi, kdvKalip);
 
     // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
     const alacak = empty3();
@@ -177,6 +195,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
       gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
       toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+      toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
+      kdvMakina, kdvServis, kdvParca, kdvKalip,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates]);
@@ -190,11 +210,15 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
   );
   // Çok-dövizli kart: her dövizi ayrı satır + yaklaşık TL karşılığı.
   // size="large" → sayfanın en üstündeki 3 özet kartı için daha büyük/öne çıkan görünüm.
-  const MultiCard = ({ label, obj, color, sub, size = "normal" }) => {
+  // kdvObj verilirse: obj artık KDV HARİÇ ana rakamı temsil eder, kdvObj kartın altında ayrıca
+  // gösterilir (örn. "100.000" ana rakam, altında "KDV (%20): 20.000"). KDV toplamı 0 ise satır
+  // hiç gösterilmez (uygulamanın genelinde sıfır değerli alanlar gizlenir, aynı desen).
+  const MultiCard = ({ label, obj, kdvObj, color, sub, size = "normal" }) => {
     const large = size === "large";
     const nonzero = CURRENCIES.filter(k => (obj[k] || 0) !== 0);
     const showCur = nonzero.length ? nonzero : ["TRY"];
     const hasFx = nonzero.some(k => k !== "TRY");
+    const kdvCur = kdvObj ? CURRENCIES.filter(k => (kdvObj[k] || 0) > 0) : [];
     return (
       <div style={{
         background: large ? "linear-gradient(135deg,#fff,#fff7ed)" : "#fff",
@@ -208,6 +232,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
         ))}
         {hasFx && rates && (
           <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
+        )}
+        {kdvCur.length > 0 && (
+          <div style={{ fontSize: large ? 13 : 11.5, color: "#0d9488", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid #f1f5f9" }}>
+            KDV (%{kdvRate}): {kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + ")}
+          </div>
         )}
         {sub && <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: large ? 6 : 3 }}>{sub}</div>}
       </div>
@@ -247,7 +276,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Ciro" obj={toplamCiromuz} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV dahil)" size="large" />
+        <MultiCard label="Toplam Ciro" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
         <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
@@ -266,10 +295,10 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Gelir & Tahsilat</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
-        <MultiCard label="Toplam Fabrika Satış Bedeli Cirosu" obj={toplamCiro} color="#0d9488" sub="Fabrika Satış Bedeli + KDV + Komisyon" />
-        <MultiCard label="Toplam Servis Ücreti Cirosu" obj={servisUcreti} color="#f59e0b" sub="Garanti dışı servisler (KDV dahil)" />
-        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcreti} color="#0ea5e9" sub="Servis kayıtlarındaki değişen parça ücretleri (KDV dahil)" />
-        <MultiCard label="Toplam Extra Kalıp Satış Cirosu" obj={toplamExtraKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV dahil)" />
+        <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
+        <MultiCard label="Toplam Servis Ücreti Cirosu" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
+        <MultiCard label="Toplam Parça Ücreti Cirosu" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki değişen parça ücretleri (KDV hariç)" />
+        <MultiCard label="Toplam Extra Kalıp Satış Cirosu" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
       </div>
 

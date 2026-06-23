@@ -1,25 +1,44 @@
 import { useState } from "react";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog } from "./ui";
+import { trLower } from "../lib/utils";
+import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
+
+const PER_PAGE = 10;
 
 export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {} }) => {
   const empty = { model: "", sogutma: "Soğutmalı", kapasite: "", kalip: "" };
   const [modelModal, setModelModal] = useState(null); // null | { mode: "add" | "edit-std" | "edit-custom", data }
   const [mForm, setMForm] = useState(empty);
   const [confirmDelModel, setConfirmDelModel] = useState(null); // silinecek model adı
+  const [page, setPage] = useState(1);
+  // Standart + özel modeller tek listede sayfalanıyor (sırayla: önce standart, sonra özel)
+  const allModels = [
+    ...standardModels.map(m => ({ m, isStd: true })),
+    ...customModels.map(m => ({ m, isStd: false })),
+  ];
+  const totalPages = Math.max(1, Math.ceil(allModels.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const pagedModels = allModels.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const openAdd = () => { setMForm(empty); setModelModal({ mode: "add" }); };
   const openEdit = (m, isStd) => { setMForm({ ...m }); setModelModal({ mode: isStd ? "edit-std" : "edit-custom", orig: m.model }); };
 
   const saveModel = () => {
     const name = (mForm.model || "").trim();
+    if (!name) return;
+    // Düzenlemede kendi orijinal adı hariç tutularak aynı isim kontrolü yapılır — yoksa bir modeli
+    // başka birinin adıyla yeniden adlandırmak sessizce iki aynı isimli kayıt oluşturabilirdi.
+    const existsElsewhere = (excludeName) =>
+      standardModels.some(m => m.model !== excludeName && trLower(m.model) === trLower(name)) ||
+      customModels.some(m => m.model !== excludeName && trLower(m.model) === trLower(name));
     if (modelModal.mode === "add") {
-      const exists = standardModels.some(m => m.model === name) || customModels.some(m => m.model === name);
-      if (!exists) { setCustomModels(p => p.some(m => m.model === name) ? p : [...p, { ...mForm, model: name }]); showToast("Model kaydedildi."); }
+      if (!existsElsewhere(null)) { setCustomModels(p => p.some(m => m.model === name) ? p : [...p, { ...mForm, model: name }]); showToast("Model kaydedildi."); }
       else showToast("Bu model zaten var.", "err");
     } else if (modelModal.mode === "edit-std") {
+      if (existsElsewhere(modelModal.orig)) { showToast("Bu model adı zaten kullanılıyor.", "err"); return; }
       setStandardModels(p => p.map(m => m.model === modelModal.orig ? { ...mForm, model: name } : m));
       showToast("Model düzenlendi.");
     } else {
+      if (existsElsewhere(modelModal.orig)) { showToast("Bu model adı zaten kullanılıyor.", "err"); return; }
       setCustomModels(p => p.map(m => m.model === modelModal.orig ? { ...mForm, model: name } : m));
       showToast("Model düzenlendi.");
     }
@@ -27,22 +46,20 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
   };
 
   const ModelRow = ({ m, isStd }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid #f1f5f9" }}>
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>{m.model}</span>
+    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+      <td style={{ padding: "10px 12px", fontSize: 14, fontWeight: 700 }}>{m.model}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.sogutma || "—"}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.kapasite || "—"}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.kalip ? `Ø ${m.kalip}` : "—"}</td>
+      <td style={{ padding: "10px 12px" }}>
+        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+          <Btn small variant="ghost" onClick={() => openEdit(m, isStd)}><Icon name="edit" size={12} /></Btn>
+          {!isStd && (
+            <Btn small variant="danger" onClick={() => setConfirmDelModel(m.model)}><Icon name="trash" size={12} /></Btn>
+          )}
         </div>
-        <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
-          {[m.sogutma, m.kapasite, m.kalip ? `Kalıp Ø ${m.kalip}` : ""].filter(Boolean).join(" · ") || "Detay girilmemiş"}
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        <Btn small variant="ghost" onClick={() => openEdit(m, isStd)}><Icon name="edit" size={12} /></Btn>
-        {!isStd && (
-          <Btn small variant="danger" onClick={() => setConfirmDelModel(m.model)}><Icon name="trash" size={12} /></Btn>
-        )}
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 
   return (
@@ -50,8 +67,21 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Model Ekle</Btn>
       </div>
-      {standardModels.map((m, i) => <ModelRow key={"s-" + m.model + "-" + i} m={m} isStd />)}
-      {customModels.map((m, i) => <ModelRow key={"c-" + m.model + "-" + i} m={m} isStd={false} />)}
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#f8fafc" }}>
+              {["Model", "Soğutma", "Kapasite", "Kalıp Çapı", ""].map(h => (
+                <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pagedModels.map(({ m, isStd }, i) => <ModelRow key={(isStd ? "s-" : "c-") + m.model + "-" + i} m={m} isStd={isStd} />)}
+          </tbody>
+        </table>
+      </div>
+      <Pagination total={allModels.length} page={safePage} setPage={setPage} perPage={PER_PAGE} />
       {customModels.length === 0 && (
         <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>Henüz özel model eklenmedi.</div>
       )}

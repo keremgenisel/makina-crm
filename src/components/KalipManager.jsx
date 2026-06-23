@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { bumpId, uid } from "../lib/utils";
-import { Icon, Input, Warn, Btn, ConfirmDialog } from "./ui";
+import { Icon, Input, Warn, Btn, ConfirmDialog, Pagination } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
+
+const PER_PAGE = 10;
 
 export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) => {
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
@@ -14,6 +17,10 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) 
       editMsg: "Kalıp modeli düzenlendi.",
       deleteMsg: "Kalıp modeli silindi.",
     });
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(kalipDefs.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const paged = kalipDefs.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   return (
     <div>
@@ -30,34 +37,48 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) 
       </div>
 
       <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-        {kalipDefs.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz kalıp tanımı yok.</div>}
-        {kalipDefs.map(k => (
-          <div key={k.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderBottom: "1px solid #f1f5f9" }}>
-            {editId === k.id ? (
-              <div style={{ display: "flex", gap: 8, flex: 1, marginRight: 10 }}>
-                <Input value={editForm.ad} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} />
-              </div>
-            ) : (
-              <div>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 6 }}>
-              {editId === k.id ? (
-                <>
-                  <Btn small onClick={saveEdit}><Icon name="check" size={12} /></Btn>
-                  <Btn small variant="ghost" onClick={cancelEdit}>İptal</Btn>
-                </>
-              ) : (
-                <>
-                  <Btn small variant="ghost" onClick={() => startEdit(k)}><Icon name="edit" size={12} /></Btn>
-                  <Btn small variant="danger" onClick={() => requestDelete(k)}><Icon name="trash" size={12} /></Btn>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
+        {kalipDefs.length === 0 ? (
+          <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz kalıp tanımı yok.</div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kalıp Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map(k => (
+                <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "10px 14px" }}>
+                    {editId === k.id ? (
+                      <Input value={editForm.ad} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} />
+                    ) : (
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "10px 14px" }}>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      {editId === k.id ? (
+                        <>
+                          <Btn small onClick={saveEdit}><Icon name="check" size={12} /></Btn>
+                          <Btn small variant="ghost" onClick={cancelEdit}>İptal</Btn>
+                        </>
+                      ) : (
+                        <>
+                          <Btn small variant="ghost" onClick={() => startEdit(k)}><Icon name="edit" size={12} /></Btn>
+                          <Btn small variant="danger" onClick={() => requestDelete(k)}><Icon name="trash" size={12} /></Btn>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
+      <Pagination total={kalipDefs.length} page={safePage} setPage={setPage} perPage={PER_PAGE} />
 
       {confirmDel && (
         <ConfirmDialog
