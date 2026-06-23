@@ -1,6 +1,7 @@
-// ── E-posta gönderimi (Yandex SMTP) ──
-// Kimlik bilgisi (uygulama parolası) renderer'a hiç gönderilmez, safeStorage ile şifrelenmiş olarak
+// ── E-posta gönderimi (genel SMTP — sunucu/port Ayarlar'dan girilir, sağlayıcıya özel sabit yok) ──
+// Kimlik bilgisi (şifre) renderer'a hiç gönderilmez, safeStorage ile şifrelenmiş olarak
 // ayrı bir dosyada (smtp-config.json) saklanır — crm:save/data.json/data.db akışının tamamen dışında.
+// Sunucu/port/güvenlik bilgisi sır değil, aynı dosyada düz metin saklanır.
 const { app, BrowserWindow, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -23,12 +24,15 @@ function readConfig() {
   return null;
 }
 
-function saveCredentials({ email, appPassword }) {
-  if (!email || !appPassword) return { ok: false, error: "E-posta ve uygulama parolası gerekli." };
+function saveCredentials({ email, appPassword, host, port, secure }) {
+  if (!email || !appPassword) return { ok: false, error: "E-posta ve şifre gerekli." };
+  if (!host) return { ok: false, error: "SMTP sunucu adresi gerekli." };
   if (!safeStorage.isEncryptionAvailable()) return { ok: false, error: "Bu bilgisayarda güvenli depolama kullanılamıyor." };
   try {
     const encrypted = safeStorage.encryptString(appPassword).toString("base64");
-    fs.writeFileSync(getConfigPath(), JSON.stringify({ email, encryptedPassword: encrypted }), "utf-8");
+    fs.writeFileSync(getConfigPath(), JSON.stringify({
+      email, encryptedPassword: encrypted, host, port: Number(port) || 465, secure: secure !== false,
+    }), "utf-8");
     return { ok: true };
   } catch (err) {
     console.error("E-posta ayarları kaydedilemedi:", err);
@@ -38,7 +42,10 @@ function saveCredentials({ email, appPassword }) {
 
 function getCredentialsStatus() {
   const cfg = readConfig();
-  return { configured: !!(cfg && cfg.email && cfg.encryptedPassword), email: cfg?.email || "" };
+  return {
+    configured: !!(cfg && cfg.email && cfg.encryptedPassword && cfg.host),
+    email: cfg?.email || "", host: cfg?.host || "", port: cfg?.port || 465, secure: cfg?.secure !== false,
+  };
 }
 
 function clearCredentials() {
@@ -53,10 +60,10 @@ function clearCredentials() {
 
 function getDecryptedCredentials() {
   const cfg = readConfig();
-  if (!cfg || !cfg.email || !cfg.encryptedPassword) return null;
+  if (!cfg || !cfg.email || !cfg.encryptedPassword || !cfg.host) return null;
   try {
     const appPassword = safeStorage.decryptString(Buffer.from(cfg.encryptedPassword, "base64"));
-    return { email: cfg.email, appPassword };
+    return { email: cfg.email, appPassword, host: cfg.host, port: cfg.port || 465, secure: cfg.secure !== false };
   } catch (err) {
     console.error("E-posta parolası çözülemedi:", err);
     return null;
@@ -65,9 +72,9 @@ function getDecryptedCredentials() {
 
 function createTransporter(creds) {
   return nodemailer.createTransport({
-    host: "smtp.yandex.com",
-    port: 465,
-    secure: true,
+    host: creds.host,
+    port: creds.port,
+    secure: creds.secure,
     auth: { user: creds.email, pass: creds.appPassword },
   });
 }

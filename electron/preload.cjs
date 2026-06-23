@@ -51,7 +51,7 @@ contextBridge.exposeInMainWorld("appControl", {
 });
 
 contextBridge.exposeInMainWorld("appMail", {
-  saveCredentials: (email, appPassword) => ipcRenderer.invoke("mail:saveCredentials", email, appPassword),
+  saveCredentials: (payload) => ipcRenderer.invoke("mail:saveCredentials", payload),
   credentialsStatus: () => ipcRenderer.invoke("mail:credentialsStatus"),
   clearCredentials: () => ipcRenderer.invoke("mail:clearCredentials"),
   test: () => ipcRenderer.invoke("mail:test"),

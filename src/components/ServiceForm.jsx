@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal } from "./ui";
+import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
@@ -125,18 +125,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], onSav
         {parts.length === 0 ? (
           <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar → Yedek Parça'dan ekleyebilirsiniz.</div>
         ) : (
-          <Select value="" onChange={e => {
-            const ad = e.target.value;
-            // Aynı parça birden fazla kez eklenebilir (örn. 2 adet kesme bıçağı) — her ekleme kendi satırını oluşturur
-            if (ad) {
-              setForm(p => ({ ...p, degisenParcalar: [...(p.degisenParcalar || []), { ad, fiyat: "" }] }));
-            }
-          }}>
-            <option value="">+ Parça ekle...</option>
-            {parts.map(p => (
-              <option key={p.id} value={p.ad}>{p.ad}</option>
-            ))}
-          </Select>
+          // Aynı parça birden fazla kez eklenebilir (örn. 2 adet kesme bıçağı) — her ekleme kendi satırını oluşturur
+          <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
+            onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { ad: p.ad, fiyat: "" }] }))} />
         )}
       </Field>
 

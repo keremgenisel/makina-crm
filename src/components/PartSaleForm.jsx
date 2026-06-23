@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { today, trLower, fmtCur, parseMoney, calcKDV } from "../lib/utils";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
 // detayından "Extra Kalıp Satışı") tarafından paylaşılır, Services/ServiceForm ile aynı desen.
@@ -72,17 +72,13 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
 
       {!isEdit && (
         <Field label="Kalıp Ekle">
-          <Select value="" onChange={e => {
-            const ad = e.target.value;
+          {kalipDefs.length === 0 ? (
+            <div style={{ fontSize: 11, color: "#dc2626" }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>
+          ) : (
             // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
-            if (ad) {
-              setForm(p => ({ ...p, kaliplar: [...(p.kaliplar || []), { ad, olcu: "", fiyat: "" }] }));
-            }
-          }}>
-            <option value="">+ Kalıp ekle...</option>
-            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
-          </Select>
-          {kalipDefs.length === 0 && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>}
+            <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."
+              onPick={k => setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu: "", fiyat: "" }] }))} />
+          )}
         </Field>
       )}
 

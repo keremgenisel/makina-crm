@@ -244,8 +244,8 @@ ipcMain.handle("app:printHtml", async (_e, html) => {
   });
 });
 
-// ── E-posta (Yandex SMTP) ──
-ipcMain.handle("mail:saveCredentials", (_e, email, appPassword) => mailer.saveCredentials({ email, appPassword }));
+// ── E-posta (genel SMTP) ──
+ipcMain.handle("mail:saveCredentials", (_e, payload) => mailer.saveCredentials(payload));
 ipcMain.handle("mail:credentialsStatus", () => mailer.getCredentialsStatus());
 ipcMain.handle("mail:clearCredentials", () => mailer.clearCredentials());
 ipcMain.handle("mail:test", () => mailer.testConnection());

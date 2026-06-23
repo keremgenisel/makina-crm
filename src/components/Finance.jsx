@@ -29,21 +29,26 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
     toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
   } = useMemo(() => {
-    // Tarih aralığı sınırlarını hesapla
+    // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
+    // (<input type="date"> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
+    // kullanmak, tarihsiz-saat ISO string'lerinin UTC olarak yorumlanması yüzünden yerel saat dilimine
+    // göre (özellikle UTC'nin gerisindeki dilimlerde) bir gün kayma riski taşıyordu — ay/yıl sınırındaki
+    // bir kayıt yanlış aya/yıla sayılabilirdi. Bunun yerine string'in kendisi üzerinde (saat dilimine
+    // bağlı olmayan) doğrudan karşılaştırma yapılıyor.
     const now = new Date();
     const y = now.getFullYear();
-    const m = now.getMonth();
+    const m = now.getMonth(); // 0-indeksli (yerel tarih — Date nesnesinin kendisi UTC'ye çevrilmiyor)
+    const thisMonthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
     const inRange = (iso) => {
       if (!iso) return range === "all";
-      const d = new Date(iso);
-      if (isNaN(d)) return range === "all";
+      const s = String(iso);
       if (range === "all") return true;
-      if (range === "thisMonth") return d.getFullYear() === y && d.getMonth() === m;
-      if (range === "thisYear") return d.getFullYear() === y;
-      if (range === "lastYear") return d.getFullYear() === y - 1;
+      if (range === "thisMonth") return s.slice(0, 7) === thisMonthKey;
+      if (range === "thisYear") return s.slice(0, 4) === String(y);
+      if (range === "lastYear") return s.slice(0, 4) === String(y - 1);
       if (range === "custom") {
-        if (customStart && iso < customStart) return false;
-        if (customEnd && iso > customEnd) return false;
+        if (customStart && s < customStart) return false;
+        if (customEnd && s > customEnd) return false;
         return true;
       }
       return true;
@@ -70,9 +75,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
     const komisyon = empty3(), toplamCiro = empty3();
     // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
     const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
+    // Faturasız satışlarda fatura bedeli kasıtlı olarak gerçek satış bedelinden daha düşük tutulabiliyor
+    // (bkz. müşteri formundaki "Gerçek bedelden farklı olabilir" notu) — bu yüzden "gelir" sayılırken
+    // her zaman gerçek bedel (Fabrika Satış Bedeli, yoksa faturaya düş) kullanılmalı, ham faturaBedeli değil.
+    const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli);
     sales.forEach(c => {
       const k = cur(c.currency);
-      const gercek = parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli); // gerçek bedel yoksa faturaya düş
+      const gercek = gercekBedel(c);
       gercekCiro[k] += gercek;
       toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
       komisyon[k] += parseMoney(c.komisyon);
@@ -131,7 +140,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       const k = c.model || "Belirtilmemiş";
       if (!byModel[k]) byModel[k] = { adet: 0, gelir: 0 };
       byModel[k].adet += 1;
-      const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
+      const o = empty3(); o[cur(c.currency)] = gercekBedel(c);
       byModel[k].gelir += toTL(o);
     });
     const modelRows = Object.entries(byModel).sort((a, b) => b[1].gelir - a[1].gelir);
@@ -142,7 +151,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       const k = c.satisYapan || "Belirtilmemiş";
       if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0 };
       bySeller[k].adet += 1;
-      const g = empty3(); g[cur(c.currency)] = parseMoney(c.faturaBedeli);
+      const g = empty3(); g[cur(c.currency)] = gercekBedel(c);
       bySeller[k].gelir += toTL(g);
     });
     const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].gelir - a[1].gelir);
@@ -156,7 +165,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       let gelir = 0;
       customers.forEach(c => {
         if (c.installDate && c.installDate.slice(0, 7) === key) {
-          const o = empty3(); o[cur(c.currency)] = parseMoney(c.faturaBedeli);
+          const o = empty3(); o[cur(c.currency)] = gercekBedel(c);
           gelir += toTL(o);
         }
       });
@@ -247,7 +256,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], kdv
       <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 28 }}>
         <AdetCard label="Toplam Satılan Makina" value={totalMakina} color="#e85d1a" />
-        <AdetCard label="Toplam Satılan Kalıp" value={totalKalip} color="#3b82f6" />
+        <AdetCard label="Toplam Satılan Kalıp" value={totalKalip + satilanExtraKalipSayisi} color="#3b82f6" />
+        <AdetCard label="İlk Satışta Verilen Toplam Kalıp" value={totalKalip} color="#60a5fa" />
         <AdetCard label="Satılan Extra Kalıp Sayısı" value={satilanExtraKalipSayisi} color="#db2777" />
         <AdetCard label="Satılan Yedek Parça Sayısı" value={satilanYedekParcaSayisi} color="#0ea5e9" />
       </div>

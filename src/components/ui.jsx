@@ -1,5 +1,6 @@
-import { useId, useEffect, cloneElement, isValidElement, Children } from "react";
+import { useId, useState, useEffect, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
+import { trLower } from "../lib/utils";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -80,6 +81,55 @@ export const PickOrType = ({ value, onChange, options = [], placeholder = "" }) 
     <Input value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ marginTop: 6 }} />
   </div>
 );
+// Arama kutulu liste seçici — tanımlı bir listeden (parça/kalıp gibi) arayarak ve tıklayarak seçim
+// yapılır, PickOrType'taki gibi serbest yazım yok. Liste, formu uzatmasın diye input'un altına
+// kayan bir panel (overlay) olarak açılır — sadece input'a odaklanınca (tıklanınca) görünür. Bir
+// öğeye tıklamak onu hemen seçer/ekler, kısa bir "eklendi" onayı gösterir ve paneli kapatır — yeniden
+// eklemek için input'a tekrar tıklanması gerekir (her seçim ayrı, kapanan bir işlem). 150+ öğelik
+// kataloglarda (örn. yedek parça listesi) formun büyümeden kullanılabilmesi için bu davranış önemli.
+export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", limit = 8 }) => {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [justAdded, setJustAdded] = useState(null);
+  const filtered = (q.trim() ? items.filter(it => trLower(getLabel(it)).includes(trLower(q))) : items).slice(0, limit);
+  const pick = (it) => {
+    onPick(it);
+    setQ("");
+    setOpen(false);
+    setJustAdded(getLabel(it));
+    setTimeout(() => setJustAdded(null), 2000);
+  };
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}>
+        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+        <input value={q} onChange={e => setQ(e.target.value)} onFocus={() => { setOpen(true); setJustAdded(null); }} onBlur={() => setOpen(false)}
+          placeholder={placeholder}
+          style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
+      </div>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", maxHeight: 220, overflowY: "auto", boxShadow: "0 10px 28px rgba(0,0,0,.14)" }}>
+          {filtered.map(it => (
+            <div key={getKey(it)} onMouseDown={e => { e.preventDefault(); pick(it); }}
+              style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", fontSize: 13, fontWeight: 600, background: "#fff" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
+              onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+              {getLabel(it)}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div style={{ padding: "10px 12px", fontSize: 13, color: "#94a3b8" }}>{emptyText}</div>
+          )}
+        </div>
+      )}
+      {justAdded && (
+        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 10px", borderRadius: 6 }}>
+          ✓ "{justAdded}" eklendi
+        </div>
+      )}
+    </div>
+  );
+};
 // Kapora/Ödeme satırları: PartSaleForm'daki çoklu-kalıp ekleme deseninin genelleştirilmiş hali
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek

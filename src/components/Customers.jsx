@@ -206,7 +206,9 @@ export const Customers = ({
         });
       })()
     : searched;
-  // Sütun sıralaması
+  // Sütun sıralaması — hiçbir sütun seçilmediyse varsayılan: tarihe göre, en yeni önce
+  // (yeni eklenen müşteri her zaman listenin en üstünde görünsün, eski verinin dizideki
+  // konumuna bağlı kalmadan).
   const sorted = sortBy ? [...filtered].sort((a, b) => {
     let av, bv;
     if (sortBy === "name") { av = trLower(a.name); bv = trLower(b.name); }
@@ -217,7 +219,7 @@ export const Customers = ({
     if (av < bv) return sortDir === "asc" ? -1 : 1;
     if (av > bv) return sortDir === "asc" ? 1 : -1;
     return 0;
-  }) : filtered;
+  }) : [...filtered].sort((a, b) => (b.installDate || "").localeCompare(a.installDate || ""));
   const toggleSort = (col) => {
     if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortBy(col); setSortDir("asc"); }
@@ -589,7 +591,7 @@ export const Customers = ({
     printMachineReportTemplate(detailView, detailHistory, partSales);
   };
 
-  // E-posta: aynı HTML şablonları PDF eki olarak gönderilir (window.appMail.send → main process'te printToPDF + Yandex SMTP)
+  // E-posta: aynı HTML şablonları PDF eki olarak gönderilir (window.appMail.send → main process'te printToPDF + SMTP)
   const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, pdfHtml, pdfFileName }
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null }); // idle | sending | ok | error
   const openMailMachineReport = () => {
@@ -878,7 +880,7 @@ export const Customers = ({
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 16 }}>
                   {[
                     ["Fatura Durumu", detailView.faturali ? `${detailView.faturali}${detailView.faturali === "Faturasız" ? " (KDV HARİÇ)" : ""}` : ""],
-                    ["Fabrika Satış Bedeli", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
+                    ["Fabrika Satış Bedeli (KDV'siz)", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                     ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
                     ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate), detailView.currency) : ""],
                     ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
