@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi } from "../lib/utils";
+import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi, isAltuntasServisi } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -18,7 +18,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // tedarik edildiği belirsiz olabilir — varsayılan "Altuntaş'tan alındı" (true). Dışarıdan
   // tedarik edilse de parça ücreti yine girilebilir (müşteriye ne kadar tahsil edildiği geçmişte
   // görünsün) — sadece bu tutar Altuntaş'ın gelir/borç hesaplarına hiç girmez (bkz. isParcaUcretliMi).
-  const islemAnlasmali = (form.islemFirma || factoryName) !== factoryName;
+  const islemAnlasmali = !isAltuntasServisi(form, factoryName);
   const parcaAltuntastanMi = !islemAnlasmali || form.parcaAltuntastanMi !== false;
   const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (parcaAltuntastanMi && warrantyAktif && !form.parcaGarantiDisi);
   const parcaUcretiToplam = (form.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
@@ -81,6 +81,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
+        <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Tür">
           <Select value={form.type || "Periyodik Bakım"} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
             {SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}
@@ -99,34 +103,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
         </Select>
       </Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
-        <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
-      </div>
-      <Field label="Fatura Tipi">
-        <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-          {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-        </Select>
+
+      <Field label="Müşteri Talimatı / Açıklama">
+        <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
+          placeholder="Müşterinin talimatı / talebi..."
+          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
       </Field>
-      {(svUcretliTipi || !parcaUcretsizMi) && (
-        <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>
-          <Field label="Para Birimi">
-            <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
-              <option value="TRY">₺ Türk Lirası</option>
-              <option value="USD">$ Dolar (USD)</option>
-              <option value="EUR">€ Euro (EUR)</option>
-            </Select>
-          </Field>
-          {svUcretliTipi && (
-            <Field label="Servis Ücreti">
-              <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
-              {(form.currency || "TRY") !== "TRY" && (
-                <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
-              )}
-            </Field>
-          )}
-        </div>
-      )}
 
       <Field label="Yapılan İşler / Parça Değişimleri">
         <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
@@ -187,6 +169,31 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </>
       )}
 
+      <Field label="Fatura Tipi">
+        <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+          {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+        </Select>
+      </Field>
+      {(svUcretliTipi || !parcaUcretsizMi) && (
+        <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>
+          <Field label="Para Birimi">
+            <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+              <option value="TRY">₺ Türk Lirası</option>
+              <option value="USD">$ Dolar (USD)</option>
+              <option value="EUR">€ Euro (EUR)</option>
+            </Select>
+          </Field>
+          {svUcretliTipi && (
+            <Field label="Servis Ücreti">
+              <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
+              {(form.currency || "TRY") !== "TRY" && (
+                <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+              )}
+            </Field>
+          )}
+        </div>
+      )}
+
       {/* Ödeme durumu — servis ve parça ücreti tek ortak toggle ile yönetilir */}
       {ucretliVarMi && (
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
@@ -220,12 +227,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           })()}
         </div>
       )}
-
-      <Field label="Müşteri Talimatı / Açıklama">
-        <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
-          placeholder="Müşterinin talimatı / talebi..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
-      </Field>
 
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
         <Btn variant="ghost" onClick={onCancel}>İptal</Btn>

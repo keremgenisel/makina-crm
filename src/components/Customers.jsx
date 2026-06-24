@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate, buildServiceFormHtml, buildMachineReportHtml } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType, PaymentRowsEditor } from "./ui";
@@ -212,12 +212,21 @@ export const Customers = ({
     return fc;
   }, [customers]);
 
+  // Borçlu müşteri id'leri — customerHasAnyDebt her çağrıda services/partSales'i baştan taradığı için
+  // (O(müşteri × servis)), bunu hem sayaç rozetinde hem her satırda tekrar tekrar çağırmak yerine
+  // tek geçişte bir Set'e çıkarıp her renderda (örn. arama kutusuna yazarken) yeniden taranmasını önlüyoruz.
+  const debtorIds = useMemo(() => {
+    const ids = new Set();
+    customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName)) ids.add(c.id); });
+    return ids;
+  }, [customers, services, partSales, factoryName]);
+
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo", "model"],
     filterFn: c => {
       if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();
       if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();
-      if (listFilter === "debt") return customerHasAnyDebt(c, services, partSales, factoryName);
+      if (listFilter === "debt") return debtorIds.has(c.id);
       if (listFilter === "serial-pending") return c.seriNoBekliyor && !c.serialNo;
       return true;
     },
@@ -681,7 +690,7 @@ export const Customers = ({
           { v: "all", l: "Hepsi", count: customers.length },
           { v: "warranty-active", l: "🟢 Garantisi Devam Eden", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
           { v: "warranty", l: "⚠ Garantisi Bitenler", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
-          ...(isCustomerTab ? [{ v: "debt", l: "₺ Borçlu Firmalar", count: customers.filter(c => customerHasAnyDebt(c, services, partSales, factoryName)).length }] : []),
+          ...(isCustomerTab ? [{ v: "debt", l: "₺ Borçlu Firmalar", count: debtorIds.size }] : []),
           ...(isCustomerTab ? [{ v: "serial-pending", l: "⏳ Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
         ].map(f => (
           <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
@@ -745,7 +754,7 @@ export const Customers = ({
               const warrantySoon = warrantyOk && c.warrantyEnd <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
               const warrantyColor = !c.warrantyEnd ? "#cbd5e1" : !warrantyOk ? "#dc2626" : warrantySoon ? "#f59e0b" : "#16a34a";
               const hasKalanBorc = parseMoney(c.kalanBorc) > 0;
-              const hasDebt = isCustomerTab && customerHasAnyDebt(c, services, partSales, factoryName);
+              const hasDebt = isCustomerTab && debtorIds.has(c.id);
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fefce8" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var — detayı görmek için tıklayın") : undefined}>
@@ -770,7 +779,7 @@ export const Customers = ({
                         )}
                       </div>
                     )}
-                    {c.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{c.adres}</div>}
+                    {c.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, maxWidth: 260, wordBreak: "break-word", overflowWrap: "break-word" }}>{c.adres}</div>}
                   </td>
                   <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{c.satisYapan || "—"}</td>
                   <td style={{ padding: "13px 16px", fontSize: 13 }}>{c.country && c.city ? `${c.country} / ${c.city}` : c.city || c.country || "—"}</td>
@@ -1091,7 +1100,7 @@ export const Customers = ({
                                 <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
                               )}
                               {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "#f1f5f9", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "#475569" }}>{ev.tip}</span>}
-                              {sv?.islemFirma && sv.islemFirma !== factoryName && (
+                              {sv?.islemFirma && !isAltuntasServisi(sv, factoryName) && (
                                 <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "#fef3c7", color: "#92400e" }}>
                                   Anlaşmalı Servis: {sv.islemFirma}
                                 </span>

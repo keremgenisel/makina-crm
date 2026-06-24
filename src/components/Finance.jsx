@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcCiro, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
+import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -87,11 +87,15 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     sales.forEach(c => {
       const k = cur(c.currency);
       const gercek = gercekBedel(c);
+      const kdvTutar = calcKDV(c.faturali, c.faturaBedeli, kdvRate);
       gercekCiro[k] += gercek;
-      toplamCiro[k] += calcCiro(c, kdvRate); // Fabrika Satış Bedeli + KDV + Komisyon — Kalan Borç'un dayandığı taban
+      // Komisyon burada GİDER olarak çıkarılır (eklenmez) — bayiye/satıcıya ödenen komisyon Altuntaş'ın
+      // kendi geliri değildir. calcCiro() kasıtlı olarak kullanılmıyor: o, Kalan Borç tabanı için ayrı bir
+      // amaçla komisyonu EKLER (bkz. utils.js calcCiro yorum satırı) — burada Toplam Bedel/ciro hesabı farklı.
+      toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
       komisyon[k] += parseMoney(c.komisyon);
       faturaBedeliToplam[k] += parseMoney(c.faturaBedeli);
-      kdvMakina[k] += calcKDV(c.faturali, c.faturaBedeli, kdvRate);
+      kdvMakina[k] += kdvTutar;
     });
     // Anlaşmalı bir firma yaptıysa servis ücretini müşteri o firmaya öder, Altuntaş'a değil —
     // bu yüzden bu ciroya hiç dahil edilmez (ücret yine de geçmişte/kayıtta bilgi amaçlı görünür).
@@ -303,7 +307,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Ciro" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
+        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp - Komisyon (KDV hariç)" size="large" />
         <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>

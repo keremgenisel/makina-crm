@@ -4,7 +4,7 @@ import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmali
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], kdvRate = DEFAULT_KDV_RATE, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRate = DEFAULT_KDV_RATE, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
@@ -50,7 +50,30 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     else {
       if (modal !== "factory" && !form.bayiMi && !form.anlasmaliServisMi) { showToast("En az biri seçili olmalı: Bayi veya Anlaşmalı Servis.", "err"); return; }
       if (modal === "add") { bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Bayi kaydedildi."); }
-      else { setDealers(p => p.map(d => d.id === form.id ? form : d)); showToast("Bayi bilgileri düzenlendi."); }
+      else {
+        const oldName = modal.edit?.name;
+        const newName = form.name;
+        setDealers(p => p.map(d => d.id === form.id ? form : d));
+        // Firma adı düzeltildiyse (yazım hatası vb.), bu adı referans alan eski servis/müşteri kayıtlarını
+        // da güncelle — yoksa borç takibi, zaman çizelgesi ve "Satış Yapan" kırılımları eski/yeni isim
+        // arasında bölünür (örn. bayi borçluyken adı düzeltilince borcu kaybolmuş gibi görünür).
+        if (oldName && newName && oldName !== newName) {
+          setServices?.(p => p.map(s => s.islemFirma === oldName ? { ...s, islemFirma: newName } : s));
+          setCustomers?.(p => p.map(c => {
+            const satisYapanEsleser = c.satisYapan === oldName;
+            const prevOwnerEsleser = c.prevOwners?.some(o => o.satisYapan === oldName);
+            if (!satisYapanEsleser && !prevOwnerEsleser) return c;
+            return {
+              ...c,
+              satisYapan: satisYapanEsleser ? newName : c.satisYapan,
+              prevOwners: prevOwnerEsleser ? c.prevOwners.map(o => o.satisYapan === oldName ? { ...o, satisYapan: newName } : o) : c.prevOwners,
+            };
+          }));
+          showToast(`Bayi bilgileri düzenlendi. "${oldName}" adı geçmiş kayıtlarda da güncellendi.`);
+        } else {
+          showToast("Bayi bilgileri düzenlendi.");
+        }
+      }
     }
     setModal(null);
   };

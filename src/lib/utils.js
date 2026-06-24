@@ -133,7 +133,12 @@ export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 // Servis Altuntaş Makina'nın kendisi tarafından mı yapıldı (işlemi yapan firma boşsa veya fabrika
 // adıyla eşleşiyorsa evet). Anlaşmalı bir firma seçiliyse hayır — o zaman işçilik ücretini müşteri
 // Altuntaş'a değil o firmaya öder, servis ücreti tamamen bilgi amaçlı bir kayıttır.
-export const isAltuntasServisi = (sv, factoryName = "Altuntaş Makina") => !sv.islemFirma || sv.islemFirma === factoryName;
+// "Altuntaş Makina" sabit string'i de ayrıca kontrol edilir: bu, fabrika adı Ayarlar'dan
+// özelleştirilmeden (veya sonradan değiştirilmeden) ÖNCE kaydedilmiş eski servis kayıtlarında
+// islemFirma'nın hâlâ taşıdığı varsayılan değer — fabrika adı sonradan değişince bu eski kayıtlar
+// güncel factoryName'le eşleşmediği için yanlışlıkla "anlaşmalı firma" sayılmasın diye.
+export const isAltuntasServisi = (sv, factoryName = "Altuntaş Makina") =>
+  !sv.islemFirma || sv.islemFirma === factoryName || sv.islemFirma === "Altuntaş Makina";
 // Servis ücretli mi (Garanti Dışı / Periyodik Bakım + ücret > 0 + Altuntaş'ın kendi servisi)
 export const isServisUcretliMi = (sv, factoryName = "Altuntaş Makina") =>
   (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0 && isAltuntasServisi(sv, factoryName);

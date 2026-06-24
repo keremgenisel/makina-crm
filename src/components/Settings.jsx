@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE, BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../lib/constants";
-import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, calcCiro, extractKDV, parseMoney, kalipCount, safeStandardModels } from "../lib/utils";
+import { today, fmtTR, trLower, bumpId, looksLikeBackup, fmt, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount, safeStandardModels } from "../lib/utils";
 import { Icon, Btn, Modal, Field, Input, Warn, EMAIL_RE, Select } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -82,10 +82,12 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     real.forEach(c => {
       const k = cur(c.currency);
       const tip = normalizeSaleType(c.faturali);
+      const kdvTutar = calcKDV(tip, c.faturaBedeli, rate);
       gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli);
-      toplamCiro[k] += calcCiro(c, rate);
+      // Komisyon GİDER olarak çıkarılır (eklenmez) — Finance.jsx'teki Toplam Bedel ile tutarlı
+      toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
       if (isFaturali(tip)) faturaliTutar[k] += parseMoney(c.faturaBedeli);
-      kdv[k] += calcKDV(tip, c.faturaBedeli, rate);
+      kdv[k] += kdvTutar;
       komisyon[k] += parseMoney(c.komisyon);
       alacak[k] += parseMoney(c.kalanBorc);
     });
@@ -116,7 +118,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       [],
       ["TUTARLAR", "₺ (TL)", "$ (USD)", "€ (EUR)"],
       line("Gerçek Ciro (fiili satış)", gercekCiro),
-      line("Toplam Ciro (Fabrika Bedeli + KDV + Komisyon)", toplamCiro),
+      line("Toplam Bedel (Fabrika Bedeli + KDV - Komisyon)", toplamCiro),
       line("Faturalı Tutar (resmi)", faturaliTutar),
       line(`Toplam KDV (%${rate})`, kdv),
       line("Toplam Extra Kalıp Satışı", extra),
@@ -450,7 +452,17 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
     return { customers: newCustomers, services: newServices, errors, guncellenecek };
   };
 
+  // xlsx (SheetJS) paketinde npm üzerinden düzeltilmemiş bilinen bir Prototip Kirlenmesi/ReDoS açığı var
+  // (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Kaynağı tamamen engelleyemediğimiz için saldırı yüzeyini
+  // makul bir dosya boyutu ve satır sayısıyla sınırlıyoruz.
+  const MAX_IMPORT_MB = 20;
+  const MAX_IMPORT_ROWS = 50000;
+
   const handleImportFile = (file) => {
+    if (file.size > MAX_IMPORT_MB * 1024 * 1024) {
+      flash("err", `Dosya çok büyük (en fazla ${MAX_IMPORT_MB} MB).`);
+      return;
+    }
     const name = (file.name || "").toLowerCase();
     const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
     const reader = new FileReader();
@@ -468,6 +480,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         } else {
           rows = parseCSV(e.target.result);
         }
+        if (rows.length > MAX_IMPORT_ROWS) { flash("err", `Dosyada çok fazla satır var (en fazla ${MAX_IMPORT_ROWS}).`); return; }
         rows = rows.filter(r => Array.isArray(r) && r.some(x => String(x).trim() !== ""));
         if (rows.length < 2) { flash("err", "Dosyada veri bulunamadı."); return; }
         const result = rowsToRecords(rows);

@@ -70,6 +70,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         )}
       </Field>
 
+      <Field label="Veriliş Tarihi"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
+
       {!isEdit && (
         <Field label="Kalıp Ekle">
           {kalipDefs.length === 0 ? (
@@ -117,8 +119,6 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
           ))}
         </Field>
       )}
-
-      <Field label="Veriliş Tarihi"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
 
       {selectedCust && (
         <Field label="Fatura Tipi">
