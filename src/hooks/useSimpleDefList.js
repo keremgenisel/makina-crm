@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower } from "../lib/utils";
+import { trLower, withDeleted } from "../lib/utils";
 
 // KalipManager ve PartManager neredeyse aynı: "ad" alanlı basit bir liste için
 // ekle/satır-içi düzenle/sil akışı. Tek farkları ID üretim stratejisi ve
@@ -32,7 +32,7 @@ export function useSimpleDefList({ items, setItems, genId, showToast = () => {},
   const requestDelete = (item) => setConfirmDel(item);
   const cancelDelete = () => setConfirmDel(null);
   const confirmDelete = () => {
-    setItems(p => p.filter(x => x.id !== confirmDel.id));
+    setItems(p => withDeleted(p, x => x.id === confirmDel.id));
     setConfirmDel(null);
     showToast(deleteMsg);
   };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower } from "../lib/utils";
+import { trLower, withDeleted } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
 
 const PER_PAGE = 10;
@@ -88,8 +88,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
 
       {confirmDelModel && (
         <ConfirmDialog
-          message={`"${confirmDelModel}" modeli silinecek. Bu işlem geri alınamaz.`}
-          onConfirm={() => { setCustomModels(p => p.filter(x => x.model !== confirmDelModel)); setConfirmDelModel(null); showToast("Model silindi."); }}
+          message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
+          onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setConfirmDelModel(null); showToast("Model silindi."); }}
           onCancel={() => setConfirmDelModel(null)}
         />
       )}

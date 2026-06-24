@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
 import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
+import { usePagination } from "../hooks/usePagination";
+import { Pagination } from "./ui";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -232,6 +234,12 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates, factoryName]);
 
+  const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
+  const { page: sellerPage, setPage: setSellerPage, paged: sellerRowsPaged, perPage: SELLER_PER_PAGE } = usePagination(sellerRows, 10);
+  // Tarih aralığı değişince listeler yeniden hesaplanıp kısalabilir — sayfa numarası eski/yüksek
+  // kalmasın diye aralık değiştiğinde her ikisi de baştan başlar.
+  useEffect(() => { setModelPage(1); setSellerPage(1); }, [range, customStart, customEnd]);
+
   // Excel'e aktar (CSV)
   const AdetCard = ({ label, value, color, icon }) => (
     <div style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderTop: `3px solid ${color}` }}>
@@ -357,7 +365,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
               {["Model", "Adet", "Gelir"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Model" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
             </tr></thead>
             <tbody>
-              {modelRows.map(([k, v]) => (
+              {modelRowsPaged.map(([k, v]) => (
                 <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
@@ -367,6 +375,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
               {modelRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
             </tbody>
           </table>
+          <Pagination total={modelRows.length} page={modelPage} setPage={setModelPage} perPage={MODEL_PER_PAGE} />
         </div>
         <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>
           <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı</div>
@@ -375,7 +384,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
               {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
             </tr></thead>
             <tbody>
-              {sellerRows.map(([k, v]) => (
+              {sellerRowsPaged.map(([k, v]) => (
                 <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
@@ -384,6 +393,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
               {sellerRows.length === 0 && <tr><td colSpan={2} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
             </tbody>
           </table>
+          <Pagination total={sellerRows.length} page={sellerPage} setPage={setSellerPage} perPage={SELLER_PER_PAGE} />
         </div>
       </div>
     </div>

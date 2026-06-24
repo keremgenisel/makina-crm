@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi, isAltuntasServisi } from "../lib/utils";
+import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -14,6 +14,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const warrantyAktif = !!(selectedCust?.warrantyEnd && selectedCust.warrantyEnd >= today());
+  // "İlk Çalıştırma" yalnızca garanti hâlâ aktifken VE garanti başlangıcından (installDate) en fazla
+  // 6 ay geçmişken anlamlı — garantisi bitmiş veya başlangıcından 6 aydan fazla geçmiş bir makinada
+  // bu seçenek soluk/tıklanamaz gösterilir.
+  const ilkCalistirmaGecersiz = !!(selectedCust?.installDate) && (!warrantyAktif || today() >= addMonthsToDateStr(selectedCust.installDate, 6));
   // İşlemi yapan firma anlaşmalı bir servisse, parçanın Altuntaş'tan mı yoksa dışarıdan mı
   // tedarik edildiği belirsiz olabilir — varsayılan "Altuntaş'tan alındı" (true). Dışarıdan
   // tedarik edilse de parça ücreti yine girilebilir (müşteriye ne kadar tahsil edildiği geçmişte
@@ -87,7 +91,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Tür">
           <Select value={form.type || "Periyodik Bakım"} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-            {SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}
+            {SERVICE_TYPES.map(t => (
+              <option key={t} disabled={(t === "Garanti İçi" && !warrantyAktif) || (t === "İlk Çalıştırma" && ilkCalistirmaGecersiz)}>{t}</option>
+            ))}
           </Select>
         </Field>
         <Field label="Yapılan İşlem">
@@ -141,7 +147,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
               <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#dc2626" }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
-                {form.parcaGarantiDisi ? "Garanti kapsamı dışı (ücretli)" : "Garanti kapsamında — parça ücretsiz verildi"}
+                {form.parcaGarantiDisi ? "Garanti kapsamı dışı (ücretli)" : "Garanti kapsamında, parça ücretsiz verildi"}
               </span>
             </label>
           )}

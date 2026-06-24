@@ -1,0 +1,26 @@
+// Dışa Aktar ve İçe Aktar sekmeleri arasında paylaşılan CSV yardımcıları.
+export const buildCSV = (rows) => "﻿" + rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+
+export const downloadCSV = (rows, filename) => {
+  const blob = new Blob([buildCSV(rows)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+};
+
+export const utf8ToBase64 = (str) => {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach(b => { binary += String.fromCharCode(b); });
+  return window.btoa(binary);
+};
+
+// Şablon sütun başlıkları (müşteri bu sıraya uyarlar) — "Tümünü İndir" (Dışa Aktar) bu formatta
+// üretir, "İçe Aktar" bu formatı okur; ikisi de aynı sütun düzenini paylaşmalı.
+export const IMPORT_HEADERS = [
+  "Kalıp Sayısı", "Satış Yapan", "Satın Alan Firma", "Telefon", "Adres", "Ülke", "Şehir",
+  "Model", "Makina Kalıp Çapı (çap x arka ölçü x boy)", "Para Birimi (TL/USD/EUR)", "Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)", "Aldığı Kalıplar", "Satış Tarihi / Garanti Başlangıç (gg.aa.yyyy)", "Garanti Bitiş (gg.aa.yyyy)", "Fabrika Satış Bedeli", "Fatura Bedeli",
+  "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
+  "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
+  "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
+];

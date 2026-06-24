@@ -1,4 +1,4 @@
-import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS } from "./constants";
+import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS } from "./constants";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -8,6 +8,17 @@ export const fmtTR = (iso) => {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 };
 export const todayTR = () => fmtTR(today());
+// "YYYY-MM-DD" tarih string'ine ay ekler, sonucu da string olarak döner — new Date(iso)+setMonth()
+// YERİNE saf sayı aritmetiği kullanılıyor (ay/yıl sınırında UTC yorumlama kaymasına karşı, bkz.
+// Finance.jsx'teki ilgili yorum: tarihler hep string üzerinde karşılaştırılır, Date nesnesine hiç çevrilmez).
+export const addMonthsToDateStr = (dateStr, months) => {
+  if (!dateStr) return "";
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const newY = Math.floor(total / 12);
+  const newM = (total % 12) + 1;
+  return `${newY}-${String(newM).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+};
 // Türkçe büyük/küçük harf dönüşümü (İ→i, I→ı doğru çalışır)
 export const trLower = (s) => (s || "").toLocaleLowerCase("tr");
 // Kalıp bilgisini okunur metne çevir (yeni dizi formatı + eski tek metin uyumlu)
@@ -187,3 +198,17 @@ export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi &
 // Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı)
 export const calcKalanBorc = (customer, payments = [], kdvRate = DEFAULT_KDV_RATE) =>
   calcCiro(customer, kdvRate) - sumPayments(customer.id, payments);
+
+// Çöp Kutusu: deletedAt'i retention süresinden eski olan kayıtları kalıcı olarak süzer
+// (uygulama açılışında bir defa çalışır) — 12 farklı dizi için aynı mantık birebir tekrarlandığı
+// için ortak bir yardımcıda toplandı.
+export const purgeOldTrash = (arr = [], days = TRASH_RETENTION_DAYS) => {
+  const cutoff = Date.now() - days * 86400000;
+  return arr.filter(x => !x.deletedAt || new Date(x.deletedAt).getTime() >= cutoff);
+};
+
+// Çöp Kutusu: tek bir kaydı (veya matchFn'e uyan kayıtları) deletedAt damgasıyla işaretler —
+// kademeli silmelerde (örn. müşteri + servisleri + ödemeleri) aynı ts paylaşılarak çağrılır,
+// böylece geri alma sırasında sadece o silme anına ait kayıtlar birlikte döner.
+export const withDeleted = (arr, matchFn, ts = new Date().toISOString()) =>
+  arr.map(x => (matchFn(x) ? { ...x, deletedAt: ts } : x));

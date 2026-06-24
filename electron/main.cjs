@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const sqliteDb = require("./db.cjs");
 const mailer = require("./mail.cjs");
+const applock = require("./applock.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -71,8 +72,6 @@ ipcMain.handle("crm:save", (_e, data) => {
     return false;
   }
 });
-ipcMain.handle("crm:dataPath", () => (sqliteDb.isActive() ? sqliteDb.getDbPath() : getDataPath()));
-
 ipcMain.handle("crm:backup", async (_e, data) => {
   const date = new Date().toISOString().split("T")[0];
   const { canceled, filePath } = await dialog.showSaveDialog({
@@ -250,6 +249,40 @@ ipcMain.handle("mail:credentialsStatus", () => mailer.getCredentialsStatus());
 ipcMain.handle("mail:clearCredentials", () => mailer.clearCredentials());
 ipcMain.handle("mail:test", () => mailer.testConnection());
 ipcMain.handle("mail:send", (_e, payload) => mailer.sendMail(payload));
+ipcMain.handle("mail:getLog", () => mailer.getSentLog());
+
+// ── Uygulama şifresi (açılış kilidi) ──
+ipcMain.handle("applock:status", () => applock.getStatus());
+ipcMain.handle("applock:setup", (_e, password) => applock.setup(password));
+ipcMain.handle("applock:verify", (_e, password) => applock.verify(password));
+ipcMain.handle("applock:disable", (_e, password) => applock.disable(password));
+ipcMain.handle("applock:changePassword", (_e, currentPassword, newPassword) => applock.changePassword(currentPassword, newPassword));
+ipcMain.handle("applock:resetWithRecoveryCode", (_e, recoveryCode, newPassword) => applock.resetWithRecoveryCode(recoveryCode, newPassword));
+
+// ── Hata günlüğü: ErrorBoundary'nin yakaladığı render hataları, crm:save/data.json
+// akışının tamamen dışında, ayrı bir sidecar dosyaya yazılır (smtp-config.json ile aynı mantık) ──
+const getErrorLogPath = () => path.join(app.getPath("userData"), "error-log.json");
+function readErrorLog() {
+  try {
+    const p = getErrorLogPath();
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+  } catch (err) {
+    console.error("Hata günlüğü okunamadı:", err);
+  }
+  return [];
+}
+ipcMain.handle("error:log", (_e, entry) => {
+  try {
+    const log = readErrorLog();
+    log.push(entry);
+    fs.writeFileSync(getErrorLogPath(), JSON.stringify(log.slice(-20), null, 2), "utf-8");
+    return { ok: true };
+  } catch (err) {
+    console.error("Hata günlüğüne yazılamadı:", err);
+    return { ok: false, error: err?.message || "bilinmeyen hata" };
+  }
+});
+ipcMain.handle("error:readLog", () => readErrorLog());
 
 function wireUpdaterEvents() {
   if (!autoUpdater) return;

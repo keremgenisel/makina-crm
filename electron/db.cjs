@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS customers (
   satisYapan TEXT, installDate TEXT, warrantyEnd TEXT,
   faturali TEXT, faturaBedeli REAL, fabrikaSatisBedeli REAL, komisyon REAL, currency TEXT,
   kalanBorc REAL, isResale INTEGER, prevOwners TEXT,
-  kalip TEXT, kalipSayisi INTEGER, extraKalipFiyati TEXT
+  kalip TEXT, kalipSayisi INTEGER, extraKalipFiyati TEXT, deletedAt TEXT
 );
 
 CREATE TABLE IF NOT EXISTS customer_kaliplar (
@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_kaliplar_customer ON customer_kaliplar(customer_i
 CREATE TABLE IF NOT EXISTS dealers (
   id INTEGER PRIMARY KEY,
   name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT,
-  bayiMi INTEGER, anlasmaliServisMi INTEGER
+  bayiMi INTEGER, anlasmaliServisMi INTEGER, deletedAt TEXT
 );
 
 CREATE TABLE IF NOT EXISTS services (
@@ -56,22 +56,22 @@ CREATE TABLE IF NOT EXISTS services (
   type TEXT, repairPlace TEXT, date TEXT, tech TEXT, yapilanIsler TEXT, musteriTalimati TEXT,
   servisUcreti REAL, currency TEXT, faturaTipi TEXT, odendi INTEGER,
   degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
-  islemFirma TEXT, parcaAltuntastanMi INTEGER
+  islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
 CREATE TABLE IF NOT EXISTS stock (
-  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT
+  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, deletedAt TEXT
 );
 
-CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT);
-CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT);
+CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, deletedAt TEXT);
+CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, deletedAt TEXT);
 
 CREATE TABLE IF NOT EXISTS part_sales (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
   tur TEXT, ad TEXT, olcu TEXT, tarih TEXT, ucret REAL, currency TEXT,
-  odendi INTEGER, faturaTipi TEXT, ucretsizMi INTEGER, batchId INTEGER
+  odendi INTEGER, faturaTipi TEXT, ucretsizMi INTEGER, batchId INTEGER, deletedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_partsales_customer ON part_sales(customer_id);
 
@@ -79,13 +79,13 @@ CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
   tarih TEXT, tutar REAL, currency TEXT, note TEXT,
-  yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER
+  yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, deletedAt TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id);
 
-CREATE TABLE IF NOT EXISTS kalip_defs (id INTEGER PRIMARY KEY, ad TEXT);
+CREATE TABLE IF NOT EXISTS kalip_defs (id INTEGER PRIMARY KEY, ad TEXT, deletedAt TEXT);
 CREATE TABLE IF NOT EXISTS standard_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT);
-CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT);
+CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, deletedAt TEXT);
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL);
 `;
@@ -102,6 +102,11 @@ function ensureColumns(conn, table, columns) {
 const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
 const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"]];
+// Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
+// sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
+// uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
+const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -133,10 +138,10 @@ function populateAll(conn, data) {
   const insertCustomer = conn.prepare(`
     INSERT INTO customers (id, name, phone, email, adres, city, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
-      faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati)
+      faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt)
     VALUES (@id, @name, @phone, @email, @adres, @city, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
-      @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati)
+      @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order) VALUES (?, ?, ?, ?, ?, ?)
@@ -159,6 +164,7 @@ function populateAll(conn, data) {
         faturaBedeli: c.faturaBedeli ?? null, fabrikaSatisBedeli: c.fabrikaSatisBedeli ?? null, komisyon: c.komisyon ?? null, currency: c.currency ?? null,
         kalanBorc: c.kalanBorc ?? null, isResale: toInt(c.isResale), prevOwners: json(c.prevOwners ?? []),
         kalip: c.kalip ?? null, kalipSayisi: c.kalipSayisi ?? null, extraKalipFiyati: c.extraKalipFiyati ?? null,
+        deletedAt: c.deletedAt ?? null,
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx);
@@ -171,10 +177,10 @@ function populateAll(conn, data) {
     const stmt = conn.prepare(`
       INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati,
         servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
-        islemFirma, parcaAltuntastanMi)
+        islemFirma, parcaAltuntastanMi, deletedAt)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
-        @islemFirma, @parcaAltuntastanMi)
+        @islemFirma, @parcaAltuntastanMi, @deletedAt)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -184,6 +190,7 @@ function populateAll(conn, data) {
         degisenParcalar: json(s.degisenParcalar ?? []), parcaUcretsizMi: toInt(s.parcaUcretsizMi), parcaUcreti: s.parcaUcreti ?? null,
         parcaCurrency: s.parcaCurrency ?? null, parcaGarantiDisi: toInt(s.parcaGarantiDisi),
         islemFirma: s.islemFirma ?? null, parcaAltuntastanMi: toIntTriState(s.parcaAltuntastanMi),
+        deletedAt: s.deletedAt ?? null,
       });
     }
   }
@@ -191,54 +198,55 @@ function populateAll(conn, data) {
   if (Array.isArray(data.partSales)) {
     conn.prepare(`DELETE FROM part_sales`).run();
     const stmt = conn.prepare(`
-      INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId)
-      VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId)
+      INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId, deletedAt)
+      VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt)
     `);
     for (const p of data.partSales) {
       stmt.run({
         id: p.id, customer_id: p.customerId ?? null, tur: p.tur ?? null, ad: p.ad ?? null, olcu: p.olcu ?? null,
         tarih: p.tarih ?? null, ucret: p.ucret ?? null, currency: p.currency ?? null, odendi: toInt(p.odendi),
         faturaTipi: p.faturaTipi ?? null, ucretsizMi: toInt(p.ucretsizMi), batchId: p.batchId ?? null,
+        deletedAt: p.deletedAt ?? null,
       });
     }
   }
 
   if (Array.isArray(data.payments)) {
     conn.prepare(`DELETE FROM payments`).run();
-    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const p of data.payments) {
-      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null);
+      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null, p.deletedAt ?? null);
     }
   }
 
   if (Array.isArray(data.dealers)) {
     conn.prepare(`DELETE FROM dealers`).run();
-    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note, bayiMi, anlasmaliServisMi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.note ?? null, toIntTriState(d.bayiMi), toInt(d.anlasmaliServisMi));
+    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note, bayiMi, anlasmaliServisMi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.note ?? null, toIntTriState(d.bayiMi), toInt(d.anlasmaliServisMi), d.deletedAt ?? null);
   }
 
   if (Array.isArray(data.stock)) {
     conn.prepare(`DELETE FROM stock`).run();
-    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note) VALUES (?, ?, ?, ?, ?)`);
-    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null);
+    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, s.deletedAt ?? null);
   }
 
   if (Array.isArray(data.notes)) {
     conn.prepare(`DELETE FROM notes`).run();
-    const stmt = conn.prepare(`INSERT INTO notes (id, content, updatedAt) VALUES (?, ?, ?)`);
-    for (const n of data.notes) stmt.run(n.id, n.content ?? null, n.updatedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO notes (id, content, updatedAt, deletedAt) VALUES (?, ?, ?, ?)`);
+    for (const n of data.notes) stmt.run(n.id, n.content ?? null, n.updatedAt ?? null, n.deletedAt ?? null);
   }
 
   if (Array.isArray(data.parts)) {
     conn.prepare(`DELETE FROM parts`).run();
-    const stmt = conn.prepare(`INSERT INTO parts (id, ad) VALUES (?, ?)`);
-    for (const p of data.parts) stmt.run(p.id, p.ad ?? null);
+    const stmt = conn.prepare(`INSERT INTO parts (id, ad, deletedAt) VALUES (?, ?, ?)`);
+    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.deletedAt ?? null);
   }
 
   if (Array.isArray(data.kalipDefs)) {
     conn.prepare(`DELETE FROM kalip_defs`).run();
-    const stmt = conn.prepare(`INSERT INTO kalip_defs (id, ad) VALUES (?, ?)`);
-    for (const k of data.kalipDefs) stmt.run(k.id, k.ad ?? null);
+    const stmt = conn.prepare(`INSERT INTO kalip_defs (id, ad, deletedAt) VALUES (?, ?, ?)`);
+    for (const k of data.kalipDefs) stmt.run(k.id, k.ad ?? null, k.deletedAt ?? null);
   }
 
   if (Array.isArray(data.standardModels)) {
@@ -249,8 +257,8 @@ function populateAll(conn, data) {
 
   if (Array.isArray(data.customModels)) {
     conn.prepare(`DELETE FROM custom_models`).run();
-    const stmt = conn.prepare(`INSERT INTO custom_models (model, sogutma, kapasite, kalip, kompresor) VALUES (?, ?, ?, ?, ?)`);
-    for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null);
+    const stmt = conn.prepare(`INSERT INTO custom_models (model, sogutma, kapasite, kalip, kompresor, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+    for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.deletedAt ?? null);
   }
 
   if (data.factory) {
@@ -290,6 +298,7 @@ function migrateFromJsonIfNeeded() {
     ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
     ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
     ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
+    for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
     active = true;
     return;
   }
@@ -420,7 +429,7 @@ function readBlobFromDb() {
     model: m.model, sogutma: m.sogutma, kapasite: m.kapasite, kalip: m.kalip, "kompresör": m.kompresor,
   }));
   const customModels = db.prepare(`SELECT * FROM custom_models`).all().map((m) => ({
-    model: m.model, sogutma: m.sogutma, kapasite: m.kapasite, kalip: m.kalip, "kompresör": m.kompresor,
+    model: m.model, sogutma: m.sogutma, kapasite: m.kapasite, kalip: m.kalip, "kompresör": m.kompresor, deletedAt: m.deletedAt,
   }));
 
   const factoryRow = db.prepare(`SELECT * FROM factory WHERE id = 1`).get();

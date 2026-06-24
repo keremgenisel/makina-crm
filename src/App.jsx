@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import LOGO from "./assets/logo.avif?inline";
 import {
   APP_VERSION, DEFAULT_KDV_RATE, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, safeStandardModels } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, safeStandardModels, purgeOldTrash } from "./lib/utils";
 import { Icon } from "./components/ui";
+import { LockScreen } from "./components/LockScreen";
 import { Dashboard } from "./components/Dashboard";
 import { Customers } from "./components/Customers";
 import { SimpleDealers } from "./components/SimpleDealers";
@@ -35,6 +36,15 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
 
+  // ── Uygulama şifresi (açılış kilidi) — isteğe bağlı, Ayarlar'dan açılır. Veri yüklemesinden
+  // bağımsız çalışır, sadece bir UI kapısı. null = durum henüz kontrol edilmedi (kısa an için
+  // boş ekran, kilitli/kilitsiz arasında flicker olmasın diye).
+  const [unlocked, setUnlocked] = useState(null);
+  useEffect(() => {
+    if (!window.appLock) { setUnlocked(true); return; }
+    window.appLock.status().then(s => setUnlocked(!s?.enabled)).catch(() => setUnlocked(true));
+  }, []);
+
   // ── Global bildirim (toast) ──
   const [toast, setToast] = useState(null); // { type: "ok"|"err", text }
   const showToast = (text, type = "ok") => {
@@ -53,7 +63,8 @@ export default function App() {
   const [dealers,   setDealers]   = useState(INIT_DEALERS);
   const [standardModels, setStandardModels] = useState(ALTUNMAK_MODELS); // düzenlenebilir standart modeller
   const [customModels, setCustomModels] = useState([]); // Ayarlar'dan eklenen modeller (nesne listesi)
-  const allModels = [...standardModels, ...customModels];
+  const liveCustomModels = useMemo(() => customModels.filter(m => !m.deletedAt), [customModels]);
+  const allModels = [...standardModels, ...liveCustomModels];
   const [factory, setFactory] = useState({ name: "Altuntaş Makina", contact: "", phone: "", email: "", adres: "", country: "Türkiye", city: "", note: "Ana üretici" });
 
   // ── Ülke & şehir verisi: tek noktadan çekilir, tüm formlara dağıtılır ──
@@ -109,12 +120,37 @@ export default function App() {
   const [payments,  setPayments]  = useState([]); // Kapora/Ödeme geçmişi [{id, customerId, tarih, tutar, currency, not}]
   const [kalipDefs, setKalipDefs] = useState(INIT_KALIPLAR);
 
+  // ── Çöp Kutusu: her dizinin deletedAt'i olmayan ("canlı") kopyası — özellik bileşenleri
+  // (Dashboard, Customers, SimpleDealers, Stock, Finance, Notes) hep bunları görür, soft-delete
+  // edilmiş kayıtlar bu bileşenlere hiç ulaşmaz. Ayarlar'daki Çöp Kutusu bölümü ise ham (raw)
+  // dizilerin kendisini kullanır — bkz. render'daki Settings çağrısı.
+  const liveCustomers = useMemo(() => customers.filter(c => !c.deletedAt), [customers]);
+  const liveDealers = useMemo(() => dealers.filter(d => !d.deletedAt), [dealers]);
+  const liveServices = useMemo(() => services.filter(s => !s.deletedAt), [services]);
+  const liveStock = useMemo(() => stock.filter(s => !s.deletedAt), [stock]);
+  const liveNotes = useMemo(() => notes.filter(n => !n.deletedAt), [notes]);
+  const liveParts = useMemo(() => parts.filter(p => !p.deletedAt), [parts]);
+  const livePartSales = useMemo(() => partSales.filter(p => !p.deletedAt), [partSales]);
+  const livePayments = useMemo(() => payments.filter(p => !p.deletedAt), [payments]);
+  const liveKalipDefs = useMemo(() => kalipDefs.filter(k => !k.deletedAt), [kalipDefs]);
+
   useEffect(() => {
     const load = async () => {
       try {
         if (window.crmStorage) {
           const data = await window.crmStorage.load();
           if (data) {
+            // Çöp Kutusu: retention süresinden eski deletedAt'li kayıtlar yüklenirken kalıcı olarak süzülür
+            if (Array.isArray(data.customers)) data.customers = purgeOldTrash(data.customers);
+            if (Array.isArray(data.payments)) data.payments = purgeOldTrash(data.payments);
+            if (Array.isArray(data.dealers)) data.dealers = purgeOldTrash(data.dealers);
+            if (Array.isArray(data.stock)) data.stock = purgeOldTrash(data.stock);
+            if (Array.isArray(data.kalipDefs)) data.kalipDefs = purgeOldTrash(data.kalipDefs);
+            if (Array.isArray(data.customModels)) data.customModels = purgeOldTrash(data.customModels);
+            if (Array.isArray(data.services)) data.services = purgeOldTrash(data.services);
+            if (Array.isArray(data.notes)) data.notes = purgeOldTrash(data.notes);
+            if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
+            if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
             if (Array.isArray(data.customers)) {
               if (Array.isArray(data.payments)) {
                 setCustomers(data.customers);
@@ -186,6 +222,9 @@ export default function App() {
         .catch(() => {});
     }
   }, [appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency]);
+
+  if (unlocked === null) return null; // durum kontrol edilirken kısa an boş ekran (flicker önleme)
+  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
@@ -276,13 +315,13 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={customers} dealers={dealers} services={services} stock={stock} partSales={partSales} payments={payments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
-        {tab === "customers" && <Customers customers={customers} setCustomers={setCustomers} services={services} setServices={setServices} dealers={dealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={stock} setStock={setStock} partSales={partSales} setPartSales={setPartSales} parts={parts} payments={payments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={kalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
-        {tab === "dealers" && <SimpleDealers dealers={dealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={services} customers={customers} setServices={setServices} setCustomers={setCustomers} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
-        {tab === "stock"     && <Stock stock={stock} setStock={setStock} models={allModels} showToast={showToast} />}
-        {tab === "finance"   && <Finance   customers={customers} services={services} dealers={dealers} partSales={partSales} factory={factory} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
-        {tab === "notes"     && <Notes ref={notesRef} notes={notes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "settings"  && <Settings  customers={customers} services={services} dealers={dealers} stock={stock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={customModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} notes={notes} setNotes={setNotes} parts={parts} setParts={setParts} partSales={partSales} setPartSales={setPartSales} payments={payments} setPayments={setPayments} showToast={showToast} />}
+        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
+        {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
+        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} />}
+        {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
+        {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
+        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} />}
       </div>
     </div>
   );

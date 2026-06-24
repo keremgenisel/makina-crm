@@ -26,6 +26,9 @@ export const Icon = ({ name, size = 16 }) => {
     notes:      "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5",
     parts:      "M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z",
     mail:       "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6",
+    lock:       "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4",
+    eye:        "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M9 12a3 3 0 1 0 6 0 3 3 0 1 0 -6 0z",
+    eyeOff:     "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22",
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,6 +61,21 @@ export const Field = ({ label, children }) => {
 export const Input = (props) => (
   <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
 );
+// Şifre alanı — sağda göz ikonuyla göster/gizle. `Input` ile aynı props (value/onChange/placeholder/
+// autoFocus/onKeyDown), type="password" sabit (toggle iç state'le yönetiliyor, dışarıdan verilmez).
+export const PasswordInput = (props) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <input {...props} type={show ? "text" : "password"}
+        style={{ width: "100%", padding: "8px 36px 8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
+      <button type="button" tabIndex={-1} onClick={() => setShow(s => !s)} title={show ? "Şifreyi gizle" : "Şifreyi göster"}
+        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4, display: "flex", alignItems: "center" }}>
+        <Icon name={show ? "eyeOff" : "eye"} size={16} />
+      </button>
+    </div>
+  );
+};
 // Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
 export const Warn = ({ children }) => children ? (
   <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>⚠ {children}</div>
@@ -194,7 +212,7 @@ export const Btn = ({ children, onClick, variant = "primary", small, disabled, t
     ghost:   { background: "transparent", color: "#64748b", border: "1px solid #e2e8f0" },
   };
   return (
-    <button onClick={onClick} disabled={disabled} title={title} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1 }}>
+    <button onClick={onClick} disabled={disabled} title={title} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1, whiteSpace: "nowrap", flexShrink: 0 }}>
       {children}
     </button>
   );

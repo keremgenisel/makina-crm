@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATE } from "../lib/constants";
-import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya } from "../lib/utils";
+import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
@@ -77,7 +77,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     }
     setModal(null);
   };
-  const confirmDel = () => { setDealers(p => p.filter(d => d.id !== confirmId)); setConfirmId(null); showToast("Bayi silindi."); };
+  const confirmDel = () => { setDealers(p => withDeleted(p, d => d.id === confirmId)); setConfirmId(null); showToast("Bayi silindi."); };
 
   // ── E-posta gönder (bayiye) — içerik tamamen serbest, birden fazla ek dosya isteğe bağlı manuel seçilir ──
   const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, attachments: [{name, base64, mime, size}] }
@@ -349,7 +349,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
 
       {confirmId && (
         <ConfirmDialog
-          message={`"${dealers.find(d => d.id === confirmId)?.name || ""}" bayisi kalıcı olarak silinecek.`}
+          message={`"${dealers.find(d => d.id === confirmId)?.name || ""}" bayisi Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
           onConfirm={confirmDel}
           onCancel={() => setConfirmId(null)}
         />

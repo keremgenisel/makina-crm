@@ -305,11 +305,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   </div>
                   {info.records.map(s => (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "5px 0", borderTop: "1px solid #fde68a", cursor: "pointer" }}>
+                      style={{ fontSize: 12, padding: "5px 0", borderTop: "1px solid #fde68a", cursor: "pointer" }}>
                       <span style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline", textDecorationColor: "#fde68a" }}>
                         {custName(s.customerId)} · {fmtTR(s.date)}
                       </span>
-                      <span style={{ fontWeight: 700, color: "#dc2626" }}>{fmtCur(s.parcaUcreti, s.parcaCurrency || s.currency)}</span>
                     </div>
                   ))}
                 </div>

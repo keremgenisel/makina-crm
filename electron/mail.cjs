@@ -13,6 +13,33 @@ try {
 }
 
 const getConfigPath = () => path.join(app.getPath("userData"), "smtp-config.json");
+// Gönderilen e-postaların düz kaydı — crm:save akışının dışında, ayrı bir sidecar dosyada.
+// Ayarlar'daki "Gönderilen E-postalar" listesi buradan okur (mail:getLog).
+const getEmailLogPath = () => path.join(app.getPath("userData"), "email-log.json");
+
+function readEmailLog() {
+  try {
+    const p = getEmailLogPath();
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+  } catch (err) {
+    console.error("E-posta günlüğü okunamadı:", err);
+  }
+  return [];
+}
+
+function appendEmailLog(entry) {
+  try {
+    const log = readEmailLog();
+    log.push(entry);
+    fs.writeFileSync(getEmailLogPath(), JSON.stringify(log.slice(-200), null, 2), "utf-8");
+  } catch (err) {
+    console.error("E-posta günlüğüne yazılamadı:", err);
+  }
+}
+
+function getSentLog() {
+  return readEmailLog();
+}
 
 function readConfig() {
   try {
@@ -125,11 +152,13 @@ async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: 
       }
     });
     await createTransporter(creds).sendMail({ from: creds.email, to, subject, text, attachments });
+    appendEmailLog({ to, subject, success: true, timestamp: new Date().toISOString() });
     return { ok: true };
   } catch (err) {
     console.error("E-posta gönderilemedi:", err);
+    appendEmailLog({ to, subject, success: false, error: err?.message || "Gönderilemedi.", timestamp: new Date().toISOString() });
     return { ok: false, error: err?.message || "Gönderilemedi." };
   }
 }
 
-module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail };
+module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail, getSentLog };

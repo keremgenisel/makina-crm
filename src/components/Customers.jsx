@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi, withDeleted } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate, buildServiceFormHtml, buildMachineReportHtml } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType, PaymentRowsEditor } from "./ui";
@@ -356,14 +356,15 @@ export const Customers = ({
   const del = id => setConfirmId(id);
   const confirmDel = () => {
     const c = customers.find(x => x.id === confirmId);
-    setCustomers(p => p.filter(x => x.id !== confirmId));
-    // Silinen müşterinin servis kayıtları da silinsin
-    if (setServices) setServices(p => p.filter(s => s.customerId !== confirmId));
-    // Silinen müşterinin Extra Kalıp satışı kayıtları da silinsin — yoksa customerId'si artık var olmayan
-    // bir müşteriye işaret eden "öksüz" kayıtlar olarak partSales'te kalıp Dashboard'daki Borçlu Firmalar'da sonsuza dek görünür
-    if (setPartSales) setPartSales(p => p.filter(x => x.customerId !== confirmId));
-    // Silinen müşterinin ödeme (Kapora/Ödeme) kayıtları da silinsin
-    if (setPayments) setPayments(p => p.filter(x => x.customerId !== confirmId));
+    // Çöp Kutusu: kalıcı silme yerine deletedAt ile işaretlenir — müşteri + kademeli silinen
+    // servis/parça/ödeme kayıtları AYNI ts ile damgalanır, böylece Ayarlar → Çöp Kutusu'ndan
+    // müşteri geri alınınca sadece bu silme anına ait çocuk kayıtlar (başka bir zamanda silinmiş
+    // olmayanlar) birlikte geri gelir.
+    const ts = new Date().toISOString();
+    setCustomers(p => withDeleted(p, x => x.id === confirmId, ts));
+    if (setServices) setServices(p => withDeleted(p, s => s.customerId === confirmId, ts));
+    if (setPartSales) setPartSales(p => withDeleted(p, x => x.customerId === confirmId, ts));
+    if (setPayments) setPayments(p => withDeleted(p, x => x.customerId === confirmId, ts));
     // Silinen müşterinin makinası stoğa geri dönsün (model + seri no varsa ve stokta yoksa)
     if (c && setStock && c.model && c.serialNo) {
       setStock(p => {
@@ -413,7 +414,7 @@ export const Customers = ({
   const toggleServisOdendi = (sv) => setServices && setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: !s.odendi } : s));
   const deleteService = (id) => {
     if (!setServices) return;
-    setServices(p => p.filter(s => s.id !== id));
+    setServices(p => withDeleted(p, s => s.id === id));
     showToast("Servis kaydı silindi.");
   };
 
@@ -464,8 +465,9 @@ export const Customers = ({
   const deletePartSale = (id) => {
     if (!setPartSales) return;
     const ps = partSales.find(x => x.id === id);
-    setPartSales(p => p.filter(x => x.id !== id));
+    setPartSales(p => withDeleted(p, x => x.id === id));
     // Kalıp tipi satışsa KALIPLAR rozetlerindeki denormalize kopyasını da kaldır — yoksa silinen kayıt orada kalmaya devam eder
+    // (Çöp Kutusu'ndan geri alınınca bu rozet Settings.jsx'teki restore fonksiyonunda yeniden eklenir)
     if (ps?.tur === "Kalıp") {
       setCustomers(p => p.map(c => {
         if (c.id !== ps.customerId) return c;
@@ -529,8 +531,10 @@ export const Customers = ({
   const deletePayment = (id) => {
     if (!setPayments) return;
     const payment = payments.find(x => x.id === id);
+    // newPayments: kalanBorc hesabı için canlı (deletedAt'siz) liste — payments prop'u zaten canlı
+    // olduğundan id'yi çıkarmak yeterli; setPayments ise ham state'i soft-delete ile işaretler.
     const newPayments = payments.filter(x => x.id !== id);
-    setPayments(newPayments);
+    setPayments(p => withDeleted(p, x => x.id === id));
     if (payment) syncKalanBorc(payment.customerId, newPayments);
     showToast("Ödeme silindi.");
   };
@@ -1116,10 +1120,13 @@ export const Customers = ({
                                   return (
                                     <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
                                       {psList.length > 1 && (
-                                        <span onClick={() => openEditPartSale(p)} title="Düzenlemek için tıklayın"
-                                          style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#fed7aa" }}>
-                                          {p.ad}{p.olcu ? ` (${p.olcu})` : ""}
-                                        </span>
+                                        <>
+                                          <span onClick={() => openEditPartSale(p)} title="Düzenlemek için tıklayın"
+                                            style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#fed7aa" }}>
+                                            {p.ad}{p.olcu ? ` (${p.olcu})` : ""}
+                                          </span>
+                                          <span style={{ fontSize: 11, color: "#94a3b8" }}>· {p.tarih ? fmtTR(p.tarih) : "tarih yok"}</span>
+                                        </>
                                       )}
                                       <span style={{ fontSize: 12, color: "#64748b" }}>
                                         {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
@@ -1461,7 +1468,7 @@ export const Customers = ({
 
       {confirmDeletePaymentId && (
         <ConfirmDialog
-          message="Bu Kapora/Ödeme kaydı kalıcı olarak silinecek ve Kalan Borç yeniden hesaplanacak."
+          message="Bu Kapora/Ödeme kaydı Çöp Kutusu'na taşınacak ve Kalan Borç yeniden hesaplanacak. Ayarlar'dan 30 gün içinde geri alabilirsiniz."
           onConfirm={() => { deletePayment(confirmDeletePaymentId); setConfirmDeletePaymentId(null); }}
           onCancel={() => setConfirmDeletePaymentId(null)}
         />
@@ -1469,7 +1476,7 @@ export const Customers = ({
 
       {confirmDeleteServiceId && (
         <ConfirmDialog
-          message="Bu servis kaydı kalıcı olarak silinecek."
+          message="Bu servis kaydı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz."
           onConfirm={() => { deleteService(confirmDeleteServiceId); setConfirmDeleteServiceId(null); }}
           onCancel={() => setConfirmDeleteServiceId(null)}
         />
@@ -1477,7 +1484,7 @@ export const Customers = ({
 
       {confirmDeletePartSaleId && (
         <ConfirmDialog
-          message="Bu Extra Kalıp kaydı kalıcı olarak silinecek."
+          message="Bu Extra Kalıp kaydı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz."
           onConfirm={() => { deletePartSale(confirmDeletePartSaleId); setConfirmDeletePartSaleId(null); }}
           onCancel={() => setConfirmDeletePartSaleId(null)}
         />
@@ -1503,7 +1510,7 @@ export const Customers = ({
 
       {confirmId && (
         <ConfirmDialog
-          message={`"${customers.find(c => c.id === confirmId)?.name || ""}" ${delWord} kalıcı olarak silinecek — bu makinaya ait servis kayıtları, Extra Kalıp satışları ve ödeme/kapora kayıtları da birlikte silinir.`}
+          message={`"${customers.find(c => c.id === confirmId)?.name || ""}" ${delWord} Çöp Kutusu'na taşınacak — bu makinaya ait servis kayıtları, Extra Kalıp satışları ve ödeme/kapora kayıtları da birlikte taşınır. Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
           onConfirm={confirmDel}
           onCancel={() => setConfirmId(null)}
         />

@@ -1,5 +1,6 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Icon, Btn, Modal, ConfirmDialog } from "./ui";
+import { withDeleted } from "../lib/utils";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
@@ -66,7 +67,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
     showToast("Not kaydedildi.");
   };
   const sil = (id) => {
-    setNotes(p => p.filter(n => n.id !== id));
+    setNotes(p => withDeleted(p, n => n.id === id));
     if (selectedId === id) { setSelectedId(null); setDraft(""); }
     setConfirmDelete(null);
     showToast("Not silindi.");
@@ -162,7 +163,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
       {/* Silme onayı */}
       {confirmDelete && (
         <ConfirmDialog
-          message={`"${baslik(confirmDelete.content)}" notu kalıcı olarak silinecek.`}
+          message={`"${baslik(confirmDelete.content)}" notu Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
           onConfirm={() => sil(confirmDelete.id)}
           onCancel={() => setConfirmDelete(null)}
         />

@@ -3,7 +3,6 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("crmStorage", {
   load: () => ipcRenderer.invoke("crm:load"),
   save: (data) => ipcRenderer.invoke("crm:save", data),
-  dataPath: () => ipcRenderer.invoke("crm:dataPath"),
   backup: (data) => ipcRenderer.invoke("crm:backup", data),
   restore: () => ipcRenderer.invoke("crm:restore"),
   chooseFolder: () => ipcRenderer.invoke("crm:chooseFolder"),
@@ -56,4 +55,19 @@ contextBridge.exposeInMainWorld("appMail", {
   clearCredentials: () => ipcRenderer.invoke("mail:clearCredentials"),
   test: () => ipcRenderer.invoke("mail:test"),
   send: (payload) => ipcRenderer.invoke("mail:send", payload),
+  getLog: () => ipcRenderer.invoke("mail:getLog"),
+});
+
+contextBridge.exposeInMainWorld("appError", {
+  log: (entry) => ipcRenderer.invoke("error:log", entry),
+  readLog: () => ipcRenderer.invoke("error:readLog"),
+});
+
+contextBridge.exposeInMainWorld("appLock", {
+  status: () => ipcRenderer.invoke("applock:status"),
+  setup: (password) => ipcRenderer.invoke("applock:setup", password),
+  verify: (password) => ipcRenderer.invoke("applock:verify", password),
+  disable: (password) => ipcRenderer.invoke("applock:disable", password),
+  changePassword: (currentPassword, newPassword) => ipcRenderer.invoke("applock:changePassword", currentPassword, newPassword),
+  resetWithRecoveryCode: (recoveryCode, newPassword) => ipcRenderer.invoke("applock:resetWithRecoveryCode", recoveryCode, newPassword),
 });

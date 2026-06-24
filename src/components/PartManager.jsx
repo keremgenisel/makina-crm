@@ -82,7 +82,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {} }) => {
 
       {confirmDel && (
         <ConfirmDialog
-          message={`"${confirmDel.ad}" yedek parça tanımı silinecek. Daha önce verilmiş kayıtlar geçmişte kalır.`}
+          message={`"${confirmDel.ad}" yedek parça tanımı Çöp Kutusu'na taşınacak (30 gün içinde geri alınabilir). Daha önce verilmiş kayıtlar geçmişte kalır.`}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />

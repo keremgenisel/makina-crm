@@ -108,3 +108,9 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
 export const APP_VERSION = "1.1.0";
+
+// ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
+export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";
+
+// ── Çöp Kutusu: soft-delete edilen kayıtların otomatik kalıcı silinme süresi (gün) ──
+export const TRASH_RETENTION_DAYS = 30;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
-import { today, fmtTR, uid, bumpId } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
 
@@ -27,7 +27,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
     else { setStock(p => p.map(s => s.id === form.id ? form : s)); showToast("Stok makinası düzenlendi."); }
     setModal(null);
   };
-  const confirmDel = () => { setStock(p => p.filter(s => s.id !== confirmId)); setConfirmId(null); showToast("Stok makinası silindi."); };
+  const confirmDel = () => { setStock(p => withDeleted(p, s => s.id === confirmId)); setConfirmId(null); showToast("Stok makinası silindi."); };
 
   return (
     <div>
@@ -100,7 +100,7 @@ export const Stock = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast = (
 
       {confirmId && (
         <ConfirmDialog
-          message={`"${stock.find(s => s.id === confirmId)?.serialNo || ""}" seri numaralı makina stoktan silinecek.`}
+          message={`"${stock.find(s => s.id === confirmId)?.serialNo || ""}" seri numaralı makina stoktan silinecek (Çöp Kutusu'na taşınır, 30 gün içinde geri alınabilir).`}
           onConfirm={confirmDel}
           onCancel={() => setConfirmId(null)}
         />

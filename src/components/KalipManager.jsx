@@ -82,7 +82,7 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {} }) 
 
       {confirmDel && (
         <ConfirmDialog
-          message={`"${confirmDel.ad}" kalıbı silinecek. Bu işlem geri alınamaz.`}
+          message={`"${confirmDel.ad}" kalıbı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />
