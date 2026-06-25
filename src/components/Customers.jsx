@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi, withDeleted } from "../lib/utils";
+import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, getKdvRateForDate, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi, withDeleted } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate, buildServiceFormHtml, buildMachineReportHtml } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType, PaymentRowsEditor } from "./ui";
@@ -21,7 +21,7 @@ export const Customers = ({
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
-  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRate = DEFAULT_KDV_RATE,
+  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -122,7 +122,7 @@ export const Customers = ({
     const detailModelInfo = detailView ? models.find(m => m.model === detailView.model) : null;
     const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= todayStr;
     const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
-    const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRate) : 0;
+    const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRates) : 0;
     const detailCiro = detailKalanBorc + detailToplamOdeme; // Toplam Bedel (Ciro) = Kalan Borç + alınan ödemeler
 
     // Ödenmemiş servis/parça ücreti ve Extra Kalıp satışı borcu — Kalan Borç kartına da yansısın diye
@@ -135,16 +135,16 @@ export const Customers = ({
       services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s, factoryName)).forEach(s => {
         if (isServisUcretliMi(s, factoryName)) {
           const tutar = parseMoney(s.servisUcreti);
-          ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+          ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, s.date, kdvRates));
         }
         if (isParcaUcretliMi(s)) {
           const tutar = parseMoney(s.parcaUcreti);
-          ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, kdvRate));
+          ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, s.date, kdvRates));
         }
       });
       (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
         const tutar = parseMoney(p.ucret);
-        ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, kdvRate));
+        ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates));
       });
     }
     const detailMainCur = detailView?.currency || "TRY";
@@ -170,18 +170,18 @@ export const Customers = ({
         if (isServisUcretliMi(s, factoryName) && (s.currency || "TRY") === detailMainCur) {
           const tutar = parseMoney(s.servisUcreti);
           detailServisNet += tutar;
-          detailServisKdv += calcKDV(s.faturaTipi, tutar, kdvRate);
+          detailServisKdv += calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
         }
         if (isParcaUcretliMi(s) && (s.parcaCurrency || s.currency || "TRY") === detailMainCur) {
           const tutar = parseMoney(s.parcaUcreti);
           detailServisNet += tutar;
-          detailServisKdv += calcKDV(s.faturaTipi, tutar, kdvRate);
+          detailServisKdv += calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
         }
       });
       (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp" && !p.ucretsizMi && (p.currency || "TRY") === detailMainCur).forEach(p => {
         const tutar = parseMoney(p.ucret);
         detailExtraKalipNet += tutar;
-        detailExtraKalipKdv += calcKDV(p.faturaTipi, tutar, kdvRate);
+        detailExtraKalipKdv += calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
       });
     }
 
@@ -203,7 +203,7 @@ export const Customers = ({
       detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailView, services, partSales, payments, kdvRate, models, todayStr, factoryName]);
+  }, [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName]);
 
   // Firma adına göre makina sayısı (aynı isimli kayıtlar = aynı firma) — sadece customers değişince hesaplanır
   const firmCount = useMemo(() => {
@@ -317,7 +317,7 @@ export const Customers = ({
       // kaydını oluşturur; Kalan Borç'tan sadece "alınmış" sayılanlar (Çek hariç) düşülür.
       const ilkOdemeSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
       const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0);
-      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRate) - ilkOdemeAlinanTutar;
+      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar;
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (ilkOdemeSatirlari.length > 0 && setPayments) {
         const yeniOdemeler = ilkOdemeSatirlari.map(r => ({
@@ -346,7 +346,7 @@ export const Customers = ({
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, ...clean } = form;
       // Düzenlemede seri no girildiyse "bekliyor" işaretini kaldır
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
-      clean.kalanBorc = calcKalanBorc(clean, payments, kdvRate);
+      clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
       showToast("Müşteri bilgileri düzenlendi.");
     }
@@ -493,7 +493,7 @@ export const Customers = ({
   // payments değiştiğinde customer.kalanBorc (stored alan) da güncellenmeli — yoksa liste/Borçlu
   // Firmalar gibi customer.kalanBorc'u doğrudan okuyan yerler eski/yanlış değeri göstermeye devam eder.
   const syncKalanBorc = (customerId, newPayments) => {
-    setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRate) } : c));
+    setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRates) } : c));
   };
   const savePayment = () => {
     if (!setPayments || !paymentForm) return;
@@ -625,7 +625,7 @@ export const Customers = ({
   };
 
   // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret — şablon src/lib/printTemplates.js'te
-  const printServiceForm = (sv) => printServiceFormTemplate(sv, customers, kdvRate);
+  const printServiceForm = (sv) => printServiceFormTemplate(sv, customers, kdvRates);
 
   // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu — şablon src/lib/printTemplates.js'te
   const printMachineReport = () => {
@@ -650,7 +650,7 @@ export const Customers = ({
   };
   const openMailServiceForm = (sv) => {
     const cust = customers.find(c => c.id === sv.customerId);
-    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRate, { forEmail: true }));
+    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true }));
     setMailDraft({
       to: cust?.email || "",
       subject: `Servis Formu — ${cust?.name || ""}`,
@@ -933,10 +933,10 @@ export const Customers = ({
                     ["Fatura Durumu", detailView.faturali ? `${detailView.faturali}${detailView.faturali === "Faturasız" ? " (KDV HARİÇ)" : ""}` : ""],
                     ["Fabrika Satış Bedeli (KDV'siz)", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                     ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
-                    ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, kdvRate), detailView.currency) : ""],
+                    ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates), detailView.currency) : ""],
                     ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
-                    ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV (%${kdvRate}): ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
-                    ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV (%${kdvRate}): ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],
+                    ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV: ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
+                    ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV: ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],
                     ["Satış Yapan", detailView.satisYapan],
                     ["Şirket Telefonu", detailView.phone],
                     ["E-posta", detailView.email],
@@ -1116,7 +1116,7 @@ export const Customers = ({
                             {psList && (
                               <div style={{ marginTop: 4 }}>
                                 {psList.map(p => {
-                                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, kdvRate);
+                                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates);
                                   return (
                                     <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
                                       {psList.length > 1 && (
@@ -1147,7 +1147,7 @@ export const Customers = ({
                                 })}
                                 {psList.length > 1 && (() => {
                                   const toplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : parseMoney(p.ucret)), 0);
-                                  const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, kdvRate)), 0);
+                                  const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates)), 0);
                                   return (
                                     <div style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8", marginTop: 5 }}>
                                       Toplam: {fmtCur(toplam, psList[0].currency)}{kdvToplam > 0 ? ` · KDV dahil: ${fmtCur(toplam + kdvToplam, psList[0].currency)}` : ""}
@@ -1192,7 +1192,7 @@ export const Customers = ({
                                   const sameCurrency = !servisVar || !parcaVar || sv.currency === (sv.parcaCurrency || sv.currency);
                                   if (sameCurrency) {
                                     const toplam = (servisVar ? parseMoney(sv.servisUcreti) : 0) + (parcaVar ? parseMoney(sv.parcaUcreti) : 0);
-                                    const kdv = calcKDV(sv.faturaTipi, toplam, kdvRate);
+                                    const kdv = calcKDV(sv.faturaTipi, toplam, sv.date, kdvRates);
                                     const label = servisVar && parcaVar ? "Servis ve Yedek Parça Ücreti" : servisVar ? "Servis Ücreti" : "Yedek Parça Ücreti";
                                     return (
                                       <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>
@@ -1494,7 +1494,7 @@ export const Customers = ({
       {svModal && (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
-          form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRate={kdvRate}
+          form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           onSave={saveService} onCancel={() => setSvModal(null)}
         />
       )}
@@ -1503,7 +1503,7 @@ export const Customers = ({
       {pkForm && (
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
-          form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRate={kdvRate}
+          form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
           onSave={savePartSale} onCancel={() => setPkForm(null)}
         />
       )}
@@ -1810,8 +1810,8 @@ export const Customers = ({
                 {/* Otomatik KDV göstergesi — sadece Yurt İçi */}
                 {isYurtIci(form.faturali) && (
                   <div style={{ fontSize: 12, color: "#065f46", background: "#d1fae5", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
-                    KDV (%{kdvRate}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
-                    {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, kdvRate), form.currency)}</b>
+                    KDV (%{getKdvRateForDate(form.installDate, kdvRates)}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
+                    {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
                   </div>
                 )}
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
@@ -1840,7 +1840,7 @@ export const Customers = ({
 
           <Field label="Kalan Borç">
             <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", padding: "9px 0" }}>
-              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRate) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0), form.currency)}
+              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0), form.currency)}
             </div>
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
           </Field>

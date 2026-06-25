@@ -95,7 +95,13 @@ export const CUR_SYM = { TRY: "₺", USD: "$", EUR: "€" };
 
 // ── Satış Tipleri ──
 export const SALE_TYPES = ["Faturalı Yurtiçi", "Faturalı Yurtdışı", "Faturasız Yurtiçi", "Faturasız Yurtdışı"];
-export const DEFAULT_KDV_RATE = 20; // varsayılan KDV oranı (%), Ayarlar'dan değiştirilebilir
+export const DEFAULT_KDV_RATE = 20; // son çare fallback (dizi tamamen boş/geçersizse)
+// KDV oranı zaman içinde değişti (Türkiye: 2023-07-10'a kadar %18, sonrasında %20) — Ayarlar'dan
+// dönem eklenip/düzenlenebilir. Her kayıt kendi tarihine göre doğru dönemin oranını kullanır.
+export const DEFAULT_KDV_RATES = [
+  { from: "2008-01-01", rate: 18 },
+  { from: "2023-07-10", rate: 20 },
+];
 
 // ── Yedek dosyası şeması ──────────────────────────────────────────────
 export const BACKUP_SCHEMA_VERSION = 1;

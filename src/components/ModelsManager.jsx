@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { trLower, withDeleted } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
+import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
 
-export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {} }) => {
+export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null }) => {
   const empty = { model: "", sogutma: "Soğutmalı", kapasite: "", kalip: "" };
   const [modelModal, setModelModal] = useState(null); // null | { mode: "add" | "edit-std" | "edit-custom", data }
   const [mForm, setMForm] = useState(empty);
   const [confirmDelModel, setConfirmDelModel] = useState(null); // silinecek model adı
-  const [page, setPage] = useState(1);
-  // Standart + özel modeller tek listede sayfalanıyor (sırayla: önce standart, sonra özel)
+  // Standart + özel modeller tek listede aranıp sayfalanıyor (sırayla: önce standart, sonra özel)
   const allModels = [
     ...standardModels.map(m => ({ m, isStd: true })),
     ...customModels.map(m => ({ m, isStd: false })),
   ];
-  const totalPages = Math.max(1, Math.ceil(allModels.length / PER_PAGE));
-  const safePage = Math.min(page, totalPages);
-  const pagedModels = allModels.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+  const { search, setSearch, page, setPage, filtered, paged: pagedModels } = useFilteredList(allModels, {
+    searchFn: (item, q) => trLower(item.m.model).includes(q),
+    perPage: PER_PAGE,
+  });
 
   const openAdd = () => { setMForm(empty); setModelModal({ mode: "add" }); };
   const openEdit = (m, isStd) => { setMForm({ ...m }); setModelModal({ mode: isStd ? "edit-std" : "edit-custom", orig: m.model }); };
@@ -30,17 +31,25 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
     const existsElsewhere = (excludeName) =>
       standardModels.some(m => m.model !== excludeName && trLower(m.model) === trLower(name)) ||
       customModels.some(m => m.model !== excludeName && trLower(m.model) === trLower(name));
+    // Model adı düz metin olarak customers[].model ve stock[].model'de kopyalanmış durumda —
+    // adı düzeltince bu kayıtlarda da güncellenmeli, yoksa eski ad geçmişte kalır (bkz. SimpleDealers.jsx'teki bayi adı deseni).
+    const cascadeRename = (oldName) => {
+      if (!oldName || oldName === name) { showToast("Model düzenlendi."); return; }
+      setCustomers?.(p => p.map(c => c.model === oldName ? { ...c, model: name } : c));
+      setStock?.(p => p.map(s => s.model === oldName ? { ...s, model: name } : s));
+      showToast(`Model düzenlendi. "${oldName}" adı geçmiş kayıtlarda da güncellendi.`);
+    };
     if (modelModal.mode === "add") {
       if (!existsElsewhere(null)) { setCustomModels(p => p.some(m => m.model === name) ? p : [...p, { ...mForm, model: name }]); showToast("Model kaydedildi."); }
       else showToast("Bu model zaten var.", "err");
     } else if (modelModal.mode === "edit-std") {
       if (existsElsewhere(modelModal.orig)) { showToast("Bu model adı zaten kullanılıyor.", "err"); return; }
       setStandardModels(p => p.map(m => m.model === modelModal.orig ? { ...mForm, model: name } : m));
-      showToast("Model düzenlendi.");
+      cascadeRename(modelModal.orig);
     } else {
       if (existsElsewhere(modelModal.orig)) { showToast("Bu model adı zaten kullanılıyor.", "err"); return; }
       setCustomModels(p => p.map(m => m.model === modelModal.orig ? { ...mForm, model: name } : m));
-      showToast("Model düzenlendi.");
+      cascadeRename(modelModal.orig);
     }
     setModelModal(null);
   };
@@ -67,21 +76,32 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Model Ekle</Btn>
       </div>
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              {["Model", "Soğutma", "Kapasite", "Kalıp Çapı", ""].map(h => (
-                <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pagedModels.map(({ m, isStd }, i) => <ModelRow key={(isStd ? "s-" : "c-") + m.model + "-" + i} m={m} isStd={isStd} />)}
-          </tbody>
-        </table>
+      <div style={{ position: "relative", marginBottom: 12 }}>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model ara..."
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
-      <Pagination total={allModels.length} page={safePage} setPage={setPage} perPage={PER_PAGE} />
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+            {allModels.length === 0 ? "Henüz model yok." : "Arama sonucu bulunamadı."}
+          </div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Model", "Soğutma", "Kapasite", "Kalıp Çapı", ""].map(h => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pagedModels.map(({ m, isStd }, i) => <ModelRow key={(isStd ? "s-" : "c-") + m.model + "-" + i} m={m} isStd={isStd} />)}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       {customModels.length === 0 && (
         <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>Henüz özel model eklenmedi.</div>
       )}

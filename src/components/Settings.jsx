@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { DEFAULT_KDV_RATE } from "../lib/constants";
 import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -13,6 +12,7 @@ import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
+import { SettingsKdv } from "./settings/SettingsKdv";
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [] }) => {
@@ -88,7 +88,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
-            customModels={customModels} setCustomModels={setCustomModels} />
+            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} />
         </Section>
       )}
 
@@ -97,7 +97,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
             Buraya eklediğiniz kalıplar, Yeni Müşteri ekranındaki <b>Kalıp</b> seçiminde listelenir. Ölçü, müşteri eklerken elle girilir.
           </div>
-          <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} />
+          <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
         </Section>
       )}
 
@@ -106,27 +106,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
-          <PartManager parts={parts} setParts={setParts} showToast={showToast} />
+          <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices} />
         </Section>
       )}
 
-      {settingsTab === "kdv" && (
-        <Section title="KDV Oranı" icon="settings">
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-            Faturalı yurt içi satışlarda uygulanan KDV oranı. Değiştirirseniz finans raporundaki KDV hesabı bu orana göre güncellenir.
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ position: "relative", width: 120 }}>
-              <input type="number" min="0" max="100" step="1"
-                value={appSettings.kdvRate ?? DEFAULT_KDV_RATE}
-                onChange={e => setAppSettings(s => ({ ...s, kdvRate: e.target.value === "" ? "" : Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }))}
-                style={{ padding: "9px 32px 9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 15, fontWeight: 700, background: "#f8fafc", outline: "none" }} />
-              <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#64748b", fontWeight: 700 }}>%</span>
-            </div>
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>Varsayılan: %{DEFAULT_KDV_RATE}</span>
-          </div>
-        </Section>
-      )}
+      {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
 
       {settingsTab === "eposta" && <SettingsMail flash={flash} />}
 

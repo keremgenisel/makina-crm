@@ -6,7 +6,7 @@ const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
 // forEmail: true ise "Teslim Eden"/"Teslim Alan" imza alanları çıkarılır — bunlar fiziksel teslimat sırasında
 // elle imzalanan kutucuklar, e-posta ekinde anlamsız kalıyor.
-export function buildServiceFormHtml(sv, customers, kdvRate, { forEmail = false } = {}) {
+export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false } = {}) {
   const cust = customers.find(c => c.id === sv.customerId) || {};
   const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
   const servisUcretiVar = (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
@@ -18,7 +18,7 @@ export function buildServiceFormHtml(sv, customers, kdvRate, { forEmail = false 
   if (servisUcretiVar && parcaUcretiVar) {
     if (sameCurrency) {
       const toplamTutar = parseMoney(sv.servisUcreti) + parseMoney(sv.parcaUcreti);
-      const kdv = calcKDV(sv.faturaTipi, toplamTutar, kdvRate);
+      const kdv = calcKDV(sv.faturaTipi, toplamTutar, sv.date, kdvRates);
       toplam = fmtCur(toplamTutar, sv.currency) + (kdv > 0 ? ` (KDV dahil: ${fmtCur(toplamTutar + kdv, sv.currency)})` : "");
     } else {
       toplam = `${fmtCur(sv.servisUcreti, sv.currency)} + ${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}`;
@@ -26,7 +26,7 @@ export function buildServiceFormHtml(sv, customers, kdvRate, { forEmail = false 
   } else if (servisUcretiVar || parcaUcretiVar) {
     const toplamTutar = servisUcretiVar ? parseMoney(sv.servisUcreti) : parseMoney(sv.parcaUcreti);
     const cur = servisUcretiVar ? sv.currency : sv.parcaCurrency;
-    const kdv = calcKDV(sv.faturaTipi, toplamTutar, kdvRate);
+    const kdv = calcKDV(sv.faturaTipi, toplamTutar, sv.date, kdvRates);
     toplam = kdv > 0 ? `${fmtCur(toplamTutar, cur)} (KDV dahil: ${fmtCur(toplamTutar + kdv, cur)})` : null;
   }
 
@@ -122,8 +122,8 @@ export function buildServiceFormHtml(sv, customers, kdvRate, { forEmail = false 
 }
 
 // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
-export function printServiceForm(sv, customers, kdvRate) {
-  const html = buildServiceFormHtml(sv, customers, kdvRate);
+export function printServiceForm(sv, customers, kdvRates) {
+  const html = buildServiceFormHtml(sv, customers, kdvRates);
   const cust = customers.find(c => c.id === sv.customerId) || {};
   if (window.appPrint) {
     window.appPrint.printHtml(stripAutoPrint(html));

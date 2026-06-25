@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS stock (
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, deletedAt TEXT);
-CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, deletedAt TEXT);
+CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, deletedAt TEXT);
 
 CREATE TABLE IF NOT EXISTS part_sales (
   id INTEGER PRIMARY KEY,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS kalip_defs (id INTEGER PRIMARY KEY, ad TEXT, deletedA
 CREATE TABLE IF NOT EXISTS standard_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT);
 CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, deletedAt TEXT);
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT);
 `;
 
 // Daha önce oluşturulmuş bir data.db'ye, şemaya sonradan eklenen sütunları ekler (ALTER TABLE) —
@@ -102,6 +102,12 @@ function ensureColumns(conn, table, columns) {
 const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
 const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"]];
+// KDV oranı artık tek bir sayı (kdvRate) değil, tarihe bağlı dönemler listesi (kdvRates, JSON) —
+// eski kdvRate sütunu geriye uyumluluk için okunmaya devam eder (bkz. normalizeKdvRates).
+const APP_SETTINGS_NEW_COLUMNS = [["kdvRates", "TEXT"]];
+// Yedek parça tanımlarına sonradan eklenen TL/USD/EUR fiyat alanları — servis formunda parça
+// seçilince fiyatın otomatik dolması için (bkz. partFiyatForCurrency).
+const PARTS_NEW_COLUMNS = [["fiyatTRY", "REAL"], ["fiyatUSD", "REAL"], ["fiyatEUR", "REAL"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
@@ -239,8 +245,8 @@ function populateAll(conn, data) {
 
   if (Array.isArray(data.parts)) {
     conn.prepare(`DELETE FROM parts`).run();
-    const stmt = conn.prepare(`INSERT INTO parts (id, ad, deletedAt) VALUES (?, ?, ?)`);
-    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.deletedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO parts (id, ad, fiyatTRY, fiyatUSD, fiyatEUR, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.fiyatTRY ?? null, p.fiyatUSD ?? null, p.fiyatEUR ?? null, p.deletedAt ?? null);
   }
 
   if (Array.isArray(data.kalipDefs)) {
@@ -271,8 +277,8 @@ function populateAll(conn, data) {
   if (data.appSettings) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate) VALUES (1, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null);
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates) VALUES (1, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates));
   }
 
   const nextId = typeof data.nextId === "number"
@@ -298,6 +304,8 @@ function migrateFromJsonIfNeeded() {
     ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
     ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
     ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
+    ensureColumns(db, "app_settings", APP_SETTINGS_NEW_COLUMNS);
+    ensureColumns(db, "parts", PARTS_NEW_COLUMNS);
     for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
     active = true;
     return;
@@ -442,8 +450,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup) };
+    const { id, autoBackup, kdvRates, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();

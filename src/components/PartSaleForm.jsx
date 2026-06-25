@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV } from "../lib/utils";
+import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
@@ -8,7 +8,7 @@ import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
   const [custSearch, setCustSearch] = useState("");
 
   const isEdit = !!form.id;
@@ -155,7 +155,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {kaliplarToplam > 0 && (
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
           {(() => {
-            const kdv = calcKDV(form.faturaTipi, kaliplarToplam, kdvRate);
+            const kdv = calcKDV(form.faturaTipi, kaliplarToplam, form.tarih, kdvRates);
             return (
               <>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
@@ -163,7 +163,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 </span>
                 {kdv > 0 && (
                   <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
-                    KDV (%{kdvRate}): {fmtCur(kdv, form.currency || "TRY")} · KDV dahil toplam: {fmtCur(kaliplarToplam + kdv, form.currency || "TRY")}
+                    KDV (%{getKdvRateForDate(form.tarih, kdvRates)}): {fmtCur(kdv, form.currency || "TRY")} · KDV dahil toplam: {fmtCur(kaliplarToplam + kdv, form.currency || "TRY")}
                   </div>
                 )}
               </>

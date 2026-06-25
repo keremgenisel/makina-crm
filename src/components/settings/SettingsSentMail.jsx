@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
-import { usePagination } from "../../hooks/usePagination";
+import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
 
 export const SettingsSentMail = () => {
@@ -11,8 +11,10 @@ export const SettingsSentMail = () => {
   const [deletedEmailLog, setDeletedEmailLog] = useState([]);
   const [viewing, setViewing] = useState(null); // içeriği görüntülenen kayıt
   const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen kayıt
-  const { page: emailLogPage, setPage: setEmailLogPage, paged: sentEmailLogPaged, perPage: EMAIL_LOG_PER_PAGE } = usePagination(sentEmailLog, 10);
-  const { page: trashPage, setPage: setTrashPage, paged: deletedEmailLogPaged, perPage: TRASH_PER_PAGE } = usePagination(deletedEmailLog, 10);
+  const { search: sentSearch, setSearch: setSentSearch, page: emailLogPage, setPage: setEmailLogPage, filtered: sentEmailLogFiltered, paged: sentEmailLogPaged, perPage: EMAIL_LOG_PER_PAGE } =
+    useFilteredList(sentEmailLog, { searchFields: ["to", "subject"], perPage: 10 });
+  const { search: delSearch, setSearch: setDelSearch, page: trashPage, setPage: setTrashPage, filtered: deletedEmailLogFiltered, paged: deletedEmailLogPaged, perPage: TRASH_PER_PAGE } =
+    useFilteredList(deletedEmailLog, { searchFields: ["to", "subject"], perPage: 10 });
 
   const loadSentEmailLog = async () => {
     if (!window.appMail?.getLog) return;
@@ -44,6 +46,14 @@ export const SettingsSentMail = () => {
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz gönderilmiş e-posta yok.</div>
         ) : (
           <>
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+              <input value={sentSearch} onChange={e => setSentSearch(e.target.value)} placeholder="Alıcı veya konu ara..."
+                style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+            </div>
+            {sentEmailLogFiltered.length === 0 ? (
+              <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
+            ) : (
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
@@ -80,7 +90,8 @@ export const SettingsSentMail = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination total={sentEmailLog.length} page={emailLogPage} setPage={setEmailLogPage} perPage={EMAIL_LOG_PER_PAGE} />
+            )}
+            <Pagination total={sentEmailLogFiltered.length} page={emailLogPage} setPage={setEmailLogPage} perPage={EMAIL_LOG_PER_PAGE} />
           </>
         )}
       </Section>
@@ -94,6 +105,14 @@ export const SettingsSentMail = () => {
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Silinen e-posta yok.</div>
         ) : (
           <>
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+              <input value={delSearch} onChange={e => setDelSearch(e.target.value)} placeholder="Alıcı veya konu ara..."
+                style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+            </div>
+            {deletedEmailLogFiltered.length === 0 ? (
+              <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
+            ) : (
             <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
@@ -116,7 +135,8 @@ export const SettingsSentMail = () => {
                 </tbody>
               </table>
             </div>
-            <Pagination total={deletedEmailLog.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
+            )}
+            <Pagination total={deletedEmailLogFiltered.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
           </>
         )}
       </Section>

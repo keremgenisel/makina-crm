@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { DEFAULT_KDV_RATE } from "../../lib/constants";
+import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtCur, calcKalanBorc } from "../../lib/utils";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
-import { usePagination } from "../../hooks/usePagination";
+import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
 
 export const SettingsTrash = ({
@@ -46,7 +46,7 @@ export const SettingsTrash = ({
       .filter(x => x.customerId === pay.customerId && (x.id === pay.id || !x.deletedAt))
       .map(x => x.id === pay.id ? { ...x, deletedAt: undefined } : x);
     setPayments?.(p => p.map(x => x.id === pay.id ? { ...x, deletedAt: undefined } : x));
-    setCustomers(p => p.map(c => c.id === pay.customerId ? { ...c, kalanBorc: calcKalanBorc(c, liveCustomerPayments, appSettings?.kdvRate ?? DEFAULT_KDV_RATE) } : c));
+    setCustomers(p => p.map(c => c.id === pay.customerId ? { ...c, kalanBorc: calcKalanBorc(c, liveCustomerPayments, appSettings?.kdvRates ?? DEFAULT_KDV_RATES) } : c));
     showToast("Ödeme kaydı geri alındı.");
   };
   const purgePayment = (pay) => { setPayments?.(p => p.filter(x => x.id !== pay.id)); showToast("Ödeme kaydı kalıcı olarak silindi."); };
@@ -78,7 +78,8 @@ export const SettingsTrash = ({
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
   }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels]);
 
-  const { page: trashPage, setPage: setTrashPage, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } = usePagination(trashItems, 10);
+  const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
+    useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });
 
   return (
     <>
@@ -90,31 +91,40 @@ export const SettingsTrash = ({
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Çöp kutusu boş.</div>
         ) : (
           <>
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead><tr style={{ background: "#f8fafc" }}>
-                  {["Tür", "Kayıt", "Silinme Tarihi", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {trashItemsPaged.map(item => (
-                    <tr key={item.key} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "10px 16px", fontSize: 11, fontWeight: 800, color: "#92400e" }}>
-                        <span style={{ background: "#fef3c7", borderRadius: 6, padding: "2px 8px" }}>{item.type}</span>
-                      </td>
-                      <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.label}</td>
-                      <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{item.deletedAt ? fmtTR(item.deletedAt.slice(0, 10)) : "—"}</td>
-                      <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                          <Btn small variant="ghost" onClick={item.restore}><Icon name="refresh" size={12} /> Geri Al</Btn>
-                          <Btn small variant="danger" onClick={() => setConfirmPurge(item)}><Icon name="trash" size={12} /> Kalıcı Sil</Btn>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+              <input value={trashSearch} onChange={e => setTrashSearch(e.target.value)} placeholder="Tür veya kayıt ara..."
+                style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
             </div>
-            <Pagination total={trashItems.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
+            {trashItemsFiltered.length === 0 ? (
+              <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
+            ) : (
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr style={{ background: "#f8fafc" }}>
+                    {["Tür", "Kayıt", "Silinme Tarihi", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {trashItemsPaged.map(item => (
+                      <tr key={item.key} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "10px 16px", fontSize: 11, fontWeight: 800, color: "#92400e" }}>
+                          <span style={{ background: "#fef3c7", borderRadius: 6, padding: "2px 8px" }}>{item.type}</span>
+                        </td>
+                        <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{item.label}</td>
+                        <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{item.deletedAt ? fmtTR(item.deletedAt.slice(0, 10)) : "—"}</td>
+                        <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                            <Btn small variant="ghost" onClick={item.restore}><Icon name="refresh" size={12} /> Geri Al</Btn>
+                            <Btn small variant="danger" onClick={() => setConfirmPurge(item)}><Icon name="trash" size={12} /> Kalıcı Sil</Btn>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <Pagination total={trashItemsFiltered.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
           </>
         )}
       </Section>

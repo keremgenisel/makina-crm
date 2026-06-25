@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
-import { DEFAULT_KDV_RATE } from "../lib/constants";
+import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRate = DEFAULT_KDV_RATE, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
@@ -23,13 +23,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       if (!map[name]) map[name] = { byCur: {}, kdvByCur: {}, records: [] };
       const curK = s.parcaCurrency || s.currency || "TRY";
       const tutar = parseMoney(s.parcaUcreti);
-      const kdv = calcKDV(s.faturaTipi, tutar, kdvRate);
+      const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
       map[name].byCur[curK] = (map[name].byCur[curK] || 0) + tutar;
       map[name].kdvByCur[curK] = (map[name].kdvByCur[curK] || 0) + kdv;
       map[name].records.push(s);
     });
     return map;
-  }, [services, factoryName, kdvRate]);
+  }, [services, factoryName, kdvRates]);
   const dealerHasDebt = (d) => !!(borcMap[d.name] && Object.values(borcMap[d.name].byCur).some(v => v > 0));
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
@@ -256,7 +256,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 <div key={k} style={{ fontSize: 20, fontWeight: 800, color: "#dc2626" }}>{fmtCur(v, k)}</div>
               ))}
               {Object.entries(borcMap[detailView.name].kdvByCur).filter(([, v]) => v > 0).map(([k, v]) => (
-                <div key={k} style={{ fontSize: 11.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>KDV (%{kdvRate}): {fmtCur(v, k)}</div>
+                <div key={k} style={{ fontSize: 11.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>KDV: {fmtCur(v, k)}</div>
               ))}
               <div style={{ marginTop: 8 }}>
                 {borcMap[detailView.name].records.map(s => (

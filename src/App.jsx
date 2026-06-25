@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import LOGO from "./assets/logo.avif?inline";
 import {
-  APP_VERSION, DEFAULT_KDV_RATE, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
+  APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, safeStandardModels, purgeOldTrash } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash } from "./lib/utils";
 import { Icon } from "./components/ui";
 import { LockScreen } from "./components/LockScreen";
 import { Dashboard } from "./components/Dashboard";
@@ -32,7 +32,7 @@ export default function App() {
   const [custDetailId, setCustDetailId] = useState(null); // dashboard'dan belirli bir müşterinin detayını açarak gelme
   const [dealerFilter, setDealerFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|borclu
   const [appVersion, setAppVersion] = useState(APP_VERSION);
-  const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRate: DEFAULT_KDV_RATE });
+  const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES });
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
 
@@ -151,26 +151,30 @@ export default function App() {
             if (Array.isArray(data.notes)) data.notes = purgeOldTrash(data.notes);
             if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
             if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
+            // KDV oranı artık tek bir sayı değil, tarihe bağlı dönemler listesi — eski tekil
+            // appSettings.kdvRate'den göç edilir. Aşağıdaki Kalan Borç hesapları (hem eski veri
+            // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
+            // sayede oran değişikliği geçmiş kayıtlara da geriye dönük doğru şekilde yansır.
+            const kdvRates = normalizeKdvRates(data.appSettings);
             if (Array.isArray(data.customers)) {
               if (Array.isArray(data.payments)) {
-                setCustomers(data.customers);
+                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, data.payments, kdvRates) })));
                 setPayments(data.payments);
               } else {
                 // Eski veri (payments alanı hiç yok) — önceki manuel "Kalan Borç" değerini referans
                 // alıp, o değere göre "zaten ödenmiş" sayılan tutarı tek bir geçmiş ödeme kaydına
                 // dönüştürür. (extraKalipFiyati'na göre migrate etmek eski kalanBorc'u görmezden
                 // gelip herkesi "hiç ödenmemiş" sayardı — borcu yanlışlıkla tam Ciro'ya şişirirdi.)
-                const kdvRate = data.appSettings?.kdvRate ?? appSettings.kdvRate ?? DEFAULT_KDV_RATE;
                 bumpId(data.customers);
                 const migratedPayments = [];
                 data.customers.forEach(c => {
-                  const ciro = calcCiro(c, kdvRate);
+                  const ciro = calcCiro(c, kdvRates);
                   const zatenOdenen = Math.max(ciro - parseMoney(c.kalanBorc), 0);
                   if (zatenOdenen > 0) {
                     migratedPayments.push({ id: uid(), customerId: c.id, tarih: c.installDate || today(), tutar: zatenOdenen, currency: c.currency || "TRY", not: "Geçmiş ödeme (otomatik migrasyon)" });
                   }
                 });
-                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, migratedPayments, kdvRate) })));
+                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, migratedPayments, kdvRates) })));
                 setPayments(migratedPayments);
               }
             } else if (Array.isArray(data.payments)) {
@@ -186,7 +190,7 @@ export default function App() {
             if (Array.isArray(data.notes)) setNotes(data.notes);
             if (Array.isArray(data.parts)) setParts(data.parts);
             if (Array.isArray(data.partSales)) setPartSales(data.partSales);
-            if (data.appSettings) setAppSettings(s => ({ ...s, ...data.appSettings }));
+            setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
             if (typeof data.nextId === "number") setIdCounter(data.nextId);
           }
         }
@@ -316,10 +320,10 @@ export default function App() {
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
         {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
-        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} />}
-        {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} />}
+        {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
         {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} />}
-        {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRate={appSettings.kdvRate ?? DEFAULT_KDV_RATE} rates={rates} />}
+        {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
         {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} />}
       </div>

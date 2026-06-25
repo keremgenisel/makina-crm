@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, parcaAdi, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
+import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRate = DEFAULT_KDV_RATE }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
@@ -129,7 +129,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         ) : (
           // Aynı parça birden fazla kez eklenebilir (örn. 2 adet kesme bıçağı) — her ekleme kendi satırını oluşturur
           <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
-            onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { ad: p.ad, fiyat: "" }] }))} />
+            onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { ad: p.ad, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
         )}
       </Field>
 
@@ -183,7 +183,21 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {(svUcretliTipi || !parcaUcretsizMi) && (
         <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>
           <Field label="Para Birimi">
-            <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+            {/* Parça seçimi Para Birimi'nden önce yapıldığı için fiyat ilk seçimde TL üzerinden gelmiş olabilir —
+                Para Birimi sonradan değiştirilince, tanımlı bir fiyatı olan satırlar yeni para birimine göre güncellenir. */}
+            <Select value={form.currency || "TRY"} onChange={e => {
+              const yeniPB = e.target.value;
+              setForm(p => ({
+                ...p,
+                currency: yeniPB,
+                degisenParcalar: (p.degisenParcalar || []).map(item => {
+                  const ad = parcaAdi(item);
+                  const tanim = parts.find(pt => pt.ad === ad);
+                  const yeniFiyat = tanim ? partFiyatForCurrency(tanim, yeniPB) : "";
+                  return yeniFiyat === "" ? item : { ad, fiyat: yeniFiyat };
+                }),
+              }));
+            }}>
               <option value="TRY">₺ Türk Lirası</option>
               <option value="USD">$ Dolar (USD)</option>
               <option value="EUR">€ Euro (EUR)</option>
@@ -217,7 +231,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             const parcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
             const cur = form.currency || "TRY";
             const toplam = parseMoney(form.servisUcreti) + (parcaVar ? parcaUcretiToplam : 0);
-            const kdv = calcKDV(form.faturaTipi, toplam, kdvRate);
+            const kdv = calcKDV(form.faturaTipi, toplam, form.date, kdvRates);
             return (
               <>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
@@ -225,7 +239,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 </span>
                 {kdv > 0 && (
                   <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
-                    KDV (%{kdvRate}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
+                    KDV (%{getKdvRateForDate(form.date, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
                 )}
               </>

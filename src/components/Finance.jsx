@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { CURRENCIES, DEFAULT_KDV_RATE } from "../lib/constants";
-import { fmt, fmtCur, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
+import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Pagination } from "./ui";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRate = DEFAULT_KDV_RATE, rates }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
@@ -89,12 +89,12 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     sales.forEach(c => {
       const k = cur(c.currency);
       const gercek = gercekBedel(c);
-      const kdvTutar = calcKDV(c.faturali, c.faturaBedeli, kdvRate);
+      const kdvTutar = calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates);
       gercekCiro[k] += gercek;
-      // Komisyon burada GİDER olarak çıkarılır (eklenmez) — bayiye/satıcıya ödenen komisyon Altuntaş'ın
-      // kendi geliri değildir. calcCiro() kasıtlı olarak kullanılmıyor: o, Kalan Borç tabanı için ayrı bir
-      // amaçla komisyonu EKLER (bkz. utils.js calcCiro yorum satırı) — burada Toplam Bedel/ciro hesabı farklı.
-      toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
+      // Komisyon Toplam Bedel'e hiç dahil edilmez (ne eklenir ne çıkarılır) — kendi ayrı "Toplam Ödenen
+      // Komisyon" kartında gösterilir. calcCiro() kasıtlı olarak kullanılmıyor: o, Kalan Borç tabanı için
+      // ayrı bir amaçla komisyonu EKLER (bkz. utils.js calcCiro yorum satırı) — burada Toplam Bedel/ciro hesabı farklı.
+      toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar;
       komisyon[k] += parseMoney(c.komisyon);
       faturaBedeliToplam[k] += parseMoney(c.faturaBedeli);
       kdvMakina[k] += kdvTutar;
@@ -103,7 +103,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // bu yüzden bu ciroya hiç dahil edilmez (ücret yine de geçmişte/kayıtta bilgi amaçlı görünür).
     const servisUcreti = empty3();
     svcInRange.filter(s => (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && isAltuntasServisi(s, factoryName)).forEach(s => {
-      const kdv = calcKDV(s.faturaTipi, s.servisUcreti, kdvRate);
+      const kdv = calcKDV(s.faturaTipi, s.servisUcreti, s.date, kdvRates);
       servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
       kdvServis[cur(s.currency)] += kdv;
     });
@@ -120,7 +120,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const kdvAnlasmaliParca = empty3();
     svcInRange.forEach(s => {
       if (isParcaUcretliMi(s)) {
-        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, kdvRate);
+        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, s.date, kdvRates);
         if (isAltuntasServisi(s, factoryName)) {
           parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
           kdvParca[cur(s.parcaCurrency)] += kdv;
@@ -132,7 +132,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     });
     const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
     kalipSatisInRange.forEach(p => {
-      const kdv = calcKDV(p.faturaTipi, p.ucret, kdvRate);
+      const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
       kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
       kdvKalip[cur(p.currency)] += kdv;
     });
@@ -178,10 +178,10 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       const servisVar = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
       const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
       const toplam = servisVar + parcaVar;
-      alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, kdvRate);
+      alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
     });
     partSales.filter(isPartSaleBorcluMu).forEach(p => {
-      alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, kdvRate);
+      alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     });
 
     // ── MODEL BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
@@ -232,13 +232,31 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       kdvMakina, kdvServis, kdvParca, kdvKalip,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customers, services, partSales, range, customStart, customEnd, kdvRate, rates, factoryName]);
+  }, [customers, services, partSales, range, customStart, customEnd, kdvRates, rates, factoryName]);
 
   const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
   const { page: sellerPage, setPage: setSellerPage, paged: sellerRowsPaged, perPage: SELLER_PER_PAGE } = usePagination(sellerRows, 10);
   // Tarih aralığı değişince listeler yeniden hesaplanıp kısalabilir — sayfa numarası eski/yüksek
   // kalmasın diye aralık değiştiğinde her ikisi de baştan başlar.
   useEffect(() => { setModelPage(1); setSellerPage(1); }, [range, customStart, customEnd]);
+
+  // KDV artık tek bir sayı değil, tarihe bağlı dönemler listesi — bu yüzden kartlarda sabit bir
+  // "%20" göstermek yerine, seçili tarih aralığında geçerli olan dönem(ler) burada listelenir.
+  // Sadece başlangıç tarihleri gösterilir (bir dönem, bir sonraki dönem başlayana kadar geçerlidir).
+  const kdvDonemleri = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const thisMonthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
+    let rangeStart = "0000-01-01", rangeEnd = "9999-12-31";
+    if (range === "thisMonth") { rangeStart = `${thisMonthKey}-01`; rangeEnd = `${thisMonthKey}-31`; }
+    else if (range === "thisYear") { rangeStart = `${y}-01-01`; rangeEnd = `${y}-12-31`; }
+    else if (range === "lastYear") { rangeStart = `${y - 1}-01-01`; rangeEnd = `${y - 1}-12-31`; }
+    else if (range === "custom") { rangeStart = customStart || "0000-01-01"; rangeEnd = customEnd || "9999-12-31"; }
+    const sorted = [...(kdvRates || [])].sort((a, b) => (a.from || "").localeCompare(b.from || ""));
+    return sorted
+      .map((p, i) => ({ from: p.from, rate: p.rate, nextFrom: sorted[i + 1]?.from || "9999-12-31" }))
+      .filter(p => p.from <= rangeEnd && p.nextFrom > rangeStart);
+  }, [kdvRates, range, customStart, customEnd]);
 
   // Excel'e aktar (CSV)
   const AdetCard = ({ label, value, color, icon }) => (
@@ -274,7 +292,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         )}
         {kdvCur.length > 0 && (
           <div style={{ fontSize: large ? 13 : 11.5, color: "#0d9488", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid #f1f5f9" }}>
-            KDV (%{kdvRate}): {kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + ")}
+            KDV: {kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + ")}
           </div>
         )}
         {sub && <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: large ? 6 : 3 }}>{sub}</div>}
@@ -309,13 +327,21 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
             style={{ padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13 }} />
         </div>
       )}
-      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
         Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{rangeLabels[range]}</b> · {totalMakina} satış kaydı
+      </div>
+      {/* KDV Dönemleri: seçili aralıkta birden fazla dönem varsa hangi tarihten itibaren hangi oranın geçerli olduğu gösterilir */}
+      <div style={{ fontSize: 12, color: "#0d9488", fontWeight: 600, marginBottom: 20 }}>
+        {kdvDonemleri.length > 1 ? (
+          <>KDV dönemleri: {kdvDonemleri.map((p, i) => `${fmtTR(p.from)}'ten itibaren %${p.rate}`).join(" · ")}</>
+        ) : kdvDonemleri.length === 1 ? (
+          <>Geçerli KDV oranı: %{kdvDonemleri[0].rate} ({fmtTR(kdvDonemleri[0].from)}'ten itibaren)</>
+        ) : null}
       </div>
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp - Komisyon (KDV hariç)" size="large" />
+        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
         <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>

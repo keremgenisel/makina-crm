@@ -1,4 +1,4 @@
-import { CUR_SYM, DEFAULT_KDV_RATE, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS } from "./constants";
+import { CUR_SYM, DEFAULT_KDV_RATE, DEFAULT_KDV_RATES, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS } from "./constants";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -89,16 +89,38 @@ export const normalizeSaleType = (v) => {
 };
 export const isFaturali = (saleType) => normalizeSaleType(saleType).startsWith("Faturalı");
 export const isYurtIci = (saleType) => normalizeSaleType(saleType).endsWith("Yurtiçi");
-// KDV tutarı: sadece Faturalı Yurtiçi satışlarda, fatura bedeli üzerinden hesaplanır
-export const calcKDV = (saleType, faturaBedeli, rate = DEFAULT_KDV_RATE) => {
-  if (!isFaturali(saleType) || !isYurtIci(saleType)) return 0;
-  return (parseMoney(faturaBedeli) * (parseFloat(rate) || 0)) / 100;
+// KDV oranı zaman içinde değiştiği için (bkz. DEFAULT_KDV_RATES) tek bir sayı yerine dönemli bir
+// liste tutulur — bu fonksiyon verilen tarihte geçerli olan oranı bulur. Tarihler bu projenin var
+// olan konvansiyonuyla (Finance.jsx) düz string karşılaştırmasıyla işlenir, Date'e çevrilmez.
+export const getKdvRateForDate = (dateStr, kdvRates = DEFAULT_KDV_RATES) => {
+  if (!Array.isArray(kdvRates) || kdvRates.length === 0) return DEFAULT_KDV_RATE;
+  const sorted = [...kdvRates].sort((a, b) => (a.from || "").localeCompare(b.from || ""));
+  const d = dateStr || "";
+  let applicable = sorted[0];
+  for (const period of sorted) {
+    if ((period.from || "") <= d) applicable = period;
+    else break;
+  }
+  return parseFloat(applicable.rate) || 0;
 };
-// KDV DAHİL bir tutarın içindeki KDV'yi ayrıştır (servis ücretleri için).
+// Eski tekil appSettings.kdvRate (sayı) → yeni appSettings.kdvRates (dönem listesi) göçü.
+// Zaten kdvRates doluysa onu kullanır; sadece eski kdvRate varsa tek dönem olarak senkronlar.
+export const normalizeKdvRates = (appSettings) => {
+  if (Array.isArray(appSettings?.kdvRates) && appSettings.kdvRates.length > 0) return appSettings.kdvRates;
+  if (typeof appSettings?.kdvRate === "number") return [{ from: "2008-01-01", rate: appSettings.kdvRate }];
+  return DEFAULT_KDV_RATES;
+};
+// KDV tutarı: sadece Faturalı Yurtiçi satışlarda, fatura bedeli üzerinden, satışın kendi tarihinde
+// geçerli olan orana göre hesaplanır
+export const calcKDV = (saleType, faturaBedeli, date, kdvRates = DEFAULT_KDV_RATES) => {
+  if (!isFaturali(saleType) || !isYurtIci(saleType)) return 0;
+  return (parseMoney(faturaBedeli) * getKdvRateForDate(date, kdvRates)) / 100;
+};
+// KDV DAHİL bir tutarın içindeki KDV'yi ayrıştır (servis ücretleri için), kaydın kendi tarihindeki orana göre.
 // Örn. 10.000 TL %20 dahil → içindeki KDV = 10.000 − (10.000 / 1.20) = 1.666,67
-export const extractKDV = (kdvDahilTutar, rate = DEFAULT_KDV_RATE) => {
+export const extractKDV = (kdvDahilTutar, date, kdvRates = DEFAULT_KDV_RATES) => {
   const tutar = parseMoney(kdvDahilTutar);
-  const r = parseFloat(rate) || 0;
+  const r = getKdvRateForDate(date, kdvRates);
   if (tutar <= 0 || r <= 0) return 0;
   return tutar - (tutar / (1 + r / 100));
 };
@@ -140,6 +162,14 @@ export const kalipCountAtSale = (c) => {
 // Değişen parça adını güvenle al — eski kayıtlarda düz string, yenilerde {ad, fiyat}
 export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 
+// Yedek parça tanımının (fiyatTRY/fiyatUSD/fiyatEUR) verilen para birimine ait fiyatını döner —
+// servis formunda parça seçilince fiyatın otomatik doldurulması için kullanılır. Tanımsızsa "" döner,
+// böylece kullanıcı elle girer; geçmiş kayıtlara dokunulmaz, sadece bundan sonraki seçimleri etkiler.
+export const partFiyatForCurrency = (part, currency = "TRY") => {
+  const v = { TRY: part?.fiyatTRY, USD: part?.fiyatUSD, EUR: part?.fiyatEUR }[currency];
+  return (v === undefined || v === null || v === "") ? "" : v;
+};
+
 // ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──
 // Servis Altuntaş Makina'nın kendisi tarafından mı yapıldı (işlemi yapan firma boşsa veya fabrika
 // adıyla eşleşiyorsa evet). Anlaşmalı bir firma seçiliyse hayır — o zaman işçilik ücretini müşteri
@@ -179,8 +209,8 @@ export const customerHasAnyDebt = (customer, services = [], partSales = [], fact
   return false;
 };
 // Ciro (gizli ara değer — hiçbir formda ayrı bir alan olarak gösterilmez, sadece Kalan Borç'u türetmek için kullanılır)
-export const calcCiro = (customer, kdvRate = DEFAULT_KDV_RATE) => {
-  const kdv = calcKDV(customer.faturali, customer.faturaBedeli, kdvRate);
+export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES) => {
+  const kdv = calcKDV(customer.faturali, customer.faturaBedeli, customer.installDate, kdvRates);
   return parseMoney(customer.fabrikaSatisBedeli) + kdv + parseMoney(customer.komisyon);
 };
 // Bir ödeme "alınmış" mı sayılır: Nakit/Kredi Kartı girildiği anda alınmış sayılır;
@@ -196,8 +226,8 @@ export const sumBekleyenCek = (customerId, payments = []) =>
 // Tahsil edilmemiş bir çekin vade tarihi geçmiş mi
 export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi && !!p.vadeTarihi && p.vadeTarihi < today();
 // Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı)
-export const calcKalanBorc = (customer, payments = [], kdvRate = DEFAULT_KDV_RATE) =>
-  calcCiro(customer, kdvRate) - sumPayments(customer.id, payments);
+export const calcKalanBorc = (customer, payments = [], kdvRates = DEFAULT_KDV_RATES) =>
+  calcCiro(customer, kdvRates) - sumPayments(customer.id, payments);
 
 // Çöp Kutusu: deletedAt'i retention süresinden eski olan kayıtları kalıcı olarak süzer
 // (uygulama açılışında bir defa çalışır) — 12 farklı dizi için aynı mantık birebir tekrarlandığı
