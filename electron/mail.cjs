@@ -5,6 +5,7 @@
 const { app, BrowserWindow, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 let nodemailer = null;
 try {
   nodemailer = require("nodemailer");
@@ -17,10 +18,34 @@ const getConfigPath = () => path.join(app.getPath("userData"), "smtp-config.json
 // Ayarlar'daki "Gönderilen E-postalar" listesi buradan okur (mail:getLog).
 const getEmailLogPath = () => path.join(app.getPath("userData"), "email-log.json");
 
+// Çöp Kutusu: src/lib/utils.js'deki purgeOldTrash ile aynı mantık (30 gün), ama bu dosya
+// renderer'ın ES module'lerini require edemediği için burada ayrıca tutuluyor.
+const EMAIL_LOG_RETENTION_DAYS = 30;
+const purgeOldEmailLogTrash = (log) => {
+  const cutoff = Date.now() - EMAIL_LOG_RETENTION_DAYS * 86400000;
+  return log.filter(e => !e.deletedAt || new Date(e.deletedAt).getTime() >= cutoff);
+};
+
+function writeEmailLog(log) {
+  fs.writeFileSync(getEmailLogPath(), JSON.stringify(log.slice(-200), null, 2), "utf-8");
+}
+
 function readEmailLog() {
   try {
     const p = getEmailLogPath();
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+    if (!fs.existsSync(p)) return [];
+    const log = JSON.parse(fs.readFileSync(p, "utf-8"));
+    // id alanı eklenmeden önce kaydedilmiş eski kayıtlara geriye dönük id atanır — Sil butonu
+    // bir id'ye bağlı çalıştığı için, id'siz eski kayıtlar silinemez kalmasın.
+    let backfilled = false;
+    const withIds = log.map(e => {
+      if (e.id) return e;
+      backfilled = true;
+      return { ...e, id: crypto.randomUUID() };
+    });
+    const purged = purgeOldEmailLogTrash(withIds);
+    if (backfilled || purged.length !== log.length) writeEmailLog(purged);
+    return purged;
   } catch (err) {
     console.error("E-posta günlüğü okunamadı:", err);
   }
@@ -30,15 +55,36 @@ function readEmailLog() {
 function appendEmailLog(entry) {
   try {
     const log = readEmailLog();
-    log.push(entry);
-    fs.writeFileSync(getEmailLogPath(), JSON.stringify(log.slice(-200), null, 2), "utf-8");
+    log.push({ id: crypto.randomUUID(), ...entry });
+    writeEmailLog(log);
   } catch (err) {
     console.error("E-posta günlüğüne yazılamadı:", err);
   }
 }
 
+// Gönderilen E-postalar listesi: silinmemiş kayıtlar
 function getSentLog() {
-  return readEmailLog();
+  return readEmailLog().filter(e => !e.deletedAt);
+}
+
+// E-posta Çöp Kutusu: silinmiş (henüz kalıcı silinmemiş) kayıtlar
+function getDeletedLog() {
+  return readEmailLog().filter(e => e.deletedAt);
+}
+
+function deleteLogEntry(id) {
+  writeEmailLog(readEmailLog().map(e => (e.id === id ? { ...e, deletedAt: new Date().toISOString() } : e)));
+  return { ok: true };
+}
+
+function restoreLogEntry(id) {
+  writeEmailLog(readEmailLog().map(e => (e.id === id ? { ...e, deletedAt: null } : e)));
+  return { ok: true };
+}
+
+function purgeLogEntry(id) {
+  writeEmailLog(readEmailLog().filter(e => e.id !== id));
+  return { ok: true };
 }
 
 function readConfig() {
@@ -139,8 +185,8 @@ async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: 
   const creds = getDecryptedCredentials();
   if (!creds) return { ok: false, error: "Önce Ayarlar'dan e-posta hesabı bağlanmalı." };
   if (!to) return { ok: false, error: "Alıcı e-posta adresi yok." };
+  const attachments = [];
   try {
-    const attachments = [];
     if (pdfHtml) {
       const pdf = await htmlToPdfBuffer(pdfHtml);
       attachments.push({ filename: pdfFileName || "rapor.pdf", content: pdf, contentType: "application/pdf" });
@@ -151,14 +197,17 @@ async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: 
         attachments.push({ filename: a.filename || "ek", content: Buffer.from(a.contentBase64, "base64"), contentType: a.mimeType || "application/octet-stream" });
       }
     });
+    // Log'a sadece dosya adı/türü yazılır — ek içeriği (PDF/base64) tekrar diske gömülmez.
+    const attachmentMeta = attachments.map(a => ({ filename: a.filename, mimeType: a.contentType }));
     await createTransporter(creds).sendMail({ from: creds.email, to, subject, text, attachments });
-    appendEmailLog({ to, subject, success: true, timestamp: new Date().toISOString() });
+    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: true, timestamp: new Date().toISOString() });
     return { ok: true };
   } catch (err) {
     console.error("E-posta gönderilemedi:", err);
-    appendEmailLog({ to, subject, success: false, error: err?.message || "Gönderilemedi.", timestamp: new Date().toISOString() });
+    const attachmentMeta = attachments.map(a => ({ filename: a.filename, mimeType: a.contentType }));
+    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: false, error: err?.message || "Gönderilemedi.", timestamp: new Date().toISOString() });
     return { ok: false, error: err?.message || "Gönderilemedi." };
   }
 }
 
-module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail, getSentLog };
+module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail, getSentLog, getDeletedLog, deleteLogEntry, restoreLogEntry, purgeLogEntry };

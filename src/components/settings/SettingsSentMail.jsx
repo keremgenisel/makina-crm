@@ -1,58 +1,153 @@
 import { useState, useEffect } from "react";
-import { Icon, Btn, Pagination } from "../ui";
+import { Icon, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
 import { Section } from "./Section";
 
 export const SettingsSentMail = () => {
   // ── Gönderilen E-postalar: tüm appMail.send() çağrılarının (Customers/SimpleDealers/Settings'ten)
-  // main process tarafında tutulan düz günlüğü — buradan sadece okunur, kaynak kayda link verilmez ──
+  // main process tarafında tutulan düz günlüğü — buradan sadece okunur, kaynak kayda link verilmez.
+  // Ek (PDF/dosya) içeriği hiç saklanmaz, sadece dosya adı/türü; gövde metni (text) saklanır.
   const [sentEmailLog, setSentEmailLog] = useState([]);
+  const [deletedEmailLog, setDeletedEmailLog] = useState([]);
+  const [viewing, setViewing] = useState(null); // içeriği görüntülenen kayıt
+  const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen kayıt
   const { page: emailLogPage, setPage: setEmailLogPage, paged: sentEmailLogPaged, perPage: EMAIL_LOG_PER_PAGE } = usePagination(sentEmailLog, 10);
+  const { page: trashPage, setPage: setTrashPage, paged: deletedEmailLogPaged, perPage: TRASH_PER_PAGE } = usePagination(deletedEmailLog, 10);
+
   const loadSentEmailLog = async () => {
     if (!window.appMail?.getLog) return;
     const log = await window.appMail.getLog();
     setSentEmailLog((log || []).slice().reverse());
   };
-  useEffect(() => { loadSentEmailLog(); }, []);
+  const loadDeletedEmailLog = async () => {
+    if (!window.appMail?.getDeletedLog) return;
+    const log = await window.appMail.getDeletedLog();
+    setDeletedEmailLog((log || []).slice().reverse());
+  };
+  const reloadAll = () => { loadSentEmailLog(); loadDeletedEmailLog(); };
+  useEffect(() => { reloadAll(); }, []);
+
+  const deleteEntry = async (id) => { await window.appMail.deleteLogEntry(id); reloadAll(); };
+  const restoreEntry = async (id) => { await window.appMail.restoreLogEntry(id); reloadAll(); };
+  const purgeEntry = async (id) => { await window.appMail.purgeLogEntry(id); setConfirmPurge(null); reloadAll(); };
 
   return (
-    <Section title="Gönderilen E-postalar" icon="mail">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-        Servis formu, makina raporu, dışa aktarım veya bayi e-postası olarak gönderilen tüm e-postaların kaydı (en yeni üstte).
-      </div>
-      <div style={{ marginBottom: 14 }}>
-        <Btn small variant="ghost" onClick={loadSentEmailLog}><Icon name="refresh" size={12} /> Yenile</Btn>
-      </div>
-      {sentEmailLog.length === 0 ? (
-        <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz gönderilmiş e-posta yok.</div>
-      ) : (
-        <>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr style={{ background: "#f8fafc" }}>
-                {["Tarih", "Kime", "Konu", "Durum"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
-              </tr></thead>
-              <tbody>
-                {sentEmailLogPaged.map((e, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{e.timestamp ? new Date(e.timestamp).toLocaleString("tr-TR") : "—"}</td>
-                    <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{e.to || "—"}</td>
-                    <td style={{ padding: "10px 16px", fontSize: 13 }}>{e.subject || "—"}</td>
-                    <td style={{ padding: "10px 16px" }}>
-                      {e.success ? (
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 6, padding: "2px 8px" }}>✓ Başarılı</span>
-                      ) : (
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#991b1b", background: "#fee2e2", borderRadius: 6, padding: "2px 8px" }} title={e.error || ""}>✗ Başarısız</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <>
+      <Section title="Gönderilen E-postalar" icon="mail">
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          Servis formu, makina raporu, dışa aktarım veya bayi e-postası olarak gönderilen tüm e-postaların kaydı (en yeni üstte).
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <Btn small variant="ghost" onClick={reloadAll}><Icon name="refresh" size={12} /> Yenile</Btn>
+        </div>
+        {sentEmailLog.length === 0 ? (
+          <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz gönderilmiş e-posta yok.</div>
+        ) : (
+          <>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr style={{ background: "#f8fafc" }}>
+                  {["Tarih", "Kime", "Konu", "Durum", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {sentEmailLogPaged.map((e, i) => (
+                    <tr key={e.id || i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{e.timestamp ? new Date(e.timestamp).toLocaleString("tr-TR") : "—"}</td>
+                      <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{e.to || "—"}</td>
+                      <td style={{ padding: "10px 16px", fontSize: 13 }}>
+                        {e.subject || "—"}
+                        {Array.isArray(e.attachments) && e.attachments.length > 0 && (
+                          <span style={{ marginLeft: 6, fontSize: 11, color: "#94a3b8" }} title={e.attachments.map(a => a.filename).join(", ")}>
+                            📎 {e.attachments.length}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 16px" }}>
+                        {e.success ? (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 6, padding: "2px 8px" }}>✓ Başarılı</span>
+                        ) : (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#991b1b", background: "#fee2e2", borderRadius: 6, padding: "2px 8px" }} title={e.error || ""}>✗ Başarısız</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <Btn small variant="ghost" onClick={() => setViewing(e)}><Icon name="eye" size={12} /> İçerik</Btn>
+                          <Btn small variant="danger" onClick={() => deleteEntry(e.id)}><Icon name="trash" size={12} /> Sil</Btn>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination total={sentEmailLog.length} page={emailLogPage} setPage={setEmailLogPage} perPage={EMAIL_LOG_PER_PAGE} />
+          </>
+        )}
+      </Section>
+
+      {/* ── E-posta Çöp Kutusu ── */}
+      <Section title="Silinen E-postalar" icon="trash">
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          Silinen e-posta kayıtları buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
+        </div>
+        {deletedEmailLog.length === 0 ? (
+          <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Silinen e-posta yok.</div>
+        ) : (
+          <>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr style={{ background: "#f8fafc" }}>
+                  {["Tarih", "Kime", "Konu", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {deletedEmailLogPaged.map((e, i) => (
+                    <tr key={e.id || i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{e.timestamp ? new Date(e.timestamp).toLocaleString("tr-TR") : "—"}</td>
+                      <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{e.to || "—"}</td>
+                      <td style={{ padding: "10px 16px", fontSize: 13 }}>{e.subject || "—"}</td>
+                      <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <Btn small variant="ghost" onClick={() => restoreEntry(e.id)}><Icon name="refresh" size={12} /> Geri Al</Btn>
+                          <Btn small variant="danger" onClick={() => setConfirmPurge(e)}><Icon name="trash" size={12} /> Kalıcı Sil</Btn>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination total={deletedEmailLog.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
+          </>
+        )}
+      </Section>
+
+      {/* İçerik görüntüleme */}
+      {viewing && (
+        <Modal title="E-posta İçeriği" onClose={() => setViewing(null)}>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, lineHeight: 1.6 }}>
+            <b>Kime:</b> {viewing.to || "—"}<br />
+            <b>Konu:</b> {viewing.subject || "—"}<br />
+            <b>Tarih:</b> {viewing.timestamp ? new Date(viewing.timestamp).toLocaleString("tr-TR") : "—"}
           </div>
-          <Pagination total={sentEmailLog.length} page={emailLogPage} setPage={setEmailLogPage} perPage={EMAIL_LOG_PER_PAGE} />
-        </>
+          {Array.isArray(viewing.attachments) && viewing.attachments.length > 0 && (
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>
+              <b>Ekler:</b> {viewing.attachments.map(a => a.filename).join(", ")}
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: "#0f172a", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto" }}>
+            {viewing.text || "(gövde metni yok)"}
+          </div>
+        </Modal>
       )}
-    </Section>
+
+      {/* Kalıcı silme onayı */}
+      {confirmPurge && (
+        <ConfirmDialog
+          message={`"${confirmPurge.subject || confirmPurge.to}" kaydı kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+          onConfirm={() => purgeEntry(confirmPurge.id)}
+          onCancel={() => setConfirmPurge(null)}
+        />
+      )}
+    </>
   );
 };

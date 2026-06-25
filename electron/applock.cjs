@@ -40,7 +40,7 @@ function getStatus() {
 }
 
 function setup(password) {
-  if (!password || password.length < 6) return { ok: false, error: "Şifre en az 6 karakter olmalı." };
+  if (!password || password.length < 4) return { ok: false, error: "Şifre en az 4 karakter olmalı." };
   const passwordSalt = newSalt();
   const recoverySalt = newSalt();
   const recoveryCode = genRecoveryCode();
@@ -74,7 +74,7 @@ function changePassword(currentPassword, newPassword) {
   if (!cfg?.enabled) return { ok: false, error: "Kilit etkin değil." };
   const v = verify(currentPassword);
   if (!v.ok) return v;
-  if (!newPassword || newPassword.length < 6) return { ok: false, error: "Yeni şifre en az 6 karakter olmalı." };
+  if (!newPassword || newPassword.length < 4) return { ok: false, error: "Yeni şifre en az 4 karakter olmalı." };
   if (hash(newPassword, cfg.passwordSalt) === cfg.passwordHash) return { ok: false, error: "Yeni şifre eski şifreyle aynı olamaz." };
   const passwordSalt = newSalt();
   writeConfig({ ...cfg, passwordHash: hash(newPassword, passwordSalt), passwordSalt });
@@ -87,7 +87,7 @@ function resetWithRecoveryCode(recoveryCode, newPassword) {
   if (!recoveryCode) return { ok: false, error: "Kurtarma kodu girilmedi." };
   const codeOk = hash(recoveryCode.trim().toUpperCase(), cfg.recoverySalt) === cfg.recoveryHash;
   if (!codeOk) return { ok: false, error: "Kurtarma kodu yanlış." };
-  if (!newPassword || newPassword.length < 6) return { ok: false, error: "Yeni şifre en az 6 karakter olmalı." };
+  if (!newPassword || newPassword.length < 4) return { ok: false, error: "Yeni şifre en az 4 karakter olmalı." };
   if (hash(newPassword, cfg.passwordSalt) === cfg.passwordHash) return { ok: false, error: "Yeni şifre eski şifreyle aynı olamaz." };
   const passwordSalt = newSalt();
   const recoverySalt = newSalt();

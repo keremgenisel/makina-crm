@@ -22,7 +22,7 @@ export const SettingsSecurity = ({ flash }) => {
 
   const submitLockSetup = async () => {
     setLockError("");
-    if (lockForm.password.length < 6) { setLockError("Şifre en az 6 karakter olmalı."); return; }
+    if (lockForm.password.length < 4) { setLockError("Şifre en az 4 karakter olmalı."); return; }
     if (lockForm.password !== lockForm.password2) { setLockError("Şifreler eşleşmiyor."); return; }
     setLockBusy(true);
     try {
@@ -52,7 +52,7 @@ export const SettingsSecurity = ({ flash }) => {
 
   const submitLockChangePassword = async () => {
     setLockError("");
-    if (lockForm.password.length < 6) { setLockError("Yeni şifre en az 6 karakter olmalı."); return; }
+    if (lockForm.password.length < 4) { setLockError("Yeni şifre en az 4 karakter olmalı."); return; }
     if (lockForm.password !== lockForm.password2) { setLockError("Şifreler eşleşmiyor."); return; }
     setLockBusy(true);
     try {

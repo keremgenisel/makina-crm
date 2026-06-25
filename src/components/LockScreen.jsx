@@ -31,7 +31,7 @@ export const LockScreen = ({ onUnlock }) => {
   const submitRecover = async () => {
     setError("");
     if (!recoveryCode.trim()) { setError("Kurtarma kodunu girin."); return; }
-    if (newPassword.length < 6) { setError("Yeni şifre en az 6 karakter olmalı."); return; }
+    if (newPassword.length < 4) { setError("Yeni şifre en az 4 karakter olmalı."); return; }
     if (newPassword !== newPassword2) { setError("Şifreler eşleşmiyor."); return; }
     setBusy(true);
     try {

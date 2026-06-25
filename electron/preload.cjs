@@ -56,6 +56,10 @@ contextBridge.exposeInMainWorld("appMail", {
   test: () => ipcRenderer.invoke("mail:test"),
   send: (payload) => ipcRenderer.invoke("mail:send", payload),
   getLog: () => ipcRenderer.invoke("mail:getLog"),
+  getDeletedLog: () => ipcRenderer.invoke("mail:getDeletedLog"),
+  deleteLogEntry: (id) => ipcRenderer.invoke("mail:deleteLogEntry", id),
+  restoreLogEntry: (id) => ipcRenderer.invoke("mail:restoreLogEntry", id),
+  purgeLogEntry: (id) => ipcRenderer.invoke("mail:purgeLogEntry", id),
 });
 
 contextBridge.exposeInMainWorld("appError", {

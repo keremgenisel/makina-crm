@@ -250,6 +250,10 @@ ipcMain.handle("mail:clearCredentials", () => mailer.clearCredentials());
 ipcMain.handle("mail:test", () => mailer.testConnection());
 ipcMain.handle("mail:send", (_e, payload) => mailer.sendMail(payload));
 ipcMain.handle("mail:getLog", () => mailer.getSentLog());
+ipcMain.handle("mail:getDeletedLog", () => mailer.getDeletedLog());
+ipcMain.handle("mail:deleteLogEntry", (_e, id) => mailer.deleteLogEntry(id));
+ipcMain.handle("mail:restoreLogEntry", (_e, id) => mailer.restoreLogEntry(id));
+ipcMain.handle("mail:purgeLogEntry", (_e, id) => mailer.purgeLogEntry(id));
 
 // ── Uygulama şifresi (açılış kilidi) ──
 ipcMain.handle("applock:status", () => applock.getStatus());
