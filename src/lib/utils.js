@@ -225,9 +225,11 @@ export const sumBekleyenCek = (customerId, payments = []) =>
   payments.filter(p => p.customerId === customerId && p.yontem === "Çek" && !p.tahsilEdildi).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
 // Tahsil edilmemiş bir çekin vade tarihi geçmiş mi
 export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi && !!p.vadeTarihi && p.vadeTarihi < today();
-// Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı)
+// Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı). En yakın tam liraya
+// yuvarlanır (KDV yüzdesi tam sayı vermeyince ortaya çıkan kuruş artıkları "borçlu" sayılmasın) ve
+// 0'ın altına düşürülmez — bu uygulamada "fazla ödeme/alacak" diye bir kavram takip edilmiyor.
 export const calcKalanBorc = (customer, payments = [], kdvRates = DEFAULT_KDV_RATES) =>
-  calcCiro(customer, kdvRates) - sumPayments(customer.id, payments);
+  Math.max(0, Math.round(calcCiro(customer, kdvRates) - sumPayments(customer.id, payments)));
 
 // Çöp Kutusu: deletedAt'i retention süresinden eski olan kayıtları kalıcı olarak süzer
 // (uygulama açılışında bir defa çalışır) — 12 farklı dizi için aynı mantık birebir tekrarlandığı

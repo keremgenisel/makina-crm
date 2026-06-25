@@ -158,7 +158,14 @@ export default function App() {
             const kdvRates = normalizeKdvRates(data.appSettings);
             if (Array.isArray(data.customers)) {
               if (Array.isArray(data.payments)) {
-                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, data.payments, kdvRates) })));
+                // NOT: Burada artık TÜM müşterilerin Kalan Borç'unu calcKalanBorc ile yeniden
+                // hesaplamıyoruz — bu, KDV dönemleri eklenmeden önce (eski sabit %20 oranıyla)
+                // girilmiş ödeme kayıtlarıyla çakışıp, dokunulmamış (zaten "ödendi" sayılmış)
+                // kayıtlarda her açılışta sürpriz negatif "fazla ödeme" bakiyeleri üretiyordu.
+                // Kalan Borç artık sadece o müşteri elle düzenlenince veya ödeme eklenince/
+                // silinince yeniden hesaplanır (bkz. Customers.jsx). Burada sadece kayıtlı
+                // değerdeki kuruş artıkları temizlenir ve negatife düşmüşse 0'a çekilir.
+                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: Math.max(0, Math.round(parseMoney(c.kalanBorc))) })));
                 setPayments(data.payments);
               } else {
                 // Eski veri (payments alanı hiç yok) — önceki manuel "Kalan Borç" değerini referans

@@ -317,7 +317,7 @@ export const Customers = ({
       // kaydını oluşturur; Kalan Borç'tan sadece "alınmış" sayılanlar (Çek hariç) düşülür.
       const ilkOdemeSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
       const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0);
-      clean.kalanBorc = calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar;
+      clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (ilkOdemeSatirlari.length > 0 && setPayments) {
         const yeniOdemeler = ilkOdemeSatirlari.map(r => ({
@@ -1840,7 +1840,7 @@ export const Customers = ({
 
           <Field label="Kalan Borç">
             <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", padding: "9px 0" }}>
-              {fmtCur(calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0), form.currency)}
+              {fmtCur(Math.max(0, calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0)), form.currency)}
             </div>
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
           </Field>

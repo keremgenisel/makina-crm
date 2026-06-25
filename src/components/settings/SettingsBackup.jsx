@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../../lib/constants";
-import { today, looksLikeBackup, safeStandardModels } from "../../lib/utils";
+import { today, looksLikeBackup, safeStandardModels, parseMoney } from "../../lib/utils";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 
@@ -66,7 +66,12 @@ export const SettingsBackup = ({
   };
 
   const applyRestore = () => {
-    if (Array.isArray(restoreData?.customers)) setCustomers(restoreData.customers);
+    // KDV oranı tarihe bağlı dönemler hâline gelmeden önce kaydedilmiş eski yedeklerde Kalan Borç
+    // kuruş artıkları veya (eski sabit orana göre girilmiş ödemelerden kalma) negatif "fazla ödeme"
+    // bakiyeleri taşıyabilir — geri yüklerken bunlar da App.jsx'in normal yükleme akışındaki gibi temizlenir.
+    if (Array.isArray(restoreData?.customers)) {
+      setCustomers(restoreData.customers.map(c => ({ ...c, kalanBorc: Math.max(0, Math.round(parseMoney(c.kalanBorc))) })));
+    }
     if (Array.isArray(restoreData?.services)) setServices(restoreData.services);
     if (Array.isArray(restoreData?.dealers)) setDealers(restoreData.dealers);
     if (Array.isArray(restoreData?.stock) && setStock) setStock(restoreData.stock);
