@@ -13,9 +13,14 @@ import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
 import { SettingsKdv } from "./settings/SettingsKdv";
+import { SettingsCompany } from "./settings/SettingsCompany";
+import { SettingsTranslations } from "./settings/SettingsTranslations";
+import { SettingsDanger } from "./settings/SettingsDanger";
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
-  rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [] }) => {
+  partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
+  rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
+  rawTeklifler = [], setTeklifler = null }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [settingsTab, setSettingsTab] = useState("app"); // "app" | "models" | ...
@@ -28,11 +33,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         {/* SOL DİKEY MENÜ — gruplu */}
         <div style={{ width: 220, flexShrink: 0, minWidth: 200 }}>
           {[
-            { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }] },
+            { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
             { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
             { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
             { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
-            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }] },
+            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
           ].map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
@@ -56,6 +61,24 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
               })}
             </div>
           ))}
+
+          {/* Tehlikeli Bölge — en altta, kırmızı */}
+          <div style={{ marginTop: 8, borderTop: "1.5px solid #fecaca", paddingTop: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>Tehlikeli Bölge</div>
+            <button onClick={() => setSettingsTab("danger")}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                border: "none", marginBottom: 4,
+                background: settingsTab === "danger" ? "#fef2f2" : "transparent",
+                color: settingsTab === "danger" ? "#b91c1c" : "#ef4444",
+                boxShadow: settingsTab === "danger" ? "0 2px 8px rgba(239,68,68,.2)" : "none",
+                transition: "background .15s",
+              }}>
+              <Icon name="trash" size={16} />
+              Uygulamayı Kaldır
+            </button>
+          </div>
         </div>
 
         {/* SAĞ İÇERİK */}
@@ -69,13 +92,17 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "app" && <SettingsApp version={version} flash={flash} />}
 
+      {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} flash={flash} />}
+
       {settingsTab === "backup" && (
         <SettingsBackup
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
+          teklifler={rawTeklifler} partStock={partStock} partStockLog={partStockLog}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
-          setPartSales={setPartSales} setPayments={setPayments} version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
+          setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
 
@@ -88,7 +115,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
-            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} />
+            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} />
         </Section>
       )}
 
@@ -106,11 +133,16 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
-          <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices} />
+          <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
+            allModels={[...standardModels, ...customModels]} />
         </Section>
       )}
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
+
+      {settingsTab === "ceviri" && <SettingsTranslations appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
+
+      {settingsTab === "danger" && <SettingsDanger flash={flash} />}
 
       {settingsTab === "eposta" && <SettingsMail flash={flash} />}
 
@@ -131,8 +163,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <SettingsTrash
           rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}
           rawDealers={rawDealers} rawStock={rawStock} rawNotes={rawNotes} rawKalipDefs={rawKalipDefs} rawParts={rawParts} rawCustomModels={rawCustomModels}
+          rawTeklifler={rawTeklifler}
           setCustomers={setCustomers} setServices={setServices} setPartSales={setPartSales} setPayments={setPayments}
           setDealers={setDealers} setStock={setStock} setNotes={setNotes} setKalipDefs={setKalipDefs} setParts={setParts} setCustomModels={setCustomModels}
+          setTeklifler={setTeklifler}
+          partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
         />
       )}

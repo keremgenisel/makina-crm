@@ -46,7 +46,30 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const openEdit = d => { setForm({ bayiMi: true, anlasmaliServisMi: false, ...d }); setModal({ edit: d }); };
   const openFactoryEdit = () => { setForm({ ...factory }); setModal("factory"); };
   const save = () => {
-    if (modal === "factory") { setFactory({ ...form }); showToast("Fabrika bilgileri düzenlendi."); }
+    if (modal === "factory") {
+      const oldName = factory?.name;
+      const newName = (form.name || "").trim() || oldName;
+      const prevNames = oldName && newName && oldName !== newName
+        ? [...new Set([...(factory?.prevNames || []), oldName])]
+        : (factory?.prevNames || []);
+      setFactory({ ...form, name: newName, prevNames });
+      if (oldName && newName && oldName !== newName) {
+        setCustomers?.(p => p.map(c => {
+          const satisYapanEsleser = c.satisYapan === oldName;
+          const prevOwnerEsleser = c.prevOwners?.some(o => o.satisYapan === oldName);
+          if (!satisYapanEsleser && !prevOwnerEsleser) return c;
+          return {
+            ...c,
+            satisYapan: satisYapanEsleser ? newName : c.satisYapan,
+            prevOwners: prevOwnerEsleser ? c.prevOwners.map(o => o.satisYapan === oldName ? { ...o, satisYapan: newName } : o) : c.prevOwners,
+          };
+        }));
+        setServices?.(p => p.map(s => s.islemFirma === oldName ? { ...s, islemFirma: newName } : s));
+        showToast(`Fabrika adı güncellendi. "${oldName}" geçmiş kayıtlarda da değiştirildi.`);
+      } else {
+        showToast("Fabrika bilgileri düzenlendi.");
+      }
+    }
     else {
       if (modal !== "factory" && !form.bayiMi && !form.anlasmaliServisMi) { showToast("En az biri seçili olmalı: Bayi veya Anlaşmalı Servis.", "err"); return; }
       if (modal === "add") { bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Bayi kaydedildi."); }

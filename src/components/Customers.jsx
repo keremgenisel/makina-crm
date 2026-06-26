@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, getKdvRateForDate, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi, withDeleted } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, isFaturali, isYurtIci, calcKDV, getKdvRateForDate, fmtCur, parseMoney, customerHasAnyDebt, sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu, isPartSaleBorcluMu, isPaymentReceived, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi, withDeleted, mergeAndUpdate, totalMiktar } from "../lib/utils";
 import { printServiceForm as printServiceFormTemplate, printMachineReport as printMachineReportTemplate, buildServiceFormHtml, buildMachineReportHtml } from "../lib/printTemplates";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, PickOrType, PaymentRowsEditor } from "./ui";
@@ -19,12 +19,15 @@ export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
+  partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
+  appSettings = {},
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
+  const [printLangModal, setPrintLangModal] = useState(null); // null | { type: "makina" | "servis", sv? }
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
 
@@ -394,6 +397,42 @@ export const Customers = ({
     setSvForm({ degisenParcalar: [], parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
     setSvModal({ edit: sv });
   };
+  const deductServiceParts = (degisenParcalar, serviceId) => {
+    if (!setPartStock || !setPartStockLog) return;
+    const valid = (degisenParcalar || []).filter(p => p && p.partId && parseInt(p.miktar) > 0);
+    if (valid.length === 0) return;
+    setPartStock(ps => {
+      let updated = [...ps];
+      valid.forEach(r => {
+        const pid = String(r.partId);
+        updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) - parseInt(r.miktar));
+      });
+      return updated;
+    });
+    setPartStockLog(lg => [
+      ...lg,
+      ...valid.map(r => ({ id: uid(), partId: String(r.partId), miktar: -parseInt(r.miktar), tip: "servis", referansId: serviceId, tarih: today(), notlar: "" })),
+    ]);
+  };
+
+  const restoreServiceParts = (serviceId) => {
+    if (!setPartStock || !setPartStockLog) return;
+    setPartStockLog(lg => {
+      const toRestore = lg.filter(l => l.referansId === serviceId && l.tip === "servis");
+      if (toRestore.length > 0) {
+        setPartStock(ps => {
+          let updated = [...ps];
+          toRestore.forEach(l => {
+            const pid = String(l.partId);
+            updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
+          });
+          return updated;
+        });
+      }
+      return lg.filter(l => !(l.referansId === serviceId && l.tip === "servis"));
+    });
+  };
+
   const saveService = (parcaUcretsizMi) => {
     if (!setServices) return;
     const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
@@ -402,9 +441,12 @@ export const Customers = ({
       bumpId(customers, services);
       const newId = uid();
       setServices(p => p.some(s => s.id === newId) ? p : [{ ...rec, id: newId }, ...p]);
+      deductServiceParts(rec.degisenParcalar, newId);
       showToast("Servis talebi kaydedildi.");
     } else {
+      restoreServiceParts(svForm.id);
       setServices(p => p.map(s => s.id === svForm.id ? rec : s));
+      deductServiceParts(rec.degisenParcalar, svForm.id);
       showToast("Servis talebi düzenlendi.");
     }
     setSvModal(null);
@@ -414,6 +456,7 @@ export const Customers = ({
   const toggleServisOdendi = (sv) => setServices && setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: !s.odendi } : s));
   const deleteService = (id) => {
     if (!setServices) return;
+    restoreServiceParts(id);
     setServices(p => withDeleted(p, s => s.id === id));
     showToast("Servis kaydı silindi.");
   };
@@ -624,21 +667,37 @@ export const Customers = ({
     setConfirmUndoOwnerId(null);
   };
 
+  const servisT = (lang = "TR") => ({ ...((appSettings?.translations?.servis) || {}), _lang: lang });
+  const makinaT = (lang = "TR") => ({ ...((appSettings?.translations?.makina) || {}), _lang: lang });
+
+  // Yurt dışı müşteri ise dil seçici göster, Türkiye ise direkt TR yazdır
+  const isTurkiye = !detailView?.country || detailView.country === "Türkiye";
+  const openPrintOrPick = (type, sv) => {
+    if (isTurkiye) {
+      if (type === "makina") printMachineReport("TR");
+      else if (type === "servis") printServiceForm(sv, "TR");
+      else if (type === "mail_makina") openMailMachineReport("TR");
+      else if (type === "mail_servis") openMailServiceForm(sv, "TR");
+    } else {
+      setPrintLangModal({ type, sv });
+    }
+  };
+
   // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret — şablon src/lib/printTemplates.js'te
-  const printServiceForm = (sv) => printServiceFormTemplate(sv, customers, kdvRates);
+  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang));
 
   // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu — şablon src/lib/printTemplates.js'te
-  const printMachineReport = () => {
+  const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales);
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang));
   };
 
   // E-posta: aynı HTML şablonları PDF eki olarak gönderilir (window.appMail.send → main process'te printToPDF + SMTP)
   const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, pdfHtml, pdfFileName }
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null }); // idle | sending | ok | error
-  const openMailMachineReport = () => {
+  const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang)));
     setMailDraft({
       to: detailView.email || "",
       subject: `Makina Servis ve Yedek Parça Geçmişi Raporu — ${detailView.name}`,
@@ -648,9 +707,9 @@ export const Customers = ({
     });
     setMailSendState({ state: "idle", error: null });
   };
-  const openMailServiceForm = (sv) => {
+  const openMailServiceForm = (sv, lang = "TR") => {
     const cust = customers.find(c => c.id === sv.customerId);
-    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true }));
+    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang) }));
     setMailDraft({
       to: cust?.email || "",
       subject: `Servis Formu — ${cust?.name || ""}`,
@@ -1028,8 +1087,8 @@ export const Customers = ({
                       <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>
                       <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>
                       <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>
-                      <Btn small variant="ghost" onClick={printMachineReport}><Icon name="print" size={12} /> Yazdır</Btn>
-                      <Btn small variant="ghost" onClick={openMailMachineReport}><Icon name="mail" size={12} /> E-posta Gönder</Btn>
+                      <Btn small variant="ghost" onClick={() => openPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>
+                      <Btn small variant="ghost" onClick={() => openPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>
                       <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: detailView.id, name: "", satanFirma: detailView.name, adres: "", city: "", country: "Türkiye", saleDate: today(), aciklama: "" })}>
                         <Icon name="customers" size={12} /> Yeni Sahip
                       </Btn>
@@ -1057,11 +1116,11 @@ export const Customers = ({
                                 <>
                                   <span onClick={() => openEditService(sv)} title="Düzenlemek için tıklayın"
                                     style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                                  <button onClick={() => printServiceForm(sv)} title="Servis Formu Yazdır"
+                                  <button onClick={() => openPrintOrPick("servis", sv)} title="Servis Formu Yazdır"
                                     style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                                     <Icon name="print" size={11} /> Yazdır
                                   </button>
-                                  <button onClick={() => openMailServiceForm(sv)} title="Servis Formu E-posta Gönder"
+                                  <button onClick={() => openPrintOrPick("mail_servis", sv)} title="Servis Formu E-posta Gönder"
                                     style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                                     <Icon name="mail" size={11} /> E-posta
                                   </button>
@@ -1373,6 +1432,28 @@ export const Customers = ({
           onConfirm={() => undoLastOwnerTransfer(confirmUndoOwnerId)}
           onCancel={() => setConfirmUndoOwnerId(null)}
         />
+      )}
+
+      {/* Yazdırma dil seçici */}
+      {printLangModal && (
+        <Modal title="Dil Seçin" onClose={() => setPrintLangModal(null)} maxWidth={300}>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "8px 0 4px" }}>
+            {["TR", "EN"].map(l => (
+              <button key={l} onClick={() => {
+                const { type, sv } = printLangModal;
+                setPrintLangModal(null);
+                if (type === "makina") printMachineReport(l);
+                else if (type === "servis") printServiceForm(sv, l);
+                else if (type === "mail_makina") openMailMachineReport(l);
+                else if (type === "mail_servis") openMailServiceForm(sv, l);
+              }} style={{
+                width: 80, padding: "12px 0", border: "1px solid #e2e8f0", borderRadius: 10,
+                fontSize: 18, fontWeight: 800, cursor: "pointer",
+                background: "#f8fafc", color: "#0f172a",
+              }}>{l}</button>
+            ))}
+          </div>
+        </Modal>
       )}
 
       {/* E-posta gönder (Makina Geçmişi raporu / Servis Formu) — PDF eki main process'te üretilir */}

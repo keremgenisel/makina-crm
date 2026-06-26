@@ -14,6 +14,7 @@ import { Stock } from "./components/Stock";
 import { Finance } from "./components/Finance";
 import { Notes } from "./components/Notes";
 import { Settings } from "./components/Settings";
+import { Documents } from "./components/Documents";
 
 const TABS = [
   { id: "dashboard", label: "Anasayfa",     icon: "dashboard" },
@@ -21,6 +22,7 @@ const TABS = [
   { id: "dealers",   label: "Bayiler",      icon: "store"     },
   { id: "stock",     label: "Stok",         icon: "box"       },
   { id: "finance",   label: "Finans",       icon: "finance"   },
+  { id: "evrak",     label: "Evrak Yönetimi", icon: "evrak"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
 ];
@@ -115,10 +117,13 @@ export default function App() {
   const [services,  setServices]  = useState(INIT_SERVICES);
   const [stock,     setStock]     = useState(INIT_STOCK);
   const [notes,     setNotes]     = useState([]); // serbest notlar [{id, content, updatedAt}]
-  const [parts,     setParts]     = useState([]); // yedek parça tanım kataloğu (Servis ve Yedek Parça → Değişen Parçalar seçimi için) [{id, ad}]
-  const [partSales, setPartSales] = useState([]); // Extra Kalıp sekmesinde verilen/satılan kalıplar [{id, customerId, ad, olcu, tarih, ucret, currency, odendi}]
-  const [payments,  setPayments]  = useState([]); // Kapora/Ödeme geçmişi [{id, customerId, tarih, tutar, currency, not}]
-  const [kalipDefs, setKalipDefs] = useState(INIT_KALIPLAR);
+  const [parts,        setParts]        = useState([]); // yedek parça tanım kataloğu [{id, ad, fiyatTRY, fiyatUSD, fiyatEUR, models:[]}]
+  const [partSales,    setPartSales]    = useState([]); // Extra Kalıp + yedek parça satışları [{id, customerId|dealerId, tur:"Kalıp"|"YedekParca", ...}]
+  const [payments,     setPayments]     = useState([]); // Kapora/Ödeme geçmişi [{id, customerId, tarih, tutar, currency, not}]
+  const [kalipDefs,    setKalipDefs]    = useState(INIT_KALIPLAR);
+  const [teklifler,    setTeklifler]    = useState([]);
+  const [partStock,    setPartStock]    = useState([]); // yedek parça stok seviyeleri [{id, partId, miktar, notlar, sonGuncelleme}]
+  const [partStockLog, setPartStockLog] = useState([]); // stok hareket log'u [{id, partId, miktar, tip, referansId, tarih, notlar}]
 
   // ── Çöp Kutusu: her dizinin deletedAt'i olmayan ("canlı") kopyası — özellik bileşenleri
   // (Dashboard, Customers, SimpleDealers, Stock, Finance, Notes) hep bunları görür, soft-delete
@@ -156,6 +161,22 @@ export default function App() {
             // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
             // sayede oran değişikliği geçmiş kayıtlara da geriye dönük doğru şekilde yansır.
             const kdvRates = normalizeKdvRates(data.appSettings);
+            // Fabrika adı geçmişte değiştiyse (prevNames), tüm referansları güncel adla eşitle
+            if (data.factory?.name && Array.isArray(data.factory.prevNames) && data.factory.prevNames.length > 0) {
+              const fName = data.factory.name;
+              const prevNames = data.factory.prevNames;
+              const norm = (val) => prevNames.includes(val) ? fName : val;
+              if (Array.isArray(data.customers)) {
+                data.customers = data.customers.map(c => ({
+                  ...c,
+                  satisYapan: norm(c.satisYapan),
+                  prevOwners: c.prevOwners?.map(o => ({ ...o, satisYapan: norm(o.satisYapan) })),
+                }));
+              }
+              if (Array.isArray(data.services)) {
+                data.services = data.services.map(s => ({ ...s, islemFirma: norm(s.islemFirma) }));
+              }
+            }
             if (Array.isArray(data.customers)) {
               if (Array.isArray(data.payments)) {
                 // NOT: Burada artık TÜM müşterilerin Kalan Borç'unu calcKalanBorc ile yeniden
@@ -197,6 +218,9 @@ export default function App() {
             if (Array.isArray(data.notes)) setNotes(data.notes);
             if (Array.isArray(data.parts)) setParts(data.parts);
             if (Array.isArray(data.partSales)) setPartSales(data.partSales);
+            if (Array.isArray(data.teklifler)) setTeklifler(data.teklifler);
+            if (Array.isArray(data.partStock)) setPartStock(data.partStock);
+            if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
             setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
             if (typeof data.nextId === "number") setIdCounter(data.nextId);
           }
@@ -210,10 +234,10 @@ export default function App() {
     if (!loaded || !window.crmStorage) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      window.crmStorage.save({ customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, appSettings, nextId: getIdCounter() });
+      window.crmStorage.save({ customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, nextId: getIdCounter() });
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, appSettings, loaded]);
+  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, loaded]);
 
   // ── Otomatik yedekleme: açılışta ve ayar değişince vakti geldiyse yedek yaz ──
   useEffect(() => {
@@ -228,7 +252,7 @@ export default function App() {
     };
     if (isDue()) {
       window.crmStorage
-        .writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs })
+        .writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog })
         .then(ok => { if (ok) setAppSettings(p => ({ ...p, lastBackup: today() })); })
         .catch(() => {});
     }
@@ -327,12 +351,13 @@ export default function App() {
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
         {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
-        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} />}
         {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
-        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} />}
+        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} />}
+        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} />}
+        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} />}
       </div>
     </div>
   );

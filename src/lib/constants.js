@@ -1,11 +1,15 @@
 // ── Altunmak Makina Modelleri (altunmak.com'dan alındı) ──────────────────
 export const ALTUNMAK_MODELS = [
-  { model: "AK100_DS",   sogutma: "Soğutmasız", kapasite: "1000 kg/gün", kalip: "10 cm", kompresör: "Kompresörsüz" },
-  { model: "AK100_DSC",  sogutma: "Soğutmalı",  kapasite: "1000 kg/gün", kalip: "10 cm", kompresör: "Kompresörsüz" },
-  { model: "AK120_DS",   sogutma: "Soğutmasız", kapasite: "1000 kg/gün", kalip: "12 cm", kompresör: "Kompresörsüz" },
-  { model: "AK120_DSC",  sogutma: "Soğutmalı",  kapasite: "1000 kg/gün", kalip: "12 cm", kompresör: "Kompresörsüz" },
-  { model: "AK140_DSC",  sogutma: "Soğutmalı",  kapasite: "2000 kg/gün", kalip: "14 cm", kompresör: "Kompresörsüz" },
-  { model: "SWP140_DSC", sogutma: "Soğutmalı",  kapasite: "2000 kg/gün", kalip: "14 cm", kompresör: "Kompresörsüz" },
+  { model: "AK100_DS",   sogutma: "Soğutmasız", kapasite: "1000 kg/gün", kalip: "10 cm", kompresör: "Kompresörsüz",
+    tanim: "FİYATA 1 ADET KALIP DAHİLDİR.\nTEKNİK ÖZELLİKLERİ:\nGÜNLÜK TEKLİ KALIPTA MAX 31.500 VURUŞ KAPASİTELİDİR.\n1 TURDA 2 DEFA BASKI YAPABİLMEKTEDİR.\nSAATTE 0.75 KW. ENERJİ TÜKETİR.\nMAX. 98x120 mm EBATLARINDAKİ HER ÇEŞİT KÖFTEYİ HIZ AYAR KONTROLÜ SAYESİNDE AYARLANABİLEN TEKLİ KALIPTAMAX. 3600 ADET (60 VURUŞ) YAPMAKTADIR.\nHAZNE KAPASİTESİ 20 LT",
+    tanimEN: "" },
+  { model: "AK100_DSC",  sogutma: "Soğutmalı",  kapasite: "1000 kg/gün", kalip: "10 cm", kompresör: "Kompresörsüz",
+    tanim: "KOMPRESÖRSÜZDE ÇALIŞABİLEN SİSTEM\n(FİYATA 1 ADET KALIP DAHİLDİR.)\nTEKNİK ÖZELLİKLERİ:\nGÜNLÜK TEKLİ KALIPTA MAX. 31.500 VURUŞ KAPASİTELİDİR.\nSAATTE 0,75 KW. ENERJİ TÜKETİR.\nHAZNE KAPASİTESİ TEK SEFERDE: 20 LT",
+    tanimEN: "" },
+  { model: "AK120_DS",   sogutma: "Soğutmasız", kapasite: "1000 kg/gün", kalip: "12 cm", kompresör: "Kompresörsüz", tanim: "", tanimEN: "" },
+  { model: "AK120_DSC",  sogutma: "Soğutmalı",  kapasite: "1000 kg/gün", kalip: "12 cm", kompresör: "Kompresörsüz", tanim: "", tanimEN: "" },
+  { model: "AK140_DSC",  sogutma: "Soğutmalı",  kapasite: "2000 kg/gün", kalip: "14 cm", kompresör: "Kompresörsüz", tanim: "", tanimEN: "" },
+  { model: "SWP140_DSC", sogutma: "Soğutmalı",  kapasite: "2000 kg/gün", kalip: "14 cm", kompresör: "Kompresörsüz", tanim: "", tanimEN: "" },
 ];
 
 // ── Ülke Listesi (statik) ─────────────────────────────────────────────────

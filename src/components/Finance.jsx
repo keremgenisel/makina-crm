@@ -65,6 +65,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const sales = customers.filter(c => inRange(c.installDate));
     const svcInRange = services.filter(s => inRange(s.date));
     const kalipSatisInRange = partSales.filter(p => p.tur === "Kalıp" && inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
+    const yedekParcaSatisInRange = partSales.filter(p => p.tur === "YedekParca" && inRange(p.tarih)); // Bağımsız yedek parça satışları
 
     // ── ADETLER ──
     const totalMakina = sales.length;
@@ -72,7 +73,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // yoksa Extra Kalıp Satışı'ndan eklenen kalıp hem burada hem satilanExtraKalipSayisi'de çift sayılırdı.
     const totalKalip = sales.reduce((sum, c) => sum + kalipCountAtSale(c), 0);
     const satilanExtraKalipSayisi = kalipSatisInRange.length;
-    const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0);
+    // Servis kayıtlarındaki değişen parçalar + bağımsız yedek parça satışları (miktar toplamı)
+    const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0)
+      + yedekParcaSatisInRange.reduce((sum, p) => sum + (parseInt(p.miktar) || 1), 0);
 
     // ── PARA (TUTAR) — para birimi başına ayrı topla ──
     const empty3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
@@ -136,10 +139,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
       kdvKalip[cur(p.currency)] += kdv;
     });
-
-    // Toplam Extra Kalıp Satışı = Extra Kalıp sekmesindeki satışlar (KDV dahil)
-    // (bilgi amaçlı kart — ödenmiş/ödenmemiş ayrımı yapmadan toplam satılan/faturalanan tutar)
     const toplamExtraKalip = kalipSatisi;
+
 
     // ── 3 büyük özet kartı ──
     const sumObj = (...objs) => {
@@ -155,8 +156,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // anlasmaliParcaSatisi/kdvAnlasmaliParca de dahil — Toplam Parça Ücreti Bedeli kartında ayrı
     // gösteriliyor olması bu satışın Altuntaş cirosu olmadığı anlamına gelmiyor, sadece tahsilatın
     // müşteriden değil anlaşmalı firmadan yapıldığı anlamına geliyor (bkz. isAltuntasServisi).
-    const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, anlasmaliParcaSatisi, kalipSatisi); // dönem bazlı (tarih filtresine uyar)
-    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvAnlasmaliParca, kdvKalip); // dönem bazlı KDV toplamı
+    const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, anlasmaliParcaSatisi, kalipSatisi);
+    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvAnlasmaliParca, kdvKalip);
 
     // KDV'siz görünüm: kartların ana rakamı KDV hariç, KDV kartın altında ayrıca gösterilir
     // (Ödenmesi Muhtemel KDV ve Toplam Alacak hariç — ikisi de kapsam dışı, ayrı sebeplerle:

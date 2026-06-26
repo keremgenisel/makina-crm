@@ -9,7 +9,6 @@ const PER_PAGE = 10;
 
 // PartManager içinde tanımlanırsa her render'da yeni bir component referansı oluşur ve React
 // içindeki input'ları unmount/remount eder — bu da her tuşa basışta focus kaybına yol açar
-// (bir rakam girip tekrar tıklamak gerekir). Bu yüzden bileşen dışında, sabit referansla tutulur.
 const PriceFields = ({ value, onChange }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
     <MoneyInput value={value.fiyatTRY} sym={CUR_SYM.TRY} onChange={v => onChange({ ...value, fiyatTRY: v })} />
@@ -18,8 +17,45 @@ const PriceFields = ({ value, onChange }) => (
   </div>
 );
 
-export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null }) => {
-  const emptyForm = { ad: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "" };
+const ModelChips = ({ selected = [], allModels = [], onChange }) => (
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+    {allModels.length === 0 && (
+      <span style={{ fontSize: 12, color: "#94a3b8" }}>Henüz makina modeli tanımlanmamış.</span>
+    )}
+    {allModels.map(m => {
+      const name = typeof m === "string" ? m : m.model;
+      const active = selected.includes(name);
+      return (
+        <button key={name} type="button" onClick={() => onChange(active ? selected.filter(x => x !== name) : [...selected, name])}
+          style={{
+            padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
+            background: active ? "#fff7ed" : "#f8fafc",
+            borderColor: active ? "#fb923c" : "#e2e8f0",
+            color: active ? "#c2410c" : "#64748b",
+          }}>
+          {name}
+        </button>
+      );
+    })}
+  </div>
+);
+
+const ModelBadges = ({ models = [] }) => {
+  if (!models.length) return <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>;
+  const show = models.slice(0, 3);
+  const rest = models.length - show.length;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      {show.map(m => (
+        <span key={m} style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>{m}</span>
+      ))}
+      {rest > 0 && <span style={{ fontSize: 11, color: "#94a3b8" }}>+{rest}</span>}
+    </div>
+  );
+};
+
+export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [] }) => {
+  const emptyForm = { ad: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [] };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -30,18 +66,15 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       addMsg: "Yedek parça tanımı kaydedildi.",
       editMsg: "Yedek parça düzenlendi.",
       deleteMsg: "Yedek parça tanımı silindi.",
-      // Parça adı düz metin olarak services[].degisenParcalar[].ad'da kopyalanmış durumda —
-      // adı düzeltince geçmiş servis kayıtlarında da güncellenmeli.
       onRename: (oldAd, newAd) => setServices?.(p => p.map(s =>
         Array.isArray(s.degisenParcalar) && s.degisenParcalar.some(x => parcaAdi(x) === oldAd)
-          ? { ...s, degisenParcalar: s.degisenParcalar.map(x => parcaAdi(x) === oldAd ? { ad: newAd, fiyat: typeof x === "string" ? "" : x.fiyat } : x) }
+          ? { ...s, degisenParcalar: s.degisenParcalar.map(x => parcaAdi(x) === oldAd ? (typeof x === "string" ? newAd : { ...x, ad: newAd }) : x) }
           : s
       )),
     });
   const [addOpen, setAddOpen] = useState(false);
   const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFields: ["ad"], perPage: PER_PAGE });
 
-  // Tanımlı fiyatların özet gösterimi — hiçbiri girilmemişse "—"
   const priceSummary = (p) => {
     const bits = [];
     if (parseMoney(p.fiyatTRY) > 0) bits.push(fmtCur(parseMoney(p.fiyatTRY), "TRY"));
@@ -74,6 +107,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Yedek Parça Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Modeller</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Fiyat</th>
                 <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
               </tr>
@@ -83,6 +117,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                 <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
+                  </td>
+                  <td style={{ padding: "10px 14px" }}>
+                    <ModelBadges models={k.models || []} />
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontSize: 13, color: "#475569" }}>{priceSummary(k)}</span>
@@ -118,6 +155,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
           </Field>
+          <Field label="Kullanıldığı Modeller">
+            <ModelChips selected={form.models || []} allModels={allModels}
+              onChange={models => setForm(p => ({ ...p, models }))} />
+          </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
@@ -133,6 +174,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />
+          </Field>
+          <Field label="Kullanıldığı Modeller">
+            <ModelChips selected={editForm.models || []} allModels={allModels}
+              onChange={models => setEditForm(p => ({ ...p, models }))} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>

@@ -129,7 +129,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         ) : (
           // Aynı parça birden fazla kez eklenebilir (örn. 2 adet kesme bıçağı) — her ekleme kendi satırını oluşturur
           <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
-            onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { ad: p.ad, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
+            onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
         )}
       </Field>
 
@@ -154,14 +154,32 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           <Field label={`Seçilen Parçalar (${form.degisenParcalar.length})`}>
             {form.degisenParcalar.map((p, i) => {
               const ad = parcaAdi(p);
+              const hasPartId = p && p.partId;
+              const cols = [
+                "1fr",
+                hasPartId ? "60px" : null,
+                !parcaUcretsizMi ? "140px" : null,
+                "36px",
+              ].filter(Boolean).join(" ");
               return (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: parcaUcretsizMi ? "1fr 36px" : "1fr 140px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{ad}</span>
+                  {hasPartId && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <input type="number" min="1" value={p.miktar ?? 1}
+                        onChange={e => setForm(prev => {
+                          const arr = [...prev.degisenParcalar];
+                          arr[i] = { ...arr[i], miktar: parseInt(e.target.value) || 1 };
+                          return { ...prev, degisenParcalar: arr };
+                        })}
+                        style={{ width: "100%", padding: "6px 6px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", boxSizing: "border-box", fontFamily: "inherit" }} />
+                    </div>
+                  )}
                   {!parcaUcretsizMi && (
                     <MoneyInput value={typeof p === "string" ? "" : p.fiyat} sym={CUR_SYM[form.currency || "TRY"]}
                       onChange={v => setForm(prev => {
                         const arr = [...prev.degisenParcalar];
-                        arr[i] = { ad, fiyat: v };
+                        arr[i] = { ...arr[i], fiyat: v };
                         return { ...prev, degisenParcalar: arr };
                       })} />
                   )}
@@ -192,9 +210,11 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 currency: yeniPB,
                 degisenParcalar: (p.degisenParcalar || []).map(item => {
                   const ad = parcaAdi(item);
-                  const tanim = parts.find(pt => pt.ad === ad);
+                  const tanim = item.partId
+                    ? parts.find(pt => String(pt.id) === String(item.partId))
+                    : parts.find(pt => pt.ad === ad);
                   const yeniFiyat = tanim ? partFiyatForCurrency(tanim, yeniPB) : "";
-                  return yeniFiyat === "" ? item : { ad, fiyat: yeniFiyat };
+                  return yeniFiyat === "" ? item : { ...item, fiyat: yeniFiyat };
                 }),
               }));
             }}>

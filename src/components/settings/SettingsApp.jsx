@@ -22,7 +22,6 @@ export const SettingsApp = ({ version, flash }) => {
   }, []);
 
   const [askInstall, setAskInstall] = useState(false); // "yüklensin mi?" onay penceresi
-  const [confirmUninstall, setConfirmUninstall] = useState(false);
 
   const checkAppUpdate = async () => {
     if (!window.appUpdater) { setAppUpd({ state: "devmode", latest: null, progress: 0, error: null }); return; }
@@ -51,16 +50,6 @@ export const SettingsApp = ({ version, flash }) => {
       return () => clearTimeout(t);
     }
   }, [appUpd.state]);
-
-  const doUninstall = async () => {
-    setConfirmUninstall(false);
-    if (window.appControl?.uninstall) {
-      const ok = await window.appControl.uninstall();
-      if (!ok) flash("err", "Kaldırma aracı bulunamadı. Denetim Masası'ndaki Programlar bölümünden kaldırabilirsiniz.");
-    } else {
-      flash("err", "Bu özellik yalnızca kurulu uygulamada çalışır.");
-    }
-  };
 
   return (
     <>
@@ -119,23 +108,6 @@ export const SettingsApp = ({ version, flash }) => {
         )}
       </Section>
 
-      {/* ── Uygulamayı Kaldır ── */}
-      {/* ── Tehlikeli Bölge ── */}
-      <div style={{ marginTop: 28, border: "1.5px solid #fecaca", borderRadius: 14, overflow: "hidden" }}>
-        <div style={{ background: "#fef2f2", padding: "12px 18px", borderBottom: "1px solid #fecaca", display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name="trash" size={16} />
-          <span style={{ fontSize: 14, fontWeight: 800, color: "#b91c1c" }}>DİKKAT</span>
-        </div>
-        <div style={{ padding: "18px 20px" }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", marginBottom: 4 }}>Uygulamayı Kaldır</div>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-            Uygulamayı bilgisayarınızdan kaldırır. <b>Müşteri ve servis verileriniz silinmez.</b> Uygulamayı
-            tekrar kurarsanız kayıtlarınız geri gelir. Kaldırmadan önce yedek almanız önerilir.
-          </div>
-          <Btn variant="danger" onClick={() => setConfirmUninstall(true)}><Icon name="trash" size={15} /> Uygulamayı Kaldır</Btn>
-        </div>
-      </div>
-
       {/* Güncelleme onayı */}
       {askInstall && (
         <Modal title="Güncelleme Bulundu" onClose={() => setAskInstall(false)}>
@@ -153,22 +125,6 @@ export const SettingsApp = ({ version, flash }) => {
         </Modal>
       )}
 
-      {/* Kaldırma onayı */}
-      {confirmUninstall && (
-        <Modal title="Uygulamayı Kaldır" onClose={() => setConfirmUninstall(false)}>
-          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 8 }}>
-            Altunmak CRM bilgisayarınızdan kaldırılacak ve uygulama kapanacak.
-          </div>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
-            Verileriniz silinmez; tekrar kurulumda geri gelir. Devam etmeden önce
-            yukarıdan <b>yedek almanız</b> önerilir.
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={() => setConfirmUninstall(false)}>Vazgeç</Btn>
-            <Btn variant="danger" onClick={doUninstall}><Icon name="trash" size={14} /> Evet, Kaldır</Btn>
-          </div>
-        </Modal>
-      )}
     </>
   );
 };

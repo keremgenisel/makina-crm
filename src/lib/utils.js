@@ -244,3 +244,17 @@ export const purgeOldTrash = (arr = [], days = TRASH_RETENTION_DAYS) => {
 // böylece geri alma sırasında sadece o silme anına ait kayıtlar birlikte döner.
 export const withDeleted = (arr, matchFn, ts = new Date().toISOString()) =>
   arr.map(x => (matchFn(x) ? { ...x, deletedAt: ts } : x));
+
+// Yedek Parça Stok yardımcıları — Stock.jsx, Customers.jsx ve SimpleDealers.jsx tarafından paylaşılır
+export const totalMiktar = (partStock, pid) =>
+  partStock.filter(s => String(s.partId) === String(pid)).reduce((sum, s) => sum + s.miktar, 0);
+
+export const mergeAndUpdate = (partStock, pid, newMiktar, extraFields = {}) => {
+  const pidStr = String(pid);
+  const matches = partStock.filter(s => String(s.partId) === pidStr);
+  const others  = partStock.filter(s => String(s.partId) !== pidStr);
+  if (matches.length > 0) {
+    return [...others, { ...matches[0], partId: pidStr, miktar: newMiktar, sonGuncelleme: today(), ...extraFields }];
+  }
+  return [...partStock, { id: uid(), partId: pidStr, miktar: newMiktar, sonGuncelleme: today(), ...extraFields }];
+};
