@@ -1,4 +1,4 @@
-import { useId, useState, useEffect, cloneElement, isValidElement, Children } from "react";
+import React, { useId, useState, useEffect, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
 import { trLower } from "../lib/utils";
 
@@ -326,6 +326,57 @@ export const CountryCityFields = ({ country, city, onCountry, onCity, geoData, l
             placeholder={loadingGeo ? "Şehirler yükleniyor..." : "Şehir yazın"} />
         )}
       </Field>
+    </div>
+  );
+};
+
+export const ImageUpload = ({ value, onChange, maxPx = 500, label = "Resim" }) => {
+  const ref = React.useRef(null);
+  const pick = () => ref.current?.click();
+  const onFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        onChange(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
+      {value ? (
+        <img src={value} alt={label}
+          style={{ width: 80, height: 60, objectFit: "contain", border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc", cursor: "pointer" }}
+          onClick={pick} title="Değiştirmek için tıkla" />
+      ) : (
+        <div onClick={pick} style={{ width: 80, height: 60, border: "1px dashed #e2e8f0", borderRadius: 8, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 11, color: "#94a3b8" }}>
+          Resim yok
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <button type="button" onClick={pick}
+          style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", color: "#475569" }}>
+          {value ? "Değiştir" : "Resim Seç"}
+        </button>
+        {value && (
+          <button type="button" onClick={() => onChange("")}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", cursor: "pointer", color: "#dc2626" }}>
+            Sil
+          </button>
+        )}
+      </div>
     </div>
   );
 };

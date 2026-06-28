@@ -4,7 +4,7 @@ import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar } f
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
 
-export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, bantlar = [] }) => {
+export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -27,18 +27,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
     if (!form.model) return [];
     return models.find(m => m.model === form.model)?.defaultParcalar || [];
   }, [form.model, models]);
-  const selectedModelBantKit = useMemo(() => {
-    if (!form.model) return [];
-    return models.find(m => m.model === form.model)?.defaultBantlar || [];
-  }, [form.model, models]);
-
   const updateParcaRow = (i, key, val) => setForm(p => ({ ...p, parcalar: p.parcalar.map((r, idx) => idx === i ? { ...r, [key]: val } : r) }));
   const removeParcaRow = (i) => setForm(p => ({ ...p, parcalar: p.parcalar.filter((_, idx) => idx !== i) }));
-  const updateBantRow  = (i, key, val) => setForm(p => ({ ...p, bantlar: p.bantlar.map((r, idx) => idx === i ? { ...r, [key]: val } : r) }));
-  const removeBantRow  = (i) => setForm(p => ({ ...p, bantlar: p.bantlar.filter((_, idx) => idx !== i) }));
 
-  const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "", parcalar: [], bantlar: [] }); setShowAllParts(false); setModal("add"); };
-  const openEdit = s => { setForm({ ...s, parcalar: s.parcalar || [], bantlar: s.bantlar || [] }); setShowAllParts(false); setModal({ edit: s }); };
+  const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "", parcalar: [] }); setShowAllParts(false); setModal("add"); };
+  const openEdit = s => { setForm({ ...s, parcalar: s.parcalar || [] }); setShowAllParts(false); setModal({ edit: s }); };
 
   const deductParts = (parcalar, stockId) => {
     const valid = parcalar.filter(r => r.partId && parseInt(r.miktar) > 0);
@@ -246,48 +239,6 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               </div>
             ))}
           </div>
-
-          {bantlar.length > 0 && (
-            <div style={{ marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6 }}>
-                  Bantlar <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none" }}>(müşteri satışında düşülür)</span>
-                </span>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {selectedModelBantKit.length > 0 && (
-                    <Btn small onClick={() => setForm(p => ({
-                      ...p,
-                      bantlar: selectedModelBantKit.map(r => ({ bantId: String(r.bantId), miktar: r.miktar })),
-                    }))}>
-                      <Icon name="box" size={12} /> Kiti Uygula ({selectedModelBantKit.length} bant)
-                    </Btn>
-                  )}
-                  <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, bantlar: [...(p.bantlar || []), { bantId: "", miktar: 1 }] }))}>
-                    <Icon name="plus" size={12} /> Bant Ekle
-                  </Btn>
-                </div>
-              </div>
-              {(form.bantlar || []).length === 0 && (
-                <div style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginBottom: 4 }}>Bant eklenmedi — opsiyonel</div>
-              )}
-              {(form.bantlar || []).map((row, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-                  <select value={row.bantId} onChange={e => updateBantRow(i, "bantId", e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}>
-                    <option value="">Bant seçin...</option>
-                    {bantlar.map(b => <option key={b.id} value={b.id}>{b.ad}{b.en && b.boy ? ` (${b.en}×${b.boy})` : ""}</option>)}
-                    {row.bantId && !bantlar.find(b => String(b.id) === String(row.bantId)) && (
-                      <option value={row.bantId}>?</option>
-                    )}
-                  </select>
-                  <input type="number" min="1" value={row.miktar} onChange={e => updateBantRow(i, "miktar", e.target.value)}
-                    style={{ ...inputStyle, width: 70, textAlign: "center" }} />
-                  <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>adet</span>
-                  <Btn small variant="danger" onClick={() => removeBantRow(i)}><Icon name="trash" size={11} /></Btn>
-                </div>
-              ))}
-            </div>
-          )}
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>

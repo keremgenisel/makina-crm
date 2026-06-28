@@ -132,11 +132,11 @@ const makeEmpty = (type, teklifler, factory, dil = "TR") => {
 };
 
 const makeSubItem = (type) => ({ id: String(uid()), type, kod: "", makinaAdi: "", tanim: "", miktar: 1, birimFiyat: "", tlKarsiligi: "" });
-const makeRow = () => ({ rowId: String(uid()), selectedModel: "", selectedKalip: "", selectedPart: "", selectedBant: "", subItems: [makeSubItem("makina")] });
+const makeRow = () => ({ rowId: String(uid()), selectedModel: "", selectedKalip: "", selectedPart: "", subItems: [makeSubItem("makina")] });
 
 const migrateRow = (r) => {
-  if (r.subItems) return r;
-  return { rowId: r.rowId, selectedModel: r.selectedModel || "", selectedKalip: r.selectedKalip || "", selectedPart: r.selectedPart || "", selectedBant: r.selectedBant || "",
+  if (r.subItems) return { ...r, subItems: r.subItems.filter(i => i.type !== "bant") };
+  return { rowId: r.rowId, selectedModel: r.selectedModel || "", selectedKalip: r.selectedKalip || "", selectedPart: r.selectedPart || "",
     subItems: [{ id: String(uid()), type: "makina", kod: r.kod || "", makinaAdi: r.makinaAdi || "", tanim: r.tanim || "", miktar: r.miktar || 1, birimFiyat: r.birimFiyat || "", tlKarsiligi: r.tlKarsiligi || "" }] };
 };
 
@@ -150,7 +150,6 @@ export const Documents = ({
   showToast = () => {},
   kalipDefs = [],
   parts = [],
-  bantlar = [],
 }) => {
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma"
   const [form, setForm] = useState(null); // null = form kapalı
@@ -322,7 +321,7 @@ export const Documents = ({
       const tanim = form.dil === "EN" ? (m.tanimEN || m.tanim || "") : (m.tanim || "");
       const makinaAdi = form.dil === "EN" ? (m.urunAdiEN || m.urunAdi || "") : (m.urunAdi || "");
       const existing = r.subItems.find(i => i.type === "makina");
-      const updated = { ...(existing || makeSubItem("makina")), kod: m.model, makinaAdi, tanim };
+      const updated = { ...(existing || makeSubItem("makina")), kod: m.model, makinaAdi, tanim, resim: m.resim || "" };
       const subItems = existing ? r.subItems.map(i => i.type === "makina" ? updated : i) : [updated, ...r.subItems];
       return { ...r, selectedModel: m.model, subItems };
     }) }));
@@ -336,7 +335,7 @@ export const Documents = ({
       const makinaAdi = p.dil === "EN" ? (k?.urunAdiEN || k?.urunAdi || kalipAd) : (k?.urunAdi || kalipAd);
       const tanim = p.dil === "EN" ? (k?.tanimEN || k?.tanim || "") : (k?.tanim || "");
       const existing = r.subItems.find(i => i.type === "kalip");
-      const updated = { ...(existing || makeSubItem("kalip")), kod: k?.kod || "", makinaAdi, tanim };
+      const updated = { ...(existing || makeSubItem("kalip")), kod: k?.kod || "", makinaAdi, tanim, resim: k?.resim || "" };
       const subItems = existing ? r.subItems.map(i => i.type === "kalip" ? updated : i) : [...r.subItems, updated];
       return { ...r, selectedKalip: kalipAd, subItems };
     }) }));
@@ -356,35 +355,16 @@ export const Documents = ({
       const makinaAdi = p.dil === "EN" ? (part.adEN || part.ad) : part.ad;
       const tanim = p.dil === "EN" ? (part.tanimEN || part.tanim || "") : (part.tanim || "");
       const existing = r.subItems.find(i => i.type === "parca");
-      const updated = { ...(existing || makeSubItem("parca")), kod: part.kod || "", makinaAdi, tanim, birimFiyat, tlKarsiligi: tl || "" };
+      const updated = { ...(existing || makeSubItem("parca")), kod: part.kod || "", makinaAdi, tanim, birimFiyat, tlKarsiligi: tl || "", resim: part.resim || "" };
       const subItems = existing ? r.subItems.map(i => i.type === "parca" ? updated : i) : [...r.subItems, updated];
       return { ...r, selectedPart: String(partId), subItems };
     }) }));
   };
 
-  const pickBant = (rowId, bantId) => {
-    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
-      if (r.rowId !== rowId) return r;
-      if (!bantId) return { ...r, selectedBant: "", subItems: r.subItems.filter(i => i.type !== "bant") };
-      const b = bantlar.find(x => String(x.id) === String(bantId));
-      if (!b) return r;
-      const cur = p?.currency || "TRY";
-      const raw = cur === "USD" ? b.fiyatUSD : cur === "EUR" ? b.fiyatEUR : b.fiyatTRY;
-      const num = parseMoney(raw);
-      const birimFiyat = num > 0 ? num.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "";
-      const tl = calcTL(birimFiyat, p?.kurRate);
-      const makinaAdi = p.dil === "EN" ? (b.adEN || b.ad) : b.ad;
-      const tanim = p.dil === "EN" ? (b.tanimEN || b.tanim || "") : (b.tanim || "");
-      const existing = r.subItems.find(i => i.type === "bant");
-      const updated = { ...(existing || makeSubItem("bant")), kod: b.kod || "", makinaAdi, tanim, birimFiyat, tlKarsiligi: tl || "" };
-      const subItems = existing ? r.subItems.map(i => i.type === "bant" ? updated : i) : [...r.subItems, updated];
-      return { ...r, selectedBant: String(bantId), subItems };
-    }) }));
-  };
 
   // ── Yazdır ──
   const printDoc = (doc) => {
-    const html = buildPrintHtml(doc, factory, appSettings?.translations);
+    const html = buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "");
     if (window.appPrint?.printHtml) {
       window.appPrint.printHtml(html);
     } else {
@@ -393,12 +373,25 @@ export const Documents = ({
       const a = document.createElement("a"); a.href = url; a.download = `${doc.type}-${doc.no || doc.tarih}.html`; a.click();
     }
   };
+  const savePdfDoc = async (doc) => {
+    const html = buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "");
+    const defaultName = `${doc.type === "proforma" ? "Proforma" : "Teklif"}-${(doc.firma || "").replace(/\s+/g, "-") || "belge"}-${doc.no || doc.tarih || ""}.pdf`;
+    if (window.appPrint?.savePdf) {
+      const result = await window.appPrint.savePdf(html, defaultName);
+      if (result?.ok) showToast("PDF kaydedildi.");
+      else if (!result?.canceled) showToast("PDF kaydedilemedi.", "err");
+    } else {
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = defaultName.replace(".pdf", ".html"); a.click();
+    }
+  };
   // ── E-posta ──
   const [mailDraft, setMailDraft] = useState(null);
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
 
   const openMailDoc = (doc) => {
-    const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations));
+    const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || ""));
     const typeLabel = doc.type === "proforma" ? "Proforma" : "Teklif";
     setMailDraft({
       to: doc.email || "",
@@ -509,7 +502,8 @@ export const Documents = ({
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                         <Btn small variant="ghost" onClick={() => openEdit(t)}><Icon name="edit" size={12} /></Btn>
-                        <Btn small variant="ghost" onClick={() => printDoc(t)}><Icon name="print" size={12} /></Btn>
+                        <Btn small variant="ghost" onClick={() => printDoc(t)} title="Yazdır"><Icon name="print" size={12} /></Btn>
+                        <Btn small variant="ghost" onClick={() => savePdfDoc(t)} title="PDF Kaydet" style={{ color: "#dc2626" }}>PDF</Btn>
                         <Btn small variant="ghost" onClick={() => openMailDoc(t)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>
                         {subTab === "teklif" && (
                           <Btn small variant="ghost" onClick={() => convertToProforma(t)}
@@ -683,14 +677,12 @@ export const Documents = ({
                   const makinaItem = row.subItems?.find(i => i.type === "makina");
                   const kalipItem  = row.subItems?.find(i => i.type === "kalip");
                   const parcaItem  = row.subItems?.find(i => i.type === "parca");
-                  const bantItem   = row.subItems?.find(i => i.type === "bant");
                   const hasModel = !!row.selectedModel;
-                  const hasAnySelected = !!(row.selectedModel || row.selectedKalip || row.selectedPart || row.selectedBant);
+                  const hasAnySelected = !!(row.selectedModel || row.selectedKalip || row.selectedPart);
                   const slots = [
                     ...(hasModel || !hasAnySelected ? [{ type: "makina", item: makinaItem }] : []),
                     ...(kalipDefs.length > 0 && (row.selectedKalip || hasModel || !hasAnySelected) ? [{ type: "kalip", item: kalipItem }] : []),
                     ...(parts.length > 0 && (row.selectedPart || hasModel || !hasAnySelected) ? [{ type: "parca", item: parcaItem }] : []),
-                    ...(bantlar.length > 0 && (row.selectedBant || hasModel || !hasAnySelected) ? [{ type: "bant", item: bantItem }] : []),
                   ];
                   const visibleSlots = slots.length > 0 ? slots : [{ type: "makina", item: makinaItem }];
                   const totalSpan = visibleSlots.length;
@@ -762,13 +754,6 @@ export const Documents = ({
                             style={{ ...inputStyle, fontSize: 12 }}>
                             <option value="">— Yedek Parça Seç —</option>
                             {parts.map(p => <option key={p.id} value={String(p.id)}>{p.ad}</option>)}
-                          </select>
-                        )}
-                        {type === "bant" && (
-                          <select value={row.selectedBant || ""} onChange={e => pickBant(row.rowId, e.target.value)}
-                            style={{ ...inputStyle, fontSize: 12 }}>
-                            <option value="">— Bant Seç —</option>
-                            {bantlar.map(b => <option key={b.id} value={String(b.id)}>{b.ad}</option>)}
                           </select>
                         )}
                       </td>
@@ -910,7 +895,7 @@ export const DEFAULT_TRANSLATIONS = {
 };
 
 // ── Print HTML ────────────────────────────────────────────────────────────────
-function buildPrintHtml(form, factory, translations = {}) {
+function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
   const f = factory || {};
   const bankalar = (Array.isArray(f.bankalar) && f.bankalar.length > 0)
     ? f.bankalar
@@ -1085,7 +1070,10 @@ function buildPrintHtml(form, factory, translations = {}) {
     <tr style="background:${rowBg};">
       <td style="text-align:center;padding:8px 6px;border-bottom:1px solid #e8ecf0;color:#888;font-size:11px;">${i + 1}</td>
       <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:700;font-size:11px;color:${BRAND};">${item.kod || ""}</td>
-      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:600;font-size:11.5px;">${item.makinaAdi || ""}</td>
+      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:600;font-size:11.5px;">
+        ${item.resim ? `<img src="${item.resim}" style="width:60px;height:45px;object-fit:contain;display:block;margin-bottom:4px;border-radius:4px;border:1px solid #e8ecf0;">` : ""}
+        ${item.makinaAdi || ""}
+      </td>
       <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-size:10.5px;color:#444;line-height:1.5;">${(item.tanim || "").replace(/\n/g, "<br>")}</td>
       <td style="text-align:center;padding:8px 6px;border-bottom:1px solid #e8ecf0;font-weight:600;">${item.miktar || 1}</td>
       <td style="text-align:right;padding:8px 10px;border-bottom:1px solid #e8ecf0;white-space:nowrap;">${birimHtml}</td>
@@ -1214,8 +1202,9 @@ function buildPrintHtml(form, factory, translations = {}) {
         <td style="width:50%;padding-right:12px;vertical-align:top;">
           <div style="border-radius:8px;border:2px solid ${BRAND};padding:14px 16px;">
             <div style="font-weight:800;font-size:12px;color:${BRAND};margin-bottom:10px;">${L.onayBaslik}</div>
-            <div style="font-size:10px;color:#888;margin-bottom:24px;">${L.onayAlt}</div>
-            <div style="border-bottom:1px solid #999;margin-top:16px;"></div>
+            <div style="font-size:10px;color:#888;margin-bottom:8px;">${L.onayAlt}</div>
+            ${kaseResmi ? `<div style="text-align:right;margin-bottom:4px;"><img src="${kaseResmi}" style="max-height:60px;max-width:140px;object-fit:contain;" alt="kaşe"></div>` : `<div style="height:40px;"></div>`}
+            <div style="border-bottom:1px solid #999;margin-top:4px;"></div>
           </div>
         </td>
         <td style="width:50%;padding-left:12px;vertical-align:top;">

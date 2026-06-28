@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, SearchPick } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor } from "../ui";
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
-  stock, models, bantlar = [], kalipDefs = [], dealers, factory,
+  stock, models, kalipDefs = [], dealers, factory,
   kdvRates, payments, geoData, loadingGeo,
-  addLabel, entity,
+  addLabel, entity, parts = [],
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
 
@@ -157,60 +157,6 @@ export const CustomerAddEditForm = ({
           );
         })()}
       </Field>
-      {bantlar.length > 0 && (
-        <Field label={`Bantlar (${(form.bantlar || []).length})`}>
-          {(() => {
-            const kitBantlar = models.find(m => m.model === form.model)?.defaultBantlar || [];
-            const bantlarEklenmemis = kitBantlar.filter(kb => !(form.bantlar || []).some(fb => String(fb.bantId) === String(kb.bantId)));
-            return (
-              <>
-                {bantlarEklenmemis.length > 0 && (
-                  <button type="button"
-                    onClick={() => setForm(p => {
-                      const mevcut = p.bantlar || [];
-                      const yeniler = kitBantlar.filter(kb => !mevcut.some(fb => String(fb.bantId) === String(kb.bantId)));
-                      return { ...p, bantlar: [...mevcut, ...yeniler] };
-                    })}
-                    style={{ marginBottom: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid #7c3aed", background: "#f5f3ff", color: "#7c3aed", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    Kit Uygula ({bantlarEklenmemis.length} bant)
-                  </button>
-                )}
-                <SearchPick items={bantlar}
-                  getLabel={b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}`}
-                  getKey={b => b.id}
-                  placeholder="Bant ekle..."
-                  onPick={b => setForm(prev => {
-                    const existing = (prev.bantlar || []).find(x => String(x.bantId) === String(b.id));
-                    if (existing) return prev;
-                    return { ...prev, bantlar: [...(prev.bantlar || []), { bantId: String(b.id), ad: b.ad, en: b.en, boy: b.boy, miktar: 1 }] };
-                  })}
-                />
-                {(form.bantlar || []).length > 0 && (
-                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                    {(form.bantlar || []).map((b, i) => (
-                      <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 36px", gap: 8, alignItems: "center" }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>
-                          {b.ad}{b.en && b.boy ? ` (${b.en}×${b.boy})` : ""}
-                        </span>
-                        <input type="number" min="1" value={b.miktar ?? 1}
-                          onChange={e => setForm(p => {
-                            const arr = [...(p.bantlar || [])];
-                            arr[i] = { ...arr[i], miktar: parseInt(e.target.value) || 1 };
-                            return { ...p, bantlar: arr };
-                          })}
-                          style={{ padding: "5px 8px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", fontFamily: "inherit" }} />
-                        <button type="button" title="Bu bandı kaldır"
-                          onClick={() => setForm(p => ({ ...p, bantlar: (p.bantlar || []).filter((_, idx) => idx !== i) }))}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </Field>
-      )}
       </div>
 
       <Field label="Makina Kalıp Çapı">
@@ -262,6 +208,54 @@ export const CustomerAddEditForm = ({
           + Kalıp Ekle
         </button>
       </Field>
+
+      {(() => {
+        const konveyorParts = parts.filter(p => (p.tip === "Konveyör Saç") && (!p.models?.length || !form.model || p.models.includes(form.model)));
+        const bantParts     = parts.filter(p => (p.tip === "Bant")         && (!p.models?.length || !form.model || p.models.includes(form.model)));
+        if (!konveyorParts.length && !bantParts.length) return null;
+        return (
+          <>
+            {konveyorParts.length > 0 && (
+              <Field label="Konveyör Saç">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {konveyorParts.map(p => {
+                    const active = form.konveyorSacId === String(p.id);
+                    return (
+                      <button key={p.id} type="button"
+                        onClick={() => setForm(prev => ({ ...prev, konveyorSacId: active ? "" : String(p.id) }))}
+                        style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
+                          borderColor: active ? "#1d4ed8" : "#e2e8f0",
+                          background: active ? "#eff6ff" : "#f8fafc",
+                          color: active ? "#1d4ed8" : "#64748b" }}>
+                        {p.ad}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
+            {bantParts.length > 0 && (
+              <Field label="Bant">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {bantParts.map(p => {
+                    const active = form.bantSecimiId === String(p.id);
+                    return (
+                      <button key={p.id} type="button"
+                        onClick={() => setForm(prev => ({ ...prev, bantSecimiId: active ? "" : String(p.id) }))}
+                        style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
+                          borderColor: active ? "#15803d" : "#e2e8f0",
+                          background: active ? "#f0fdf4" : "#f8fafc",
+                          color: active ? "#15803d" : "#64748b" }}>
+                        {p.ad}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
+          </>
+        );
+      })()}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Garanti Başlangıç">

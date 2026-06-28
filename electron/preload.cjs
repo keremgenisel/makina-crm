@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("crmStorage", {
 contextBridge.exposeInMainWorld("appPrint", {
   // HTML içeriğini Electron'un yazdırma penceresinde aç ve yazdırma diyaloğunu göster
   printHtml: (html) => ipcRenderer.invoke("app:printHtml", html),
+  // HTML'i PDF olarak kaydet (dialog ile dosya yolu seçtirir)
+  savePdf: (html, defaultName) => ipcRenderer.invoke("app:savePdf", html, defaultName),
 });
 
 contextBridge.exposeInMainWorld("appUpdater", {

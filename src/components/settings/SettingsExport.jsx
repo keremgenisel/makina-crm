@@ -5,7 +5,7 @@ import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash, bantlar = [], bantStock = [], bantStockLog = [] }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -189,19 +189,6 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     downloadCSV(rows, "yedek-parca-tanimlari.csv");
     flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
   };
-  const exportBantlar = (mode = "download") => {
-    const stokMap = {};
-    bantStock.forEach(s => { stokMap[String(s.bantId)] = s; });
-    const head = ["Bant Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "En (mm)", "Boy (mm)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)", "Mevcut Stok (adet)", "Son Güncelleme"];
-    const rows = [head, ...bantlar.filter(b => !b.deletedAt).map(b => {
-      const s = stokMap[String(b.id)];
-      return [b.ad, b.adEN ?? "", b.kod ?? "", b.tanim ?? "", b.tanimEN ?? "", b.en ?? "", b.boy ?? "", b.fiyatTRY ?? "", b.fiyatUSD ?? "", b.fiyatEUR ?? "", s?.miktar ?? 0, s?.sonGuncelleme ?? ""];
-    })];
-    if (mode === "email") { openExportMailCSV(rows, "bant-tanimlari-stok.csv", "Bant Tanımları ve Stok"); return; }
-    downloadCSV(rows, "bant-tanimlari-stok.csv");
-    flash("ok", "Bant tanımları ve stok durumu Excel (CSV) olarak indirildi.");
-  };
-
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -303,7 +290,6 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
             { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
             { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
-            { title: "Bant Tanımları ve Stok", desc: `Bant kataloğu ve mevcut stok seviyeleri (${bantlar.filter(b => !b.deletedAt).length} bant).`, onClick: exportBantlar },
           ] },
         ].map(g => (
           <div key={g.group} style={{ marginBottom: 22 }}>

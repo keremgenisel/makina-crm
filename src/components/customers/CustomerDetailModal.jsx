@@ -4,7 +4,7 @@ import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu,
   isPartSaleBorcluMu, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi,
-  withDeleted, mergeAndUpdate, totalMiktar, bantMergeAndUpdate, bantTotalMiktar, resolveSatisYapan,
+  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan,
 } from "../../lib/utils";
 import {
   printServiceForm as printServiceFormTemplate,
@@ -36,7 +36,6 @@ export const CustomerDetailModal = ({
   payments, setPayments,
   setStock,
   setPartStock, setPartStockLog,
-  bantlar = [], setBantStock, setBantStockLog,
   parts = [], models = [], dealers, factory,
   geoData, loadingGeo,
   kdvRates, appSettings,
@@ -230,42 +229,6 @@ export const CustomerDetailModal = ({
     });
   };
 
-  const deductServiceBantlar = (degisenParcalar, serviceId) => {
-    if (!setBantStock || !setBantStockLog) return;
-    const valid = (degisenParcalar || []).filter(p => p && p.bantId && parseInt(p.miktar) > 0);
-    if (valid.length === 0) return;
-    setBantStock(bs => {
-      let updated = [...bs];
-      valid.forEach(r => {
-        const bid = String(r.bantId);
-        updated = bantMergeAndUpdate(updated, bid, bantTotalMiktar(updated, bid) - parseInt(r.miktar));
-      });
-      return updated;
-    });
-    setBantStockLog(lg => [
-      ...lg,
-      ...valid.map(r => ({ id: uid(), bantId: String(r.bantId), miktar: -parseInt(r.miktar), tip: "servis", referansId: serviceId, tarih: today(), notlar: "" })),
-    ]);
-  };
-
-  const restoreServiceBantlar = (serviceId) => {
-    if (!setBantStock || !setBantStockLog) return;
-    setBantStockLog(lg => {
-      const toRestore = lg.filter(l => l.referansId === serviceId && l.tip === "servis" && l.bantId);
-      if (toRestore.length > 0) {
-        setBantStock(bs => {
-          let updated = [...bs];
-          toRestore.forEach(l => {
-            const bid = String(l.bantId);
-            updated = bantMergeAndUpdate(updated, bid, bantTotalMiktar(updated, bid) + Math.abs(l.miktar));
-          });
-          return updated;
-        });
-      }
-      return lg.filter(l => !(l.referansId === serviceId && l.tip === "servis" && l.bantId));
-    });
-  };
-
   // ── Servis kayıtları ──
   const openAddService = () => {
     setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
@@ -289,14 +252,11 @@ export const CustomerDetailModal = ({
       const newId = uid();
       setServices(p => p.some(s => s.id === newId) ? p : [{ ...rec, id: newId }, ...p]);
       deductServiceParts(rec.degisenParcalar, newId);
-      deductServiceBantlar(rec.degisenParcalar, newId);
       showToast("Servis talebi kaydedildi.");
     } else {
       restoreServiceParts(svForm.id);
-      restoreServiceBantlar(svForm.id);
       setServices(p => p.map(s => s.id === svForm.id ? rec : s));
       deductServiceParts(rec.degisenParcalar, svForm.id);
-      deductServiceBantlar(rec.degisenParcalar, svForm.id);
       showToast("Servis talebi düzenlendi.");
     }
     setSvModal(null);
@@ -510,14 +470,15 @@ export const CustomerDetailModal = ({
       setPrintLangModal({ type, sv });
     }
   };
-  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang));
+  const kaseResmi = appSettings?.kaseResmi || "";
+  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi);
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang));
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi);
   };
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang)));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi));
     setMailDraft({
       to: detailView.email || "",
       subject: `Makina Servis ve Yedek Parça Geçmişi Raporu - ${detailView.name}`,
@@ -529,7 +490,7 @@ export const CustomerDetailModal = ({
   };
   const openMailServiceForm = (sv, lang = "TR") => {
     const cust = customers.find(c => c.id === sv.customerId);
-    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang) }));
+    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang), kaseResmi }));
     setMailDraft({
       to: cust?.email || "",
       subject: `Servis Formu - ${cust?.name || ""}`,
@@ -670,6 +631,8 @@ export const CustomerDetailModal = ({
                 ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
                 ["Model", detailView.model],
                 ["Makina Kalıp Çapı", detailView.kalipCapi ? `${detailView.kalipCapi.en || ""}×${detailView.kalipCapi.yukseklik || ""}×${detailView.kalipCapi.boy || ""}`.replace(/^×+|×+$/g, "") : ""],
+                ["Konveyör Saç", detailView.konveyorSacId ? (parts.find(p => String(p.id) === String(detailView.konveyorSacId))?.ad || "") : ""],
+                ["Bant", detailView.bantSecimiId ? (parts.find(p => String(p.id) === String(detailView.bantSecimiId))?.ad || "") : ""],
                 ...(Array.isArray(detailView.bantlar) ? detailView.bantlar.map((b, i) => {
                   const olcu = b.en && b.boy ? `${b.en}×${b.boy}` : (b.en || b.boy || "");
                   return [`__bant_${i}`, [b.ad, olcu].filter(Boolean).join(" "), b.miktar > 1 ? `×${b.miktar} adet` : ""];
@@ -1235,7 +1198,7 @@ export const CustomerDetailModal = ({
       {svModal && (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
-          form={svForm} setForm={setSvForm} customers={customers} parts={parts} bantlar={bantlar} dealers={dealers} factory={factory} kdvRates={kdvRates}
+          form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           onSave={saveService} onCancel={() => setSvModal(null)}
         />
       )}

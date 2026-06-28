@@ -170,28 +170,10 @@ export const partFiyatForCurrency = (part, currency = "TRY") => {
   return (v === undefined || v === null || v === "") ? "" : v;
 };
 
-export const bantFiyatForCurrency = (bant, currency = "TRY") => {
-  const v = { TRY: bant?.fiyatTRY, USD: bant?.fiyatUSD, EUR: bant?.fiyatEUR }[currency];
-  return (v === undefined || v === null || v === "") ? "" : v;
-};
-
-export const bantTotalMiktar = (bantStock, bid) =>
-  bantStock.filter(s => String(s.bantId) === String(bid)).reduce((sum, s) => sum + s.miktar, 0);
-
 export const resolveSatisYapan = (val, factory) => {
   if (!val) return val;
   if (val === "__fabrika__" || val === "Altuntaş Makina") return factory?.name || "Altuntaş Makina";
   return val;
-};
-
-export const bantMergeAndUpdate = (bantStock, bid, newMiktar) => {
-  const bidStr = String(bid);
-  const matches = bantStock.filter(s => String(s.bantId) === bidStr);
-  const others  = bantStock.filter(s => String(s.bantId) !== bidStr);
-  if (matches.length > 0) {
-    return [...others, { ...matches[0], bantId: bidStr, miktar: newMiktar, sonGuncelleme: today() }];
-  }
-  return [...bantStock, { id: uid(), bantId: bidStr, miktar: newMiktar, sonGuncelleme: today() }];
 };
 
 // ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──

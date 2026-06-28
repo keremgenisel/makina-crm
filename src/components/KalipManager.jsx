@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { bumpId, uid } from "../lib/utils";
-import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
+import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -59,6 +59,7 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "8px 14px", width: 52 }}></th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kalıp Adı</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ürün Adı / Tanım</th>
@@ -68,6 +69,12 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
             <tbody>
               {paged.map(k => (
                 <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "10px 14px" }}>
+                    {k.resim
+                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
+                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+                    }
+                  </td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
                   </td>
@@ -124,6 +131,9 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
+          <Field label="Resim">
+            <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
+          </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
@@ -155,6 +165,9 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
             <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
+          <Field label="Resim">
+            <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>

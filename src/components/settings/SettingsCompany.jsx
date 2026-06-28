@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Icon, Field, Input, Btn } from "../ui";
+import { Icon, Field, Input, Btn, ImageUpload } from "../ui";
 import { Section } from "./Section";
 
 const emptyBank = () => ({
@@ -21,7 +21,7 @@ const migrateBankalar = (factory) => {
   return (b.bankaAdi || b.hesapAdi || b.swift || b.ibanTL || b.ibanEUR || b.ibanUSD) ? [b] : [emptyBank()];
 };
 
-export const SettingsCompany = ({ factory, setFactory, flash }) => {
+export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, flash }) => {
   const [form, setForm] = useState({
     name: "", contact: "", phone: "", email: "", adres: "",
     gtipNo: "",
@@ -128,6 +128,20 @@ export const SettingsCompany = ({ factory, setFactory, flash }) => {
           <Icon name="add" size={14} /> Yeni Banka Ekle
         </button>
 
+      </Section>
+
+      <Section title="Kaşe / İmza">
+        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+          Teklif ve proforma çıktılarında onay kutusuna eklenir. Şeffaf arka planlı PNG önerilir.
+        </div>
+        <Field label="Kaşe / İmza Resmi">
+          <ImageUpload
+            value={appSettings?.kaseResmi || ""}
+            onChange={v => setAppSettings?.(p => ({ ...p, kaseResmi: v }))}
+            maxPx={600}
+            label="kaşe"
+          />
+        </Field>
       </Section>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>

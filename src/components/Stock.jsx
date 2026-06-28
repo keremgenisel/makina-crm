@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
 import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
-import { BantStokTab }   from "./stock/BantStokTab";
 
 export const Stock = ({
   stock, setStock,
@@ -11,7 +10,6 @@ export const Stock = ({
   parts = [],
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
-  bantlar = [], bantStock = [], setBantStock = () => {}, bantStockLog = [], setBantStockLog = () => {},
 }) => {
   const [subTab, setSubTab] = useState("makina");
 
@@ -22,7 +20,7 @@ export const Stock = ({
       </div>
 
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid #f1f5f9", paddingBottom: 0 }}>
-        {[["makina", "Makina Stoğu"], ["bant", "Bant Stoğu"], ["parca", "Parça/Yedek Parça Stoğu"]].map(([id, label]) => (
+        {[["makina", "Makina Stoğu"], ["parca", "Parça/Yedek Parça Stoğu"]].map(([id, label]) => (
           <button key={id} onClick={() => setSubTab(id)} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
             borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
@@ -35,16 +33,11 @@ export const Stock = ({
       {subTab === "makina" && (
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
-          partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          bantlar={bantlar} />
+          partStockLog={partStockLog} setPartStockLog={setPartStockLog} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} />
-      )}
-      {subTab === "bant" && (
-        <BantStokTab bantlar={bantlar} bantStock={bantStock} setBantStock={setBantStock}
-          bantStockLog={bantStockLog} setBantStockLog={setBantStockLog} showToast={showToast} />
       )}
     </div>
   );

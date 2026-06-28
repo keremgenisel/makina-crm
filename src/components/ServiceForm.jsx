@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, bantFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
+import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], bantlar = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
@@ -124,22 +124,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], bantl
 
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
-        {parts.length === 0 && bantlar.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça veya bant yok. Ayarlar → Tanımlar'dan ekleyebilirsiniz.</div>
+        {parts.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar'dan ekleyebilirsiniz.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {parts.length > 0 && (
-              <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
-                onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
-            )}
-            {bantlar.length > 0 && (
-              <SearchPick items={bantlar}
-                getLabel={b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}`}
-                getKey={b => b.id}
-                placeholder="Bant ara..."
-                onPick={b => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { bantId: String(b.id), ad: b.ad, adEN: b.adEN || "", miktar: 1, fiyat: bantFiyatForCurrency(b, prev.currency || "TRY") }] }))}
-              />
-            )}
+            <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
+              onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
           </div>
         )}
       </Field>
@@ -166,9 +156,8 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], bantl
             {form.degisenParcalar.map((p, i) => {
               const ad = parcaAdi(p);
               const hasPartId = p && p.partId;
-              const hasBantId = p && p.bantId;
-              const hasComponentId = hasPartId || hasBantId;
-              const itemColor = hasBantId ? "#7c3aed" : "#1d4ed8";
+              const hasComponentId = !!hasPartId;
+              const itemColor = "#1d4ed8";
               const cols = [
                 "1fr",
                 hasComponentId ? "60px" : null,
@@ -178,7 +167,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], bantl
               return (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: itemColor }}>
-                    {ad}{hasBantId ? " (Bant)" : ""}
+                    {ad}
                   </span>
                   {hasComponentId && (
                     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -225,11 +214,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], bantl
                 ...p,
                 currency: yeniPB,
                 degisenParcalar: (p.degisenParcalar || []).map(item => {
-                  if (item.bantId) {
-                    const tanim = bantlar.find(b => String(b.id) === String(item.bantId));
-                    const yeniFiyat = tanim ? bantFiyatForCurrency(tanim, yeniPB) : "";
-                    return yeniFiyat === "" ? item : { ...item, fiyat: yeniFiyat };
-                  }
                   const ad = parcaAdi(item);
                   const tanim = item.partId
                     ? parts.find(pt => String(pt.id) === String(item.partId))

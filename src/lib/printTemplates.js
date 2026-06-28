@@ -194,7 +194,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
 // forEmail: true ise "Teslim Eden"/"Teslim Alan" imza alanları çıkarılır
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {} } = {}) {
+export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {}, kaseResmi = "" } = {}) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_SERVIS_TRANSLATIONS[lang] || DEFAULT_SERVIS_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -293,7 +293,8 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
         <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaEden)}</div>
       </td>
       <td style="border:none;width:50%;padding:0 0 0 16px;vertical-align:top">
-        <div style="font-size:12px;font-weight:700;margin-bottom:50px">${esc(L.teslimAlan)}</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:${kaseResmi ? "8px" : "50px"}">${esc(L.teslimAlan)}</div>
+        ${kaseResmi ? `<div style="text-align:right;margin-bottom:4px;"><img src="${kaseResmi}" style="max-height:55px;max-width:130px;object-fit:contain;" alt="kaşe"></div>` : ""}
         <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaAlan)}</div>
       </td>
     </tr>
@@ -313,8 +314,8 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 }
 
 // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
-export function printServiceForm(sv, customers, kdvRates, translations = {}) {
-  const html = buildServiceFormHtml(sv, customers, kdvRates, { translations });
+export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "") {
+  const html = buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi });
   const cust = customers.find(c => c.id === sv.customerId) || {};
   if (window.appPrint) {
     window.appPrint.printHtml(stripAutoPrint(html));
@@ -333,7 +334,7 @@ export function printServiceForm(sv, customers, kdvRates, translations = {}) {
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}) {
+export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "") {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_MAKINA_TRANSLATIONS[lang] || DEFAULT_MAKINA_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -414,6 +415,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thKalip)}</th></tr></thead>
     <tbody>${partRows}</tbody>
   </table>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:60px;max-width:140px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;

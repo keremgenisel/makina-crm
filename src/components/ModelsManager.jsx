@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { trLower, withDeleted } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick } from "./ui";
+import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
 
-export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], bantlar = [] }) => {
-  const empty = { model: "", urunAdi: "", urunAdiEN: "", sogutma: "Soğutmalı", kapasite: "", kalip: "", tanim: "", tanimEN: "", defaultParcalar: [], defaultBantlar: [] };
+export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [] }) => {
+  const empty = { model: "", urunAdi: "", urunAdiEN: "", sogutma: "Soğutmalı", kapasite: "", kalip: "", tanim: "", tanimEN: "", defaultParcalar: [] };
   const [modelModal, setModelModal] = useState(null); // null | { mode: "add" | "edit-std" | "edit-custom", data }
   const [mForm, setMForm] = useState(empty);
   const [confirmDelModel, setConfirmDelModel] = useState(null); // silinecek model adı
@@ -21,7 +21,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
   });
 
   const openAdd = () => { setMForm(empty); setModelModal({ mode: "add" }); };
-  const openEdit = (m, isStd) => { setMForm({ defaultBantlar: [], ...m }); setModelModal({ mode: isStd ? "edit-std" : "edit-custom", orig: m.model }); };
+  const openEdit = (m, isStd) => { setMForm({ ...m }); setModelModal({ mode: isStd ? "edit-std" : "edit-custom", orig: m.model }); };
 
   const saveModel = () => {
     const name = (mForm.model || "").trim();
@@ -56,6 +56,12 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
 
   const ModelRow = ({ m, isStd }) => (
     <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+      <td style={{ padding: "10px 12px" }}>
+        {m.resim
+          ? <img src={m.resim} alt={m.model} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
+          : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+        }
+      </td>
       <td style={{ padding: "10px 12px", fontSize: 14, fontWeight: 700 }}>{m.model}</td>
       <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.sogutma || "—"}</td>
       <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.kapasite || "—"}</td>
@@ -95,7 +101,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f8fafc" }}>
-                {["Model", "Soğutma", "Kapasite", "Kalıp Çapı", "Tanım", ""].map(h => (
+                {["", "Model", "Soğutma", "Kapasite", "Kalıp Çapı", "Tanım", ""].map(h => (
                   <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
                 ))}
               </tr>
@@ -151,6 +157,9 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               placeholder="English technical description..."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "#f8fafc", outline: "none" }} />
           </Field>
+          <Field label="Resim (Teklif/Proforma'da görünür)">
+            <ImageUpload value={mForm.resim || ""} onChange={v => setMForm(p => ({ ...p, resim: v }))} label={mForm.model} />
+          </Field>
 
           {parts.length > 0 && (
             <Field label="Makina Kiti — Varsayılan Parçalar">
@@ -184,46 +193,6 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               )}
             </Field>
           )}
-
-          <Field label="Makina Kiti — Varsayılan Bantlar">
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
-              Stoka yeni makina eklerken "Kiti Uygula" ile bu bantlar otomatik dolar.
-            </div>
-            {bantlar.length === 0 ? (
-              <div style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", padding: "8px 0" }}>
-                Bant tanımı yok. Ayarlar → Bant Modelleri'nden ekleyin.
-              </div>
-            ) : (
-              <SearchPick items={bantlar} getLabel={b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}`} getKey={b => b.id}
-                placeholder="Bant ekle..."
-                onPick={b => setMForm(prev => {
-                  const existing = (prev.defaultBantlar || []).find(x => String(x.bantId) === String(b.id));
-                  if (existing) return prev;
-                  return { ...prev, defaultBantlar: [...(prev.defaultBantlar || []), { bantId: String(b.id), ad: b.ad, en: b.en, boy: b.boy, miktar: 1 }] };
-                })} />
-            )}
-            {(mForm.defaultBantlar || []).length > 0 && (
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                {(mForm.defaultBantlar || []).map((row, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 32px", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>
-                      {row.ad}{row.en && row.boy ? ` (${row.en}×${row.boy})` : ""}
-                    </span>
-                    <input type="number" min="1" value={row.miktar}
-                      onChange={e => setMForm(prev => {
-                        const arr = [...prev.defaultBantlar];
-                        arr[i] = { ...arr[i], miktar: parseInt(e.target.value) || 1 };
-                        return { ...prev, defaultBantlar: arr };
-                      })}
-                      style={{ padding: "5px 8px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", fontFamily: "inherit" }} />
-                    <button type="button"
-                      onClick={() => setMForm(prev => ({ ...prev, defaultBantlar: prev.defaultBantlar.filter((_, idx) => idx !== i) }))}
-                      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Field>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>

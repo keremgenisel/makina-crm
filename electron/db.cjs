@@ -121,9 +121,6 @@ CREATE TABLE IF NOT EXISTS teklifler (
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT);
 
-CREATE TABLE IF NOT EXISTS bantlar (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, en TEXT, boy TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, deletedAt TEXT);
-CREATE TABLE IF NOT EXISTS bant_stock (id INTEGER PRIMARY KEY, bant_id INTEGER, miktar INTEGER, notlar TEXT, sonGuncelleme TEXT);
-CREATE TABLE IF NOT EXISTS bant_stock_log (id INTEGER PRIMARY KEY, bant_id INTEGER, miktar INTEGER, tip TEXT, referans_id INTEGER, tarih TEXT, notlar TEXT);
 `;
 
 // Daha önce oluşturulmuş bir data.db'ye, şemaya sonradan eklenen sütunları ekler (ALTER TABLE) —
@@ -147,11 +144,9 @@ const PARTS_NEW_COLUMNS = [["fiyatTRY", "REAL"], ["fiyatUSD", "REAL"], ["fiyatEU
 const PARTS_EXTRA_COLUMNS = [["adEN", "TEXT"], ["kod", "TEXT"], ["tanim", "TEXT"], ["tanimEN", "TEXT"]];
 const STOCK_NEW_COLUMNS = [["parcalar", "TEXT"]];
 const MODELS_NEW_COLUMNS = [["tanim", "TEXT"], ["tanimEN", "TEXT"], ["defaultParcalar", "TEXT"]];
-const MODELS_BANTLAR_COLUMN = [["defaultBantlar", "TEXT"]];
 const MODELS_URUN_COLUMNS = [["urunAdi", "TEXT"], ["urunAdiEN", "TEXT"]];
 const KALIP_DEFS_NEW_COLUMNS = [["kod", "TEXT"], ["urunAdi", "TEXT"], ["urunAdiEN", "TEXT"], ["tanim", "TEXT"], ["tanimEN", "TEXT"]];
 const TEKLIFLER_NEW_COLUMNS = [["email", "TEXT"], ["authority", "TEXT"], ["forwarder", "TEXT"], ["kurRate", "TEXT"], ["parentTeklifId", "INTEGER"]];
-const BANTLAR_NEW_COLUMNS = [["adEN", "TEXT"], ["kod", "TEXT"], ["tanim", "TEXT"], ["tanimEN", "TEXT"]];
 const CUSTOMERS_BANTLAR_COLUMN = [["bantlar", "TEXT"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
@@ -326,24 +321,6 @@ function populateAll(conn, data) {
     for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.deletedAt ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null);
   }
 
-  if (Array.isArray(data.bantlar)) {
-    conn.prepare(`DELETE FROM bantlar`).run();
-    const stmt = conn.prepare(`INSERT INTO bantlar (id, ad, adEN, kod, tanim, tanimEN, en, boy, fiyatTRY, fiyatUSD, fiyatEUR, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const b of data.bantlar) stmt.run(b.id, b.ad ?? null, b.adEN ?? null, b.kod ?? null, b.tanim ?? null, b.tanimEN ?? null, b.en ?? null, b.boy ?? null, b.fiyatTRY ?? null, b.fiyatUSD ?? null, b.fiyatEUR ?? null, b.deletedAt ?? null);
-  }
-
-  if (Array.isArray(data.bantStock)) {
-    conn.prepare(`DELETE FROM bant_stock`).run();
-    const stmt = conn.prepare(`INSERT INTO bant_stock (id, bant_id, miktar, notlar, sonGuncelleme) VALUES (?, ?, ?, ?, ?)`);
-    for (const s of data.bantStock) stmt.run(s.id, s.bantId ?? null, s.miktar ?? 0, s.notlar ?? null, s.sonGuncelleme ?? null);
-  }
-
-  if (Array.isArray(data.bantStockLog)) {
-    conn.prepare(`DELETE FROM bant_stock_log`).run();
-    const stmt = conn.prepare(`INSERT INTO bant_stock_log (id, bant_id, miktar, tip, referans_id, tarih, notlar) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    for (const l of data.bantStockLog) stmt.run(l.id, l.bantId ?? null, l.miktar ?? 0, l.tip ?? null, l.referansId ?? null, l.tarih ?? null, l.notlar ?? null);
-  }
-
   if (Array.isArray(data.teklifler)) {
     conn.prepare(`DELETE FROM teklifler`).run();
     const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -369,7 +346,7 @@ function populateAll(conn, data) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.bantlar, data.bantStock, data.bantStockLog]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -397,13 +374,10 @@ function migrateFromJsonIfNeeded() {
     ensureColumns(db, "parts", PARTS_EXTRA_COLUMNS);
     ensureColumns(db, "standard_models", MODELS_NEW_COLUMNS);
     ensureColumns(db, "custom_models", MODELS_NEW_COLUMNS);
-    ensureColumns(db, "standard_models", MODELS_BANTLAR_COLUMN);
-    ensureColumns(db, "custom_models", MODELS_BANTLAR_COLUMN);
     ensureColumns(db, "standard_models", MODELS_URUN_COLUMNS);
     ensureColumns(db, "custom_models", MODELS_URUN_COLUMNS);
     ensureColumns(db, "kalip_defs", KALIP_DEFS_NEW_COLUMNS);
     ensureColumns(db, "teklifler", TEKLIFLER_NEW_COLUMNS);
-    ensureColumns(db, "bantlar", BANTLAR_NEW_COLUMNS);
     ensureColumns(db, "customers", CUSTOMERS_BANTLAR_COLUMN);
     ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
     ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
@@ -596,18 +570,10 @@ function readBlobFromDb() {
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
   const nextId = nextIdRow ? Number(nextIdRow.value) : undefined;
 
-  const bantlar = db.prepare(`SELECT * FROM bantlar`).all();
-  const bantStock = db.prepare(`SELECT * FROM bant_stock`).all().map((s) => ({
-    id: s.id, bantId: String(s.bant_id), miktar: s.miktar, notlar: s.notlar, sonGuncelleme: s.sonGuncelleme,
-  }));
-  const bantStockLog = db.prepare(`SELECT * FROM bant_stock_log`).all().map((l) => ({
-    id: l.id, bantId: String(l.bant_id), miktar: l.miktar, tip: l.tip, referansId: l.referans_id, tarih: l.tarih, notlar: l.notlar,
-  }));
-
   return {
     customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, teklifler, appSettings, nextId,
-    partStock, partStockLog, bantlar, bantStock, bantStockLog,
+    partStock, partStockLog,
   };
 }
 

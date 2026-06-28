@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, bantMergeAndUpdate, bantTotalMiktar, resolveSatisYapan } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Btn, ConfirmDialog, Pagination } from "./ui";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
@@ -22,7 +22,6 @@ export const Customers = ({
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {},
-  bantlar = [], bantStock = [], setBantStock = null, bantStockLog = [], setBantStockLog = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -138,7 +137,6 @@ export const Customers = ({
       const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0);
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
-      deductCustomerBantlar(clean.bantlar, newId);
       if (ilkOdemeSatirlari.length > 0 && setPayments) {
         const yeniOdemeler = ilkOdemeSatirlari.map(r => ({
           id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: parseMoney(r.tutar),
@@ -164,9 +162,7 @@ export const Customers = ({
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
-      restoreCustomerBantlar(clean.id);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
-      deductCustomerBantlar(clean.bantlar, clean.id);
       if (wasSerialPending && setStock) {
         if (_stokSerisiz) {
           setStock(p => {
@@ -198,46 +194,10 @@ export const Customers = ({
         return [{ id: uid(), model: c.model, serialNo: c.serialNo, addedDate: today(), note: "Silinen müşteriden geri döndü" }, ...p];
       });
     }
-    restoreCustomerBantlar(confirmId);
     setConfirmId(null);
     showToast("Müşteri silindi.");
   };
 
-  const deductCustomerBantlar = (bantlarList, customerId) => {
-    if (!setBantStock || !setBantStockLog) return;
-    const valid = (bantlarList || []).filter(b => b && b.bantId && parseInt(b.miktar) > 0);
-    if (valid.length === 0) return;
-    setBantStock(bs => {
-      let updated = [...bs];
-      valid.forEach(r => {
-        const bid = String(r.bantId);
-        updated = bantMergeAndUpdate(updated, bid, bantTotalMiktar(updated, bid) - parseInt(r.miktar));
-      });
-      return updated;
-    });
-    setBantStockLog(lg => [
-      ...lg,
-      ...valid.map(r => ({ id: uid(), bantId: String(r.bantId), miktar: -parseInt(r.miktar), tip: "musteri", referansId: customerId, tarih: today(), notlar: "" })),
-    ]);
-  };
-
-  const restoreCustomerBantlar = (customerId) => {
-    if (!setBantStock || !setBantStockLog) return;
-    setBantStockLog(lg => {
-      const toRestore = lg.filter(l => l.referansId === customerId && l.tip === "musteri");
-      if (toRestore.length > 0) {
-        setBantStock(bs => {
-          let updated = [...bs];
-          toRestore.forEach(l => {
-            const bid = String(l.bantId);
-            updated = bantMergeAndUpdate(updated, bid, bantTotalMiktar(updated, bid) + Math.abs(l.miktar));
-          });
-          return updated;
-        });
-      }
-      return lg.filter(l => !(l.referansId === customerId && l.tip === "musteri"));
-    });
-  };
 
   return (
     <div>
@@ -401,7 +361,6 @@ export const Customers = ({
           payments={payments} setPayments={setPayments}
           setStock={setStock}
           setPartStock={setPartStock} setPartStockLog={setPartStockLog}
-          bantlar={bantlar} setBantStock={setBantStock} setBantStockLog={setBantStockLog}
           parts={parts} models={models} dealers={dealers} factory={factory}
           geoData={geoData} loadingGeo={loadingGeo}
           kdvRates={kdvRates} appSettings={appSettings}
@@ -421,7 +380,7 @@ export const Customers = ({
       {modal && (
         <CustomerAddEditForm
           modal={modal} form={form} setForm={setForm} save={save} onClose={() => setModal(null)}
-          stock={stock} models={models} bantlar={bantlar} kalipDefs={kalipDefs}
+          stock={stock} models={models} kalipDefs={kalipDefs} parts={parts}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}

@@ -64,6 +64,42 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
     });
   });
 
+  // ── PDF Kaydet ──
+  ipcMain.handle("app:savePdf", async (_e, html, defaultName) => {
+    const { dialog } = require("electron");
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: "PDF Olarak Kaydet",
+      defaultPath: defaultName || "belge.pdf",
+      filters: [{ name: "PDF Dosyası", extensions: ["pdf"] }],
+    });
+    if (canceled || !filePath) return { ok: false, canceled: true };
+
+    let tmpFile = null;
+    let pdfWin = null;
+    try {
+      tmpFile = path.join(app.getPath("temp"), `altunmak-pdf-${Date.now()}.html`);
+      fs.writeFileSync(tmpFile, html, "utf-8");
+      pdfWin = new BrowserWindow({
+        show: false,
+        webPreferences: { contextIsolation: true, nodeIntegration: false },
+      });
+      await pdfWin.loadFile(tmpFile);
+      const pdfData = await pdfWin.webContents.printToPDF({
+        printBackground: true,
+        pageSize: "A4",
+        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      });
+      fs.writeFileSync(filePath, pdfData);
+      return { ok: true, filePath };
+    } catch (err) {
+      console.error("PDF kaydetme hatası:", err);
+      return { ok: false, error: err?.message };
+    } finally {
+      if (pdfWin && !pdfWin.isDestroyed()) pdfWin.close();
+      if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch { /* yoksay */ } }
+    }
+  });
+
   // ── E-posta (genel SMTP) ──
   ipcMain.handle("mail:saveCredentials", (_e, payload) => mailer.saveCredentials(payload));
   ipcMain.handle("mail:credentialsStatus", () => mailer.getCredentialsStatus());

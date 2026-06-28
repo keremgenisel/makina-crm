@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM } from "../lib/constants";
-import { Icon, Field, Input, Warn, MoneyInput, Btn, Modal, ConfirmDialog, Pagination } from "./ui";
+import { Icon, Field, Input, Warn, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -54,8 +54,33 @@ const ModelBadges = ({ models = [] }) => {
   );
 };
 
+const TIP_LABELS = { "Standart": "Standart", "Konveyör Saç": "Konveyör Saç", "Bant": "Bant" };
+const TIP_COLORS = {
+  "Standart":     { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0" },
+  "Konveyör Saç": { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  "Bant":         { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+};
+
+const TipSelector = ({ value, onChange }) => (
+  <div style={{ display: "flex", gap: 6 }}>
+    {Object.keys(TIP_LABELS).map(t => {
+      const active = (value || "Standart") === t;
+      const c = TIP_COLORS[t];
+      return (
+        <button key={t} type="button" onClick={() => onChange(t)}
+          style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            border: `1px solid ${active ? c.border : "#e2e8f0"}`,
+            background: active ? c.bg : "#f8fafc",
+            color: active ? c.color : "#94a3b8" }}>
+          {t}
+        </button>
+      );
+    })}
+  </div>
+);
+
 export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [] }) => {
-  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [] };
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "" };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -89,7 +114,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Yedek Parça Ekle</Btn>
+        <Btn onClick={openAdd}><Icon name="plus" size={14} /> Parça/Yedek Parça Ekle</Btn>
       </div>
       <div style={{ position: "relative", marginBottom: 12 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
@@ -106,7 +131,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "8px 14px", width: 52 }}></th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Yedek Parça Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Tip</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ad / Tanım</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Modeller</th>
@@ -118,7 +145,18 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
               {paged.map(k => (
                 <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 14px" }}>
+                    {k.resim
+                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
+                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+                    }
+                  </td>
+                  <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
+                  </td>
+                  <td style={{ padding: "10px 14px" }}>
+                    {(() => { const t = k.tip || "Standart"; const c = TIP_COLORS[t] || TIP_COLORS["Standart"]; return (
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{t}</span>
+                    ); })()}
                   </td>
                   <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>
                   <td style={{ padding: "10px 14px", fontSize: 11 }}>
@@ -179,6 +217,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
           </Field>
+          <Field label="Parça Tipi">
+            <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} />
+          </Field>
+          <Field label="Resim">
+            <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
+          </Field>
           <Field label="Kullanıldığı Modeller">
             <ModelChips selected={form.models || []} allModels={allModels}
               onChange={models => setForm(p => ({ ...p, models }))} />
@@ -214,6 +258,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />
+          </Field>
+          <Field label="Parça Tipi">
+            <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} />
+          </Field>
+          <Field label="Resim">
+            <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
           <Field label="Kullanıldığı Modeller">
             <ModelChips selected={editForm.models || []} allModels={allModels}
