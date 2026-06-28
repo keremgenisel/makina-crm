@@ -15,7 +15,7 @@ export const ALTUNMAK_MODELS = [
 // ── Ülke Listesi (statik) ─────────────────────────────────────────────────
 export const COUNTRIES = [
   "Türkiye",
-  "ABD","Almanya","Arjantin","Arnavutluk","Avustralya","Avusturya","Azerbaycan",
+  "ABD","Afganistan","Almanya","Arjantin","Arnavutluk","Avustralya","Avusturya","Azerbaycan",
   "BAE","Bahreyn","Belçika","Beyaz Rusya","Bosna Hersek","Brezilya","Bulgaristan",
   "Cezayir","Çek Cumhuriyeti","Çin","Danimarka","Endonezya","Estonya","Etiyopya",
   "Fas","Filipinler","Finlandiya","Fransa","Güney Afrika","Güney Kore","Gürcistan",
@@ -31,7 +31,7 @@ export const COUNTRIES = [
 
 // Türkçe ülke adı → API'nin İngilizce adı (şehir sorgusu için)
 export const COUNTRY_EN = {
-  "Türkiye":"Türkiye","ABD":"United States","Almanya":"Germany","Arjantin":"Argentina","Arnavutluk":"Albania",
+  "Türkiye":"Türkiye","ABD":"United States","Afganistan":"Afghanistan","Almanya":"Germany","Arjantin":"Argentina","Arnavutluk":"Albania",
   "Avustralya":"Australia","Avusturya":"Austria","Azerbaycan":"Azerbaijan","BAE":"United Arab Emirates",
   "Bahreyn":"Bahrain","Belçika":"Belgium","Beyaz Rusya":"Belarus","Bosna Hersek":"Bosnia and Herzegovina",
   "Brezilya":"Brazil","Bulgaristan":"Bulgaria","Cezayir":"Algeria","Çek Cumhuriyeti":"Czech Republic",
@@ -108,7 +108,7 @@ export const DEFAULT_KDV_RATES = [
 ];
 
 // ── Yedek dosyası şeması ──────────────────────────────────────────────
-export const BACKUP_SCHEMA_VERSION = 1;
+export const BACKUP_SCHEMA_VERSION = 2;
 export const BACKUP_APP_TAG = "altunmak-crm";
 
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];

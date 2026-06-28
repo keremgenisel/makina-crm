@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { today, uid, parseMoney, trLower, stripAutoPrint } from "../lib/utils";
+import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import LOGO_B64 from "../assets/logo.avif?inline";
@@ -113,6 +113,7 @@ const makeEmpty = (type, teklifler, factory, dil = "TR") => {
     currency: dil === "EN" ? "EUR" : "TRY",
     customerId: null,
     firma: "", yetkili: "", tel: "", vergiNo: "", vergiDairesi: "", adres: "",
+    authority: "", forwarder: "",
     satirlar: [],
     iskonto: "", kdvOrani: dil === "EN" ? "0" : "20",
     odemeSekli: D.odemeSekli,
@@ -130,7 +131,14 @@ const makeEmpty = (type, teklifler, factory, dil = "TR") => {
   };
 };
 
-const makeRow = () => ({ rowId: String(uid()), kod: "", makinaAdi: "", tanim: "", miktar: 1, birimFiyat: "", tlKarsiligi: "" });
+const makeSubItem = (type) => ({ id: String(uid()), type, kod: "", makinaAdi: "", tanim: "", miktar: 1, birimFiyat: "", tlKarsiligi: "" });
+const makeRow = () => ({ rowId: String(uid()), selectedModel: "", selectedKalip: "", selectedPart: "", selectedBant: "", subItems: [makeSubItem("makina")] });
+
+const migrateRow = (r) => {
+  if (r.subItems) return r;
+  return { rowId: r.rowId, selectedModel: r.selectedModel || "", selectedKalip: r.selectedKalip || "", selectedPart: r.selectedPart || "", selectedBant: r.selectedBant || "",
+    subItems: [{ id: String(uid()), type: "makina", kod: r.kod || "", makinaAdi: r.makinaAdi || "", tanim: r.tanim || "", miktar: r.miktar || 1, birimFiyat: r.birimFiyat || "", tlKarsiligi: r.tlKarsiligi || "" }] };
+};
 
 // ── Ana bileşen ────────────────────────────────────────────────────────────────
 export const Documents = ({
@@ -140,6 +148,9 @@ export const Documents = ({
   factory,
   appSettings = {},
   showToast = () => {},
+  kalipDefs = [],
+  parts = [],
+  bantlar = [],
 }) => {
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma"
   const [form, setForm] = useState(null); // null = form kapalı
@@ -150,11 +161,18 @@ export const Documents = ({
   const custResults = useMemo(() => {
     if (!custSearch.trim()) return [];
     const q = trLower(custSearch.trim());
-    return customers.filter(c => trLower(c.name || "").includes(q)).slice(0, 6);
+    const seen = new Set();
+    return customers.filter(c => {
+      if (!trLower(c.name || "").includes(q)) return false;
+      const key = trLower(c.name || "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 6);
   }, [custSearch, customers]);
 
   // ── Liste filtresi ──
-  const liveTeklifler = useMemo(() => teklifler.filter(t => !t.deletedAt), [teklifler]);
+  const liveTeklifler = useMemo(() => withoutDeleted(teklifler), [teklifler]);
   const filtered = useMemo(() =>
     liveTeklifler.filter(t => t.type === subTab).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
   [liveTeklifler, subTab]);
@@ -165,7 +183,8 @@ export const Documents = ({
 
   // ── Totaller ──
   const calcTotals = (f) => {
-    const toplam = (f?.satirlar || []).reduce((s, r) => s + (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.miktar) || 0), 0);
+    const toplam = (f?.satirlar || []).reduce((s, r) =>
+      s + (r.subItems || []).reduce((s2, item) => s2 + (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0), 0), 0);
     const iskonto = parseMoney(f?.iskonto) || 0;
     const araToplam = toplam - iskonto;
     const kdv = araToplam * (parseFloat(f?.kdvOrani) || 0) / 100;
@@ -194,7 +213,7 @@ export const Documents = ({
           ...p,
           kur: `1 ${currency} = ${rateStr} TL (${todayFmt})`,
           kurRate: rate,
-          satirlar: (p.satirlar || []).map(r => ({ ...r, tlKarsiligi: calcTL(r.birimFiyat, rate) })),
+          satirlar: (p.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) })),
         }) : p);
       }
     } catch {}
@@ -207,7 +226,7 @@ export const Documents = ({
   };
 
   const openEdit = (t) => {
-    setForm({ ...t, satirlar: (t.satirlar || []).map(r => ({ ...r })) });
+    setForm({ ...t, satirlar: (t.satirlar || []).map(migrateRow) });
     setCustSearch("");
   };
 
@@ -237,7 +256,7 @@ export const Documents = ({
       teklifGecerlilik: "",
       durum: "taslak",
       createdAt: today(),
-      satirlar: (t.satirlar || []).map(r => ({ ...r, rowId: String(uid()) })),
+      satirlar: (t.satirlar || []).map(r => ({ ...migrateRow(r), rowId: String(uid()) })),
     };
     setForm(newForm);
     setCustSearch("");
@@ -246,16 +265,38 @@ export const Documents = ({
   };
 
   // ── Kaydet ──
+  const PROFORMA_SYNC_FIELDS = ["firma", "yetkili", "tel", "vergiNo", "vergiDairesi", "adres", "email", "authority", "forwarder", "satirlar", "iskonto", "currency", "kur", "kurRate", "gtipNo", "teslimYeri"];
+
   const save = () => {
     if (!form.firma.trim()) { showToast("Firma adı girilmedi.", "err"); return; }
     if (form.type === "teklif" && !form.no.trim()) { showToast("Teklif numarası girilmedi.", "err"); return; }
     const entry = { ...form };
+    const isUpdate = !!form.id;
     if (!entry.id) entry.id = uid();
+    let linkedUpdated = false;
     setTeklifler(p => {
       const idx = p.findIndex(t => t.id === entry.id);
-      return idx >= 0 ? p.map(t => t.id === entry.id ? entry : t) : [...p, entry];
+      let updated = idx >= 0 ? p.map(t => t.id === entry.id ? entry : t) : [...p, entry];
+      if (isUpdate) {
+        const syncPatch = Object.fromEntries(PROFORMA_SYNC_FIELDS.map(f => [f, entry[f]]));
+        if (entry.type === "teklif") {
+          updated = updated.map(t => {
+            if (t.type !== "proforma" || t.parentTeklifId !== entry.id || t.deletedAt) return t;
+            linkedUpdated = true;
+            return { ...t, ...syncPatch };
+          });
+        } else if (entry.type === "proforma" && entry.parentTeklifId) {
+          updated = updated.map(t => {
+            if (t.type !== "teklif" || t.id !== entry.parentTeklifId || t.deletedAt) return t;
+            linkedUpdated = true;
+            return { ...t, ...syncPatch };
+          });
+        }
+      }
+      return updated;
     });
-    showToast(form.id ? "Belge güncellendi." : "Belge kaydedildi.");
+    const linkedLabel = entry.type === "teklif" ? "Bağlı proforma da güncellendi." : "Bağlı teklif de güncellendi.";
+    showToast(isUpdate ? (linkedUpdated ? `Belge güncellendi. ${linkedLabel}` : "Belge güncellendi.") : "Belge kaydedildi.");
     setForm(null);
   };
 
@@ -268,13 +309,77 @@ export const Documents = ({
 
   // ── Satır işlemleri ──
   const addRow = () => setForm(p => ({ ...p, satirlar: [...(p.satirlar || []), makeRow()] }));
-  const updateRow = (rowId, field, val) => setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId === rowId ? { ...r, [field]: val } : r) }));
   const removeRow = (rowId) => setForm(p => ({ ...p, satirlar: p.satirlar.filter(r => r.rowId !== rowId) }));
+  const updateSubItem = (rowId, itemId, field, val) =>
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId !== rowId ? r : { ...r, subItems: r.subItems.map(item => item.id === itemId ? { ...item, [field]: val } : item) }) }));
+
   const pickModel = (rowId, modelName) => {
-    const m = allModels.find(x => x.model === modelName);
-    if (!m) return;
-    const tanim = form.dil === "EN" ? (m.tanimEN || m.tanim || "") : (m.tanim || "");
-    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId === rowId ? { ...r, kod: m.model, tanim } : r) }));
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
+      if (r.rowId !== rowId) return r;
+      if (!modelName) return { ...r, selectedModel: "" };
+      const m = allModels.find(x => x.model === modelName);
+      if (!m) return r;
+      const tanim = form.dil === "EN" ? (m.tanimEN || m.tanim || "") : (m.tanim || "");
+      const makinaAdi = form.dil === "EN" ? (m.urunAdiEN || m.urunAdi || "") : (m.urunAdi || "");
+      const existing = r.subItems.find(i => i.type === "makina");
+      const updated = { ...(existing || makeSubItem("makina")), kod: m.model, makinaAdi, tanim };
+      const subItems = existing ? r.subItems.map(i => i.type === "makina" ? updated : i) : [updated, ...r.subItems];
+      return { ...r, selectedModel: m.model, subItems };
+    }) }));
+  };
+
+  const pickKalip = (rowId, kalipAd) => {
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
+      if (r.rowId !== rowId) return r;
+      if (!kalipAd) return { ...r, selectedKalip: "", subItems: r.subItems.filter(i => i.type !== "kalip") };
+      const k = kalipDefs.find(x => x.ad === kalipAd);
+      const makinaAdi = p.dil === "EN" ? (k?.urunAdiEN || k?.urunAdi || kalipAd) : (k?.urunAdi || kalipAd);
+      const tanim = p.dil === "EN" ? (k?.tanimEN || k?.tanim || "") : (k?.tanim || "");
+      const existing = r.subItems.find(i => i.type === "kalip");
+      const updated = { ...(existing || makeSubItem("kalip")), kod: k?.kod || "", makinaAdi, tanim };
+      const subItems = existing ? r.subItems.map(i => i.type === "kalip" ? updated : i) : [...r.subItems, updated];
+      return { ...r, selectedKalip: kalipAd, subItems };
+    }) }));
+  };
+
+  const pickPart = (rowId, partId) => {
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
+      if (r.rowId !== rowId) return r;
+      if (!partId) return { ...r, selectedPart: "", subItems: r.subItems.filter(i => i.type !== "parca") };
+      const part = parts.find(pt => String(pt.id) === String(partId));
+      if (!part) return r;
+      const cur = p?.currency || "TRY";
+      const raw = cur === "USD" ? part.fiyatUSD : cur === "EUR" ? part.fiyatEUR : part.fiyatTRY;
+      const num = parseMoney(raw);
+      const birimFiyat = num > 0 ? num.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "";
+      const tl = calcTL(birimFiyat, p?.kurRate);
+      const makinaAdi = p.dil === "EN" ? (part.adEN || part.ad) : part.ad;
+      const tanim = p.dil === "EN" ? (part.tanimEN || part.tanim || "") : (part.tanim || "");
+      const existing = r.subItems.find(i => i.type === "parca");
+      const updated = { ...(existing || makeSubItem("parca")), kod: part.kod || "", makinaAdi, tanim, birimFiyat, tlKarsiligi: tl || "" };
+      const subItems = existing ? r.subItems.map(i => i.type === "parca" ? updated : i) : [...r.subItems, updated];
+      return { ...r, selectedPart: String(partId), subItems };
+    }) }));
+  };
+
+  const pickBant = (rowId, bantId) => {
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
+      if (r.rowId !== rowId) return r;
+      if (!bantId) return { ...r, selectedBant: "", subItems: r.subItems.filter(i => i.type !== "bant") };
+      const b = bantlar.find(x => String(x.id) === String(bantId));
+      if (!b) return r;
+      const cur = p?.currency || "TRY";
+      const raw = cur === "USD" ? b.fiyatUSD : cur === "EUR" ? b.fiyatEUR : b.fiyatTRY;
+      const num = parseMoney(raw);
+      const birimFiyat = num > 0 ? num.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "";
+      const tl = calcTL(birimFiyat, p?.kurRate);
+      const makinaAdi = p.dil === "EN" ? (b.adEN || b.ad) : b.ad;
+      const tanim = p.dil === "EN" ? (b.tanimEN || b.tanim || "") : (b.tanim || "");
+      const existing = r.subItems.find(i => i.type === "bant");
+      const updated = { ...(existing || makeSubItem("bant")), kod: b.kod || "", makinaAdi, tanim, birimFiyat, tlKarsiligi: tl || "" };
+      const subItems = existing ? r.subItems.map(i => i.type === "bant" ? updated : i) : [...r.subItems, updated];
+      return { ...r, selectedBant: String(bantId), subItems };
+    }) }));
   };
 
   // ── Yazdır ──
@@ -393,7 +498,7 @@ export const Documents = ({
                     onMouseLeave={e => e.currentTarget.style.background = ""}>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{t.no || "—"}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{t.tarih}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtTR(t.tarih)}</div>
                     </td>
                     <td style={{ padding: "10px 12px", fontSize: 13 }}>{t.firma || "—"}</td>
                     <td style={{ padding: "10px 12px" }}>
@@ -483,6 +588,10 @@ export const Documents = ({
             <Field label="Telefon"><input {...f("tel")} style={inputStyle} /></Field>
             <Field label="Vergi No"><input {...f("vergiNo")} style={inputStyle} /></Field>
             <Field label="Vergi Dairesi"><input {...f("vergiDairesi")} style={inputStyle} /></Field>
+            {form.dil === "EN" && form.type === "proforma" && (<>
+              <Field label="Authority"><input {...f("authority")} style={inputStyle} placeholder="Authority name" /></Field>
+              <Field label="Forwarder"><input {...f("forwarder")} style={inputStyle} placeholder="Forwarder name" /></Field>
+            </>)}
           </div>
           <Field label="Adres"><textarea {...f("adres")} style={taStyle} /></Field>
         </div>
@@ -559,9 +668,10 @@ export const Documents = ({
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 160 }}>Model Seç / KOD</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Makina Adı</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 200 }}>Tanım</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 170 }}>Ürün Seç</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 90 }}>KOD</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 150 }}>Ürün Adı</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 180 }}>Tanım</th>
                   <th style={{ padding: "6px 8px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#475569", width: 60 }}>Miktar</th>
                   <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 130 }}>Birim Fiyat</th>
                   {showTL && <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 120 }}>TL Karşılığı</th>}
@@ -569,61 +679,108 @@ export const Documents = ({
                 </tr>
               </thead>
               <tbody>
-                {form.satirlar.map((row) => (
-                  <tr key={row.rowId} style={{ borderBottom: "1px solid #f1f5f9", verticalAlign: "top" }}>
-                    {/* Model seç */}
-                    <td style={{ padding: "6px 8px" }}>
-                      <select value={row.kod} onChange={e => pickModel(row.rowId, e.target.value)}
-                        style={{ ...inputStyle, marginBottom: 4, fontSize: 12 }}>
-                        <option value="">— Model Seç —</option>
-                        {allModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
-                      </select>
-                      <input value={row.kod} onChange={e => updateRow(row.rowId, "kod", e.target.value)}
-                        placeholder="Serbest KOD" style={{ ...inputStyle, fontSize: 12 }} />
-                    </td>
-                    <td style={{ padding: "6px 8px" }}>
-                      <input value={row.makinaAdi} onChange={e => updateRow(row.rowId, "makinaAdi", e.target.value)}
-                        style={inputStyle} />
-                    </td>
-                    <td style={{ padding: "6px 8px" }}>
-                      <textarea value={row.tanim} onChange={e => updateRow(row.rowId, "tanim", e.target.value)}
-                        style={{ ...taStyle, minHeight: 72, fontSize: 12 }} />
-                    </td>
-                    <td style={{ padding: "6px 8px", textAlign: "center" }}>
-                      <input type="number" min="1" value={row.miktar} onChange={e => updateRow(row.rowId, "miktar", e.target.value)}
-                        style={{ ...inputStyle, textAlign: "center", width: 56 }} />
-                    </td>
-                    <td style={{ padding: "6px 8px" }}>
-                      <input value={row.birimFiyat}
-                        onChange={e => {
-                          const raw = e.target.value;
-                          // Virgülle başlayan ondalık kısmı serbest bırak (kullanıcı yazarken)
-                          if (raw === "" || raw.endsWith(",") || /,\d$/.test(raw)) {
-                            updateRow(row.rowId, "birimFiyat", raw);
-                            return;
-                          }
-                          const num = parseMoney(raw);
-                          if (num <= 0 && raw.trim() !== "0") { updateRow(row.rowId, "birimFiyat", raw); return; }
-                          const [int, dec] = num.toFixed(2).split(".");
-                          const intFmt = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                          const formatted = dec === "00" ? intFmt : `${intFmt},${dec.replace(/0+$/, "")}`;
-                          const tl = calcTL(formatted, form.kurRate);
-                          setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId === row.rowId ? { ...r, birimFiyat: formatted, tlKarsiligi: tl } : r) }));
-                        }}
-                        placeholder="0" style={inputStyle} />
-                    </td>
-                    {showTL && (
+                {form.satirlar.map((row) => {
+                  const makinaItem = row.subItems?.find(i => i.type === "makina");
+                  const kalipItem  = row.subItems?.find(i => i.type === "kalip");
+                  const parcaItem  = row.subItems?.find(i => i.type === "parca");
+                  const bantItem   = row.subItems?.find(i => i.type === "bant");
+                  const hasModel = !!row.selectedModel;
+                  const hasAnySelected = !!(row.selectedModel || row.selectedKalip || row.selectedPart || row.selectedBant);
+                  const slots = [
+                    ...(hasModel || !hasAnySelected ? [{ type: "makina", item: makinaItem }] : []),
+                    ...(kalipDefs.length > 0 && (row.selectedKalip || hasModel || !hasAnySelected) ? [{ type: "kalip", item: kalipItem }] : []),
+                    ...(parts.length > 0 && (row.selectedPart || hasModel || !hasAnySelected) ? [{ type: "parca", item: parcaItem }] : []),
+                    ...(bantlar.length > 0 && (row.selectedBant || hasModel || !hasAnySelected) ? [{ type: "bant", item: bantItem }] : []),
+                  ];
+                  const visibleSlots = slots.length > 0 ? slots : [{ type: "makina", item: makinaItem }];
+                  const totalSpan = visibleSlots.length;
+
+                  const renderDataCells = (item) => item ? (
+                    <>
                       <td style={{ padding: "6px 8px" }}>
-                        <input value={row.tlKarsiligi} onChange={e => updateRow(row.rowId, "tlKarsiligi", e.target.value)}
-                          placeholder={form.kurRate ? "Hesaplanıyor..." : "TL karşılığı"}
-                          style={{ ...inputStyle, fontSize: 12, background: row.tlKarsiligi ? "#f0fdf4" : "#f8fafc" }} />
+                        <input value={item.kod} onChange={e => updateSubItem(row.rowId, item.id, "kod", e.target.value)}
+                          placeholder="KOD" style={{ ...inputStyle, fontSize: 12 }} />
                       </td>
-                    )}
-                    <td style={{ padding: "6px 8px" }}>
-                      <Btn small variant="danger" onClick={() => removeRow(row.rowId)}><Icon name="trash" size={11} /></Btn>
-                    </td>
-                  </tr>
-                ))}
+                      <td style={{ padding: "6px 8px" }}>
+                        <input value={item.makinaAdi} onChange={e => updateSubItem(row.rowId, item.id, "makinaAdi", e.target.value)}
+                          placeholder="Ürün Adı" style={{ ...inputStyle, fontSize: 12 }} />
+                      </td>
+                      <td style={{ padding: "6px 8px" }}>
+                        <textarea value={item.tanim} onChange={e => updateSubItem(row.rowId, item.id, "tanim", e.target.value)}
+                          style={{ ...taStyle, minHeight: item.type === "makina" ? 72 : 40, fontSize: 12 }} />
+                      </td>
+                      <td style={{ padding: "6px 8px", textAlign: "center" }}>
+                        <input type="number" min="1" value={item.miktar} onChange={e => updateSubItem(row.rowId, item.id, "miktar", e.target.value)}
+                          style={{ ...inputStyle, textAlign: "center", width: 56 }} />
+                      </td>
+                      <td style={{ padding: "6px 8px" }}>
+                        <input value={item.birimFiyat}
+                          onChange={e => {
+                            const raw = e.target.value;
+                            if (raw === "" || raw.endsWith(",") || /,\d$/.test(raw)) { updateSubItem(row.rowId, item.id, "birimFiyat", raw); return; }
+                            const num = parseMoney(raw);
+                            if (num <= 0 && raw.trim() !== "0") { updateSubItem(row.rowId, item.id, "birimFiyat", raw); return; }
+                            const [int, dec] = num.toFixed(2).split(".");
+                            const intFmt = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                            const formatted = dec === "00" ? intFmt : `${intFmt},${dec.replace(/0+$/, "")}`;
+                            const tl = calcTL(formatted, form.kurRate);
+                            setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId !== row.rowId ? r : { ...r, subItems: r.subItems.map(si => si.id !== item.id ? si : { ...si, birimFiyat: formatted, tlKarsiligi: tl }) }) }));
+                          }}
+                          placeholder="0" style={inputStyle} />
+                      </td>
+                      {showTL && (
+                        <td style={{ padding: "6px 8px" }}>
+                          <input value={item.tlKarsiligi} onChange={e => updateSubItem(row.rowId, item.id, "tlKarsiligi", e.target.value)}
+                            placeholder={form.kurRate ? "Hesaplanıyor..." : "TL karşılığı"}
+                            style={{ ...inputStyle, fontSize: 12, background: item.tlKarsiligi ? "#f0fdf4" : "#f8fafc" }} />
+                        </td>
+                      )}
+                    </>
+                  ) : (
+                    <td colSpan={showTL ? 5 : 4} style={{ padding: "8px", color: "#cbd5e1", fontSize: 11 }}>— seçilmedi —</td>
+                  );
+
+                  return visibleSlots.map(({ type, item }, idx) => (
+                    <tr key={`${row.rowId}-${type}`} style={{ borderBottom: idx === totalSpan - 1 ? "1px solid #e2e8f0" : "1px dashed #f1f5f9", verticalAlign: "middle" }}>
+                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid #f1f5f9" }}>
+                        {type === "makina" && (
+                          <select value={row.selectedModel || ""} onChange={e => pickModel(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Model Seç —</option>
+                            {allModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
+                          </select>
+                        )}
+                        {type === "kalip" && (
+                          <select value={row.selectedKalip || ""} onChange={e => pickKalip(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Kalıp Seç —</option>
+                            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
+                          </select>
+                        )}
+                        {type === "parca" && (
+                          <select value={row.selectedPart || ""} onChange={e => pickPart(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Yedek Parça Seç —</option>
+                            {parts.map(p => <option key={p.id} value={String(p.id)}>{p.ad}</option>)}
+                          </select>
+                        )}
+                        {type === "bant" && (
+                          <select value={row.selectedBant || ""} onChange={e => pickBant(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Bant Seç —</option>
+                            {bantlar.map(b => <option key={b.id} value={String(b.id)}>{b.ad}</option>)}
+                          </select>
+                        )}
+                      </td>
+                      {renderDataCells(item)}
+                      {idx === 0 && (
+                        <td rowSpan={totalSpan} style={{ padding: "6px 8px", verticalAlign: "top" }}>
+                          <Btn small variant="danger" onClick={() => removeRow(row.rowId)}><Icon name="trash" size={11} /></Btn>
+                        </td>
+                      )}
+                    </tr>
+                  ));
+                })}
               </tbody>
             </table>
           </div>
@@ -639,8 +796,12 @@ export const Documents = ({
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ color: "#64748b" }}>İskonto</span>
-                <input value={form.iskonto} onChange={e => setForm(p => ({ ...p, iskonto: e.target.value }))}
-                  placeholder="0" style={{ ...inputStyle, width: 120, textAlign: "right", fontSize: 12 }} />
+                <input
+                  value={(form.iskonto === "" || form.iskonto == null || form.iskonto === 0) ? "" : new Intl.NumberFormat("tr-TR").format(form.iskonto)}
+                  onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setForm(p => ({ ...p, iskonto: raw === "" ? "" : parseInt(raw, 10) })); }}
+                  placeholder="0" inputMode="numeric"
+                  style={{ ...inputStyle, width: 120, textAlign: "right", fontSize: 12, fontWeight: 400 }}
+                />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, paddingTop: 6, borderTop: "1px solid #e2e8f0" }}>
                 <span style={{ color: "#64748b" }}>Ara Toplam</span>
@@ -666,6 +827,11 @@ export const Documents = ({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Ödeme Şekli"><input {...f("odemeSekli")} style={inputStyle} /></Field>
             <Field label="Teslim Şekli"><input {...f("teslimSekli")} style={inputStyle} /></Field>
+          </div>
+          <Field label="Teslim Yeri / Gümrük Notu">
+            <textarea {...f("teslimYeri")} style={taStyle} />
+          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Teslim Süresi"><input {...f("teslimSuresi")} style={inputStyle} /></Field>
             <Field label="Teslim Tarihi"><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field>
             <Field label="Teklif Geçerlilik Süresi"><input {...f("teklifGecerlilik")} style={inputStyle} /></Field>
@@ -697,7 +863,8 @@ export const DEFAULT_TRANSLATIONS = {
     tarihLabel: "Tarih", noLabel: "Teklif No",
     modelYiliLabel: "Model Yılı", modelYiliSuffix: "Yeni ve Kullanılmamıştır",
     kurLabel: "Kur (Bugün)", teslimYeriLabel: "Teslim Yeri",
-    thSira: "#", thKod: "KOD", thAd: "MAKİNA ADI",
+    authorityLabel: "Yetkili", forwarderLabel: "Nakliyeci",
+    thSira: "#", thKod: "KOD", thAd: "ÜRÜN ADI",
     thTanim: "AÇIKLAMA / ÖZELLİKLER", thMiktar: "ADET", thBirimFiyat: "BİRİM FİYAT", thTutar: "TUTAR",
     subtotalLabel: "ARA TOPLAM", iskontoLabel: "İSKONTO", netLabel: "NET TOPLAM",
     kdvPrefix: "KDV", grandLabel: "GENEL TOPLAM",
@@ -722,7 +889,8 @@ export const DEFAULT_TRANSLATIONS = {
     tarihLabel: "Date", noLabel: "Quote No",
     modelYiliLabel: "Model Year", modelYiliSuffix: "New and Unused",
     kurLabel: "Exchange Rate", teslimYeriLabel: "Delivery Point",
-    thSira: "#", thKod: "CODE", thAd: "MACHINE NAME",
+    authorityLabel: "Authority", forwarderLabel: "Forwarder",
+    thSira: "#", thKod: "CODE", thAd: "PRODUCT NAME",
     thTanim: "DESCRIPTION / SPECIFICATIONS", thMiktar: "QTY", thBirimFiyat: "UNIT PRICE", thTutar: "AMOUNT",
     subtotalLabel: "SUBTOTAL", iskontoLabel: "DISCOUNT", netLabel: "NET TOTAL",
     kdvPrefix: "VAT", grandLabel: "GRAND TOTAL",
@@ -744,6 +912,11 @@ export const DEFAULT_TRANSLATIONS = {
 // ── Print HTML ────────────────────────────────────────────────────────────────
 function buildPrintHtml(form, factory, translations = {}) {
   const f = factory || {};
+  const bankalar = (Array.isArray(f.bankalar) && f.bankalar.length > 0)
+    ? f.bankalar
+    : (f.bankaAdi || f.hesapAdi || f.swift || f.ibanTL || f.ibanEUR || f.ibanUSD)
+      ? [{ bankaAdi: f.bankaAdi, hesapAdi: f.hesapAdi, swift: f.swift, ibanTL: f.ibanTL, ibanEUR: f.ibanEUR, ibanUSD: f.ibanUSD }]
+      : [];
   const isTR = form.dil !== "EN";
   const isProforma = form.type === "proforma";
   const cur = form.currency || "EUR";
@@ -762,7 +935,7 @@ function buildPrintHtml(form, factory, translations = {}) {
   };
 
   const totals = (() => {
-    const toplam = (form.satirlar || []).reduce((s, r) => s + (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.miktar) || 0), 0);
+    const toplam = (form.satirlar || []).reduce((s, r) => s + (r.subItems || []).reduce((s2, item) => s2 + (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0), 0), 0);
     const iskonto = parseMoney(form.iskonto) || 0;
     const araToplam = toplam - iskonto;
     const kdv = araToplam * (parseFloat(form.kdvOrani) || 0) / 100;
@@ -783,19 +956,21 @@ function buildPrintHtml(form, factory, translations = {}) {
   const companyEmail = f.email || "";
 
   // ── HEADER ─────────────────────────────────────────────────────────────────
+  const enProforma = !isTR && isProforma;
   const header = `
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
     <tr>
       <td style="vertical-align:top;padding-right:20px;">
-        <img src="${LOGO_B64}" style="height:56px;object-fit:contain;display:block;" alt="logo" />
-        <div style="font-size:10.5px;color:#555;margin-top:6px;line-height:1.6;">${companyAddr}</div>
-        ${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:10.5px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
+        ${!enProforma ? `<img src="${LOGO_B64}" style="height:56px;object-fit:contain;display:block;" alt="logo" />` : ""}
+        <div style="font-size:${enProforma ? "15px;font-weight:800;color:#1a1a1a" : "10.5px;color:#555"};margin-top:${enProforma ? "0" : "6px"};line-height:1.6;">${enProforma ? companyName : companyAddr}</div>
+        ${!enProforma && [companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:10.5px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
+        ${enProforma ? `<div style="font-size:10.5px;color:#555;margin-top:4px;line-height:1.6;">${companyAddr}</div>${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:10.5px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}` : ""}
       </td>
       <td style="text-align:right;vertical-align:middle;white-space:nowrap;">
         <div style="display:inline-block;background:${BRAND};color:#fff;padding:10px 20px;border-radius:6px;text-align:center;">
           <div style="font-size:16px;font-weight:900;letter-spacing:1px;">${L.title}</div>
           ${!isProforma && form.no ? `<div style="font-size:12px;margin-top:4px;opacity:.9;">${form.no}</div>` : ""}
-          <div style="font-size:12px;margin-top:4px;opacity:.9;">${form.tarih || ""}</div>
+          <div style="font-size:12px;margin-top:4px;opacity:.9;">${fmtTR(form.tarih) || ""}</div>
         </div>
       </td>
     </tr>
@@ -839,7 +1014,7 @@ function buildPrintHtml(form, factory, translations = {}) {
             </tr>` : ""}
             <tr>
               <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;color:#888;font-size:10.5px;font-weight:600;">${L.tarihLabel}</td>
-              <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;">${form.tarih || ""}</td>
+              <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;">${fmtTR(form.tarih) || ""}</td>
             </tr>
             <tr>
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.modelYiliLabel}</td>
@@ -859,30 +1034,67 @@ function buildPrintHtml(form, factory, translations = {}) {
     </tr>
   </table>`;
 
+  // ── EN PROFORMA BİLGİ TABLOSU (4 sütun) ──────────────────────────────────
+  const vergiStr = [form.vergiNo, form.vergiDairesi].filter(Boolean).join(" / ");
+  const infoSectionEN = `
+  <div style="text-align:right;font-size:11px;color:#555;margin-bottom:6px;">Date: ${fmtTR(form.tarih) || ""}</div>
+  <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:14px;border:1px solid #dde3ea;border-radius:6px;overflow:hidden;">
+    <tr style="background:#f8f9fa;">
+      <td style="padding:7px 12px;font-weight:700;color:#475569;width:14%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">COMPANY</td>
+      <td style="padding:7px 12px;font-weight:700;color:#1a1a1a;width:36%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${form.firma || "—"}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;width:16%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${L.authorityLabel}</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #e2e8f0;">${form.authority || form.yetkili || "—"}</td>
+    </tr>
+    <tr style="background:#fff;">
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">Tax Administration</td>
+      <td style="padding:7px 12px;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${vergiStr || "—"}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">ADDRESS</td>
+      <td style="padding:7px 12px;border-bottom:1px solid #e2e8f0;">${form.adres || "—"}</td>
+    </tr>
+    <tr style="background:#f8f9fa;">
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">Telephone:</td>
+      <td style="padding:7px 12px;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${form.tel || "—"}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${L.forwarderLabel}</td>
+      <td style="padding:7px 12px;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${form.forwarder || "—"}</td>
+    </tr>
+    ${form.currency !== "TRY" && form.kur ? `<tr style="background:#fff;">
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${L.kurLabel}</td>
+      <td colspan="3" style="padding:7px 12px;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${form.kur}</td>
+    </tr>` : ""}
+    ${form.teslimYeri ? `<tr style="background:${form.currency !== "TRY" && form.kur ? "#f8f9fa" : "#fff"};">
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;">${L.teslimYeriLabel}</td>
+      <td colspan="3" style="padding:7px 12px;">${form.teslimYeri}</td>
+    </tr>` : ""}
+  </table>`;
+
   // ── ÜRÜN TABLOSU ──────────────────────────────────────────────────────────
-  const rowsHtml = (form.satirlar || []).map((r, i) => {
-    const tutar = (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.miktar) || 0);
-    const tutarTL = r.tlKarsiligi ? (parseMoney(r.tlKarsiligi) || 0) * (parseFloat(r.miktar) || 0) : null;
-    const birimHtml = r.tlKarsiligi
-      ? `${fmt2(parseMoney(r.birimFiyat))}<br><span style="font-size:9.5px;color:#777;">(${fmt2TL(r.tlKarsiligi)})</span>`
-      : fmt2(parseMoney(r.birimFiyat));
-    const tutarHtml = r.tlKarsiligi
+  const allItems = (form.satirlar || [])
+    .flatMap(r => r.subItems || [])
+    .filter(item => item.kod || item.makinaAdi || (parseMoney(item.birimFiyat) > 0));
+  const rowsHtml = allItems.map((item, i) => {
+    const tutar = (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0);
+    const tutarTL = item.tlKarsiligi ? (parseMoney(item.tlKarsiligi) || 0) * (parseFloat(item.miktar) || 0) : null;
+    const birimHtml = item.tlKarsiligi
+      ? `${fmt2(parseMoney(item.birimFiyat))}<br><span style="font-size:9.5px;color:#777;">(${fmt2TL(item.tlKarsiligi)})</span>`
+      : fmt2(parseMoney(item.birimFiyat));
+    const tutarHtml = item.tlKarsiligi
       ? `${fmt2(tutar)}<br><span style="font-size:9.5px;color:#777;">(${fmt2TL(tutarTL)})</span>`
       : fmt2(tutar);
     const rowBg = i % 2 === 0 ? "#fff" : "#f8fafc";
     return `
     <tr style="background:${rowBg};">
       <td style="text-align:center;padding:8px 6px;border-bottom:1px solid #e8ecf0;color:#888;font-size:11px;">${i + 1}</td>
-      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:700;font-size:11px;color:${BRAND};">${r.kod || ""}</td>
-      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:600;font-size:11.5px;">${r.makinaAdi || ""}</td>
-      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-size:10.5px;color:#444;line-height:1.5;">${(r.tanim || "").replace(/\n/g, "<br>")}</td>
-      <td style="text-align:center;padding:8px 6px;border-bottom:1px solid #e8ecf0;font-weight:600;">${r.miktar || 1}</td>
+      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:700;font-size:11px;color:${BRAND};">${item.kod || ""}</td>
+      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-weight:600;font-size:11.5px;">${item.makinaAdi || ""}</td>
+      <td style="padding:8px 8px;border-bottom:1px solid #e8ecf0;font-size:10.5px;color:#444;line-height:1.5;">${(item.tanim || "").replace(/\n/g, "<br>")}</td>
+      <td style="text-align:center;padding:8px 6px;border-bottom:1px solid #e8ecf0;font-weight:600;">${item.miktar || 1}</td>
       <td style="text-align:right;padding:8px 10px;border-bottom:1px solid #e8ecf0;white-space:nowrap;">${birimHtml}</td>
       <td style="text-align:right;padding:8px 10px;border-bottom:1px solid #e8ecf0;font-weight:700;white-space:nowrap;">${tutarHtml}</td>
     </tr>`;
   }).join("");
 
-  const emptyRows = Math.max(0, 3 - (form.satirlar || []).length);
+  const totalPrintItems = (form.satirlar || []).reduce((s, r) => s + (r.subItems || []).length, 0);
+  const emptyRows = Math.max(0, 3 - totalPrintItems);
   const emptyHtml = Array(emptyRows).fill(`<tr style="background:#fff;"><td colspan="7" style="padding:14px;border-bottom:1px solid #e8ecf0;"></td></tr>`).join("");
 
   const productTable = `
@@ -937,10 +1149,6 @@ function buildPrintHtml(form, factory, translations = {}) {
           <td style="padding:10px 14px;color:#fff;font-weight:800;font-size:13px;">${L.grandLabel}</td>
           <td style="padding:10px 14px;text-align:right;color:#fff;font-weight:900;font-size:14px;">${fmt2(totals.genelToplam)}</td>
         </tr>
-        ${isProforma && form.gtipNo ? `
-        <tr style="background:#f1f5f9;">
-          <td colspan="2" style="padding:5px 14px;font-size:10.5px;color:#64748b;text-align:right;">GTIP NO: ${form.gtipNo}</td>
-        </tr>` : ""}
       </table>
     </div>
   </div>`;
@@ -952,14 +1160,19 @@ function buildPrintHtml(form, factory, translations = {}) {
     ${form.not ? `<div><b>${L.notLabel}:</b> ${form.not}</div>` : ""}
     ${form.ek ? `<div style="margin-top:4px;">${form.ek}</div>` : ""}
   </div>` : ""}
-  ${(f.swift || f.ibanEUR) ? `
+  ${(bankalar.some(b => b.swift || b.ibanEUR || b.bankaAdi) || form.gtipNo) ? `
   <div style="border-radius:6px;background:#f8f9fa;border:1px solid #e2e8f0;padding:10px 14px;font-size:11px;line-height:1.8;">
     <div style="font-weight:700;color:#1a1a1a;font-size:11.5px;margin-bottom:4px;">${L.bankaBaslik}</div>
-    ${f.bankaAdi ? `<div style="color:#444;">${f.bankaAdi}</div>` : ""}
-    ${f.hesapAdi ? `<div>${L.hesapAdiLabel}: <b>${f.hesapAdi}</b></div>` : ""}
-    ${f.swift ? `<div>SWIFT: <b>${f.swift}</b></div>` : ""}
-    ${f.ibanEUR ? `<div>${L.ibanEURLabel}: <b>${f.ibanEUR}</b></div>` : ""}
-  </div>` : ""}` : "";
+    ${bankalar.map((b, bi) => `
+      ${bi > 0 ? `<div style="border-top:1px solid #e2e8f0;margin:4px 0;"></div>` : ""}
+      ${b.bankaAdi ? `<div style="color:#444;">${b.bankaAdi}</div>` : ""}
+      ${b.hesapAdi ? `<div>${L.hesapAdiLabel}: <b>${b.hesapAdi}</b></div>` : ""}
+      ${b.swift ? `<div>SWIFT: <b>${b.swift}</b></div>` : ""}
+      ${b.ibanEUR ? `<div>${L.ibanEURLabel}: <b>${b.ibanEUR}</b></div>` : ""}
+    `).join("")}
+    ${form.gtipNo ? `<div style="margin-top:4px;border-top:1px solid #e2e8f0;padding-top:4px;">GTIP NO: <b>${form.gtipNo}</b></div>` : ""}
+  </div>` : ""}
+  ${enProforma ? `<div style="text-align:right;margin-top:12px;"><img src="${LOGO_B64}" style="height:48px;object-fit:contain;" alt="logo" /></div>` : ""}` : "";
 
   // ── GENEL ŞARTLAR NOTU (teklif sayfa 1 altı) ──────────────────────────────
   const teklifSartlar = !isProforma ? `
@@ -968,7 +1181,7 @@ function buildPrintHtml(form, factory, translations = {}) {
     ${[L.sart1, L.sart2, L.sart3].map(s => `<span style="display:inline-block;margin-right:12px;">• ${s}</span>`).join("")}
   </div>` : "";
 
-  const page1 = header + infoSection + productTable + totalsBox + proformaNotlar + teklifSartlar;
+  const page1 = header + (enProforma ? infoSectionEN : infoSection) + productTable + totalsBox + proformaNotlar + teklifSartlar;
 
   // ── SAYFA 2 (sadece teklif) ───────────────────────────────────────────────
   const page2 = !isProforma ? `
@@ -980,10 +1193,11 @@ function buildPrintHtml(form, factory, translations = {}) {
     <table style="width:100%;border-collapse:collapse;font-size:12px;border-radius:8px;overflow:hidden;border:1px solid #dde3ea;margin-bottom:20px;">
       ${[
         [L.odemeSekli, form.odemeSekli],
-        [L.iskontoRow, totals.iskonto > 0 ? "UYGULAINDI" : "—"],
+        [L.iskontoRow, totals.iskonto > 0 ? fmt2(totals.iskonto) : "—"],
         [L.teslimSekli, form.teslimSekli],
         [L.teslimSuresi, form.teslimSuresi],
-        [L.teslimTarihi, form.teslimTarihi],
+        [L.teslimTarihi, form.teslimTarihi ? fmtTR(form.teslimTarihi) : ""],
+        [L.teslimYeriLabel, form.teslimYeri],
         [L.gecerlilik, form.teklifGecerlilik],
         [L.kurLabel, form.kur],
         [L.notLabel, form.not],
@@ -1005,14 +1219,17 @@ function buildPrintHtml(form, factory, translations = {}) {
           </div>
         </td>
         <td style="width:50%;padding-left:12px;vertical-align:top;">
-          ${(f.bankaAdi || f.ibanTL || f.ibanEUR || f.ibanUSD || f.swift) ? `
+          ${bankalar.length > 0 ? `
           <div style="border-radius:8px;background:#f8f9fa;border:1px solid #e2e8f0;padding:14px 16px;">
             <div style="font-weight:800;font-size:12px;color:#1a1a1a;margin-bottom:10px;">${L.bankaBaslik}</div>
-            ${f.bankaAdi ? `<div style="font-size:11px;color:#444;margin-bottom:2px;">${f.bankaAdi}${f.swift ? `  ·  SWIFT: <b>${f.swift}</b>` : ""}</div>` : ""}
-            ${f.hesapAdi ? `<div style="font-size:11px;margin-bottom:2px;">${L.hesapAdiLabel}: <b>${f.hesapAdi}</b></div>` : ""}
-            ${f.ibanTL ? `<div style="font-size:11px;margin-bottom:2px;">${L.ibanTLLabel}: <b style="font-family:monospace;">${f.ibanTL}</b></div>` : ""}
-            ${f.ibanEUR ? `<div style="font-size:11px;margin-bottom:2px;">${L.ibanEURLabel}: <b style="font-family:monospace;">${f.ibanEUR}</b></div>` : ""}
-            ${f.ibanUSD ? `<div style="font-size:11px;">${L.ibanUSDLabel}: <b style="font-family:monospace;">${f.ibanUSD}</b></div>` : ""}
+            ${bankalar.map((b, bi) => `
+              ${bi > 0 ? `<div style="border-top:1px solid #e2e8f0;margin:6px 0;"></div>` : ""}
+              ${b.bankaAdi ? `<div style="font-size:11px;color:#444;margin-bottom:2px;">${b.bankaAdi}${b.swift ? `  ·  SWIFT: <b>${b.swift}</b>` : ""}</div>` : ""}
+              ${b.hesapAdi ? `<div style="font-size:11px;margin-bottom:2px;">${L.hesapAdiLabel}: <b>${b.hesapAdi}</b></div>` : ""}
+              ${b.ibanTL ? `<div style="font-size:11px;margin-bottom:2px;">${L.ibanTLLabel}: <b style="font-family:monospace;">${b.ibanTL}</b></div>` : ""}
+              ${b.ibanEUR ? `<div style="font-size:11px;margin-bottom:2px;">${L.ibanEURLabel}: <b style="font-family:monospace;">${b.ibanEUR}</b></div>` : ""}
+              ${b.ibanUSD ? `<div style="font-size:11px;">${L.ibanUSDLabel}: <b style="font-family:monospace;">${b.ibanUSD}</b></div>` : ""}
+            `).join("")}
           </div>` : ""}
         </td>
       </tr>

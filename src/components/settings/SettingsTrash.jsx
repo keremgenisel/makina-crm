@@ -7,15 +7,16 @@ import { Section } from "./Section";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
-  rawTeklifler = [],
+  rawTeklifler = [], rawBantlar = [],
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
-  setTeklifler,
+  setTeklifler, setBantlar = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
   // ── Çöp Kutusu: tüm dizilerdeki deletedAt'li (soft-delete edilmiş) kayıtlar tek bir listede ──
   const trashCustomerName = (id) => rawCustomers.find(c => c.id === id)?.name || "—";
   const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen trash item
+  const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
 
   const restoreCustomer = (c) => {
     setCustomers(p => p.map(x => x.id === c.id ? { ...x, deletedAt: undefined } : x));
@@ -81,6 +82,24 @@ export const SettingsTrash = ({
   const purgeCustomModel = (m) => { setCustomModels(p => p.filter(x => x.model !== m.model)); showToast("Model kalıcı olarak silindi."); };
   const restoreTeklif = (t) => { setTeklifler?.(p => p.map(x => x.id === t.id ? { ...x, deletedAt: undefined } : x)); showToast("Belge geri alındı."); };
   const purgeTeklif = (t) => { setTeklifler?.(p => p.filter(x => x.id !== t.id)); showToast("Belge kalıcı olarak silindi."); };
+  const restoreBant = (b) => { setBantlar?.(p => p.map(x => x.id === b.id ? { ...x, deletedAt: undefined } : x)); showToast("Bant tanımı geri alındı."); };
+  const purgeBant = (b) => { setBantlar?.(p => p.filter(x => x.id !== b.id)); showToast("Bant tanımı kalıcı olarak silindi."); };
+
+  const emptyTrash = () => {
+    setCustomers(p => p.filter(x => !x.deletedAt));
+    setServices(p => p.filter(x => !x.deletedAt));
+    setPartSales?.(p => p.filter(x => !x.deletedAt));
+    setPayments?.(p => p.filter(x => !x.deletedAt));
+    setDealers(p => p.filter(x => !x.deletedAt));
+    setStock?.(p => p.filter(x => !x.deletedAt));
+    setNotes?.(p => p.filter(x => !x.deletedAt));
+    setKalipDefs(p => p.filter(x => !x.deletedAt));
+    setParts?.(p => p.filter(x => !x.deletedAt));
+    setCustomModels(p => p.filter(x => !x.deletedAt));
+    setTeklifler?.(p => p.filter(x => !x.deletedAt));
+    setBantlar?.(p => p.filter(x => !x.deletedAt));
+    showToast("Çöp kutusu boşaltıldı.");
+  };
 
   const trashItems = useMemo(() => {
     const items = [];
@@ -99,8 +118,9 @@ export const SettingsTrash = ({
     rawParts.filter(p => p.deletedAt).forEach(p => items.push({ key: `part-${p.id}`, type: "Yedek Parça Tanımı", label: p.ad || "—", deletedAt: p.deletedAt, restore: () => restorePart(p), purge: () => purgePart(p) }));
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
+    rawBantlar.filter(b => b.deletedAt).forEach(b => items.push({ key: `bant-${b.id}`, type: "Bant Tanımı", label: `${b.ad || "—"}${b.en && b.boy ? " · " + b.en + "×" + b.boy : ""}`, deletedAt: b.deletedAt, restore: () => restoreBant(b), purge: () => purgeBant(b) }));
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler]);
+  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawBantlar]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });
@@ -111,6 +131,13 @@ export const SettingsTrash = ({
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Silinen kayıtlar buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
+        {trashItems.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <Btn variant="danger" onClick={() => setConfirmEmptyTrash(true)}>
+              <Icon name="trash" size={14} /> Çöp Kutusunu Boşalt
+            </Btn>
+          </div>
+        )}
         {trashItems.length === 0 ? (
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Çöp kutusu boş.</div>
         ) : (
@@ -153,12 +180,18 @@ export const SettingsTrash = ({
         )}
       </Section>
 
-      {/* Çöp Kutusu: kalıcı silme onayı */}
       {confirmPurge && (
         <ConfirmDialog
           message={`"${confirmPurge.label}" kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
           onConfirm={() => { confirmPurge.purge(); setConfirmPurge(null); }}
           onCancel={() => setConfirmPurge(null)}
+        />
+      )}
+      {confirmEmptyTrash && (
+        <ConfirmDialog
+          message={`Çöp kutusundaki ${trashItems.length} kayıt kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+          onConfirm={() => { emptyTrash(); setConfirmEmptyTrash(false); }}
+          onCancel={() => setConfirmEmptyTrash(false)}
         />
       )}
     </>

@@ -55,7 +55,7 @@ const ModelBadges = ({ models = [] }) => {
 };
 
 export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [] }) => {
-  const emptyForm = { ad: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [] };
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [] };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -107,6 +107,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Yedek Parça Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ad / Tanım</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Modeller</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Fiyat</th>
                 <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
@@ -117,6 +119,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                 <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
+                  </td>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 11 }}>
+                    <span style={{ color: k.adEN ? "#16a34a" : "#cbd5e1" }}>TR</span>
+                    {" · "}
+                    <span style={{ color: k.adEN ? "#16a34a" : "#cbd5e1" }}>EN</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <ModelBadges models={k.models || []} />
@@ -148,9 +156,25 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
 
       {addOpen && (
         <Modal title="Yeni Yedek Parça Ekle" onClose={() => setAddOpen(false)}>
-          <Field label="Yedek Parça Adı">
+          <Field label="Yedek Parça Adı (TR)">
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
             <Warn>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
+          </Field>
+          <Field label="Yedek Parça Adı (EN) — Proforma ve yurtdışı teklifler için">
+            <Input value={form.adEN || ""} onChange={e => setForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
+          </Field>
+          <Field label="Kod">
+            <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
+          </Field>
+          <Field label="Tanım (TR)">
+            <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
+              placeholder="Teknik özellikler, boyutlar vb."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
+          <Field label="Tanım (EN)">
+            <textarea value={form.tanimEN || ""} onChange={e => setForm(p => ({ ...p, tanimEN: e.target.value }))}
+              placeholder="Technical specifications, dimensions etc."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
@@ -168,9 +192,25 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
 
       {editId !== null && (
         <Modal title="Yedek Parçayı Düzenle" onClose={cancelEdit}>
-          <Field label="Yedek Parça Adı">
+          <Field label="Yedek Parça Adı (TR)">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
             <Warn>{!(editForm.ad || "").trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
+          </Field>
+          <Field label="Yedek Parça Adı (EN) — Proforma ve yurtdışı teklifler için">
+            <Input value={editForm.adEN || ""} onChange={e => setEditForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
+          </Field>
+          <Field label="Kod">
+            <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
+          </Field>
+          <Field label="Tanım (TR)">
+            <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
+              placeholder="Teknik özellikler, boyutlar vb."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
+          <Field label="Tanım (EN)">
+            <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
+              placeholder="Technical specifications, dimensions etc."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />

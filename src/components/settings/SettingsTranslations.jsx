@@ -28,7 +28,8 @@ const GROUPS = [
   { label: "Başlık & Belge", keys: [
     { key: "titleProforma",     label: "Başlık" },
     { key: "docLabelProforma",  label: "Belge Bölümü Başlığı" },
-    { key: "teslimYeriLabel",   label: "Teslim Yeri Etiketi" },
+    { key: "authorityLabel",    label: "Yetkili Etiketi (EN info tablosu)" },
+    { key: "forwarderLabel",    label: "Nakliyeci Etiketi (EN info tablosu)" },
   ]},
   { label: "Banka Bilgileri", keys: [
     { key: "bankaBaslik",       label: "Bölüm Başlığı" },
@@ -57,7 +58,7 @@ const GROUPS = [
   { label: "Tablo Başlıkları", keys: [
     { key: "thSira",            label: "Sıra" },
     { key: "thKod",             label: "Kod" },
-    { key: "thAd",              label: "Makina Adı" },
+    { key: "thAd",              label: "Ürün Adı" },
     { key: "thTanim",           label: "Tanım / Açıklama" },
     { key: "thMiktar",          label: "Miktar" },
     { key: "thBirimFiyat",      label: "Birim Fiyat" },
@@ -76,6 +77,7 @@ const GROUPS = [
     { key: "teslimSekli",       label: "Teslim Şekli" },
     { key: "teslimSuresi",      label: "Teslim Süresi" },
     { key: "teslimTarihi",      label: "Teslim Tarihi" },
+    { key: "teslimYeriLabel",   label: "Teslim Yeri / Gümrük Notu" },
     { key: "notLabel",          label: "Not" },
     { key: "ekLabel",           label: "Ek Bilgi" },
   ]},
@@ -118,6 +120,18 @@ const GROUPS = [
     { key: "sart2", label: "Şart 2" },
     { key: "sart3", label: "Şart 3" },
     { key: "sart4", label: "Şart 4" },
+  ]},
+  { label: "Servis Tipleri", ns: "servis", keys: [
+    { key: "typeIlkCalistirma",  label: "İlk Çalıştırma" },
+    { key: "typeGarantiIci",     label: "Garanti İçi" },
+    { key: "typeGarantiDisi",    label: "Garanti Dışı" },
+    { key: "typePeriyodikBakim", label: "Periyodik Bakım" },
+  ]},
+  { label: "Tamir Yerleri", ns: "servis", keys: [
+    { key: "placeYerindeOnarim",   label: "Yerinde Onarım" },
+    { key: "placeFabrikadaOnarim", label: "Fabrikada Onarım" },
+    { key: "placeKargo",           label: "Kargo" },
+    { key: "placeFabrikaTeslim",   label: "Fabrika Teslim" },
   ]},
 
   // ─── MAKİNA RAPORU ──────────────────────────────────────────────────────────
@@ -163,6 +177,18 @@ const GROUPS = [
   { label: "Kalıplar", ns: "makina", keys: [
     { key: "kalipBaslik",  label: "Bölüm Başlığı" },
     { key: "thKalip",      label: "Kalıp Sütun Başlığı" },
+  ]},
+  { label: "Servis Tipleri", ns: "makina", keys: [
+    { key: "typeIlkCalistirma",  label: "İlk Çalıştırma" },
+    { key: "typeGarantiIci",     label: "Garanti İçi" },
+    { key: "typeGarantiDisi",    label: "Garanti Dışı" },
+    { key: "typePeriyodikBakim", label: "Periyodik Bakım" },
+  ]},
+  { label: "Tamir Yerleri", ns: "makina", keys: [
+    { key: "placeYerindeOnarim",   label: "Yerinde Onarım" },
+    { key: "placeFabrikadaOnarim", label: "Fabrikada Onarım" },
+    { key: "placeKargo",           label: "Kargo" },
+    { key: "placeFabrikaTeslim",   label: "Fabrika Teslim" },
   ]},
 ];
 
@@ -244,7 +270,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
             </div>
           );
         }
-        const groupId = g.ns ? `${g.ns}:${g.label}` : g.label;
+        const groupId = g.ns ? `${g.ns}:${g.label}` : `${i}:${g.label}`;
         const isOpen = openGroups.has(groupId);
         const getTR = (key) => g.ns ? (draft[g.ns]?.TR?.[key] ?? "") : (draft.TR[key] ?? "");
         const getEN = (key) => g.ns ? (draft[g.ns]?.EN?.[key] ?? "") : (draft.EN[key] ?? "");

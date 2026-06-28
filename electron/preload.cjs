@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("crmStorage", {
   load: () => ipcRenderer.invoke("crm:load"),
   save: (data) => ipcRenderer.invoke("crm:save", data),
+  flushSave: (data) => ipcRenderer.sendSync("crm:flush-save", data),
   backup: (data) => ipcRenderer.invoke("crm:backup", data),
   restore: () => ipcRenderer.invoke("crm:restore"),
   chooseFolder: () => ipcRenderer.invoke("crm:chooseFolder"),

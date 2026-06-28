@@ -5,7 +5,7 @@ import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash, bantlar = [], bantStock = [], bantStockLog = [] }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -101,12 +101,13 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
   };
   const exportCustomers = (mode = "download") => {
-    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
+    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Bantlar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
     const rows = [head, ...customers.map(c => [
       c.name, c.phone, c.email, c.country, c.city, c.adres, c.model, fmtKalipCapi(c.kalipCapi), c.serialNo,
       (c.kaliplar || []).map(k => `${k.ad}${k.olcu ? " (" + k.olcu + ")" : ""}`).join(", "),
+      (c.bantlar || []).map(b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`).join("; "),
       c.installDate, c.warrantyEnd, c.satisYapan, normalizeSaleType(c.faturali),
       curName[CURRENCIES.includes(c.currency) ? c.currency : "TRY"],
       parseMoney(c.fabrikaSatisBedeli), parseMoney(c.faturaBedeli), calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates),
@@ -182,11 +183,23 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     flash("ok", "Notlar Excel (CSV) olarak indirildi.");
   };
   const exportParts = (mode = "download") => {
-    const head = ["Yedek Parça Adı", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
-    const rows = [head, ...parts.map(p => [p.ad, p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
+    const head = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
+    const rows = [head, ...parts.map(p => [p.ad, p.adEN ?? "", p.kod ?? "", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
     if (mode === "email") { openExportMailCSV(rows, "yedek-parca-tanimlari.csv", "Yedek Parça Tanımları"); return; }
     downloadCSV(rows, "yedek-parca-tanimlari.csv");
     flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
+  };
+  const exportBantlar = (mode = "download") => {
+    const stokMap = {};
+    bantStock.forEach(s => { stokMap[String(s.bantId)] = s; });
+    const head = ["Bant Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "En (mm)", "Boy (mm)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)", "Mevcut Stok (adet)", "Son Güncelleme"];
+    const rows = [head, ...bantlar.filter(b => !b.deletedAt).map(b => {
+      const s = stokMap[String(b.id)];
+      return [b.ad, b.adEN ?? "", b.kod ?? "", b.tanim ?? "", b.tanimEN ?? "", b.en ?? "", b.boy ?? "", b.fiyatTRY ?? "", b.fiyatUSD ?? "", b.fiyatEUR ?? "", s?.miktar ?? 0, s?.sonGuncelleme ?? ""];
+    })];
+    if (mode === "email") { openExportMailCSV(rows, "bant-tanimlari-stok.csv", "Bant Tanımları ve Stok"); return; }
+    downloadCSV(rows, "bant-tanimlari-stok.csv");
+    flash("ok", "Bant tanımları ve stok durumu Excel (CSV) olarak indirildi.");
   };
 
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
@@ -290,6 +303,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
             { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
             { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
+            { title: "Bant Tanımları ve Stok", desc: `Bant kataloğu ve mevcut stok seviyeleri (${bantlar.filter(b => !b.deletedAt).length} bant).`, onClick: exportBantlar },
           ] },
         ].map(g => (
           <div key={g.group} style={{ marginBottom: 22 }}>

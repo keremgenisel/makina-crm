@@ -3,6 +3,28 @@ import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalip
 
 const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Servis tipi ve tamir yeri çevirisi için sabit eşlemeler
+const TYPE_KEY_MAP = {
+  "İlk Çalıştırma": "typeIlkCalistirma",
+  "Garanti İçi": "typeGarantiIci",
+  "Garanti Dışı": "typeGarantiDisi",
+  "Periyodik Bakım": "typePeriyodikBakim",
+};
+const PLACE_KEY_MAP = {
+  "Yerinde Onarım": "placeYerindeOnarim",
+  "Fabrikada Onarım": "placeFabrikadaOnarim",
+  "Kargo": "placeKargo",
+  "Fabrika Teslim": "placeFabrikaTeslim",
+};
+const transType = (L, t) => (TYPE_KEY_MAP[t] && L[TYPE_KEY_MAP[t]]) ? L[TYPE_KEY_MAP[t]] : (t || "—");
+const transPlace = (L, p) => (PLACE_KEY_MAP[p] && L[PLACE_KEY_MAP[p]]) ? L[PLACE_KEY_MAP[p]] : (p || "—");
+const parcaAdiEN = (p) => typeof p === "string" ? p : (p?.adEN || p?.ad || "");
+const kalipTextEN = (c) => {
+  if (Array.isArray(c?.kaliplar) && c.kaliplar.length)
+    return c.kaliplar.map(k => [k.olcu, k.adEN || k.ad].filter(Boolean).join(" - ")).filter(Boolean).join(" · ");
+  return c?.kalip || "—";
+};
+
 // ── Varsayılan çeviriler — Servis Formu ──────────────────────────────────────
 export const DEFAULT_SERVIS_TRANSLATIONS = {
   TR: {
@@ -33,6 +55,14 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     sart2: "Tamir süresi 10 (on) iş gününü geçmez.",
     sart3: "Yere düşen malzemeler garanti kapsamı dışındadır.",
     sart4: "Teslim tarihinden itibaren 20 iş günü içerisinde alınmayan ürünlerden servisimiz sorumlu değildir.",
+    typeIlkCalistirma: "İlk Çalıştırma",
+    typeGarantiIci: "Garanti İçi",
+    typeGarantiDisi: "Garanti Dışı",
+    typePeriyodikBakim: "Periyodik Bakım",
+    placeYerindeOnarim: "Yerinde Onarım",
+    placeFabrikadaOnarim: "Fabrikada Onarım",
+    placeKargo: "Kargo",
+    placeFabrikaTeslim: "Fabrika Teslim",
   },
   EN: {
     title: "Service Form",
@@ -62,6 +92,14 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     sart2: "Repair time shall not exceed 10 (ten) business days.",
     sart3: "Items dropped on the floor are not covered under warranty.",
     sart4: "We are not responsible for uncollected products after 20 business days from the delivery date.",
+    typeIlkCalistirma: "First Start-Up",
+    typeGarantiIci: "Under Warranty",
+    typeGarantiDisi: "Out of Warranty",
+    typePeriyodikBakim: "Periodic Maintenance",
+    placeYerindeOnarim: "On-Site Repair",
+    placeFabrikadaOnarim: "Factory Repair",
+    placeKargo: "Cargo / Shipping",
+    placeFabrikaTeslim: "Factory Delivery",
   },
 };
 
@@ -100,6 +138,14 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     degisenParcalarLabel: "Değişen parçalar:",
     kalipBaslik: "EXTRA KALIPLAR",
     thKalip: "Kalıp",
+    typeIlkCalistirma: "İlk Çalıştırma",
+    typeGarantiIci: "Garanti İçi",
+    typeGarantiDisi: "Garanti Dışı",
+    typePeriyodikBakim: "Periyodik Bakım",
+    placeYerindeOnarim: "Yerinde Onarım",
+    placeFabrikadaOnarim: "Fabrikada Onarım",
+    placeKargo: "Kargo",
+    placeFabrikaTeslim: "Fabrika Teslim",
   },
   EN: {
     subBaslik: "Machine Service and Spare Parts History Report",
@@ -134,6 +180,14 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     degisenParcalarLabel: "Replaced parts:",
     kalipBaslik: "EXTRA MOLDS",
     thKalip: "Mold",
+    typeIlkCalistirma: "First Start-Up",
+    typeGarantiIci: "Under Warranty",
+    typeGarantiDisi: "Out of Warranty",
+    typePeriyodikBakim: "Periodic Maintenance",
+    placeYerindeOnarim: "On-Site Repair",
+    placeFabrikadaOnarim: "Factory Repair",
+    placeKargo: "Cargo / Shipping",
+    placeFabrikaTeslim: "Factory Delivery",
   },
 };
 
@@ -173,8 +227,8 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     [L.adresLabel, adres],
     [L.makinaModeliLabel, cust.model],
     [L.seriNoLabel, cust.serialNo],
-    [L.servisTuruLabel, sv.type],
-    [L.yapilanIslemLabel, sv.repairPlace],
+    [L.servisTuruLabel, transType(L, sv.type)],
+    [L.yapilanIslemLabel, transPlace(L, sv.repairPlace)],
     [L.girisLabel, fmtTR(sv.date)],
     [L.teknisyenLabel, sv.tech],
     [L.servisUcretiLabel, ucret],
@@ -223,7 +277,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   ${sv.degisenParcalar?.length ? `
   <h2>${esc(L.degisenParcalarBaslik)}</h2>
   <div class="box-area" style="min-height:auto">${esc(sv.degisenParcalar.map(p => {
-    const ad = parcaAdi(p);
+    const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p);
     const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
     return fiyat > 0 ? `${ad} (${fmtCur(fiyat, sv.parcaCurrency)})` : ad;
   }).join(", "))}</div>
@@ -291,7 +345,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     [L.makinaModeliLabel, detailView.model || "—"],
     [L.seriNoLabel, detailView.serialNo || "—"],
     ...(fmtKalipCapi(detailView.kalipCapi) ? [[L.kalipCapiLabel, fmtKalipCapi(detailView.kalipCapi)]] : []),
-    [L.kaliplarLabel, kalipText(detailView)],
+    [L.kaliplarLabel, lang === "EN" ? kalipTextEN(detailView) : kalipText(detailView)],
     [L.garantiBaslangicLabel, detailView.installDate ? fmtTR(detailView.installDate) : "—"],
     [L.garantiBitisLabel, `${detailView.warrantyEnd ? fmtTR(detailView.warrantyEnd) : "—"} (${detailWarrantyOk ? L.garantiDevam : L.garantiBitti})`],
     [L.notLabel, detailView.aciklama || "—"],
@@ -300,7 +354,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   const svcRows = detailHistory.length === 0
     ? `<tr><td colspan="5" style="text-align:center">${esc(L.servisYok)}</td></tr>`
     : detailHistory.map(sv =>
-        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(sv.type)}</td><td>${esc(sv.repairPlace || "—")}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(parcaAdi).join(", "))}` : ""}</td></tr>`
+        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(lang === "EN" ? parcaAdiEN : parcaAdi).join(", "))}` : ""}</td></tr>`
       ).join("");
 
   const givenParts = (partSales || []).filter(ps => ps.customerId === detailView.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));

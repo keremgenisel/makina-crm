@@ -4,7 +4,10 @@ import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsImport = ({ customers, setCustomers, setServices, flash }) => {
+const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
+const BANTLAR_IMPORT_HEADERS = ["Bant Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "En (mm)", "Boy (mm)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)", "Mevcut Stok (adet)", "Son Güncelleme"];
+
+export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, bantlar = [], setBantlar, bantStock = [], setBantStock }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
   const parseCSV = (text) => {
     text = text.replace(/^﻿/, "");
@@ -28,6 +31,9 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
   };
 
   const [importPreview, setImportPreview] = useState(null); // { customers:[], services:[], errors:[] }
+  const [partsImportPreview, setPartsImportPreview] = useState(null);
+  const [bantlarImportPreview, setBantlarImportPreview] = useState(null);
+
   const trDate = (s) => {
     if (s == null || s === "") return "";
     // Date nesnesi (cellDates ile gelebilir) — UTC metotlarıyla oku (timezone kayması önle)
@@ -150,17 +156,81 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
     return { customers: newCustomers, services: newServices, errors, guncellenecek };
   };
 
+  // Yedek parça satırlarını kayıt dizisine çevirir
+  const partsRowsToRecords = (rows) => {
+    const dataRows = rows.slice(1);
+    const newParts = []; const errors = [];
+    let yeniler = 0, guncellenenler = 0;
+    let idc = Date.now();
+    const byAd = new Map();
+    (parts || []).forEach(p => { if (p.ad && !p.deletedAt) byAd.set(trLower(p.ad), p); });
+    dataRows.forEach((r, idx) => {
+      const cell = (i) => (r[i] == null ? "" : String(r[i]).trim());
+      const ad = cell(0);
+      if (!ad) { errors.push(`Satır ${idx + 2}: Parça adı boş, atlandı.`); return; }
+      const mevcut = byAd.get(trLower(ad));
+      const id = mevcut ? mevcut.id : (++idc);
+      if (mevcut) guncellenenler++; else yeniler++;
+      newParts.push({
+        id, ad,
+        adEN: cell(1) || (mevcut?.adEN ?? ""),
+        kod: cell(2) || (mevcut?.kod ?? ""),
+        tanim: cell(3) || (mevcut?.tanim ?? ""),
+        tanimEN: cell(4) || (mevcut?.tanimEN ?? ""),
+        fiyatTRY: cell(5) || (mevcut?.fiyatTRY ?? ""),
+        fiyatUSD: cell(6) || (mevcut?.fiyatUSD ?? ""),
+        fiyatEUR: cell(7) || (mevcut?.fiyatEUR ?? ""),
+        _mevcut: !!mevcut,
+      });
+    });
+    return { parts: newParts, errors, yeniler, guncellenenler };
+  };
+
+  // Bant satırlarını kayıt dizisine çevirir
+  const bantlarRowsToRecords = (rows) => {
+    const dataRows = rows.slice(1);
+    const newBantlar = []; const stokUpdates = []; const errors = [];
+    let yeniler = 0, guncellenenler = 0;
+    let idc = Date.now();
+    const byAd = new Map();
+    (bantlar || []).forEach(b => { if (b.ad && !b.deletedAt) byAd.set(trLower(b.ad), b); });
+    dataRows.forEach((r, idx) => {
+      const cell = (i) => (r[i] == null ? "" : String(r[i]).trim());
+      const ad = cell(0);
+      if (!ad) { errors.push(`Satır ${idx + 2}: Bant adı boş, atlandı.`); return; }
+      const mevcut = byAd.get(trLower(ad));
+      const id = mevcut ? mevcut.id : (++idc);
+      if (mevcut) guncellenenler++; else yeniler++;
+      const stokStr = cell(10);
+      const stokMiktar = stokStr !== "" ? parseInt(stokStr, 10) : NaN;
+      if (!isNaN(stokMiktar) && stokMiktar >= 0) {
+        stokUpdates.push({ bantId: id, miktar: stokMiktar, sonGuncelleme: cell(11) || new Date().toISOString().split("T")[0] });
+      }
+      newBantlar.push({
+        id, ad,
+        adEN: cell(1) || (mevcut?.adEN ?? ""),
+        kod: cell(2) || (mevcut?.kod ?? ""),
+        tanim: cell(3) || (mevcut?.tanim ?? ""),
+        tanimEN: cell(4) || (mevcut?.tanimEN ?? ""),
+        en: cell(5) || (mevcut?.en ?? ""),
+        boy: cell(6) || (mevcut?.boy ?? ""),
+        fiyatTRY: cell(7) || (mevcut?.fiyatTRY ?? ""),
+        fiyatUSD: cell(8) || (mevcut?.fiyatUSD ?? ""),
+        fiyatEUR: cell(9) || (mevcut?.fiyatEUR ?? ""),
+        _mevcut: !!mevcut,
+      });
+    });
+    return { bantlar: newBantlar, stokUpdates, errors, yeniler, guncellenenler };
+  };
+
   // xlsx (SheetJS) paketinde npm üzerinden düzeltilmemiş bilinen bir Prototip Kirlenmesi/ReDoS açığı var
   // (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Kaynağı tamamen engelleyemediğimiz için saldırı yüzeyini
   // makul bir dosya boyutu ve satır sayısıyla sınırlıyoruz.
   const MAX_IMPORT_MB = 20;
   const MAX_IMPORT_ROWS = 50000;
 
-  const handleImportFile = (file) => {
-    if (file.size > MAX_IMPORT_MB * 1024 * 1024) {
-      flash("err", `Dosya çok büyük (en fazla ${MAX_IMPORT_MB} MB).`);
-      return;
-    }
+  const readFileRows = (file, onRows) => {
+    if (file.size > MAX_IMPORT_MB * 1024 * 1024) { flash("err", `Dosya çok büyük (en fazla ${MAX_IMPORT_MB} MB).`); return; }
     const name = (file.name || "").toLowerCase();
     const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
     const reader = new FileReader();
@@ -168,10 +238,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
       try {
         let rows;
         if (isExcel) {
-          // SheetJS ile Excel oku
           const XLSX = await import("xlsx");
           const data = new Uint8Array(e.target.result);
-          // Tarihleri METİN olarak oku (cellDates timezone kaymasına yol açıyordu)
           const wb = XLSX.read(data, { type: "array", cellDates: false });
           const ws = wb.Sheets[wb.SheetNames[0]];
           rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "", dateNF: "dd.mm.yyyy" });
@@ -181,8 +249,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
         if (rows.length > MAX_IMPORT_ROWS) { flash("err", `Dosyada çok fazla satır var (en fazla ${MAX_IMPORT_ROWS}).`); return; }
         rows = rows.filter(r => Array.isArray(r) && r.some(x => String(x).trim() !== ""));
         if (rows.length < 2) { flash("err", "Dosyada veri bulunamadı."); return; }
-        const result = rowsToRecords(rows);
-        setImportPreview(result);
+        onRows(rows);
       } catch (err) {
         flash("err", "Dosya okunamadı: " + err.message);
       }
@@ -190,6 +257,10 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
     if (isExcel) reader.readAsArrayBuffer(file);
     else reader.readAsText(file, "UTF-8");
   };
+
+  const handleImportFile = (file) => readFileRows(file, rows => setImportPreview(rowsToRecords(rows)));
+  const handlePartsFile = (file) => readFileRows(file, rows => setPartsImportPreview(partsRowsToRecords(rows)));
+  const handleBantlarFile = (file) => readFileRows(file, rows => setBantlarImportPreview(bantlarRowsToRecords(rows)));
 
   const applyImport = () => {
     if (!importPreview) return;
@@ -226,6 +297,46 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
     setTimeout(() => { window.__importApplying = false; }, 800);
   };
 
+  const applyPartsImport = () => {
+    if (!partsImportPreview || !setParts) return;
+    const impParts = partsImportPreview.parts;
+    bumpId(impParts);
+    setParts(p => {
+      const guncelMap = new Map();
+      impParts.forEach(x => { const { _mevcut, ...clean } = x; guncelMap.set(x.id, clean); });
+      const updated = p.map(x => guncelMap.has(x.id) ? { ...x, ...guncelMap.get(x.id) } : x);
+      const existingIds = new Set(p.map(x => x.id));
+      const yeniler = impParts.filter(x => !existingIds.has(x.id)).map(x => { const { _mevcut, ...clean } = x; return clean; });
+      return [...yeniler, ...updated];
+    });
+    flash("ok", `${partsImportPreview.yeniler} yeni parça eklendi, ${partsImportPreview.guncellenenler} parça güncellendi.`);
+    setPartsImportPreview(null);
+  };
+
+  const applyBantlarImport = () => {
+    if (!bantlarImportPreview || !setBantlar) return;
+    const impBantlar = bantlarImportPreview.bantlar;
+    const impStok = bantlarImportPreview.stokUpdates;
+    bumpId(impBantlar);
+    setBantlar(p => {
+      const guncelMap = new Map();
+      impBantlar.forEach(x => { const { _mevcut, ...clean } = x; guncelMap.set(x.id, clean); });
+      const updated = p.map(x => guncelMap.has(x.id) ? { ...x, ...guncelMap.get(x.id) } : x);
+      const existingIds = new Set(p.map(x => x.id));
+      const yeniler = impBantlar.filter(x => !existingIds.has(x.id)).map(x => { const { _mevcut, ...clean } = x; return clean; });
+      return [...yeniler, ...updated];
+    });
+    if (impStok.length && setBantStock) {
+      setBantStock(p => {
+        const stokMap = new Map(p.map(s => [String(s.bantId), s]));
+        impStok.forEach(s => { stokMap.set(String(s.bantId), { ...(stokMap.get(String(s.bantId)) || {}), ...s }); });
+        return [...stokMap.values()];
+      });
+    }
+    flash("ok", `${bantlarImportPreview.yeniler} yeni bant eklendi, ${bantlarImportPreview.guncellenenler} bant güncellendi.`);
+    setBantlarImportPreview(null);
+  };
+
   const downloadTemplate = async () => {
     const ornek = ["2", "Altuntaş Makina", "Örnek Gıda A.Ş.", "0532 000 00 00", "Atatürk Cad. No:1", "Türkiye", "İstanbul",
       "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurtiçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
@@ -244,19 +355,53 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
     }
   };
 
+  const downloadPartsTemplate = async () => {
+    const ornek = ["Örnek Parça", "Example Part", "PRC-001", "Parça açıklaması", "Part description", "250", "", ""];
+    try {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.aoa_to_sheet([PARTS_IMPORT_HEADERS, ornek]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Yedek Parçalar");
+      XLSX.writeFile(wb, "yedek-parca-sablonu.xlsx");
+      flash("ok", "Yedek parça şablonu indirildi.");
+    } catch {
+      downloadCSV([PARTS_IMPORT_HEADERS, ornek], "yedek-parca-sablonu.csv");
+      flash("ok", "Şablon (CSV) indirildi.");
+    }
+  };
+
+  const downloadBantlarTemplate = async () => {
+    const ornek = ["Standart Bant", "Standard Belt", "BNT-001", "60mm × 1200mm standart bant", "60mm × 1200mm standard belt", "60", "1200", "500", "", "", "10", ""];
+    try {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.aoa_to_sheet([BANTLAR_IMPORT_HEADERS, ornek]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Bantlar");
+      XLSX.writeFile(wb, "bant-sablonu.xlsx");
+      flash("ok", "Bant şablonu indirildi.");
+    } catch {
+      downloadCSV([BANTLAR_IMPORT_HEADERS, ornek], "bant-sablonu.csv");
+      flash("ok", "Şablon (CSV) indirildi.");
+    }
+  };
+
+  const FileUploadBtn = ({ onFile, label = "Excel / CSV Yükle" }) => (
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "#e85d1a", color: "#fff" }}>
+      <Icon name="plus" size={14} /> {label}
+      <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
+        onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); e.target.value = ""; }} />
+    </label>
+  );
+
   return (
     <>
-      <Section title="İçe Aktar (Excel / CSV)" icon="box">
+      <Section title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Eski müşteri verilerinizi toplu olarak içe aktarın. <b>1)</b> Excel şablonunu indirin. <b>2)</b> Verilerinizi şablondaki sütun sırasına göre doldurun (Excel'de kaydedin, .xlsx olarak kalabilir). <b>3)</b> Aşağıdan yükleyin, önizlemeyi kontrol edip onaylayın. Hem Excel (.xlsx, .xls) hem CSV dosyaları desteklenir.
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
           <Btn variant="ghost" onClick={downloadTemplate}><Icon name="download" size={14} /> Boş Excel Şablonu İndir</Btn>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "#e85d1a", color: "#fff" }}>
-            <Icon name="plus" size={14} /> Excel / CSV Yükle
-            <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
-              onChange={e => { if (e.target.files[0]) handleImportFile(e.target.files[0]); e.target.value = ""; }} />
-          </label>
+          <FileUploadBtn onFile={handleImportFile} />
         </div>
 
         <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
@@ -305,6 +450,108 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash }) 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setImportPreview(null)}>İptal</Btn>
             <Btn onClick={applyImport}><Icon name="check" size={14} /> İçe Aktar ({importPreview.customers.length} kayıt)</Btn>
+          </div>
+        </Modal>
+      )}
+
+      <Section title="Yedek Parça İçe Aktar" icon="parts">
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          Yedek parça kataloğunu toplu olarak içe aktarın. Aynı adlı (TR) parçalar güncellenir, yeni olanlar eklenir.
+        </div>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+          <Btn variant="ghost" onClick={downloadPartsTemplate}><Icon name="download" size={14} /> Boş Şablon İndir</Btn>
+          <FileUploadBtn onFile={handlePartsFile} />
+        </div>
+        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
+        </div>
+      </Section>
+
+      {partsImportPreview && (
+        <Modal wide title="Yedek Parça İçe Aktarma Önizlemesi" onClose={() => setPartsImportPreview(null)}>
+          <div style={{ fontSize: 14, marginBottom: 16 }}>
+            Toplam <b>{partsImportPreview.parts.length}</b> kayıt bulundu:
+            <b style={{ color: "#16a34a" }}> {partsImportPreview.yeniler} yeni</b> eklenecek,
+            <b style={{ color: "#0891b2" }}> {partsImportPreview.guncellenenler} mevcut</b> güncellenecek.
+            {partsImportPreview.errors.length > 0 && <span style={{ color: "#dc2626" }}> · {partsImportPreview.errors.length} satır atlandı.</span>}
+          </div>
+          {partsImportPreview.errors.length > 0 && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#991b1b", maxHeight: 100, overflowY: "auto" }}>
+              {partsImportPreview.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ background: "#f8fafc" }}>
+                {["Parça Adı (TR)", "Adı (EN)", "Kod", "Fiyat (TL)"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {partsImportPreview.parts.slice(0, 5).map((p, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: !p._mevcut ? "#f0fdf4" : undefined }}>
+                    <td style={{ padding: "8px 12px", fontWeight: 600 }}>{p.ad}</td>
+                    <td style={{ padding: "8px 12px", color: "#64748b" }}>{p.adEN || "—"}</td>
+                    <td style={{ padding: "8px 12px", fontFamily: "monospace", color: "#64748b" }}>{p.kod || "—"}</td>
+                    <td style={{ padding: "8px 12px" }}>{p.fiyatTRY || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setPartsImportPreview(null)}>İptal</Btn>
+            <Btn onClick={applyPartsImport}><Icon name="check" size={14} /> İçe Aktar ({partsImportPreview.parts.length} kayıt)</Btn>
+          </div>
+        </Modal>
+      )}
+
+      <Section title="Bant İçe Aktar" icon="box">
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          Bant kataloğunu ve stok miktarlarını toplu olarak içe aktarın. Aynı adlı (TR) bantlar güncellenir, yeni olanlar eklenir.
+        </div>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+          <Btn variant="ghost" onClick={downloadBantlarTemplate}><Icon name="download" size={14} /> Boş Şablon İndir</Btn>
+          <FileUploadBtn onFile={handleBantlarFile} />
+        </div>
+        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+          <b>Sütunlar:</b> Bant Adı (TR) · Adı (EN) · Kod · Tanım (TR) · Tanım (EN) · En (mm) · Boy (mm) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR) · <b>Mevcut Stok (adet)</b> · Son Güncelleme
+        </div>
+      </Section>
+
+      {bantlarImportPreview && (
+        <Modal wide title="Bant İçe Aktarma Önizlemesi" onClose={() => setBantlarImportPreview(null)}>
+          <div style={{ fontSize: 14, marginBottom: 16 }}>
+            Toplam <b>{bantlarImportPreview.bantlar.length}</b> kayıt bulundu:
+            <b style={{ color: "#16a34a" }}> {bantlarImportPreview.yeniler} yeni</b> eklenecek,
+            <b style={{ color: "#0891b2" }}> {bantlarImportPreview.guncellenenler} mevcut</b> güncellenecek.
+            {bantlarImportPreview.stokUpdates.length > 0 && <span style={{ color: "#6d28d9" }}> · {bantlarImportPreview.stokUpdates.length} stok kaydı güncellenecek.</span>}
+            {bantlarImportPreview.errors.length > 0 && <span style={{ color: "#dc2626" }}> · {bantlarImportPreview.errors.length} satır atlandı.</span>}
+          </div>
+          {bantlarImportPreview.errors.length > 0 && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#991b1b", maxHeight: 100, overflowY: "auto" }}>
+              {bantlarImportPreview.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ background: "#f8fafc" }}>
+                {["Bant Adı (TR)", "Adı (EN)", "Kod", "En×Boy", "Fiyat (TL)"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {bantlarImportPreview.bantlar.slice(0, 5).map((b, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: !b._mevcut ? "#f0fdf4" : undefined }}>
+                    <td style={{ padding: "8px 12px", fontWeight: 600 }}>{b.ad}</td>
+                    <td style={{ padding: "8px 12px", color: "#64748b" }}>{b.adEN || "—"}</td>
+                    <td style={{ padding: "8px 12px", fontFamily: "monospace", color: "#64748b" }}>{b.kod || "—"}</td>
+                    <td style={{ padding: "8px 12px" }}>{b.en && b.boy ? `${b.en}×${b.boy}` : "—"}</td>
+                    <td style={{ padding: "8px 12px" }}>{b.fiyatTRY || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setBantlarImportPreview(null)}>İptal</Btn>
+            <Btn onClick={applyBantlarImport}><Icon name="check" size={14} /> İçe Aktar ({bantlarImportPreview.bantlar.length} kayıt)</Btn>
           </div>
         </Modal>
       )}

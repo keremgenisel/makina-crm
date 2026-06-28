@@ -7,7 +7,7 @@ import { useFilteredList } from "../hooks/useFilteredList";
 const PER_PAGE = 10;
 
 export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, setCustomers = null, setPartSales = null }) => {
-  const emptyForm = { ad: "" };
+  const emptyForm = { ad: "", kod: "", urunAdi: "", urunAdiEN: "", tanim: "", tanimEN: "" };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: kalipDefs,
@@ -60,6 +60,8 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kalıp Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ürün Adı / Tanım</th>
                 <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
               </tr>
             </thead>
@@ -68,6 +70,12 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
                 <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
+                  </td>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 11 }}>
+                    <span style={{ color: k.urunAdi ? "#16a34a" : "#cbd5e1" }}>TR</span>
+                    {" · "}
+                    <span style={{ color: k.urunAdiEN ? "#16a34a" : "#cbd5e1" }}>EN</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -97,6 +105,25 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
             <Warn>{!form.ad.trim() ? "Kalıp adı girilmedi" : ""}</Warn>
           </Field>
+          <Field label="Kod">
+            <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
+          </Field>
+          <Field label="Ürün Adı (TR) — Teklif ve proformada görünür">
+            <Input value={form.urunAdi || ""} onChange={e => setForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Adana Köfte Kalıbı" />
+          </Field>
+          <Field label="Ürün Adı (EN) — Proforma ve yurtdışı teklifler için">
+            <Input value={form.urunAdiEN || ""} onChange={e => setForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Adana Kebab Mold" />
+          </Field>
+          <Field label="Tanım (TR)">
+            <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
+              placeholder="Teknik özellikler, boyutlar vb."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
+          <Field label="Tanım (EN)">
+            <textarea value={form.tanimEN || ""} onChange={e => setForm(p => ({ ...p, tanimEN: e.target.value }))}
+              placeholder="Technical specifications, dimensions etc."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
@@ -109,6 +136,25 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Kalıp Adı">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
             <Warn>{!(editForm.ad || "").trim() ? "Kalıp adı girilmedi" : ""}</Warn>
+          </Field>
+          <Field label="Kod">
+            <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
+          </Field>
+          <Field label="Ürün Adı (TR) — Teklif ve proformada görünür">
+            <Input value={editForm.urunAdi || ""} onChange={e => setEditForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Adana Köfte Kalıbı" />
+          </Field>
+          <Field label="Ürün Adı (EN) — Proforma ve yurtdışı teklifler için">
+            <Input value={editForm.urunAdiEN || ""} onChange={e => setEditForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Adana Kebab Mold" />
+          </Field>
+          <Field label="Tanım (TR)">
+            <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
+              placeholder="Teknik özellikler, boyutlar vb."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+          </Field>
+          <Field label="Tanım (EN)">
+            <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
+              placeholder="Technical specifications, dimensions etc."
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>

@@ -11,6 +11,7 @@ export const SettingsSentMail = () => {
   const [deletedEmailLog, setDeletedEmailLog] = useState([]);
   const [viewing, setViewing] = useState(null); // içeriği görüntülenen kayıt
   const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen kayıt
+  const [confirmEmptyMailTrash, setConfirmEmptyMailTrash] = useState(false);
   const { search: sentSearch, setSearch: setSentSearch, page: emailLogPage, setPage: setEmailLogPage, filtered: sentEmailLogFiltered, paged: sentEmailLogPaged, perPage: EMAIL_LOG_PER_PAGE } =
     useFilteredList(sentEmailLog, { searchFields: ["to", "subject"], perPage: 10 });
   const { search: delSearch, setSearch: setDelSearch, page: trashPage, setPage: setTrashPage, filtered: deletedEmailLogFiltered, paged: deletedEmailLogPaged, perPage: TRASH_PER_PAGE } =
@@ -32,6 +33,11 @@ export const SettingsSentMail = () => {
   const deleteEntry = async (id) => { await window.appMail.deleteLogEntry(id); reloadAll(); };
   const restoreEntry = async (id) => { await window.appMail.restoreLogEntry(id); reloadAll(); };
   const purgeEntry = async (id) => { await window.appMail.purgeLogEntry(id); setConfirmPurge(null); reloadAll(); };
+  const emptyMailTrash = async () => {
+    for (const e of deletedEmailLog) await window.appMail.purgeLogEntry(e.id);
+    setConfirmEmptyMailTrash(false);
+    reloadAll();
+  };
 
   return (
     <>
@@ -101,6 +107,13 @@ export const SettingsSentMail = () => {
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Silinen e-posta kayıtları buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
+        {deletedEmailLog.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <Btn variant="danger" onClick={() => setConfirmEmptyMailTrash(true)}>
+              <Icon name="trash" size={14} /> Çöp Kutusunu Boşalt
+            </Btn>
+          </div>
+        )}
         {deletedEmailLog.length === 0 ? (
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Silinen e-posta yok.</div>
         ) : (
@@ -160,12 +173,18 @@ export const SettingsSentMail = () => {
         </Modal>
       )}
 
-      {/* Kalıcı silme onayı */}
       {confirmPurge && (
         <ConfirmDialog
           message={`"${confirmPurge.subject || confirmPurge.to}" kaydı kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
           onConfirm={() => purgeEntry(confirmPurge.id)}
           onCancel={() => setConfirmPurge(null)}
+        />
+      )}
+      {confirmEmptyMailTrash && (
+        <ConfirmDialog
+          message={`Silinen ${deletedEmailLog.length} e-posta kaydı kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+          onConfirm={emptyMailTrash}
+          onCancel={() => setConfirmEmptyMailTrash(false)}
         />
       )}
     </>

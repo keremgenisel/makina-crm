@@ -7,15 +7,17 @@ import { Section } from "./Section";
 export const SettingsBackup = ({
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments,
   teklifler = [], partStock = [], partStockLog = [],
+  bantlar = [], bantStock = [], bantStockLog = [],
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setPartStock = null, setPartStockLog = null,
+  setBantlar = null, setBantStock = null, setBantStockLog = null,
   version, appSettings, setAppSettings, flash,
 }) => {
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
 
   // ── Yedek Al ──
   const doBackup = async () => {
-    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog };
+    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog, bantlar, bantStock, bantStockLog };
     try {
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
@@ -88,6 +90,9 @@ export const SettingsBackup = ({
     if (Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
     if (Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
     if (Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
+    if (Array.isArray(restoreData?.bantlar) && setBantlar) setBantlar(restoreData.bantlar);
+    if (Array.isArray(restoreData?.bantStock) && setBantStock) setBantStock(restoreData.bantStock);
+    if (Array.isArray(restoreData?.bantStockLog) && setBantStockLog) setBantStockLog(restoreData.bantStockLog);
     setRestoreData(null);
     flash("ok", "Yedek başarıyla yüklendi. Veriler geri getirildi.");
   };
@@ -161,7 +166,9 @@ export const SettingsBackup = ({
         <Modal title="Yedeği Geri Yükle" onClose={() => setRestoreData(null)}>
           <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, marginBottom: 8 }}>
             Yüklenecek yedek: <b>{Array.isArray(restoreData.customers) ? restoreData.customers.length : 0} müşteri</b>,{" "}
-            <b>{Array.isArray(restoreData.dealers) ? restoreData.dealers.length : 0} bayi</b>, <b>{Array.isArray(restoreData.services) ? restoreData.services.length : 0} servis kaydı</b>
+            <b>{Array.isArray(restoreData.dealers) ? restoreData.dealers.length : 0} bayi</b>,{" "}
+            <b>{Array.isArray(restoreData.services) ? restoreData.services.length : 0} servis kaydı</b>
+            {Array.isArray(restoreData.bantlar) && restoreData.bantlar.length > 0 ? `, ${restoreData.bantlar.length} bant tanımı` : ""}
             {restoreData.exportDate ? ` (${restoreData.exportDate} tarihli)` : ""}.
           </div>
           {restoreData.schemaVersion > BACKUP_SCHEMA_VERSION && (

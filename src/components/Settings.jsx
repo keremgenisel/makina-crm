@@ -3,6 +3,7 @@ import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
+import { BantManager } from "./BantManager";
 import { Section } from "./settings/Section";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsBackup } from "./settings/SettingsBackup";
@@ -12,7 +13,7 @@ import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
-import { SettingsKdv } from "./settings/SettingsKdv";
+import { SettingsKdv } from "./settings/SettingsDanger";
 import { SettingsCompany } from "./settings/SettingsCompany";
 import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
@@ -20,7 +21,9 @@ import { SettingsDanger } from "./settings/SettingsDanger";
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
-  rawTeklifler = [], setTeklifler = null }) => {
+  rawTeklifler = [], setTeklifler = null,
+  bantlar = [], setBantlar = null, bantStock = [], setBantStock = null, bantStockLog = [], setBantStockLog = null, rawBantlar = [],
+}) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [settingsTab, setSettingsTab] = useState("app"); // "app" | "models" | ...
@@ -37,7 +40,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
             { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
             { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
-            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "bantlar", label: "Bant Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
           ].map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
@@ -99,9 +102,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} partStock={partStock} partStockLog={partStockLog}
+          bantlar={bantlar} bantStock={bantStock} bantStockLog={bantStockLog}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          setBantlar={setBantlar} setBantStock={setBantStock} setBantStockLog={setBantStockLog}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -115,7 +120,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
-            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} />
+            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} bantlar={bantlar} />
         </Section>
       )}
 
@@ -129,12 +134,21 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       )}
 
       {settingsTab === "yedekparca" && (
-        <Section title="Yedek Parça Tanımları" icon="parts">
+        <Section title="Parça/Yedek Parça Tanımları" icon="parts">
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
             allModels={[...standardModels, ...customModels]} />
+        </Section>
+      )}
+
+      {settingsTab === "bantlar" && (
+        <Section title="Bant Modelleri" icon="box">
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+            Buraya eklediğiniz bantlar, Yeni Müşteri ekranında ve Servis Talebi'nde seçilebilir. Stok takibi otomatik yapılır.
+          </div>
+          <BantManager bantlar={bantlar} setBantlar={setBantlar} showToast={showToast} />
         </Section>
       )}
 
@@ -152,21 +166,23 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <SettingsExport
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} appSettings={appSettings} flash={flash}
+          bantlar={bantlar} bantStock={bantStock} bantStockLog={bantStockLog}
         />
       )}
 
       {settingsTab === "import" && (
-        <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash} />
+        <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash}
+          parts={parts} setParts={setParts} bantlar={bantlar} setBantlar={setBantlar} bantStock={bantStock} setBantStock={setBantStock} />
       )}
 
       {settingsTab === "trash" && (
         <SettingsTrash
           rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}
           rawDealers={rawDealers} rawStock={rawStock} rawNotes={rawNotes} rawKalipDefs={rawKalipDefs} rawParts={rawParts} rawCustomModels={rawCustomModels}
-          rawTeklifler={rawTeklifler}
+          rawTeklifler={rawTeklifler} rawBantlar={rawBantlar}
           setCustomers={setCustomers} setServices={setServices} setPartSales={setPartSales} setPayments={setPayments}
           setDealers={setDealers} setStock={setStock} setNotes={setNotes} setKalipDefs={setKalipDefs} setParts={setParts} setCustomModels={setCustomModels}
-          setTeklifler={setTeklifler}
+          setTeklifler={setTeklifler} setBantlar={setBantlar}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
         />

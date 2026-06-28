@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Pagination } from "./ui";
 
@@ -199,7 +199,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // ── SATICI/BAYİ BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
     const bySeller = {};
     sales.forEach(c => {
-      const k = c.satisYapan || "Belirtilmemiş";
+      const k = resolveSatisYapan(c.satisYapan, factory) || "Belirtilmemiş";
       if (!bySeller[k]) bySeller[k] = { adet: 0, gelir: 0 };
       bySeller[k].adet += 1;
       const g = empty3(); g[cur(c.currency)] = gercekBedel(c);
