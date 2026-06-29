@@ -643,11 +643,18 @@ export const CustomerDetailModal = ({
                 ["Açıklama", detailView.aciklama],
               ].filter(([, v]) => v && v !== "—").map(([k, v, sub]) => {
                 const isBant = k.startsWith("__bant_");
+                const bantIdx = isBant ? parseInt(k.replace("__bant_", ""), 10) : -1;
                 return (
-                  <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
+                  <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px", position: "relative" }}>
                     <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{isBant ? "Bant" : k}</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
                     {sub && <div style={{ fontSize: 10.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>{sub}</div>}
+                    {isBant && (
+                      <button
+                        onClick={() => setCustomers(p => p.map(c => c.id === detailView.id ? { ...c, bantlar: (c.bantlar || []).filter((_, i) => i !== bantIdx) } : c))}
+                        title="Eski bant verisini kaldır"
+                        style={{ position: "absolute", top: 6, right: 8, border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 14, fontWeight: 700, lineHeight: 1, padding: 2 }}>×</button>
+                    )}
                   </div>
                 );
               })}
