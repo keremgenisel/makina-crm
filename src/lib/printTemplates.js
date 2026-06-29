@@ -338,7 +338,7 @@ export function printServiceForm(sv, customers, kdvRates, translations = {}, kas
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "") {
+export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = []) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_MAKINA_TRANSLATIONS[lang] || DEFAULT_MAKINA_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -351,7 +351,17 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     [L.seriNoLabel, detailView.serialNo || "—"],
     ...(fmtKalipCapi(detailView.kalipCapi) ? [[L.kalipCapiLabel, fmtKalipCapi(detailView.kalipCapi)]] : []),
     [L.kaliplarLabel, lang === "EN" ? kalipTextEN(detailView) : kalipText(detailView)],
-    ...((Array.isArray(detailView.bantlar) && detailView.bantlar.length > 0) ? [[L.bantlarLabel, detailView.bantlar.map(b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`).join(" · ")]] : []),
+    ...(() => {
+      const bantLines = [];
+      if (detailView.bantSecimiId) {
+        const bant = parts.find(p => String(p.id) === String(detailView.bantSecimiId));
+        if (bant) bantLines.push(bant.ad);
+      }
+      if (Array.isArray(detailView.bantlar) && detailView.bantlar.length > 0) {
+        detailView.bantlar.forEach(b => bantLines.push(`${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`));
+      }
+      return bantLines.length > 0 ? [[L.bantlarLabel, bantLines.join(" · ")]] : [];
+    })(),
     [L.garantiBaslangicLabel, detailView.installDate ? fmtTR(detailView.installDate) : "—"],
     [L.garantiBitisLabel, `${detailView.warrantyEnd ? fmtTR(detailView.warrantyEnd) : "—"} (${detailWarrantyOk ? L.garantiDevam : L.garantiBitti})`],
     [L.notLabel, detailView.aciklama || "—"],
@@ -429,10 +439,10 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
 }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "") {
+export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = []) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, ""));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi)) : null;
+  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts)) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;

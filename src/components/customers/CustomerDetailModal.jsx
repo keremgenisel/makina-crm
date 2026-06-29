@@ -473,11 +473,11 @@ export const CustomerDetailModal = ({
   const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi);
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi);
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts);
   };
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts));
     setMailDraft({
       to: detailView.email || "",
       subject: `Makina Servis ve Yedek Parça Geçmişi Raporu - ${detailView.name}`,

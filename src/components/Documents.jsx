@@ -571,14 +571,10 @@ export const Documents = ({
 
           <Field label="Firma Adı"><input {...f("firma")} style={inputStyle} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Yetkili"><input {...f("yetkili")} style={inputStyle} /></Field>
+            <Field label="Yetkili (Authority)"><input {...f("yetkili")} style={inputStyle} /></Field>
             <Field label="Telefon"><input {...f("tel")} style={inputStyle} /></Field>
             <Field label="Vergi No"><input {...f("vergiNo")} style={inputStyle} /></Field>
             <Field label="Vergi Dairesi"><input {...f("vergiDairesi")} style={inputStyle} /></Field>
-            {form.dil === "EN" && form.type === "proforma" && (<>
-              <Field label="Authority"><input {...f("authority")} style={inputStyle} placeholder="Authority name" /></Field>
-              <Field label="Forwarder"><input {...f("forwarder")} style={inputStyle} placeholder="Forwarder name" /></Field>
-            </>)}
           </div>
           <Field label="Adres"><textarea {...f("adres")} style={taStyle} /></Field>
         </div>
@@ -586,6 +582,7 @@ export const Documents = ({
         {/* Belge Detayları */}
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
+          <Field label={form.dil === "EN" ? "Forwarder" : "Gönderen (Forwarder)"}><input {...f("forwarder")} style={inputStyle} placeholder={form.dil === "EN" ? "Forwarder name" : "Gönderen adı"} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {form.type === "teklif" && (
               <Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field>
@@ -844,7 +841,7 @@ export const DEFAULT_TRANSLATIONS = {
     tarihLabel: "Tarih", noLabel: "Teklif No",
     modelYiliLabel: "Model Yılı", modelYiliSuffix: "Yeni ve Kullanılmamıştır",
     kurLabel: "Kur (Bugün)", teslimYeriLabel: "Teslim Yeri",
-    authorityLabel: "Yetkili", forwarderLabel: "Nakliyeci",
+    authorityLabel: "Yetkili", forwarderLabel: "Gönderen",
     thSira: "#", thKod: "KOD", thAd: "ÜRÜN ADI",
     thTanim: "AÇIKLAMA / ÖZELLİKLER", thMiktar: "ADET", thBirimFiyat: "BİRİM FİYAT", thTutar: "TUTAR",
     subtotalLabel: "ARA TOPLAM", iskontoLabel: "İSKONTO", netLabel: "NET TOPLAM",
@@ -974,6 +971,10 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.yetkiliLabel}</td>
               <td style="padding:3px 12px;">${[form.yetkili, form.tel].filter(Boolean).join("  /  ") || "—"}</td>
             </tr>
+            ${form.authority ? `<tr>
+              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.authorityLabel}</td>
+              <td style="padding:3px 12px;">${form.authority}</td>
+            </tr>` : ""}
             ${(form.vergiNo || form.vergiDairesi) ? `<tr>
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.vergiLabel}</td>
               <td style="padding:3px 12px;">${[form.vergiNo, form.vergiDairesi].filter(Boolean).join("  /  ")}</td>
@@ -989,12 +990,16 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;">
           <div style="background:#475569;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 12px;">${L.docLabel}</div>
           <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+            ${form.forwarder ? `<tr>
+              <td style="padding:6px 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:42%;">${L.forwarderLabel}</td>
+              <td style="padding:6px 12px 3px;font-weight:700;">${form.forwarder}</td>
+            </tr>` : ""}
             ${!isProforma ? `<tr>
-              <td style="padding:6px 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:42%;">${L.noLabel}</td>
-              <td style="padding:6px 12px 3px;font-weight:700;">${form.no || "—"}</td>
+              <td style="padding:${form.forwarder ? "3px" : "6px"} 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:42%;">${L.noLabel}</td>
+              <td style="padding:${form.forwarder ? "3px" : "6px"} 12px 3px;font-weight:700;">${form.no || "—"}</td>
             </tr>` : ""}
             <tr>
-              <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;color:#888;font-size:10.5px;font-weight:600;">${L.tarihLabel}</td>
+              <td style="padding:${isProforma && !form.forwarder ? "6px" : "3px"} 12px 3px;color:#888;font-size:10.5px;font-weight:600;">${L.tarihLabel}</td>
               <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;">${fmtTR(form.tarih) || ""}</td>
             </tr>
             <tr>
@@ -1144,7 +1149,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
     ${form.not ? `<div><b>${L.notLabel}:</b> ${form.not}</div>` : ""}
     ${form.ek ? `<div style="margin-top:4px;">${form.ek}</div>` : ""}
   </div>` : ""}
-  ${(bankalar.some(b => b.swift || b.ibanEUR || b.bankaAdi) || form.gtipNo) ? `
+  ${(bankalar.some(b => b.bankaAdi || b.swift || b.ibanTL || b.ibanEUR || b.ibanUSD) || form.gtipNo) ? `
   <div style="border-radius:6px;background:#f8f9fa;border:1px solid #e2e8f0;padding:10px 14px;font-size:11px;line-height:1.8;">
     <div style="font-weight:700;color:#1a1a1a;font-size:11.5px;margin-bottom:4px;">${L.bankaBaslik}</div>
     ${bankalar.map((b, bi) => `
@@ -1152,7 +1157,9 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
       ${b.bankaAdi ? `<div style="color:#444;">${b.bankaAdi}</div>` : ""}
       ${b.hesapAdi ? `<div>${L.hesapAdiLabel}: <b>${b.hesapAdi}</b></div>` : ""}
       ${b.swift ? `<div>SWIFT: <b>${b.swift}</b></div>` : ""}
-      ${b.ibanEUR ? `<div>${L.ibanEURLabel}: <b>${b.ibanEUR}</b></div>` : ""}
+      ${b.ibanTL ? `<div>${L.ibanTLLabel}: <b style="font-family:monospace;">${b.ibanTL}</b></div>` : ""}
+      ${b.ibanEUR ? `<div>${L.ibanEURLabel}: <b style="font-family:monospace;">${b.ibanEUR}</b></div>` : ""}
+      ${b.ibanUSD ? `<div>${L.ibanUSDLabel}: <b style="font-family:monospace;">${b.ibanUSD}</b></div>` : ""}
     `).join("")}
     ${form.gtipNo ? `<div style="margin-top:4px;border-top:1px solid #e2e8f0;padding-top:4px;">GTIP NO: <b>${form.gtipNo}</b></div>` : ""}
   </div>` : ""}

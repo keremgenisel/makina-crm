@@ -28,8 +28,8 @@ const GROUPS = [
   { label: "Başlık & Belge", keys: [
     { key: "titleProforma",     label: "Başlık" },
     { key: "docLabelProforma",  label: "Belge Bölümü Başlığı" },
-    { key: "authorityLabel",    label: "Yetkili Etiketi (EN info tablosu)" },
-    { key: "forwarderLabel",    label: "Nakliyeci Etiketi (EN info tablosu)" },
+    { key: "authorityLabel",    label: "Yetkili Etiketi (Authority)" },
+    { key: "forwarderLabel",    label: "Gönderen Etiketi (Forwarder)" },
   ]},
   { label: "Banka Bilgileri", keys: [
     { key: "bankaBaslik",       label: "Bölüm Başlığı" },

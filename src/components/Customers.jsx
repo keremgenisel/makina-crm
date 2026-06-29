@@ -225,6 +225,27 @@ export const Customers = ({
     if (setPartSales) setPartSales(p => withDeleted(p, x => x.customerId === confirmId, ts));
     if (setPayments) setPayments(p => withDeleted(p, x => x.customerId === confirmId, ts));
 
+    // Servislerde kullanılan parçaları stoka geri al
+    if (c && setPartStock && setPartStockLog) {
+      const custServices = services.filter(s => s.customerId === c.id && !s.deletedAt);
+      const svcIds = new Set(custServices.map(s => String(s.id)));
+      const svcPartLog = partStockLog.filter(l => l.tip === "servis" && svcIds.has(String(l.referansId)));
+      if (svcPartLog.length > 0) {
+        setPartStock(ps => {
+          let updated = [...ps];
+          svcPartLog.forEach(l => {
+            const pid = String(l.partId);
+            updated = updated.map(s => String(s.partId) === pid
+              ? { ...s, miktar: (s.miktar || 0) + Math.abs(l.miktar), sonGuncelleme: today() }
+              : s
+            );
+          });
+          return updated;
+        });
+        setPartStockLog(lg => lg.filter(l => !(l.tip === "servis" && svcIds.has(String(l.referansId)))));
+      }
+    }
+
     // Kit log'unu önceden belirle — stok girişinin parcalar alanı ve log güncellemesi için gerekli
     let kitLog = [];
     let restoredRefId = null;
