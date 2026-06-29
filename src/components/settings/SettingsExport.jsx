@@ -101,13 +101,12 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
   };
   const exportCustomers = (mode = "download") => {
-    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Bantlar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
+    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
     const rows = [head, ...customers.map(c => [
       c.name, c.phone, c.email, c.country, c.city, c.adres, c.model, fmtKalipCapi(c.kalipCapi), c.serialNo,
       (c.kaliplar || []).map(k => `${k.ad}${k.olcu ? " (" + k.olcu + ")" : ""}`).join(", "),
-      (c.bantlar || []).map(b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`).join("; "),
       c.installDate, c.warrantyEnd, c.satisYapan, normalizeSaleType(c.faturali),
       curName[CURRENCIES.includes(c.currency) ? c.currency : "TRY"],
       parseMoney(c.fabrikaSatisBedeli), parseMoney(c.faturaBedeli), calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates),
@@ -183,8 +182,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     flash("ok", "Notlar Excel (CSV) olarak indirildi.");
   };
   const exportParts = (mode = "download") => {
-    const head = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
-    const rows = [head, ...parts.map(p => [p.ad, p.adEN ?? "", p.kod ?? "", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
+    const head = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
+    const rows = [head, ...parts.map(p => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
     if (mode === "email") { openExportMailCSV(rows, "yedek-parca-tanimlari.csv", "Yedek Parça Tanımları"); return; }
     downloadCSV(rows, "yedek-parca-tanimlari.csv");
     flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");

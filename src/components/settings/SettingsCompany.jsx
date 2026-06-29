@@ -130,7 +130,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
       </Section>
 
-      <Section title="Kaşe / İmza">
+      <Section title="Kaşe / İmza" icon="stamp">
         <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
           Teklif ve proforma çıktılarında onay kutusuna eklenir. Şeffaf arka planlı PNG önerilir.
         </div>
@@ -140,6 +140,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
             onChange={v => setAppSettings?.(p => ({ ...p, kaseResmi: v }))}
             maxPx={600}
             label="kaşe"
+            preserveFormat
           />
         </Field>
       </Section>

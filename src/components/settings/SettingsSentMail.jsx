@@ -60,7 +60,7 @@ export const SettingsSentMail = () => {
             {sentEmailLogFiltered.length === 0 ? (
               <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
             ) : (
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
                   {["Tarih", "Kime", "Konu", "Durum", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
@@ -126,7 +126,7 @@ export const SettingsSentMail = () => {
             {deletedEmailLogFiltered.length === 0 ? (
               <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
             ) : (
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
                   {["Tarih", "Kime", "Konu", ""].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}

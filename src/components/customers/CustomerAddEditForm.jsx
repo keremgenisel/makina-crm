@@ -11,6 +11,21 @@ export const CustomerAddEditForm = ({
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
 
+  const getKitAutoFill = (stockEntry) => {
+    if (!stockEntry?.parcalar?.length) return {};
+    let konveyorSacId = "";
+    let bantSecimiId = "";
+    for (const row of stockEntry.parcalar) {
+      const part = parts.find(p => String(p.id) === String(row.partId));
+      if (part?.tip === "Konveyör Saç" && !konveyorSacId) konveyorSacId = String(row.partId);
+      if (part?.tip === "Bant" && !bantSecimiId) bantSecimiId = String(row.partId);
+    }
+    return {
+      ...(konveyorSacId ? { konveyorSacId, _konveyorFromKit: true } : {}),
+      ...(bantSecimiId  ? { bantSecimiId,  _bantFromKit: true }     : {}),
+    };
+  };
+
   return (
     <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
@@ -105,11 +120,13 @@ export const CustomerAddEditForm = ({
               <>
                 <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
                   if (e.target.value === "__manual__") {
-                    setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "" }));
+                    setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _konveyorFromKit: false, _bantFromKit: false }));
                   } else if (e.target.value === "__serisiz__") {
-                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "" }));
+                    const firstSerisiz = stockForModel.find(s => !s.serialNo);
+                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz) }));
                   } else {
-                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value }));
+                    const stockEntry = stockForModel.find(s => s.serialNo === e.target.value);
+                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value, ...getKitAutoFill(stockEntry) }));
                   }
                 }}>
                   <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
@@ -222,7 +239,7 @@ export const CustomerAddEditForm = ({
                     const active = form.konveyorSacId === String(p.id);
                     return (
                       <button key={p.id} type="button"
-                        onClick={() => setForm(prev => ({ ...prev, konveyorSacId: active ? "" : String(p.id) }))}
+                        onClick={() => setForm(prev => ({ ...prev, konveyorSacId: active ? "" : String(p.id), _konveyorFromKit: false }))}
                         style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
                           borderColor: active ? "#1d4ed8" : "#e2e8f0",
                           background: active ? "#eff6ff" : "#f8fafc",
@@ -241,7 +258,7 @@ export const CustomerAddEditForm = ({
                     const active = form.bantSecimiId === String(p.id);
                     return (
                       <button key={p.id} type="button"
-                        onClick={() => setForm(prev => ({ ...prev, bantSecimiId: active ? "" : String(p.id) }))}
+                        onClick={() => setForm(prev => ({ ...prev, bantSecimiId: active ? "" : String(p.id), _bantFromKit: false }))}
                         style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
                           borderColor: active ? "#15803d" : "#e2e8f0",
                           background: active ? "#f0fdf4" : "#f8fafc",

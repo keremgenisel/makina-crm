@@ -129,7 +129,7 @@ export const Customers = ({
   };
   const save = () => {
     if (modal === "add") {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
@@ -147,31 +147,69 @@ export const Customers = ({
       }
       if (setStock) {
         if (_stokSerisiz) {
+          const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
+          if (srcEntry) clean.sourceStockId = srcEntry.id;
           setStock(p => {
             const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
             if (idx === -1) return p;
             return p.filter((_, i) => i !== idx);
           });
         } else if (clean.serialNo && !_manualSerial) {
+          const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
+          if (srcEntry) clean.sourceStockId = srcEntry.id;
           setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
         }
       }
+      // Konveyör Saç / Bant seçimi varsa partStock'tan 1 adet düş (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
+      const deductPartIds = [
+        !_konveyorFromKit ? clean.konveyorSacId : null,
+        !_bantFromKit     ? clean.bantSecimiId  : null,
+      ].filter(Boolean);
+      if (deductPartIds.length > 0 && setPartStock) {
+        setPartStock(p => p.map(s => deductPartIds.includes(String(s.partId))
+          ? { ...s, miktar: Math.max(0, (s.miktar || 0) - 1), sonGuncelleme: today() }
+          : s
+        ));
+      }
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
       if (wasSerialPending && setStock) {
         if (_stokSerisiz) {
+          const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
+          if (srcEntry) clean.sourceStockId = srcEntry.id;
           setStock(p => {
             const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
             if (idx === -1) return p;
             return p.filter((_, i) => i !== idx);
           });
         } else if (clean.serialNo && !_manualSerial) {
+          const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
+          if (srcEntry) clean.sourceStockId = srcEntry.id;
           setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
+        }
+      }
+      // Konveyör Saç / Bant değişmişse eski stoğu geri al, yeni seçimi düş (kit'ten gelenleri atlat)
+      if (setPartStock) {
+        const oldIds = [modal?.edit?.konveyorSacId, modal?.edit?.bantSecimiId].filter(Boolean);
+        const newIds = [clean.konveyorSacId, clean.bantSecimiId].filter(Boolean);
+        const kitIds = [
+          _konveyorFromKit ? clean.konveyorSacId : null,
+          _bantFromKit     ? clean.bantSecimiId  : null,
+        ].filter(Boolean);
+        const toRestore = oldIds.filter(id => !newIds.includes(id));
+        const toDeduct  = newIds.filter(id => !oldIds.includes(id) && !kitIds.includes(id));
+        if (toRestore.length > 0 || toDeduct.length > 0) {
+          setPartStock(p => p.map(s => {
+            const sid = String(s.partId);
+            if (toRestore.includes(sid)) return { ...s, miktar: (s.miktar || 0) + 1, sonGuncelleme: today() };
+            if (toDeduct.includes(sid))  return { ...s, miktar: Math.max(0, (s.miktar || 0) - 1), sonGuncelleme: today() };
+            return s;
+          }));
         }
       }
       showToast("Müşteri bilgileri düzenlendi.");
@@ -186,13 +224,77 @@ export const Customers = ({
     if (setServices) setServices(p => withDeleted(p, s => s.customerId === confirmId, ts));
     if (setPartSales) setPartSales(p => withDeleted(p, x => x.customerId === confirmId, ts));
     if (setPayments) setPayments(p => withDeleted(p, x => x.customerId === confirmId, ts));
-    if (c && setStock && c.model && c.serialNo) {
+    if (c && setStock && c.model && (c.serialNo || c.seriNoBekliyor)) {
       setStock(p => {
-        const zatenVar = p.some(s => s.model === c.model && s.serialNo === c.serialNo);
+        const zatenVar = c.serialNo
+          ? p.some(s => s.model === c.model && s.serialNo === c.serialNo)
+          : p.some(s => s.model === c.model && !s.serialNo);
         if (zatenVar) return p;
         bumpId(p);
-        return [{ id: uid(), model: c.model, serialNo: c.serialNo, addedDate: today(), note: "Silinen müşteriden geri döndü" }, ...p];
+        return [{ id: uid(), model: c.model, serialNo: c.serialNo || "", addedDate: today(), note: "Silinen müşteriden geri döndü", parcalar: [] }, ...p];
       });
+    }
+    // Makina kitinin parçalarını stoka geri al (orijinal stok makinasının log kayıtlarından)
+    const kitRestoredIds = new Set();
+    if (c && setPartStock && setPartStockLog) {
+      let kitLog = [];
+      let restoredRefId = null;
+
+      if (c.sourceStockId) {
+        // Yeni kayıt: sourceStockId ile direkt eşleş
+        const srcId = String(c.sourceStockId);
+        kitLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === srcId);
+        restoredRefId = srcId;
+      } else if (c.model) {
+        // Eski kayıt: aynı model için orphan log ara (stokta olmayan referansId)
+        const liveIds = new Set(stock.map(s => String(s.id)));
+        const orphan = partStockLog.filter(l =>
+          l.tip === "makina_uretimi" &&
+          l.notlar === c.model &&
+          !liveIds.has(String(l.referansId))
+        );
+        if (orphan.length > 0) {
+          const groups = new Map();
+          orphan.forEach(l => {
+            const k = String(l.referansId);
+            if (!groups.has(k)) groups.set(k, []);
+            groups.get(k).push(l);
+          });
+          const bestKey = [...groups.keys()].sort((a, b) => Number(b) - Number(a))[0];
+          kitLog = groups.get(bestKey);
+          restoredRefId = bestKey;
+        }
+      }
+
+      if (kitLog.length > 0) {
+        // Senkron olarak doldur — aşağıdaki restoreIds kontrolü setPartStock callback'inden önce çalışır
+        kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
+        setPartStock(ps => {
+          let updated = [...ps];
+          kitLog.forEach(l => {
+            const pid = String(l.partId);
+            updated = updated.map(s => String(s.partId) === pid
+              ? { ...s, miktar: (s.miktar || 0) + Math.abs(l.miktar), sonGuncelleme: today() }
+              : s
+            );
+          });
+          return updated;
+        });
+        setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId)));
+      }
+    }
+    // Konveyör Saç / Bant stoğunu geri al (kit'te olmayan, manuel seçilenler)
+    if (c && setPartStock) {
+      const restoreIds = [c.konveyorSacId, c.bantSecimiId]
+        .filter(Boolean)
+        .map(String)
+        .filter(id => !kitRestoredIds.has(id));
+      if (restoreIds.length > 0) {
+        setPartStock(p => p.map(s => restoreIds.includes(String(s.partId))
+          ? { ...s, miktar: (s.miktar || 0) + 1, sonGuncelleme: today() }
+          : s
+        ));
+      }
     }
     setConfirmId(null);
     showToast("Müşteri silindi.");
@@ -245,7 +347,7 @@ export const Customers = ({
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
           style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc" }} />
       </div>
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>
+      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f8fafc" }}>

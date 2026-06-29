@@ -255,7 +255,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   .box-area { border: 1px solid #000; border-radius: 4px; min-height: 80px; padding: 12px; font-size: 13px; white-space: pre-wrap; line-height: 1.6; margin-bottom: 24px; }
   .terms { font-size: 10px; color: #444; line-height: 1.6; margin-top: 8px; border-top: 1px solid #ccc; padding-top: 12px; }
   .printbtn { display: block; margin: 0 auto 24px; padding: 10px 28px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  @media print { .printbtn { display: none; } body { padding: 0; } }
+  @media print { @page { margin: 12mm 14mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
 </style>
 </head>
 <body>
@@ -293,8 +293,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
         <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaEden)}</div>
       </td>
       <td style="border:none;width:50%;padding:0 0 0 16px;vertical-align:top">
-        <div style="font-size:12px;font-weight:700;margin-bottom:${kaseResmi ? "8px" : "50px"}">${esc(L.teslimAlan)}</div>
-        ${kaseResmi ? `<div style="text-align:right;margin-bottom:4px;"><img src="${kaseResmi}" style="max-height:55px;max-width:130px;object-fit:contain;" alt="kaşe"></div>` : ""}
+        <div style="font-size:12px;font-weight:700;margin-bottom:50px">${esc(L.teslimAlan)}</div>
         <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaAlan)}</div>
       </td>
     </tr>
@@ -306,6 +305,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     3- ${esc(L.sart3)}<br>
     4- ${esc(L.sart4)}
   </div>
+  ${kaseResmi ? `<div style="text-align:right;margin-top:20px;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;
@@ -315,19 +315,21 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 
 // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
 export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "") {
-  const html = buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi });
   const cust = customers.find(c => c.id === sv.customerId) || {};
+  const defaultName = `servis-formu-${(cust.serialNo || cust.name || "kayit").replace(/\s+/g, "-")}.pdf`;
+  const htmlPrint = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi: "" }));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi })) : null;
   if (window.appPrint) {
-    window.appPrint.printHtml(stripAutoPrint(html));
+    window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;
   }
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const blob = new Blob([htmlPrint], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, "_blank");
   if (!w) {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `servis-formu-${(cust.serialNo || cust.name || "kayit").replace(/\s+/g, "-")}.html`;
+    a.download = defaultName.replace(".pdf", ".html");
     a.click();
   }
 }
@@ -381,7 +383,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   .svc th { background: #eee; }
   h2 { font-size: 15px; margin: 0 0 10px; }
   .printbtn { display: block; margin: 0 auto 24px; padding: 10px 28px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  @media print { .printbtn { display: none; } body { padding: 0; } }
+  @media print { @page { margin: 12mm 14mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
 </style>
 </head>
 <body>
@@ -415,7 +417,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thKalip)}</th></tr></thead>
     <tbody>${partRows}</tbody>
   </table>` : ""}
-  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:60px;max-width:140px;object-fit:contain;" alt="kaşe"></div>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;
@@ -424,19 +426,21 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
 }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales, translations = {}) {
-  const html = buildMachineReportHtml(detailView, detailHistory, partSales, translations);
+export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "") {
+  const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
+  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, ""));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi)) : null;
   if (window.appPrint) {
-    window.appPrint.printHtml(stripAutoPrint(html));
+    window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;
   }
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const blob = new Blob([htmlPrint], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, "_blank");
   if (!win) {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `servis-raporu-${(detailView.serialNo || detailView.name).replace(/\s+/g, "-")}.html`;
+    a.download = defaultName.replace(".pdf", ".html");
     a.click();
   }
   setTimeout(() => URL.revokeObjectURL(url), 60000);

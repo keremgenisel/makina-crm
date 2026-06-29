@@ -84,7 +84,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
           </button>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Notlarda ara..."
             style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 13, marginBottom: 10, boxSizing: "border-box", outline: "none" }} />
-          <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+          <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
                 {q ? "Eşleşen not yok." : "Henüz not yok. 'Yeni Not' ile başlayın."}

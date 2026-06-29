@@ -62,7 +62,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       showToast("Stok makinası kaydedildi.");
     } else {
       const stockId = form.id;
-      const oldPartLog = partStockLog.filter(l => l.tip === "makina_uretimi" && l.referansId === stockId);
+      const sid = String(stockId);
+      const oldPartLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === sid);
       if (oldPartLog.length > 0) {
         setPartStock(ps => {
           let updated = [...ps];
@@ -72,7 +73,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           });
           return updated;
         });
-        setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && l.referansId === stockId)));
+        setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === sid)));
       }
       setStock(p => p.map(s => s.id === stockId ? form : s));
       deductParts(form.parcalar || [], stockId);
@@ -82,8 +83,34 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   };
 
   const confirmDel = () => {
-    const partLog = partStockLog.filter(l => l.tip === "makina_uretimi" && l.referansId === confirmId);
+    const cid = String(confirmId);
+    const machine = stock.find(s => s.id === confirmId);
+    let partLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === cid);
+
+    // Log kaydı yoksa ve makina kit parçası içeriyorsa — orphan log ara
+    // (parcalar boşsa müşteri silmeden geri dönen makina; kit zaten o adımda restore edildi)
+    if (partLog.length === 0 && machine?.model && machine?.parcalar?.length) {
+      const liveIds = new Set(stock.map(s => String(s.id)));
+      const orphan = partStockLog.filter(l =>
+        l.tip === "makina_uretimi" &&
+        l.notlar === machine.model &&
+        !liveIds.has(String(l.referansId))
+      );
+      if (orphan.length > 0) {
+        // Birden fazla grup varsa en yüksek referansId'li grubu al (en son eklenen makina)
+        const groups = new Map();
+        orphan.forEach(l => {
+          const k = String(l.referansId);
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(l);
+        });
+        const bestKey = [...groups.keys()].sort((a, b) => Number(b) - Number(a))[0];
+        partLog = groups.get(bestKey);
+      }
+    }
+
     if (partLog.length > 0) {
+      const restoredRefId = String(partLog[0].referansId);
       setPartStock(ps => {
         let updated = [...ps];
         partLog.forEach(l => {
@@ -92,7 +119,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         });
         return updated;
       });
-      setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && l.referansId === confirmId)));
+      setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId)));
     }
     setStock(p => withDeleted(p, s => s.id === confirmId));
     setConfirmId(null);
@@ -136,7 +163,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden" }}>
+      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f8fafc" }}>

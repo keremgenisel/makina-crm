@@ -4,7 +4,7 @@ import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
 
-const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
+const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
 
 export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
@@ -173,11 +173,12 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         id, ad,
         adEN: cell(1) || (mevcut?.adEN ?? ""),
         kod: cell(2) || (mevcut?.kod ?? ""),
-        tanim: cell(3) || (mevcut?.tanim ?? ""),
-        tanimEN: cell(4) || (mevcut?.tanimEN ?? ""),
-        fiyatTRY: cell(5) || (mevcut?.fiyatTRY ?? ""),
-        fiyatUSD: cell(6) || (mevcut?.fiyatUSD ?? ""),
-        fiyatEUR: cell(7) || (mevcut?.fiyatEUR ?? ""),
+        tip: cell(3) || (mevcut?.tip ?? "Standart"),
+        tanim: cell(4) || (mevcut?.tanim ?? ""),
+        tanimEN: cell(5) || (mevcut?.tanimEN ?? ""),
+        fiyatTRY: cell(6) || (mevcut?.fiyatTRY ?? ""),
+        fiyatUSD: cell(7) || (mevcut?.fiyatUSD ?? ""),
+        fiyatEUR: cell(8) || (mevcut?.fiyatEUR ?? ""),
         _mevcut: !!mevcut,
       });
     });
@@ -292,7 +293,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   };
 
   const downloadPartsTemplate = async () => {
-    const ornek = ["Örnek Parça", "Example Part", "PRC-001", "Parça açıklaması", "Part description", "250", "", ""];
+    const ornek = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", ""];
     try {
       const XLSX = await import("xlsx");
       const ws = XLSX.utils.aoa_to_sheet([PARTS_IMPORT_HEADERS, ornek]);
@@ -384,7 +385,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
           <FileUploadBtn onFile={handlePartsFile} />
         </div>
         <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
+          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip (Standart/Konveyör Saç/Bant) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
         </div>
       </Section>
 

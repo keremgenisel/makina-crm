@@ -97,7 +97,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
           Henüz yedek parça tanımı yok. Ayarlar → Yedek Parça'dan ekleyin.
         </div>
       ) : (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f8fafc" }}>

@@ -122,7 +122,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
 
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
             {parts.length === 0 ? "Henüz yedek parça tanımı yok." : "Arama sonucu bulunamadı."}
@@ -155,7 +155,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     {(() => { const t = k.tip || "Standart"; const c = TIP_COLORS[t] || TIP_COLORS["Standart"]; return (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{t}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: c.bg, color: c.color, border: `1px solid ${c.border}`, whiteSpace: "nowrap" }}>{t}</span>
                     ); })()}
                   </td>
                   <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>

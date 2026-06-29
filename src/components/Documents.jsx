@@ -363,29 +363,22 @@ export const Documents = ({
 
 
   // ── Yazdır ──
+  const docDefaultName = (doc) =>
+    `${doc.type === "proforma" ? "Proforma" : "Teklif"}-${(doc.firma || "").replace(/\s+/g, "-") || "belge"}-${doc.no || doc.tarih || ""}.pdf`;
+
   const printDoc = (doc) => {
-    const html = buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "");
+    const kase = appSettings?.kaseResmi || "";
+    const htmlPrint = buildPrintHtml(doc, factory, appSettings?.translations, "");
+    const htmlPdf   = kase ? buildPrintHtml(doc, factory, appSettings?.translations, kase) : null;
     if (window.appPrint?.printHtml) {
-      window.appPrint.printHtml(html);
+      window.appPrint.printHtml(htmlPrint, htmlPdf, docDefaultName(doc));
     } else {
-      const blob = new Blob([html], { type: "text/html" });
+      const blob = new Blob([htmlPrint], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = `${doc.type}-${doc.no || doc.tarih}.html`; a.click();
     }
   };
-  const savePdfDoc = async (doc) => {
-    const html = buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "");
-    const defaultName = `${doc.type === "proforma" ? "Proforma" : "Teklif"}-${(doc.firma || "").replace(/\s+/g, "-") || "belge"}-${doc.no || doc.tarih || ""}.pdf`;
-    if (window.appPrint?.savePdf) {
-      const result = await window.appPrint.savePdf(html, defaultName);
-      if (result?.ok) showToast("PDF kaydedildi.");
-      else if (!result?.canceled) showToast("PDF kaydedilemedi.", "err");
-    } else {
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = defaultName.replace(".pdf", ".html"); a.click();
-    }
-  };
+
   // ── E-posta ──
   const [mailDraft, setMailDraft] = useState(null);
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
@@ -465,7 +458,7 @@ export const Documents = ({
       </div>
 
       {/* Tablo */}
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
         {searched.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
             {filtered.length === 0 ? `Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.` : "Arama sonucu bulunamadı."}
@@ -502,8 +495,7 @@ export const Documents = ({
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                         <Btn small variant="ghost" onClick={() => openEdit(t)}><Icon name="edit" size={12} /></Btn>
-                        <Btn small variant="ghost" onClick={() => printDoc(t)} title="Yazdır"><Icon name="print" size={12} /></Btn>
-                        <Btn small variant="ghost" onClick={() => savePdfDoc(t)} title="PDF Kaydet" style={{ color: "#dc2626" }}>PDF</Btn>
+                        <Btn small variant="ghost" onClick={() => printDoc(t)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>
                         <Btn small variant="ghost" onClick={() => openMailDoc(t)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>
                         {subTab === "teklif" && (
                           <Btn small variant="ghost" onClick={() => convertToProforma(t)}
@@ -1169,7 +1161,10 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
     ${[L.sart1, L.sart2, L.sart3].map(s => `<span style="display:inline-block;margin-right:12px;">• ${s}</span>`).join("")}
   </div>` : "";
 
-  const page1 = header + (enProforma ? infoSectionEN : infoSection) + productTable + totalsBox + proformaNotlar + teklifSartlar;
+  const proformaKase = isProforma && kaseResmi
+    ? `<div style="margin-top:24px;text-align:right;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>`
+    : "";
+  const page1 = header + (enProforma ? infoSectionEN : infoSection) + productTable + totalsBox + proformaNotlar + teklifSartlar + proformaKase;
 
   // ── SAYFA 2 (sadece teklif) ───────────────────────────────────────────────
   const page2 = !isProforma ? `
@@ -1203,7 +1198,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
           <div style="border-radius:8px;border:2px solid ${BRAND};padding:14px 16px;">
             <div style="font-weight:800;font-size:12px;color:${BRAND};margin-bottom:10px;">${L.onayBaslik}</div>
             <div style="font-size:10px;color:#888;margin-bottom:8px;">${L.onayAlt}</div>
-            ${kaseResmi ? `<div style="text-align:right;margin-bottom:4px;"><img src="${kaseResmi}" style="max-height:60px;max-width:140px;object-fit:contain;" alt="kaşe"></div>` : `<div style="height:40px;"></div>`}
+            <div style="height:40px;"></div>
             <div style="border-bottom:1px solid #999;margin-top:4px;"></div>
           </div>
         </td>
@@ -1220,6 +1215,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
               ${b.ibanUSD ? `<div style="font-size:11px;">${L.ibanUSDLabel}: <b style="font-family:monospace;">${b.ibanUSD}</b></div>` : ""}
             `).join("")}
           </div>` : ""}
+          ${kaseResmi ? `<div style="margin-top:10px;text-align:right;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
         </td>
       </tr>
     </table>

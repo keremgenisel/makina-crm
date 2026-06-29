@@ -92,7 +92,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
       </div>
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
             {allModels.length === 0 ? "Henüz model yok." : "Arama sonucu bulunamadı."}

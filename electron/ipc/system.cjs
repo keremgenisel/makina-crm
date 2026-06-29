@@ -13,31 +13,41 @@ function readErrorLog(app) {
   return [];
 }
 
+const pdfHtmlCache = new Map(); // previewWin.webContents.id → pdfHtml
+
 function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
   // ── Yazdırma: HTML'i GÖRÜNÜR önizleme penceresinde aç ──
-  ipcMain.handle("app:printHtml", async (_e, html) => {
+  ipcMain.handle("app:printHtml", async (_e, html, pdfHtml, defaultName) => {
     return new Promise((resolve) => {
       let tmpFile = null;
+      const previewPreload = path.join(__dirname, "..", "preload-preview.cjs");
       let previewWin = new BrowserWindow({
         width: 920,
         height: 1040,
         show: true,
         title: "Baskı Önizleme",
         autoHideMenuBar: true,
-        webPreferences: { contextIsolation: true, nodeIntegration: false },
+        webPreferences: { contextIsolation: true, nodeIntegration: false, preload: previewPreload },
       });
       previewWin.webContents.on("will-navigate", (e, url) => {
         if (!url.startsWith("file://")) e.preventDefault();
       });
       previewWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+      const wcId = previewWin.webContents.id;
       const cleanup = () => {
         if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch { /* yoksay */ } tmpFile = null; }
       };
-      previewWin.on("closed", () => { previewWin = null; cleanup(); resolve(true); });
+      previewWin.on("closed", () => {
+        pdfHtmlCache.delete(wcId);
+        previewWin = null; cleanup(); resolve(true);
+      });
 
+      const safeName = JSON.stringify(defaultName || "belge.pdf");
       const toolbar = `
+<script>window.__pdfDefaultName = ${safeName};</script>
 <div id="__print_toolbar" style="position:fixed;top:0;left:0;right:0;height:52px;background:#1e293b;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 18px;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.2);font-family:Arial,sans-serif;">
-  <span style="color:#94a3b8;font-size:13px;margin-right:auto;">Baskı Önizleme — yazdırmak için sağdaki butona basın</span>
+  <span style="color:#94a3b8;font-size:13px;margin-right:auto;">Baskı Önizleme</span>
+  <button onclick="window.previewPdf&&window.previewPdf.save(window.__pdfDefaultName)" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer;">PDF Kaydet</button>
   <button onclick="window.print()" style="background:#e85d1a;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;">🖨 Yazdır</button>
   <button onclick="window.close()" style="background:#475569;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer;">Kapat</button>
 </div>
@@ -56,6 +66,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
         tmpFile = path.join(app.getPath("temp"), `altunmak-yazdir-${Date.now()}.html`);
         fs.writeFileSync(tmpFile, finalHtml, "utf-8");
         previewWin.loadFile(tmpFile);
+        if (pdfHtml) pdfHtmlCache.set(previewWin.webContents.id, pdfHtml);
       } catch (err) {
         console.error("Yazdırma önizleme dosyası yazılamadı:", err);
         if (previewWin && !previewWin.isDestroyed()) previewWin.close();
@@ -64,32 +75,43 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
     });
   });
 
-  // ── PDF Kaydet ──
-  ipcMain.handle("app:savePdf", async (_e, html, defaultName) => {
+  // Önizleme penceresinden PDF kaydet — kaşeli HTML varsa şeffaf pencerede render eder
+  ipcMain.handle("app:previewSavePdf", async (event, defaultName) => {
     const { dialog } = require("electron");
-    const { canceled, filePath } = await dialog.showSaveDialog({
+    const previewWin = BrowserWindow.fromWebContents(event.sender);
+    if (!previewWin) return { ok: false };
+
+    const { canceled, filePath } = await dialog.showSaveDialog(previewWin, {
       title: "PDF Olarak Kaydet",
       defaultPath: defaultName || "belge.pdf",
       filters: [{ name: "PDF Dosyası", extensions: ["pdf"] }],
     });
     if (canceled || !filePath) return { ok: false, canceled: true };
 
+    const pdfHtml = pdfHtmlCache.get(event.sender.id);
     let tmpFile = null;
     let pdfWin = null;
     try {
-      tmpFile = path.join(app.getPath("temp"), `altunmak-pdf-${Date.now()}.html`);
-      fs.writeFileSync(tmpFile, html, "utf-8");
-      pdfWin = new BrowserWindow({
-        show: false,
-        webPreferences: { contextIsolation: true, nodeIntegration: false },
-      });
-      await pdfWin.loadFile(tmpFile);
-      const pdfData = await pdfWin.webContents.printToPDF({
-        printBackground: true,
-        pageSize: "A4",
-        margins: { top: 0, bottom: 0, left: 0, right: 0 },
-      });
-      fs.writeFileSync(filePath, pdfData);
+      if (pdfHtml) {
+        // Kaşeli HTML → şeffaf görünür pencerede render et (GPU tam çalışır, kullanıcı görmez)
+        tmpFile = path.join(app.getPath("temp"), `altunmak-pdf-${Date.now()}.html`);
+        fs.writeFileSync(tmpFile, pdfHtml, "utf-8");
+        pdfWin = new BrowserWindow({
+          width: 1240, height: 1754,
+          show: true, frame: false, skipTaskbar: true,
+          webPreferences: { contextIsolation: true, nodeIntegration: false },
+        });
+        pdfWin.setOpacity(0);
+        await pdfWin.loadFile(tmpFile);
+        const pdfData = await pdfWin.webContents.printToPDF({ printBackground: true, pageSize: "A4", margins: { top: 0, bottom: 0, left: 0, right: 0 } });
+        fs.writeFileSync(filePath, pdfData);
+      } else {
+        // Kaşe yoksa önizleme penceresinin kendisini kullan
+        const pdfData = await previewWin.webContents.printToPDF({ printBackground: true, pageSize: "A4", margins: { top: 0, bottom: 0, left: 0, right: 0 } });
+        fs.writeFileSync(filePath, pdfData);
+      }
+      pdfHtmlCache.delete(event.sender.id);
+      previewWin.close();
       return { ok: true, filePath };
     } catch (err) {
       console.error("PDF kaydetme hatası:", err);
@@ -99,6 +121,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
       if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch { /* yoksay */ } }
     }
   });
+
 
   // ── E-posta (genel SMTP) ──
   ipcMain.handle("mail:saveCredentials", (_e, payload) => mailer.saveCredentials(payload));
