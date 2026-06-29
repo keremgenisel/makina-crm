@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
+import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
@@ -31,6 +32,28 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     return map;
   }, [services, factoryName, kdvRates]);
   const dealerHasDebt = (d) => !!(borcMap[d.name] && Object.values(borcMap[d.name].byCur).some(v => v > 0));
+
+  const [dealerSvcSearch, setDealerSvcSearch] = useState("");
+  useEffect(() => { setDealerSvcSearch(""); }, [detailView]);
+
+  const dealerServices = useMemo(() => {
+    if (!detailView?.anlasmaliServisMi) return [];
+    return services
+      .filter(s => !s.deletedAt && s.islemFirma === detailView.name)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  }, [services, detailView]);
+
+  const dealerSvcFiltered = useMemo(() => {
+    if (!dealerSvcSearch.trim()) return dealerServices;
+    const q = dealerSvcSearch.toLocaleLowerCase("tr-TR");
+    return dealerServices.filter(s => {
+      const cust = customers.find(c => c.id === s.customerId);
+      return (cust?.name || "").toLocaleLowerCase("tr-TR").includes(q) ||
+        (s.type || "").toLocaleLowerCase("tr-TR").includes(q);
+    });
+  }, [dealerServices, dealerSvcSearch, customers]);
+
+  const { page: svcPage, setPage: setSvcPage, paged: svcPaged } = usePagination(dealerSvcFiltered, 10);
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
     searchFields: ["name", "city", "contact", "country"],
@@ -311,7 +334,72 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          {!detailView._isFactory && detailView.anlasmaliServisMi && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e2e8f0" }}>
+                Servis Geçmişi ({dealerServices.length})
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <input
+                  value={dealerSvcSearch}
+                  onChange={e => { setDealerSvcSearch(e.target.value); setSvcPage(1); }}
+                  placeholder="Müşteri veya servis tipi ara..."
+                  style={{ width: "100%", padding: "7px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
+                />
+              </div>
+              {svcPaged.length === 0 && (
+                <div style={{ padding: "16px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Kayıt bulunamadı.</div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {svcPaged.map(s => {
+                  const cust = customers.find(c => c.id === s.customerId);
+                  const parcaUcret = parseMoney(s.parcaUcreti);
+                  const servisUcret = parseMoney(s.servisUcreti);
+                  const toplamNet = parcaUcret + servisUcret;
+                  const kdvToplam = calcKDV(s.faturaTipi, toplamNet, s.date, kdvRates);
+                  return (
+                    <div key={s.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{fmtTR(s.date) || "—"}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{s.type || "—"}</span>
+                        {cust && (
+                          <span
+                            onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
+                            style={{ fontSize: 11, fontWeight: 700, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px", cursor: onGoCustomerDetail ? "pointer" : "default", textDecoration: onGoCustomerDetail ? "underline" : "none" }}>
+                            {cust.name}
+                          </span>
+                        )}
+                        {s.repairPlace && <span style={{ fontSize: 11, color: "#64748b" }}>· {s.repairPlace}</span>}
+                        {s.tech && <span style={{ fontSize: 11, color: "#64748b" }}>· {s.tech}</span>}
+                      </div>
+                      {Array.isArray(s.degisenParcalar) && s.degisenParcalar.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                          {s.degisenParcalar.map((p, i) => (
+                            <span key={i} style={{ fontSize: 11, fontWeight: 700, background: "#e0f2fe", color: "#0369a1", borderRadius: 20, padding: "3px 10px" }}>
+                              {p.ad || p.name || "—"}{p.ucret ? ` · ${fmtCur(parseMoney(p.ucret), s.parcaCurrency || "TRY")}` : ""}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        {toplamNet > 0 && (
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>
+                            {fmtCur(toplamNet, s.parcaCurrency || s.currency || "TRY")}
+                            {kdvToplam > 0 && <span style={{ color: "#64748b", fontWeight: 400 }}> · KDV dahil: {fmtCur(toplamNet + kdvToplam, s.parcaCurrency || s.currency || "TRY")}</span>}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "#dcfce7" : "#fee2e2", color: s.odendi ? "#16a34a" : "#dc2626" }}>
+                          {s.odendi ? "Ödendi" : "Bekliyor"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={10} />
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             {!detailView._isFactory && (
               <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
             )}
