@@ -148,6 +148,7 @@ const GROUPS = [
     { key: "seriNoLabel",         label: "Seri Numarası" },
     { key: "kalipCapiLabel",      label: "Kalıp Çapı" },
     { key: "kaliplarLabel",       label: "Kalıplar" },
+    { key: "bantlarLabel",        label: "Bant" },
     { key: "garantiBaslangicLabel", label: "Garanti Başlangıç" },
     { key: "garantiBitisLabel",   label: "Garanti Bitiş" },
     { key: "notLabel",            label: "Not" },

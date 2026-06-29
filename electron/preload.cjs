@@ -61,6 +61,10 @@ contextBridge.exposeInMainWorld("appMail", {
   deleteLogEntry: (id) => ipcRenderer.invoke("mail:deleteLogEntry", id),
   restoreLogEntry: (id) => ipcRenderer.invoke("mail:restoreLogEntry", id),
   purgeLogEntry: (id) => ipcRenderer.invoke("mail:purgeLogEntry", id),
+  getConfigForBackup: () => ipcRenderer.invoke("mail:getConfigForBackup"),
+  restoreConfigFromBackup: (config) => ipcRenderer.invoke("mail:restoreConfigFromBackup", config),
+  getAllLog: () => ipcRenderer.invoke("mail:getAllLog"),
+  restoreFullLog: (log) => ipcRenderer.invoke("mail:restoreFullLog", log),
 });
 
 contextBridge.exposeInMainWorld("appError", {
@@ -75,4 +79,6 @@ contextBridge.exposeInMainWorld("appLock", {
   disable: (password) => ipcRenderer.invoke("applock:disable", password),
   changePassword: (currentPassword, newPassword) => ipcRenderer.invoke("applock:changePassword", currentPassword, newPassword),
   resetWithRecoveryCode: (recoveryCode, newPassword) => ipcRenderer.invoke("applock:resetWithRecoveryCode", recoveryCode, newPassword),
+  getDataForBackup: () => ipcRenderer.invoke("applock:getDataForBackup"),
+  restoreFromBackup: (data) => ipcRenderer.invoke("applock:restoreFromBackup", data),
 });

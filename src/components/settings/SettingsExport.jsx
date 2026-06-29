@@ -3,7 +3,7 @@ import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount } from "../../lib/utils";
 import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
-import { buildCSV, downloadCSV, utf8ToBase64, IMPORT_HEADERS } from "./csvUtils";
+import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 
 export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
@@ -41,7 +41,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       setExportMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
     }
   };
-  const exportFinance = (mode = "download") => {
+  const exportFinance = async (mode = "download") => {
     // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
     const real = customers;
     const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
@@ -96,11 +96,15 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       line("NET GENEL TOPLAM", net),
       line("Kalan Alacak / Tahsil Edilecek", alacak),
     ];
-    if (mode === "email") { openExportMailCSV(rows, "finans-ozeti.csv", "Finans Özeti"); return; }
-    downloadCSV(rows, "finans-ozeti.csv");
-    flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Finans"); openExportMailXLSXBase64(b64, "finans-ozeti.xlsx", "Finans Özeti"); return; }
+      await downloadXlsx(rows, "finans-ozeti.xlsx", "Finans"); flash("ok", "Finans özeti Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "finans-ozeti.csv", "Finans Özeti"); return; }
+      downloadCSV(rows, "finans-ozeti.csv"); flash("ok", "Finans özeti Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportCustomers = (mode = "download") => {
+  const exportCustomers = async (mode = "download") => {
     const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
@@ -114,11 +118,15 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       c.isResale ? "Evet" : "Hayır",
       c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel,
     ])];
-    if (mode === "email") { openExportMailCSV(rows, "musteriler.csv", "Müşteri Listesi"); return; }
-    downloadCSV(rows, "musteriler.csv");
-    flash("ok", "Müşteri listesi Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Müşteriler"); openExportMailXLSXBase64(b64, "musteriler.xlsx", "Müşteri Listesi"); return; }
+      await downloadXlsx(rows, "musteriler.xlsx", "Müşteriler"); flash("ok", "Müşteri listesi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "musteriler.csv", "Müşteri Listesi"); return; }
+      downloadCSV(rows, "musteriler.csv"); flash("ok", "Müşteri listesi Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportServices = (mode = "download") => {
+  const exportServices = async (mode = "download") => {
     const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
@@ -126,25 +134,37 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       return [c.name, c.model, c.serialNo, s.type, s.repairPlace, s.date, s.tech,
         curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti), s.yapilanIsler, s.musteriTalimati];
     })];
-    if (mode === "email") { openExportMailCSV(rows, "servis-kayitlari.csv", "Servis Kayıtları"); return; }
-    downloadCSV(rows, "servis-kayitlari.csv");
-    flash("ok", "Servis kayıtları Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Servis"); openExportMailXLSXBase64(b64, "servis-kayitlari.xlsx", "Servis Kayıtları"); return; }
+      await downloadXlsx(rows, "servis-kayitlari.xlsx", "Servis"); flash("ok", "Servis kayıtları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "servis-kayitlari.csv", "Servis Kayıtları"); return; }
+      downloadCSV(rows, "servis-kayitlari.csv"); flash("ok", "Servis kayıtları Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportDealers = (mode = "download") => {
+  const exportDealers = async (mode = "download") => {
     const head = ["Bayi/Firma Adı", "Yetkili", "Telefon", "E-posta", "Adres", "Ülke", "Şehir", "Bayi mi", "Anlaşmalı Servis mi", "Not"];
     const rows = [head, ...dealers.map(d => [d.name, d.contact, d.phone, d.email, d.adres, d.country, d.city, d.bayiMi !== false ? "Evet" : "Hayır", d.anlasmaliServisMi ? "Evet" : "Hayır", d.note])];
-    if (mode === "email") { openExportMailCSV(rows, "bayiler.csv", "Bayi Listesi"); return; }
-    downloadCSV(rows, "bayiler.csv");
-    flash("ok", "Bayi listesi Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Bayiler"); openExportMailXLSXBase64(b64, "bayiler.xlsx", "Bayi Listesi"); return; }
+      await downloadXlsx(rows, "bayiler.xlsx", "Bayiler"); flash("ok", "Bayi listesi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "bayiler.csv", "Bayi Listesi"); return; }
+      downloadCSV(rows, "bayiler.csv"); flash("ok", "Bayi listesi Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportStock = (mode = "download") => {
+  const exportStock = async (mode = "download") => {
     const head = ["Model", "Seri No", "Stoğa Giriş Tarihi", "Not"];
     const rows = [head, ...stock.map(s => [s.model, s.serialNo, s.addedDate, s.note])];
-    if (mode === "email") { openExportMailCSV(rows, "stok.csv", "Stok Listesi"); return; }
-    downloadCSV(rows, "stok.csv");
-    flash("ok", "Stok listesi Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Stok"); openExportMailXLSXBase64(b64, "stok.xlsx", "Stok Listesi"); return; }
+      await downloadXlsx(rows, "stok.xlsx", "Stok"); flash("ok", "Stok listesi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "stok.csv", "Stok Listesi"); return; }
+      downloadCSV(rows, "stok.csv"); flash("ok", "Stok listesi Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportPartSales = (mode = "download") => {
+  const exportPartSales = async (mode = "download") => {
     const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
@@ -152,11 +172,15 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       return [c.name, p.tur, p.ad, p.olcu, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
         parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır"];
     })];
-    if (mode === "email") { openExportMailCSV(rows, "extra-kalip-satislari.csv", "Extra Kalıp Satışları"); return; }
-    downloadCSV(rows, "extra-kalip-satislari.csv");
-    flash("ok", "Extra Kalıp satışları Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Kalıp Satışları"); openExportMailXLSXBase64(b64, "extra-kalip-satislari.xlsx", "Extra Kalıp Satışları"); return; }
+      await downloadXlsx(rows, "extra-kalip-satislari.xlsx", "Kalıp Satışları"); flash("ok", "Extra Kalıp satışları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "extra-kalip-satislari.csv", "Extra Kalıp Satışları"); return; }
+      downloadCSV(rows, "extra-kalip-satislari.csv"); flash("ok", "Extra Kalıp satışları Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportPayments = (mode = "download") => {
+  const exportPayments = async (mode = "download") => {
     const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Yöntem", "Vade Tarihi", "Tahsil Edildi", "Not"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...payments.map(p => {
@@ -170,23 +194,35 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         p.not,
       ];
     })];
-    if (mode === "email") { openExportMailCSV(rows, "odemeler.csv", "Ödemeler / Kapora"); return; }
-    downloadCSV(rows, "odemeler.csv");
-    flash("ok", "Ödeme/kapora geçmişi Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Ödemeler"); openExportMailXLSXBase64(b64, "odemeler.xlsx", "Ödemeler / Kapora"); return; }
+      await downloadXlsx(rows, "odemeler.xlsx", "Ödemeler"); flash("ok", "Ödeme/kapora geçmişi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "odemeler.csv", "Ödemeler / Kapora"); return; }
+      downloadCSV(rows, "odemeler.csv"); flash("ok", "Ödeme/kapora geçmişi Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportNotes = (mode = "download") => {
+  const exportNotes = async (mode = "download") => {
     const head = ["İçerik", "Güncellenme Tarihi"];
     const rows = [head, ...notes.map(n => [n.content, n.updatedAt])];
-    if (mode === "email") { openExportMailCSV(rows, "notlar.csv", "Notlar"); return; }
-    downloadCSV(rows, "notlar.csv");
-    flash("ok", "Notlar Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Notlar"); openExportMailXLSXBase64(b64, "notlar.xlsx", "Notlar"); return; }
+      await downloadXlsx(rows, "notlar.xlsx", "Notlar"); flash("ok", "Notlar Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "notlar.csv", "Notlar"); return; }
+      downloadCSV(rows, "notlar.csv"); flash("ok", "Notlar Excel (CSV) olarak indirildi.");
+    }
   };
-  const exportParts = (mode = "download") => {
+  const exportParts = async (mode = "download") => {
     const head = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
     const rows = [head, ...parts.map(p => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
-    if (mode === "email") { openExportMailCSV(rows, "yedek-parca-tanimlari.csv", "Yedek Parça Tanımları"); return; }
-    downloadCSV(rows, "yedek-parca-tanimlari.csv");
-    flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça"); openExportMailXLSXBase64(b64, "yedek-parca-tanimlari.xlsx", "Yedek Parça Tanımları"); return; }
+      await downloadXlsx(rows, "yedek-parca-tanimlari.xlsx", "Yedek Parça"); flash("ok", "Yedek parça tanımları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "yedek-parca-tanimlari.csv", "Yedek Parça Tanımları"); return; }
+      downloadCSV(rows, "yedek-parca-tanimlari.csv"); flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
+    }
   };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {

@@ -10,6 +10,7 @@ export const Stock = ({
   parts = [],
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
+  appSettings = {}, setAppSettings = () => {},
 }) => {
   const [subTab, setSubTab] = useState("makina");
 
@@ -37,7 +38,8 @@ export const Stock = ({
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
-          partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} />
+          partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
+          appSettings={appSettings} setAppSettings={setAppSettings} />
       )}
     </div>
   );

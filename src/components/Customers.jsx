@@ -224,29 +224,16 @@ export const Customers = ({
     if (setServices) setServices(p => withDeleted(p, s => s.customerId === confirmId, ts));
     if (setPartSales) setPartSales(p => withDeleted(p, x => x.customerId === confirmId, ts));
     if (setPayments) setPayments(p => withDeleted(p, x => x.customerId === confirmId, ts));
-    if (c && setStock && c.model && (c.serialNo || c.seriNoBekliyor)) {
-      setStock(p => {
-        const zatenVar = c.serialNo
-          ? p.some(s => s.model === c.model && s.serialNo === c.serialNo)
-          : p.some(s => s.model === c.model && !s.serialNo);
-        if (zatenVar) return p;
-        bumpId(p);
-        return [{ id: uid(), model: c.model, serialNo: c.serialNo || "", addedDate: today(), note: "Silinen müşteriden geri döndü", parcalar: [] }, ...p];
-      });
-    }
-    // Makina kitinin parçalarını stoka geri al (orijinal stok makinasının log kayıtlarından)
-    const kitRestoredIds = new Set();
-    if (c && setPartStock && setPartStockLog) {
-      let kitLog = [];
-      let restoredRefId = null;
 
+    // Kit log'unu önceden belirle — stok girişinin parcalar alanı ve log güncellemesi için gerekli
+    let kitLog = [];
+    let restoredRefId = null;
+    if (c && setPartStockLog) {
       if (c.sourceStockId) {
-        // Yeni kayıt: sourceStockId ile direkt eşleş
         const srcId = String(c.sourceStockId);
         kitLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === srcId);
         restoredRefId = srcId;
       } else if (c.model) {
-        // Eski kayıt: aynı model için orphan log ara (stokta olmayan referansId)
         const liveIds = new Set(stock.map(s => String(s.id)));
         const orphan = partStockLog.filter(l =>
           l.tip === "makina_uretimi" &&
@@ -265,24 +252,33 @@ export const Customers = ({
           restoredRefId = bestKey;
         }
       }
+    }
 
-      if (kitLog.length > 0) {
-        // Senkron olarak doldur — aşağıdaki restoreIds kontrolü setPartStock callback'inden önce çalışır
-        kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
-        setPartStock(ps => {
-          let updated = [...ps];
-          kitLog.forEach(l => {
-            const pid = String(l.partId);
-            updated = updated.map(s => String(s.partId) === pid
-              ? { ...s, miktar: (s.miktar || 0) + Math.abs(l.miktar), sonGuncelleme: today() }
-              : s
-            );
-          });
-          return updated;
-        });
-        setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId)));
+    // Makinayı stoka geri al — kit varsa parcalar korunur, parçalar stoka iade edilmez
+    const kitRestoredIds = new Set();
+    if (c && setStock && c.model && (c.serialNo || c.seriNoBekliyor)) {
+      const alreadyInStock = c.serialNo
+        ? stock.some(s => s.model === c.model && s.serialNo === c.serialNo)
+        : stock.some(s => s.model === c.model && !s.serialNo);
+
+      if (!alreadyInStock) {
+        const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: Math.abs(l.miktar) }));
+        bumpId(stock);
+        const newStockId = uid();
+        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), note: "Silinen müşteriden geri döndü", parcalar: kitParcalar }, ...p]);
+
+        if (kitLog.length > 0 && setPartStockLog) {
+          kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
+          // Parçalar makinada kalmaya devam ediyor — log'u yeni stok ID'sine bağla
+          setPartStockLog(log => log.map(l =>
+            l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId
+              ? { ...l, referansId: newStockId }
+              : l
+          ));
+        }
       }
     }
+
     // Konveyör Saç / Bant stoğunu geri al (kit'te olmayan, manuel seçilenler)
     if (c && setPartStock) {
       const restoreIds = [c.konveyorSacId, c.bantSecimiId]

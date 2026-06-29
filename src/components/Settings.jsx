@@ -12,6 +12,7 @@ import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
+import { SettingsOptimize } from "./settings/SettingsOptimize";
 import { SettingsKdv } from "./settings/SettingsDanger";
 import { SettingsCompany } from "./settings/SettingsCompany";
 import { SettingsTranslations } from "./settings/SettingsTranslations";
@@ -37,7 +38,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
             { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
             { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
-            { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
+            { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
             { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
           ].map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
@@ -93,7 +94,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "app" && <SettingsApp version={version} flash={flash} />}
 
-      {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
+      {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} setCustomers={setCustomers} setServices={setServices} flash={flash} />}
 
       {settingsTab === "backup" && (
         <SettingsBackup
@@ -160,6 +161,17 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "import" && (
         <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash}
           parts={parts} setParts={setParts} />
+      )}
+
+      {settingsTab === "optimize" && (
+        <SettingsOptimize
+          customModels={customModels} setCustomModels={setCustomModels}
+          standardModels={standardModels} setStandardModels={setStandardModels}
+          kalipDefs={kalipDefs} setKalipDefs={setKalipDefs}
+          parts={parts} setParts={setParts}
+          appSettings={appSettings} setAppSettings={setAppSettings}
+          flash={flash}
+        />
       )}
 
       {settingsTab === "trash" && (

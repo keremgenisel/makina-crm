@@ -100,4 +100,19 @@ function resetWithRecoveryCode(recoveryCode, newPassword) {
   return { ok: true, recoveryCode: newRecoveryCode };
 }
 
-module.exports = { getStatus, setup, verify, disable, changePassword, resetWithRecoveryCode };
+// Yedek desteği: hash+salt makineye özgü değil (scrypt), farklı makinede de çalışır.
+function getDataForBackup() {
+  return readConfig();
+}
+
+function restoreFromBackup(data) {
+  if (!data || typeof data !== "object") return { ok: false, error: "Geçersiz kilit verisi." };
+  try {
+    writeConfig(data);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+}
+
+module.exports = { getStatus, setup, verify, disable, changePassword, resetWithRecoveryCode, getDataForBackup, restoreFromBackup };

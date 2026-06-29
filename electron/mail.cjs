@@ -210,4 +210,36 @@ async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: 
   }
 }
 
-module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail, getSentLog, getDeletedLog, deleteLogEntry, restoreLogEntry, purgeLogEntry };
+// Yedek desteği: şifre safeStorage ile makineye özgü şifreli olduğundan yedeklenmez,
+// geri yüklemede sadece host/port/email restore edilir, kullanıcı şifreyi tekrar girmeli.
+function getConfigForBackup() {
+  const cfg = readConfig();
+  if (!cfg) return null;
+  return { email: cfg.email || null, host: cfg.host || null, port: cfg.port || 465, secure: cfg.secure !== false };
+}
+
+function restoreConfigFromBackup(config) {
+  if (!config?.host || !config?.email) return { ok: false, error: "Geçersiz e-posta yapılandırması." };
+  try {
+    fs.writeFileSync(getConfigPath(), JSON.stringify({ email: config.email, host: config.host, port: Number(config.port) || 465, secure: config.secure !== false, encryptedPassword: null }), "utf-8");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+}
+
+function getAllLog() {
+  return readEmailLog();
+}
+
+function restoreFullLog(log) {
+  try {
+    if (!Array.isArray(log)) return { ok: false, error: "Geçersiz log verisi." };
+    writeEmailLog(log);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+}
+
+module.exports = { saveCredentials, getCredentialsStatus, clearCredentials, testConnection, sendMail, getSentLog, getDeletedLog, deleteLogEntry, restoreLogEntry, purgeLogEntry, getConfigForBackup, restoreConfigFromBackup, getAllLog, restoreFullLog };

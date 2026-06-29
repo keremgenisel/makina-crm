@@ -134,6 +134,10 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
   ipcMain.handle("mail:deleteLogEntry", (_e, id) => mailer.deleteLogEntry(id));
   ipcMain.handle("mail:restoreLogEntry", (_e, id) => mailer.restoreLogEntry(id));
   ipcMain.handle("mail:purgeLogEntry", (_e, id) => mailer.purgeLogEntry(id));
+  ipcMain.handle("mail:getConfigForBackup", () => mailer.getConfigForBackup());
+  ipcMain.handle("mail:restoreConfigFromBackup", (_e, config) => mailer.restoreConfigFromBackup(config));
+  ipcMain.handle("mail:getAllLog", () => mailer.getAllLog());
+  ipcMain.handle("mail:restoreFullLog", (_e, log) => mailer.restoreFullLog(log));
 
   // ── Uygulama şifresi (açılış kilidi) ──
   ipcMain.handle("applock:status", () => applock.getStatus());
@@ -142,6 +146,8 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
   ipcMain.handle("applock:disable", (_e, password) => applock.disable(password));
   ipcMain.handle("applock:changePassword", (_e, currentPassword, newPassword) => applock.changePassword(currentPassword, newPassword));
   ipcMain.handle("applock:resetWithRecoveryCode", (_e, recoveryCode, newPassword) => applock.resetWithRecoveryCode(recoveryCode, newPassword));
+  ipcMain.handle("applock:getDataForBackup", () => applock.getDataForBackup());
+  ipcMain.handle("applock:restoreFromBackup", (_e, data) => applock.restoreFromBackup(data));
 
   // ── Hata günlüğü ──
   ipcMain.handle("error:log", (_e, entry) => {

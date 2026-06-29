@@ -331,7 +331,7 @@ export const CountryCityFields = ({ country, city, onCountry, onCity, geoData, l
   );
 };
 
-export const ImageUpload = ({ value, onChange, maxPx = 500, label = "Resim", preserveFormat = false }) => {
+export const ImageUpload = ({ value, onChange, maxPx = 250, label = "Resim", preserveFormat = false }) => {
   const ref = React.useRef(null);
   const pick = () => ref.current?.click();
   const onFile = (e) => {
@@ -339,16 +339,21 @@ export const ImageUpload = ({ value, onChange, maxPx = 500, label = "Resim", pre
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (preserveFormat) { onChange(ev.target.result); return; }
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        // preserveFormat=true: kaşe/imza — alpha kanalı için WebP, 600px sınırı
+        const limit = preserveFormat ? 600 : maxPx;
+        const scale = Math.min(1, limit / Math.max(img.width, img.height, 1));
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
         const canvas = document.createElement("canvas");
         canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        onChange(canvas.toDataURL("image/jpeg", 0.82));
+        // WebP önce (daha küçük + alpha destekler), fallback JPEG/PNG
+        const webp = canvas.toDataURL("image/webp", preserveFormat ? 0.85 : 0.80);
+        onChange(webp.startsWith("data:image/webp")
+          ? webp
+          : canvas.toDataURL(preserveFormat ? "image/png" : "image/jpeg", 0.72));
       };
       img.src = ev.target.result;
     };

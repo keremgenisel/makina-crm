@@ -267,7 +267,6 @@ export const CustomerDetailModal = ({
   const deleteService = (id) => {
     if (!setServices) return;
     restoreServiceParts(id);
-    restoreServiceBantlar(id);
     setServices(p => withDeleted(p, s => s.id === id));
     showToast("Servis kaydı silindi.");
   };

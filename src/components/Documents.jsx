@@ -126,6 +126,7 @@ const makeEmpty = (type, teklifler, factory, dil = "TR") => {
     kur: "",
     teslimYeri: type === "proforma" ? D.teslimYeri : "",
     gtipNo: factory?.gtipNo || "",
+    modelYiliDegeri: "",
     durum: "taslak",
     createdAt: today(),
   };
@@ -623,6 +624,9 @@ export const Documents = ({
             {form.type === "proforma" && (
               <Field label="GTIP No"><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field>
             )}
+            <Field label="Model Yılı" style={{ gridColumn: "1 / -1" }}>
+              <input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} />
+            </Field>
             {form.type === "proforma" && form.currency !== "TRY" && (
               <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field>
             )}
@@ -995,7 +999,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
             </tr>
             <tr>
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.modelYiliLabel}</td>
-              <td style="padding:3px 12px;">${L.newUnused}</td>
+              <td style="padding:3px 12px;">${form.modelYiliDegeri || L.newUnused}</td>
             </tr>
             ${form.currency !== "TRY" && form.kur ? `<tr>
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.kurLabel}</td>
@@ -1162,7 +1166,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
   </div>` : "";
 
   const proformaKase = isProforma && kaseResmi
-    ? `<div style="margin-top:24px;text-align:right;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>`
+    ? `<div style="margin-top:24px;text-align:right;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>`
     : "";
   const page1 = header + (enProforma ? infoSectionEN : infoSection) + productTable + totalsBox + proformaNotlar + teklifSartlar + proformaKase;
 
@@ -1215,7 +1219,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
               ${b.ibanUSD ? `<div style="font-size:11px;">${L.ibanUSDLabel}: <b style="font-family:monospace;">${b.ibanUSD}</b></div>` : ""}
             `).join("")}
           </div>` : ""}
-          ${kaseResmi ? `<div style="margin-top:10px;text-align:right;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
+          ${kaseResmi ? `<div style="margin-top:10px;text-align:right;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
         </td>
       </tr>
     </table>

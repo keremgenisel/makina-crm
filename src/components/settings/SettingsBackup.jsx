@@ -15,8 +15,15 @@ export const SettingsBackup = ({
 
   // ── Yedek Al ──
   const doBackup = async () => {
-    const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog };
     try {
+      // appSettings dışındaki makineye özgü alanlar (yedek klasörü, zamanlama) restore'da atlanır.
+      // SMTP şifresi safeStorage ile şifreli olduğundan yedeklenmez, sadece host/port/email alınır.
+      const [mailConfig, mailLog, appLockData] = await Promise.all([
+        window.appMail?.getConfigForBackup?.() ?? null,
+        window.appMail?.getAllLog?.() ?? [],
+        window.appLock?.getDataForBackup?.() ?? null,
+      ]);
+      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData };
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
         if (ok) flash("ok", "Yedek başarıyla kaydedildi.");
@@ -67,7 +74,7 @@ export const SettingsBackup = ({
     }
   };
 
-  const applyRestore = () => {
+  const applyRestore = async () => {
     // KDV oranı tarihe bağlı dönemler hâline gelmeden önce kaydedilmiş eski yedeklerde Kalan Borç
     // kuruş artıkları veya (eski sabit orana göre girilmiş ödemelerden kalma) negatif "fazla ödeme"
     // bakiyeleri taşıyabilir — geri yüklerken bunlar da App.jsx'in normal yükleme akışındaki gibi temizlenir.
@@ -88,8 +95,30 @@ export const SettingsBackup = ({
     if (Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
     if (Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
     if (Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
+
+    // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
+    if (restoreData?.appSettings) {
+      const { autoBackup, backupFolder, frequency, lastBackup, ...portableSettings } = restoreData.appSettings;
+      setAppSettings(p => ({ ...p, ...portableSettings }));
+    }
+    // SMTP config (şifresiz): e-posta sunucu ayarları geri yüklenir, şifre tekrar girilmeli.
+    let smtpRestored = false;
+    if (restoreData?.mailConfig && window.appMail?.restoreConfigFromBackup) {
+      await window.appMail.restoreConfigFromBackup(restoreData.mailConfig).catch(() => {});
+      smtpRestored = true;
+    }
+    // E-posta logu
+    if (Array.isArray(restoreData?.mailLog) && window.appMail?.restoreFullLog) {
+      await window.appMail.restoreFullLog(restoreData.mailLog).catch(() => {});
+    }
+    // Uygulama kilidi
+    if (restoreData?.appLockData && window.appLock?.restoreFromBackup) {
+      await window.appLock.restoreFromBackup(restoreData.appLockData).catch(() => {});
+    }
+
     setRestoreData(null);
-    flash("ok", "Yedek başarıyla yüklendi. Veriler geri getirildi.");
+    const smtpNote = smtpRestored ? " E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli." : "";
+    flash("ok", "Yedek başarıyla yüklendi." + smtpNote);
   };
 
   return (

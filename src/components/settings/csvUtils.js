@@ -8,6 +8,24 @@ export const downloadCSV = (rows, filename) => {
   a.href = url; a.download = filename; a.click();
 };
 
+// XLSX ile indir — Türkçe karakterler her zaman korunur, CSV'ye kıyasla Excel uyumluluğu garantili.
+export const downloadXlsx = async (rows, filename, sheetName = "Veri") => {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
+};
+
+// XLSX içeriğini base64 string olarak döndürür (e-posta eki için).
+export const xlsxToBase64 = async (rows, sheetName = "Veri") => {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  return XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+};
+
 export const utf8ToBase64 = (str) => {
   const bytes = new TextEncoder().encode(str);
   let binary = "";

@@ -115,6 +115,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     seriNoLabel: "Seri Numarası",
     kalipCapiLabel: "Makina Kalıp Çapı",
     kaliplarLabel: "Kalıplar",
+    bantlarLabel: "Bant",
     garantiBaslangicLabel: "Satış / Garanti Başlangıç",
     garantiBitisLabel: "Garanti Bitiş",
     notLabel: "Not",
@@ -157,6 +158,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     seriNoLabel: "Serial Number",
     kalipCapiLabel: "Machine Mold Diameter",
     kaliplarLabel: "Molds",
+    bantlarLabel: "Band",
     garantiBaslangicLabel: "Sale / Warranty Start",
     garantiBitisLabel: "Warranty End",
     notLabel: "Note",
@@ -305,7 +307,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     3- ${esc(L.sart3)}<br>
     4- ${esc(L.sart4)}
   </div>
-  ${kaseResmi ? `<div style="text-align:right;margin-top:20px;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin-top:20px;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;
@@ -349,6 +351,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     [L.seriNoLabel, detailView.serialNo || "—"],
     ...(fmtKalipCapi(detailView.kalipCapi) ? [[L.kalipCapiLabel, fmtKalipCapi(detailView.kalipCapi)]] : []),
     [L.kaliplarLabel, lang === "EN" ? kalipTextEN(detailView) : kalipText(detailView)],
+    ...((Array.isArray(detailView.bantlar) && detailView.bantlar.length > 0) ? [[L.bantlarLabel, detailView.bantlar.map(b => `${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`).join(" · ")]] : []),
     [L.garantiBaslangicLabel, detailView.installDate ? fmtTR(detailView.installDate) : "—"],
     [L.garantiBitisLabel, `${detailView.warrantyEnd ? fmtTR(detailView.warrantyEnd) : "—"} (${detailWarrantyOk ? L.garantiDevam : L.garantiBitti})`],
     [L.notLabel, detailView.aciklama || "—"],
@@ -417,7 +420,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thKalip)}</th></tr></thead>
     <tbody>${partRows}</tbody>
   </table>` : ""}
-  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:160px;max-width:300px;object-fit:contain;" alt="kaşe"></div>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;

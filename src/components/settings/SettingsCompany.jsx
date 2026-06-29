@@ -21,7 +21,7 @@ const migrateBankalar = (factory) => {
   return (b.bankaAdi || b.hesapAdi || b.swift || b.ibanTL || b.ibanEUR || b.ibanUSD) ? [b] : [emptyBank()];
 };
 
-export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, flash }) => {
+export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
     name: "", contact: "", phone: "", email: "", adres: "",
     gtipNo: "",
@@ -42,8 +42,28 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
   }, [factory]);
 
   const save = () => {
-    setFactory({ ...form });
-    flash("ok", "Firma bilgileri kaydedildi.");
+    const oldName = factory?.name;
+    const newName = (form.name || "").trim() || oldName;
+    const prevNames = oldName && newName && oldName !== newName
+      ? [...new Set([...(factory?.prevNames || []), oldName])]
+      : (factory?.prevNames || []);
+    setFactory({ ...form, name: newName, prevNames });
+    if (oldName && newName && oldName !== newName) {
+      setCustomers?.(p => p.map(c => {
+        const satisYapanEsleser = c.satisYapan === oldName;
+        const prevOwnerEsleser = c.prevOwners?.some(o => o.satisYapan === oldName);
+        if (!satisYapanEsleser && !prevOwnerEsleser) return c;
+        return {
+          ...c,
+          satisYapan: satisYapanEsleser ? newName : c.satisYapan,
+          prevOwners: prevOwnerEsleser ? c.prevOwners.map(o => o.satisYapan === oldName ? { ...o, satisYapan: newName } : o) : c.prevOwners,
+        };
+      }));
+      setServices?.(p => p.map(s => s.islemFirma === oldName ? { ...s, islemFirma: newName } : s));
+      flash("ok", `Firma adı güncellendi. "${oldName}" geçmiş kayıtlarda da değiştirildi.`);
+    } else {
+      flash("ok", "Firma bilgileri kaydedildi.");
+    }
   };
 
   const f = (key) => ({
@@ -138,7 +158,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           <ImageUpload
             value={appSettings?.kaseResmi || ""}
             onChange={v => setAppSettings?.(p => ({ ...p, kaseResmi: v }))}
-            maxPx={600}
+            maxPx={300}
             label="kaşe"
             preserveFormat
           />
