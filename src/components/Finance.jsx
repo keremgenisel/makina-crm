@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
-import { Pagination } from "./ui";
+import { Modal, Pagination } from "./ui";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -237,9 +237,62 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
   const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
   const { page: sellerPage, setPage: setSellerPage, paged: sellerRowsPaged, perPage: SELLER_PER_PAGE } = usePagination(sellerRows, 10);
+
+  const [showAnlasmaliModal, setShowAnlasmaliModal] = useState(false);
+  const [anlasmaliSearch, setAnlasmaliSearch] = useState("");
+
+  const anlasmaliServisDetay = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const thisMonthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
+    const inR = (iso) => {
+      if (!iso) return range === "all";
+      const s = String(iso);
+      if (range === "all") return true;
+      if (range === "thisMonth") return s.slice(0, 7) === thisMonthKey;
+      if (range === "thisYear") return s.slice(0, 4) === String(y);
+      if (range === "lastYear") return s.slice(0, 4) === String(y - 1);
+      if (range === "custom") {
+        if (customStart && s < customStart) return false;
+        if (customEnd && s > customEnd) return false;
+        return true;
+      }
+      return true;
+    };
+    return services
+      .filter(s => !s.deletedAt && inR(s.date) && isParcaUcretliMi(s) && !isAltuntasServisi(s, factoryName))
+      .map(s => {
+        const cust = customers.find(c => String(c.id) === String(s.customerId));
+        const ucret = parseMoney(s.parcaUcreti);
+        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, s.date, kdvRates);
+        return {
+          id: s.id,
+          tarih: s.date || "",
+          firmaAdi: cust?.name || "—",
+          islemFirma: s.islemFirma || "—",
+          parcaUcreti: ucret,
+          kdv,
+          currency: s.parcaCurrency || "TRY",
+          odendi: s.parcaOdendi,
+        };
+      })
+      .sort((a, b) => b.tarih.localeCompare(a.tarih));
+  }, [services, customers, range, customStart, customEnd, factoryName, kdvRates]);
+
+  const anlasmaliFiltered = useMemo(() => {
+    if (!anlasmaliSearch.trim()) return anlasmaliServisDetay;
+    const q = anlasmaliSearch.toLocaleLowerCase("tr-TR");
+    return anlasmaliServisDetay.filter(r =>
+      r.firmaAdi.toLocaleLowerCase("tr-TR").includes(q) ||
+      r.islemFirma.toLocaleLowerCase("tr-TR").includes(q)
+    );
+  }, [anlasmaliServisDetay, anlasmaliSearch]);
+
+  const { page: anlasmaliPage, setPage: setAnlasmaliPage, paged: anlasmaliPaged, perPage: ANLASMALI_PER_PAGE } = usePagination(anlasmaliFiltered, 10);
+
   // Tarih aralığı değişince listeler yeniden hesaplanıp kısalabilir — sayfa numarası eski/yüksek
   // kalmasın diye aralık değiştiğinde her ikisi de baştan başlar.
-  useEffect(() => { setModelPage(1); setSellerPage(1); }, [range, customStart, customEnd]);
+  useEffect(() => { setModelPage(1); setSellerPage(1); setAnlasmaliPage(1); }, [range, customStart, customEnd]);
 
   // KDV artık tek bir sayı değil, tarihe bağlı dönemler listesi — bu yüzden kartlarda sabit bir
   // "%20" göstermek yerine, seçili tarih aralığında geçerli olan dönem(ler) burada listelenir.
@@ -364,7 +417,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
         <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
         <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri (KDV hariç)" />
-        <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç)" />
+        <div onClick={() => setShowAnlasmaliModal(true)} style={{ cursor: "pointer" }} title="Detay için tıklayın">
+          <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç) · detay için tıklayın" />
+        </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
       </div>
@@ -423,6 +478,48 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
           <Pagination total={sellerRows.length} page={sellerPage} setPage={setSellerPage} perPage={SELLER_PER_PAGE} />
         </div>
       </div>
+
+      {showAnlasmaliModal && (
+        <Modal title="Anlaşmalı Servislere Satılan Parça Detayı" onClose={() => { setShowAnlasmaliModal(false); setAnlasmaliSearch(""); }}>
+          <div style={{ marginBottom: 12 }}>
+            <input
+              value={anlasmaliSearch}
+              onChange={e => { setAnlasmaliSearch(e.target.value); setAnlasmaliPage(1); }}
+              placeholder="Müşteri firma veya servis firması ara..."
+              style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }}
+            />
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Tarih", "Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"].map(h => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: ["Parça Ücreti", "KDV"].includes(h) ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {anlasmaliPaged.map(r => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{fmtTR(r.tarih) || "—"}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 600 }}>{r.firmaAdi}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{r.islemFirma}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#a855f7" }}>{fmtCur(r.parcaUcreti, r.currency)}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: "#0d9488" }}>{r.kdv > 0 ? fmtCur(r.kdv, r.currency) : "—"}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13 }}>
+                    <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.odendi ? "#dcfce7" : "#fee2e2", color: r.odendi ? "#16a34a" : "#dc2626" }}>
+                      {r.odendi ? "Ödendi" : "Bekliyor"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {anlasmaliFiltered.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Kayıt bulunamadı</td></tr>
+              )}
+            </tbody>
+          </table>
+          <Pagination total={anlasmaliFiltered.length} page={anlasmaliPage} setPage={setAnlasmaliPage} perPage={ANLASMALI_PER_PAGE} />
+        </Modal>
+      )}
     </div>
   );
 };

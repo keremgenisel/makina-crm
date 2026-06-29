@@ -113,7 +113,7 @@ const makeEmpty = (type, teklifler, factory, dil = "TR") => {
     currency: dil === "EN" ? "EUR" : "TRY",
     customerId: null,
     firma: "", yetkili: "", tel: "", vergiNo: "", vergiDairesi: "", adres: "",
-    authority: "", forwarder: "",
+    authority: "", forwarder: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali",
     satirlar: [],
     iskonto: "", kdvOrani: dil === "EN" ? "0" : "20",
     odemeSekli: D.odemeSekli,
