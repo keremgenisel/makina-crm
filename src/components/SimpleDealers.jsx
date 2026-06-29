@@ -53,7 +53,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     });
   }, [dealerServices, dealerSvcSearch, customers]);
 
-  const { page: svcPage, setPage: setSvcPage, paged: svcPaged } = usePagination(dealerSvcFiltered, 10);
+  const { page: svcPage, setPage: setSvcPage, paged: svcPaged } = usePagination(dealerSvcFiltered, 5);
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
     searchFields: ["name", "city", "contact", "country"],
@@ -396,7 +396,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   );
                 })}
               </div>
-              <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={10} />
+              <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={5} />
             </div>
           )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
