@@ -480,6 +480,7 @@ export const CustomerDetailModal = ({
       adres: detailView.adres || "",
       city: detailView.city || "",
       country: detailView.country || "",
+      tel: detailView.phone || "",
       yetkili1Ad: detailView.yetkili1Ad || "",
       yetkili1Tel: detailView.yetkili1Tel || "",
       yetkili2Ad: detailView.yetkili2Ad || "",
@@ -487,14 +488,15 @@ export const CustomerDetailModal = ({
     },
   });
 
-  const printSandikEtiket = () => {
-    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici);
+  const printSandikEtiket = (lang = "TR") => {
+    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici, lang);
     if (window.appPrint) { window.appPrint.printHtml(html, null, "sandik-etiketi.pdf"); return; }
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
+  const sandikIsYurtdisi = sandikModal && sandikModal.alici.country && sandikModal.alici.country !== "Türkiye";
 
   const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi);
   const printMachineReport = (lang = "TR") => {
@@ -1262,6 +1264,7 @@ export const CustomerDetailModal = ({
                 <Field label="Adres"><Input value={sandikModal.alici.adres} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, adres: e.target.value } }))} /></Field>
                 <Field label="Şehir"><Input value={sandikModal.alici.city} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, city: e.target.value } }))} /></Field>
                 <Field label="Ülke"><Input value={sandikModal.alici.country} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, country: e.target.value } }))} /></Field>
+                <Field label="Telefon"><Input value={sandikModal.alici.tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, tel: e.target.value } }))} /></Field>
                 <Field label="Yetkili 1 - Ad Soyad"><Input value={sandikModal.alici.yetkili1Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Ad: e.target.value } }))} /></Field>
                 <Field label="Yetkili 1 - Telefon"><Input value={sandikModal.alici.yetkili1Tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Tel: e.target.value } }))} /></Field>
                 <Field label="Yetkili 2 - Ad Soyad"><Input value={sandikModal.alici.yetkili2Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili2Ad: e.target.value } }))} /></Field>
@@ -1270,7 +1273,14 @@ export const CustomerDetailModal = ({
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <Btn variant="ghost" onClick={() => setSandikModal(null)}>İptal</Btn>
-              <Btn onClick={printSandikEtiket}><Icon name="print" size={14} /> Yazdır</Btn>
+              {sandikIsYurtdisi ? (
+                <>
+                  <Btn variant="ghost" onClick={() => printSandikEtiket("TR")}><Icon name="print" size={14} /> Türkçe</Btn>
+                  <Btn onClick={() => printSandikEtiket("EN")}><Icon name="print" size={14} /> English</Btn>
+                </>
+              ) : (
+                <Btn onClick={() => printSandikEtiket("TR")}><Icon name="print" size={14} /> Yazdır</Btn>
+              )}
             </div>
           </div>
         </Modal>
