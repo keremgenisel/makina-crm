@@ -407,7 +407,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>
                               {fmtCur(parcaUcret, s.parcaCurrency || s.currency || "TRY")}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik Parça</span>
                           </div>
                         )}
                       </div>
