@@ -355,8 +355,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   const cust = customers.find(c => c.id === s.customerId);
                   const parcaUcret = parseMoney(s.parcaUcreti);
                   const servisUcret = parseMoney(s.servisUcreti);
-                  const toplamNet = parcaUcret + servisUcret;
-                  const kdvToplam = calcKDV(s.faturaTipi, toplamNet, s.date, kdvRates);
+                  const parcaBizden = parcaUcret > 0 && s.parcaAltuntastanMi !== false && !s.parcaUcretsizMi;
+                  const kdvToplam = parcaBizden ? calcKDV(s.faturaTipi, parcaUcret, s.date, kdvRates) : 0;
                   return (
                     <div key={s.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
@@ -381,16 +381,27 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                           ))}
                         </div>
                       )}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                        {toplamNet > 0 && (
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>
-                            {fmtCur(toplamNet, s.parcaCurrency || s.currency || "TRY")}
-                            {kdvToplam > 0 && <span style={{ color: "#64748b", fontWeight: 400 }}> · KDV dahil: {fmtCur(toplamNet + kdvToplam, s.parcaCurrency || s.currency || "TRY")}</span>}
-                          </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {servisUcret > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>
+                              {fmtCur(servisUcret, s.currency || "TRY")}
+                            </span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Bayi Geliri</span>
+                          </div>
                         )}
-                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "#dcfce7" : "#fee2e2", color: s.odendi ? "#16a34a" : "#dc2626" }}>
-                          {s.odendi ? "Ödendi" : "Bekliyor"}
-                        </span>
+                        {parcaBizden && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>
+                              {fmtCur(parcaUcret, s.parcaCurrency || s.currency || "TRY")}
+                              {kdvToplam > 0 && <span style={{ color: "#64748b", fontWeight: 400 }}> · KDV dahil: {fmtCur(parcaUcret + kdvToplam, s.parcaCurrency || s.currency || "TRY")}</span>}
+                            </span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Parça</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "#dcfce7" : "#fee2e2", color: s.odendi ? "#16a34a" : "#dc2626" }}>
+                              {s.odendi ? "Ödendi" : "Bekliyor"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

@@ -273,7 +273,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
           parcaUcreti: ucret,
           kdv,
           currency: s.parcaCurrency || "TRY",
-          odendi: s.parcaOdendi,
+          odendi: s.odendi,
         };
       })
       .sort((a, b) => b.tarih.localeCompare(a.tarih));
