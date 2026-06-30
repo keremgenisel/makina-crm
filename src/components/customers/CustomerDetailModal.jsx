@@ -11,6 +11,7 @@ import {
   printMachineReport as printMachineReportTemplate,
   buildServiceFormHtml,
   buildMachineReportHtml,
+  buildSandikEtiketiHtml,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor } from "../ui";
 import { ServiceForm } from "../ServiceForm";
@@ -53,6 +54,7 @@ export const CustomerDetailModal = ({
   const [confirmDeleteServiceId, setConfirmDeleteServiceId] = useState(null);
   const [confirmDeletePartSaleId, setConfirmDeletePartSaleId] = useState(null);
   const [printLangModal, setPrintLangModal] = useState(null);
+  const [sandikModal, setSandikModal] = useState(null);
   const [mailDraft, setMailDraft] = useState(null);
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
 
@@ -470,6 +472,30 @@ export const CustomerDetailModal = ({
     }
   };
   const kaseResmi = appSettings?.kaseResmi || "";
+
+  const openSandikEtiket = () => setSandikModal({
+    gonderen: { ad: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali", tel: factory?.phone || "", adres: factory?.adres || "" },
+    alici: {
+      firmaAdi: detailView.name || "",
+      adres: detailView.adres || "",
+      city: detailView.city || "",
+      country: detailView.country || "",
+      yetkili1Ad: detailView.yetkili1Ad || "",
+      yetkili1Tel: detailView.yetkili1Tel || "",
+      yetkili2Ad: detailView.yetkili2Ad || "",
+      yetkili2Tel: detailView.yetkili2Tel || "",
+    },
+  });
+
+  const printSandikEtiket = () => {
+    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici);
+    if (window.appPrint) { window.appPrint.printHtml(html, null, "sandik-etiketi.pdf"); return; }
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
   const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi);
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
@@ -928,6 +954,7 @@ export const CustomerDetailModal = ({
               <Icon name="plus" size={14} /> Bu Firmaya Makina Ekle
             </Btn>
           )}
+          <Btn variant="ghost" onClick={openSandikEtiket}><Icon name="print" size={14} /> Sandık Etiketi</Btn>
           <Btn onClick={() => { onClose(); onOpenEdit(detailView); }}><Icon name="edit" size={14} /> Düzenle</Btn>
         </div>
       </Modal>
@@ -1215,6 +1242,38 @@ export const CustomerDetailModal = ({
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
           onSave={savePartSale} onCancel={() => setPkForm(null)}
         />
+      )}
+
+      {sandikModal && (
+        <Modal title="Sandık Etiketi" onClose={() => setSandikModal(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Gönderen</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Field label="Şirket Adı"><Input value={sandikModal.gonderen.ad} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, ad: e.target.value } }))} /></Field>
+                <Field label="Telefon"><Input value={sandikModal.gonderen.tel} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, tel: e.target.value } }))} /></Field>
+                <Field label="Adres"><Input value={sandikModal.gonderen.adres} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, adres: e.target.value } }))} /></Field>
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Alıcı</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Field label="Firma Adı"><Input value={sandikModal.alici.firmaAdi} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, firmaAdi: e.target.value } }))} /></Field>
+                <Field label="Adres"><Input value={sandikModal.alici.adres} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, adres: e.target.value } }))} /></Field>
+                <Field label="Şehir"><Input value={sandikModal.alici.city} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, city: e.target.value } }))} /></Field>
+                <Field label="Ülke"><Input value={sandikModal.alici.country} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, country: e.target.value } }))} /></Field>
+                <Field label="Yetkili 1 - Ad Soyad"><Input value={sandikModal.alici.yetkili1Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Ad: e.target.value } }))} /></Field>
+                <Field label="Yetkili 1 - Telefon"><Input value={sandikModal.alici.yetkili1Tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Tel: e.target.value } }))} /></Field>
+                <Field label="Yetkili 2 - Ad Soyad"><Input value={sandikModal.alici.yetkili2Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili2Ad: e.target.value } }))} /></Field>
+                <Field label="Yetkili 2 - Telefon"><Input value={sandikModal.alici.yetkili2Tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili2Tel: e.target.value } }))} /></Field>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <Btn variant="ghost" onClick={() => setSandikModal(null)}>İptal</Btn>
+              <Btn onClick={printSandikEtiket}><Icon name="print" size={14} /> Yazdır</Btn>
+            </div>
+          </div>
+        </Modal>
       )}
     </>
   );

@@ -438,6 +438,51 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   return html;
 }
 
+// Sandık Üstü Etiketi — A4 HTML
+export function buildSandikEtiketiHtml(gonderen, alici) {
+  const g = gonderen || {};
+  const a = alici || {};
+  const konum = [a.city, a.country].filter(Boolean).join(" / ");
+  const yetkiliRows = [
+    a.yetkili1Ad ? `${esc(a.yetkili1Ad)}${a.yetkili1Tel ? `: ${esc(a.yetkili1Tel)}` : ""}` : "",
+    a.yetkili2Ad ? `${esc(a.yetkili2Ad)}${a.yetkili2Tel ? `: ${esc(a.yetkili2Tel)}` : ""}` : "",
+  ].filter(Boolean);
+  return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Sandık Etiketi</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 18mm 20mm; }
+  @media print { @page { margin: 0; size: A4 portrait; } body { padding: 18mm 20mm; } }
+</style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16mm;">
+    <tr>
+      <td valign="top">
+        <div style="font-size:13pt;font-weight:900;letter-spacing:1px;margin-bottom:8mm;">GÖNDEREN:</div>
+        ${g.ad ? `<div style="font-size:12pt;font-weight:700;margin-bottom:3px;">${esc(g.ad)}</div>` : ""}
+        ${g.adres ? `<div style="font-size:10pt;color:#444;line-height:1.5;margin-bottom:3px;">${esc(g.adres)}</div>` : ""}
+        ${g.tel ? `<div style="font-size:10pt;color:#444;">${esc(g.tel)}</div>` : ""}
+      </td>
+      <td align="right" valign="top" style="padding-left:10mm;">
+        <img src="${LOGO}" alt="Logo" style="height:80px;display:block;margin-left:auto;">
+      </td>
+    </tr>
+  </table>
+  <hr style="border:none;border-top:2px solid #000;margin-bottom:16mm;">
+  <div style="font-size:13pt;font-weight:900;letter-spacing:1px;margin-bottom:8mm;">ALICI :</div>
+  <div style="font-size:28pt;font-weight:900;color:#e85d1a;margin-bottom:6mm;line-height:1.15;">${esc(a.firmaAdi || "—")}</div>
+  ${a.adres ? `<div style="font-size:16pt;color:#e85d1a;margin-bottom:4mm;line-height:1.3;">${esc(a.adres)}</div>` : ""}
+  ${konum ? `<div style="font-size:16pt;color:#e85d1a;margin-bottom:4mm;line-height:1.3;">${esc(konum)}</div>` : ""}
+  ${yetkiliRows.map(r => `<div style="font-size:16pt;color:#e85d1a;margin-bottom:4mm;line-height:1.3;">${r}</div>`).join("")}
+<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };<\/script>
+</body>
+</html>`;
+}
+
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
 export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = []) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
