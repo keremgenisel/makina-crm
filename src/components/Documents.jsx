@@ -104,31 +104,38 @@ const nextDocNo = (teklifler, type) => {
   return `${prefix}${String(max + 1).padStart(5, "0")}`;
 };
 
-const makeEmpty = (type, teklifler, factory, dil = "TR") => {
+const makeEmpty = (type, teklifler, factory, dil = "TR", evrakFormConfig = null) => {
   const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
+  const fd = evrakFormConfig?.[type]?.fieldDefaults || {};
+  const fv = (key, fallback) => fd[key]?.[dil] ?? fd[key]?.TR ?? fallback;
   return {
     id: null, type,
     no: nextDocNo(teklifler, type),
     tarih: today(), dil,
     currency: dil === "EN" ? "EUR" : "TRY",
     customerId: null,
-    firma: "", yetkili: "", tel: "", vergiNo: "", vergiDairesi: "", adres: "",
-    authority: "", forwarder: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali",
+    firma: "", yetkili: "", tel: "", vergiNo: "", vergiDairesi: "", adres: "", email: "",
+    authority: "", forwarder: fv("forwarder", "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali"),
     satirlar: [],
     iskonto: "", kdvOrani: dil === "EN" ? "0" : "20",
-    odemeSekli: D.odemeSekli,
-    teslimSekli: D.teslimSekli,
-    teslimSuresi: D.teslimSuresi,
+    odemeSekli: fv("odemeSekli", D.odemeSekli),
+    teslimSekli: fv("teslimSekli", D.teslimSekli),
+    teslimSuresi: fv("teslimSuresi", D.teslimSuresi),
     teslimTarihi: "",
-    not: type === "proforma" ? "" : D.notTeklif,
-    ek: D.ek,
-    teklifGecerlilik: type === "teklif" ? D.teklifGecerlilik : "",
+    not: type === "proforma" ? fv("not", "") : fv("not", D.notTeklif),
+    ek: fv("ek", type === "proforma" ? D.ek : ""),
+    teklifGecerlilik: type === "teklif" ? fv("teklifGecerlilik", D.teklifGecerlilik) : "",
     kur: "",
-    teslimYeri: type === "proforma" ? D.teslimYeri : "",
+    teslimYeri: fv("teslimYeri", type === "proforma" ? D.teslimYeri : ""),
     gtipNo: factory?.gtipNo || "",
     modelYiliDegeri: "",
     durum: "taslak",
     createdAt: today(),
+    customFieldValues: Object.fromEntries(
+      (evrakFormConfig?.[type]?.customFields || [])
+        .filter(cf => cf.defaultValue)
+        .map(cf => [cf.id, cf.defaultValue])
+    ),
   };
 };
 
@@ -141,7 +148,36 @@ const migrateRow = (r) => {
     subItems: [{ id: String(uid()), type: "makina", kod: r.kod || "", makinaAdi: r.makinaAdi || "", tanim: r.tanim || "", miktar: r.miktar || 1, birimFiyat: r.birimFiyat || "", tlKarsiligi: r.tlKarsiligi || "" }] };
 };
 
-// ── Ana bileşen ────────────────────────────────────────────────────────────────
+// ── Özel alan input bileşeni ──────────────────────────────────────────────────
+const CfInput = ({ cf, dil, value, onChange, inputStyle }) => {
+  const label = (dil === "EN" && cf.label.EN) ? cf.label.EN : cf.label.TR;
+  if (cf.type === "select") {
+    const options = cf.options || [];
+    return (
+      <Field label={label}>
+        <select value={value} onChange={e => onChange(e.target.value)} style={inputStyle}>
+          <option value="">—</option>
+          {options.map((opt, i) => {
+            const display = (dil === "EN" && opt.EN) ? opt.EN : opt.TR;
+            return <option key={i} value={opt.TR}>{display}</option>;
+          })}
+        </select>
+      </Field>
+    );
+  }
+  const listId = cf.suggestions ? `cf-datalist-${cf.id}` : undefined;
+  return (
+    <Field label={label}>
+      <input value={value} onChange={e => onChange(e.target.value)} style={inputStyle} list={listId} />
+      {listId && (
+        <datalist id={listId}>
+          {cf.suggestions.split(",").map(s => s.trim()).filter(Boolean).map(s => <option key={s} value={s} />)}
+        </datalist>
+      )}
+    </Field>
+  );
+};
+
 export const Documents = ({
   teklifler, setTeklifler,
   customers,
@@ -152,6 +188,23 @@ export const Documents = ({
   kalipDefs = [],
   parts = [],
 }) => {
+  const evrakFormConfig = appSettings?.evrakFormConfig || null;
+
+  const isFieldHidden = (type, section, key) =>
+    (evrakFormConfig?.[type]?.hiddenFields?.[section] || []).includes(key);
+
+  const getFieldLabel = (type, section, key, fallbackTR) => {
+    const lbl = evrakFormConfig?.[type]?.fieldLabels?.[section]?.[key];
+    return lbl?.TR || fallbackTR;
+  };
+
+  const cfOf = (type, section) =>
+    (evrakFormConfig?.[type]?.customFields || []).filter(cf => cf.section === section);
+
+  const getCfValue = (cfId) => form?.customFieldValues?.[cfId] ?? "";
+  const setCfValue = (cfId, val) =>
+    setForm(p => p ? ({ ...p, customFieldValues: { ...(p.customFieldValues || {}), [cfId]: val } }) : p);
+
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma"
   const [form, setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
@@ -221,7 +274,7 @@ export const Documents = ({
 
   // ── Form açma ──
   const openNew = (type) => {
-    setForm(makeEmpty(type, liveTeklifler, factory));
+    setForm(makeEmpty(type, liveTeklifler, factory, "TR", evrakFormConfig));
     setCustSearch("");
   };
 
@@ -369,8 +422,8 @@ export const Documents = ({
 
   const printDoc = (doc) => {
     const kase = appSettings?.kaseResmi || "";
-    const htmlPrint = buildPrintHtml(doc, factory, appSettings?.translations, "");
-    const htmlPdf   = kase ? buildPrintHtml(doc, factory, appSettings?.translations, kase) : null;
+    const htmlPrint = buildPrintHtml(doc, factory, appSettings?.translations, "", evrakFormConfig);
+    const htmlPdf   = kase ? buildPrintHtml(doc, factory, appSettings?.translations, kase, evrakFormConfig) : null;
     if (window.appPrint?.printHtml) {
       window.appPrint.printHtml(htmlPrint, htmlPdf, docDefaultName(doc));
     } else {
@@ -385,7 +438,7 @@ export const Documents = ({
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
 
   const openMailDoc = (doc) => {
-    const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || ""));
+    const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "", evrakFormConfig));
     const typeLabel = doc.type === "proforma" ? "Proforma" : "Teklif";
     setMailDraft({
       to: doc.email || "",
@@ -571,18 +624,24 @@ export const Documents = ({
 
           <Field label="Firma Adı"><input {...f("firma")} style={inputStyle} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Yetkili (Authority)"><input {...f("yetkili")} style={inputStyle} /></Field>
-            <Field label="Telefon"><input {...f("tel")} style={inputStyle} /></Field>
-            <Field label="Vergi No"><input {...f("vergiNo")} style={inputStyle} /></Field>
-            <Field label="Vergi Dairesi"><input {...f("vergiDairesi")} style={inputStyle} /></Field>
+            {!isFieldHidden(form.type, "alici", "yetkili") && <Field label={getFieldLabel(form.type, "alici", "yetkili", "Yetkili", "Authority")}><input {...f("yetkili")} style={inputStyle} /></Field>}
+            {!isFieldHidden(form.type, "alici", "tel") && <Field label={getFieldLabel(form.type, "alici", "tel", "Telefon", "Phone")}><input {...f("tel")} style={inputStyle} /></Field>}
+            {!isFieldHidden(form.type, "alici", "vergiNo") && <Field label={getFieldLabel(form.type, "alici", "vergiNo", "Vergi No", "Tax No")}><input {...f("vergiNo")} style={inputStyle} /></Field>}
+            {!isFieldHidden(form.type, "alici", "vergiDairesi") && <Field label={getFieldLabel(form.type, "alici", "vergiDairesi", "Vergi Dairesi", "Tax Office")}><input {...f("vergiDairesi")} style={inputStyle} /></Field>}
           </div>
-          <Field label="Adres"><textarea {...f("adres")} style={taStyle} /></Field>
+          {!isFieldHidden(form.type, "alici", "adres") && <Field label={getFieldLabel(form.type, "alici", "adres", "Adres", "Address")}><textarea {...f("adres")} style={taStyle} /></Field>}
+          {!isFieldHidden(form.type, "alici", "email") && <Field label={getFieldLabel(form.type, "alici", "email", "E-posta", "Email")}><input {...f("email")} style={inputStyle} /></Field>}
+          {cfOf(form.type, "alici").map(cf => (
+            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
+          ))}
         </div>
 
         {/* Belge Detayları */}
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
-          <Field label={form.dil === "EN" ? "Forwarder" : "Gönderen (Forwarder)"}><input {...f("forwarder")} style={inputStyle} placeholder={form.dil === "EN" ? "Forwarder name" : "Gönderen adı"} /></Field>
+          {!isFieldHidden(form.type, "belge", "forwarder") && (
+            <Field label={form.dil === "EN" ? "Forwarder" : "Gönderen (Forwarder)"}><input {...f("forwarder")} style={inputStyle} placeholder={form.dil === "EN" ? "Forwarder name" : "Gönderen adı"} /></Field>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {form.type === "teklif" && (
               <Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field>
@@ -618,26 +677,36 @@ export const Documents = ({
               </select>
             </Field>
             <Field label="KDV Oranı (%)"><input {...f("kdvOrani")} type="number" min="0" max="100" style={inputStyle} /></Field>
-            {form.type === "proforma" && (
+            {form.type === "proforma" && !isFieldHidden(form.type, "belge", "gtipNo") && (
               <Field label="GTIP No"><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field>
             )}
-            <Field label="Model Yılı" style={{ gridColumn: "1 / -1" }}>
-              <input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} />
-            </Field>
-            {form.type === "proforma" && form.currency !== "TRY" && (
+            {!isFieldHidden(form.type, "belge", "modelYiliDegeri") && (
+              <Field label="Model Yılı" style={{ gridColumn: "1 / -1" }}>
+                <input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} />
+              </Field>
+            )}
+            {form.type === "proforma" && form.currency !== "TRY" && !isFieldHidden(form.type, "belge", "kur") && (
               <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field>
             )}
           </div>
-          {form.type === "proforma" && (
+          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "teslimYeri") && (
             <Field label="Teslim Yeri / Gümrük Notu">
               <textarea {...f("teslimYeri")} style={taStyle} />
             </Field>
           )}
-          {form.type === "proforma" && (
+          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "not") && (
             <Field label="Not (Proforma)">
               <textarea {...f("not")} style={taStyle} />
             </Field>
           )}
+          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "ek") && (
+            <Field label="Ek Bilgi">
+              <textarea {...f("ek")} style={taStyle} />
+            </Field>
+          )}
+          {cfOf(form.type, "belge").map(cf => (
+            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
+          ))}
         </div>
       </div>
 
@@ -803,20 +872,24 @@ export const Documents = ({
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Teklif Koşulları (2. Sayfa)</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Ödeme Şekli"><input {...f("odemeSekli")} style={inputStyle} /></Field>
-            <Field label="Teslim Şekli"><input {...f("teslimSekli")} style={inputStyle} /></Field>
+            {!isFieldHidden("teklif", "kosullar", "odemeSekli") && <Field label="Ödeme Şekli"><input {...f("odemeSekli")} style={inputStyle} /></Field>}
+            {!isFieldHidden("teklif", "kosullar", "teslimSekli") && <Field label="Teslim Şekli"><input {...f("teslimSekli")} style={inputStyle} /></Field>}
           </div>
-          <Field label="Teslim Yeri / Gümrük Notu">
-            <textarea {...f("teslimYeri")} style={taStyle} />
-          </Field>
+          {!isFieldHidden("teklif", "kosullar", "teslimYeri") && (
+            <Field label="Teslim Yeri / Gümrük Notu">
+              <textarea {...f("teslimYeri")} style={taStyle} />
+            </Field>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Teslim Süresi"><input {...f("teslimSuresi")} style={inputStyle} /></Field>
-            <Field label="Teslim Tarihi"><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field>
-            <Field label="Teklif Geçerlilik Süresi"><input {...f("teklifGecerlilik")} style={inputStyle} /></Field>
-            <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field>
+            {!isFieldHidden("teklif", "kosullar", "teslimSuresi") && <Field label="Teslim Süresi"><input {...f("teslimSuresi")} style={inputStyle} /></Field>}
+            {!isFieldHidden("teklif", "kosullar", "teslimTarihi") && <Field label="Teslim Tarihi"><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field>}
+            {!isFieldHidden("teklif", "kosullar", "teklifGecerlilik") && <Field label="Teklif Geçerlilik Süresi"><input {...f("teklifGecerlilik")} style={inputStyle} /></Field>}
+            {!isFieldHidden("teklif", "kosullar", "kur") && <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field>}
           </div>
-          <Field label="Not"><textarea {...f("not")} style={taStyle} /></Field>
-          <Field label="Ek"><textarea {...f("ek")} style={taStyle} /></Field>
+          {!isFieldHidden("teklif", "kosullar", "not") && <Field label="Not"><textarea {...f("not")} style={taStyle} /></Field>}
+          {cfOf("teklif", "kosullar").map(cf => (
+            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
+          ))}
         </div>
       )}
 
@@ -887,8 +960,14 @@ export const DEFAULT_TRANSLATIONS = {
   },
 };
 
+export const DEFAULT_SARTLAR = [
+  { TR: DEFAULT_TRANSLATIONS.TR.sart1, EN: DEFAULT_TRANSLATIONS.EN.sart1 },
+  { TR: DEFAULT_TRANSLATIONS.TR.sart2, EN: DEFAULT_TRANSLATIONS.EN.sart2 },
+  { TR: DEFAULT_TRANSLATIONS.TR.sart3, EN: DEFAULT_TRANSLATIONS.EN.sart3 },
+];
+
 // ── Print HTML ────────────────────────────────────────────────────────────────
-function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
+function buildPrintHtml(form, factory, translations = {}, kaseResmi = "", evrakFormConfig = null) {
   const f = factory || {};
   const bankalar = (Array.isArray(f.bankalar) && f.bankalar.length > 0)
     ? f.bankalar
@@ -911,6 +990,33 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
     newUnused: `${new Date().getFullYear()} — ${base.modelYiliSuffix}`,
     kdvLabel:  `${base.kdvPrefix} %${form.kdvOrani}`,
   };
+
+  const docType = form.type;
+  const FL_DEFAULTS = {
+    alici: { yetkili: { TR: "Yetkili / Tel", EN: "Authority" }, vergiNo: { TR: "Vergi No / Dairesi", EN: "Tax No / Office" }, adres: { TR: "Adres", EN: "Address" } },
+    belge:  { forwarder: { TR: "Gönderen", EN: "Forwarder" }, kur: { TR: "Kur (Bugün)", EN: "Exchange Rate" }, teslimYeri: { TR: "Teslim Yeri", EN: "Delivery Point" }, not: { TR: "Not", EN: "Note" } },
+    kosullar: { odemeSekli: { TR: "Ödeme Şekli", EN: "Payment Terms" }, teslimSekli: { TR: "Teslim Şekli", EN: "Delivery Method" }, teslimSuresi: { TR: "Teslim Süresi", EN: "Lead Time" }, teslimTarihi: { TR: "Teslim Tarihi", EN: "Delivery Date" }, teslimYeri: { TR: "Teslim Yeri", EN: "Delivery Point" }, teklifGecerlilik: { TR: "Geçerlilik Süresi", EN: "Quote Validity" }, kur: { TR: "Kur (Bugün)", EN: "Exchange Rate" }, not: { TR: "Not", EN: "Note" } },
+  };
+  const fl = (section, key) => {
+    const lbl = evrakFormConfig?.[docType]?.fieldLabels?.[section]?.[key];
+    const def = FL_DEFAULTS[section]?.[key];
+    return isTR ? (lbl?.TR || def?.TR || "") : (lbl?.EN || def?.EN || def?.TR || "");
+  };
+  const isHiddenPrint = (section, key) =>
+    (evrakFormConfig?.[docType]?.hiddenFields?.[section] || []).includes(key);
+
+  const cfRowsHtml = (section) =>
+    (evrakFormConfig?.[docType]?.customFields || [])
+      .filter(cf => cf.section === section)
+      .map(cf => {
+        const label = (!isTR && cf.label.EN) ? cf.label.EN : cf.label.TR;
+        const value = form.customFieldValues?.[cf.id];
+        if (!value) return "";
+        return `<tr>
+          <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;width:30%;">${label}</td>
+          <td style="padding:3px 12px;">${value}</td>
+        </tr>`;
+      }).join("");
 
   const totals = (() => {
     const toplam = (form.satirlar || []).reduce((s, r) => s + (r.subItems || []).reduce((s2, item) => s2 + (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0), 0), 0);
@@ -940,7 +1046,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
     <tr>
       <td style="vertical-align:top;padding-right:20px;">
         ${!enProforma ? `<img src="${LOGO_B64}" style="height:56px;object-fit:contain;display:block;" alt="logo" />` : ""}
-        <div style="font-size:${enProforma ? "15px;font-weight:800;color:#1a1a1a" : "10.5px;color:#555"};margin-top:${enProforma ? "0" : "6px"};line-height:1.6;">${enProforma ? companyName : companyAddr}</div>
+        <div style="font-size:${enProforma ? "15px;font-weight:800;color:#1a1a1a" : "10.5px;color:#555"};margin-top:${enProforma ? "0" : "6px"};line-height:1.6;">${enProforma ? (form.forwarder || companyName) : companyAddr}</div>
         ${!enProforma && [companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:10.5px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
         ${enProforma ? `<div style="font-size:10.5px;color:#555;margin-top:4px;line-height:1.6;">${companyAddr}</div>${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:10.5px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}` : ""}
       </td>
@@ -967,22 +1073,23 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
               <td style="padding:6px 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:30%;">${L.firmLabel}</td>
               <td style="padding:6px 12px 3px;font-weight:700;font-size:13px;color:#1a1a1a;">${form.firma || "—"}</td>
             </tr>
-            <tr>
-              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.yetkiliLabel}</td>
-              <td style="padding:3px 12px;">${[form.yetkili, form.tel].filter(Boolean).join("  /  ") || "—"}</td>
-            </tr>
-            ${form.authority ? `<tr>
-              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.authorityLabel}</td>
+            ${!isHiddenPrint("alici", "yetkili") || !isHiddenPrint("alici", "tel") ? `<tr>
+              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${fl("alici", "yetkili")}</td>
+              <td style="padding:3px 12px;">${[!isHiddenPrint("alici", "yetkili") ? form.yetkili : "", !isHiddenPrint("alici", "tel") ? form.tel : ""].filter(Boolean).join("  /  ") || "—"}</td>
+            </tr>` : ""}
+            ${form.authority && !isHiddenPrint("alici", "yetkili") ? `<tr>
+              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${fl("alici", "yetkili")}</td>
               <td style="padding:3px 12px;">${form.authority}</td>
             </tr>` : ""}
-            ${(form.vergiNo || form.vergiDairesi) ? `<tr>
-              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.vergiLabel}</td>
+            ${(form.vergiNo || form.vergiDairesi) && !isHiddenPrint("alici", "vergiNo") && !isHiddenPrint("alici", "vergiDairesi") ? `<tr>
+              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${fl("alici", "vergiNo")}</td>
               <td style="padding:3px 12px;">${[form.vergiNo, form.vergiDairesi].filter(Boolean).join("  /  ")}</td>
             </tr>` : ""}
-            ${form.adres ? `<tr>
-              <td style="padding:3px 12px 8px;color:#888;font-size:10.5px;font-weight:600;vertical-align:top;">${L.adresLabel}</td>
+            ${form.adres && !isHiddenPrint("alici", "adres") ? `<tr>
+              <td style="padding:3px 12px 8px;color:#888;font-size:10.5px;font-weight:600;vertical-align:top;">${fl("alici", "adres")}</td>
               <td style="padding:3px 12px 8px;">${form.adres}</td>
             </tr>` : `<tr><td colspan="2" style="padding:4px;"></td></tr>`}
+            ${cfRowsHtml("alici")}
           </table>
         </div>
       </td>
@@ -990,8 +1097,8 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;">
           <div style="background:#475569;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 12px;">${L.docLabel}</div>
           <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
-            ${form.forwarder ? `<tr>
-              <td style="padding:6px 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:42%;">${L.forwarderLabel}</td>
+            ${form.forwarder && !isHiddenPrint("belge", "forwarder") ? `<tr>
+              <td style="padding:6px 12px 3px;color:#888;font-size:10.5px;font-weight:600;width:42%;">${fl("belge", "forwarder")}</td>
               <td style="padding:6px 12px 3px;font-weight:700;">${form.forwarder}</td>
             </tr>` : ""}
             ${!isProforma ? `<tr>
@@ -1002,18 +1109,19 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
               <td style="padding:${isProforma && !form.forwarder ? "6px" : "3px"} 12px 3px;color:#888;font-size:10.5px;font-weight:600;">${L.tarihLabel}</td>
               <td style="padding:${isProforma ? "6px" : "3px"} 12px 3px;">${fmtTR(form.tarih) || ""}</td>
             </tr>
-            <tr>
+            ${!isHiddenPrint("belge", "modelYiliDegeri") ? `<tr>
               <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.modelYiliLabel}</td>
               <td style="padding:3px 12px;">${form.modelYiliDegeri || L.newUnused}</td>
-            </tr>
-            ${form.currency !== "TRY" && form.kur ? `<tr>
-              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${L.kurLabel}</td>
+            </tr>` : ""}
+            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr>
+              <td style="padding:3px 12px;color:#888;font-size:10.5px;font-weight:600;">${fl("belge", "kur")}</td>
               <td style="padding:3px 12px;">${form.kur}</td>
             </tr>` : ""}
-            ${isProforma && form.teslimYeri ? `<tr>
-              <td style="padding:3px 12px 8px;color:#888;font-size:10.5px;font-weight:600;vertical-align:top;">${L.teslimYeriLabel}</td>
+            ${isProforma && form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<tr>
+              <td style="padding:3px 12px 8px;color:#888;font-size:10.5px;font-weight:600;vertical-align:top;">${fl("belge", "teslimYeri")}</td>
               <td style="padding:3px 12px 8px;font-size:11px;">${form.teslimYeri}</td>
             </tr>` : `<tr><td colspan="2" style="padding:4px;"></td></tr>`}
+            ${cfRowsHtml("belge")}
           </table>
         </div>
       </td>
@@ -1028,7 +1136,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
     <tr style="background:#f8f9fa;">
       <td style="padding:7px 12px;font-weight:700;color:#475569;width:14%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">COMPANY</td>
       <td style="padding:7px 12px;font-weight:700;color:#1a1a1a;width:36%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${form.firma || "—"}</td>
-      <td style="padding:7px 12px;font-weight:700;color:#475569;width:16%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${L.authorityLabel}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;width:16%;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">${fl("alici", "yetkili")}</td>
       <td style="padding:7px 12px;border-bottom:1px solid #e2e8f0;">${form.authority || form.yetkili || "—"}</td>
     </tr>
     <tr style="background:#fff;">
@@ -1044,11 +1152,11 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
       <td style="padding:7px 12px;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${form.forwarder || "—"}</td>
     </tr>
     ${form.currency !== "TRY" && form.kur ? `<tr style="background:#fff;">
-      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${L.kurLabel}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${fl("belge", "kur")}</td>
       <td colspan="3" style="padding:7px 12px;${form.teslimYeri ? "border-bottom:1px solid #e2e8f0;" : ""}">${form.kur}</td>
     </tr>` : ""}
     ${form.teslimYeri ? `<tr style="background:${form.currency !== "TRY" && form.kur ? "#f8f9fa" : "#fff"};">
-      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;">${L.teslimYeriLabel}</td>
+      <td style="padding:7px 12px;font-weight:700;color:#475569;border-right:1px solid #e2e8f0;">${fl("belge", "teslimYeri")}</td>
       <td colspan="3" style="padding:7px 12px;">${form.teslimYeri}</td>
     </tr>` : ""}
   </table>`;
@@ -1146,7 +1254,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
   const proformaNotlar = isProforma ? `
   ${(form.not || form.ek) ? `
   <div style="border-radius:6px;border:1px solid #e2e8f0;padding:10px 14px;font-size:10.5px;color:#444;margin-bottom:10px;line-height:1.6;">
-    ${form.not ? `<div><b>${L.notLabel}:</b> ${form.not}</div>` : ""}
+    ${form.not ? `<div><b>${fl("belge", "not")}:</b> ${form.not}</div>` : ""}
     ${form.ek ? `<div style="margin-top:4px;">${form.ek}</div>` : ""}
   </div>` : ""}
   ${(bankalar.some(b => b.bankaAdi || b.swift || b.ibanTL || b.ibanEUR || b.ibanUSD) || form.gtipNo) ? `
@@ -1166,10 +1274,22 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
   ${enProforma ? `<div style="text-align:right;margin-top:12px;"><img src="${LOGO_B64}" style="height:48px;object-fit:contain;" alt="logo" /></div>` : ""}` : "";
 
   // ── GENEL ŞARTLAR NOTU (teklif sayfa 1 altı) ──────────────────────────────
+  const activeSartlar = (() => {
+    const saved = evrakFormConfig?.teklif?.sartlar;
+    if (saved && saved.length > 0) return saved.map(s => isTR ? (s.TR || s.EN || "") : (s.EN || s.TR || ""));
+    return [L.sart1, L.sart2, L.sart3];
+  })().filter(Boolean);
+
+  const notAltText = (() => {
+    const alt = evrakFormConfig?.[docType]?.notAlt;
+    if (alt) return isTR ? (alt.TR || alt.EN || "") : (alt.EN || alt.TR || "");
+    return L.notAlt;
+  })();
+
   const teklifSartlar = !isProforma ? `
   <div style="border-top:2px solid #e2e8f0;margin-top:6px;padding-top:8px;font-size:10px;color:#64748b;line-height:1.7;">
     <b style="color:#475569;">${L.sartlarBaslik}:</b>
-    ${[L.sart1, L.sart2, L.sart3].map(s => `<span style="display:inline-block;margin-right:12px;">• ${s}</span>`).join("")}
+    ${activeSartlar.map(s => `<span style="display:inline-block;margin-right:12px;">• ${s}</span>`).join("")}
   </div>` : "";
 
   const proformaKase = isProforma && kaseResmi
@@ -1186,17 +1306,19 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
 
     <table style="width:100%;border-collapse:collapse;font-size:12px;border-radius:8px;overflow:hidden;border:1px solid #dde3ea;margin-bottom:20px;">
       ${[
-        [L.odemeSekli, form.odemeSekli],
+        !isHiddenPrint("kosullar", "odemeSekli") && [fl("kosullar", "odemeSekli"), form.odemeSekli],
         [L.iskontoRow, totals.iskonto > 0 ? fmt2(totals.iskonto) : "—"],
-        [L.teslimSekli, form.teslimSekli],
-        [L.teslimSuresi, form.teslimSuresi],
-        [L.teslimTarihi, form.teslimTarihi ? fmtTR(form.teslimTarihi) : ""],
-        [L.teslimYeriLabel, form.teslimYeri],
-        [L.gecerlilik, form.teklifGecerlilik],
-        [L.kurLabel, form.kur],
-        [L.notLabel, form.not],
-        [L.ekLabel, form.ek],
-      ].filter(([, v]) => v).map(([label, val], i) => `
+        !isHiddenPrint("kosullar", "teslimSekli") && [fl("kosullar", "teslimSekli"), form.teslimSekli],
+        !isHiddenPrint("kosullar", "teslimSuresi") && [fl("kosullar", "teslimSuresi"), form.teslimSuresi],
+        !isHiddenPrint("kosullar", "teslimTarihi") && [fl("kosullar", "teslimTarihi"), form.teslimTarihi ? fmtTR(form.teslimTarihi) : ""],
+        !isHiddenPrint("kosullar", "teslimYeri") && [fl("kosullar", "teslimYeri"), form.teslimYeri],
+        !isHiddenPrint("kosullar", "teklifGecerlilik") && [fl("kosullar", "teklifGecerlilik"), form.teklifGecerlilik],
+        !isHiddenPrint("kosullar", "kur") && [fl("kosullar", "kur"), form.kur],
+        !isHiddenPrint("kosullar", "not") && [fl("kosullar", "not"), form.not],
+        ...(evrakFormConfig?.teklif?.customFields || [])
+          .filter(cf => cf.section === "kosullar" && form.customFieldValues?.[cf.id])
+          .map(cf => [(!isTR && cf.label.EN) ? cf.label.EN : cf.label.TR, form.customFieldValues[cf.id]]),
+      ].filter(row => row && row[1]).map(([label, val], i) => `
       <tr style="background:${i % 2 === 0 ? "#f8f9fa" : "#fff"};">
         <td style="padding:9px 14px;font-weight:700;color:#475569;font-size:11.5px;width:28%;border-right:1px solid #e2e8f0;">${label}</td>
         <td style="padding:9px 14px;color:#1a1a1a;">${val}</td>
@@ -1231,7 +1353,7 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "") {
       </tr>
     </table>
 
-    <div style="font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px;">${L.notAlt}</div>
+    <div style="font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px;">${notAltText}</div>
   </div>` : "";
 
   return `<!DOCTYPE html><html lang="${isTR ? "tr" : "en"}"><head>

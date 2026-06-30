@@ -157,6 +157,7 @@ const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
+const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
@@ -355,8 +356,8 @@ function populateAll(conn, data) {
   if (data.appSettings) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null));
   }
 
   const nextId = typeof data.nextId === "number"
@@ -404,6 +405,7 @@ function migrateFromJsonIfNeeded() {
     ensureColumns(db, "parts", PARTS_TIP_RESIM_COLUMNS);
     ensureColumns(db, "app_settings", APP_SETTINGS_KASE_COLUMN);
     ensureColumns(db, "app_settings", APP_SETTINGS_PINNED_COLUMN);
+    ensureColumns(db, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
     ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
     ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
     for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
@@ -593,8 +595,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();

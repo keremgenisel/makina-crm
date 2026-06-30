@@ -17,6 +17,7 @@ import { SettingsKdv } from "./settings/SettingsDanger";
 import { SettingsCompany } from "./settings/SettingsCompany";
 import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
+import { SettingsDocuments } from "./settings/SettingsDocuments";
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -39,7 +40,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
             { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
             { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
-            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma Formu", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
           ].map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
@@ -142,6 +143,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
+
+      {settingsTab === "evrak" && <SettingsDocuments appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "ceviri" && <SettingsTranslations appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 

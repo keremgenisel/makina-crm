@@ -13,14 +13,9 @@ const GROUPS = [
   ]},
   { label: "Koşullar (2. Sayfa)", keys: [
     { key: "koşullarBaslik",    label: "Bölüm Başlığı" },
-    { key: "gecerlilik",        label: "Geçerlilik Süresi" },
     { key: "onayBaslik",        label: "Onay Kutusu Başlığı" },
     { key: "onayAlt",           label: "Onay Alt Yazısı" },
     { key: "sartlarBaslik",     label: "Şartlar Başlığı" },
-    { key: "sart1",             label: "Şart 1" },
-    { key: "sart2",             label: "Şart 2" },
-    { key: "sart3",             label: "Şart 3" },
-    { key: "notAlt",            label: "Sayfa Alt Notu" },
   ]},
 
   // ─── PROFORMA ───────────────────────────────────────────────────────────────
@@ -28,8 +23,6 @@ const GROUPS = [
   { label: "Başlık & Belge", keys: [
     { key: "titleProforma",     label: "Başlık" },
     { key: "docLabelProforma",  label: "Belge Bölümü Başlığı" },
-    { key: "authorityLabel",    label: "Yetkili Etiketi (Authority)" },
-    { key: "forwarderLabel",    label: "Gönderen Etiketi (Forwarder)" },
   ]},
   { label: "Banka Bilgileri", keys: [
     { key: "bankaBaslik",       label: "Bölüm Başlığı" },
@@ -44,16 +37,12 @@ const GROUPS = [
   { label: "Alıcı Bölümü", keys: [
     { key: "alicrLabel",        label: "Bölüm Başlığı" },
     { key: "firmLabel",         label: "Firma" },
-    { key: "yetkiliLabel",      label: "Yetkili" },
-    { key: "adresLabel",        label: "Adres" },
-    { key: "vergiLabel",        label: "Vergi No" },
   ]},
   { label: "Belge Bilgileri", keys: [
     { key: "tarihLabel",        label: "Tarih" },
     { key: "noLabel",           label: "Teklif No" },
     { key: "modelYiliLabel",    label: "Model Yılı Etiketi" },
     { key: "modelYiliSuffix",   label: "Model Yılı Değeri" },
-    { key: "kurLabel",          label: "Kur" },
   ]},
   { label: "Tablo Başlıkları", keys: [
     { key: "thSira",            label: "Sıra" },
@@ -72,14 +61,7 @@ const GROUPS = [
     { key: "grandLabel",        label: "Genel Toplam" },
   ]},
   { label: "Koşullar Alanları", keys: [
-    { key: "odemeSekli",        label: "Ödeme Şekli" },
     { key: "iskontoRow",        label: "İskonto Satırı" },
-    { key: "teslimSekli",       label: "Teslim Şekli" },
-    { key: "teslimSuresi",      label: "Teslim Süresi" },
-    { key: "teslimTarihi",      label: "Teslim Tarihi" },
-    { key: "teslimYeriLabel",   label: "Teslim Yeri / Gümrük Notu" },
-    { key: "notLabel",          label: "Not" },
-    { key: "ekLabel",           label: "Ek Bilgi" },
   ]},
 
   // ─── SERVİS FORMU ───────────────────────────────────────────────────────────
