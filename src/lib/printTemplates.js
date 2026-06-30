@@ -438,14 +438,19 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   return html;
 }
 
+export const DEFAULT_SANDIK_TRANSLATIONS = {
+  TR: { gonderen: "GÖNDEREN:", alici: "ALICI :", adres: "Adres:", tel: "Telefon:", yetkili: "Yetkili:" },
+  EN: { gonderen: "SENDER:", alici: "RECIPIENT:", adres: "Address:", tel: "Phone:", yetkili: "Contact:" },
+};
+
 // Sandık Üstü Etiketi — A4 HTML
-export function buildSandikEtiketiHtml(gonderen, alici, lang = "TR") {
+export function buildSandikEtiketiHtml(gonderen, alici, lang = "TR", translations = {}) {
   const g = gonderen || {};
   const a = alici || {};
   const isTR = lang !== "EN";
-  const L = isTR
-    ? { gonderen: "GÖNDEREN:", alici: "ALICI :", adres: "Adres:", tel: "Telefon:", yetkili: "Yetkili:" }
-    : { gonderen: "SENDER:", alici: "RECIPIENT:", adres: "Address:", tel: "Phone:", yetkili: "Contact:" };
+  const def = isTR ? DEFAULT_SANDIK_TRANSLATIONS.TR : DEFAULT_SANDIK_TRANSLATIONS.EN;
+  const saved = isTR ? (translations?.TR || {}) : (translations?.EN || {});
+  const L = { ...def, ...saved };
   const konum = [a.city, a.country].filter(Boolean).join(" / ");
   const aliciRows = [];
   if (a.adres || konum) aliciRows.push({ label: L.adres, val: [a.adres, konum].filter(Boolean).map(esc).join(" / ") });

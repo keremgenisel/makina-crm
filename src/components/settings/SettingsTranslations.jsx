@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DEFAULT_TRANSLATIONS } from "../Documents";
-import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS } from "../../lib/printTemplates";
+import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDIK_TRANSLATIONS } from "../../lib/printTemplates";
 import { Btn, Icon } from "../ui";
 import { Section } from "./Section";
 
@@ -116,6 +116,16 @@ const GROUPS = [
     { key: "placeFabrikaTeslim",   label: "Fabrika Teslim" },
   ]},
 
+  // ─── SANDIK ETİKETİ ─────────────────────────────────────────────────────────
+  { divider: "Sandık Etiketi" },
+  { label: "Etiket Alanları", ns: "sandik", keys: [
+    { key: "gonderen", label: "Gönderen Başlığı" },
+    { key: "alici",    label: "Alıcı Başlığı" },
+    { key: "adres",    label: "Adres Etiketi" },
+    { key: "tel",      label: "Telefon Etiketi" },
+    { key: "yetkili",  label: "Yetkili Etiketi" },
+  ]},
+
   // ─── MAKİNA RAPORU ──────────────────────────────────────────────────────────
   { divider: "Makina Raporu" },
   { label: "Üst Bilgi", ns: "makina", keys: [
@@ -188,6 +198,10 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
       TR: { ...DEFAULT_MAKINA_TRANSLATIONS.TR, ...(saved.makina?.TR || {}) },
       EN: { ...DEFAULT_MAKINA_TRANSLATIONS.EN, ...(saved.makina?.EN || {}) },
     },
+    sandik: {
+      TR: { ...DEFAULT_SANDIK_TRANSLATIONS.TR, ...(saved.sandik?.TR || {}) },
+      EN: { ...DEFAULT_SANDIK_TRANSLATIONS.EN, ...(saved.sandik?.EN || {}) },
+    },
   });
   const [openGroups, setOpenGroups] = useState(new Set());
   const toggleGroup = (label) => setOpenGroups(p => {
@@ -216,6 +230,10 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
       makina: {
         TR: { ...DEFAULT_MAKINA_TRANSLATIONS.TR },
         EN: { ...DEFAULT_MAKINA_TRANSLATIONS.EN },
+      },
+      sandik: {
+        TR: { ...DEFAULT_SANDIK_TRANSLATIONS.TR },
+        EN: { ...DEFAULT_SANDIK_TRANSLATIONS.EN },
       },
     };
     setDraft(defaults);

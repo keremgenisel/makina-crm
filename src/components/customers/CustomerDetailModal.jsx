@@ -12,6 +12,7 @@ import {
   buildServiceFormHtml,
   buildMachineReportHtml,
   buildSandikEtiketiHtml,
+  DEFAULT_SANDIK_TRANSLATIONS,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor } from "../ui";
 import { ServiceForm } from "../ServiceForm";
@@ -489,7 +490,8 @@ export const CustomerDetailModal = ({
   });
 
   const printSandikEtiket = (lang = "TR") => {
-    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici, lang);
+    const sandikT = appSettings?.translations?.sandik || {};
+    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici, lang, sandikT);
     if (window.appPrint) { window.appPrint.printHtml(html, null, "sandik-etiketi.pdf"); return; }
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
