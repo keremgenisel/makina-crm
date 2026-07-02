@@ -47,6 +47,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslerBaslik: "YAPILAN İŞLER / PARÇA DEĞİŞİMLERİ",
     degisenParcalarBaslik: "DEĞİŞEN PARÇALAR",
     musteriTalimatiBaslik: "MÜŞTERİ TALİMATI / AÇIKLAMA",
+    fabrikaNotuBaslik: "FABRİKA NOTU",
     teslimEden: "TESLİM EDEN",
     teslimAlan: "TESLİM ALAN",
     imzaEden: "Ad Soyad / İmza",
@@ -84,6 +85,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslerBaslik: "WORK PERFORMED / PARTS REPLACED",
     degisenParcalarBaslik: "REPLACED PARTS",
     musteriTalimatiBaslik: "CUSTOMER INSTRUCTIONS / NOTES",
+    fabrikaNotuBaslik: "FACTORY NOTE",
     teslimEden: "DELIVERED BY",
     teslimAlan: "RECEIVED BY",
     imzaEden: "Name Surname / Signature",
@@ -273,20 +275,32 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   </div>
   <table class="info"><tbody>${infoRows}</tbody></table>
 
-  <h2>${esc(L.yapilanIslerBaslik)}</h2>
-  <div class="box-area">${esc(sv.yapilanIsler || "")}</div>
+  <h2>${esc(L.musteriTalimatiBaslik)}</h2>
+  <div class="box-area">${esc(sv.musteriTalimati || "")}</div>
 
   ${sv.degisenParcalar?.length ? `
   <h2>${esc(L.degisenParcalarBaslik)}</h2>
-  <div class="box-area" style="min-height:auto">${esc(sv.degisenParcalar.map(p => {
-    const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p);
-    const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
-    return fiyat > 0 ? `${ad} (${fmtCur(fiyat, sv.parcaCurrency)})` : ad;
-  }).join(", "))}</div>
+  ${(() => {
+    const lines = sv.degisenParcalar.map(p => {
+      const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p);
+      const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
+      const suffix = (typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : "";
+      return esc(fiyat > 0 ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})` : `${ad}${suffix}`);
+    });
+    const cellStyle = "border:none;padding:12px;vertical-align:top;font-size:13px;line-height:1.8;width:50%";
+    if (lines.length <= 5) {
+      return `<div class="box-area" style="min-height:auto;line-height:1.8">${lines.map(l => `<div>${l}</div>`).join("")}</div>`;
+    }
+    const mid = Math.ceil(lines.length / 2);
+    return `<table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:1px solid #000;border-radius:4px"><tr>
+      <td style="${cellStyle};border-right:1px solid #ccc">${lines.slice(0, mid).map(l => `<div>${l}</div>`).join("")}</td>
+      <td style="${cellStyle}">${lines.slice(mid).map(l => `<div>${l}</div>`).join("")}</td>
+    </tr></table>`;
+  })()}
   ` : ""}
 
-  <h2>${esc(L.musteriTalimatiBaslik)}</h2>
-  <div class="box-area">${esc(sv.musteriTalimati || "")}</div>
+  <h2>${esc(L.fabrikaNotuBaslik)}</h2>
+  <div class="box-area">${esc(sv.fabrikaNotu || "")}</div>
 
   ${forEmail ? "" : `<table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:none">
     <tr>
@@ -370,7 +384,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   const svcRows = detailHistory.length === 0
     ? `<tr><td colspan="5" style="text-align:center">${esc(L.servisYok)}</td></tr>`
     : detailHistory.map(sv =>
-        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(lang === "EN" ? parcaAdiEN : parcaAdi).join(", "))}` : ""}</td></tr>`
+        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(p => { const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p); return ad + ((typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : ""); }).join(", "))}` : ""}</td></tr>`
       ).join("");
 
   const givenParts = (partSales || []).filter(ps => ps.customerId === detailView.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));

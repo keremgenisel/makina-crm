@@ -87,9 +87,9 @@ const GROUPS = [
     { key: "kdvDahilLabel",     label: "KDV Dahil" },
   ]},
   { label: "Bölüm Başlıkları", ns: "servis", keys: [
-    { key: "yapilanIslerBaslik",    label: "Yapılan İşler" },
-    { key: "degisenParcalarBaslik", label: "Değişen Parçalar" },
     { key: "musteriTalimatiBaslik", label: "Müşteri Talimatı" },
+    { key: "degisenParcalarBaslik", label: "Değişen Parçalar" },
+    { key: "fabrikaNotuBaslik",     label: "Fabrika Notu" },
   ]},
   { label: "İmza Alanları", ns: "servis", keys: [
     { key: "teslimEden",  label: "Teslim Eden" },

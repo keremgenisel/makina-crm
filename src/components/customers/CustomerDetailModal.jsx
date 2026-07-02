@@ -234,7 +234,7 @@ export const CustomerDetailModal = ({
 
   // ── Servis kayıtları ──
   const openAddService = () => {
-    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
+    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", fabrikaNotu: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
     setSvModal("add");
   };
   const openEditService = sv => {
@@ -249,7 +249,9 @@ export const CustomerDetailModal = ({
   const saveService = (parcaUcretsizMi) => {
     if (!setServices) return;
     const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
-    const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaCurrency: svForm.currency };
+    // Yalnızca Altuntaş'tan alınan parçaların toplamı — dış tedarik parçalar Altuntaş'a gelir/borç olarak yazılmaz
+    const parcaUcretiAltuntastan = (svForm.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + parseMoney(p.fiyat), 0);
+    const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -916,9 +918,10 @@ export const CustomerDetailModal = ({
                               {sv.degisenParcalar.map((p, i) => {
                                 const ad = parcaAdi(p);
                                 const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
+                                const isDisTedarik = typeof p === "object" && !!p.disTedarik;
                                 return (
-                                  <span key={i} style={{ fontSize: 11, fontWeight: 600, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "2px 9px" }}>
-                                    {ad}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
+                                  <span key={i} style={{ fontSize: 11, fontWeight: 600, color: isDisTedarik ? "#ea580c" : "#1d4ed8", background: isDisTedarik ? "#fff7ed" : "#eff6ff", border: `1px solid ${isDisTedarik ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 12, padding: "2px 9px" }}>
+                                    {ad}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
                                   </span>
                                 );
                               })}
@@ -929,6 +932,12 @@ export const CustomerDetailModal = ({
                           <div style={{ marginTop: 5 }}>
                             <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Müşteri Talimatı</div>
                             <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.musteriTalimati}</div>
+                          </div>
+                        )}
+                        {sv?.fabrikaNotu && (
+                          <div style={{ marginTop: 5 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Fabrika Notu</div>
+                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.fabrikaNotu}</div>
                           </div>
                         )}
                         {sv && (svUcretliMi(sv) || svParcaUcretliMi(sv)) && (

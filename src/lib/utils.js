@@ -192,7 +192,17 @@ export const isServisUcretliMi = (sv, factoryName = "Altuntaş Makina") =>
 // Değişen parçalar Altuntaş'a gelir/borç olarak sayılır mı: garanti dışı işaretlenmiş veya garanti
 // yoksa + ücret > 0 + parça gerçekten Altuntaş'tan alınmış (anlaşmalı serviste dışarıdan tedarik
 // edilen parçalar için ücret yine girilebilir ama burada hiç sayılmaz — bkz. ServiceForm.jsx).
-export const isParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0 && sv.parcaAltuntastanMi !== false;
+export const isParcaUcretliMi = (sv) => {
+  if (sv.parcaUcretsizMi || parseMoney(sv.parcaUcreti) <= 0) return false;
+  // Yeni format: parcaUcretiAltuntastan alanı varsa onu kullan (dış tedarik parçalar hariç)
+  if (sv.parcaUcretiAltuntastan !== undefined) return parseMoney(sv.parcaUcretiAltuntastan) > 0;
+  // Eski format: tek global flag
+  return sv.parcaAltuntastanMi !== false;
+};
+// Bir serviste Altuntaş'a ait parça bedeli — dış tedarik parçaların fiyatı bilgi amaçlıdır,
+// Altuntaş'ın gelir/borç hesaplarına yazılmaz.
+export const altuntasParcaBedeli = (sv) =>
+  sv.parcaUcretiAltuntastan !== undefined ? parseMoney(sv.parcaUcretiAltuntastan) : parseMoney(sv.parcaUcreti);
 // Servis kaydından MÜŞTERİNİN borçlu olduğu kısım: işçilik (yalnızca Altuntaş'ın kendi servisiyse —
 // isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı
 // bir firma yaptıysa parça borcu müşteriye değil o firmaya aittir (bkz. isParcaBorcluAnlasmaliFirmaya) —

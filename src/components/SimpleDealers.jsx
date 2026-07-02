@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
-import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, withDeleted } from "../lib/utils";
+import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
@@ -23,7 +23,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       const name = s.islemFirma;
       if (!map[name]) map[name] = { byCur: {}, kdvByCur: {}, records: [] };
       const curK = s.parcaCurrency || s.currency || "TRY";
-      const tutar = parseMoney(s.parcaUcreti);
+      const tutar = altuntasParcaBedeli(s);
       const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
       map[name].byCur[curK] = (map[name].byCur[curK] || 0) + tutar;
       map[name].kdvByCur[curK] = (map[name].kdvByCur[curK] || 0) + kdv;
@@ -314,7 +314,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                     <span style={{ color: "#7f1d1d", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "#fecaca" }}>
                       {customers.find(c => c.id === s.customerId)?.name || "—"} · {fmtTR(s.date)}
                     </span>
-                    <span style={{ fontWeight: 700, color: "#dc2626" }}>{fmtCur(s.parcaUcreti, s.parcaCurrency || s.currency)}</span>
+                    <span style={{ fontWeight: 700, color: "#dc2626" }}>{fmtCur(altuntasParcaBedeli(s), s.parcaCurrency || s.currency)}</span>
                   </div>
                 ))}
               </div>
@@ -354,9 +354,10 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {svcPaged.map(s => {
                   const cust = customers.find(c => c.id === s.customerId);
-                  const parcaUcret = parseMoney(s.parcaUcreti);
+                  const parcaUcret = altuntasParcaBedeli(s);
+                  const disTedarikUcret = parseMoney(s.parcaUcreti) - parcaUcret;
                   const servisUcret = parseMoney(s.servisUcreti);
-                  const parcaBizden = parcaUcret > 0 && s.parcaAltuntastanMi !== false && !s.parcaUcretsizMi;
+                  const parcaBizden = parcaUcret > 0 && !s.parcaUcretsizMi;
                   const kdvToplam = parcaBizden ? calcKDV(s.faturaTipi, parcaUcret, s.date, kdvRates) : 0;
                   return (
                     <div key={s.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
@@ -375,11 +376,15 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                       </div>
                       {Array.isArray(s.degisenParcalar) && s.degisenParcalar.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                          {s.degisenParcalar.map((p, i) => (
-                            <span key={i} style={{ fontSize: 11, fontWeight: 700, background: "#e0f2fe", color: "#0369a1", borderRadius: 20, padding: "3px 10px" }}>
-                              {p.ad || p.name || "—"}{p.ucret ? ` · ${fmtCur(parseMoney(p.ucret), s.parcaCurrency || "TRY")}` : ""}
-                            </span>
-                          ))}
+                          {s.degisenParcalar.map((p, i) => {
+                            const isDisTedarik = typeof p === "object" && !!p.disTedarik;
+                            const fiyat = typeof p === "object" ? parseMoney(p.fiyat || p.ucret) : 0;
+                            return (
+                              <span key={i} style={{ fontSize: 11, fontWeight: 700, background: isDisTedarik ? "#fff7ed" : "#e0f2fe", color: isDisTedarik ? "#ea580c" : "#0369a1", border: isDisTedarik ? "1px solid #fed7aa" : "none", borderRadius: 20, padding: "3px 10px" }}>
+                                {p.ad || p.name || "—"}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, s.parcaCurrency || "TRY")}` : ""}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -399,16 +404,16 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                             </span>
                             <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Parça</span>
                             <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "#dcfce7" : "#fee2e2", color: s.odendi ? "#16a34a" : "#dc2626" }}>
-                              {s.odendi ? "Ödendi" : "Bekliyor"}
+                              {s.odendi ? "Ödendi" : "Ödenmedi"}
                             </span>
                           </div>
                         )}
-                        {!parcaBizden && parcaUcret > 0 && (
+                        {disTedarikUcret > 0 && (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>
-                              {fmtCur(parcaUcret, s.parcaCurrency || s.currency || "TRY")}
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#ea580c" }}>
+                              {fmtCur(disTedarikUcret, s.parcaCurrency || s.currency || "TRY")}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik Parça</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#ea580c", background: "#fff7ed", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik Parça</span>
                           </div>
                         )}
                       </div>

@@ -21,7 +21,7 @@ export const Customers = ({
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
-  appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null,
+  appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -133,7 +133,10 @@ export const Customers = ({
   };
 
   useEffect(() => {
-    if (openNewPrefill) openAddWithPrefill(openNewPrefill);
+    if (openNewPrefill) {
+      openAddWithPrefill(openNewPrefill);
+      onPrefillConsumed?.();
+    }
   }, [openNewPrefill]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openAddForFirm = (base) => {
@@ -428,7 +431,7 @@ export const Customers = ({
               const hasKalanBorc = parseMoney(c.kalanBorc) > 0;
               const hasDebt = isCustomerTab && debtorIds.has(c.id);
               return (
-                <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fefce8" : undefined }}
+                <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fef2f2" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}>
                   <td style={{ padding: "13px 16px", cursor: "pointer" }}
                     onClick={() => setDetailViewId(c.id)}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon } from "./ui";
 
@@ -125,12 +125,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const kdvAnlasmaliParca = empty3();
     svcInRange.forEach(s => {
       if (isParcaUcretliMi(s)) {
-        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, s.date, kdvRates);
+        const bedel = altuntasParcaBedeli(s);
+        const kdv = calcKDV(s.faturaTipi, bedel, s.date, kdvRates);
         if (isAltuntasServisi(s, factoryName)) {
-          parcaUcreti[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+          parcaUcreti[cur(s.parcaCurrency)] += bedel + kdv;
           kdvParca[cur(s.parcaCurrency)] += kdv;
         } else {
-          anlasmaliParcaSatisi[cur(s.parcaCurrency)] += parseMoney(s.parcaUcreti) + kdv;
+          anlasmaliParcaSatisi[cur(s.parcaCurrency)] += bedel + kdv;
           kdvAnlasmaliParca[cur(s.parcaCurrency)] += kdv;
         }
       }
@@ -179,7 +180,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     // müşteri-odaklı tanımından farklı olarak burada anlaşmalı firmanın üstlendiği parça borcu da dahildir).
     services.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && s.odendi === false).forEach(s => {
       const servisVar = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
-      const parcaVar = isParcaUcretliMi(s) ? parseMoney(s.parcaUcreti) : 0;
+      const parcaVar = isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0;
       const toplam = servisVar + parcaVar;
       alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
     });
@@ -265,8 +266,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       .filter(s => !s.deletedAt && inR(s.date) && isParcaUcretliMi(s) && !isAltuntasServisi(s, factoryName))
       .map(s => {
         const cust = customers.find(c => String(c.id) === String(s.customerId));
-        const ucret = parseMoney(s.parcaUcreti);
-        const kdv = calcKDV(s.faturaTipi, s.parcaUcreti, s.date, kdvRates);
+        const ucret = altuntasParcaBedeli(s);
+        const kdv = calcKDV(s.faturaTipi, ucret, s.date, kdvRates);
         return {
           id: s.id,
           tarih: s.date || "",

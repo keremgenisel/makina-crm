@@ -23,9 +23,13 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // tedarik edilse de parça ücreti yine girilebilir (müşteriye ne kadar tahsil edildiği geçmişte
   // görünsün) — sadece bu tutar Altuntaş'ın gelir/borç hesaplarına hiç girmez (bkz. isParcaUcretliMi).
   const islemAnlasmali = !isAltuntasServisi(form, factoryName);
-  const parcaAltuntastanMi = !islemAnlasmali || form.parcaAltuntastanMi !== false;
-  const parcaUcretsizMi = (form.degisenParcalar || []).length === 0 || (parcaAltuntastanMi && warrantyAktif && !form.parcaGarantiDisi);
-  const parcaUcretiToplam = (form.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
+  const parcalar = form.degisenParcalar || [];
+  // Anlaşmalı bayi servisinde parça bazında dış tedarik işaretlenebilir
+  const hasDisTedarikParca = islemAnlasmali && parcalar.some(p => p.disTedarik);
+  const hasAltuntasParca = parcalar.some(p => !p.disTedarik);
+  // parcaUcretsizMi: dış tedarik parça varsa her zaman false (o parçaların fiyatı girilmeli)
+  const parcaUcretsizMi = parcalar.length === 0 || (!hasDisTedarikParca && warrantyAktif && !form.parcaGarantiDisi);
+  const parcaUcretiToplam = parcalar.reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
   const svUcretliTipi = form.type === "Garanti Dışı" || form.type === "Periyodik Bakım";
   const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
   const matchedCustomers = custSearch.trim()
@@ -116,6 +120,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
       </Field>
 
+      <Field label="Fabrika Notu">
+        <textarea value={form.fabrikaNotu || ""} onChange={e => setForm(p => ({ ...p, fabrikaNotu: e.target.value }))}
+          placeholder="Fabrika dahili notu (yazdırılan formda görünür)..."
+          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
+      </Field>
+
       <Field label="Yapılan İşler / Parça Değişimleri">
         <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
           placeholder="Yapılan işlemler, değişen parçalar..."
@@ -129,22 +139,14 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
-              onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY") }] }))} />
+              onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY"), disTedarik: false }] }))} />
           </div>
         )}
       </Field>
 
       {(form.degisenParcalar || []).length > 0 && (
         <>
-          {islemAnlasmali && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-              <input type="checkbox" checked={parcaAltuntastanMi} onChange={e => setForm(p => ({ ...p, parcaAltuntastanMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
-                {parcaAltuntastanMi ? "Bu parçalar Altuntaş'tan alındı (Altuntaş'a gelir/borç olarak sayılır)" : "Parçalar dışarıdan tedarik edildi (ücret yine girilebilir, ama Altuntaş'a gelir/borç olarak sayılmaz)"}
-              </span>
-            </label>
-          )}
-          {parcaAltuntastanMi && warrantyAktif && (
+          {hasAltuntasParca && warrantyAktif && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
               <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#dc2626" }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
@@ -158,15 +160,17 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               const hasPartId = p && p.partId;
               const hasComponentId = !!hasPartId;
               const itemColor = "#1d4ed8";
+              const isDisTedarik = !!(islemAnlasmali && p.disTedarik);
               const cols = [
                 "1fr",
                 hasComponentId ? "60px" : null,
+                islemAnlasmali ? "88px" : null,
                 !parcaUcretsizMi ? "140px" : null,
                 "36px",
               ].filter(Boolean).join(" ");
               return (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: itemColor }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "#ea580c" : itemColor }}>
                     {ad}
                   </span>
                   {hasComponentId && (
@@ -179,6 +183,18 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                         })}
                         style={{ width: "100%", padding: "6px 6px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", boxSizing: "border-box", fontFamily: "inherit" }} />
                     </div>
+                  )}
+                  {islemAnlasmali && (
+                    <button type="button"
+                      onClick={() => setForm(prev => {
+                        const arr = [...prev.degisenParcalar];
+                        arr[i] = { ...arr[i], disTedarik: !arr[i].disTedarik };
+                        return { ...prev, degisenParcalar: arr };
+                      })}
+                      title={isDisTedarik ? "Dış tedarik — Altuntaş'tan alınmadı" : "Altuntaş'tan alındı"}
+                      style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", padding: "4px 7px", borderRadius: 8, border: isDisTedarik ? "1px solid #f97316" : "1px solid #e2e8f0", background: isDisTedarik ? "#fff7ed" : "#f8fafc", color: isDisTedarik ? "#ea580c" : "#94a3b8", whiteSpace: "nowrap" }}>
+                      {isDisTedarik ? "Dış Tedarik" : "Bizden"}
+                    </button>
                   )}
                   {!parcaUcretsizMi && (
                     <MoneyInput value={typeof p === "string" ? "" : p.fiyat} sym={CUR_SYM[form.currency || "TRY"]}
