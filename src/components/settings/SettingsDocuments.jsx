@@ -172,7 +172,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const [fieldLabelModal, setFieldLabelModal] = useState(null);
   const [openSections, setOpenSections] = useState(new Set());
   const [proformaConfirm, setProformaConfirm] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { sectionKey, fieldKey, label }
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { label, onConfirm }
 
   const toggleSection = (key) =>
     setOpenSections(p => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -508,7 +508,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                         style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>
                         ↓
                       </button>
-                      <button onClick={() => setDeleteConfirm({ sectionKey: sec.key, fieldKey: f.key, label: chipLabel })}
+                      <button onClick={() => setDeleteConfirm({ label: chipLabel, onConfirm: () => deleteBuiltin(sec.key, f.key) })}
                         title="Kaldır"
                         style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>
                         ✕
@@ -577,7 +577,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                         <Btn small variant="ghost" onClick={() => moveCf(cf.id, -1)} disabled={globalIdx === 0} title="Yukarı taşı">↑</Btn>
                         <Btn small variant="ghost" onClick={() => moveCf(cf.id, 1)} disabled={globalIdx === allCfs.length - 1} title="Aşağı taşı">↓</Btn>
                         <Btn small variant="ghost" onClick={() => openEditCf(cf)}><Icon name="edit" size={12} /></Btn>
-                        <Btn small variant="danger" onClick={() => deleteCf(cf.id)}><Icon name="trash" size={12} /></Btn>
+                        <Btn small variant="danger" onClick={() => setDeleteConfirm({ label: cf.label.TR || cf.label.EN, onConfirm: () => deleteCf(cf.id) })}><Icon name="trash" size={12} /></Btn>
                       </div>
                     );
                   })}
@@ -621,7 +621,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setDeleteConfirm(null)}>Vazgeç</Btn>
-            <Btn variant="danger" onClick={() => { deleteBuiltin(deleteConfirm.sectionKey, deleteConfirm.fieldKey); setDeleteConfirm(null); }}>
+            <Btn variant="danger" onClick={() => { deleteConfirm.onConfirm(); setDeleteConfirm(null); }}>
               <Icon name="trash" size={14} /> Kaldır
             </Btn>
           </div>
