@@ -167,6 +167,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const [cfModal, setCfModal] = useState(null);
   const [fieldLabelModal, setFieldLabelModal] = useState(null);
   const [openSections, setOpenSections] = useState(new Set());
+  const [proformaConfirm, setProformaConfirm] = useState(null);
 
   const toggleSection = (key) =>
     setOpenSections(p => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -277,12 +278,39 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const saveCf = () => {
     const { cf, isNew } = cfModal;
     if (!cf.label.TR.trim()) return;
+    let newDraft;
     setDraft(p => {
       const fields = p[docType].customFields;
       const next = isNew ? [...fields, cf] : fields.map(f => f.id === cf.id ? cf : f);
-      return { ...p, [docType]: { ...p[docType], customFields: next } };
+      newDraft = { ...p, [docType]: { ...p[docType], customFields: next } };
+      return newDraft;
     });
     setCfModal(null);
+    // Hemen kaydet — kullanıcı Kaydet butonuna basmayı unutmasın
+    setTimeout(() => {
+      if (newDraft) {
+        setAppSettings(p => ({ ...p, evrakFormConfig: newDraft }));
+        flash("ok", "Özel alan kaydedildi.");
+      }
+    }, 0);
+    // Teklif'e eklenirken proformaya da eklensin mi?
+    if (isNew && docType === "teklif" && cf.section !== "kosullar") {
+      setProformaConfirm(cf);
+    }
+  };
+
+  const addCfToProforma = () => {
+    if (!proformaConfirm) return;
+    const cf = proformaConfirm;
+    const newCf = { ...cf, id: String(uid()) };
+    setDraft(p => {
+      const fields = p.proforma.customFields;
+      const newDraft = { ...p, proforma: { ...p.proforma, customFields: [...fields, newCf] } };
+      setAppSettings(prev => ({ ...prev, evrakFormConfig: newDraft }));
+      return newDraft;
+    });
+    setProformaConfirm(null);
+    flash("ok", "Özel alan proformaya da eklendi.");
   };
 
   const deleteCf = (id) =>
@@ -484,6 +512,18 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           onReset={() => { resetLabel(fieldLabelModal.sectionKey, fieldLabelModal.fieldKey); setFieldLabelModal(null); }}
           onClose={() => setFieldLabelModal(null)}
         />
+      )}
+
+      {proformaConfirm && (
+        <Modal title="Proformada da göster?" onClose={() => setProformaConfirm(null)}>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+            <b>"{proformaConfirm.label.TR}"</b> alanı proformada da gösterilsin mi?
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setProformaConfirm(null)}>Hayır</Btn>
+            <Btn onClick={addCfToProforma}><Icon name="check" size={14} /> Evet, ekle</Btn>
+          </div>
+        </Modal>
       )}
     </Section>
   );

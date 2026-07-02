@@ -165,13 +165,20 @@ const CfInput = ({ cf, dil, value, onChange, inputStyle }) => {
       </Field>
     );
   }
-  const listId = cf.suggestions ? `cf-datalist-${cf.id}` : undefined;
+  const suggestions = (cf.suggestions || "").trim();
+  const listId = suggestions ? `cf-datalist-${cf.id}` : undefined;
   return (
     <Field label={label}>
-      <input value={value} onChange={e => onChange(e.target.value)} style={inputStyle} list={listId} />
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={inputStyle}
+        autoComplete="off"
+        {...(listId ? { list: listId } : {})}
+      />
       {listId && (
         <datalist id={listId}>
-          {cf.suggestions.split(",").map(s => s.trim()).filter(Boolean).map(s => <option key={s} value={s} />)}
+          {suggestions.split(",").map(s => s.trim()).filter(Boolean).map(s => <option key={s} value={s} />)}
         </datalist>
       )}
     </Field>
@@ -640,7 +647,7 @@ export const Documents = ({
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
           {!isFieldHidden(form.type, "belge", "forwarder") && (
-            <Field label={form.dil === "EN" ? "Forwarder" : "Gönderen (Forwarder)"}><input {...f("forwarder")} style={inputStyle} placeholder={form.dil === "EN" ? "Forwarder name" : "Gönderen adı"} /></Field>
+            <Field label={getFieldLabel(form.type, "belge", "forwarder", "Gönderen (Forwarder)")}><input {...f("forwarder")} style={inputStyle} placeholder="Gönderen adı" /></Field>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {form.type === "teklif" && (
