@@ -200,9 +200,22 @@ export const Documents = ({
   const isFieldHidden = (type, section, key) =>
     (evrakFormConfig?.[type]?.hiddenFields?.[section] || []).includes(key);
 
+  const isFieldDeleted = (type, section, key) =>
+    (evrakFormConfig?.[type]?.deletedFields?.[section] || []).includes(key);
+
+  const canShow = (type, section, key) =>
+    !isFieldHidden(type, section, key) && !isFieldDeleted(type, section, key);
+
   const getFieldLabel = (type, section, key, fallbackTR) => {
     const lbl = evrakFormConfig?.[type]?.fieldLabels?.[section]?.[key];
     return lbl?.TR || fallbackTR;
+  };
+
+  const getBuiltinOrder = (type, section, defaultKeys) => {
+    const order = evrakFormConfig?.[type]?.fieldOrder?.[section];
+    if (!order?.length) return defaultKeys;
+    const orderSet = new Set(order);
+    return [...order.filter(k => defaultKeys.includes(k)), ...defaultKeys.filter(k => !orderSet.has(k))];
   };
 
   const cfOf = (type, section) =>
@@ -631,13 +644,19 @@ export const Documents = ({
 
           <Field label="Firma Adı"><input {...f("firma")} style={inputStyle} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {!isFieldHidden(form.type, "alici", "yetkili") && <Field label={getFieldLabel(form.type, "alici", "yetkili", "Yetkili", "Authority")}><input {...f("yetkili")} style={inputStyle} /></Field>}
-            {!isFieldHidden(form.type, "alici", "tel") && <Field label={getFieldLabel(form.type, "alici", "tel", "Telefon", "Phone")}><input {...f("tel")} style={inputStyle} /></Field>}
-            {!isFieldHidden(form.type, "alici", "vergiNo") && <Field label={getFieldLabel(form.type, "alici", "vergiNo", "Vergi No", "Tax No")}><input {...f("vergiNo")} style={inputStyle} /></Field>}
-            {!isFieldHidden(form.type, "alici", "vergiDairesi") && <Field label={getFieldLabel(form.type, "alici", "vergiDairesi", "Vergi Dairesi", "Tax Office")}><input {...f("vergiDairesi")} style={inputStyle} /></Field>}
+            {getBuiltinOrder(form.type, "alici", ["yetkili","tel","vergiNo","vergiDairesi","adres","email"]).map(key => {
+              if (!canShow(form.type, "alici", key)) return null;
+              const wide = key === "adres" || key === "email";
+              const ws = wide ? { gridColumn: "1 / -1" } : {};
+              if (key === "yetkili") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "yetkili", "Yetkili")}><input {...f("yetkili")} style={inputStyle} /></Field></div>;
+              if (key === "tel") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "tel", "Telefon")}><input {...f("tel")} style={inputStyle} /></Field></div>;
+              if (key === "vergiNo") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "vergiNo", "Vergi No")}><input {...f("vergiNo")} style={inputStyle} /></Field></div>;
+              if (key === "vergiDairesi") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "vergiDairesi", "Vergi Dairesi")}><input {...f("vergiDairesi")} style={inputStyle} /></Field></div>;
+              if (key === "adres") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "adres", "Adres")}><textarea {...f("adres")} style={taStyle} /></Field></div>;
+              if (key === "email") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "alici", "email", "E-posta")}><input {...f("email")} style={inputStyle} /></Field></div>;
+              return null;
+            })}
           </div>
-          {!isFieldHidden(form.type, "alici", "adres") && <Field label={getFieldLabel(form.type, "alici", "adres", "Adres", "Address")}><textarea {...f("adres")} style={taStyle} /></Field>}
-          {!isFieldHidden(form.type, "alici", "email") && <Field label={getFieldLabel(form.type, "alici", "email", "E-posta", "Email")}><input {...f("email")} style={inputStyle} /></Field>}
           {cfOf(form.type, "alici").map(cf => (
             <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
           ))}
@@ -646,9 +665,7 @@ export const Documents = ({
         {/* Belge Detayları */}
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
-          {!isFieldHidden(form.type, "belge", "forwarder") && (
-            <Field label={getFieldLabel(form.type, "belge", "forwarder", "Gönderen (Forwarder)")}><input {...f("forwarder")} style={inputStyle} placeholder="Gönderen adı" /></Field>
-          )}
+          {/* Core fields — always shown, not reorderable */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {form.type === "teklif" && (
               <Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field>
@@ -684,33 +701,35 @@ export const Documents = ({
               </select>
             </Field>
             <Field label="KDV Oranı (%)"><input {...f("kdvOrani")} type="number" min="0" max="100" style={inputStyle} /></Field>
-            {form.type === "proforma" && !isFieldHidden(form.type, "belge", "gtipNo") && (
-              <Field label="GTIP No"><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field>
-            )}
-            {!isFieldHidden(form.type, "belge", "modelYiliDegeri") && (
-              <Field label="Model Yılı" style={{ gridColumn: "1 / -1" }}>
-                <input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} />
-              </Field>
-            )}
-            {form.type === "proforma" && form.currency !== "TRY" && !isFieldHidden(form.type, "belge", "kur") && (
-              <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field>
-            )}
           </div>
-          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "teslimYeri") && (
-            <Field label="Teslim Yeri / Gümrük Notu">
-              <textarea {...f("teslimYeri")} style={taStyle} />
-            </Field>
-          )}
-          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "not") && (
-            <Field label="Not (Proforma)">
-              <textarea {...f("not")} style={taStyle} />
-            </Field>
-          )}
-          {form.type === "proforma" && !isFieldHidden(form.type, "belge", "ek") && (
-            <Field label="Ek Bilgi">
-              <textarea {...f("ek")} style={taStyle} />
-            </Field>
-          )}
+          {/* BUILTIN belge fields — in field order, deletable */}
+          {(() => {
+            const teklif_keys = ["forwarder", "gtipNo", "modelYiliDegeri", "kur"];
+            const proforma_keys = ["forwarder", "gtipNo", "modelYiliDegeri", "kur", "teslimYeri", "not", "ek"];
+            const defaultKeys = form.type === "proforma" ? proforma_keys : teklif_keys;
+            const BELGE_WIDE = new Set(["forwarder", "teslimYeri", "not", "ek"]);
+            const ordered = getBuiltinOrder(form.type, "belge", defaultKeys);
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 0 }}>
+                {ordered.map(key => {
+                  if (!canShow(form.type, "belge", key)) return null;
+                  if ((key === "gtipNo" || key === "teslimYeri" || key === "not" || key === "ek") && form.type !== "proforma") return null;
+                  if (key === "kur" && form.type === "proforma" && form.currency === "TRY") return null;
+                  if (key === "kur" && form.type !== "proforma") return null;
+                  const wide = BELGE_WIDE.has(key);
+                  const ws = wide ? { gridColumn: "1 / -1" } : {};
+                  if (key === "forwarder") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "forwarder", "Gönderen (Forwarder)")}><input {...f("forwarder")} style={inputStyle} placeholder="Gönderen adı" /></Field></div>;
+                  if (key === "gtipNo") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "gtipNo", "GTIP No")}><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field></div>;
+                  if (key === "modelYiliDegeri") return <div key={key} style={{ gridColumn: "1 / -1" }}><Field label={getFieldLabel(form.type, "belge", "modelYiliDegeri", "Model Yılı")}><input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} /></Field></div>;
+                  if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "kur", "Kur (Bugün)")}><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field></div>;
+                  if (key === "teslimYeri") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "teslimYeri", "Teslim Yeri / Gümrük Notu")}><textarea {...f("teslimYeri")} style={taStyle} /></Field></div>;
+                  if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "not", "Not (Proforma)")}><textarea {...f("not")} style={taStyle} /></Field></div>;
+                  if (key === "ek") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "ek", "Ek Bilgi")}><textarea {...f("ek")} style={taStyle} /></Field></div>;
+                  return null;
+                })}
+              </div>
+            );
+          })()}
           {cfOf(form.type, "belge").map(cf => (
             <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
           ))}
@@ -879,21 +898,21 @@ export const Documents = ({
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Teklif Koşulları (2. Sayfa)</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {!isFieldHidden("teklif", "kosullar", "odemeSekli") && <Field label="Ödeme Şekli"><input {...f("odemeSekli")} style={inputStyle} /></Field>}
-            {!isFieldHidden("teklif", "kosullar", "teslimSekli") && <Field label="Teslim Şekli"><input {...f("teslimSekli")} style={inputStyle} /></Field>}
+            {getBuiltinOrder("teklif", "kosullar", ["odemeSekli","teslimSekli","teslimYeri","teslimSuresi","teslimTarihi","teklifGecerlilik","kur","not"]).map(key => {
+              if (!canShow("teklif", "kosullar", key)) return null;
+              const wide = key === "teslimYeri" || key === "not";
+              const ws = wide ? { gridColumn: "1 / -1" } : {};
+              if (key === "odemeSekli") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "odemeSekli", "Ödeme Şekli")}><input {...f("odemeSekli")} style={inputStyle} /></Field></div>;
+              if (key === "teslimSekli") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimSekli", "Teslim Şekli")}><input {...f("teslimSekli")} style={inputStyle} /></Field></div>;
+              if (key === "teslimYeri") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimYeri", "Teslim Yeri / Gümrük Notu")}><textarea {...f("teslimYeri")} style={taStyle} /></Field></div>;
+              if (key === "teslimSuresi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimSuresi", "Teslim Süresi")}><input {...f("teslimSuresi")} style={inputStyle} /></Field></div>;
+              if (key === "teslimTarihi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimTarihi", "Teslim Tarihi")}><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field></div>;
+              if (key === "teklifGecerlilik") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teklifGecerlilik", "Teklif Geçerlilik Süresi")}><input {...f("teklifGecerlilik")} style={inputStyle} /></Field></div>;
+              if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "kur", "Kur (Bugün)")}><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field></div>;
+              if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "not", "Not")}><textarea {...f("not")} style={taStyle} /></Field></div>;
+              return null;
+            })}
           </div>
-          {!isFieldHidden("teklif", "kosullar", "teslimYeri") && (
-            <Field label="Teslim Yeri / Gümrük Notu">
-              <textarea {...f("teslimYeri")} style={taStyle} />
-            </Field>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {!isFieldHidden("teklif", "kosullar", "teslimSuresi") && <Field label="Teslim Süresi"><input {...f("teslimSuresi")} style={inputStyle} /></Field>}
-            {!isFieldHidden("teklif", "kosullar", "teslimTarihi") && <Field label="Teslim Tarihi"><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field>}
-            {!isFieldHidden("teklif", "kosullar", "teklifGecerlilik") && <Field label="Teklif Geçerlilik Süresi"><input {...f("teklifGecerlilik")} style={inputStyle} /></Field>}
-            {!isFieldHidden("teklif", "kosullar", "kur") && <Field label="Kur (Bugün)"><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field>}
-          </div>
-          {!isFieldHidden("teklif", "kosullar", "not") && <Field label="Not"><textarea {...f("not")} style={taStyle} /></Field>}
           {cfOf("teklif", "kosullar").map(cf => (
             <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
           ))}

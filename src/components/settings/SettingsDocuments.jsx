@@ -151,6 +151,8 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         customFields: saved?.teklif?.customFields || [],
         fieldDefaults: initFd("teklif"),
         fieldLabels: saved?.teklif?.fieldLabels || {},
+        fieldOrder: { alici: [], belge: [], kosullar: [], ...(saved?.teklif?.fieldOrder || {}) },
+        deletedFields: { alici: [], belge: [], kosullar: [], ...(saved?.teklif?.deletedFields || {}) },
         sartlar: migratedSartlar,
         notAlt: saved?.teklif?.notAlt || migratedNotAlt,
       },
@@ -159,6 +161,8 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         customFields: saved?.proforma?.customFields || [],
         fieldDefaults: initFd("proforma"),
         fieldLabels: saved?.proforma?.fieldLabels || {},
+        fieldOrder: { alici: [], belge: [], ...(saved?.proforma?.fieldOrder || {}) },
+        deletedFields: { alici: [], belge: [], ...(saved?.proforma?.deletedFields || {}) },
         notAlt: saved?.proforma?.notAlt || migratedNotAlt,
       },
     };
@@ -267,6 +271,73 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
       ...p,
       [docType]: { ...p[docType], notAlt: { ...(p[docType].notAlt || {}), [lang]: val } },
     }));
+
+  // ── Mevcut alan sıralama / silme ─────────────────────────────────────────
+  const getOrderedBuiltins = (sectionKey) => {
+    const sec = SECTIONS[docType]?.find(s => s.key === sectionKey);
+    const builtins = sec?.builtins || [];
+    const order = draft[docType]?.fieldOrder?.[sectionKey] || [];
+    const deleted = new Set(draft[docType]?.deletedFields?.[sectionKey] || []);
+    const visible = builtins.filter(f => !deleted.has(f.key));
+    if (!order.length) return visible;
+    const orderSet = new Set(order);
+    return [
+      ...order.map(k => builtins.find(b => b.key === k)).filter(Boolean).filter(b => !deleted.has(b.key)),
+      ...visible.filter(b => !orderSet.has(b.key)),
+    ];
+  };
+
+  const getDeletedBuiltins = (sectionKey) => {
+    const sec = SECTIONS[docType]?.find(s => s.key === sectionKey);
+    const builtins = sec?.builtins || [];
+    const deleted = new Set(draft[docType]?.deletedFields?.[sectionKey] || []);
+    return builtins.filter(f => deleted.has(f.key));
+  };
+
+  const autoSaveDraft = (newDraft) => setTimeout(() => setAppSettings(p => ({ ...p, evrakFormConfig: newDraft })), 0);
+
+  const deleteBuiltin = (sectionKey, fieldKey) => {
+    let newDraft;
+    setDraft(p => {
+      const deleted = p[docType].deletedFields?.[sectionKey] || [];
+      if (deleted.includes(fieldKey)) return p;
+      newDraft = { ...p, [docType]: { ...p[docType], deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: [...deleted, fieldKey] } } };
+      return newDraft;
+    });
+    setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
+  };
+
+  const restoreBuiltin = (sectionKey, fieldKey) => {
+    let newDraft;
+    setDraft(p => {
+      newDraft = { ...p, [docType]: { ...p[docType], deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: (p[docType].deletedFields?.[sectionKey] || []).filter(k => k !== fieldKey) } } };
+      return newDraft;
+    });
+    setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
+  };
+
+  const moveBuiltin = (sectionKey, fieldKey, dir) => {
+    let newDraft;
+    setDraft(p => {
+      const sec = SECTIONS[docType]?.find(s => s.key === sectionKey);
+      const builtins = sec?.builtins || [];
+      const deleted = new Set(p[docType].deletedFields?.[sectionKey] || []);
+      const existingOrder = p[docType].fieldOrder?.[sectionKey] || [];
+      const fullOrder = existingOrder.length > 0
+        ? [...existingOrder.filter(k => builtins.some(b => b.key === k)), ...builtins.map(b => b.key).filter(k => !existingOrder.includes(k))]
+        : builtins.map(b => b.key);
+      const visible = fullOrder.filter(k => !deleted.has(k));
+      const idx = visible.indexOf(fieldKey);
+      const target = idx + dir;
+      if (idx < 0 || target < 0 || target >= visible.length) return p;
+      const newVisible = [...visible];
+      [newVisible[idx], newVisible[target]] = [newVisible[target], newVisible[idx]];
+      const newFullOrder = [...newVisible, ...fullOrder.filter(k => deleted.has(k))];
+      newDraft = { ...p, [docType]: { ...p[docType], fieldOrder: { ...(p[docType].fieldOrder || {}), [sectionKey]: newFullOrder } } };
+      return newDraft;
+    });
+    setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
+  };
 
   // ── Özel alanlar ──────────────────────────────────────────────────────────
   const openAddCf = (section) =>
@@ -407,28 +478,55 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                 Mevcut Alanlar <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(tıklayarak gizle/göster)</span>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {sec.builtins.map(f => {
+                {getOrderedBuiltins(sec.key).map((f, idx, arr) => {
                   const hidden = isHidden(sec.key, f.key);
                   const chipLabel = getChipLabel(sec.key, f.key, f.label);
                   const isCustomLabel = chipLabel !== f.label;
+                  const borderColor = hidden ? "#fca5a5" : "#bbf7d0";
+                  const textColor = hidden ? "#b91c1c" : "#166534";
                   return (
-                    <div key={f.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${hidden ? "#fca5a5" : "#bbf7d0"}`, background: hidden ? "#fff1f2" : "#f0fdf4", overflow: "hidden", transition: "all .1s" }}>
+                    <div key={f.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "#f0fdf4", overflow: "hidden", transition: "all .1s" }}>
                       <div onClick={() => toggleHide(sec.key, f.key)}
-                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: hidden ? "#b91c1c" : "#166534", userSelect: "none" }}>
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 8px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: textColor, userSelect: "none" }}>
                         <span style={{ fontSize: 11 }}>{hidden ? "✕" : "✓"}</span>
                         {chipLabel}
-                        {isCustomLabel && <span style={{ fontSize: 10, color: hidden ? "#b91c1c" : "#166534", opacity: 0.6 }}>(özel)</span>}
+                        {isCustomLabel && <span style={{ fontSize: 10, color: textColor, opacity: 0.6 }}>(özel)</span>}
                       </div>
-                      <button
-                        onClick={e => { e.stopPropagation(); openLabelEdit(sec.key, f.key, f.label, f.enDefault || ""); }}
+                      <button onClick={e => { e.stopPropagation(); openLabelEdit(sec.key, f.key, f.label, f.enDefault || ""); }}
                         title="Etiketi düzenle"
-                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${hidden ? "#fca5a5" : "#bbf7d0"}`, padding: "5px 8px", cursor: "pointer", fontSize: 12, color: hidden ? "#b91c1c" : "#166534", opacity: 0.7, lineHeight: 1 }}>
+                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: "pointer", fontSize: 12, color: textColor, opacity: 0.7, lineHeight: 1 }}>
                         ✏
+                      </button>
+                      <button onClick={() => moveBuiltin(sec.key, f.key, -1)} disabled={idx === 0}
+                        title="Yukarı taşı"
+                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === 0 ? 0.3 : 0.7, lineHeight: 1 }}>
+                        ↑
+                      </button>
+                      <button onClick={() => moveBuiltin(sec.key, f.key, 1)} disabled={idx === arr.length - 1}
+                        title="Aşağı taşı"
+                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>
+                        ↓
+                      </button>
+                      <button onClick={() => deleteBuiltin(sec.key, f.key)}
+                        title="Kaldır"
+                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>
+                        ✕
                       </button>
                     </div>
                   );
                 })}
               </div>
+              {getDeletedBuiltins(sec.key).length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: "#94a3b8" }}>Kaldırılanlar:</span>
+                  {getDeletedBuiltins(sec.key).map(f => (
+                    <button key={f.key} onClick={() => restoreBuiltin(sec.key, f.key)}
+                      style={{ fontSize: 11, color: "#64748b", background: "#f1f5f9", border: "1px dashed #cbd5e1", borderRadius: 20, padding: "3px 10px", cursor: "pointer" }}>
+                      + {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Varsayılan değerler */}
