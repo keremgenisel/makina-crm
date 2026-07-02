@@ -231,7 +231,7 @@ export const StatCard = ({ label, value, sub, color, onClick }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) => {
+export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHeight }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -239,13 +239,30 @@ export const Modal = ({ title, onClose, children, wide, maxWidth, maxHeight }) =
   }, [onClose]);
   return (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>
+    {footer ? (
+      <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+        <div style={{ padding: "28px 28px 0", flexShrink: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>
+          </div>
+        </div>
+        <div style={{ padding: "0 28px 20px", overflowY: "auto", flex: 1 }}>
+          {children}
+        </div>
+        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
+          {footer}
+        </div>
       </div>
-      {children}
-    </div>
+    ) : (
+      <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>
+        </div>
+        {children}
+      </div>
+    )}
   </div>
   );
 };

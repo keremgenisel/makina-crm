@@ -541,7 +541,7 @@ export const CustomerDetailModal = ({
     if (!window.appMail || !mailDraft) return;
     if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
     setMailSendState({ state: "sending", error: null });
-    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName });
+    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName, type: "musteri" });
     if (res?.ok) {
       setMailSendState({ state: "idle", error: null });
       setMailDraft(null);
@@ -557,7 +557,7 @@ export const CustomerDetailModal = ({
 
   return (
     <>
-      <Modal wide maxWidth={1080} title={detailView.name} onClose={onClose}>
+      <Modal wide maxWidth={1080} title={detailView.name} onClose={onClose} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
         <div style={{ display: "grid", gridTemplateColumns: hasMultiple ? "220px 1fr" : "1fr", gap: 20, alignItems: "start" }}>
           {hasMultiple && (
             <div>
@@ -706,6 +706,31 @@ export const CustomerDetailModal = ({
               </div>
             )}
 
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #e2e8f0" }}>
+                İşlemler
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>
+                  <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>
+                  <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: detailView.id, name: "", satanFirma: detailView.name, adres: "", city: "", country: "Türkiye", saleDate: today(), aciklama: "" })}>
+                    <Icon name="customers" size={12} /> Yeni Sahip
+                  </Btn>
+                  {isCustomer && (
+                    <Btn small variant="ghost" onClick={() => { onClose(); onOpenAddForFirm(detailView); }}>
+                      <Icon name="plus" size={12} /> Bu Firmaya Makina Ekle
+                    </Btn>
+                  )}
+                  <Btn small variant="ghost" onClick={openSandikEtiket}><Icon name="print" size={12} /> Sandık Etiketi</Btn>
+                  <Btn small onClick={() => { onClose(); onOpenEdit(detailView); }}><Icon name="edit" size={12} /> Düzenle</Btn>
+                </div>
+              </div>
+            </div>
+
             {detailView.prevOwners?.length > 0 && (
               <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, marginBottom: 10, color: "#0f172a", fontSize: 13 }}>Sahiplik Geçmişi</div>
@@ -753,14 +778,8 @@ export const CustomerDetailModal = ({
                   <span style={{ fontSize: 11, background: "#fff", color: "#64748b", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>
-                  <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>
-                  <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>
                   <Btn small variant="ghost" onClick={() => openPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>
                   <Btn small variant="ghost" onClick={() => openPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>
-                  <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: detailView.id, name: "", satanFirma: detailView.name, adres: "", city: "", country: "Türkiye", saleDate: today(), aciklama: "" })}>
-                    <Icon name="customers" size={12} /> Yeni Sahip
-                  </Btn>
                 </div>
               </div>
               {detailTimelineEvents.length === 0 ? (
@@ -951,16 +970,6 @@ export const CustomerDetailModal = ({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, flexWrap: "wrap" }}>
-          <Btn variant="ghost" onClick={onClose}>Kapat</Btn>
-          {isCustomer && (
-            <Btn variant="ghost" onClick={() => { onClose(); onOpenAddForFirm(detailView); }}>
-              <Icon name="plus" size={14} /> Bu Firmaya Makina Ekle
-            </Btn>
-          )}
-          <Btn variant="ghost" onClick={openSandikEtiket}><Icon name="print" size={14} /> Sandık Etiketi</Btn>
-          <Btn onClick={() => { onClose(); onOpenEdit(detailView); }}><Icon name="edit" size={14} /> Düzenle</Btn>
-        </div>
       </Modal>
 
       {newOwnerForm && (

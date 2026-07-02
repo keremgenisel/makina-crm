@@ -179,6 +179,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     const res = await window.appMail.send({
       to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text,
       attachments: (mailDraft.attachments || []).map(a => ({ filename: a.name, contentBase64: a.base64, mimeType: a.mime })),
+      type: "bayi",
     });
     if (res?.ok) {
       setMailSendState({ state: "idle", error: null });

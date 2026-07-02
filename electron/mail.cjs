@@ -180,7 +180,7 @@ async function htmlToPdfBuffer(html) {
   }
 }
 
-async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: rawAttachments }) {
+async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: rawAttachments, type }) {
   if (!nodemailer) return { ok: false, error: "nodemailer yüklü değil." };
   const creds = getDecryptedCredentials();
   if (!creds) return { ok: false, error: "Önce Ayarlar'dan e-posta hesabı bağlanmalı." };
@@ -200,12 +200,12 @@ async function sendMail({ to, subject, text, pdfHtml, pdfFileName, attachments: 
     // Log'a sadece dosya adı/türü yazılır — ek içeriği (PDF/base64) tekrar diske gömülmez.
     const attachmentMeta = attachments.map(a => ({ filename: a.filename, mimeType: a.contentType }));
     await createTransporter(creds).sendMail({ from: creds.email, to, subject, text, attachments });
-    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: true, timestamp: new Date().toISOString() });
+    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: true, timestamp: new Date().toISOString(), type: type || null });
     return { ok: true };
   } catch (err) {
     console.error("E-posta gönderilemedi:", err);
     const attachmentMeta = attachments.map(a => ({ filename: a.filename, mimeType: a.contentType }));
-    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: false, error: err?.message || "Gönderilemedi.", timestamp: new Date().toISOString() });
+    appendEmailLog({ to, subject, text: text || "", attachments: attachmentMeta, success: false, error: err?.message || "Gönderilemedi.", timestamp: new Date().toISOString(), type: type || null });
     return { ok: false, error: err?.message || "Gönderilemedi." };
   }
 }

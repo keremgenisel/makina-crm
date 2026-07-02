@@ -150,17 +150,16 @@ const migrateRow = (r) => {
 
 // ── Özel alan input bileşeni ──────────────────────────────────────────────────
 const CfInput = ({ cf, dil, value, onChange, inputStyle }) => {
-  const label = (dil === "EN" && cf.label.EN) ? cf.label.EN : cf.label.TR;
+  const label = cf.label.TR;
   if (cf.type === "select") {
     const options = cf.options || [];
     return (
       <Field label={label}>
         <select value={value} onChange={e => onChange(e.target.value)} style={inputStyle}>
           <option value="">—</option>
-          {options.map((opt, i) => {
-            const display = (dil === "EN" && opt.EN) ? opt.EN : opt.TR;
-            return <option key={i} value={opt.TR}>{display}</option>;
-          })}
+          {options.map((opt, i) => (
+            <option key={i} value={opt.TR}>{opt.TR}</option>
+          ))}
         </select>
       </Field>
     );
@@ -211,15 +210,20 @@ export const Documents = ({
     return lbl?.TR || fallbackTR;
   };
 
-  const getBuiltinOrder = (type, section, defaultKeys) => {
-    const order = evrakFormConfig?.[type]?.fieldOrder?.[section];
-    if (!order?.length) return defaultKeys;
-    const orderSet = new Set(order);
-    return [...order.filter(k => defaultKeys.includes(k)), ...defaultKeys.filter(k => !orderSet.has(k))];
+  const getUnifiedOrder = (type, section, builtinKeys) => {
+    const savedOrder = evrakFormConfig?.[type]?.fieldOrder?.[section] || [];
+    const cfs = (evrakFormConfig?.[type]?.customFields || []).filter(cf => cf.section === section);
+    const cfKeys = cfs.map(cf => String(cf.id));
+    const allKeys = [...builtinKeys, ...cfKeys];
+    const inOrder = new Set(savedOrder);
+    return [
+      ...savedOrder.filter(k => allKeys.includes(k)),
+      ...allKeys.filter(k => !inOrder.has(k)),
+    ];
   };
 
-  const cfOf = (type, section) =>
-    (evrakFormConfig?.[type]?.customFields || []).filter(cf => cf.section === section);
+  const cfById = (type, id) =>
+    (evrakFormConfig?.[type]?.customFields || []).find(cf => String(cf.id) === String(id));
 
   const getCfValue = (cfId) => form?.customFieldValues?.[cfId] ?? "";
   const setCfValue = (cfId, val) =>
@@ -466,6 +470,7 @@ export const Documents = ({
       text: `Sayın ${doc.firma || ""},\n\n${typeLabel} formunuz ekte yer almaktadır.\n\nİyi günler dileriz.\n${factory?.firmaAdi || "Altuntaş Makina"}`,
       pdfHtml: html,
       pdfFileName: `${doc.type}-${(doc.no || doc.tarih || "belge").replace(/\s+/g, "-")}.pdf`,
+      type: doc.type,
     });
     setMailSendState({ state: "idle", error: null });
   };
@@ -481,7 +486,7 @@ export const Documents = ({
     if (!window.appMail || !mailDraft) return;
     if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
     setMailSendState({ state: "sending", error: null });
-    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName });
+    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName, type: mailDraft.type });
     if (res?.ok) {
       setMailSendState({ state: "idle", error: null });
       setMailDraft(null);
@@ -644,7 +649,9 @@ export const Documents = ({
 
           <Field label="Firma Adı"><input {...f("firma")} style={inputStyle} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {getBuiltinOrder(form.type, "alici", ["yetkili","tel","vergiNo","vergiDairesi","adres","email"]).map(key => {
+            {getUnifiedOrder(form.type, "alici", ["yetkili","tel","vergiNo","vergiDairesi","adres","email"]).map(key => {
+              const cf = cfById(form.type, key);
+              if (cf) return <div key={key}><CfInput cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} /></div>;
               if (!canShow(form.type, "alici", key)) return null;
               const wide = key === "adres" || key === "email";
               const ws = wide ? { gridColumn: "1 / -1" } : {};
@@ -657,70 +664,69 @@ export const Documents = ({
               return null;
             })}
           </div>
-          {cfOf(form.type, "alici").map(cf => (
-            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
-          ))}
         </div>
 
         {/* Belge Detayları */}
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
-          {/* Core fields — always shown, not reorderable */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {form.type === "teklif" && (
-              <Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field>
-            )}
-            <Field label="Tarih"><input type="date" {...f("tarih")} style={inputStyle} /></Field>
-            <Field label="Dil">
-              <select value={form.dil} onChange={e => {
-                const dil = e.target.value;
-                const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
-                setForm(p => ({
-                  ...p, dil,
-                  kdvOrani: dil === "EN" ? "0" : p.kdvOrani,
-                  odemeSekli: D.odemeSekli,
-                  teslimSekli: D.teslimSekli,
-                  teslimSuresi: D.teslimSuresi,
-                  not: p.type === "proforma" ? p.not : D.notTeklif,
-                  ek: D.ek,
-                  teklifGecerlilik: p.type === "teklif" ? D.teklifGecerlilik : "",
-                  teslimYeri: p.type === "proforma" ? D.teslimYeri : p.teslimYeri,
-                }));
-              }} style={inputStyle}>
-                <option value="TR">Türkçe (TR)</option>
-                <option value="EN">English (EN)</option>
-              </select>
-            </Field>
-            <Field label="Para Birimi">
-              <select value={form.currency} onChange={e => {
-                const cur = e.target.value;
-                setForm(p => ({ ...p, currency: cur }));
-                fetchAndSetRate(cur);
-              }} style={inputStyle}>
-                {CURRENCIES.map(c => <option key={c} value={c}>{c} — {CUR_LABEL[c]}</option>)}
-              </select>
-            </Field>
-            <Field label="KDV Oranı (%)"><input {...f("kdvOrani")} type="number" min="0" max="100" style={inputStyle} /></Field>
-          </div>
-          {/* BUILTIN belge fields — in field order, deletable */}
+          {/* Belge alanları — tümü birleşik sırada */}
           {(() => {
-            const teklif_keys = ["forwarder", "gtipNo", "modelYiliDegeri", "kur"];
-            const proforma_keys = ["forwarder", "gtipNo", "modelYiliDegeri", "kur", "teslimYeri", "not", "ek"];
+            const teklif_keys = ["no", "tarih", "dil", "currency", "kdvOrani", "forwarder", "gtipNo", "modelYiliDegeri", "kur"];
+            const proforma_keys = ["tarih", "dil", "currency", "kdvOrani", "forwarder", "gtipNo", "modelYiliDegeri", "kur", "teslimYeri", "not", "ek"];
             const defaultKeys = form.type === "proforma" ? proforma_keys : teklif_keys;
-            const BELGE_WIDE = new Set(["forwarder", "teslimYeri", "not", "ek"]);
-            const ordered = getBuiltinOrder(form.type, "belge", defaultKeys);
+            const BELGE_WIDE = new Set(["forwarder", "teslimYeri", "not", "ek", "modelYiliDegeri"]);
+            const ordered = getUnifiedOrder(form.type, "belge", defaultKeys);
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {ordered.map(key => {
+                  const cf = cfById(form.type, key);
+                  if (cf) return <div key={key}><CfInput cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} /></div>;
+                  if (key === "no" && form.type !== "teklif") return null;
                   if (!canShow(form.type, "belge", key)) return null;
                   if ((key === "gtipNo" || key === "teslimYeri" || key === "not" || key === "ek") && form.type !== "proforma") return null;
                   if (key === "kur" && form.type === "proforma" && form.currency === "TRY") return null;
                   if (key === "kur" && form.type !== "proforma") return null;
                   const wide = BELGE_WIDE.has(key);
                   const ws = wide ? { gridColumn: "1 / -1" } : {};
+                  if (key === "no") return <div key={key}><Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field></div>;
+                  if (key === "tarih") return <div key={key}><Field label="Tarih"><input type="date" {...f("tarih")} style={inputStyle} /></Field></div>;
+                  if (key === "dil") return (
+                    <div key={key}><Field label="Dil">
+                      <select value={form.dil} onChange={e => {
+                        const dil = e.target.value;
+                        const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
+                        setForm(p => ({
+                          ...p, dil,
+                          kdvOrani: dil === "EN" ? "0" : p.kdvOrani,
+                          odemeSekli: D.odemeSekli,
+                          teslimSekli: D.teslimSekli,
+                          teslimSuresi: D.teslimSuresi,
+                          not: p.type === "proforma" ? p.not : D.notTeklif,
+                          ek: D.ek,
+                          teklifGecerlilik: p.type === "teklif" ? D.teklifGecerlilik : "",
+                          teslimYeri: p.type === "proforma" ? D.teslimYeri : p.teslimYeri,
+                        }));
+                      }} style={inputStyle}>
+                        <option value="TR">Türkçe (TR)</option>
+                        <option value="EN">English (EN)</option>
+                      </select>
+                    </Field></div>
+                  );
+                  if (key === "currency") return (
+                    <div key={key}><Field label="Para Birimi">
+                      <select value={form.currency} onChange={e => {
+                        const cur = e.target.value;
+                        setForm(p => ({ ...p, currency: cur }));
+                        fetchAndSetRate(cur);
+                      }} style={inputStyle}>
+                        {CURRENCIES.map(c => <option key={c} value={c}>{c} — {CUR_LABEL[c]}</option>)}
+                      </select>
+                    </Field></div>
+                  );
+                  if (key === "kdvOrani") return <div key={key}><Field label="KDV Oranı (%)"><input {...f("kdvOrani")} type="number" min="0" max="100" style={inputStyle} /></Field></div>;
                   if (key === "forwarder") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "forwarder", "Gönderen (Forwarder)")}><input {...f("forwarder")} style={inputStyle} placeholder="Gönderen adı" /></Field></div>;
                   if (key === "gtipNo") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "gtipNo", "GTIP No")}><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field></div>;
-                  if (key === "modelYiliDegeri") return <div key={key} style={{ gridColumn: "1 / -1" }}><Field label={getFieldLabel(form.type, "belge", "modelYiliDegeri", "Model Yılı")}><input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} /></Field></div>;
+                  if (key === "modelYiliDegeri") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "modelYiliDegeri", "Model Yılı")}><input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} /></Field></div>;
                   if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "kur", "Kur (Bugün)")}><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field></div>;
                   if (key === "teslimYeri") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "teslimYeri", "Teslim Yeri / Gümrük Notu")}><textarea {...f("teslimYeri")} style={taStyle} /></Field></div>;
                   if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "not", "Not (Proforma)")}><textarea {...f("not")} style={taStyle} /></Field></div>;
@@ -730,9 +736,6 @@ export const Documents = ({
               </div>
             );
           })()}
-          {cfOf(form.type, "belge").map(cf => (
-            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
-          ))}
         </div>
       </div>
 
@@ -898,7 +901,9 @@ export const Documents = ({
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Teklif Koşulları (2. Sayfa)</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {getBuiltinOrder("teklif", "kosullar", ["odemeSekli","teslimSekli","teslimYeri","teslimSuresi","teslimTarihi","teklifGecerlilik","kur","not"]).map(key => {
+            {getUnifiedOrder("teklif", "kosullar", ["odemeSekli","teslimSekli","teslimYeri","teslimSuresi","teslimTarihi","teklifGecerlilik","kur","not"]).map(key => {
+              const cf = cfById("teklif", key);
+              if (cf) return <div key={key}><CfInput cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} /></div>;
               if (!canShow("teklif", "kosullar", key)) return null;
               const wide = key === "teslimYeri" || key === "not";
               const ws = wide ? { gridColumn: "1 / -1" } : {};
@@ -913,9 +918,6 @@ export const Documents = ({
               return null;
             })}
           </div>
-          {cfOf("teklif", "kosullar").map(cf => (
-            <CfInput key={cf.id} cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} />
-          ))}
         </div>
       )}
 

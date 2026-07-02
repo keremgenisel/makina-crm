@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
-import { Modal, Pagination } from "./ui";
+import { Modal, Pagination, Icon } from "./ui";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -11,6 +11,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [moneyVisible, setMoneyVisible] = useState(false);
+  const M = v => moneyVisible ? v : "———";
   const rangeLabels = RANGE_LABELS;
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,
@@ -339,14 +341,14 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       }}>
         <div style={{ fontSize: large ? 14 : 12, color: "#64748b", fontWeight: 700, marginBottom: large ? 8 : 6 }}>{label}</div>
         {showCur.map(k => (
-          <div key={k} style={{ fontSize: large ? 34 : 20, fontWeight: 800, color: color || "#0f172a", lineHeight: 1.25 }}>{fmtCur(obj[k] || 0, k)}</div>
+          <div key={k} style={{ fontSize: large ? 34 : 20, fontWeight: 800, color: moneyVisible ? (color || "#0f172a") : "#94a3b8", lineHeight: 1.25 }}>{M(fmtCur(obj[k] || 0, k))}</div>
         ))}
-        {hasFx && rates && (
+        {hasFx && rates && moneyVisible && (
           <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
         )}
         {kdvCur.length > 0 && (
-          <div style={{ fontSize: large ? 13 : 11.5, color: "#0d9488", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid #f1f5f9" }}>
-            KDV: {kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + ")}
+          <div style={{ fontSize: large ? 13 : 11.5, color: moneyVisible ? "#0d9488" : "#94a3b8", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid #f1f5f9" }}>
+            KDV: {M(kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + "))}
           </div>
         )}
         {sub && <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: large ? 6 : 3 }}>{sub}</div>}
@@ -358,6 +360,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Finans</h2>
+        <button onClick={() => setMoneyVisible(v => !v)} title={moneyVisible ? "Tutarları gizle" : "Tutarları göster"}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid #e2e8f0", background: moneyVisible ? "#f0fdf4" : "#f8fafc", color: moneyVisible ? "#16a34a" : "#94a3b8", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+          <Icon name={moneyVisible ? "eye" : "eyeOff"} size={15} />
+          {moneyVisible ? "Gizle" : "Göster"}
+        </button>
       </div>
 
       {/* Tarih aralığı filtresi */}
@@ -430,7 +437,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
           {monthly.map((mo, i) => (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{mo.gelir > 0 ? Math.round(mo.gelir / 1000) + "k" : ""}</div>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{mo.gelir > 0 && moneyVisible ? Math.round(mo.gelir / 1000) + "k" : ""}</div>
               <div style={{ width: "100%", height: `${(mo.gelir / maxMonthly) * 100}px`, minHeight: mo.gelir > 0 ? 4 : 0, background: "linear-gradient(180deg, #e85d1a, #f59e0b)", borderRadius: "4px 4px 0 0" }} />
               <div style={{ fontSize: 9, color: "#64748b" }}>{mo.label}</div>
             </div>
@@ -451,7 +458,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
                 <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
-                  <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: "#16a34a" }}>{fmt(v.gelir)}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: moneyVisible ? "#16a34a" : "#94a3b8" }}>{M(fmt(v.gelir))}</td>
                 </tr>
               ))}
               {modelRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
@@ -503,11 +510,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
                   <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{fmtTR(r.tarih) || "—"}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 600 }}>{r.firmaAdi}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{r.islemFirma}</td>
-                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: "#a855f7" }}>{fmtCur(r.parcaUcreti, r.currency)}</td>
-                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: "#0d9488" }}>{r.kdv > 0 ? fmtCur(r.kdv, r.currency) : "—"}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: moneyVisible ? "#a855f7" : "#94a3b8" }}>{M(fmtCur(r.parcaUcreti, r.currency))}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "#0d9488" : "#94a3b8" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13 }}>
                     <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.odendi ? "#dcfce7" : "#fee2e2", color: r.odendi ? "#16a34a" : "#dc2626" }}>
-                      {r.odendi ? "Ödendi" : "Bekliyor"}
+                      {r.odendi ? "Ödendi" : "Ödenmedi"}
                     </span>
                   </td>
                 </tr>

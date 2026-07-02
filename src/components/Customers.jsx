@@ -21,7 +21,7 @@ export const Customers = ({
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
-  appSettings = {},
+  appSettings = {}, onDetailClosed = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -469,7 +469,7 @@ export const Customers = ({
       {detailView && (
         <CustomerDetailModal
           detailView={detailView}
-          onClose={() => setDetailViewId(null)}
+          onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           onOpenAddForFirm={openAddForFirm}

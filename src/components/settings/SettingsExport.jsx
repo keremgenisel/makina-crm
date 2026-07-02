@@ -32,6 +32,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     const res = await window.appMail.send({
       to: exportMailDraft.to.trim(), subject: exportMailDraft.subject, text: exportMailDraft.text,
       attachments: [{ filename: exportMailDraft.attachmentFilename, contentBase64: exportMailDraft.attachmentBase64, mimeType: exportMailDraft.mimeType }],
+      type: "disaaktarim",
     });
     if (res?.ok) {
       setExportMailSendState({ state: "idle", error: null });

@@ -35,12 +35,21 @@ const BUILTIN_ALICI = [
 
 const BUILTIN_BELGE = {
   teklif: [
+    { key: "no",              label: "Teklif No",            enDefault: "Quotation No" },
+    { key: "tarih",           label: "Tarih",                enDefault: "Date" },
+    { key: "dil",             label: "Dil",                  enDefault: "Language" },
+    { key: "currency",        label: "Para Birimi",          enDefault: "Currency" },
+    { key: "kdvOrani",        label: "KDV Oranı (%)",        enDefault: "VAT Rate (%)" },
     { key: "forwarder",       label: "Gönderen (Forwarder)", enDefault: "Forwarder" },
     { key: "gtipNo",          label: "GTIP No",              enDefault: "GTIP No" },
     { key: "modelYiliDegeri", label: "Model Yılı",           enDefault: "Model Year" },
     { key: "kur",             label: "Kur",                  enDefault: "Exchange Rate" },
   ],
   proforma: [
+    { key: "tarih",           label: "Tarih",                enDefault: "Date" },
+    { key: "dil",             label: "Dil",                  enDefault: "Language" },
+    { key: "currency",        label: "Para Birimi",          enDefault: "Currency" },
+    { key: "kdvOrani",        label: "KDV Oranı (%)",        enDefault: "VAT Rate (%)" },
     { key: "forwarder",       label: "Gönderen (Forwarder)", enDefault: "Forwarder" },
     { key: "gtipNo",          label: "GTIP No",              enDefault: "GTIP No" },
     { key: "modelYiliDegeri", label: "Model Yılı",           enDefault: "Model Year" },
@@ -274,18 +283,28 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     }));
 
   // ── Mevcut alan sıralama / silme ─────────────────────────────────────────
-  const getOrderedBuiltins = (sectionKey) => {
+  const getUnifiedOrder = (sectionKey) => {
     const sec = SECTIONS[docType]?.find(s => s.key === sectionKey);
     const builtins = sec?.builtins || [];
-    const order = draft[docType]?.fieldOrder?.[sectionKey] || [];
-    const deleted = new Set(draft[docType]?.deletedFields?.[sectionKey] || []);
-    const visible = builtins.filter(f => !deleted.has(f.key));
-    if (!order.length) return visible;
-    const orderSet = new Set(order);
-    return [
-      ...order.map(k => builtins.find(b => b.key === k)).filter(Boolean).filter(b => !deleted.has(b.key)),
-      ...visible.filter(b => !orderSet.has(b.key)),
+    const cfs = (draft[docType]?.customFields || []).filter(f => f.section === sectionKey);
+    const deletedBuiltins = new Set(draft[docType]?.deletedFields?.[sectionKey] || []);
+    const allKeys = [
+      ...builtins.filter(b => !deletedBuiltins.has(b.key)).map(b => b.key),
+      ...cfs.map(f => String(f.id)),
     ];
+    const savedOrder = draft[docType]?.fieldOrder?.[sectionKey] || [];
+    const inOrder = new Set(savedOrder);
+    const unified = [
+      ...savedOrder.filter(k => allKeys.includes(k)),
+      ...allKeys.filter(k => !inOrder.has(k)),
+    ];
+    return unified.map(k => {
+      const b = builtins.find(f => f.key === k);
+      if (b) return { kind: "builtin", key: k, ...b };
+      const cf = cfs.find(f => String(f.id) === k);
+      if (cf) return { kind: "cf", key: k, cf };
+      return null;
+    }).filter(Boolean);
   };
 
   const getDeletedBuiltins = (sectionKey) => {
@@ -302,7 +321,11 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     setDraft(p => {
       const deleted = p[docType].deletedFields?.[sectionKey] || [];
       if (deleted.includes(fieldKey)) return p;
-      newDraft = { ...p, [docType]: { ...p[docType], deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: [...deleted, fieldKey] } } };
+      const order = (p[docType]?.fieldOrder?.[sectionKey] || []).filter(k => k !== fieldKey);
+      newDraft = { ...p, [docType]: { ...p[docType],
+        deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: [...deleted, fieldKey] },
+        fieldOrder: { ...(p[docType].fieldOrder || {}), [sectionKey]: order },
+      }};
       return newDraft;
     });
     setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
@@ -311,30 +334,40 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const restoreBuiltin = (sectionKey, fieldKey) => {
     let newDraft;
     setDraft(p => {
-      newDraft = { ...p, [docType]: { ...p[docType], deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: (p[docType].deletedFields?.[sectionKey] || []).filter(k => k !== fieldKey) } } };
+      const deletedNew = (p[docType]?.deletedFields?.[sectionKey] || []).filter(k => k !== fieldKey);
+      const order = [...(p[docType]?.fieldOrder?.[sectionKey] || []).filter(k => k !== fieldKey), fieldKey];
+      newDraft = { ...p, [docType]: { ...p[docType],
+        deletedFields: { ...(p[docType].deletedFields || {}), [sectionKey]: deletedNew },
+        fieldOrder: { ...(p[docType].fieldOrder || {}), [sectionKey]: order },
+      }};
       return newDraft;
     });
     setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
   };
 
-  const moveBuiltin = (sectionKey, fieldKey, dir) => {
+  const moveField = (sectionKey, key, dir) => {
     let newDraft;
     setDraft(p => {
       const sec = SECTIONS[docType]?.find(s => s.key === sectionKey);
       const builtins = sec?.builtins || [];
-      const deleted = new Set(p[docType].deletedFields?.[sectionKey] || []);
-      const existingOrder = p[docType].fieldOrder?.[sectionKey] || [];
-      const fullOrder = existingOrder.length > 0
-        ? [...existingOrder.filter(k => builtins.some(b => b.key === k)), ...builtins.map(b => b.key).filter(k => !existingOrder.includes(k))]
-        : builtins.map(b => b.key);
-      const visible = fullOrder.filter(k => !deleted.has(k));
-      const idx = visible.indexOf(fieldKey);
+      const cfs = (p[docType]?.customFields || []).filter(f => f.section === sectionKey);
+      const deletedBuiltins = new Set(p[docType]?.deletedFields?.[sectionKey] || []);
+      const allKeys = [
+        ...builtins.filter(b => !deletedBuiltins.has(b.key)).map(b => b.key),
+        ...cfs.map(f => String(f.id)),
+      ];
+      const savedOrder = p[docType]?.fieldOrder?.[sectionKey] || [];
+      const inOrder = new Set(savedOrder);
+      const unified = [
+        ...savedOrder.filter(k => allKeys.includes(k)),
+        ...allKeys.filter(k => !inOrder.has(k)),
+      ];
+      const idx = unified.indexOf(key);
       const target = idx + dir;
-      if (idx < 0 || target < 0 || target >= visible.length) return p;
-      const newVisible = [...visible];
-      [newVisible[idx], newVisible[target]] = [newVisible[target], newVisible[idx]];
-      const newFullOrder = [...newVisible, ...fullOrder.filter(k => deleted.has(k))];
-      newDraft = { ...p, [docType]: { ...p[docType], fieldOrder: { ...(p[docType].fieldOrder || {}), [sectionKey]: newFullOrder } } };
+      if (idx < 0 || target < 0 || target >= unified.length) return p;
+      const next = [...unified];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      newDraft = { ...p, [docType]: { ...p[docType], fieldOrder: { ...(p[docType].fieldOrder || {}), [sectionKey]: next } } };
       return newDraft;
     });
     setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
@@ -354,18 +387,21 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     setDraft(p => {
       const fields = p[docType].customFields;
       const next = isNew ? [...fields, cf] : fields.map(f => f.id === cf.id ? cf : f);
-      newDraft = { ...p, [docType]: { ...p[docType], customFields: next } };
+      let fieldOrder = p[docType]?.fieldOrder || {};
+      if (isNew) {
+        const secOrder = [...(fieldOrder[cf.section] || []).filter(k => k !== String(cf.id)), String(cf.id)];
+        fieldOrder = { ...fieldOrder, [cf.section]: secOrder };
+      }
+      newDraft = { ...p, [docType]: { ...p[docType], customFields: next, fieldOrder } };
       return newDraft;
     });
     setCfModal(null);
-    // Hemen kaydet — kullanıcı Kaydet butonuna basmayı unutmasın
     setTimeout(() => {
       if (newDraft) {
         setAppSettings(p => ({ ...p, evrakFormConfig: newDraft }));
         flash("ok", "Özel alan kaydedildi.");
       }
     }, 0);
-    // Teklif'e eklenirken proformaya da eklensin mi?
     if (isNew && docType === "teklif" && cf.section !== "kosullar") {
       setProformaConfirm(cf);
     }
@@ -377,7 +413,8 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     const newCf = { ...cf, id: String(uid()) };
     setDraft(p => {
       const fields = p.proforma.customFields;
-      const newDraft = { ...p, proforma: { ...p.proforma, customFields: [...fields, newCf] } };
+      const secOrder = [...(p.proforma?.fieldOrder?.[cf.section] || []).filter(k => k !== String(newCf.id)), String(newCf.id)];
+      const newDraft = { ...p, proforma: { ...p.proforma, customFields: [...fields, newCf], fieldOrder: { ...(p.proforma.fieldOrder || {}), [cf.section]: secOrder } } };
       setAppSettings(prev => ({ ...prev, evrakFormConfig: newDraft }));
       return newDraft;
     });
@@ -385,18 +422,20 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     flash("ok", "Özel alan proformaya da eklendi.");
   };
 
-  const deleteCf = (id) =>
-    setDraft(p => ({ ...p, [docType]: { ...p[docType], customFields: p[docType].customFields.filter(f => f.id !== id) } }));
-
-  const moveCf = (id, dir) => {
+  const deleteCf = (id) => {
+    let newDraft;
     setDraft(p => {
-      const fields = [...p[docType].customFields];
-      const idx = fields.findIndex(f => f.id === id);
-      const target = idx + dir;
-      if (idx < 0 || target < 0 || target >= fields.length) return p;
-      [fields[idx], fields[target]] = [fields[target], fields[idx]];
-      return { ...p, [docType]: { ...p[docType], customFields: fields } };
+      const sectionKey = (p[docType]?.customFields || []).find(f => String(f.id) === String(id))?.section;
+      const cfs = (p[docType]?.customFields || []).filter(f => String(f.id) !== String(id));
+      let fieldOrder = p[docType]?.fieldOrder || {};
+      if (sectionKey) {
+        const order = (fieldOrder[sectionKey] || []).filter(k => k !== String(id));
+        fieldOrder = { ...fieldOrder, [sectionKey]: order };
+      }
+      newDraft = { ...p, [docType]: { ...p[docType], customFields: cfs, fieldOrder } };
+      return newDraft;
     });
+    setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
   };
 
   const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none", resize: "vertical" };
@@ -473,48 +512,64 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           <Accordion key={sec.key} label={sec.label} sKey={sec.key} openSections={openSections} toggle={toggleSection}
             badge={cfs.length > 0 ? `${cfs.length} özel alan` : null}>
 
-            {/* Mevcut alanlar */}
+            {/* Alanlar (mevcut + özel, birleşik sıra) */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
-                Mevcut Alanlar <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(tıklayarak gizle/göster)</span>
+                Alanlar <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(↑↓ ile sırala; yerleşik alanlara tıkla gizle/göster)</span>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {getOrderedBuiltins(sec.key).map((f, idx, arr) => {
-                  const hidden = isHidden(sec.key, f.key);
-                  const chipLabel = getChipLabel(sec.key, f.key, f.label);
-                  const isCustomLabel = chipLabel !== f.label;
-                  const borderColor = hidden ? "#fca5a5" : "#bbf7d0";
-                  const textColor = hidden ? "#b91c1c" : "#166534";
-                  return (
-                    <div key={f.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "#f0fdf4", overflow: "hidden", transition: "all .1s" }}>
-                      <div onClick={() => toggleHide(sec.key, f.key)}
-                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 8px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: textColor, userSelect: "none" }}>
-                        <span style={{ fontSize: 11 }}>{hidden ? "✕" : "✓"}</span>
-                        {chipLabel}
-                        {isCustomLabel && <span style={{ fontSize: 10, color: textColor, opacity: 0.6 }}>(özel)</span>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {getUnifiedOrder(sec.key).map((item, idx, arr) => {
+                  if (item.kind === "builtin") {
+                    const hidden = isHidden(sec.key, item.key);
+                    const chipLabel = getChipLabel(sec.key, item.key, item.label);
+                    const isCustomLabel = chipLabel !== item.label;
+                    const borderColor = hidden ? "#fca5a5" : "#bbf7d0";
+                    const textColor = hidden ? "#b91c1c" : "#166534";
+                    return (
+                      <div key={item.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "#f0fdf4", overflow: "hidden", transition: "all .1s" }}>
+                        <div onClick={() => toggleHide(sec.key, item.key)}
+                          style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 8px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: textColor, userSelect: "none", flex: 1 }}>
+                          <span style={{ fontSize: 11 }}>{hidden ? "✕" : "✓"}</span>
+                          {chipLabel}
+                          {isCustomLabel && <span style={{ fontSize: 10, color: textColor, opacity: 0.6 }}>(özel)</span>}
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); openLabelEdit(sec.key, item.key, item.label, item.enDefault || ""); }}
+                          title="Etiketi düzenle"
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: "pointer", fontSize: 12, color: textColor, opacity: 0.7, lineHeight: 1 }}>✏</button>
+                        <button onClick={() => moveField(sec.key, item.key, -1)} disabled={idx === 0}
+                          title="Yukarı taşı"
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === 0 ? 0.3 : 0.7, lineHeight: 1 }}>↑</button>
+                        <button onClick={() => moveField(sec.key, item.key, 1)} disabled={idx === arr.length - 1}
+                          title="Aşağı taşı"
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>↓</button>
+                        <button onClick={() => setDeleteConfirm({ label: chipLabel, onConfirm: () => deleteBuiltin(sec.key, item.key) })}
+                          title="Kaldır"
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>✕</button>
                       </div>
-                      <button onClick={e => { e.stopPropagation(); openLabelEdit(sec.key, f.key, f.label, f.enDefault || ""); }}
-                        title="Etiketi düzenle"
-                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: "pointer", fontSize: 12, color: textColor, opacity: 0.7, lineHeight: 1 }}>
-                        ✏
-                      </button>
-                      <button onClick={() => moveBuiltin(sec.key, f.key, -1)} disabled={idx === 0}
-                        title="Yukarı taşı"
-                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === 0 ? 0.3 : 0.7, lineHeight: 1 }}>
-                        ↑
-                      </button>
-                      <button onClick={() => moveBuiltin(sec.key, f.key, 1)} disabled={idx === arr.length - 1}
-                        title="Aşağı taşı"
-                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>
-                        ↓
-                      </button>
-                      <button onClick={() => setDeleteConfirm({ label: chipLabel, onConfirm: () => deleteBuiltin(sec.key, f.key) })}
-                        title="Kaldır"
-                        style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>
-                        ✕
-                      </button>
-                    </div>
-                  );
+                    );
+                  } else {
+                    const cf = item.cf;
+                    return (
+                      <div key={cf.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>{cf.label.TR || "—"}</span>
+                          {cf.label.EN && <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6 }}>/ {cf.label.EN}</span>}
+                          <span style={{ fontSize: 11, marginLeft: 8, padding: "1px 6px", borderRadius: 5, background: cf.type === "select" ? "#dbeafe" : "#f1f5f9", color: cf.type === "select" ? "#1d4ed8" : "#64748b" }}>
+                            {cf.type === "select" ? `Seçim (${(cf.options || []).length} seç.)` : "Metin"}
+                          </span>
+                          <span style={{ fontSize: 10, marginLeft: 6, color: "#94a3b8" }}>• Özel</span>
+                        </div>
+                        <button onClick={() => moveField(sec.key, String(cf.id), -1)} disabled={idx === 0}
+                          title="Yukarı taşı"
+                          style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: 4, padding: "3px 7px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: "#64748b", opacity: idx === 0 ? 0.3 : 1, lineHeight: 1 }}>↑</button>
+                        <button onClick={() => moveField(sec.key, String(cf.id), 1)} disabled={idx === arr.length - 1}
+                          title="Aşağı taşı"
+                          style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: 4, padding: "3px 7px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: "#64748b", opacity: idx === arr.length - 1 ? 0.3 : 1, lineHeight: 1 }}>↓</button>
+                        <Btn small variant="ghost" onClick={() => openEditCf(cf)}><Icon name="edit" size={12} /></Btn>
+                        <Btn small variant="danger" onClick={() => setDeleteConfirm({ label: cf.label.TR || cf.label.EN, onConfirm: () => deleteCf(cf.id) })}><Icon name="trash" size={12} /></Btn>
+                      </div>
+                    );
+                  }
                 })}
               </div>
               {getDeletedBuiltins(sec.key).length > 0 && (
@@ -552,37 +607,9 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
               </div>
             )}
 
-            {/* Özel alanlar */}
-            <div style={{ borderTop: fdFields.length > 0 ? "1px solid #f1f5f9" : "1px solid #f1f5f9", paddingTop: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5 }}>Özel Alanlar</div>
-                <Btn small onClick={() => openAddCf(sec.key)}><Icon name="plus" size={12} /> Alan Ekle</Btn>
-              </div>
-              {cfs.length === 0 ? (
-                <div style={{ fontSize: 12, color: "#cbd5e1", padding: "4px 0" }}>Henüz özel alan eklenmedi.</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  {cfs.map(cf => {
-                    const allCfs = draft[docType].customFields;
-                    const globalIdx = allCfs.findIndex(f => f.id === cf.id);
-                    return (
-                      <div key={cf.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>{cf.label.TR || "—"}</span>
-                          {cf.label.EN && <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6 }}>/ {cf.label.EN}</span>}
-                          <span style={{ fontSize: 11, marginLeft: 8, padding: "1px 6px", borderRadius: 5, background: cf.type === "select" ? "#dbeafe" : "#f1f5f9", color: cf.type === "select" ? "#1d4ed8" : "#64748b" }}>
-                            {cf.type === "select" ? `Seçim (${(cf.options || []).length} seç.)` : "Metin"}
-                          </span>
-                        </div>
-                        <Btn small variant="ghost" onClick={() => moveCf(cf.id, -1)} disabled={globalIdx === 0} title="Yukarı taşı">↑</Btn>
-                        <Btn small variant="ghost" onClick={() => moveCf(cf.id, 1)} disabled={globalIdx === allCfs.length - 1} title="Aşağı taşı">↓</Btn>
-                        <Btn small variant="ghost" onClick={() => openEditCf(cf)}><Icon name="edit" size={12} /></Btn>
-                        <Btn small variant="danger" onClick={() => setDeleteConfirm({ label: cf.label.TR || cf.label.EN, onConfirm: () => deleteCf(cf.id) })}><Icon name="trash" size={12} /></Btn>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            {/* Özel alan ekle */}
+            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+              <Btn small onClick={() => openAddCf(sec.key)}><Icon name="plus" size={12} /> Özel Alan Ekle</Btn>
             </div>
           </Accordion>
         );

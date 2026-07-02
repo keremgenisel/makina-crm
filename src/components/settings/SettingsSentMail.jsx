@@ -3,19 +3,46 @@ import { Icon, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
 
+const TYPE_LABELS = {
+  teklif: "Teklif",
+  proforma: "Proforma",
+  musteri: "Müşteri",
+  bayi: "Bayi",
+  disaaktarim: "Dışa Aktarım",
+  hata: "Hata",
+  diger: "Diğer",
+};
+
+const inferType = (entry) => {
+  if (entry.type) return entry.type;
+  const s = entry.subject || "";
+  if (/^teklif/i.test(s)) return "teklif";
+  if (/^proforma/i.test(s)) return "proforma";
+  if (/makina servis|servis formu/i.test(s)) return "musteri";
+  if (/altunta[sş] makina/i.test(s)) return "disaaktarim";
+  if (/hata raporu/i.test(s)) return "hata";
+  return "diger";
+};
+
 export const SettingsSentMail = () => {
   // ── Gönderilen E-postalar: tüm appMail.send() çağrılarının (Customers/SimpleDealers/Settings'ten)
   // main process tarafında tutulan düz günlüğü — buradan sadece okunur, kaynak kayda link verilmez.
   // Ek (PDF/dosya) içeriği hiç saklanmaz, sadece dosya adı/türü; gövde metni (text) saklanır.
   const [sentEmailLog, setSentEmailLog] = useState([]);
   const [deletedEmailLog, setDeletedEmailLog] = useState([]);
+  const [trashTypeFilter, setTrashTypeFilter] = useState("all");
   const [viewing, setViewing] = useState(null); // içeriği görüntülenen kayıt
   const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen kayıt
   const [confirmEmptyMailTrash, setConfirmEmptyMailTrash] = useState(false);
   const { search: sentSearch, setSearch: setSentSearch, page: emailLogPage, setPage: setEmailLogPage, filtered: sentEmailLogFiltered, paged: sentEmailLogPaged, perPage: EMAIL_LOG_PER_PAGE } =
     useFilteredList(sentEmailLog, { searchFields: ["to", "subject"], perPage: 10 });
   const { search: delSearch, setSearch: setDelSearch, page: trashPage, setPage: setTrashPage, filtered: deletedEmailLogFiltered, paged: deletedEmailLogPaged, perPage: TRASH_PER_PAGE } =
-    useFilteredList(deletedEmailLog, { searchFields: ["to", "subject"], perPage: 10 });
+    useFilteredList(deletedEmailLog, {
+      searchFields: ["to", "subject"],
+      perPage: 10,
+      filterFn: trashTypeFilter === "all" ? null : (e => inferType(e) === trashTypeFilter),
+      sortFn: (a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""),
+    });
 
   const loadSentEmailLog = async () => {
     if (!window.appMail?.getLog) return;
@@ -25,7 +52,7 @@ export const SettingsSentMail = () => {
   const loadDeletedEmailLog = async () => {
     if (!window.appMail?.getDeletedLog) return;
     const log = await window.appMail.getDeletedLog();
-    setDeletedEmailLog((log || []).slice().reverse());
+    setDeletedEmailLog(log || []);
   };
   const reloadAll = () => { loadSentEmailLog(); loadDeletedEmailLog(); };
   useEffect(() => { reloadAll(); }, []);
@@ -118,6 +145,24 @@ export const SettingsSentMail = () => {
           <div style={{ padding: "24px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Silinen e-posta yok.</div>
         ) : (
           <>
+            {/* Tür filtresi */}
+            {(() => {
+              const presentTypes = [...new Set(deletedEmailLog.map(inferType))];
+              if (presentTypes.length < 2) return null;
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                  {[["all", "Tümü"], ...presentTypes.map(t => [t, TYPE_LABELS[t] || t])].map(([val, label]) => (
+                    <button key={val} onClick={() => setTrashTypeFilter(val)}
+                      style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                        border: "1px solid", borderColor: trashTypeFilter === val ? "#e85d1a" : "#e2e8f0",
+                        background: trashTypeFilter === val ? "#e85d1a" : "#f8fafc",
+                        color: trashTypeFilter === val ? "#fff" : "#64748b" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             <div style={{ position: "relative", marginBottom: 14 }}>
               <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
               <input value={delSearch} onChange={e => setDelSearch(e.target.value)} placeholder="Alıcı veya konu ara..."

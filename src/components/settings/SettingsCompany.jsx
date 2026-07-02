@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Icon, Field, Input, Btn, ImageUpload } from "../ui";
+import { Icon, Field, Input, Btn, ImageUpload, ConfirmDialog } from "../ui";
 import { Section } from "./Section";
 
 const emptyBank = () => ({
@@ -27,6 +27,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     gtipNo: "",
     bankalar: [emptyBank()],
   });
+  const [confirmRemoveBankId, setConfirmRemoveBankId] = useState(null);
 
   useEffect(() => {
     if (!factory) return;
@@ -75,8 +76,10 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     setForm(p => ({ ...p, bankalar: p.bankalar.map(b => b.id === id ? { ...b, [key]: val } : b) }));
   const addBank = () =>
     setForm(p => ({ ...p, bankalar: [...p.bankalar, emptyBank()] }));
-  const removeBank = (id) =>
+  const removeBank = (id) => {
     setForm(p => ({ ...p, bankalar: p.bankalar.filter(b => b.id !== id) }));
+    setConfirmRemoveBankId(null);
+  };
 
   const inputStyle = { fontFamily: "monospace" };
 
@@ -113,7 +116,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
                 Banka {idx + 1}
               </span>
               {form.bankalar.length > 1 && (
-                <Btn small variant="danger" onClick={() => removeBank(bank.id)}>
+                <Btn small variant="danger" onClick={() => setConfirmRemoveBankId(bank.id)}>
                   <Icon name="trash" size={11} /> Sil
                 </Btn>
               )}
@@ -168,6 +171,18 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
+
+      {confirmRemoveBankId && (() => {
+        const bank = form.bankalar.find(b => b.id === confirmRemoveBankId);
+        const label = bank?.bankaAdi || bank?.hesapAdi || "Bu banka kaydı";
+        return (
+          <ConfirmDialog
+            message={`"${label}" silinecek. Kaydet'e basmadıkça geri alınabilir.`}
+            onConfirm={() => removeBank(confirmRemoveBankId)}
+            onCancel={() => setConfirmRemoveBankId(null)}
+          />
+        );
+      })()}
     </>
   );
 };

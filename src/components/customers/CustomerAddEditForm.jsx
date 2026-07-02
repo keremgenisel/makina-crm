@@ -109,7 +109,7 @@ export const CustomerAddEditForm = ({
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
-      <Field label="Seri Numarası">
+      <Field label="Seri Numarası" style={{ gridColumn: 1 }}>
         {(() => {
           const stockForModel = (stock && form.model) ? stock.filter(s => s.model === form.model) : [];
           const serili = stockForModel.filter(s => s.serialNo);
@@ -174,20 +174,19 @@ export const CustomerAddEditForm = ({
           );
         })()}
       </Field>
-      </div>
-
       <Field label="Makina Kalıp Çapı">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <Input value={form.kalipCapi?.en || ""} placeholder="Çap"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), en: e.target.value } }))} />
-          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 16 }}>×</span>
+          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
           <Input value={form.kalipCapi?.yukseklik || ""} placeholder="Arka Ölçü"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), yukseklik: e.target.value } }))} />
-          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 16 }}>×</span>
+          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
           <Input value={form.kalipCapi?.boy || ""} placeholder="Boy"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), boy: e.target.value } }))} />
         </div>
       </Field>
+      </div>
 
       <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>
         {(form.kaliplar || []).map((k, i) => (
