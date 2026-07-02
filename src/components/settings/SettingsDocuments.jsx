@@ -172,6 +172,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const [fieldLabelModal, setFieldLabelModal] = useState(null);
   const [openSections, setOpenSections] = useState(new Set());
   const [proformaConfirm, setProformaConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { sectionKey, fieldKey, label }
 
   const toggleSection = (key) =>
     setOpenSections(p => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -507,7 +508,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                         style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>
                         ↓
                       </button>
-                      <button onClick={() => deleteBuiltin(sec.key, f.key)}
+                      <button onClick={() => setDeleteConfirm({ sectionKey: sec.key, fieldKey: f.key, label: chipLabel })}
                         title="Kaldır"
                         style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>
                         ✕
@@ -610,6 +611,21 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           onReset={() => { resetLabel(fieldLabelModal.sectionKey, fieldLabelModal.fieldKey); setFieldLabelModal(null); }}
           onClose={() => setFieldLabelModal(null)}
         />
+      )}
+
+      {deleteConfirm && (
+        <Modal title="Alanı kaldır?" onClose={() => setDeleteConfirm(null)}>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+            <b>"{deleteConfirm.label}"</b> alanı formdan kaldırılsın mı?
+            <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>Kaldırılan alan formda ve çıktıda görünmez. İstediğinizde geri yükleyebilirsiniz.</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setDeleteConfirm(null)}>Vazgeç</Btn>
+            <Btn variant="danger" onClick={() => { deleteBuiltin(deleteConfirm.sectionKey, deleteConfirm.fieldKey); setDeleteConfirm(null); }}>
+              <Icon name="trash" size={14} /> Kaldır
+            </Btn>
+          </div>
+        </Modal>
       )}
 
       {proformaConfirm && (
