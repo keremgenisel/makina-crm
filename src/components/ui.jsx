@@ -32,6 +32,7 @@ export const Icon = ({ name, size = 16 }) => {
     evrak:      "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",
     arrowRight: "M5 12h14M12 5l7 7-7 7",
     stamp:      "M10 4V2h4v2M7 4h10v8H7zM5 12h14v2H5zM4 17h16",
+    userPlus:   "M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6",
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

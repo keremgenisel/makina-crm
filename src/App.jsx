@@ -33,6 +33,7 @@ export default function App() {
   const [custFilter, setCustFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|warranty|warranty-active|debt|serial-pending
   const [custDetailId, setCustDetailId] = useState(null); // dashboard'dan belirli bir müşterinin detayını açarak gelme
   const [custReturnTab, setCustReturnTab] = useState(null); // detay kapanınca geri dönülecek sekme
+  const [custNewPrefill, setCustNewPrefill] = useState(null); // teklif→müşteri dönüşümü: yeni müşteri formu önceden doldurulur
   const [dealerFilter, setDealerFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|borclu
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
@@ -54,6 +55,34 @@ export default function App() {
     setToast({ type, text });
     clearTimeout(window.__toastTimer);
     window.__toastTimer = setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDonusturTeklif = (t) => {
+    const kaliplar = (t.satirlar || []).flatMap(r =>
+      (r.subItems || []).filter(i => i.type === "kalip").map(i => ({ ad: i.makinaAdi || i.kod || "", olcu: "" }))
+    );
+    const model = (t.satirlar || []).find(r => r.selectedModel)?.selectedModel || "";
+    setCustNewPrefill({
+      name: t.firma || "",
+      yetkili1Ad: t.yetkili || "",
+      yetkili1Tel: t.tel || "",
+      adres: t.adres || "",
+      email: t.email || "",
+      currency: t.currency || "TRY",
+      faturali: (t.currency && t.currency !== "TRY") ? "Faturalı Yurtdışı" : "Faturalı Yurtiçi",
+      model,
+      kaliplar,
+      fromTeklifId: t.id,
+    });
+    setCustReturnTab("evrak");
+    setCustFilter("all");
+    setCustDetailId(null);
+    setTab("customers");
+  };
+
+  const handleCustomerLinked = (customerId, teklifId) => {
+    setTeklifler(p => p.map(t => t.id === teklifId ? { ...t, customerId } : t));
+    setCustNewPrefill(null);
   };
 
   // Sürümü kurulu uygulamadan oku (package.json'daki version otomatik yansır)
@@ -139,6 +168,7 @@ export default function App() {
   const livePartSales  = useMemo(() => withoutDeleted(partSales),  [partSales]);
   const livePayments   = useMemo(() => withoutDeleted(payments),   [payments]);
   const liveKalipDefs  = useMemo(() => withoutDeleted(kalipDefs),  [kalipDefs]);
+  const liveTeklifler  = useMemo(() => withoutDeleted(teklifler),  [teklifler]);
 
   useEffect(() => {
     const load = async () => {
@@ -372,13 +402,13 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} />}
-        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} />}
+        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} />}
         {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
         {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} />}
+        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} onDonusturTeklif={handleDonusturTeklif} />}
         {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} />}
       </div>
     </div>

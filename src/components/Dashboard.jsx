@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null }) => {
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   // Anlaşmalı servis ayrımı için (isServisUcretliMi/isServisBorcluMu'ya geçilir) — bkz. utils.js
@@ -64,6 +64,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
   }, [customers, services, partSales, todayStr, factoryName]);
 
+  const donusturBekleyenlar = useMemo(() =>
+    teklifler.filter(t => t.durum === "onaylandi" && !t.customerId && !t.deletedAt),
+  [teklifler]);
+
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
   // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
   const cekRozeti = (customerId) => {
@@ -118,6 +122,30 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
         <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="#ef4444" onClick={onGoExpired} />
       </div>
+
+      {/* Müşteriye Dönüşecek Teklifler */}
+      {donusturBekleyenlar.length > 0 && (
+        <div style={{ background: "#fff7ed", border: "1.5px solid #fed7aa", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <span>⚡</span> Müşteriye Dönüşecek Teklifler ({donusturBekleyenlar.length})
+          </div>
+          {donusturBekleyenlar.map(t => (
+            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #fed7aa" }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
+                <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
+                {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
+              </div>
+              {onDonusturTeklif && (
+                <Btn small onClick={() => onDonusturTeklif(t)}
+                  style={{ background: "#f97316", color: "#fff", border: "none", flexShrink: 0 }}>
+                  Müşteri Ekle
+                </Btn>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
         {/* Son Satışlar */}

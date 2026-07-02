@@ -21,7 +21,7 @@ export const Customers = ({
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
-  appSettings = {}, onDetailClosed = null,
+  appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -104,6 +104,38 @@ export const Customers = ({
     });
     setModal("add");
   };
+  const openAddWithPrefill = (prefill) => {
+    const start = today();
+    const end = `${parseInt(start.slice(0,4)) + 2}${start.slice(4)}`;
+    setForm({
+      kalipSayisi: prefill.kaliplar?.length || 0,
+      satisYapan: factory?.name || "Altuntaş Makina",
+      name: prefill.name || "",
+      phone: "",
+      email: prefill.email || "",
+      yetkili1Ad: prefill.yetkili1Ad || "",
+      yetkili1Tel: prefill.yetkili1Tel || "",
+      yetkili2Ad: "", yetkili2Tel: "",
+      adres: prefill.adres || "",
+      city: "", country: "Türkiye",
+      model: prefill.model || "",
+      kaliplar: prefill.kaliplar?.length > 0 ? prefill.kaliplar : [],
+      bantlar: [],
+      installDate: start, warrantyEnd: end,
+      faturali: prefill.faturali || "Faturalı Yurtiçi",
+      faturaBedeli: "",
+      fabrikaSatisBedeli: "", komisyon: "", _ilkOdemeSatirlari: [],
+      serialNo: "",
+      currency: prefill.currency || "TRY",
+      fromTeklifId: prefill.fromTeklifId || null,
+    });
+    setModal("add");
+  };
+
+  useEffect(() => {
+    if (openNewPrefill) openAddWithPrefill(openNewPrefill);
+  }, [openNewPrefill]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const openAddForFirm = (base) => {
     const start = today();
     const end = `${parseInt(start.slice(0,4)) + 2}${start.slice(4)}`;
@@ -129,7 +161,7 @@ export const Customers = ({
   };
   const save = () => {
     if (modal === "add") {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, fromTeklifId, ...clean } = form;
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
@@ -171,6 +203,7 @@ export const Customers = ({
           : s
         ));
       }
+      if (fromTeklifId && onCustomerLinked) onCustomerLinked(newId, fromTeklifId);
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;

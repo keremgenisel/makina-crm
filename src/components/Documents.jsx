@@ -193,6 +193,7 @@ export const Documents = ({
   showToast = () => {},
   kalipDefs = [],
   parts = [],
+  onDonusturTeklif = null,
 }) => {
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
 
@@ -232,6 +233,7 @@ export const Documents = ({
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma"
   const [form, setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
+  const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → müşteri çevirme bildirimi
 
   // ── Müşteri arama (alıcı alanlarını doldurmak için) ──
   const [custSearch, setCustSearch] = useState("");
@@ -350,6 +352,7 @@ export const Documents = ({
     const entry = { ...form };
     const isUpdate = !!form.id;
     if (!entry.id) entry.id = uid();
+    const prevEntry = isUpdate ? liveTeklifler.find(t => t.id === entry.id) : null;
     let linkedUpdated = false;
     setTeklifler(p => {
       const idx = p.findIndex(t => t.id === entry.id);
@@ -374,6 +377,9 @@ export const Documents = ({
     });
     const linkedLabel = entry.type === "teklif" ? "Bağlı proforma da güncellendi." : "Bağlı teklif de güncellendi.";
     showToast(isUpdate ? (linkedUpdated ? `Belge güncellendi. ${linkedLabel}` : "Belge güncellendi.") : "Belge kaydedildi.");
+    if (entry.type === "teklif" && entry.durum === "onaylandi" && !entry.customerId && prevEntry?.durum !== "onaylandi") {
+      setDonusturBanner(entry);
+    }
     setForm(null);
   };
 
@@ -517,6 +523,26 @@ export const Documents = ({
         </div>
       </div>
 
+      {/* Dönüştür Banner */}
+      {donusturBanner && (
+        <div style={{ background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 10, padding: "11px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46" }}>Teklif onaylandı:</span>
+            <span style={{ fontSize: 13, color: "#065f46" }}>{donusturBanner.firma || "—"}</span>
+            <span style={{ fontSize: 12, color: "#059669" }}>· Müşteri kaydı şimdi oluşturulsun mu?</span>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            {onDonusturTeklif && (
+              <Btn small onClick={() => { onDonusturTeklif(donusturBanner); setDonusturBanner(null); }}
+                style={{ background: "#059669", color: "#fff" }}>
+                <Icon name="userPlus" size={12} /> Müşteri Ekle
+              </Btn>
+            )}
+            <Btn small variant="ghost" onClick={() => setDonusturBanner(null)}>×</Btn>
+          </div>
+        </div>
+      )}
+
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid #f1f5f9", paddingBottom: 0 }}>
         {[["teklif","Teklifler"],["proforma","Proformalar"]].map(([id, label]) => (
@@ -583,6 +609,15 @@ export const Documents = ({
                             <Icon name="arrowRight" size={12} />
                           </Btn>
                         )}
+                        {subTab === "teklif" && t.durum === "onaylandi" && !t.customerId && onDonusturTeklif && (
+                          <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }}
+                            title="Müşteri kaydı oluştur" style={{ color: "#16a34a" }}>
+                            <Icon name="userPlus" size={12} />
+                          </Btn>
+                        )}
+                        {subTab === "teklif" && t.customerId && (
+                          <span title="Müşteriye bağlandı" style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "#d1fae5", color: "#065f46", lineHeight: 1.6 }}>✓ Bağlı</span>
+                        )}
                         <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>
                       </div>
                     </td>
@@ -611,12 +646,27 @@ export const Documents = ({
         title={form.id ? "Belgeyi Düzenle" : (form.type === "teklif" ? "Yeni Teklif" : "Yeni Proforma")}
         onClose={() => setForm(null)}>
         {/* Durum + Kaydet */}
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <select value={form.durum} onChange={e => setForm(p => ({ ...p, durum: e.target.value }))}
-            style={{ width: 130, padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
-            {DURUM_OPTS.map(d => <option key={d} value={d}>{DURUM_LABEL[d]}</option>)}
-          </select>
-          <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {form.type === "teklif" && form.durum === "onaylandi" && !form.customerId && form.id && onDonusturTeklif ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
+              <span style={{ fontSize: 12, color: "#065f46", fontWeight: 600 }}>Teklif onaylandı</span>
+              <Btn small onClick={() => { const saved = liveTeklifler.find(x => x.id === form.id); if (saved) { setForm(null); onDonusturTeklif(saved); } }}
+                style={{ background: "#059669", color: "#fff" }}>
+                <Icon name="userPlus" size={12} /> Müşteri Ekle
+              </Btn>
+            </div>
+          ) : form.type === "teklif" && form.customerId ? (
+            <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ Müşteriye Bağlı</span>
+          ) : (
+            <div />
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <select value={form.durum} onChange={e => setForm(p => ({ ...p, durum: e.target.value }))}
+              style={{ width: 130, padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
+              {DURUM_OPTS.map(d => <option key={d} value={d}>{DURUM_LABEL[d]}</option>)}
+            </select>
+            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>
         </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
