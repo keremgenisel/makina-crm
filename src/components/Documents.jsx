@@ -1693,7 +1693,39 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "", evrakF
   const infoSection = `
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10px;">
     <tr>
-      <td style="width:55%;vertical-align:top;padding-right:8px;">
+      <td style="width:45%;vertical-align:top;padding-right:8px;">
+        <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="background:#475569;color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">${L.docLabel}</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            ${!isHiddenPrint("belge", "forwarder") ? `<tr>
+              <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${fl("belge", "forwarder")}</td>
+              <td style="padding:4px 8px 2px;font-weight:700;">${companyName}</td>
+            </tr>` : ""}
+            ${!isProforma ? `<tr>
+              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${L.noLabel}</td>
+              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;font-weight:700;">${form.no || "—"}</td>
+            </tr>` : ""}
+            <tr>
+              <td style="padding:${isProforma && isHiddenPrint("belge", "forwarder") ? "4px" : "2px"} 8px 2px;color:#888;font-size:9px;font-weight:600;">${L.tarihLabel}</td>
+              <td style="padding:${isProforma ? "4px" : "2px"} 8px 2px;">${fmtTR(form.tarih) || ""}</td>
+            </tr>
+            ${!isHiddenPrint("belge", "modelYiliDegeri") ? `<tr>
+              <td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.modelYiliLabel}</td>
+              <td style="padding:2px 8px;">${form.modelYiliDegeri || L.newUnused}</td>
+            </tr>` : ""}
+            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr>
+              <td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${fl("belge", "kur")}</td>
+              <td style="padding:2px 8px;">${form.kur}</td>
+            </tr>` : ""}
+            ${isProforma && form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<tr>
+              <td style="padding:2px 8px 6px;color:#888;font-size:9px;font-weight:600;vertical-align:top;">${fl("belge", "teslimYeri")}</td>
+              <td style="padding:2px 8px 6px;font-size:9.5px;">${form.teslimYeri}</td>
+            </tr>` : `<tr><td colspan="2" style="padding:3px;"></td></tr>`}
+            ${cfRowsHtml("belge")}
+          </table>
+        </div>
+      </td>
+      <td style="width:55%;vertical-align:top;">
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;">
           <div style="background:${BRAND};color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">${L.alicrLabel}</div>
           <table style="width:100%;border-collapse:collapse;font-size:10px;">
@@ -1727,38 +1759,6 @@ function buildPrintHtml(form, factory, translations = {}, kaseResmi = "", evrakF
               return `<tr><td style="padding:2px 8px 6px;color:#888;font-size:9px;font-weight:600;">${lbl}</td><td style="padding:2px 8px 6px;">${val}</td></tr>`;
             })()}
             ${cfRowsHtml("alici")}
-          </table>
-        </div>
-      </td>
-      <td style="width:45%;vertical-align:top;">
-        <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;">
-          <div style="background:#475569;color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">${L.docLabel}</div>
-          <table style="width:100%;border-collapse:collapse;font-size:10px;">
-            ${!isHiddenPrint("belge", "forwarder") ? `<tr>
-              <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${fl("belge", "forwarder")}</td>
-              <td style="padding:4px 8px 2px;font-weight:700;">${companyName}</td>
-            </tr>` : ""}
-            ${!isProforma ? `<tr>
-              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${L.noLabel}</td>
-              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;font-weight:700;">${form.no || "—"}</td>
-            </tr>` : ""}
-            <tr>
-              <td style="padding:${isProforma && isHiddenPrint("belge", "forwarder") ? "4px" : "2px"} 8px 2px;color:#888;font-size:9px;font-weight:600;">${L.tarihLabel}</td>
-              <td style="padding:${isProforma ? "4px" : "2px"} 8px 2px;">${fmtTR(form.tarih) || ""}</td>
-            </tr>
-            ${!isHiddenPrint("belge", "modelYiliDegeri") ? `<tr>
-              <td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.modelYiliLabel}</td>
-              <td style="padding:2px 8px;">${form.modelYiliDegeri || L.newUnused}</td>
-            </tr>` : ""}
-            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr>
-              <td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${fl("belge", "kur")}</td>
-              <td style="padding:2px 8px;">${form.kur}</td>
-            </tr>` : ""}
-            ${isProforma && form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<tr>
-              <td style="padding:2px 8px 6px;color:#888;font-size:9px;font-weight:600;vertical-align:top;">${fl("belge", "teslimYeri")}</td>
-              <td style="padding:2px 8px 6px;font-size:9.5px;">${form.teslimYeri}</td>
-            </tr>` : `<tr><td colspan="2" style="padding:3px;"></td></tr>`}
-            ${cfRowsHtml("belge")}
           </table>
         </div>
       </td>

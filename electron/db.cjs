@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS dealers (
 CREATE TABLE IF NOT EXISTS services (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
-  type TEXT, repairPlace TEXT, date TEXT, tech TEXT, yapilanIsler TEXT, musteriTalimati TEXT,
+  type TEXT, repairPlace TEXT, date TEXT, tech TEXT, yapilanIsler TEXT, musteriTalimati TEXT, fabrikaNotu TEXT,
   servisUcreti REAL, currency TEXT, faturaTipi TEXT, odendi INTEGER,
   degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
   islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT
@@ -146,7 +146,7 @@ function ensureColumns(conn, table, columns) {
 }
 const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
-const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"]];
+const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"], ["fabrikaNotu", "TEXT"]];
 // KDV oranı artık tek bir sayı (kdvRate) değil, tarihe bağlı dönemler listesi (kdvRates, JSON) —
 // eski kdvRate sütunu geriye uyumluluk için okunmaya devam eder (bkz. normalizeKdvRates).
 const APP_SETTINGS_NEW_COLUMNS = [["kdvRates", "TEXT"]];
@@ -249,17 +249,17 @@ function populateAll(conn, data) {
   if (Array.isArray(data.services)) {
     conn.prepare(`DELETE FROM services`).run();
     const stmt = conn.prepare(`
-      INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati,
+      INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati, fabrikaNotu,
         servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
         islemFirma, parcaAltuntastanMi, deletedAt)
-      VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati,
+      VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
         @islemFirma, @parcaAltuntastanMi, @deletedAt)
     `);
     for (const s of data.services) {
       stmt.run({
         id: s.id, customer_id: s.customerId ?? null, type: s.type ?? null, repairPlace: s.repairPlace ?? null,
-        date: s.date ?? null, tech: s.tech ?? null, yapilanIsler: s.yapilanIsler ?? null, musteriTalimati: s.musteriTalimati ?? null,
+        date: s.date ?? null, tech: s.tech ?? null, yapilanIsler: s.yapilanIsler ?? null, musteriTalimati: s.musteriTalimati ?? null, fabrikaNotu: s.fabrikaNotu ?? null,
         servisUcreti: s.servisUcreti ?? null, currency: s.currency ?? null, faturaTipi: s.faturaTipi ?? null, odendi: toInt(s.odendi),
         degisenParcalar: json(s.degisenParcalar ?? []), parcaUcretsizMi: toInt(s.parcaUcretsizMi), parcaUcreti: s.parcaUcreti ?? null,
         parcaCurrency: s.parcaCurrency ?? null, parcaGarantiDisi: toInt(s.parcaGarantiDisi),

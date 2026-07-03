@@ -66,8 +66,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     });
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
 
-    const recentSales = [...customers].filter(c => c.installDate).sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "")).slice(0, 5);
-    const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+    const recentSales = [...customers].filter(c => c.installDate).sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "")).slice(0, 10);
+    const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 10);
 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
   }, [customers, services, partSales, todayStr, factoryName]);

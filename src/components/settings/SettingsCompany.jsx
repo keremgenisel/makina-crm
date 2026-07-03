@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Icon, Field, Input, Btn, ImageUpload, ConfirmDialog } from "../ui";
+import { Icon, Field, Input, Btn, Select, ImageUpload, ConfirmDialog } from "../ui";
+import { COUNTRIES, CITIES_TR } from "../../lib/constants";
 import { Section } from "./Section";
 
 const emptyBank = () => ({
@@ -23,7 +24,7 @@ const migrateBankalar = (factory) => {
 
 export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
-    evrakFirmaAdi: "", contact: "", phone: "", email: "", adres: "",
+    evrakFirmaAdi: "", contact: "", phone: "", email: "", adres: "", country: "", city: "",
     gtipNo: "",
     bankalar: [emptyBank()],
   });
@@ -37,6 +38,8 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       phone: factory.phone || "",
       email: factory.email || "",
       adres: factory.adres || "",
+      country: factory.country || "",
+      city: factory.city || "",
       gtipNo: factory.gtipNo || "",
       bankalar: migrateBankalar(factory),
     });
@@ -50,6 +53,8 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       phone: form.phone,
       email: form.email,
       adres: form.adres,
+      country: form.country,
+      city: form.city,
       gtipNo: form.gtipNo,
       bankalar: form.bankalar,
     }));
@@ -88,6 +93,24 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           <textarea {...f("adres")} placeholder="Topçular mah. Keresteciler sit. İşgören sok. No:33/2-3 Eyüp - İSTANBUL"
             style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "#f8fafc", outline: "none" }} />
         </Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Ülke">
+            <Select value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value, city: "" }))}>
+              <option value="">— Seçin —</option>
+              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </Select>
+          </Field>
+          <Field label="Şehir">
+            {form.country === "Türkiye" ? (
+              <Select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))}>
+                <option value="">— Seçin —</option>
+                {CITIES_TR.map(c => <option key={c} value={c}>{c}</option>)}
+              </Select>
+            ) : (
+              <Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} placeholder="Şehir" />
+            )}
+          </Field>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="GTIP No (Gümrük Tarife)"><Input {...f("gtipNo")} placeholder="8438 50 00 00 00" /></Field>
         </div>
