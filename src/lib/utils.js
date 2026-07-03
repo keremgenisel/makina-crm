@@ -170,6 +170,30 @@ export const partFiyatForCurrency = (part, currency = "TRY") => {
   return (v === undefined || v === null || v === "") ? "" : v;
 };
 
+export const numberToWordsEN = (n, currency = "USD") => {
+  const curWords = { USD: "US DOLLARS", EUR: "EUROS", TRY: "TURKISH LIRAS", GBP: "POUNDS STERLING" };
+  const ones = ["","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE",
+                 "TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN",
+                 "SEVENTEEN","EIGHTEEN","NINETEEN"];
+  const tns = ["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];
+  const toW = (num) => {
+    if (!num) return "";
+    if (num < 20) return ones[num];
+    if (num < 100) return tns[Math.floor(num/10)] + (num%10 ? " " + ones[num%10] : "");
+    if (num < 1000) return ones[Math.floor(num/100)] + " HUNDRED" + (num%100 ? " " + toW(num%100) : "");
+    if (num < 1e6) return toW(Math.floor(num/1000)) + " THOUSAND" + (num%1000 ? " " + toW(num%1000) : "");
+    if (num < 1e9) return toW(Math.floor(num/1e6)) + " MILLION" + (num%1e6 ? " " + toW(num%1e6) : "");
+    return toW(Math.floor(num/1e9)) + " BILLION" + (num%1e9 ? " " + toW(num%1e9) : "");
+  };
+  const total = parseMoney(n) || 0;
+  if (!total) return "ZERO " + (curWords[currency] || currency) + " ONLY";
+  const whole = Math.floor(total);
+  const cents = Math.round((total - whole) * 100);
+  let result = toW(whole) + " " + (curWords[currency] || currency);
+  if (cents > 0) result += " AND " + toW(cents) + " CENTS";
+  return result + " ONLY";
+};
+
 export const resolveSatisYapan = (val, factory) => {
   if (!val) return val;
   if (val === "__fabrika__" || val === "Altuntaş Makina") return factory?.name || "Altuntaş Makina";
@@ -201,8 +225,13 @@ export const isParcaUcretliMi = (sv) => {
 };
 // Bir serviste Altuntaş'a ait parça bedeli — dış tedarik parçaların fiyatı bilgi amaçlıdır,
 // Altuntaş'ın gelir/borç hesaplarına yazılmaz.
-export const altuntasParcaBedeli = (sv) =>
-  sv.parcaUcretiAltuntastan !== undefined ? parseMoney(sv.parcaUcretiAltuntastan) : parseMoney(sv.parcaUcreti);
+export const altuntasParcaBedeli = (sv) => {
+  if (sv.parcaUcretiAltuntastan !== undefined) return parseMoney(sv.parcaUcretiAltuntastan);
+  const p = sv.degisenParcalar;
+  if (Array.isArray(p) && p.some(i => typeof i === "object" && i.disTedarik))
+    return p.filter(i => typeof i !== "string" && !i.disTedarik).reduce((s, i) => s + parseMoney(i.fiyat ?? i.ucret), 0);
+  return parseMoney(sv.parcaUcreti);
+};
 // Servis kaydından MÜŞTERİNİN borçlu olduğu kısım: işçilik (yalnızca Altuntaş'ın kendi servisiyse —
 // isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı
 // bir firma yaptıysa parça borcu müşteriye değil o firmaya aittir (bkz. isParcaBorcluAnlasmaliFirmaya) —

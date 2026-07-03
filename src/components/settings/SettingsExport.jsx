@@ -5,7 +5,7 @@ import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, appSettings, flash }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, flash }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -225,6 +225,17 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       downloadCSV(rows, "yedek-parca-tanimlari.csv"); flash("ok", "Yedek parça tanımları Excel (CSV) olarak indirildi.");
     }
   };
+  const exportFaturalar = async (mode = "download") => {
+    const head = ["Fatura No", "Tarih", "Firma", "Ülke", "Şehir", "Para Birimi", "Ödeme Şekli", "Teslim Şekli", "Not"];
+    const rows = [head, ...faturalar.map(f => [f.no, f.tarih, f.firma, f.ulke, f.sehir, f.currency, f.payment, f.delivery, f.not])];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Faturalar"); openExportMailXLSXBase64(b64, "faturalar.xlsx", "Yurt Dışı Faturalar"); return; }
+      await downloadXlsx(rows, "faturalar.xlsx", "Faturalar"); flash("ok", "Fatura listesi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "faturalar.csv", "Yurt Dışı Faturalar"); return; }
+      downloadCSV(rows, "faturalar.csv"); flash("ok", "Fatura listesi Excel (CSV) olarak indirildi.");
+    }
+  };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -326,6 +337,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
             { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
             { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
+            { title: "Yurt Dışı Faturalar", desc: `Düzenlenen yurt dışı faturalar (${faturalar.length} kayıt).`, onClick: exportFaturalar },
           ] },
         ].map(g => (
           <div key={g.group} style={{ marginBottom: 22 }}>

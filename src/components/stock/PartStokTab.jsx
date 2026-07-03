@@ -170,7 +170,9 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                 ].filter(Boolean);
                 const isPinned = pinnedPartIds.includes(String(part.id));
                 return (
-                <tr key={part.id} style={{ borderBottom: "1px solid #f1f5f9", background: rowBg(miktar) }}>
+                <tr key={part.id} style={{ borderBottom: "1px solid #f1f5f9", background: rowBg(miktar) }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                  onMouseLeave={e => e.currentTarget.style.background = rowBg(miktar) ?? ""}>
                   <td style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: rowColor(miktar) }}>{part.ad}</td>
                   <td style={{ padding: "10px 14px" }}>
                     {(part.models || []).length === 0

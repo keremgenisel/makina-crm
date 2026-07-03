@@ -23,6 +23,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
+  faturalar = [], setFaturalar = null, rawFaturalar = [],
 }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
@@ -40,7 +41,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
             { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
             { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
-            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma Formu", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
           ].map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
@@ -101,10 +102,10 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <SettingsBackup
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
-          teklifler={rawTeklifler} partStock={partStock} partStockLog={partStockLog}
+          teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
-          setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -157,7 +158,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "export" && (
         <SettingsExport
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
-          notes={notes} parts={parts} appSettings={appSettings} flash={flash}
+          notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} flash={flash}
         />
       )}
 
@@ -181,10 +182,10 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <SettingsTrash
           rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}
           rawDealers={rawDealers} rawStock={rawStock} rawNotes={rawNotes} rawKalipDefs={rawKalipDefs} rawParts={rawParts} rawCustomModels={rawCustomModels}
-          rawTeklifler={rawTeklifler}
+          rawTeklifler={rawTeklifler} rawFaturalar={rawFaturalar}
           setCustomers={setCustomers} setServices={setServices} setPartSales={setPartSales} setPayments={setPayments}
           setDealers={setDealers} setStock={setStock} setNotes={setNotes} setKalipDefs={setKalipDefs} setParts={setParts} setCustomModels={setCustomModels}
-          setTeklifler={setTeklifler}
+          setTeklifler={setTeklifler} setFaturalar={setFaturalar}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
         />

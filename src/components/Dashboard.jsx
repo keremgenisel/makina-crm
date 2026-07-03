@@ -2,7 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null }) => {
+  const effectiveTur = (t) => {
+    if (t?.tur) return t.tur;
+    const rows = t?.satirlar || [];
+    if (rows.some(r => r.selectedModel)) return "makina";
+    if (rows.some(r => r.selectedPart)) return "parca";
+    if (rows.some(r => r.selectedKalip)) return "kalip";
+    return "diger";
+  };
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   // Anlaşmalı servis ayrımı için (isServisUcretliMi/isServisBorcluMu'ya geçilir) — bkz. utils.js
@@ -65,7 +73,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   }, [customers, services, partSales, todayStr, factoryName]);
 
   const donusturBekleyenlar = useMemo(() =>
-    teklifler.filter(t => t.durum === "onaylandi" && !t.customerId && !t.deletedAt),
+    teklifler.filter(t => {
+      if (t.durum !== "onaylandi" || t.deletedAt || t.satisTamam) return false;
+      if (!t.customerId) return true; // müşteri bağlanmamış → her zaman göster
+      const tur = effectiveTur(t);
+      return tur === "makina" || tur === "parca" || tur === "kalip"; // bağlı + işlem gerektiren tur
+    }),
   [teklifler]);
 
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
@@ -127,23 +140,43 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       {donusturBekleyenlar.length > 0 && (
         <div style={{ background: "#fff7ed", border: "1.5px solid #fed7aa", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <span>⚡</span> Müşteriye Dönüşecek Teklifler ({donusturBekleyenlar.length})
+            <span>⚡</span> İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
           </div>
-          {donusturBekleyenlar.map(t => (
-            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #fed7aa" }}>
-              <div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
-                <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
-                {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
+          {donusturBekleyenlar.map(t => {
+            const tur = effectiveTur(t);
+            return (
+              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #fed7aa" }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
+                  <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
+                  {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
+                  <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "#fed7aa", color: "#92400e", fontWeight: 700 }}>
+                    {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+                  {tur === "makina" && !t.customerId && onDonusturTeklif && (
+                    <Btn small onClick={() => onDonusturTeklif(t)} style={{ background: "#f97316", color: "#fff", border: "none" }}>
+                      Müşteri Ekle
+                    </Btn>
+                  )}
+                  {tur === "makina" && t.customerId && onDonusturMakina && (
+                    <Btn small onClick={() => onDonusturMakina(t)} style={{ background: "#f97316", color: "#fff", border: "none" }}>
+                      Makina Ekle
+                    </Btn>
+                  )}
+                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && (
+                    <Btn small onClick={() => onKaydetSatis(t)} style={{ background: "#0891b2", color: "#fff", border: "none" }}>
+                      Satışa Dönüştür
+                    </Btn>
+                  )}
+                  {(tur === "parca" || tur === "kalip") && !t.customerId && (
+                    <span style={{ fontSize: 11, color: "#b45309", fontWeight: 600 }}>Müşteri bağlayın</span>
+                  )}
+                </div>
               </div>
-              {onDonusturTeklif && (
-                <Btn small onClick={() => onDonusturTeklif(t)}
-                  style={{ background: "#f97316", color: "#fff", border: "none", flexShrink: 0 }}>
-                  Müşteri Ekle
-                </Btn>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

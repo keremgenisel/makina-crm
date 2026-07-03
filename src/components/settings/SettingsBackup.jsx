@@ -6,9 +6,9 @@ import { Section } from "./Section";
 
 export const SettingsBackup = ({
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments,
-  teklifler = [], partStock = [], partStockLog = [],
+  teklifler = [], faturalar = [], partStock = [], partStockLog = [],
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setNotes, setParts, setPartSales, setPayments,
-  setTeklifler = null, setPartStock = null, setPartStockLog = null,
+  setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null,
   version, appSettings, setAppSettings, flash,
 }) => {
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
@@ -23,7 +23,7 @@ export const SettingsBackup = ({
         window.appMail?.getAllLog?.() ?? [],
         window.appLock?.getDataForBackup?.() ?? null,
       ]);
-      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData };
+      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData };
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
         if (ok) flash("ok", "Yedek başarıyla kaydedildi.");
@@ -93,6 +93,7 @@ export const SettingsBackup = ({
     if (Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
     if (Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
     if (Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
+    if (Array.isArray(restoreData?.faturalar) && setFaturalar) setFaturalar(restoreData.faturalar);
     if (Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
     if (Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
 

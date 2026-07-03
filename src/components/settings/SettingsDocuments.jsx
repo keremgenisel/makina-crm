@@ -3,7 +3,6 @@ import { Btn, Icon, Modal, Field } from "../ui";
 import { Section } from "./Section";
 import { DEFAULT_TRANSLATIONS } from "../Documents";
 import { uid } from "../../lib/utils";
-
 export const DEFAULT_EVRAK_FORM_CONFIG = {
   teklif: {
     hiddenFields: { alici: [], belge: [], kosullar: [] },
@@ -22,6 +21,11 @@ export const DEFAULT_EVRAK_FORM_CONFIG = {
     fieldDefaults: {},
     notAlt: { TR: DEFAULT_TRANSLATIONS.TR.notAlt, EN: DEFAULT_TRANSLATIONS.EN.notAlt },
   },
+  fatura: {
+    hiddenFields: { alici: [], belge: [], paketleme: [] },
+    customFields: [],
+    fieldDefaults: {},
+  },
 };
 
 const BUILTIN_ALICI = [
@@ -31,6 +35,8 @@ const BUILTIN_ALICI = [
   { key: "vergiDairesi", label: "Vergi Dairesi", enDefault: "Tax Office" },
   { key: "adres",        label: "Adres",         enDefault: "Address" },
   { key: "email",        label: "E-posta",       enDefault: "Email" },
+  { key: "country",      label: "Ülke",          enDefault: "Country" },
+  { key: "city",         label: "Şehir",         enDefault: "City" },
 ];
 
 const BUILTIN_BELGE = {
@@ -71,6 +77,31 @@ const BUILTIN_KOSULLAR = [
   { key: "not",              label: "Not",                    enDefault: "Note" },
 ];
 
+const BUILTIN_FATURA_ALICI = [
+  { key: "firma",      label: "Firma Adı",             enDefault: "Company Name" },
+  { key: "adres",      label: "Adres",                 enDefault: "Address" },
+  { key: "ulke",       label: "Ülke",                  enDefault: "Country" },
+  { key: "sehir",      label: "Şehir",                 enDefault: "City" },
+  { key: "vatId",      label: "Uluslararası Vergi No", enDefault: "VAT ID" },
+  { key: "localTaxNo", label: "Yerel Vergi No",        enDefault: "Local Tax No" },
+];
+const BUILTIN_FATURA_BELGE = [
+  { key: "no",       label: "Fatura No",     enDefault: "Invoice No" },
+  { key: "tarih",    label: "Tarih",         enDefault: "Date" },
+  { key: "currency", label: "Para Birimi",   enDefault: "Currency" },
+  { key: "payment",  label: "Ödeme Şekli",   enDefault: "Payment Terms" },
+  { key: "delivery", label: "Teslim Şekli",  enDefault: "Delivery Method" },
+  { key: "gtipNo",   label: "GTİP No",       enDefault: "GTIP No" },
+  { key: "origin",   label: "Menşei",        enDefault: "Country of Origin" },
+  { key: "kur",      label: "Döviz Kuru",    enDefault: "Exchange Rate" },
+];
+const BUILTIN_FATURA_PAKETLEME = [
+  { key: "paketAdedi",  label: "Paket Adedi",  enDefault: "No. of Packages" },
+  { key: "brutAgirlik", label: "Brüt Ağırlık", enDefault: "Gross Weight" },
+  { key: "olculer",     label: "Ölçüler",      enDefault: "Dimensions" },
+  { key: "not",         label: "Not",          enDefault: "Notes" },
+];
+
 const SECTIONS = {
   teklif: [
     { key: "alici", label: "Alıcı Bilgileri", builtins: BUILTIN_ALICI },
@@ -81,14 +112,17 @@ const SECTIONS = {
     { key: "alici", label: "Alıcı Bilgileri", builtins: BUILTIN_ALICI },
     { key: "belge", label: "Belge Detayları", builtins: BUILTIN_BELGE.proforma },
   ],
+  fatura: [
+    { key: "alici",     label: "Alıcı Bilgileri",  builtins: BUILTIN_FATURA_ALICI },
+    { key: "belge",     label: "Fatura Bilgileri",  builtins: BUILTIN_FATURA_BELGE },
+    { key: "paketleme", label: "Paketleme & Not",   builtins: BUILTIN_FATURA_PAKETLEME },
+  ],
 };
 
 // Hangi bölümlerde hangi alanların varsayılan değeri düzenlenebilir
 const FIELD_DEFAULTS_META = {
   teklif: {
-    belge: [
-      { key: "forwarder", label: "Gönderen (Forwarder)", biDil: true, multiline: true },
-    ],
+    belge: [],
     kosullar: [
       { key: "odemeSekli", label: "Ödeme Şekli", biDil: true },
       { key: "teslimSekli", label: "Teslim Şekli", biDil: true },
@@ -100,10 +134,22 @@ const FIELD_DEFAULTS_META = {
   },
   proforma: {
     belge: [
-      { key: "forwarder", label: "Gönderen (Forwarder)", biDil: true, multiline: true },
       { key: "teslimYeri", label: "Teslim Yeri", biDil: true, multiline: true },
       { key: "not", label: "Not (Proforma)", biDil: true, multiline: true },
       { key: "ek", label: "Ek Bilgi", biDil: true, multiline: true },
+    ],
+  },
+  fatura: {
+    belge: [
+      { key: "payment",  label: "Ödeme Şekli",  biDil: false },
+      { key: "delivery", label: "Teslim Şekli", biDil: false },
+      { key: "gtipNo",   label: "GTİP No",      biDil: false },
+      { key: "origin",   label: "Menşei",       biDil: false },
+    ],
+    paketleme: [
+      { key: "paketAdedi",  label: "Paket Adedi",  biDil: false },
+      { key: "brutAgirlik", label: "Brüt Ağırlık", biDil: false },
+      { key: "olculer",     label: "Ölçüler",      biDil: false },
     ],
   },
 };
@@ -111,15 +157,21 @@ const FIELD_DEFAULTS_META = {
 // Mevcut hardcoded varsayılanlar — fieldDefaults kaydedilmemişse ilk açılışta buradan doldurulur
 const FIELD_INITIAL_DEFAULTS = {
   teklif: {
-    forwarder: { TR: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali", EN: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali" },
     teslimSuresi: { TR: "SİPARİŞ ONAYINIZA İSTİNADEN OPSİYONLUDUR.", EN: "OPTIONAL UPON ORDER CONFIRMATION." },
     teklifGecerlilik: { TR: "TEKLİF TARİHİNDEN İTİBAREN 3 GÜN GEÇERLİDİR.", EN: "VALID FOR 3 DAYS FROM THE DATE OF QUOTATION." },
     not: { TR: "TÜRKİYE TESLİM FİYATIDIR. YURTDIŞI NAKLİYE, GÜMRÜK, ARDİYE VE VERGİLERİ HARİÇTİR.", EN: "TURKEY DELIVERY PRICE. OVERSEAS FREIGHT, CUSTOMS, WAREHOUSE AND TAXES ARE NOT INCLUDED." },
   },
   proforma: {
-    forwarder: { TR: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali", EN: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali" },
     teslimYeri: { TR: "İSTANBUL TUZLA TESLİMDİR. TÜRKİYE GÜMRÜĞÜ GÖNDERİCİYE AİTTİR.", EN: "ISTANBUL TUZLA DELIVERY. TURKEY CUSTOMS BELONGS TO SENDER." },
     ek: { TR: "SİZLERE TESLİMAT İLE İLGİLİ BİLDİRİLEN TARİHTEN İTİBAREN 7 GÜN İÇİNDE ÖDEMESİ YAPILMAYAN SİPARİŞLER İPTAL EDİLECEKTİR.", EN: "ORDERS NOT PAID WITHIN 7 DAYS FROM THE NOTIFIED DATE WILL BE CANCELLED." },
+  },
+  fatura: {
+    payment:     { TR: "T/T in advance" },
+    delivery:    { TR: "CIF Istanbul" },
+    origin:      { TR: "Türkiye" },
+    paketAdedi:  { TR: "1" },
+    brutAgirlik: { TR: "180 KG" },
+    olculer:     { TR: "70x100x80 CM" },
   },
 };
 
@@ -152,7 +204,11 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     };
 
     // Kaydedilen fieldDefaults yoksa FIELD_INITIAL_DEFAULTS'tan doldur (saved değerler öncelikli)
-    const initFd = (type) => ({ ...FIELD_INITIAL_DEFAULTS[type], ...(saved?.[type]?.fieldDefaults || {}) });
+    const initFd = (type) => {
+      const fd = { ...FIELD_INITIAL_DEFAULTS[type], ...(saved?.[type]?.fieldDefaults || {}) };
+      delete fd.forwarder;
+      return fd;
+    };
 
     return {
       teklif: {
@@ -173,6 +229,14 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         fieldOrder: { alici: [], belge: [], ...(saved?.proforma?.fieldOrder || {}) },
         deletedFields: { alici: [], belge: [], ...(saved?.proforma?.deletedFields || {}) },
         notAlt: saved?.proforma?.notAlt || migratedNotAlt,
+      },
+      fatura: {
+        hiddenFields: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.hiddenFields || {}) },
+        customFields: saved?.fatura?.customFields || [],
+        fieldDefaults: initFd("fatura"),
+        fieldLabels: saved?.fatura?.fieldLabels || {},
+        fieldOrder: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.fieldOrder || {}) },
+        deletedFields: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.deletedFields || {}) },
       },
     };
   });
@@ -444,7 +508,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const cfsBySection = (sec) => (draft[docType]?.customFields || []).filter(f => f.section === sec);
 
   return (
-    <Section title="Teklif / Proforma Formu" icon="settings">
+    <Section title="Teklif / Proforma / Yurt Dışı Fatura" icon="settings">
       <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
         Form bölümlerindeki alanları gizleyin, varsayılan değerleri düzenleyin veya özel alanlar ekleyin.
         Gizlenen alanlar yazılı çıktıda da görünmez.
@@ -452,7 +516,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid #f1f5f9" }}>
-        {[["teklif", "Teklif"], ["proforma", "Proforma"]].map(([id, label]) => (
+        {[["teklif", "Teklif"], ["proforma", "Proforma"], ["fatura", "Yurt Dışı Fatura"]].map(([id, label]) => (
           <button key={id} onClick={() => setDocType(id)} style={{
             padding: "7px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
             borderBottom: docType === id ? "2px solid #e85d1a" : "2px solid transparent",
@@ -489,8 +553,8 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         </Accordion>
       )}
 
-      {/* Alt Not (her iki belge türü için) */}
-      <Accordion
+      {/* Alt Not (teklif ve proforma için, fatura için yok) */}
+      {docType !== "fatura" && <Accordion
         label={docType === "teklif" ? "Sayfa Alt Notu (\"Bu belge gizlidir...\")" : "Alt Not"}
         sKey="altnot" openSections={openSections} toggle={toggleSection}>
         <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
@@ -502,7 +566,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           <LangTextarea label="Türkçe (TR)" value={getNotAlt("TR")} onChange={v => setNotAlt("TR", v)} inputStyle={inputStyle} />
           <LangTextarea label="İngilizce (EN)" value={getNotAlt("EN")} onChange={v => setNotAlt("EN", v)} inputStyle={inputStyle} />
         </div>
-      </Accordion>
+      </Accordion>}
 
       {/* Alan bölümleri */}
       {sections.map(sec => {

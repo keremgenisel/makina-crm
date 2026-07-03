@@ -1,7 +1,9 @@
 import LOGO from "../assets/logo.avif?inline";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi } from "./utils";
+import { COUNTRY_EN } from "./constants";
 
 const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const latinize = (s) => (s || "").replace(/İ/g, "I").replace(/ı/g, "i").replace(/Ş/g, "S").replace(/ş/g, "s").replace(/Ğ/g, "G").replace(/ğ/g, "g").replace(/Ç/g, "C").replace(/ç/g, "c");
 
 // Servis tipi ve tamir yeri çevirisi için sabit eşlemeler
 const TYPE_KEY_MAP = {
@@ -203,7 +205,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   const L = { ...DEFAULT_SERVIS_TRANSLATIONS[lang] || DEFAULT_SERVIS_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
   const cust = customers.find(c => c.id === sv.customerId) || {};
-  const adres = [cust.adres, cust.city, cust.country].filter(Boolean).join(", ") || "—";
+  const adres = [cust.adres, lang === "EN" ? latinize(cust.city) : cust.city, lang === "EN" ? (COUNTRY_EN[cust.country] || cust.country) : cust.country].filter(Boolean).join(", ") || "—";
   const servisUcretiVar = (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const parcaUcretiVar = !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
   const ucret = servisUcretiVar ? fmtCur(sv.servisUcreti, sv.currency) : "—";
@@ -247,25 +249,25 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: 'unsafe-inline'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:;">
 <title>${esc(L.title)} - ${esc(cust.name)}</title>
 <style>
-  body { font-family: Arial, sans-serif; color: #000; padding: 32px; max-width: 800px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 24px; }
-  .header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-  .header .sub { font-size: 13px; }
-  .header .right { font-size: 12px; text-align: right; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-  th, td { border: 1px solid #000; padding: 7px 12px; text-align: left; }
-  .info th { width: 210px; background: #eee; }
-  h2 { font-size: 15px; margin: 0 0 10px; }
-  .box-area { border: 1px solid #000; border-radius: 4px; min-height: 80px; padding: 12px; font-size: 13px; white-space: pre-wrap; line-height: 1.6; margin-bottom: 24px; }
-  .terms { font-size: 10px; color: #444; line-height: 1.6; margin-top: 8px; border-top: 1px solid #ccc; padding-top: 12px; }
-  .printbtn { display: block; margin: 0 auto 24px; padding: 10px 28px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  @media print { @page { margin: 12mm 14mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
+  body { font-family: Arial, sans-serif; color: #000; padding: 20px; max-width: 800px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 14px; }
+  .header h1 { margin: 0; font-size: 18px; letter-spacing: 1px; }
+  .header .sub { font-size: 11px; }
+  .header .right { font-size: 10px; text-align: right; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10.5px; }
+  th, td { border: 1px solid #000; padding: 4px 8px; text-align: left; }
+  .info th { width: 180px; background: #eee; }
+  h2 { font-size: 12px; margin: 0 0 6px; }
+  .box-area { border: 1px solid #000; border-radius: 4px; min-height: 44px; padding: 8px; font-size: 10.5px; white-space: pre-wrap; line-height: 1.5; margin-bottom: 12px; }
+  .terms { font-size: 9px; color: #444; line-height: 1.5; margin-top: 6px; border-top: 1px solid #ccc; padding-top: 8px; }
+  .printbtn { display: block; margin: 0 auto 16px; padding: 8px 24px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  @media print { @page { margin: 10mm 12mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
 </style>
 </head>
 <body>
   <div class="header">
     <div>
-      <img src="${LOGO}" alt="Altuntaş Makina" style="height:42px;display:block;margin-bottom:6px" />
+      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block;margin-bottom:4px" />
       <div class="sub">${esc(L.title)}</div>
     </div>
     <div class="right">
@@ -287,7 +289,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
       const suffix = (typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : "";
       return esc(fiyat > 0 ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})` : `${ad}${suffix}`);
     });
-    const cellStyle = "border:none;padding:12px;vertical-align:top;font-size:13px;line-height:1.8;width:50%";
+    const cellStyle = "border:none;padding:8px;vertical-align:top;font-size:10.5px;line-height:1.6;width:50%";
     if (lines.length <= 5) {
       return `<div class="box-area" style="min-height:auto;line-height:1.8">${lines.map(l => `<div>${l}</div>`).join("")}</div>`;
     }
@@ -305,12 +307,12 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   ${forEmail ? "" : `<table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:none">
     <tr>
       <td style="border:none;width:50%;padding:0 16px 0 0;vertical-align:top">
-        <div style="font-size:12px;font-weight:700;margin-bottom:50px">${esc(L.teslimEden)}</div>
-        <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaEden)}</div>
+        <div style="font-size:10.5px;font-weight:700;margin-bottom:30px">${esc(L.teslimEden)}</div>
+        <div style="border-top:1px solid #000;padding-top:4px;font-size:9.5px;color:#444">${esc(L.imzaEden)}</div>
       </td>
       <td style="border:none;width:50%;padding:0 0 0 16px;vertical-align:top">
-        <div style="font-size:12px;font-weight:700;margin-bottom:50px">${esc(L.teslimAlan)}</div>
-        <div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#444">${esc(L.imzaAlan)}</div>
+        <div style="font-size:10.5px;font-weight:700;margin-bottom:30px">${esc(L.teslimAlan)}</div>
+        <div style="border-top:1px solid #000;padding-top:4px;font-size:9.5px;color:#444">${esc(L.imzaAlan)}</div>
       </td>
     </tr>
   </table>`}
@@ -360,7 +362,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   const infoRows = [
     [L.satinAlanLabel, detailView.name],
     [L.satisYapanLabel, detailView.satisYapan || detailView.contact || "—"],
-    [L.adresLabel, `${detailView.adres ? detailView.adres + ", " : ""}${detailView.city || ""}${detailView.country ? " / " + detailView.country : ""}` || "—"],
+    [L.adresLabel, `${detailView.adres ? detailView.adres + ", " : ""}${lang === "EN" ? latinize(detailView.city || "") : (detailView.city || "")}${detailView.country ? " / " + (lang === "EN" ? (COUNTRY_EN[detailView.country] || detailView.country) : detailView.country) : ""}` || "—"],
     [L.makinaModeliLabel, detailView.model || "—"],
     [L.seriNoLabel, detailView.serialNo || "—"],
     ...(fmtKalipCapi(detailView.kalipCapi) ? [[L.kalipCapiLabel, fmtKalipCapi(detailView.kalipCapi)]] : []),
@@ -399,24 +401,24 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: 'unsafe-inline'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:;">
 <title>${esc(L.subBaslik)} - ${esc(detailView.name)}</title>
 <style>
-  body { font-family: Arial, sans-serif; color: #000; padding: 32px; max-width: 800px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 24px; }
-  .header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; }
-  .header .sub { font-size: 13px; }
-  .header .right { font-size: 12px; text-align: right; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-  th, td { border: 1px solid #000; padding: 7px 12px; text-align: left; }
-  .info th { width: 210px; background: #eee; }
+  body { font-family: Arial, sans-serif; color: #000; padding: 20px; max-width: 800px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 14px; }
+  .header h1 { margin: 0; font-size: 18px; letter-spacing: 1px; }
+  .header .sub { font-size: 11px; }
+  .header .right { font-size: 10px; text-align: right; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10.5px; }
+  th, td { border: 1px solid #000; padding: 4px 8px; text-align: left; }
+  .info th { width: 180px; background: #eee; }
   .svc th { background: #eee; }
-  h2 { font-size: 15px; margin: 0 0 10px; }
-  .printbtn { display: block; margin: 0 auto 24px; padding: 10px 28px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  @media print { @page { margin: 12mm 14mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
+  h2 { font-size: 12px; margin: 0 0 6px; }
+  .printbtn { display: block; margin: 0 auto 16px; padding: 8px 24px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  @media print { @page { margin: 10mm 12mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
 </style>
 </head>
 <body>
   <div class="header">
     <div>
-      <img src="${LOGO}" alt="Altuntaş Makina" style="height:42px;display:block;margin-bottom:6px" />
+      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block;margin-bottom:4px" />
       <div class="sub">${esc(L.subBaslik)}</div>
     </div>
     <div class="right">
@@ -429,8 +431,8 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   <table class="svc">
     <thead><tr><th>${esc(L.thSira)}</th><th>${esc(L.thSahip)}</th><th>${esc(L.thKonum)}</th><th>${esc(L.thSatisYapan)}</th><th>${esc(L.thDevirTarihi)}</th></tr></thead>
     <tbody>
-      ${detailView.prevOwners.map((o, i) => `<tr><td>${i + 1}. ${esc(L.mevcutLabel === "Mevcut" ? "Sahip" : "Owner")}</td><td>${esc(o.name)}</td><td>${esc([o.city, o.country].filter(Boolean).join(" / ") || "—")}</td><td>${esc(o.satisYapan || "—")}</td><td>${esc(o.soldDate || "—")}</td></tr>`).join("")}
-      <tr style="background:#f0fdf4"><td><b>${esc(L.mevcutLabel)}</b></td><td><b>${esc(detailView.name)}</b></td><td>${esc([detailView.city, detailView.country].filter(Boolean).join(" / ") || "—")}</td><td>${esc(detailView.satisYapan || "—")}</td><td>—</td></tr>
+      ${detailView.prevOwners.map((o, i) => `<tr><td>${i + 1}. ${esc(L.mevcutLabel === "Mevcut" ? "Sahip" : "Owner")}</td><td>${esc(o.name)}</td><td>${esc([lang === "EN" ? latinize(o.city) : o.city, lang === "EN" ? (COUNTRY_EN[o.country] || o.country) : o.country].filter(Boolean).join(" / ") || "—")}</td><td>${esc(o.satisYapan || "—")}</td><td>${esc(o.soldDate || "—")}</td></tr>`).join("")}
+      <tr style="background:#f0fdf4"><td><b>${esc(L.mevcutLabel)}</b></td><td><b>${esc(detailView.name)}</b></td><td>${esc([lang === "EN" ? latinize(detailView.city) : detailView.city, lang === "EN" ? (COUNTRY_EN[detailView.country] || detailView.country) : detailView.country].filter(Boolean).join(" / ") || "—")}</td><td>${esc(detailView.satisYapan || "—")}</td><td>—</td></tr>
     </tbody>
   </table>` : ""}
   <h2>${esc(L.servisBaslik)} (${detailHistory.length} ${esc(L.kayitSuffix)})</h2>

@@ -23,7 +23,7 @@ const migrateBankalar = (factory) => {
 
 export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
-    name: "", contact: "", phone: "", email: "", adres: "",
+    evrakFirmaAdi: "", contact: "", phone: "", email: "", adres: "",
     gtipNo: "",
     bankalar: [emptyBank()],
   });
@@ -32,7 +32,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
   useEffect(() => {
     if (!factory) return;
     setForm({
-      name: factory.name || "",
+      evrakFirmaAdi: factory.evrakFirmaAdi ?? factory.name ?? "",
       contact: factory.contact || "",
       phone: factory.phone || "",
       email: factory.email || "",
@@ -43,28 +43,17 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
   }, [factory]);
 
   const save = () => {
-    const oldName = factory?.name;
-    const newName = (form.name || "").trim() || oldName;
-    const prevNames = oldName && newName && oldName !== newName
-      ? [...new Set([...(factory?.prevNames || []), oldName])]
-      : (factory?.prevNames || []);
-    setFactory({ ...form, name: newName, prevNames });
-    if (oldName && newName && oldName !== newName) {
-      setCustomers?.(p => p.map(c => {
-        const satisYapanEsleser = c.satisYapan === oldName;
-        const prevOwnerEsleser = c.prevOwners?.some(o => o.satisYapan === oldName);
-        if (!satisYapanEsleser && !prevOwnerEsleser) return c;
-        return {
-          ...c,
-          satisYapan: satisYapanEsleser ? newName : c.satisYapan,
-          prevOwners: prevOwnerEsleser ? c.prevOwners.map(o => o.satisYapan === oldName ? { ...o, satisYapan: newName } : o) : c.prevOwners,
-        };
-      }));
-      setServices?.(p => p.map(s => s.islemFirma === oldName ? { ...s, islemFirma: newName } : s));
-      flash("ok", `Firma adı güncellendi. "${oldName}" geçmiş kayıtlarda da değiştirildi.`);
-    } else {
-      flash("ok", "Firma bilgileri kaydedildi.");
-    }
+    setFactory(prev => ({
+      ...prev,
+      evrakFirmaAdi: (form.evrakFirmaAdi || "").trim(),
+      contact: form.contact,
+      phone: form.phone,
+      email: form.email,
+      adres: form.adres,
+      gtipNo: form.gtipNo,
+      bankalar: form.bankalar,
+    }));
+    flash("ok", "Firma bilgileri kaydedildi.");
   };
 
   const f = (key) => ({
@@ -87,10 +76,10 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     <>
       <Section title="Firma Bilgileri" icon="settings">
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-          Teklif ve proforma fatura belgelerinde gönderen olarak görünecek bilgiler.
+          Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Firma Adı"><Input {...f("name")} placeholder="Altuntaş Makina Sanayi" /></Field>
+          <Field label="Evrak'ta Görünen Firma Adı"><Input {...f("evrakFirmaAdi")} placeholder="Altuntaş Makina Sanayi" /></Field>
           <Field label="Yetkili / Sorumlu"><Input {...f("contact")} placeholder="Mehmet Altuntaş" /></Field>
           <Field label="Telefon"><Input {...f("phone")} placeholder="0212 493 35 86" /></Field>
           <Field label="E-posta"><Input {...f("email")} placeholder="info@altunmak.com" /></Field>
@@ -106,7 +95,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
       <Section title="Banka ve Ödeme Bilgileri" icon="finance">
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-          Teklif ve proforma fatura belgelerinde ödeme bölümüne otomatik eklenir.
+          Teklif, proforma ve yurt dışı fatura belgelerinde ödeme bölümüne otomatik eklenir.
         </div>
 
         {form.bankalar.map((bank, idx) => (
@@ -155,7 +144,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
       <Section title="Kaşe / İmza" icon="stamp">
         <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
-          Teklif ve proforma çıktılarında onay kutusuna eklenir. Şeffaf arka planlı PNG önerilir.
+          Teklif, proforma ve yurt dışı fatura çıktılarında görünür. Şeffaf arka planlı PNG önerilir.
         </div>
         <Field label="Kaşe / İmza Resmi">
           <ImageUpload

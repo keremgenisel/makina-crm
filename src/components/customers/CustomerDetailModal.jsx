@@ -463,21 +463,13 @@ export const CustomerDetailModal = ({
   // ── Yazdırma / e-posta ──
   const servisT = (lang = "TR") => ({ ...((appSettings?.translations?.servis) || {}), _lang: lang });
   const makinaT = (lang = "TR") => ({ ...((appSettings?.translations?.makina) || {}), _lang: lang });
-  const isTurkiye = !detailView?.country || detailView.country === "Türkiye";
   const openPrintOrPick = (type, sv) => {
-    if (isTurkiye) {
-      if (type === "makina") printMachineReport("TR");
-      else if (type === "servis") printServiceForm(sv, "TR");
-      else if (type === "mail_makina") openMailMachineReport("TR");
-      else if (type === "mail_servis") openMailServiceForm(sv, "TR");
-    } else {
-      setPrintLangModal({ type, sv });
-    }
+    setPrintLangModal({ type, sv });
   };
   const kaseResmi = appSettings?.kaseResmi || "";
 
   const openSandikEtiket = () => setSandikModal({
-    gonderen: { ad: "Huriye ALTUNTAŞ - Makina Dişli ve Yedek Parça İmali", tel: factory?.phone || "", adres: factory?.adres || "" },
+    gonderen: { ad: factory?.evrakFirmaAdi || factory?.name || "", tel: factory?.phone || "", adres: factory?.adres || "" },
     alici: {
       firmaAdi: detailView.name || "",
       adres: detailView.adres || "",

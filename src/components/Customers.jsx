@@ -107,6 +107,29 @@ export const Customers = ({
   const openAddWithPrefill = (prefill) => {
     const start = today();
     const end = `${parseInt(start.slice(0,4)) + 2}${start.slice(4)}`;
+    if (prefill._addForFirmId) {
+      const base = customers.find(c => c.id === prefill._addForFirmId);
+      if (!base) return;
+      setForm({
+        kalipSayisi: prefill.kaliplar?.length || 0,
+        satisYapan: factory?.name || "Altuntaş Makina",
+        name: base.name || "", phone: base.phone || "", email: base.email || "",
+        yetkili1Ad: base.yetkili1Ad || "", yetkili1Tel: base.yetkili1Tel || "",
+        yetkili2Ad: base.yetkili2Ad || "", yetkili2Tel: base.yetkili2Tel || "",
+        adres: base.adres || "", city: base.city || "", country: base.country || "Türkiye",
+        model: prefill.model || "",
+        kaliplar: prefill.kaliplar?.length > 0 ? prefill.kaliplar : [],
+        bantlar: [],
+        installDate: start, warrantyEnd: end,
+        faturali: prefill.faturali || base.faturali || "Faturalı Yurtiçi",
+        faturaBedeli: "",
+        fabrikaSatisBedeli: prefill.fabrikaSatisBedeli || "", komisyon: "", _ilkOdemeSatirlari: [],
+        serialNo: "", currency: prefill.currency || base.currency || "TRY",
+        fromTeklifId: prefill.fromTeklifId || null,
+      });
+      setModal("add");
+      return;
+    }
     setForm({
       kalipSayisi: prefill.kaliplar?.length || 0,
       satisYapan: factory?.name || "Altuntaş Makina",
@@ -117,14 +140,15 @@ export const Customers = ({
       yetkili1Tel: prefill.yetkili1Tel || "",
       yetkili2Ad: "", yetkili2Tel: "",
       adres: prefill.adres || "",
-      city: "", country: "Türkiye",
+      city: prefill.city || "",
+      country: prefill.country || "Türkiye",
       model: prefill.model || "",
       kaliplar: prefill.kaliplar?.length > 0 ? prefill.kaliplar : [],
       bantlar: [],
       installDate: start, warrantyEnd: end,
       faturali: prefill.faturali || "Faturalı Yurtiçi",
       faturaBedeli: "",
-      fabrikaSatisBedeli: "", komisyon: "", _ilkOdemeSatirlari: [],
+      fabrikaSatisBedeli: prefill.fabrikaSatisBedeli || "", komisyon: "", _ilkOdemeSatirlari: [],
       serialNo: "",
       currency: prefill.currency || "TRY",
       fromTeklifId: prefill.fromTeklifId || null,
@@ -432,7 +456,9 @@ export const Customers = ({
               const hasDebt = isCustomerTab && debtorIds.has(c.id);
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fef2f2" : undefined }}
-                  title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}>
+                  title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}
+                  onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "#fde8e8" : "#f8fafc"}
+                  onMouseLeave={e => e.currentTarget.style.background = hasDebt ? "#fef2f2" : ""}>
                   <td style={{ padding: "13px 16px", cursor: "pointer" }}
                     onClick={() => setDetailViewId(c.id)}
                     title="Tüm bilgileri görüntüle">

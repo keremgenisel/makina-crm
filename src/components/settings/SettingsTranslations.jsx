@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DEFAULT_TRANSLATIONS } from "../Documents";
+import { DEFAULT_TRANSLATIONS, DEFAULT_FATURA_TRANSLATIONS } from "../Documents";
 import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDIK_TRANSLATIONS } from "../../lib/printTemplates";
 import { Btn, Icon } from "../ui";
 import { Section } from "./Section";
@@ -37,12 +37,19 @@ const GROUPS = [
   { label: "Alıcı Bölümü", keys: [
     { key: "alicrLabel",        label: "Bölüm Başlığı" },
     { key: "firmLabel",         label: "Firma" },
+    { key: "yetkiliLabel",      label: "Yetkili / Tel" },
+    { key: "adresLabel",        label: "Adres" },
+    { key: "vergiLabel",        label: "Vergi No / Dairesi" },
   ]},
   { label: "Belge Bilgileri", keys: [
     { key: "tarihLabel",        label: "Tarih" },
     { key: "noLabel",           label: "Teklif No" },
     { key: "modelYiliLabel",    label: "Model Yılı Etiketi" },
     { key: "modelYiliSuffix",   label: "Model Yılı Değeri" },
+    { key: "kurLabel",          label: "Döviz Kuru" },
+    { key: "teslimYeriLabel",   label: "Teslim Yeri" },
+    { key: "authorityLabel",    label: "Yetkili (imza alanı)" },
+    { key: "forwarderLabel",    label: "Gönderen (imza alanı)" },
   ]},
   { label: "Tablo Başlıkları", keys: [
     { key: "thSira",            label: "Sıra" },
@@ -62,6 +69,13 @@ const GROUPS = [
   ]},
   { label: "Koşullar Alanları", keys: [
     { key: "iskontoRow",        label: "İskonto Satırı" },
+    { key: "odemeSekli",        label: "Ödeme Şekli" },
+    { key: "teslimSekli",       label: "Teslim Şekli" },
+    { key: "teslimSuresi",      label: "Teslim Süresi" },
+    { key: "teslimTarihi",      label: "Teslim Tarihi" },
+    { key: "gecerlilik",        label: "Geçerlilik Süresi" },
+    { key: "notLabel",          label: "Not" },
+    { key: "ekLabel",           label: "Ek Bilgi" },
   ]},
 
   // ─── SERVİS FORMU ───────────────────────────────────────────────────────────
@@ -183,6 +197,36 @@ const GROUPS = [
     { key: "placeKargo",           label: "Kargo" },
     { key: "placeFabrikaTeslim",   label: "Fabrika Teslim" },
   ]},
+
+  // ─── YURT DIŞI FATURA ───────────────────────────────────────────────────────
+  { divider: "Yurt Dışı Fatura" },
+  { label: "Başlık & No", ns: "fatura", singleLang: true, keys: [
+    { key: "title",          label: "Belge Başlığı" },
+    { key: "invoiceNoLabel", label: "Fatura No Etiketi" },
+    { key: "dateLabel",      label: "Tarih Etiketi" },
+  ]},
+  { label: "Taraflar", ns: "fatura", singleLang: true, keys: [
+    { key: "fromLabel",   label: "Gönderen Başlığı" },
+    { key: "billToLabel", label: "Alıcı Başlığı" },
+  ]},
+  { label: "Tablo Başlıkları", ns: "fatura", singleLang: true, keys: [
+    { key: "thDescription", label: "Açıklama" },
+    { key: "thSerialNo",    label: "Seri No" },
+    { key: "thQty",         label: "Miktar" },
+    { key: "thUnitPrice",   label: "Birim Fiyat" },
+    { key: "thAmount",      label: "Tutar" },
+  ]},
+  { label: "Alt Bilgiler", ns: "fatura", singleLang: true, keys: [
+    { key: "paymentLabel",      label: "Ödeme" },
+    { key: "deliveryLabel",     label: "Teslim" },
+    { key: "packingLabel",      label: "Paket" },
+    { key: "gtipLabel",         label: "GTİP No" },
+    { key: "originLabel",       label: "Menşei Ülke" },
+    { key: "exchangeRateLabel", label: "Döviz Kuru" },
+    { key: "notesLabel",        label: "Notlar" },
+    { key: "bankLabel",         label: "Banka Bilgileri" },
+    { key: "totalLabel",        label: "Toplam" },
+  ]},
 ];
 
 export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => {
@@ -202,6 +246,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
       TR: { ...DEFAULT_SANDIK_TRANSLATIONS.TR, ...(saved.sandik?.TR || {}) },
       EN: { ...DEFAULT_SANDIK_TRANSLATIONS.EN, ...(saved.sandik?.EN || {}) },
     },
+    fatura: { ...DEFAULT_FATURA_TRANSLATIONS, ...(saved.fatura || {}) },
   });
   const [openGroups, setOpenGroups] = useState(new Set());
   const toggleGroup = (label) => setOpenGroups(p => {
@@ -213,6 +258,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
   const set = (lang, key, val) => setDraft(p => ({ ...p, [lang]: { ...p[lang], [key]: val } }));
   const setNested = (ns, lang, key, val) =>
     setDraft(p => ({ ...p, [ns]: { ...p[ns], [lang]: { ...p[ns][lang], [key]: val } } }));
+  const setFlat = (ns, key, val) => setDraft(p => ({ ...p, [ns]: { ...p[ns], [key]: val } }));
 
   const save = () => {
     setAppSettings(p => ({ ...p, translations: draft }));
@@ -235,6 +281,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         TR: { ...DEFAULT_SANDIK_TRANSLATIONS.TR },
         EN: { ...DEFAULT_SANDIK_TRANSLATIONS.EN },
       },
+      fatura: { ...DEFAULT_FATURA_TRANSLATIONS },
     };
     setDraft(defaults);
     setAppSettings(p => ({ ...p, translations: defaults }));
@@ -273,10 +320,10 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         }
         const groupId = g.ns ? `${g.ns}:${g.label}` : `${i}:${g.label}`;
         const isOpen = openGroups.has(groupId);
-        const getTR = (key) => g.ns ? (draft[g.ns]?.TR?.[key] ?? "") : (draft.TR[key] ?? "");
-        const getEN = (key) => g.ns ? (draft[g.ns]?.EN?.[key] ?? "") : (draft.EN[key] ?? "");
-        const onChangeTR = (key, val) => g.ns ? setNested(g.ns, "TR", key, val) : set("TR", key, val);
-        const onChangeEN = (key, val) => g.ns ? setNested(g.ns, "EN", key, val) : set("EN", key, val);
+        const getTR = (key) => g.singleLang ? (draft[g.ns]?.[key] ?? "") : g.ns ? (draft[g.ns]?.TR?.[key] ?? "") : (draft.TR[key] ?? "");
+        const getEN = (key) => g.singleLang ? "" : g.ns ? (draft[g.ns]?.EN?.[key] ?? "") : (draft.EN[key] ?? "");
+        const onChangeTR = (key, val) => g.singleLang ? setFlat(g.ns, key, val) : g.ns ? setNested(g.ns, "TR", key, val) : set("TR", key, val);
+        const onChangeEN = (key, val) => g.singleLang ? undefined : g.ns ? setNested(g.ns, "EN", key, val) : set("EN", key, val);
         return (
           <div key={groupId} style={{ marginBottom: 8 }}>
             <div
@@ -297,9 +344,14 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      <th style={{ ...thStyle, width: "24%" }}>Alan</th>
-                      <th style={{ ...thStyle, width: "38%" }}>Türkçe (TR)</th>
-                      <th style={{ ...thStyle, width: "38%" }}>İngilizce (EN)</th>
+                      <th style={{ ...thStyle, width: g.singleLang ? "30%" : "24%" }}>Alan</th>
+                      {g.singleLang
+                        ? <th style={{ ...thStyle, width: "70%" }}>Değer</th>
+                        : <>
+                            <th style={{ ...thStyle, width: "38%" }}>Türkçe (TR)</th>
+                            <th style={{ ...thStyle, width: "38%" }}>İngilizce (EN)</th>
+                          </>
+                      }
                     </tr>
                   </thead>
                   <tbody>
@@ -309,9 +361,11 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
                         <td style={tdStyle}>
                           <textarea rows={1} value={getTR(key)} onChange={e => onChangeTR(key, e.target.value)} style={inputStyle} />
                         </td>
-                        <td style={tdStyle}>
-                          <textarea rows={1} value={getEN(key)} onChange={e => onChangeEN(key, e.target.value)} style={inputStyle} />
-                        </td>
+                        {!g.singleLang && (
+                          <td style={tdStyle}>
+                            <textarea rows={1} value={getEN(key)} onChange={e => onChangeEN(key, e.target.value)} style={inputStyle} />
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

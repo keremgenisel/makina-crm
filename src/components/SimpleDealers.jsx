@@ -251,8 +251,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             {paged.map(d => (
               <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
                 onClick={() => setDetailView(d)} title="Tüm bilgileri görüntüle"
-                onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseLeave={e => e.currentTarget.style.background = ""}>
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{d.name}</span>

@@ -58,20 +58,26 @@ export default function App() {
   };
 
   const handleDonusturTeklif = (t) => {
-    const kaliplar = (t.satirlar || []).flatMap(r =>
-      (r.subItems || []).filter(i => i.type === "kalip").map(i => ({ ad: i.makinaAdi || i.kod || "", olcu: "" }))
-    );
+    const kaliplar = (t.satirlar || [])
+      .filter(r => r.selectedKalip)
+      .map(r => ({ ad: r.selectedKalip, olcu: "" }));
     const model = (t.satirlar || []).find(r => r.selectedModel)?.selectedModel || "";
+    const satirToplam = (t.satirlar || []).reduce((s, r) =>
+      s + (r.subItems || []).reduce((s2, item) => s2 + (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0), 0), 0);
+    const araToplam = satirToplam - (parseMoney(t.iskonto) || 0);
     setCustNewPrefill({
       name: t.firma || "",
       yetkili1Ad: t.yetkili || "",
       yetkili1Tel: t.tel || "",
       adres: t.adres || "",
       email: t.email || "",
+      country: t.country || "",
+      city: t.city || "",
       currency: t.currency || "TRY",
       faturali: (t.currency && t.currency !== "TRY") ? "Faturalı Yurtdışı" : "Faturalı Yurtiçi",
       model,
       kaliplar,
+      fabrikaSatisBedeli: araToplam > 0 ? String(araToplam) : "",
       fromTeklifId: t.id,
     });
     setCustReturnTab("evrak");
@@ -80,8 +86,80 @@ export default function App() {
     setTab("customers");
   };
 
+  const handleDonusturMakina = (t) => {
+    const kaliplar = (t.satirlar || []).filter(r => r.selectedKalip).map(r => ({ ad: r.selectedKalip, olcu: "" }));
+    const model = (t.satirlar || []).find(r => r.selectedModel)?.selectedModel || "";
+    const satirToplam = (t.satirlar || []).reduce((s, r) =>
+      s + (r.subItems || []).reduce((s2, item) => s2 + (parseMoney(item.birimFiyat) || 0) * (parseFloat(item.miktar) || 0), 0), 0);
+    const araToplam = satirToplam - (parseMoney(t.iskonto) || 0);
+    setCustNewPrefill({
+      _addForFirmId: t.customerId,
+      model,
+      kaliplar,
+      fabrikaSatisBedeli: araToplam > 0 ? String(araToplam) : "",
+      currency: t.currency || "TRY",
+      faturali: (t.currency && t.currency !== "TRY") ? "Faturalı Yurtdışı" : "Faturalı Yurtiçi",
+      fromTeklifId: t.id,
+    });
+    setCustReturnTab("evrak");
+    setCustFilter("all");
+    setCustDetailId(null);
+    setTab("customers");
+  };
+
+  const handleKaydetSatis = (t) => {
+    if (!t.customerId) return;
+    const tur = (() => {
+      if (t.tur) return t.tur;
+      const rows = t.satirlar || [];
+      if (rows.some(r => r.selectedModel)) return "makina";
+      if (rows.some(r => r.selectedPart)) return "parca";
+      if (rows.some(r => r.selectedKalip)) return "kalip";
+      return "diger";
+    })();
+    const tarih = t.tarih || today();
+    const faturaTipi = (t.currency && t.currency !== "TRY") ? "Faturalı Yurtdışı" : "Faturalı Yurtiçi";
+    const currency = t.currency || "TRY";
+    if (tur === "parca") {
+      const yeniKayitlar = (t.satirlar || []).flatMap(r =>
+        (r.subItems || []).filter(i => i.type === "parca").map(i => ({
+          id: uid(), customerId: t.customerId, tur: "Parça", tarih,
+          ad: i.makinaAdi || i.kod || "", olcu: "",
+          ucret: (parseMoney(i.birimFiyat) || 0) * (parseFloat(i.miktar) || 1),
+          currency, faturaTipi, odendi: false, teklifId: t.id,
+        }))
+      ).filter(k => k.ad);
+      if (!yeniKayitlar.length) { showToast("Teklif satırlarında yedek parça bulunamadı.", "err"); return; }
+      setPartSales(p => [...p, ...yeniKayitlar]);
+      setTeklifler(p => p.map(x => x.id === t.id ? { ...x, satisTamam: true } : x));
+      showToast(`${yeniKayitlar.length} yedek parça satışı CRM'e kaydedildi.`);
+    } else if (tur === "kalip") {
+      const batchId = uid();
+      const yeniKayitlar = (t.satirlar || []).flatMap(r =>
+        (r.subItems || []).filter(i => i.type === "kalip").map(i => ({
+          id: uid(), batchId, customerId: t.customerId, tur: "Kalıp", tarih,
+          ad: r.selectedKalip || i.makinaAdi || "", olcu: "",
+          ucret: (parseMoney(i.birimFiyat) || 0) * (parseFloat(i.miktar) || 1),
+          currency, faturaTipi, odendi: false, teklifId: t.id,
+        }))
+      ).filter(k => k.ad);
+      if (!yeniKayitlar.length) { showToast("Teklif satırlarında kalıp bulunamadı.", "err"); return; }
+      setPartSales(p => [...p, ...yeniKayitlar]);
+      setCustomers(p => p.map(c => c.id === t.customerId
+        ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: "", partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
+        : c
+      ));
+      setTeklifler(p => p.map(x => x.id === t.id ? { ...x, satisTamam: true } : x));
+      showToast(`${yeniKayitlar.length} kalıp satışı CRM'e kaydedildi.`);
+    }
+  };
+
+  const handleDismissTeklif = (t) => {
+    setTeklifler(p => p.map(x => x.id === t.id ? { ...x, satisTamam: true } : x));
+  };
+
   const handleCustomerLinked = (customerId, teklifId) => {
-    setTeklifler(p => p.map(t => t.id === teklifId ? { ...t, customerId } : t));
+    setTeklifler(p => p.map(t => t.id === teklifId ? { ...t, customerId, satisTamam: true } : t));
     setCustNewPrefill(null);
   };
 
@@ -97,7 +175,7 @@ export default function App() {
   const [customModels, setCustomModels] = useState([]); // Ayarlar'dan eklenen modeller (nesne listesi)
   const liveCustomModels = useMemo(() => withoutDeleted(customModels), [customModels]);
   const allModels = [...standardModels, ...liveCustomModels];
-  const [factory, setFactory] = useState({ name: "Altuntaş Makina", contact: "", phone: "", email: "", adres: "", country: "Türkiye", city: "", note: "Ana üretici" });
+  const [factory, setFactory] = useState({ name: "Altuntaş Makina", evrakFirmaAdi: "", contact: "", phone: "", email: "", adres: "", country: "Türkiye", city: "", note: "Ana üretici" });
 
   // ── Ülke & şehir verisi: tek noktadan çekilir, tüm formlara dağıtılır ──
   const [geoData, setGeoData] = useState(null);
@@ -152,6 +230,7 @@ export default function App() {
   const [payments,     setPayments]     = useState([]); // Kapora/Ödeme geçmişi [{id, customerId, tarih, tutar, currency, not}]
   const [kalipDefs,    setKalipDefs]    = useState(INIT_KALIPLAR);
   const [teklifler,    setTeklifler]    = useState([]);
+  const [faturalar,    setFaturalar]    = useState([]); // yurt dışı faturalar [{id, no, tarih, firma, ...}]
   const [partStock,    setPartStock]    = useState([]); // yedek parça stok seviyeleri [{id, partId, miktar, notlar, sonGuncelleme}]
   const [partStockLog, setPartStockLog] = useState([]); // stok hareket log'u [{id, partId, miktar, tip, referansId, tarih, notlar}]
 
@@ -188,6 +267,7 @@ export default function App() {
             if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
             if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
             if (Array.isArray(data.teklifler)) data.teklifler = purgeOldTrash(data.teklifler);
+            if (Array.isArray(data.faturalar)) data.faturalar = purgeOldTrash(data.faturalar);
             // KDV oranı artık tek bir sayı değil, tarihe bağlı dönemler listesi — eski tekil
             // appSettings.kdvRate'den göç edilir. Aşağıdaki Kalan Borç hesapları (hem eski veri
             // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
@@ -251,6 +331,7 @@ export default function App() {
             if (Array.isArray(data.parts)) setParts(data.parts);
             if (Array.isArray(data.partSales)) setPartSales(data.partSales);
             if (Array.isArray(data.teklifler)) setTeklifler(data.teklifler);
+            if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
             if (Array.isArray(data.partStock)) setPartStock(data.partStock);
             if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
             setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
@@ -265,7 +346,7 @@ export default function App() {
   const pendingSave = useRef(null);
   useEffect(() => {
     if (!loaded || !window.crmStorage) return;
-    const data = { customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, nextId: getIdCounter() };
+    const data = { customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, nextId: getIdCounter() };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -273,7 +354,7 @@ export default function App() {
       window.crmStorage.save(data);
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, loaded]);
+  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, loaded]);
   useEffect(() => {
     const flush = () => {
       if (pendingSave.current && window.crmStorage?.flushSave) {
@@ -304,7 +385,7 @@ export default function App() {
           window.appMail?.getAllLog?.() ?? [],
           window.appLock?.getDataForBackup?.() ?? null,
         ]).catch(() => [null, [], null]);
-        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData }).catch(() => false);
+        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData }).catch(() => false);
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }
@@ -402,14 +483,14 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} />}
+        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} onDismissTeklif={handleDismissTeklif} />}
         {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} />}
         {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
         {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
-        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} onDonusturTeklif={handleDonusturTeklif} />}
-        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} />}
+        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} />}
+        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} />}
       </div>
     </div>
   );

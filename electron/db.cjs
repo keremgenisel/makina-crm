@@ -119,8 +119,19 @@ CREATE TABLE IF NOT EXISTS teklifler (
   parentTeklifId INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT);
+CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT);
+
+CREATE TABLE IF NOT EXISTS faturalar (
+  id INTEGER PRIMARY KEY,
+  no TEXT, tarih TEXT, firma TEXT, adres TEXT, ulke TEXT, sehir TEXT,
+  vatId TEXT, localTaxNo TEXT,
+  satirlar TEXT,
+  currency TEXT, kur TEXT, origin TEXT,
+  payment TEXT, delivery TEXT,
+  paketAdedi TEXT, brutAgirlik TEXT, olculer TEXT,
+  gtipNo TEXT, notField TEXT, createdAt TEXT, deletedAt TEXT
+);
 
 `;
 
@@ -158,7 +169,7 @@ const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
-const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"]];
+const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
@@ -347,10 +358,10 @@ function populateAll(conn, data) {
   if (data.factory) {
     conn.prepare(`DELETE FROM factory`).run();
     const f = data.factory;
-    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(f.name ?? null, f.contact ?? null, f.phone ?? null, f.email ?? null, f.adres ?? null, f.country ?? null, f.city ?? null, f.note ?? null,
            f.bankaAdi ?? null, f.hesapAdi ?? null, f.swift ?? null, f.ibanTL ?? null, f.ibanEUR ?? null, f.ibanUSD ?? null, f.gtipNo ?? null,
-           Array.isArray(f.bankalar) ? json(f.bankalar) : null);
+           Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null);
   }
 
   if (data.appSettings) {
@@ -358,6 +369,14 @@ function populateAll(conn, data) {
     const s = data.appSettings;
     conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null));
+  }
+
+  if (Array.isArray(data.faturalar)) {
+    conn.prepare(`DELETE FROM faturalar`).run();
+    const stmtF = conn.prepare(`INSERT INTO faturalar (id, no, tarih, firma, adres, ulke, sehir, vatId, localTaxNo, satirlar, currency, kur, origin, payment, delivery, paketAdedi, brutAgirlik, olculer, gtipNo, notField, createdAt, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const f of data.faturalar) {
+      stmtF.run(f.id, f.no ?? null, f.tarih ?? null, f.firma ?? null, f.adres ?? null, f.ulke ?? null, f.sehir ?? null, f.vatId ?? null, f.localTaxNo ?? null, json(f.satirlar ?? []), f.currency ?? null, f.kur ?? null, f.origin ?? null, f.payment ?? null, f.delivery ?? null, f.paketAdedi ?? null, f.brutAgirlik ?? null, f.olculer ?? null, f.gtipNo ?? null, f.not ?? null, f.createdAt ?? null, f.deletedAt ?? null);
+    }
   }
 
   const nextId = typeof data.nextId === "number"
@@ -589,6 +608,7 @@ function readBlobFromDb() {
       ibanTL: rest.ibanTL ?? "", ibanEUR: rest.ibanEUR ?? "", ibanUSD: rest.ibanUSD ?? "",
       gtipNo: rest.gtipNo ?? "",
       bankalar: parseJsonCol(rest.bankalar, null),
+      evrakFirmaAdi: rest.evrakFirmaAdi ?? "",
     };
   }
 
@@ -602,10 +622,16 @@ function readBlobFromDb() {
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
   const nextId = nextIdRow ? Number(nextIdRow.value) : undefined;
 
+  const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
+    ...rest,
+    not: notField,
+    satirlar: parseJsonCol(satirlar, []),
+  }));
+
   return {
     customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, teklifler, appSettings, nextId,
-    partStock, partStockLog,
+    partStock, partStockLog, faturalar,
   };
 }
 
