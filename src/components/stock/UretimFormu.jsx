@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { uid } from "../../lib/utils";
+import { logAction } from "../../lib/audit";
 import { fmtKalipCapi } from "../../lib/utils";
 import { Btn, Icon, Modal, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -131,7 +132,7 @@ function buildPrintHtml(form) {
 </body></html>`;
 }
 
-export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers = [], kalipDefs = [], showToast = () => {} }) {
+export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers = [], kalipDefs = [], showToast = () => {}, canDoStock = () => true, serverPermissions = null }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm]     = useState(null);
   const lockEntityId = editId !== null && editId !== "new" ? editId : null;
@@ -157,17 +158,21 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
 
   const saveForm = () => {
     if (!form) return;
+    const isUpdate = uretimFormlari.some(f => f.id === form.id && !f.deletedAt);
     setUretimFormlari(prev => {
       const idx = prev.findIndex(f => f.id === form.id);
       return idx >= 0 ? prev.map(f => f.id === form.id ? form : f) : [...prev, form];
     });
+    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: "uretim_formu", entityId: form.id, entityName: form.tarih });
     showToast("Form kaydedildi.");
   };
 
   const deleteForm = (id) => {
     const now = new Date().toISOString().slice(0, 10);
-    setUretimFormlari(prev => prev.map(f => f.id === id ? { ...f, deletedAt: now } : f));
+    const f = uretimFormlari.find(x => x.id === id);
+    setUretimFormlari(prev => prev.map(x => x.id === id ? { ...x, deletedAt: now } : x));
     setDelConfirm(null);
+    logAction({ serverPermissions, action: "silindi", entity: "uretim_formu", entityId: id, entityName: f?.tarih });
     showToast("Form çöp kutusuna taşındı.");
   };
 
@@ -543,7 +548,7 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Kalıp Üretim Formları</h3>
-        <Btn onClick={openNew}><Icon name="plus" size={14} /> Yeni Form</Btn>
+        {canDoStock("stock_uretim_add") && <Btn onClick={openNew}><Icon name="plus" size={14} /> Yeni Form</Btn>}
       </div>
 
       {sorted.length === 0 ? (
@@ -577,9 +582,9 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
                   </td>
                   <td style={{ padding: "10px 12px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      <Btn small variant="ghost" onClick={() => openEdit(f)}><Icon name="edit" size={12} /></Btn>
-                      <Btn small variant="ghost" onClick={() => printSaved(f)}><Icon name="print" size={12} /></Btn>
-                      <Btn small variant="danger" onClick={() => setDelConfirm(f.id)}><Icon name="trash" size={12} /></Btn>
+                      {canDoStock("stock_uretim_edit") && <Btn small variant="ghost" onClick={() => openEdit(f)}><Icon name="edit" size={12} /></Btn>}
+                      {canDoStock("stock_uretim_print") && <Btn small variant="ghost" onClick={() => printSaved(f)}><Icon name="print" size={12} /></Btn>}
+                      {canDoStock("stock_uretim_delete") && <Btn small variant="danger" onClick={() => setDelConfirm(f.id)}><Icon name="trash" size={12} /></Btn>}
                     </div>
                   </td>
                 </tr>

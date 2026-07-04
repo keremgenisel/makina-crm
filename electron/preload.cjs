@@ -132,6 +132,11 @@ contextBridge.exposeInMainWorld("appServer", {
   },
 });
 
+contextBridge.exposeInMainWorld("auditLog", {
+  log: (entry) => ipcRenderer.invoke("audit:log", entry),
+  get: (filters) => ipcRenderer.invoke("audit:get", filters),
+});
+
 contextBridge.exposeInMainWorld("crmLocks", {
   acquire:    (entityType, entityId, force = false) => ipcRenderer.invoke("crm:lock:acquire", { entityType, entityId, force }),
   release:    (entityType, entityId) => ipcRenderer.invoke("crm:lock:release", { entityType, entityId }),

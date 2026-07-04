@@ -231,6 +231,24 @@ function buildApp() {
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // POST /api/audit — istemci tarafından çağrılır; username JWT'den alınır
+  app.post("/api/audit", requireAuth, (req, res) => {
+    try {
+      const { action, entity, entity_id, entity_name, detail } = req.body;
+      db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action, entity, entity_id, entity_name, detail });
+      res.json({ ok: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // GET /api/audit — sadece admin
+  app.get("/api/audit", requireAuth, requireAdmin, (req, res) => {
+    try {
+      const { limit, offset, username, entity, dateFrom, dateTo } = req.query;
+      const result = db.getAuditLog({ limit: Number(limit) || 100, offset: Number(offset) || 0, username: username || undefined, entity: entity || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined });
+      res.json({ ok: true, ...result });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // Global hata yakalayıcı (Express 4 fallback)
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {

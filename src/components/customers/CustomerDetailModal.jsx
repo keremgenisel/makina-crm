@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { logAction } from "../../lib/audit";
 import { CUR_SYM, ODEME_YONTEMLERI, SALE_TYPE_STYLE } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
@@ -27,6 +28,7 @@ export const CustomerDetailModal = ({
   onOpenAddForFirm,
   isCustomer,
   canDo = () => true,
+  serverPermissions = null,
   customers, setCustomers,
   services, setServices,
   partSales, setPartSales,
@@ -254,22 +256,30 @@ export const CustomerDetailModal = ({
       const newId = uid();
       setServices(p => p.some(s => s.id === newId) ? p : [{ ...rec, id: newId }, ...p]);
       deductServiceParts(rec.degisenParcalar, newId);
+      logAction({ serverPermissions, action: "olusturuldu", entity: "servis", entityId: newId, entityName: detailView?.name, detail: { type: rec.type } });
       showToast("Servis talebi kaydedildi.");
     } else {
       restoreServiceParts(svForm.id);
       setServices(p => p.map(s => s.id === svForm.id ? rec : s));
       deductServiceParts(rec.degisenParcalar, svForm.id);
+      logAction({ serverPermissions, action: "duzenlendi", entity: "servis", entityId: svForm.id, entityName: detailView?.name });
       showToast("Servis talebi düzenlendi.");
     }
     setSvModal(null);
   };
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
-  const toggleServisOdendi = (sv) => setServices && setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: !s.odendi } : s));
+  const toggleServisOdendi = (sv) => {
+    if (!setServices) return;
+    const yeniDurum = !sv.odendi;
+    setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum } : s));
+    logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
+  };
   const deleteService = (id) => {
     if (!setServices) return;
     restoreServiceParts(id);
     setServices(p => withDeleted(p, s => s.id === id));
+    logAction({ serverPermissions, action: "silindi", entity: "servis", entityId: id, entityName: detailView?.name });
     showToast("Servis kaydı silindi.");
   };
 
@@ -302,6 +312,7 @@ export const CustomerDetailModal = ({
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
         : c));
+      logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad } });
       showToast("Kayıt güncellendi.");
     } else {
       const batchId = uid();
@@ -310,11 +321,17 @@ export const CustomerDetailModal = ({
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
         : c));
+      logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: yeniKayitlar[0]?.id, entityName: selectedCust.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
     }
     setPkForm(null);
   };
-  const togglePartSaleOdendi = (ps) => setPartSales && setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: !x.odendi } : x));
+  const togglePartSaleOdendi = (ps) => {
+    if (!setPartSales) return;
+    const yeniDurum = !ps.odendi;
+    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum } : x));
+    logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+  };
   const deletePartSale = (id) => {
     if (!setPartSales) return;
     const ps = partSales.find(x => x.id === id);
@@ -326,6 +343,7 @@ export const CustomerDetailModal = ({
         return { ...c, kaliplar, kalipSayisi: kaliplar.length };
       }));
     }
+    logAction({ serverPermissions, action: "silindi", entity: "kalip_satisi", entityId: id, entityName: detailView?.name });
     showToast("Extra Kalıp kaydı silindi.");
   };
 
@@ -356,6 +374,7 @@ export const CustomerDetailModal = ({
         tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
+      logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name });
       showToast("Ödeme güncellendi.");
     } else {
       const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
@@ -367,6 +386,7 @@ export const CustomerDetailModal = ({
         ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
       }));
       newPayments = [...yeniKayitlar, ...payments];
+      logAction({ serverPermissions, action: "olusturuldu", entity: "odeme", entityId: yeniKayitlar[0]?.id, entityName: detailView?.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     }
     setPayments(newPayments);
@@ -379,6 +399,7 @@ export const CustomerDetailModal = ({
     const newPayments = payments.filter(x => x.id !== id);
     setPayments(p => withDeleted(p, x => x.id === id));
     if (payment) syncKalanBorc(payment.customerId, newPayments);
+    logAction({ serverPermissions, action: "silindi", entity: "odeme", entityId: id, entityName: detailView?.name });
     showToast("Ödeme silindi.");
   };
   const toggleCekTahsil = (payment) => {
@@ -410,6 +431,7 @@ export const CustomerDetailModal = ({
         satisYapan: newOwnerForm.satanFirma?.trim() || "2. El Devir",
       };
     }));
+    logAction({ serverPermissions, action: "yeni_sahip", entity: "musteri", entityId: newOwnerForm._machineId, entityName: newOwnerForm.name, detail: { eskiSahip: detailView?.name } });
     showToast("Devir tamamlandı. Yeni sahip kaydedildi.");
     setNewOwnerForm(null);
   };

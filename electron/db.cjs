@@ -162,6 +162,19 @@ CREATE TABLE IF NOT EXISTS uretim_formlari (
   deletedAt TEXT
 );
 
+CREATE TABLE IF NOT EXISTS audit_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts         TEXT NOT NULL,
+  username   TEXT NOT NULL,
+  role       TEXT,
+  action     TEXT NOT NULL,
+  entity     TEXT NOT NULL,
+  entity_id  INTEGER,
+  entity_name TEXT,
+  detail     TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
+
 `;
 
 // Daha önce oluşturulmuş bir data.db'ye, şemaya sonradan eklenen sütunları ekler (ALTER TABLE) —
@@ -786,9 +799,29 @@ function releaseAllLocksByUser(username) {
   db.prepare("DELETE FROM locks WHERE locked_by=?").run(username);
 }
 
+function writeAuditEntry({ ts, username, role, action, entity, entity_id, entity_name, detail } = {}) {
+  if (!db) return;
+  db.prepare(`INSERT INTO audit_log (ts, username, role, action, entity, entity_id, entity_name, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(ts || new Date().toISOString(), username || "yerel", role || null, action || "", entity || "", entity_id ?? null, entity_name || null, detail || null);
+}
+
+function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, dateTo } = {}) {
+  if (!db) return [];
+  let where = "WHERE 1=1";
+  const params = [];
+  if (username) { where += " AND username = ?"; params.push(username); }
+  if (entity)   { where += " AND entity = ?";   params.push(entity); }
+  if (dateFrom) { where += " AND ts >= ?";       params.push(dateFrom); }
+  if (dateTo)   { where += " AND ts <= ?";       params.push(dateTo + "T23:59:59Z"); }
+  const rows = db.prepare(`SELECT * FROM audit_log ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) as cnt FROM audit_log ${where}`).get(...params)?.cnt ?? 0;
+  return { rows, total };
+}
+
 module.exports = {
   migrateFromJsonIfNeeded, isActive, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getUserByUsername, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,
   acquireLock, releaseLock, listLocks, releaseAllLocksByUser,
+  writeAuditEntry, getAuditLog,
 };

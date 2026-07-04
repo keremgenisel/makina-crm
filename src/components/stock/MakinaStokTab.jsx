@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
+import { logAction } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
-export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog }) => {
+export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -61,6 +62,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       const nid = uid();
       setStock(p => p.some(s => s.id === nid) ? p : [{ ...form, id: nid }, ...p]);
       deductParts(form.parcalar || [], nid);
+      logAction({ serverPermissions, action: "olusturuldu", entity: "stok_makina", entityId: nid, entityName: form.model, detail: { serialNo: form.serialNo } });
       showToast("Stok makinası kaydedildi.");
     } else {
       const stockId = form.id;
@@ -79,6 +81,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       }
       setStock(p => p.map(s => s.id === stockId ? form : s));
       deductParts(form.parcalar || [], stockId);
+      logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model });
       showToast("Stok makinası düzenlendi.");
     }
     setModal(null);
@@ -125,6 +128,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
     }
     setStock(p => withDeleted(p, s => s.id === confirmId));
     setConfirmId(null);
+    logAction({ serverPermissions, action: "silindi", entity: "stok_makina", entityId: confirmId, entityName: machine?.model });
     showToast("Stok makinası silindi.");
   };
 
@@ -162,7 +166,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model veya seri no ara..."
             style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
         </div>
-        <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>
+        {canDoStock("stock_makina_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>}
       </div>
 
       <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
@@ -185,8 +189,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
                 <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "#64748b", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <Btn small variant="ghost" onClick={() => openEdit(s)}><Icon name="edit" size={12} /></Btn>
-                    <Btn small variant="danger" onClick={() => setConfirmId(s.id)}><Icon name="trash" size={12} /></Btn>
+                    {canDoStock("stock_makina_edit") && <Btn small variant="ghost" onClick={() => openEdit(s)}><Icon name="edit" size={12} /></Btn>}
+                    {canDoStock("stock_makina_delete") && <Btn small variant="danger" onClick={() => setConfirmId(s.id)}><Icon name="trash" size={12} /></Btn>}
                   </div>
                 </td>
               </tr>

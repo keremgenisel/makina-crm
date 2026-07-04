@@ -15,6 +15,7 @@ export const Stock = ({
   customers = [],
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
+  serverPermissions = null,
 }) => {
   const [subTab, setSubTab] = useState("makina");
 
@@ -23,6 +24,13 @@ export const Stock = ({
     ["parca",  "Parça/Yedek Parça Stoğu"],
     ["uretim", "Kalıp Üretim"],
   ];
+
+  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
+  const _allowedStockActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.stockActions ?? null; }
+    catch { return null; }
+  })();
+  const canDoStock = action => !_allowedStockActions || _allowedStockActions.includes(action);
 
   return (
     <div>
@@ -44,17 +52,20 @@ export const Stock = ({
       {subTab === "makina" && (
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
-          partStockLog={partStockLog} setPartStockLog={setPartStockLog} />
+          partStockLog={partStockLog} setPartStockLog={setPartStockLog}
+          canDoStock={canDoStock} serverPermissions={serverPermissions} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
-          appSettings={appSettings} setAppSettings={setAppSettings} />
+          appSettings={appSettings} setAppSettings={setAppSettings}
+          canDoStock={canDoStock} serverPermissions={serverPermissions} />
       )}
       {subTab === "uretim" && (
         <UretimFormu
           uretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari}
-          customers={customers} kalipDefs={kalipDefs} showToast={showToast} />
+          customers={customers} kalipDefs={kalipDefs} showToast={showToast}
+          canDoStock={canDoStock} serverPermissions={serverPermissions} />
       )}
     </div>
   );

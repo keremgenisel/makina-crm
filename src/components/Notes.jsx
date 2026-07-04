@@ -1,11 +1,18 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import { logAction } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { withDeleted } from "../lib/utils";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
-export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} }, ref) => {
+export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, serverPermissions = null }, ref) => {
+  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
+  const _allowedNotActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.notActions ?? null; }
+    catch { return null; }
+  })();
+  const canDoNot = action => !_allowedNotActions || _allowedNotActions.includes(action);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState(""); // düzenlenen içerik (kaydet'e kadar geçici)
@@ -58,20 +65,24 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
     setNotes(p => [yeni, ...p]);
     setSelectedId(nid);
     setDraft("");
-    setPage(1); // yeni not en üstte, ilk sayfaya dön
+    setPage(1);
+    logAction({ serverPermissions, action: "olusturuldu", entity: "not", entityId: nid });
   };
   const yeniNot = () => guarded(createNewNote);
   const kaydet = () => {
     if (!selected) return;
     setNotes(p => p.map(n => n.id === selected.id ? { ...n, content: draft, updatedAt: Date.now() } : n));
-    setSelectedId(null); // kaydedince editör kapanır, "Not seçilmedi" ekranına döner
+    logAction({ serverPermissions, action: "duzenlendi", entity: "not", entityId: selected.id, entityName: draft.split("\n")[0].trim().slice(0, 60) || "Yeni Not" });
+    setSelectedId(null);
     setDraft("");
     showToast("Not kaydedildi.");
   };
   const sil = (id) => {
-    setNotes(p => withDeleted(p, n => n.id === id));
+    const n = notes.find(x => x.id === id);
+    setNotes(p => withDeleted(p, x => x.id === id));
     if (selectedId === id) { setSelectedId(null); setDraft(""); }
     setConfirmDelete(null);
+    logAction({ serverPermissions, action: "silindi", entity: "not", entityId: id, entityName: (n?.content || "").split("\n")[0].trim().slice(0, 60) || "Not" });
     showToast("Not silindi.");
   };
 
@@ -81,9 +92,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
         {/* SOL: not listesi */}
         <div style={{ width: 280, flexShrink: 0, minWidth: 240 }}>
-          <button onClick={yeniNot} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "#e85d1a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Icon name="edit" size={15} /> Yeni Not
-          </button>
+          {canDoNot("not_add") && (
+            <button onClick={yeniNot} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "#e85d1a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Icon name="edit" size={15} /> Yeni Not
+            </button>
+          )}
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Notlarda ara..."
             style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 13, marginBottom: 10, boxSizing: "border-box", outline: "none" }} />
           <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "auto" }}>
@@ -104,8 +117,10 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
                     <div style={{ fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{onizleme(n.content)}</div>
                     <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 3 }}>{fmtZaman(n.updatedAt)}</div>
                   </div>
-                  <button onClick={e => { e.stopPropagation(); setConfirmDelete(n); }} title="Notu sil"
-                    style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+                  {canDoNot("not_delete") && (
+                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(n); }} title="Notu sil"
+                      style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+                  )}
                 </div>
               );
             })}
@@ -133,10 +148,14 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
             <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>Son düzenleme: {fmtZaman(selected.updatedAt)}</span>
-                <button onClick={kaydet} disabled={!dirty}
-                  style={{ padding: "8px 18px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: dirty ? "pointer" : "not-allowed", background: dirty ? "#16a34a" : "#e2e8f0", color: dirty ? "#fff" : "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Icon name="check" size={14} /> {dirty ? "Kaydet" : "Kaydedildi"}
-                </button>
+                {canDoNot("not_edit") ? (
+                  <button onClick={kaydet} disabled={!dirty}
+                    style={{ padding: "8px 18px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: dirty ? "pointer" : "not-allowed", background: dirty ? "#16a34a" : "#e2e8f0", color: dirty ? "#fff" : "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="check" size={14} /> {dirty ? "Kaydet" : "Kaydedildi"}
+                  </button>
+                ) : (
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>Salt okunur</span>
+                )}
               </div>
               <textarea value={draft} onChange={e => setDraft(e.target.value)} autoFocus
                 placeholder="Notunuzu yazın... (ilk satır başlık olur)"

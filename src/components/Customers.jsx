@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
+import { logAction } from "../lib/audit";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Btn, ConfirmDialog, Pagination } from "./ui";
@@ -33,11 +34,18 @@ export const Customers = ({
   const factoryName = factory?.name || "Altuntaş Makina";
 
   const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
-  const _allowedActions = _isAdmin ? null : (() => {
+  const _allowedCustomerActions = _isAdmin ? null : (() => {
     try { return JSON.parse(serverPermissions?.permissions || "null")?.customerActions ?? null; }
     catch { return null; }
   })();
-  const canDo = action => !_allowedActions || _allowedActions.includes(action);
+  const _allowedDealerActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.dealerActions ?? null; }
+    catch { return null; }
+  })();
+  const canDo = action => {
+    if (action.startsWith("dealer_")) return !_allowedDealerActions || _allowedDealerActions.includes(action);
+    return !_allowedCustomerActions || _allowedCustomerActions.includes(action);
+  };
 
   const firmCount = useMemo(() => {
     const fc = {};
@@ -233,6 +241,7 @@ export const Customers = ({
         ));
       }
       if (fromTeklifId && onCustomerLinked) onCustomerLinked(newId, fromTeklifId);
+      logAction({ serverPermissions, action: "olusturuldu", entity: "musteri", entityId: newId, entityName: clean.name, detail: { model: clean.model, serialNo: clean.serialNo } });
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
@@ -274,6 +283,7 @@ export const Customers = ({
           }));
         }
       }
+      logAction({ serverPermissions, action: "duzenlendi", entity: "musteri", entityId: clean.id, entityName: clean.name });
       showToast("Müşteri bilgileri düzenlendi.");
     }
     setModal(null);
@@ -376,6 +386,7 @@ export const Customers = ({
       }
     }
     setConfirmId(null);
+    logAction({ serverPermissions, action: "silindi", entity: "musteri", entityId: confirmId, entityName: c?.name });
     showToast("Müşteri silindi.");
   };
 
@@ -550,6 +561,7 @@ export const Customers = ({
           kdvRates={kdvRates} appSettings={appSettings}
           showToast={showToast}
           kalipDefs={kalipDefs}
+          serverPermissions={serverPermissions}
         />
       )}
 

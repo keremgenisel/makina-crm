@@ -80,16 +80,27 @@ function parseCustomerActionsPerms(permissions) {
   try { return JSON.parse(permissions || "null")?.customerActions ?? null; } catch { return null; }
 }
 
+function parseDealerActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.dealerActions ?? null; } catch { return null; }
+}
+
+function parseStockActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.stockActions ?? null; } catch { return null; }
+}
+
+function parseEvrakActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.evrakActions ?? null; } catch { return null; }
+}
+
+function parseNotActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.notActions ?? null; } catch { return null; }
+}
+
 const CUSTOMER_ACTION_GROUPS = [
   { grup: "Müşteri Listesi", items: [
     { id: "cust_add",    label: "Yeni müşteri ekle" },
     { id: "cust_edit",   label: "Müşteri düzenle" },
     { id: "cust_delete", label: "Müşteri sil" },
-  ]},
-  { grup: "Bayi Listesi", items: [
-    { id: "dealer_add",    label: "Yeni bayi ekle" },
-    { id: "dealer_edit",   label: "Bayi düzenle" },
-    { id: "dealer_delete", label: "Bayi sil" },
   ]},
   { grup: "Müşteri Detayı", items: [
     { id: "cust_detail_edit",        label: "Ana kaydı düzenle" },
@@ -116,25 +127,96 @@ const CUSTOMER_ACTION_GROUPS = [
   ]},
 ];
 
+const DEALER_ACTION_GROUPS = [
+  { grup: "Bayi Listesi", items: [
+    { id: "dealer_add",    label: "Yeni bayi ekle" },
+    { id: "dealer_edit",   label: "Bayi düzenle" },
+    { id: "dealer_delete", label: "Bayi sil" },
+  ]},
+];
+
+const EVRAK_ACTION_GROUPS = [
+  { grup: "Teklif", items: [
+    { id: "evrak_teklif_add",     label: "Yeni teklif oluştur" },
+    { id: "evrak_teklif_edit",    label: "Teklifi düzenle" },
+    { id: "evrak_teklif_print",   label: "Yazdır / PDF kaydet" },
+    { id: "evrak_teklif_mail",    label: "E-posta ile gönder" },
+    { id: "evrak_teklif_convert", label: "Proformaya çevir / CRM'e kaydet" },
+    { id: "evrak_teklif_delete",  label: "Teklifi sil" },
+  ]},
+  { grup: "Proforma", items: [
+    { id: "evrak_proforma_add",     label: "Yeni proforma oluştur" },
+    { id: "evrak_proforma_edit",    label: "Proformayı düzenle" },
+    { id: "evrak_proforma_print",   label: "Yazdır / PDF kaydet" },
+    { id: "evrak_proforma_mail",    label: "E-posta ile gönder" },
+    { id: "evrak_proforma_convert", label: "Yurt dışı faturaya çevir" },
+    { id: "evrak_proforma_delete",  label: "Proformayı sil" },
+  ]},
+  { grup: "Yurt Dışı Fatura", items: [
+    { id: "evrak_fatura_add",    label: "Yeni fatura oluştur" },
+    { id: "evrak_fatura_edit",   label: "Faturayı düzenle" },
+    { id: "evrak_fatura_print",  label: "Yazdır / PDF kaydet" },
+    { id: "evrak_fatura_delete", label: "Faturayı sil" },
+  ]},
+];
+
+const NOT_ACTION_GROUPS = [
+  { grup: "Not İşlemleri", items: [
+    { id: "not_add",    label: "Yeni not oluştur" },
+    { id: "not_edit",   label: "Not düzenle / kaydet" },
+    { id: "not_delete", label: "Notu sil" },
+  ]},
+];
+
+const STOCK_ACTION_GROUPS = [
+  { grup: "Makina Stoğu", items: [
+    { id: "stock_makina_add",    label: "Stoğa makina ekle" },
+    { id: "stock_makina_edit",   label: "Makina düzenle" },
+    { id: "stock_makina_delete", label: "Makina sil" },
+  ]},
+  { grup: "Parça / Yedek Parça Stoğu", items: [
+    { id: "stock_parca_add",  label: "Stoğa parça ekle" },
+    { id: "stock_parca_edit", label: "Stok miktarı düzelt" },
+  ]},
+  { grup: "Kalıp Üretim", items: [
+    { id: "stock_uretim_add",    label: "Yeni form oluştur" },
+    { id: "stock_uretim_edit",   label: "Formu düzenle" },
+    { id: "stock_uretim_print",  label: "Formu yazdır" },
+    { id: "stock_uretim_delete", label: "Formu sil" },
+  ]},
+];
+
 // ── Kullanıcı yönetimi ────────────────────────────────────────────────────────
 function UserManager({ flash, settingsGroups = [] }) {
-  const allSettingIds = [...settingsGroups.flatMap(g => g.items.map(i => i.id)), DANGER_SECTION.id];
-  const allActionIds  = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allSettingIds      = [...settingsGroups.flatMap(g => g.items.map(i => i.id)), DANGER_SECTION.id];
+  const allActionIds       = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allDealerActionIds = DEALER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allStockActionIds  = STOCK_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allEvrakActionIds  = EVRAK_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allNotActionIds    = NOT_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
 
   const [users, setUsers]         = useState(null);
   const [loading, setLoading]     = useState(false);
   const [showAdd, setShowAdd]     = useState(false);
   const [newU, setNewU]           = useState({ username: "", password: "", role: "user", tabs: [...DEFAULT_USER_TABS] });
   const [adding, setAdding]       = useState(false);
-  const [editPermsId, setEditPermsId]           = useState(null);
-  const [editTabs, setEditTabs]                 = useState([]);
-  const [editSettings, setEditSettings]         = useState([]);
-  const [editSettingsOn, setEditSettingsOn]     = useState(false);
-  const [editActions, setEditActions]           = useState([]);
-  const [editActionsOn, setEditActionsOn]       = useState(false);
-  const [changePwId, setChangePwId]             = useState(null);
-  const [newPw, setNewPw]                       = useState("");
-  const [changingPw, setChangingPw]             = useState(false);
+  const [editPermsId, setEditPermsId]               = useState(null);
+  const [editTabs, setEditTabs]                     = useState([]);
+  const [editSettings, setEditSettings]             = useState([]);
+  const [editSettingsOn, setEditSettingsOn]         = useState(false);
+  const [editActions, setEditActions]               = useState([]);
+  const [editActionsOn, setEditActionsOn]           = useState(false);
+  const [editDealerActions, setEditDealerActions]     = useState([]);
+  const [editDealerActionsOn, setEditDealerActionsOn] = useState(false);
+  const [editStockActions, setEditStockActions]       = useState([]);
+  const [editStockActionsOn, setEditStockActionsOn]   = useState(false);
+  const [editEvrakActions, setEditEvrakActions]       = useState([]);
+  const [editEvrakActionsOn, setEditEvrakActionsOn]   = useState(false);
+  const [editNotActions, setEditNotActions]           = useState([]);
+  const [editNotActionsOn, setEditNotActionsOn]       = useState(false);
+  const [changePwId, setChangePwId]                 = useState(null);
+  const [newPw, setNewPw]                           = useState("");
+  const [changingPw, setChangingPw]                 = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -161,21 +243,37 @@ function UserManager({ flash, settingsGroups = [] }) {
     if (res?.ok) load(); else flash("err", "Güncellenemedi");
   };
   const openEditPerms = (u) => {
-    const tabs    = parseTabPerms(u.permissions) ?? [...DEFAULT_USER_TABS];
-    const settings = parseSettingsPerms(u.permissions);
-    const actions  = parseCustomerActionsPerms(u.permissions);
+    const tabs         = parseTabPerms(u.permissions) ?? [...DEFAULT_USER_TABS];
+    const settings     = parseSettingsPerms(u.permissions);
+    const actions      = parseCustomerActionsPerms(u.permissions);
+    const dealerActions = parseDealerActionsPerms(u.permissions);
+    const stockActions  = parseStockActionsPerms(u.permissions);
     setEditTabs(tabs);
     setEditSettings(settings ?? [...allSettingIds]);
     setEditSettingsOn(settings !== null);
     setEditActions(actions ?? [...allActionIds]);
     setEditActionsOn(actions !== null);
+    setEditDealerActions(dealerActions ?? [...allDealerActionIds]);
+    setEditDealerActionsOn(dealerActions !== null);
+    setEditStockActions(stockActions ?? [...allStockActionIds]);
+    setEditStockActionsOn(stockActions !== null);
+    const evrakActions  = parseEvrakActionsPerms(u.permissions);
+    setEditEvrakActions(evrakActions ?? [...allEvrakActionIds]);
+    setEditEvrakActionsOn(evrakActions !== null);
+    const notActions    = parseNotActionsPerms(u.permissions);
+    setEditNotActions(notActions ?? [...allNotActionIds]);
+    setEditNotActionsOn(notActions !== null);
     setEditPermsId(u.id);
     setChangePwId(null);
   };
   const savePerms = async (u) => {
-    const settingsVal = editSettingsOn ? editSettings : null;
-    const actionsVal  = editActionsOn  ? editActions  : null;
-    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal });
+    const settingsVal     = editSettingsOn     ? editSettings     : null;
+    const actionsVal      = editActionsOn      ? editActions      : null;
+    const dealerActionsVal = editDealerActionsOn ? editDealerActions : null;
+    const stockActionsVal  = editStockActionsOn  ? editStockActions  : null;
+    const evrakActionsVal  = editEvrakActionsOn  ? editEvrakActions  : null;
+    const notActionsVal    = editNotActionsOn    ? editNotActions    : null;
+    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal, dealerActions: dealerActionsVal, stockActions: stockActionsVal, evrakActions: evrakActionsVal, notActions: notActionsVal });
     const res = await window.appServer.apiRequest({ method: "PATCH", path: `/api/users/${u.id}`, body: { permissions } });
     if (res?.ok) { flash("ok", "İzinler güncellendi."); setEditPermsId(null); load(); }
     else flash("err", "Güncellenemedi");
@@ -373,6 +471,122 @@ function UserManager({ flash, settingsGroups = [] }) {
                                     {g.items.map(item => (
                                       <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
                                         <input type="checkbox" checked={editActions.includes(item.id)} onChange={e => setEditActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+                                        {item.label}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
+                          )}
+                        </div>
+
+                        {/* Bayi işlemleri — per-user */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
+                            <input type="checkbox" checked={editDealerActionsOn}
+                              onChange={e => { setEditDealerActionsOn(e.target.checked); if (e.target.checked) setEditDealerActions([...allDealerActionIds]); }}
+                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Bayi işlemlerini bu kullanıcı için özelleştir</span>
+                          </label>
+                          {editDealerActionsOn ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {DEALER_ACTION_GROUPS.map(g => (
+                                <div key={g.grup}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {g.items.map(item => (
+                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editDealerActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editDealerActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                        <input type="checkbox" checked={editDealerActions.includes(item.id)} onChange={e => setEditDealerActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+                                        {item.label}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
+                          )}
+                        </div>
+
+                        {/* Stok işlemleri — per-user */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
+                            <input type="checkbox" checked={editStockActionsOn}
+                              onChange={e => { setEditStockActionsOn(e.target.checked); if (e.target.checked) setEditStockActions([...allStockActionIds]); }}
+                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Stok işlemlerini bu kullanıcı için özelleştir</span>
+                          </label>
+                          {editStockActionsOn ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {STOCK_ACTION_GROUPS.map(g => (
+                                <div key={g.grup}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {g.items.map(item => (
+                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editStockActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editStockActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                        <input type="checkbox" checked={editStockActions.includes(item.id)} onChange={e => setEditStockActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+                                        {item.label}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
+                          )}
+                        </div>
+
+                        {/* Evrak işlemleri — per-user */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
+                            <input type="checkbox" checked={editEvrakActionsOn}
+                              onChange={e => { setEditEvrakActionsOn(e.target.checked); if (e.target.checked) setEditEvrakActions([...allEvrakActionIds]); }}
+                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Evrak işlemlerini bu kullanıcı için özelleştir</span>
+                          </label>
+                          {editEvrakActionsOn ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {EVRAK_ACTION_GROUPS.map(g => (
+                                <div key={g.grup}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {g.items.map(item => (
+                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editEvrakActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editEvrakActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                        <input type="checkbox" checked={editEvrakActions.includes(item.id)} onChange={e => setEditEvrakActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+                                        {item.label}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
+                          )}
+                        </div>
+
+                        {/* Not işlemleri — per-user */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
+                            <input type="checkbox" checked={editNotActionsOn}
+                              onChange={e => { setEditNotActionsOn(e.target.checked); if (e.target.checked) setEditNotActions([...allNotActionIds]); }}
+                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Notlar işlemlerini bu kullanıcı için özelleştir</span>
+                          </label>
+                          {editNotActionsOn ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {NOT_ACTION_GROUPS.map(g => (
+                                <div key={g.grup}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {g.items.map(item => (
+                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editNotActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editNotActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                        <input type="checkbox" checked={editNotActions.includes(item.id)} onChange={e => setEditNotActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
                                         {item.label}
                                       </label>
                                     ))}

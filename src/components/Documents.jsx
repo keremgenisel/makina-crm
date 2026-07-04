@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN } from "../lib/utils";
+import { logAction } from "../lib/audit";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
@@ -201,6 +202,7 @@ export const Documents = ({
   onDonusturTeklif = null,
   onDonusturMakina = null,
   onKaydetSatis = null,
+  serverPermissions = null,
 }) => {
   const effectiveTur = (f) => {
     if (f?.tur) return f.tur;
@@ -211,6 +213,13 @@ export const Documents = ({
     return "diger";
   };
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
+
+  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
+  const _allowedEvrakActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.evrakActions ?? null; }
+    catch { return null; }
+  })();
+  const canDoEvrak = action => !_allowedEvrakActions || _allowedEvrakActions.includes(action);
 
   const isFieldHidden = (type, section, key) =>
     (evrakFormConfig?.[type]?.hiddenFields?.[section] || []).includes(key);
@@ -314,13 +323,17 @@ export const Documents = ({
       const idx = p.findIndex(f => f.id === entry.id);
       return idx >= 0 ? p.map(f => f.id === entry.id ? entry : f) : [...p, entry];
     });
+    const isFaturaUpdate = !!faturaForm.id && liveFaturalar.some(f => f.id === faturaForm.id);
     setFaturaForm(null);
+    logAction({ serverPermissions, action: isFaturaUpdate ? "duzenlendi" : "olusturuldu", entity: "fatura", entityId: entry.id, entityName: entry.firma });
     showToast("Fatura kaydedildi.");
   };
 
   const delFatura = (id) => {
+    const fat = liveFaturalar.find(f => f.id === id);
     setFaturalar(p => p.map(f => f.id === id ? { ...f, deletedAt: today() } : f));
     setFaturaConfirmDel(null);
+    logAction({ serverPermissions, action: "silindi", entity: "fatura", entityId: id, entityName: fat?.firma });
     showToast("Fatura silindi.");
   };
 
@@ -531,6 +544,8 @@ export const Documents = ({
       return updated;
     });
     const linkedLabel = entry.type === "teklif" ? "Bağlı proforma da güncellendi." : "Bağlı teklif de güncellendi.";
+    const logEntity = entry.type === "teklif" ? "teklif" : "proforma";
+    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: logEntity, entityId: entry.id, entityName: entry.firma, detail: { no: entry.no, durum: entry.durum } });
     showToast(isUpdate ? (linkedUpdated ? `Belge güncellendi. ${linkedLabel}` : "Belge güncellendi.") : "Belge kaydedildi.");
     if (entry.type === "teklif" && entry.durum === "onaylandi") {
       const tur = effectiveTur(entry);
@@ -550,7 +565,9 @@ export const Documents = ({
 
   // ── Sil ──
   const del = (id) => {
+    const doc = liveTeklifler.find(t => t.id === id);
     setTeklifler(p => p.map(t => t.id === id ? { ...t, deletedAt: today() } : t));
+    logAction({ serverPermissions, action: "silindi", entity: doc?.type === "proforma" ? "proforma" : "teklif", entityId: id, entityName: doc?.firma });
     showToast("Belge silindi.");
     setConfirmDel(null);
   };
@@ -683,13 +700,15 @@ export const Documents = ({
         <div style={{ display: "flex", gap: 8 }}>
           {subTab !== "fatura" ? (
             <>
-              <Btn onClick={() => openNew("teklif")}><Icon name="plus" size={14} /> Yeni Teklif</Btn>
-              <button onClick={() => openNew("proforma")} style={{ padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", whiteSpace: "nowrap" }}>
-                <Icon name="plus" size={14} /> Yeni Proforma
-              </button>
+              {canDoEvrak("evrak_teklif_add") && <Btn onClick={() => openNew("teklif")}><Icon name="plus" size={14} /> Yeni Teklif</Btn>}
+              {canDoEvrak("evrak_proforma_add") && (
+                <button onClick={() => openNew("proforma")} style={{ padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", whiteSpace: "nowrap" }}>
+                  <Icon name="plus" size={14} /> Yeni Proforma
+                </button>
+              )}
             </>
           ) : (
-            <Btn onClick={() => { const f = makeEmptyFatura(); setFaturaForm(f); fetchFaturaRate(f.currency); }}><Icon name="plus" size={14} /> Yeni Fatura</Btn>
+            canDoEvrak("evrak_fatura_add") && <Btn onClick={() => { const f = makeEmptyFatura(); setFaturaForm(f); fetchFaturaRate(f.currency); }}><Icon name="plus" size={14} /> Yeni Fatura</Btn>
           )}
         </div>
       </div>
@@ -709,19 +728,19 @@ export const Documents = ({
               </span>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              {bTur === "makina" && !donusturBanner.customerId && onDonusturTeklif && (
+              {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && !donusturBanner.customerId && onDonusturTeklif && (
                 <Btn small onClick={() => { onDonusturTeklif(donusturBanner); setDonusturBanner(null); }}
                   style={{ background: "#059669", color: "#fff" }}>
                   <Icon name="userPlus" size={12} /> Yeni Müşteri Ekle
                 </Btn>
               )}
-              {bTur === "makina" && donusturBanner.customerId && onDonusturMakina && (
+              {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && donusturBanner.customerId && onDonusturMakina && (
                 <Btn small onClick={() => { onDonusturMakina(donusturBanner); setDonusturBanner(null); }}
                   style={{ background: "#059669", color: "#fff" }}>
                   <Icon name="userPlus" size={12} /> Bu Firmaya Makina Ekle
                 </Btn>
               )}
-              {(bTur === "parca" || bTur === "kalip") && donusturBanner.customerId && onKaydetSatis && (
+              {canDoEvrak("evrak_teklif_convert") && (bTur === "parca" || bTur === "kalip") && donusturBanner.customerId && onKaydetSatis && (
                 <Btn small onClick={() => { onKaydetSatis(donusturBanner); setDonusturBanner(null); }}
                   style={{ background: "#059669", color: "#fff" }}>
                   Satışa Dönüştür
@@ -774,8 +793,8 @@ export const Documents = ({
                 const hasProforma = subTab === "teklif" && liveTeklifler.some(p => p.type === "proforma" && p.parentTeklifId === t.id);
                 return (
                   <tr key={t.id}
-                    onClick={() => openEdit(t)}
-                    style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                    onClick={canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? () => openEdit(t) : undefined}
+                    style={{ borderBottom: "1px solid #f1f5f9", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
                     onMouseLeave={e => e.currentTarget.style.background = ""}>
                     <td style={{ padding: "10px 12px" }}>
@@ -790,10 +809,10 @@ export const Documents = ({
                     <td style={{ padding: "10px 12px" }}><DurumBadge durum={t.durum} /></td>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-                        <Btn small variant="ghost" onClick={() => openEdit(t)}><Icon name="edit" size={12} /></Btn>
-                        <Btn small variant="ghost" onClick={() => printDoc(t)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>
-                        <Btn small variant="ghost" onClick={() => openMailDoc(t)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>
-                        {subTab === "proforma" && t.dil === "EN" && (() => {
+                        {canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") && <Btn small variant="ghost" onClick={() => openEdit(t)}><Icon name="edit" size={12} /></Btn>}
+                        {canDoEvrak(subTab === "teklif" ? "evrak_teklif_print" : "evrak_proforma_print") && <Btn small variant="ghost" onClick={() => printDoc(t)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>}
+                        {canDoEvrak(subTab === "teklif" ? "evrak_teklif_mail" : "evrak_proforma_mail") && <Btn small variant="ghost" onClick={() => openMailDoc(t)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>}
+                        {subTab === "proforma" && canDoEvrak("evrak_proforma_convert") && t.dil === "EN" && (() => {
                           const hasFatura = liveFaturalar.some(f => f.parentProformaId === t.id);
                           return (
                             <Btn small variant="ghost" onClick={() => !hasFatura && convertToFatura(t)}
@@ -803,14 +822,14 @@ export const Documents = ({
                             </Btn>
                           );
                         })()}
-                        {subTab === "teklif" && (
+                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && (
                           <Btn small variant="ghost" onClick={() => convertToProforma(t)}
                             title={hasProforma ? "Proforma mevcut" : "Proformaya Dönüştür"}
                             style={{ color: hasProforma ? "#94a3b8" : "#0369a1", opacity: hasProforma ? 0.5 : 1 }}>
                             <Icon name="arrowRight" size={12} />
                           </Btn>
                         )}
-                        {subTab === "teklif" && t.durum === "onaylandi" && !t.satisTamam && (() => {
+                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !t.satisTamam && (() => {
                           const rTur = effectiveTur(t);
                           if (rTur === "makina" && !t.customerId && onDonusturTeklif)
                             return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }} title="Yeni müşteri kaydı oluştur" style={{ color: "#16a34a" }}><Icon name="userPlus" size={12} /></Btn>;
@@ -823,7 +842,7 @@ export const Documents = ({
                         {subTab === "teklif" && (t.satisTamam || t.customerId) && (
                           <span title={t.satisTamam ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "#d1fae5", color: "#065f46", lineHeight: 1.6 }}>✓ {t.satisTamam ? "Kaydedildi" : "Bağlı"}</span>
                         )}
-                        <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>
+                        {canDoEvrak(subTab === "teklif" ? "evrak_teklif_delete" : "evrak_proforma_delete") && <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>}
                       </div>
                     </td>
                   </tr>
@@ -879,9 +898,9 @@ export const Documents = ({
                       </td>
                       <td style={{ padding: "10px 12px" }}>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-                          <Btn small variant="ghost" onClick={() => setFaturaForm({ ...fat })}><Icon name="edit" size={12} /></Btn>
-                          <Btn small variant="ghost" onClick={() => printFatura(fat)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>
-                          <Btn small variant="danger" onClick={() => setFaturaConfirmDel(fat.id)}><Icon name="trash" size={12} /></Btn>
+                          {canDoEvrak("evrak_fatura_edit") && <Btn small variant="ghost" onClick={() => setFaturaForm({ ...fat })}><Icon name="edit" size={12} /></Btn>}
+                          {canDoEvrak("evrak_fatura_print") && <Btn small variant="ghost" onClick={() => printFatura(fat)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>}
+                          {canDoEvrak("evrak_fatura_delete") && <Btn small variant="danger" onClick={() => setFaturaConfirmDel(fat.id)}><Icon name="trash" size={12} /></Btn>}
                         </div>
                       </td>
                     </tr>

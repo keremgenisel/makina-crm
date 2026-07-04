@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
+import { logAction } from "../lib/audit";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
@@ -97,11 +98,15 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     }
     else {
       if (modal !== "factory" && !form.bayiMi && !form.anlasmaliServisMi) { showToast("En az biri seçili olmalı: Bayi veya Anlaşmalı Servis.", "err"); return; }
-      if (modal === "add") { bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]); showToast("Bayi kaydedildi."); }
-      else {
+      if (modal === "add") {
+        bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]);
+        logAction({ serverPermissions, action: "olusturuldu", entity: "bayi", entityId: nid, entityName: form.name });
+        showToast("Bayi kaydedildi.");
+      } else {
         const oldName = modal.edit?.name;
         const newName = form.name;
         setDealers(p => p.map(d => d.id === form.id ? form : d));
+        logAction({ serverPermissions, action: "duzenlendi", entity: "bayi", entityId: form.id, entityName: newName });
         // Firma adı düzeltildiyse (yazım hatası vb.), bu adı referans alan eski servis/müşteri kayıtlarını
         // da güncelle — yoksa borç takibi, zaman çizelgesi ve "Satış Yapan" kırılımları eski/yeni isim
         // arasında bölünür (örn. bayi borçluyken adı düzeltilince borcu kaybolmuş gibi görünür).
@@ -125,7 +130,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     }
     setModal(null);
   };
-  const confirmDel = () => { setDealers(p => withDeleted(p, d => d.id === confirmId)); setConfirmId(null); showToast("Bayi silindi."); };
+  const confirmDel = () => {
+    const d = dealers.find(x => x.id === confirmId);
+    setDealers(p => withDeleted(p, x => x.id === confirmId));
+    setConfirmId(null);
+    logAction({ serverPermissions, action: "silindi", entity: "bayi", entityId: confirmId, entityName: d?.name });
+    showToast("Bayi silindi.");
+  };
 
   // ── E-posta gönder (bayiye) — içerik tamamen serbest, birden fazla ek dosya isteğe bağlı manuel seçilir ──
   const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, attachments: [{name, base64, mime, size}] }

@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar } from "../../lib/utils";
+import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
 const PER_PAGE = 15;
 
-export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {} }) => {
+export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
 
@@ -68,8 +69,10 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
     if (qty <= 0) { showToast("Geçerli bir miktar girin.", "err"); return; }
     const pid = String(form.partId);
     const logId = uid();
+    const parca = parts.find(p => String(p.id) === pid);
     setPartStock(p => mergeAndUpdate(p, pid, totalMiktar(p, pid) + qty, { notlar: form.notlar || "" }));
     setPartStockLog(p => [...p, { id: logId, partId: pid, miktar: qty, tip: "stok_girisi", referansId: null, tarih: today(), notlar: form.notlar || "" }]);
+    logAction({ serverPermissions, action: "stok_eklendi", entity: "stok_parca", entityId: Number(pid), entityName: parca?.ad, detail: { miktar: qty } });
     showToast("Stok güncellendi.");
     setModal(null);
   };
@@ -79,8 +82,10 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
     if (isNaN(qty)) { showToast("Geçerli bir miktar girin.", "err"); return; }
     const pid = String(form.partId);
     const logId = uid();
+    const parca2 = parts.find(p => String(p.id) === pid);
     setPartStock(p => mergeAndUpdate(p, pid, qty, { notlar: form.notlar || "" }));
     setPartStockLog(p => [...p, { id: logId, partId: pid, miktar: qty, tip: "manuel_duzelt", referansId: null, tarih: today(), notlar: `Sayım düzeltmesi${form.notlar ? ": " + form.notlar : ""}` }]);
+    logAction({ serverPermissions, action: "stok_duzeltildi", entity: "stok_parca", entityId: Number(pid), entityName: parca2?.ad, detail: { miktar: qty } });
     showToast("Stok düzeltildi.");
     setModal(null);
   };
@@ -147,7 +152,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Parça adı veya model ara..."
             style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
         </div>
-        <Btn onClick={openEkle}><Icon name="plus" size={14} /> Stoğa Parça Ekle</Btn>
+        {canDoStock("stock_parca_add") && <Btn onClick={openEkle}><Icon name="plus" size={14} /> Stoğa Parça Ekle</Btn>}
       </div>
 
       {rows.length === 0 ? (
@@ -210,9 +215,9 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      <Btn small onClick={() => { setForm({ partId: String(part.id), miktar: "1", notlar: "" }); setModal("ekle"); }}
-                        style={{ fontSize: 11 }}>+ Ekle</Btn>
-                      <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>
+                      {canDoStock("stock_parca_add") && <Btn small onClick={() => { setForm({ partId: String(part.id), miktar: "1", notlar: "" }); setModal("ekle"); }}
+                        style={{ fontSize: 11 }}>+ Ekle</Btn>}
+                      {canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>}
                       <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
                         title={isPinned ? "Dashboarddan çıkar" : "Dashboarda ekle"}
                         style={{ fontSize: 11, padding: "3px 7px" }}>

@@ -6,6 +6,7 @@ const mailer = require("./mail.cjs");
 const applock = require("./applock.cjs");
 const { registerDataHandlers } = require("./ipc/data.cjs");
 const { registerSystemHandlers } = require("./ipc/system.cjs");
+const { registerAuditHandlers } = require("./ipc/audit.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -46,6 +47,7 @@ function quitApp() {
 // ── IPC handler kayıtları ──
 registerDataHandlers(ipcMain, app, dialog, sqliteDb);
 registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock);
+registerAuditHandlers(ipcMain, sqliteDb);
 
 // ── Güncelleme IPC kanalları ──
 ipcMain.handle("updater:version", () => app.getVersion());
