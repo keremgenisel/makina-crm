@@ -529,13 +529,12 @@ export default function App() {
     }
   }, [appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency]);
 
+  // Yerel kilit her zaman önce kontrol edilir — server modu aktif olsa bile atlanmaz.
+  if (unlocked === null) return null; // appLock.status() bekleniyor
+  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
+
   if (serverMode === null) return null; // sunucu durumu kontrol edilirken bekle
   if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} />;
-  // Sunucu modunda uygulama kilidi atlanır (sunucu girişi yeterli kimlik doğrulama sağlar)
-  if (serverMode !== "active") {
-    if (unlocked === null) return null; // durum kontrol edilirken kısa an boş ekran (flicker önleme)
-    if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
-  }
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>

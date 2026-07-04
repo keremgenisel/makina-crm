@@ -198,6 +198,7 @@ const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
+const APP_SETTINGS_AUTOLOCK_COLUMN = [["autoLockMinutes", "INTEGER"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
@@ -397,8 +398,8 @@ function populateAll(conn, data) {
   if (data.appSettings) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null);
   }
 
   if (Array.isArray(data.faturalar)) {
@@ -434,40 +435,48 @@ function migrateFromJsonIfNeeded() {
 
   const dbPath = getDbPath();
   if (fs.existsSync(dbPath)) {
-    db = new Database(dbPath);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    // Sonradan eklenen yeni tabloları oluşturur (CREATE TABLE IF NOT EXISTS idempotent — var olanları bozmaz).
-    db.exec(SCHEMA_SQL);
-    ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
-    ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
-    ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
-    ensureColumns(db, "app_settings", APP_SETTINGS_NEW_COLUMNS);
-    ensureColumns(db, "parts", PARTS_NEW_COLUMNS);
-    ensureColumns(db, "parts", PARTS_EXTRA_COLUMNS);
-    ensureColumns(db, "standard_models", MODELS_NEW_COLUMNS);
-    ensureColumns(db, "custom_models", MODELS_NEW_COLUMNS);
-    ensureColumns(db, "standard_models", MODELS_URUN_COLUMNS);
-    ensureColumns(db, "custom_models", MODELS_URUN_COLUMNS);
-    ensureColumns(db, "standard_models", MODELS_RESIM_COLUMN);
-    ensureColumns(db, "custom_models", MODELS_RESIM_COLUMN);
-    ensureColumns(db, "standard_models", MODELS_BANTLAR_COLUMN);
-    ensureColumns(db, "custom_models", MODELS_BANTLAR_COLUMN);
-    ensureColumns(db, "kalip_defs", KALIP_DEFS_NEW_COLUMNS);
-    ensureColumns(db, "kalip_defs", KALIP_DEFS_RESIM_COLUMN);
-    ensureColumns(db, "teklifler", TEKLIFLER_NEW_COLUMNS);
-    ensureColumns(db, "customers", CUSTOMERS_BANTLAR_COLUMN);
-    ensureColumns(db, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
-    ensureColumns(db, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
-    ensureColumns(db, "parts", PARTS_TIP_RESIM_COLUMNS);
-    ensureColumns(db, "app_settings", APP_SETTINGS_KASE_COLUMN);
-    ensureColumns(db, "app_settings", APP_SETTINGS_PINNED_COLUMN);
-    ensureColumns(db, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
-    ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
-    ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
-    for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
-    ensureColumns(db, "users", USERS_PERMISSIONS_COLUMN);
-    active = true;
+    try {
+      db = new Database(dbPath);
+      db.pragma("journal_mode = WAL");
+      db.pragma("foreign_keys = ON");
+      // Sonradan eklenen yeni tabloları oluşturur (CREATE TABLE IF NOT EXISTS idempotent — var olanları bozmaz).
+      db.exec(SCHEMA_SQL);
+      ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
+      ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
+      ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
+      ensureColumns(db, "app_settings", APP_SETTINGS_NEW_COLUMNS);
+      ensureColumns(db, "parts", PARTS_NEW_COLUMNS);
+      ensureColumns(db, "parts", PARTS_EXTRA_COLUMNS);
+      ensureColumns(db, "standard_models", MODELS_NEW_COLUMNS);
+      ensureColumns(db, "custom_models", MODELS_NEW_COLUMNS);
+      ensureColumns(db, "standard_models", MODELS_URUN_COLUMNS);
+      ensureColumns(db, "custom_models", MODELS_URUN_COLUMNS);
+      ensureColumns(db, "standard_models", MODELS_RESIM_COLUMN);
+      ensureColumns(db, "custom_models", MODELS_RESIM_COLUMN);
+      ensureColumns(db, "standard_models", MODELS_BANTLAR_COLUMN);
+      ensureColumns(db, "custom_models", MODELS_BANTLAR_COLUMN);
+      ensureColumns(db, "kalip_defs", KALIP_DEFS_NEW_COLUMNS);
+      ensureColumns(db, "kalip_defs", KALIP_DEFS_RESIM_COLUMN);
+      ensureColumns(db, "teklifler", TEKLIFLER_NEW_COLUMNS);
+      ensureColumns(db, "customers", CUSTOMERS_BANTLAR_COLUMN);
+      ensureColumns(db, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
+      ensureColumns(db, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
+      ensureColumns(db, "parts", PARTS_TIP_RESIM_COLUMNS);
+      ensureColumns(db, "app_settings", APP_SETTINGS_KASE_COLUMN);
+      ensureColumns(db, "app_settings", APP_SETTINGS_PINNED_COLUMN);
+      ensureColumns(db, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
+      ensureColumns(db, "app_settings", APP_SETTINGS_AUTOLOCK_COLUMN);
+      ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
+      ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
+      for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
+      ensureColumns(db, "users", USERS_PERMISSIONS_COLUMN);
+      active = true;
+    } catch (err) {
+      console.error("SQLite açılamadı, JSON moduna geçiliyor:", err);
+      try { db?.close(); } catch { /* yoksay */ }
+      db = null;
+      active = false;
+    }
     return;
   }
 
