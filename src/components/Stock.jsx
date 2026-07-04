@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
 import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
+import { UretimFormu }   from "./stock/UretimFormu";
 
 export const Stock = ({
   stock, setStock,
@@ -11,8 +12,17 @@ export const Stock = ({
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
+  customers = [],
+  kalipDefs = [],
+  uretimFormlari = [], setUretimFormlari = () => {},
 }) => {
   const [subTab, setSubTab] = useState("makina");
+
+  const TABS = [
+    ["makina", "Makina Stoğu"],
+    ["parca",  "Parça/Yedek Parça Stoğu"],
+    ["uretim", "Kalıp Üretim"],
+  ];
 
   return (
     <div>
@@ -21,7 +31,7 @@ export const Stock = ({
       </div>
 
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid #f1f5f9", paddingBottom: 0 }}>
-        {[["makina", "Makina Stoğu"], ["parca", "Parça/Yedek Parça Stoğu"]].map(([id, label]) => (
+        {TABS.map(([id, label]) => (
           <button key={id} onClick={() => setSubTab(id)} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
             borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
@@ -40,6 +50,11 @@ export const Stock = ({
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings} />
+      )}
+      {subTab === "uretim" && (
+        <UretimFormu
+          uretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari}
+          customers={customers} kalipDefs={kalipDefs} showToast={showToast} />
       )}
     </div>
   );

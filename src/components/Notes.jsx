@@ -1,5 +1,6 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
-import { Icon, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
 import { withDeleted } from "../lib/utils";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
@@ -11,6 +12,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
   const [page, setPage] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState(null); // silme onayı bekleyen not
   const [pendingAction, setPendingAction] = useState(null); // dirty iken not değiştirme/yeni not isteği bekletilir
+  const { lockLoading: noteLockLoading, lockConflict: noteLock, forceAcquire: forceNoteLock } = useLock("note", selectedId);
   const PER_PAGE = 5;
   const selected = notes.find(n => n.id === selectedId) || null;
   const dirty = selected && draft !== (selected.content || "");
@@ -122,7 +124,12 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
 
         {/* SAĞ: editör */}
         <div style={{ flex: 1, minWidth: 320 }}>
-          {selected ? (
+          {selected && noteLock ? (
+            <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+              <LockConflict lockedBy={noteLock.lockedBy} lockedAt={noteLock.lockedAt}
+                onForce={forceNoteLock} onCancel={() => { setSelectedId(null); setDraft(""); }} />
+            </div>
+          ) : selected ? (
             <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>Son düzenleme: {fmtZaman(selected.updatedAt)}</span>
@@ -143,6 +150,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {} },
               <div style={{ fontSize: 13 }}>Soldan bir not seçin veya "Yeni Not" oluşturun.</div>
             </div>
           )}
+
         </div>
       </div>
 

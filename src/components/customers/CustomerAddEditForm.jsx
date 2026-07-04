@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
@@ -10,6 +11,7 @@ export const CustomerAddEditForm = ({
   addLabel, entity, parts = [],
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
+  const { lockLoading, lockConflict, forceAcquire } = useLock("customer", modal?.edit?.id ?? null);
 
   const getKitAutoFill = (stockEntry) => {
     if (!stockEntry?.parcalar?.length) return {};
@@ -25,6 +27,15 @@ export const CustomerAddEditForm = ({
       ...(bantSecimiId  ? { bantSecimiId,  _bantFromKit: true }     : {}),
     };
   };
+
+  if (modal?.edit && lockConflict) {
+    return (
+      <Modal wide maxWidth={600} title={`${entity} Düzenle`} onClose={onClose}>
+        <LockConflict lockedBy={lockConflict.lockedBy} lockedAt={lockConflict.lockedAt}
+          onForce={forceAcquire} onCancel={onClose} />
+      </Modal>
+    );
+  }
 
   return (
     <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}>

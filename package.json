@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "2.37.0",
+  "version": "2.41.0",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -14,8 +14,12 @@
     "release": "vite build && electron-builder --win --publish always"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.5",
     "electron-updater": "^6.3.9",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "nodemailer": "^9.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -46,6 +50,9 @@
     ],
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
+    ],
+    "extraResources": [
+      { "from": "build/icon.png", "to": "icon.png" }
     ],
     "npmRebuild": true,
     "win": {

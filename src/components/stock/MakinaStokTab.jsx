@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
+import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 
 export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog }) => {
   const [modelFilter, setModelFilter] = useState(null);
@@ -10,6 +11,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
   const [showAllParts, setShowAllParts] = useState(false);
+  const { lockLoading: stockLockLoading, lockConflict: stockLock, forceAcquire: forceStockLock } = useLock("stock", modal?.edit?.id ?? null);
 
   const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", outline: "none", fontFamily: "inherit" };
 
@@ -205,6 +207,10 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
       {modal && (
         <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)}>
+          {(stockLock && modal?.edit) ? (
+            <LockConflict lockedBy={stockLock.lockedBy} lockedAt={stockLock.lockedAt}
+              onForce={forceStockLock} onCancel={() => setModal(null)} />
+          ) : (<>
           <Field label="Makina Modeli">
             <Select value={form.model || ""} onChange={e => setForm(p => ({ ...p, model: e.target.value }))}>
               <option value="">Model seçin...</option>
@@ -273,6 +279,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
             <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
+          </>)}
         </Modal>
       )}
     </div>

@@ -1,13 +1,17 @@
 import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Btn, Modal, Pagination } from "../ui";
+import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 
 const PER_PAGE = 15;
 
 export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {} }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+
+  const lockPartId = modal && form.partId ? String(form.partId) : null;
+  const { lockLoading: partStokLockLoading, lockConflict: partStokLock, forceAcquire: forcePartStokLock } = useLock("partstock", lockPartId);
 
   const pinnedPartIds = appSettings.pinnedPartIds || [];
   const togglePin = (partId) => {
@@ -229,54 +233,68 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
 
       {(modal === "ekle") && (
         <Modal title="Stoğa Parça Ekle" onClose={() => setModal(null)} maxWidth={420}>
-          <Field label="Yedek Parça">
-            <select value={form.partId} onChange={e => setForm(p => ({ ...p, partId: e.target.value }))} style={inputStyle}>
-              <option value="">Parça seçin...</option>
-              {parts.map(p => <option key={p.id} value={p.id}>{p.ad}</option>)}
-            </select>
-            <Warn>{!form.partId ? "Parça seçilmedi" : ""}</Warn>
-          </Field>
-          <Field label="Eklenecek Miktar (adet)">
-            <Input type="number" min="1" value={form.miktar} onChange={e => setForm(p => ({ ...p, miktar: e.target.value }))} placeholder="1" />
-          </Field>
-          <Field label="Not (opsiyonel)">
-            <Input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Örn: Fatura no, tedarikçi..." />
-          </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={saveEkle}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+          {(partStokLock && form.partId) ? (
+            <LockConflict lockedBy={partStokLock.lockedBy} lockedAt={partStokLock.lockedAt}
+              onForce={forcePartStokLock} onCancel={() => setModal(null)} />
+          ) : (
+            <>
+              <Field label="Yedek Parça">
+                <select value={form.partId} onChange={e => setForm(p => ({ ...p, partId: e.target.value }))} style={inputStyle}>
+                  <option value="">Parça seçin...</option>
+                  {parts.map(p => <option key={p.id} value={p.id}>{p.ad}</option>)}
+                </select>
+                <Warn>{!form.partId ? "Parça seçilmedi" : ""}</Warn>
+              </Field>
+              <Field label="Eklenecek Miktar (adet)">
+                <Input type="number" min="1" value={form.miktar} onChange={e => setForm(p => ({ ...p, miktar: e.target.value }))} placeholder="1" />
+              </Field>
+              <Field label="Not (opsiyonel)">
+                <Input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Örn: Fatura no, tedarikçi..." />
+              </Field>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+                <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+                <Btn onClick={saveEkle}><Icon name="check" size={14} /> Kaydet</Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
 
       {(modal === "duzelt") && (
         <Modal title="Stok Miktarını Düzelt" onClose={() => setModal(null)} maxWidth={420}>
-          <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "8px 12px", borderRadius: 8, marginBottom: 14 }}>
-            <b>{parts.find(p => p.id === form.partId)?.ad}</b> — mevcut stok: <b>{stokMap[form.partId]?.miktar ?? 0} adet</b>
-          </div>
-          <Field label="Yeni Miktar (adet)">
-            <Input type="number" min="0" value={form.miktar} onChange={e => setForm(p => ({ ...p, miktar: e.target.value }))} />
-          </Field>
-          <Field label="Not (opsiyonel)">
-            <Input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Örn: Sayım sonucu..." />
-          </Field>
-          {(() => {
-            const isPinned = pinnedPartIds.includes(String(form.partId));
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer" }}
-                onClick={() => togglePin(form.partId)}>
-                <span style={{ fontSize: 18, color: isPinned ? "#e85d1a" : "#94a3b8" }}>{isPinned ? "★" : "☆"}</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{isPinned ? "Dashboarddan Çıkar" : "Dashboarda Ekle"}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>Bu parça dashboard kartlarında {isPinned ? "görünüyor" : "görünmüyor"}</div>
-                </div>
+          {partStokLock ? (
+            <LockConflict lockedBy={partStokLock.lockedBy} lockedAt={partStokLock.lockedAt}
+              onForce={forcePartStokLock} onCancel={() => setModal(null)} />
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "8px 12px", borderRadius: 8, marginBottom: 14 }}>
+                <b>{parts.find(p => p.id === form.partId)?.ad}</b> — mevcut stok: <b>{stokMap[form.partId]?.miktar ?? 0} adet</b>
               </div>
-            );
-          })()}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={saveDuzelt}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+              <Field label="Yeni Miktar (adet)">
+                <Input type="number" min="0" value={form.miktar} onChange={e => setForm(p => ({ ...p, miktar: e.target.value }))} />
+              </Field>
+              <Field label="Not (opsiyonel)">
+                <Input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Örn: Sayım sonucu..." />
+              </Field>
+              {(() => {
+                const isPinned = pinnedPartIds.includes(String(form.partId));
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer" }}
+                    onClick={() => togglePin(form.partId)}>
+                    <span style={{ fontSize: 18, color: isPinned ? "#e85d1a" : "#94a3b8" }}>{isPinned ? "★" : "☆"}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{isPinned ? "Dashboarddan Çıkar" : "Dashboarda Ekle"}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>Bu parça dashboard kartlarında {isPinned ? "görünüyor" : "görünmüyor"}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+                <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+                <Btn onClick={saveDuzelt}><Icon name="check" size={14} /> Kaydet</Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>

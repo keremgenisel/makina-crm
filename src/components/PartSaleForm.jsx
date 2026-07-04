@@ -79,14 +79,21 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
           ) : (
             // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
             <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."
-              onPick={k => setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu: "", fiyat: "" }] }))} />
+              onPick={k => {
+                const olcu = selectedCust?.kaliplar?.find(kk => kk.ad === k.ad)?.olcu || "";
+                setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu, fiyat: "" }] }));
+              }} />
           )}
         </Field>
       )}
 
       {isEdit && (
         <Field label="Kalıp Modeli">
-          <Select value={kaliplar[0]?.ad || ""} onChange={e => setForm(p => ({ ...p, kaliplar: [{ ...(p.kaliplar?.[0] || {}), ad: e.target.value }] }))}>
+          <Select value={kaliplar[0]?.ad || ""} onChange={e => {
+            const ad = e.target.value;
+            const custOlcu = selectedCust?.kaliplar?.find(k => k.ad === ad)?.olcu || "";
+            setForm(p => ({ ...p, kaliplar: [{ ...(p.kaliplar?.[0] || {}), ad, olcu: custOlcu || p.kaliplar?.[0]?.olcu || "" }] }));
+          }}>
             <option value="">Seçin...</option>
             {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
           </Select>

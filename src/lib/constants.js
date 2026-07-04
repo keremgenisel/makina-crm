@@ -117,10 +117,17 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "2.37.0";
+export const APP_VERSION = "2.41.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";
 
 // ── Çöp Kutusu: soft-delete edilen kayıtların otomatik kalıcı silinme süresi (gün) ──
 export const TRASH_RETENTION_DAYS = 30;
+
+export const SALE_TYPE_STYLE = {
+  "Faturalı Yurtiçi":  { bg: "#d1fae5", fg: "#065f46" },
+  "Faturalı Yurtdışı": { bg: "#dbeafe", fg: "#1d4ed8" },
+  "Faturasız Yurtiçi": { bg: "#fef3c7", fg: "#92400e" },
+  "Faturasız Yurtdışı":{ bg: "#fde68a", fg: "#7c2d12" },
+};

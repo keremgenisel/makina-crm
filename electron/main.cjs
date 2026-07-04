@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, powerSaveBlocker } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const sqliteDb = require("./db.cjs");
@@ -22,7 +22,26 @@ try {
 app.commandLine.appendSwitch("lang", "tr");
 
 let mainWin = null;
+let tray = null;
 let allowCloseWithoutPrompt = false;
+
+function getTrayIcon() {
+  const candidates = [
+    path.join(process.resourcesPath || "", "icon.png"),
+    path.join(__dirname, "../build/icon.png"),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return nativeImage.createFromPath(p).resize({ width: 16, height: 16 });
+  }
+  return nativeImage.createEmpty();
+}
+
+function quitApp() {
+  allowCloseWithoutPrompt = true;
+  tray?.destroy();
+  tray = null;
+  app.quit();
+}
 
 // ── IPC handler kayıtları ──
 registerDataHandlers(ipcMain, app, dialog, sqliteDb);
@@ -165,15 +184,35 @@ function createWindow() {
     if (template.length) Menu.buildFromTemplate(template).popup({ window: mainWin });
   });
 
-  // ── Kapatma uyarısı ──
+  // ── System tray ──
+  tray = new Tray(getTrayIcon());
+  tray.setToolTip("Altunmak CRM");
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: "Altunmak CRM'yi Aç",
+      click: () => { mainWin.show(); mainWin.focus(); },
+    },
+    { type: "separator" },
+    {
+      label: "Çıkış Yap",
+      click: () => {
+        const choice = dialog.showMessageBoxSync({
+          type: "question", buttons: ["Çıkış Yap", "Vazgeç"],
+          defaultId: 1, cancelId: 1, title: "Çıkış",
+          message: "Altunmak CRM'den çıkmak istediğinize emin misiniz?",
+          detail: "Sunucu modunda çalışıyorsanız diğer kullanıcılar bağlantıyı kaybeder.",
+        });
+        if (choice === 0) quitApp();
+      },
+    },
+  ]));
+  tray.on("double-click", () => { mainWin.show(); mainWin.focus(); });
+
+  // ── Kapatma: pencereyi kapat değil, tray'e gizle ──
   mainWin.on("close", (e) => {
     if (allowCloseWithoutPrompt) return;
-    const choice = dialog.showMessageBoxSync(mainWin, {
-      type: "question", buttons: ["Çıkış", "Vazgeç"],
-      defaultId: 1, cancelId: 1, title: "Çıkış",
-      message: "Uygulamadan çıkmak istediğinize emin misiniz?",
-    });
-    if (choice !== 0) e.preventDefault();
+    e.preventDefault();
+    mainWin.hide();
   });
 
   mainWin.once("ready-to-show", () => {
@@ -202,18 +241,20 @@ if (!gotTheLock) {
   app.on("second-instance", () => {
     if (mainWin) {
       if (mainWin.isMinimized()) mainWin.restore();
-      mainWin.show();
+      if (!mainWin.isVisible()) mainWin.show();
       mainWin.focus();
       dialog.showMessageBox(mainWin, {
         type: "info", title: "Altunmak CRM",
         message: "Uygulama zaten çalışıyor",
-        detail: "Altunmak CRM şu anda açık. Aynı anda yalnızca bir pencere açılabilir.",
+        detail: "Altunmak CRM arka planda çalışmaya devam ediyor. Görev çubuğundaki simgeye çift tıklayarak açabilirsiniz.",
         buttons: ["Tamam"],
       });
     }
   });
 
   app.whenReady().then(() => {
+    // Sistem uykusunu engelle — sunucu modunda ağ stack'i canlı kalsın
+    powerSaveBlocker.start("prevent-app-suspension");
     sqliteDb.migrateFromJsonIfNeeded();
     createWindow();
     app.on("activate", () => {
@@ -221,7 +262,8 @@ if (!gotTheLock) {
     });
   });
 
+  // Pencere gizlenince (tray'e küçülünce) uygulama kapanmaz
   app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") app.quit();
+    if (process.platform !== "darwin" && allowCloseWithoutPrompt) app.quit();
   });
 }

@@ -13,6 +13,28 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   };
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
+  const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
+  const [teklifConflict, setTeklifConflict] = useState({});      // { [id]: "kullanıcı adı" }
+
+  // Butona tıklandığında kilidi dene; başkası işliyorsa engelle, başarılıysa action'ı çalıştır
+  const withLock = (teklifId, action) => async () => {
+    if (!window.crmLocks) { action(); return; }
+    setTeklifBusy(s => new Set(s).add(teklifId));
+    try {
+      const result = await window.crmLocks.acquire("teklif", String(teklifId));
+      if (result?.ok) {
+        setTeklifConflict(m => { const n = { ...m }; delete n[teklifId]; return n; });
+        action();
+      } else {
+        setTeklifConflict(m => ({ ...m, [teklifId]: result?.lockedBy || "başka kullanıcı" }));
+      }
+    } catch {
+      action(); // bağlantı yoksa devam et (fail-open)
+    } finally {
+      setTeklifBusy(s => { const n = new Set(s); n.delete(teklifId); return n; });
+    }
+  };
+
   // Anlaşmalı servis ayrımı için (isServisUcretliMi/isServisBorcluMu'ya geçilir) — bkz. utils.js
   const factoryName = factory?.name || "Altuntaş Makina";
 
@@ -144,6 +166,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           </div>
           {donusturBekleyenlar.map(t => {
             const tur = effectiveTur(t);
+            const busy     = teklifBusy.has(t.id);
+            const conflict = teklifConflict[t.id];
             return (
               <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #fed7aa" }}>
                 <div>
@@ -153,21 +177,26 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "#fed7aa", color: "#92400e", fontWeight: 700 }}>
                     {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
                   </span>
+                  {conflict && (
+                    <span style={{ fontSize: 11, marginLeft: 10, color: "#b91c1c", fontWeight: 600 }}>
+                      🔒 {conflict} işliyor
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                   {tur === "makina" && !t.customerId && onDonusturTeklif && (
-                    <Btn small onClick={() => onDonusturTeklif(t)} style={{ background: "#f97316", color: "#fff", border: "none" }}>
-                      Müşteri Ekle
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Müşteri Ekle"}
                     </Btn>
                   )}
                   {tur === "makina" && t.customerId && onDonusturMakina && (
-                    <Btn small onClick={() => onDonusturMakina(t)} style={{ background: "#f97316", color: "#fff", border: "none" }}>
-                      Makina Ekle
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Makina Ekle"}
                     </Btn>
                   )}
                   {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && (
-                    <Btn small onClick={() => onKaydetSatis(t)} style={{ background: "#0891b2", color: "#fff", border: "none" }}>
-                      Satışa Dönüştür
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "#e5e7eb" : "#0891b2", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Satışa Dönüştür"}
                     </Btn>
                   )}
                   {(tur === "parca" || tur === "kalip") && !t.customerId && (

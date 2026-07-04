@@ -134,15 +134,17 @@ const FIELD_DEFAULTS_META = {
   },
   proforma: {
     belge: [
-      { key: "teslimYeri", label: "Teslim Yeri", biDil: true, multiline: true },
-      { key: "not", label: "Not (Proforma)", biDil: true, multiline: true },
-      { key: "ek", label: "Ek Bilgi", biDil: true, multiline: true },
+      { key: "odemeSekli",  label: "Ödeme Şekli",  biDil: true },
+      { key: "teslimSekli", label: "Teslim Şekli", biDil: true },
+      { key: "teslimYeri",  label: "Teslim Yeri",  biDil: true, multiline: true },
+      { key: "not",         label: "Not (Proforma)", biDil: true, multiline: true },
+      { key: "ek",          label: "Ek Bilgi",     biDil: true, multiline: true },
     ],
   },
   fatura: {
     belge: [
-      { key: "payment",  label: "Ödeme Şekli",  biDil: false },
-      { key: "delivery", label: "Teslim Şekli", biDil: false },
+      { key: "payment",  label: "Ödeme Şekli",  biDil: true },
+      { key: "delivery", label: "Teslim Şekli", biDil: true },
       { key: "gtipNo",   label: "GTİP No",      biDil: false },
       { key: "origin",   label: "Menşei",       biDil: false },
     ],
@@ -166,8 +168,8 @@ const FIELD_INITIAL_DEFAULTS = {
     ek: { TR: "SİZLERE TESLİMAT İLE İLGİLİ BİLDİRİLEN TARİHTEN İTİBAREN 7 GÜN İÇİNDE ÖDEMESİ YAPILMAYAN SİPARİŞLER İPTAL EDİLECEKTİR.", EN: "ORDERS NOT PAID WITHIN 7 DAYS FROM THE NOTIFIED DATE WILL BE CANCELLED." },
   },
   fatura: {
-    payment:     { TR: "T/T in advance" },
-    delivery:    { TR: "CIF Istanbul" },
+    payment:     { TR: "T/T in advance", EN: "T/T in advance" },
+    delivery:    { TR: "CIF Istanbul",   EN: "CIF Istanbul" },
     origin:      { TR: "Türkiye" },
     paketAdedi:  { TR: "1" },
     brutAgirlik: { TR: "180 KG" },

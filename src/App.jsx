@@ -7,6 +7,7 @@ import {
 import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
 import { Icon } from "./components/ui";
 import { LockScreen } from "./components/LockScreen";
+import { ServerLogin } from "./components/ServerLogin";
 import { Dashboard } from "./components/Dashboard";
 import { Customers } from "./components/Customers";
 import { SimpleDealers } from "./components/SimpleDealers";
@@ -39,6 +40,10 @@ export default function App() {
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
+  const suppressSaveRef = useRef(false); // reload sırasında debounced save'in tetiklenmesini engeller
+  const [serverOnline, setServerOnline] = useState(true);
+  const serverOnlineRef = useRef(true); // polling effect closure'ında stale state'den kaçınmak için
+  const failedSaveRef = useRef(null);   // sunucu kpalıyken başarısız olan son save datası
 
   // ── Uygulama şifresi (açılış kilidi) — isteğe bağlı, Ayarlar'dan açılır. Veri yüklemesinden
   // bağımsız çalışır, sadece bir UI kapısı. null = durum henüz kontrol edilmedi (kısa an için
@@ -48,6 +53,127 @@ export default function App() {
     if (!window.appLock) { setUnlocked(true); return; }
     window.appLock.status().then(s => setUnlocked(!s?.enabled)).catch(() => setUnlocked(true));
   }, []);
+
+  // ── Hareketsizlik sonrası otomatik kilit ──
+  useEffect(() => {
+    const minutes = appSettings?.autoLockMinutes;
+    if (!unlocked || !minutes || !window.appLock) return;
+    let timer;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const s = await window.appLock.status().catch(() => null);
+        if (s?.enabled) setUnlocked(false);
+      }, minutes * 60 * 1000);
+    };
+    const events = ["mousemove", "mousedown", "keydown", "touchstart", "wheel", "scroll"];
+    events.forEach(ev => document.addEventListener(ev, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(ev => document.removeEventListener(ev, reset));
+    };
+  }, [unlocked, appSettings?.autoLockMinutes]);
+
+  // ── Sunucu modu: null=kontrol bekleniyor | "none"=yerel mod | "login"=giriş gerekli | "active"=giriş yapıldı ──
+  const [serverMode, setServerMode] = useState(null);
+  const [serverPermissions, setServerPermissions] = useState(null); // { role, permissions (JSON string | null) }
+
+  // ── Tab izin filtresi: yerel mod / sunucu PC / admin → tüm tablar; user rolü → izin listesi ──
+  const visibleTabs = useMemo(() => {
+    if (serverMode !== "active") return TABS; // yerel mod veya sunucu PC
+    if (!serverPermissions || serverPermissions.role === "admin") return TABS;
+    try {
+      const allowed = JSON.parse(serverPermissions.permissions || "null")?.tabs;
+      if (!Array.isArray(allowed)) return TABS;
+      return TABS.filter(t => allowed.includes(t.id));
+    } catch { return TABS; }
+  }, [serverMode, serverPermissions]);
+  useEffect(() => {
+    if (visibleTabs.length && !visibleTabs.find(t => t.id === tab)) setTab(visibleTabs[0].id);
+  }, [visibleTabs]);
+  const dataVersionRef = useRef(null);
+  const loadFromStorageRef = useRef(null);
+  useEffect(() => {
+    if (!window.appServer) { setServerMode("none"); return; }
+    window.appServer.getConfig().then(cfg => {
+      if (!cfg?.serverUrl) { setServerMode("none"); return; }
+      const active = cfg.isActive ? "active" : "login";
+      setServerMode(active);
+      if (cfg.isActive) setServerPermissions({ role: cfg.role, permissions: cfg.permissions ?? null });
+    }).catch(() => setServerMode("none"));
+  }, []);
+
+  // ── Sunucu olayları: çakışma / oturum sona erme / versiyon güncelleme ──
+  useEffect(() => {
+    if (!window.appServer) return;
+    const u1 = window.appServer.onVersionUpdate(v => { dataVersionRef.current = v; });
+    const u2 = window.appServer.onConflict(() => {
+      showToast("Başka bir kullanıcı veriyi güncelledi. Uygulama yeniden yükleniyor...", "err");
+      setTimeout(() => window.location.reload(), 2500);
+    });
+    const u3 = window.appServer.onSessionExpired(() => {
+      showToast("Oturum süresi doldu. Lütfen tekrar giriş yapın.", "err");
+      setServerMode("login");
+    });
+    const u4 = window.appServer.onError(_msg => {
+      if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
+    });
+    const u5 = window.appServer.onDataChanged?.(() => { loadFromStorageRef.current?.(); });
+    return () => { u1?.(); u2?.(); u3?.(); u4?.(); u5?.(); };
+  }, []);
+
+  // ── Token otomatik yenileme: 8 saatlik JWT'nin dolmasını önlemek için 7 saatte bir ──
+  useEffect(() => {
+    if (serverMode !== "active" || !window.appServer?.refreshToken) return;
+    const id = setInterval(() => window.appServer.refreshToken(), 7 * 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [serverMode]);
+
+  // ── İstemci PC polling: veri sync + izin güncelleme + devre dışı bırakma + offline/online ──
+  useEffect(() => {
+    if (serverMode !== "active" || !window.appServer?.apiRequest) return;
+    const id = setInterval(async () => {
+      try {
+        const result = await window.appServer.apiRequest({ method: "GET", path: "/api/version" });
+        // 401 → kullanıcı pasif yapıldı veya token süresi doldu → giriş ekranına gönder
+        if (result?.status === 401 || result?.error === "Oturum gerekli") {
+          setServerMode("login");
+          return;
+        }
+        if (!result?.ok) {
+          if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
+          return;
+        }
+        // Sunucu tekrar erişilebilir — yeniden bağlan
+        if (!serverOnlineRef.current) {
+          serverOnlineRef.current = true;
+          setServerOnline(true);
+          if (failedSaveRef.current) {
+            const retry = failedSaveRef.current;
+            failedSaveRef.current = null;
+            window.crmStorage.save(retry);
+            showToast("Sunucu bağlantısı yeniden kuruldu — değişiklikler kaydedildi");
+          } else {
+            showToast("Sunucu bağlantısı yeniden kuruldu");
+          }
+        }
+        // İzinler veya rol değiştiyse güncelle (sekme kısıtları anında yansısın)
+        const { role: newRole, permissions: newPerms, dataVersion: sv } = result.data || {};
+        if (newRole !== undefined) {
+          setServerPermissions(p => (p?.role !== newRole || p?.permissions !== newPerms) ? { role: newRole, permissions: newPerms ?? null } : p);
+        }
+        // Veri versiyonu değiştiyse state'i yenile
+        if (typeof sv === "number" && sv !== dataVersionRef.current) {
+          await loadFromStorageRef.current?.();
+        }
+      } catch {
+        // Network error — sunucu erişilemiyor
+        if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
+      }
+    }, 10000);
+    return () => clearInterval(id);
+  }, [serverMode]);
 
   // ── Global bildirim (toast) ──
   const [toast, setToast] = useState(null); // { type: "ok"|"err", text }
@@ -231,8 +357,9 @@ export default function App() {
   const [kalipDefs,    setKalipDefs]    = useState(INIT_KALIPLAR);
   const [teklifler,    setTeklifler]    = useState([]);
   const [faturalar,    setFaturalar]    = useState([]); // yurt dışı faturalar [{id, no, tarih, firma, ...}]
-  const [partStock,    setPartStock]    = useState([]); // yedek parça stok seviyeleri [{id, partId, miktar, notlar, sonGuncelleme}]
-  const [partStockLog, setPartStockLog] = useState([]); // stok hareket log'u [{id, partId, miktar, tip, referansId, tarih, notlar}]
+  const [partStock,       setPartStock]       = useState([]); // yedek parça stok seviyeleri [{id, partId, miktar, notlar, sonGuncelleme}]
+  const [partStockLog,    setPartStockLog]    = useState([]); // stok hareket log'u [{id, partId, miktar, tip, referansId, tarih, notlar}]
+  const [uretimFormlari,  setUretimFormlari]  = useState([]); // kalıp üretim formları
 
   // ── Çöp Kutusu: her dizinin deletedAt'i olmayan ("canlı") kopyası — özellik bileşenleri
   // (Dashboard, Customers, SimpleDealers, Stock, Finance, Notes) hep bunları görür, soft-delete
@@ -246,115 +373,125 @@ export default function App() {
   const liveParts      = useMemo(() => withoutDeleted(parts),      [parts]);
   const livePartSales  = useMemo(() => withoutDeleted(partSales),  [partSales]);
   const livePayments   = useMemo(() => withoutDeleted(payments),   [payments]);
-  const liveKalipDefs  = useMemo(() => withoutDeleted(kalipDefs),  [kalipDefs]);
-  const liveTeklifler  = useMemo(() => withoutDeleted(teklifler),  [teklifler]);
+  const liveKalipDefs      = useMemo(() => withoutDeleted(kalipDefs),      [kalipDefs]);
+  const liveTeklifler      = useMemo(() => withoutDeleted(teklifler),      [teklifler]);
+  const liveUretimFormlari = useMemo(() => withoutDeleted(uretimFormlari), [uretimFormlari]);
+
+  // loadFromStorageRef: her render'da güncellenir, hem ilk yükleme hem remote-update soft reload'da kullanılır
+  loadFromStorageRef.current = async () => {
+    suppressSaveRef.current = true; // yükleme sırasında debounced save tetiklenmesin
+    try {
+      if (!window.crmStorage) return;
+      const data = await window.crmStorage.load();
+      if (!data) return;
+      // Çöp Kutusu: retention süresinden eski deletedAt'li kayıtlar yüklenirken kalıcı olarak süzülür
+      if (Array.isArray(data.customers)) data.customers = purgeOldTrash(data.customers);
+      if (Array.isArray(data.payments)) data.payments = purgeOldTrash(data.payments);
+      if (Array.isArray(data.dealers)) data.dealers = purgeOldTrash(data.dealers);
+      if (Array.isArray(data.stock)) data.stock = purgeOldTrash(data.stock);
+      if (Array.isArray(data.kalipDefs)) data.kalipDefs = purgeOldTrash(data.kalipDefs);
+      if (Array.isArray(data.customModels)) data.customModels = purgeOldTrash(data.customModels);
+      if (Array.isArray(data.services)) data.services = purgeOldTrash(data.services);
+      if (Array.isArray(data.notes)) data.notes = purgeOldTrash(data.notes);
+      if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
+      if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
+      if (Array.isArray(data.teklifler)) data.teklifler = purgeOldTrash(data.teklifler);
+      if (Array.isArray(data.faturalar)) data.faturalar = purgeOldTrash(data.faturalar);
+      if (Array.isArray(data.uretimFormlari)) data.uretimFormlari = purgeOldTrash(data.uretimFormlari);
+      // KDV oranı artık tek bir sayı değil, tarihe bağlı dönemler listesi — eski tekil
+      // appSettings.kdvRate'den göç edilir. Aşağıdaki Kalan Borç hesapları (hem eski veri
+      // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
+      // sayede oran değişikliği geçmiş kayıtlara da geriye dönük doğru şekilde yansır.
+      const kdvRates = normalizeKdvRates(data.appSettings);
+      // Fabrika adı geçmişte değiştiyse (prevNames), tüm referansları güncel adla eşitle
+      if (data.factory?.name && Array.isArray(data.factory.prevNames) && data.factory.prevNames.length > 0) {
+        const fName = data.factory.name;
+        const prevNames = data.factory.prevNames;
+        const norm = (val) => prevNames.includes(val) ? fName : val;
+        if (Array.isArray(data.customers)) {
+          data.customers = data.customers.map(c => ({
+            ...c,
+            satisYapan: norm(c.satisYapan),
+            prevOwners: c.prevOwners?.map(o => ({ ...o, satisYapan: norm(o.satisYapan) })),
+          }));
+        }
+        if (Array.isArray(data.services)) {
+          data.services = data.services.map(s => ({ ...s, islemFirma: norm(s.islemFirma) }));
+        }
+      }
+      if (Array.isArray(data.customers)) {
+        if (Array.isArray(data.payments)) {
+          // NOT: Burada artık TÜM müşterilerin Kalan Borç'unu calcKalanBorc ile yeniden
+          // hesaplamıyoruz — bu, KDV dönemleri eklenmeden önce (eski sabit %20 oranıyla)
+          // girilmiş ödeme kayıtlarıyla çakışıp, dokunulmamış (zaten "ödendi" sayılmış)
+          // kayıtlarda her açılışta sürpriz negatif "fazla ödeme" bakiyeleri üretiyordu.
+          // Kalan Borç artık sadece o müşteri elle düzenlenince veya ödeme eklenince/
+          // silinince yeniden hesaplanır (bkz. Customers.jsx). Burada sadece kayıtlı
+          // değerdeki kuruş artıkları temizlenir ve negatife düşmüşse 0'a çekilir.
+          setCustomers(data.customers.map(c => ({ ...c, kalanBorc: Math.max(0, Math.round(parseMoney(c.kalanBorc))) })));
+          setPayments(data.payments);
+        } else {
+          // Eski veri (payments alanı hiç yok) — önceki manuel "Kalan Borç" değerini referans
+          // alıp, o değere göre "zaten ödenmiş" sayılan tutarı tek bir geçmiş ödeme kaydına
+          // dönüştürür. (extraKalipFiyati'na göre migrate etmek eski kalanBorc'u görmezden
+          // gelip herkesi "hiç ödenmemiş" sayardı — borcu yanlışlıkla tam Ciro'ya şişirirdi.)
+          bumpId(data.customers);
+          const migratedPayments = [];
+          data.customers.forEach(c => {
+            const ciro = calcCiro(c, kdvRates);
+            const zatenOdenen = Math.max(ciro - parseMoney(c.kalanBorc), 0);
+            if (zatenOdenen > 0) {
+              migratedPayments.push({ id: uid(), customerId: c.id, tarih: c.installDate || today(), tutar: zatenOdenen, currency: c.currency || "TRY", not: "Geçmiş ödeme (otomatik migrasyon)" });
+            }
+          });
+          setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, migratedPayments, kdvRates) })));
+          setPayments(migratedPayments);
+        }
+      } else if (Array.isArray(data.payments)) {
+        setPayments(data.payments);
+      }
+      if (Array.isArray(data.dealers)) setDealers(data.dealers);
+      if (Array.isArray(data.stock)) setStock(data.stock);
+      if (Array.isArray(data.kalipDefs)) setKalipDefs(data.kalipDefs);
+      setStandardModels(safeStandardModels(data.standardModels));
+      if (Array.isArray(data.customModels)) setCustomModels(data.customModels);
+      if (data.factory) setFactory(f => ({ ...f, ...data.factory }));
+      if (Array.isArray(data.services)) setServices(data.services);
+      if (Array.isArray(data.notes)) setNotes(data.notes);
+      if (Array.isArray(data.parts)) setParts(data.parts);
+      if (Array.isArray(data.partSales)) setPartSales(data.partSales);
+      if (Array.isArray(data.teklifler)) setTeklifler(data.teklifler);
+      if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
+      if (Array.isArray(data.partStock)) setPartStock(data.partStock);
+      if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
+      if (Array.isArray(data.uretimFormlari)) setUretimFormlari(data.uretimFormlari);
+      setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
+      if (typeof data.nextId === "number") setIdCounter(data.nextId);
+      if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
+    } catch (err) { console.error(err); } finally {
+      // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver
+      setTimeout(() => { suppressSaveRef.current = false; }, 700);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        if (window.crmStorage) {
-          const data = await window.crmStorage.load();
-          if (data) {
-            // Çöp Kutusu: retention süresinden eski deletedAt'li kayıtlar yüklenirken kalıcı olarak süzülür
-            if (Array.isArray(data.customers)) data.customers = purgeOldTrash(data.customers);
-            if (Array.isArray(data.payments)) data.payments = purgeOldTrash(data.payments);
-            if (Array.isArray(data.dealers)) data.dealers = purgeOldTrash(data.dealers);
-            if (Array.isArray(data.stock)) data.stock = purgeOldTrash(data.stock);
-            if (Array.isArray(data.kalipDefs)) data.kalipDefs = purgeOldTrash(data.kalipDefs);
-            if (Array.isArray(data.customModels)) data.customModels = purgeOldTrash(data.customModels);
-            if (Array.isArray(data.services)) data.services = purgeOldTrash(data.services);
-            if (Array.isArray(data.notes)) data.notes = purgeOldTrash(data.notes);
-            if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
-            if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
-            if (Array.isArray(data.teklifler)) data.teklifler = purgeOldTrash(data.teklifler);
-            if (Array.isArray(data.faturalar)) data.faturalar = purgeOldTrash(data.faturalar);
-            // KDV oranı artık tek bir sayı değil, tarihe bağlı dönemler listesi — eski tekil
-            // appSettings.kdvRate'den göç edilir. Aşağıdaki Kalan Borç hesapları (hem eski veri
-            // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
-            // sayede oran değişikliği geçmiş kayıtlara da geriye dönük doğru şekilde yansır.
-            const kdvRates = normalizeKdvRates(data.appSettings);
-            // Fabrika adı geçmişte değiştiyse (prevNames), tüm referansları güncel adla eşitle
-            if (data.factory?.name && Array.isArray(data.factory.prevNames) && data.factory.prevNames.length > 0) {
-              const fName = data.factory.name;
-              const prevNames = data.factory.prevNames;
-              const norm = (val) => prevNames.includes(val) ? fName : val;
-              if (Array.isArray(data.customers)) {
-                data.customers = data.customers.map(c => ({
-                  ...c,
-                  satisYapan: norm(c.satisYapan),
-                  prevOwners: c.prevOwners?.map(o => ({ ...o, satisYapan: norm(o.satisYapan) })),
-                }));
-              }
-              if (Array.isArray(data.services)) {
-                data.services = data.services.map(s => ({ ...s, islemFirma: norm(s.islemFirma) }));
-              }
-            }
-            if (Array.isArray(data.customers)) {
-              if (Array.isArray(data.payments)) {
-                // NOT: Burada artık TÜM müşterilerin Kalan Borç'unu calcKalanBorc ile yeniden
-                // hesaplamıyoruz — bu, KDV dönemleri eklenmeden önce (eski sabit %20 oranıyla)
-                // girilmiş ödeme kayıtlarıyla çakışıp, dokunulmamış (zaten "ödendi" sayılmış)
-                // kayıtlarda her açılışta sürpriz negatif "fazla ödeme" bakiyeleri üretiyordu.
-                // Kalan Borç artık sadece o müşteri elle düzenlenince veya ödeme eklenince/
-                // silinince yeniden hesaplanır (bkz. Customers.jsx). Burada sadece kayıtlı
-                // değerdeki kuruş artıkları temizlenir ve negatife düşmüşse 0'a çekilir.
-                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: Math.max(0, Math.round(parseMoney(c.kalanBorc))) })));
-                setPayments(data.payments);
-              } else {
-                // Eski veri (payments alanı hiç yok) — önceki manuel "Kalan Borç" değerini referans
-                // alıp, o değere göre "zaten ödenmiş" sayılan tutarı tek bir geçmiş ödeme kaydına
-                // dönüştürür. (extraKalipFiyati'na göre migrate etmek eski kalanBorc'u görmezden
-                // gelip herkesi "hiç ödenmemiş" sayardı — borcu yanlışlıkla tam Ciro'ya şişirirdi.)
-                bumpId(data.customers);
-                const migratedPayments = [];
-                data.customers.forEach(c => {
-                  const ciro = calcCiro(c, kdvRates);
-                  const zatenOdenen = Math.max(ciro - parseMoney(c.kalanBorc), 0);
-                  if (zatenOdenen > 0) {
-                    migratedPayments.push({ id: uid(), customerId: c.id, tarih: c.installDate || today(), tutar: zatenOdenen, currency: c.currency || "TRY", not: "Geçmiş ödeme (otomatik migrasyon)" });
-                  }
-                });
-                setCustomers(data.customers.map(c => ({ ...c, kalanBorc: calcKalanBorc(c, migratedPayments, kdvRates) })));
-                setPayments(migratedPayments);
-              }
-            } else if (Array.isArray(data.payments)) {
-              setPayments(data.payments);
-            }
-            if (Array.isArray(data.dealers)) setDealers(data.dealers);
-            if (Array.isArray(data.stock)) setStock(data.stock);
-            if (Array.isArray(data.kalipDefs)) setKalipDefs(data.kalipDefs);
-            setStandardModels(safeStandardModels(data.standardModels));
-            if (Array.isArray(data.customModels)) setCustomModels(data.customModels);
-            if (data.factory) setFactory(f => ({ ...f, ...data.factory }));
-            if (Array.isArray(data.services)) setServices(data.services);
-            if (Array.isArray(data.notes)) setNotes(data.notes);
-            if (Array.isArray(data.parts)) setParts(data.parts);
-            if (Array.isArray(data.partSales)) setPartSales(data.partSales);
-            if (Array.isArray(data.teklifler)) setTeklifler(data.teklifler);
-            if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
-            if (Array.isArray(data.partStock)) setPartStock(data.partStock);
-            if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
-            setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
-            if (typeof data.nextId === "number") setIdCounter(data.nextId);
-          }
-        }
-      } catch (err) { console.error(err); } finally { setLoaded(true); }
-    };
-    load();
+    loadFromStorageRef.current().finally(() => setLoaded(true));
   }, []);
 
   const pendingSave = useRef(null);
   useEffect(() => {
-    if (!loaded || !window.crmStorage) return;
-    const data = { customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, nextId: getIdCounter() };
+    if (!loaded || !window.crmStorage || suppressSaveRef.current) return;
+    const data = { customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
+    saveTimer.current = setTimeout(async () => {
       pendingSave.current = null;
-      window.crmStorage.save(data);
+      const ok = await window.crmStorage.save(data);
+      if (ok) { failedSaveRef.current = null; }
+      else if (serverMode === "active") { failedSaveRef.current = data; }
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, loaded]);
+  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded]);
   useEffect(() => {
     const flush = () => {
       if (pendingSave.current && window.crmStorage?.flushSave) {
@@ -362,6 +499,7 @@ export default function App() {
         window.crmStorage.flushSave(pendingSave.current);
         pendingSave.current = null;
       }
+      window.crmLocks?.releaseAll?.().catch?.(() => {});
     };
     window.addEventListener("beforeunload", flush);
     return () => window.removeEventListener("beforeunload", flush);
@@ -391,8 +529,13 @@ export default function App() {
     }
   }, [appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency]);
 
-  if (unlocked === null) return null; // durum kontrol edilirken kısa an boş ekran (flicker önleme)
-  if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
+  if (serverMode === null) return null; // sunucu durumu kontrol edilirken bekle
+  if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} />;
+  // Sunucu modunda uygulama kilidi atlanır (sunucu girişi yeterli kimlik doğrulama sağlar)
+  if (serverMode !== "active") {
+    if (unlocked === null) return null; // durum kontrol edilirken kısa an boş ekran (flicker önleme)
+    if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
@@ -444,7 +587,7 @@ export default function App() {
 
         {/* Menü */}
         <nav style={{ padding: "16px 12px", flex: 1, overflowY: "auto" }}>
-          {TABS.map(t => {
+          {visibleTabs.map(t => {
             const active = tab === t.id;
             return (
               <button key={t.id} className="nav-btn" onClick={() => {
@@ -478,19 +621,35 @@ export default function App() {
         {/* Alt bilgi */}
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(232,93,26,.12)", fontSize: 11, color: "#7d614e", textAlign: "center", letterSpacing: .6 }}>
           {`altunmak.com · v${appVersion}`}
+          {serverMode === "active" && (
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 10px", borderRadius: 7, background: serverOnline ? "rgba(22,163,74,.12)" : "rgba(220,38,38,.12)", border: `1px solid ${serverOnline ? "rgba(22,163,74,.25)" : "rgba(220,38,38,.25)"}` }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: serverOnline ? "#16a34a" : "#dc2626", flexShrink: 0, boxShadow: serverOnline ? "0 0 0 2px rgba(22,163,74,.25)" : "0 0 0 2px rgba(220,38,38,.25)" }} />
+              <span style={{ color: serverOnline ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
+                {serverOnline ? "Sunucu bağlı" : "Sunucu kapalı"}
+              </span>
+            </div>
+          )}
+          {serverMode === "active" && (
+            <button onClick={async () => {
+              await window.appServer?.logout();
+              setServerMode("login");
+            }} style={{ display: "block", width: "100%", marginTop: 8, padding: "7px 0", background: "rgba(232,93,26,.13)", border: "1px solid rgba(232,93,26,.25)", borderRadius: 7, color: "#bd8257", fontSize: 11, cursor: "pointer", letterSpacing: .5 }}>
+              Çıkış Yap
+            </button>
+          )}
         </div>
       </div>
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
         {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} onDismissTeklif={handleDismissTeklif} />}
-        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} serverPermissions={serverPermissions} />}
         {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} />}
-        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} />}
+        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} customers={liveCustomers} kalipDefs={liveKalipDefs} uretimFormlari={liveUretimFormlari} setUretimFormlari={setUretimFormlari} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} />}
         {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} />}
-        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} />}
+        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} serverPermissions={serverPermissions} />}
       </div>
     </div>
   );

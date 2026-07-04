@@ -1,4 +1,4 @@
-import React, { useId, useState, useEffect, cloneElement, isValidElement, Children } from "react";
+import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
 import { trLower } from "../lib/utils";
 
@@ -401,6 +401,31 @@ export const ImageUpload = ({ value, onChange, maxPx = 250, label = "Resim", pre
             Sil
           </button>
         )}
+      </div>
+    </div>
+  );
+};
+
+export const LockConflict = ({ lockedBy, lockedAt, onForce, onCancel }) => {
+  const [elapsed, setElapsed] = useState(0);
+  const intervalRef = useRef(null);
+  useEffect(() => {
+    const calc = () => setElapsed(Math.max(0, Math.round((Date.now() - new Date(lockedAt).getTime()) / 60000)));
+    calc();
+    intervalRef.current = setInterval(calc, 30000);
+    return () => clearInterval(intervalRef.current);
+  }, [lockedAt]);
+  return (
+    <div style={{ padding: "40px 24px", textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#0f172a" }}>Bu kayıt şu an düzenleniyor</div>
+      <div style={{ color: "#64748b", fontSize: 14, marginBottom: 28 }}>
+        <strong style={{ color: "#0f172a" }}>{lockedBy}</strong>
+        {" "}bu kaydı {elapsed === 0 ? "az önce" : `${elapsed} dakika önce`} açtı.
+      </div>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+        <Btn variant="ghost" onClick={onCancel}>Geri Dön</Btn>
+        <Btn onClick={onForce}>Zorla Düzenle</Btn>
       </div>
     </div>
   );

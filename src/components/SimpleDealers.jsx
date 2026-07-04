@@ -3,13 +3,15 @@ import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {} }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
+  const { lockLoading: dealerLockLoading, lockConflict: dealerLock, forceAcquire: forceDealerLock } = useLock("dealer", modal?.edit?.id ?? null);
   const [dealerFilter, setDealerFilter] = useState(initialFilter); // all | bayi | anlasmali | borclu
   useEffect(() => { setDealerFilter(initialFilter); }, [initialFilter]);
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -493,6 +495,10 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
 
       {modal && (
         <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}>
+          {(dealerLock && modal?.edit) ? (
+            <LockConflict lockedBy={dealerLock.lockedBy} lockedAt={dealerLock.lockedAt}
+              onForce={forceDealerLock} onCancel={() => setModal(null)} />
+          ) : (<>
           <Field label="Firma Adı">
             <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Bayi firma adı" />
             {modal !== "factory" && <Warn>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>}
@@ -535,6 +541,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
             <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
+          </>)}
         </Modal>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon, Btn, Modal, Field, PasswordInput } from "../ui";
 import { Section } from "./Section";
 
-export const SettingsSecurity = ({ flash }) => {
+export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () => {} }) => {
   // ── Uygulama Şifresi (açılış kilidi) — isteğe bağlı, sadece bir caydırıcı yerel kilit ──
   const [appLockStatus, setAppLockStatus] = useState({ enabled: false });
   const [lockModal, setLockModal] = useState(null); // null | "setup" | "disable" | "changePassword"
@@ -86,7 +86,26 @@ export const SettingsSecurity = ({ flash }) => {
               <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Açılışta şifre sorulsun</span>
             </label>
             {appLockStatus.enabled && (
-              <Btn small variant="ghost" onClick={() => openLockModal("changePassword")}><Icon name="lock" size={12} /> Şifre Değiştir</Btn>
+              <>
+                <Btn small variant="ghost" onClick={() => openLockModal("changePassword")}><Icon name="lock" size={12} /> Şifre Değiştir</Btn>
+                <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 10 }}>Otomatik Kilitleme</div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 10 }}>
+                    <input type="checkbox" checked={!!appSettings.autoLockMinutes}
+                      onChange={e => setAppSettings(p => ({ ...p, autoLockMinutes: e.target.checked ? 5 : null }))}
+                      style={{ width: 17, height: 17, accentColor: "#e85d1a", cursor: "pointer" }} />
+                    <span style={{ fontSize: 13, color: "#0f172a" }}>Hareketsizlik sonrası otomatik kilitle</span>
+                  </label>
+                  {!!appSettings.autoLockMinutes && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 27 }}>
+                      <input type="number" min={1} max={120} value={appSettings.autoLockMinutes}
+                        onChange={e => setAppSettings(p => ({ ...p, autoLockMinutes: Math.max(1, parseInt(e.target.value) || 5) }))}
+                        style={{ width: 68, padding: "6px 10px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", textAlign: "center" }} />
+                      <span style={{ fontSize: 13, color: "#64748b" }}>dakika sonra kilitle</span>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </>
         )}

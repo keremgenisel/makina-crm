@@ -7,6 +7,7 @@ import { Section } from "./settings/Section";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsBackup } from "./settings/SettingsBackup";
 import { SettingsSecurity } from "./settings/SettingsSecurity";
+import { SettingsServer } from "./settings/SettingsServer";
 import { SettingsMail } from "./settings/SettingsMail";
 import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
@@ -19,15 +20,39 @@ import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
 import { SettingsDocuments } from "./settings/SettingsDocuments";
 
+const SETTINGS_GROUPS = [
+  { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
+  { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }] },
+  { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
+  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
+  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+];
+
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
+  rawUretimFormlari = [], setUretimFormlari = null,
+  serverPermissions = null,
 }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
   const [settingsTab, setSettingsTab] = useState("app"); // "app" | "models" | ...
+
+  const isAdmin = !serverPermissions || serverPermissions.role === "admin";
+
+  // Per-user settings: permissions JSON'ındaki settings alanı varsa onu kullan, yoksa kısıtlama yok.
+  const perUserSettings = (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.settings ?? null; } catch { return null; }
+  })();
+  const clientVisible = isAdmin ? null : perUserSettings;
+
+  const visibleGroups = SETTINGS_GROUPS.map(g => ({
+    ...g,
+    items: g.items.filter(item => isAdmin || !clientVisible || clientVisible.includes(item.id)),
+  })).filter(g => g.items.length > 0);
+  const canSeeDanger = isAdmin || !clientVisible || clientVisible.includes("danger");
 
   return (
     <div>
@@ -36,13 +61,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
         {/* SOL DİKEY MENÜ — gruplu */}
         <div style={{ width: 220, flexShrink: 0, minWidth: 200 }}>
-          {[
-            { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
-            { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }] },
-            { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
-            { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
-            { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
-          ].map(g => (
+          {visibleGroups.map(g => (
             <div key={g.grup} style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
               {g.items.map(st => {
@@ -67,7 +86,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           ))}
 
           {/* Tehlikeli Bölge — en altta, kırmızı */}
-          <div style={{ marginTop: 8, borderTop: "1.5px solid #fecaca", paddingTop: 14 }}>
+          {canSeeDanger && <div style={{ marginTop: 8, borderTop: "1.5px solid #fecaca", paddingTop: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>Tehlikeli Bölge</div>
             <button onClick={() => setSettingsTab("danger")}
               style={{
@@ -82,7 +101,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
               <Icon name="trash" size={16} />
               Uygulamayı Kaldır
             </button>
-          </div>
+          </div>}
         </div>
 
         {/* SAĞ İÇERİK */}
@@ -110,7 +129,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         />
       )}
 
-      {settingsTab === "security" && <SettingsSecurity flash={flash} />}
+      {settingsTab === "security" && <SettingsSecurity flash={flash} appSettings={appSettings} setAppSettings={setAppSettings} />}
+      {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} />}
 
       {settingsTab === "models" && (
         <Section title="Makina Modelleri" icon="machine">
@@ -183,9 +203,10 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}
           rawDealers={rawDealers} rawStock={rawStock} rawNotes={rawNotes} rawKalipDefs={rawKalipDefs} rawParts={rawParts} rawCustomModels={rawCustomModels}
           rawTeklifler={rawTeklifler} rawFaturalar={rawFaturalar}
+          rawUretimFormlari={rawUretimFormlari}
           setCustomers={setCustomers} setServices={setServices} setPartSales={setPartSales} setPayments={setPayments}
           setDealers={setDealers} setStock={setStock} setNotes={setNotes} setKalipDefs={setKalipDefs} setParts={setParts} setCustomModels={setCustomModels}
-          setTeklifler={setTeklifler} setFaturalar={setFaturalar}
+          setTeklifler={setTeklifler} setFaturalar={setFaturalar} setUretimFormlari={setUretimFormlari}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
         />

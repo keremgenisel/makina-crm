@@ -1,17 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES } from "../lib/constants";
+import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Btn, ConfirmDialog, Pagination } from "./ui";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
-
-const SALE_TYPE_STYLE = {
-  "Faturalı Yurtiçi":  { bg: "#d1fae5", fg: "#065f46" },
-  "Faturalı Yurtdışı": { bg: "#dbeafe", fg: "#1d4ed8" },
-  "Faturasız Yurtiçi": { bg: "#fef3c7", fg: "#92400e" },
-  "Faturasız Yurtdışı":{ bg: "#fde68a", fg: "#7c2d12" },
-};
 
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
@@ -22,6 +15,7 @@ export const Customers = ({
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
+  serverPermissions = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -37,6 +31,13 @@ export const Customers = ({
   const isCustomerTab = isCustomer;
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
   const factoryName = factory?.name || "Altuntaş Makina";
+
+  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
+  const _allowedActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.customerActions ?? null; }
+    catch { return null; }
+  })();
+  const canDo = action => !_allowedActions || _allowedActions.includes(action);
 
   const firmCount = useMemo(() => {
     const fc = {};
@@ -185,6 +186,7 @@ export const Customers = ({
       : (c.kalip ? [{ olcu: "", ad: c.kalip }] : [{ olcu: "", ad: "" }]);
     setForm({ ...c, kaliplar, kalipSayisi: c.kalipSayisi ?? kaliplar.length });
     setModal({ edit: c });
+    setDetailViewId(null); // detay modalı onDetailClosed tetiklemeden kapat — hem çift kilit sorununu çözer, hem dashboard'a geri dönme olmaz
   };
   const save = () => {
     if (modal === "add") {
@@ -382,7 +384,7 @@ export const Customers = ({
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>{title}</h2>
-        <Btn onClick={openAdd}><Icon name="plus" size={14} /> {addLabel}</Btn>
+        {canDo(isCustomer ? "cust_add" : "dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> {addLabel}</Btn>}
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         {[
@@ -515,8 +517,8 @@ export const Customers = ({
                   </td>
                   <td style={{ padding: "13px 16px" }}>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <Btn small variant="ghost" onClick={() => openEdit(c)}><Icon name="edit" size={12} /></Btn>
-                      <Btn small variant="danger" onClick={() => del(c.id)}><Icon name="trash" size={12} /></Btn>
+                      {canDo(isCustomer ? "cust_edit" : "dealer_edit") && <Btn small variant="ghost" onClick={() => openEdit(c)}><Icon name="edit" size={12} /></Btn>}
+                      {canDo(isCustomer ? "cust_delete" : "dealer_delete") && <Btn small variant="danger" onClick={() => del(c.id)}><Icon name="trash" size={12} /></Btn>}
                     </div>
                   </td>
                 </tr>
@@ -534,6 +536,7 @@ export const Customers = ({
           onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
+          canDo={canDo}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomerTab}
           customers={customers} setCustomers={setCustomers}

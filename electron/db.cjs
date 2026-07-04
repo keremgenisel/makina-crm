@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS customers (
   faturali TEXT, faturaBedeli REAL, fabrikaSatisBedeli REAL, komisyon REAL, currency TEXT,
   kalanBorc REAL, isResale INTEGER, prevOwners TEXT,
   kalip TEXT, kalipSayisi INTEGER, extraKalipFiyati TEXT, deletedAt TEXT,
+  bantlar TEXT,
   konveyorSacId TEXT, bantSecimiId TEXT, sourceStockId INTEGER
 );
 
@@ -120,7 +121,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -131,6 +132,34 @@ CREATE TABLE IF NOT EXISTS faturalar (
   payment TEXT, delivery TEXT,
   paketAdedi TEXT, brutAgirlik TEXT, olculer TEXT,
   gtipNo TEXT, notField TEXT, createdAt TEXT, deletedAt TEXT
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id          INTEGER PRIMARY KEY,
+  username    TEXT NOT NULL UNIQUE,
+  password    TEXT NOT NULL,
+  role        TEXT NOT NULL DEFAULT 'user',
+  is_active   INTEGER NOT NULL DEFAULT 1,
+  permissions TEXT,
+  created_at  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS locks (
+  entity_type TEXT NOT NULL,
+  entity_id   TEXT NOT NULL,
+  locked_by   TEXT NOT NULL,
+  locked_at   TEXT NOT NULL,
+  expires_at  TEXT NOT NULL,
+  PRIMARY KEY (entity_type, entity_id)
+);
+
+CREATE TABLE IF NOT EXISTS uretim_formlari (
+  id INTEGER PRIMARY KEY,
+  tarih TEXT,
+  notField TEXT,
+  createdAt TEXT,
+  satirlar TEXT,
+  deletedAt TEXT
 );
 
 `;
@@ -169,12 +198,13 @@ const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
+const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models"];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -379,9 +409,17 @@ function populateAll(conn, data) {
     }
   }
 
+  if (Array.isArray(data.uretimFormlari)) {
+    conn.prepare(`DELETE FROM uretim_formlari`).run();
+    const stmtU = conn.prepare(`INSERT INTO uretim_formlari (id, tarih, notField, createdAt, satirlar, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+    for (const u of data.uretimFormlari) {
+      stmtU.run(u.id, u.tarih ?? null, u.not ?? null, u.createdAt ?? null, json(u.satirlar ?? []), u.deletedAt ?? null);
+    }
+  }
+
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -428,6 +466,7 @@ function migrateFromJsonIfNeeded() {
     ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
     ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
     for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
+    ensureColumns(db, "users", USERS_PERMISSIONS_COLUMN);
     active = true;
     return;
   }
@@ -628,10 +667,16 @@ function readBlobFromDb() {
     satirlar: parseJsonCol(satirlar, []),
   }));
 
+  const uretimFormlari = db.prepare(`SELECT * FROM uretim_formlari`).all().map(({ notField, satirlar, ...rest }) => ({
+    ...rest,
+    not: notField,
+    satirlar: parseJsonCol(satirlar, []),
+  }));
+
   return {
     customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, teklifler, appSettings, nextId,
-    partStock, partStockLog, faturalar,
+    partStock, partStockLog, faturalar, uretimFormlari,
   };
 }
 
@@ -639,4 +684,102 @@ function writeBlobToDb(data) {
   db.transaction(() => populateAll(db, data))();
 }
 
-module.exports = { migrateFromJsonIfNeeded, isActive, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath };
+// ── Meta yardımcıları ──────────────────────────────────────────────────────────
+function getMetaValue(key) {
+  if (!db) return null;
+  const row = db.prepare("SELECT value FROM meta WHERE key = ?").get(key);
+  return row ? row.value : null;
+}
+function setMetaValue(key, value) {
+  if (!db) return;
+  db.prepare("INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(key, String(value));
+}
+function getDataVersion() {
+  const v = getMetaValue("dataVersion");
+  return v ? parseInt(v) : 0;
+}
+function bumpDataVersion() {
+  const next = getDataVersion() + 1;
+  setMetaValue("dataVersion", String(next));
+  return next;
+}
+
+// ── Kullanıcı CRUD ────────────────────────────────────────────────────────────
+function getUserByUsername(username) {
+  if (!db) return null;
+  return db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+}
+function getAllUsers() {
+  if (!db) return [];
+  return db.prepare("SELECT id,username,role,is_active,permissions,created_at FROM users ORDER BY id").all();
+}
+function createUser(username, hash, role, permissions) {
+  if (!db) throw new Error("DB aktif değil");
+  const r = db.prepare("INSERT INTO users (username,password,role,is_active,permissions,created_at) VALUES (?,?,?,1,?,?)").run(username, hash, role, permissions ?? null, new Date().toISOString());
+  return r.lastInsertRowid;
+}
+function updateUser(id, fields) {
+  if (!db) return;
+  const parts = [], vals = [];
+  if (fields.is_active !== undefined)  { parts.push("is_active=?");   vals.push(fields.is_active ? 1 : 0); }
+  if (fields.role)                     { parts.push("role=?");         vals.push(fields.role); }
+  if (fields.password)                 { parts.push("password=?");     vals.push(fields.password); }
+  if (fields.permissions !== undefined){ parts.push("permissions=?");  vals.push(fields.permissions); }
+  if (!parts.length) return;
+  db.prepare(`UPDATE users SET ${parts.join(",")} WHERE id=?`).run(...vals, id);
+}
+function deleteUser(id) {
+  if (!db) return;
+  db.prepare("DELETE FROM users WHERE id=?").run(id);
+}
+function hasAnyUser() {
+  if (!db) return false;
+  return db.prepare("SELECT COUNT(*) as c FROM users").get().c > 0;
+}
+
+// ── Kayıt kilitleme ───────────────────────────────────────────────────────────
+const LOCK_TTL_MS = 2 * 60 * 1000; // 2 dakika
+
+function cleanExpiredLocks() {
+  if (!db) return;
+  db.prepare("DELETE FROM locks WHERE expires_at < ?").run(new Date().toISOString());
+}
+
+function acquireLock(entityType, entityId, username, force = false) {
+  if (!db) return { ok: true };
+  cleanExpiredLocks();
+  const existing = db.prepare("SELECT * FROM locks WHERE entity_type=? AND entity_id=?").get(entityType, String(entityId));
+  if (existing && !force && existing.locked_by !== username) {
+    return { error: "locked", lockedBy: existing.locked_by, lockedAt: existing.locked_at };
+  }
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + LOCK_TTL_MS).toISOString();
+  db.prepare(`INSERT INTO locks (entity_type,entity_id,locked_by,locked_at,expires_at) VALUES (?,?,?,?,?)
+    ON CONFLICT(entity_type,entity_id) DO UPDATE SET locked_by=excluded.locked_by,locked_at=excluded.locked_at,expires_at=excluded.expires_at`)
+    .run(entityType, String(entityId), username, now, expiresAt);
+  return { ok: true };
+}
+
+function releaseLock(entityType, entityId, username) {
+  if (!db) return;
+  db.prepare("DELETE FROM locks WHERE entity_type=? AND entity_id=? AND locked_by=?")
+    .run(entityType, String(entityId), username);
+}
+
+function listLocks() {
+  if (!db) return [];
+  cleanExpiredLocks();
+  return db.prepare("SELECT * FROM locks ORDER BY locked_at").all();
+}
+
+function releaseAllLocksByUser(username) {
+  if (!db) return;
+  db.prepare("DELETE FROM locks WHERE locked_by=?").run(username);
+}
+
+module.exports = {
+  migrateFromJsonIfNeeded, isActive, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
+  getUserByUsername, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,
+  acquireLock, releaseLock, listLocks, releaseAllLocksByUser,
+};

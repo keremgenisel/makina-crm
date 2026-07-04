@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-"Altunmak CRM" (`Altunmak CRM` / package name `makina-crm`) — a Windows desktop CRM for Altuntaş Makina, built with React (Vite) for the UI and Electron as the desktop shell. It tracks customers/machines, dealers, service requests, machine resale history, stock, spare parts, notes, and finance, and persists everything to a single JSON file on disk (no backend, no database).
+"Altunmak CRM" (`Altunmak CRM` / package name `makina-crm`) — a Windows desktop CRM for Altuntaş Makina, built with React (Vite) for the UI and Electron as the desktop shell. It tracks customers/machines, dealers, service requests, machine resale history, stock, spare parts, notes, and finance, and persists everything to a SQLite database (`data.db`) via `better-sqlite3` in `electron/db.cjs`. Supports a multi-user LAN mode: one PC acts as server (embedded Express + JWT, `electron/server.cjs`), others connect as HTTP clients; single-user local mode also works with no configuration.
 
 ## Commands
 
@@ -55,10 +55,11 @@ All three used to be separate top-level tabs. They were removed one at a time an
 - `src/App.jsx` (last in the chain): owns all top-level state (`customers`, `dealers`, `services`, `stock`, `notes`, `parts`, `partSales`, `kalipDefs`, `standardModels`/`customModels`, `factory`, `appSettings`, geo data, toast, current `tab`) and renders the sidebar + the active tab's component, passing data/setters down as props (no Context, no Redux/Zustand — plain prop drilling).
 
 ### Data persistence pattern
-- On mount, `App` calls `window.crmStorage.load()` to read `data.json`; if Electron APIs are absent (e.g. running in a plain browser via `npm run preview`), storage silently no-ops and data only lives in memory for that session.
-- Any change to the tracked state arrays triggers a `useRef`-backed 500ms debounced `window.crmStorage.save(...)` writing the *entire* state blob at once.
-- `main.cjs` writes saves atomically (write to `.tmp`, then `fs.renameSync`) so a crash mid-write can't corrupt `data.json`.
-- Manual backup/restore and scheduled auto-backup (configurable frequency, target folder chosen via native dialog) go through separate IPC channels (`crm:backup`, `crm:restore`, `crm:chooseFolder`, `crm:writeBackup`) and write timestamped JSON files, independent of the live `data.json`.
+- On mount, `App` calls `window.crmStorage.load()`. In local mode this reads from SQLite via `electron/db.cjs`; in client mode it fetches from the server via `electron/ipc/data.cjs`. If Electron APIs are absent (e.g. `npm run preview`), storage silently no-ops and data only lives in memory.
+- Any change to the tracked state arrays triggers a `useRef`-backed 500ms debounced `window.crmStorage.save(...)` writing the entire state blob at once (SQLite stores it as a single JSON blob in the `meta` table, not as individual rows per record).
+- SQLite writes are atomic via WAL mode; `electron/db.cjs` also keeps the old `data.json` atomic-write pattern (`fs.renameSync`) for the JSON fallback path.
+- Multi-user mode: server PC runs `electron/server.cjs` (Express + JWT). Client PCs poll `/api/version` every 30 s and listen for `server:dataChanged` push events. Optimistic locking with `dataVersion` prevents silent overwrites (409 on conflict → reload). Entity-level pessimistic locking via `useLock` hook + `/api/lock` endpoint (2-min TTL, heartbeat every 60 s, fail-open).
+- Manual backup/restore and scheduled auto-backup go through separate IPC channels (`crm:backup`, `crm:restore`, `crm:chooseFolder`, `crm:writeBackup`) and write timestamped JSON files.
 - New records get IDs from the global `uid()` counter, not from `crypto.randomUUID()` or DB-assigned IDs — when loading saved data, `bumpId(...)` scans existing records to advance the counter past any existing max ID.
 
 ### Printing and export

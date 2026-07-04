@@ -7,9 +7,9 @@ import { Section } from "./Section";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
-  rawTeklifler = [], rawFaturalar = [],
+  rawTeklifler = [], rawFaturalar = [], rawUretimFormlari = [],
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
-  setTeklifler, setFaturalar,
+  setTeklifler, setFaturalar, setUretimFormlari = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -84,6 +84,8 @@ export const SettingsTrash = ({
   const purgeTeklif = (t) => { setTeklifler?.(p => p.filter(x => x.id !== t.id)); showToast("Belge kalıcı olarak silindi."); };
   const restoreFatura = (f) => { setFaturalar?.(p => p.map(x => x.id === f.id ? { ...x, deletedAt: undefined } : x)); showToast("Fatura geri alındı."); };
   const purgeFatura = (f) => { setFaturalar?.(p => p.filter(x => x.id !== f.id)); showToast("Fatura kalıcı olarak silindi."); };
+  const restoreUretimFormu = (u) => { setUretimFormlari?.(p => p.map(x => x.id === u.id ? { ...x, deletedAt: undefined } : x)); showToast("Üretim formu geri alındı."); };
+  const purgeUretimFormu = (u) => { setUretimFormlari?.(p => p.filter(x => x.id !== u.id)); showToast("Üretim formu kalıcı olarak silindi."); };
   const emptyTrash = () => {
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
@@ -97,6 +99,7 @@ export const SettingsTrash = ({
     setCustomModels(p => p.filter(x => !x.deletedAt));
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
+    setUretimFormlari?.(p => p.filter(x => !x.deletedAt));
     showToast("Çöp kutusu boşaltıldı.");
   };
 
@@ -118,8 +121,9 @@ export const SettingsTrash = ({
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
+    rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${u.tarih || "—"}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar]);
+  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

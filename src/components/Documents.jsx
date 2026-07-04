@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE } from "./ui";
+import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
+import { useLock } from "../hooks/useLock";
 import LOGO_B64 from "../assets/logo.avif?inline";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR } from "../lib/constants";
 
@@ -248,9 +249,11 @@ export const Documents = ({
   const [form, setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
   const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → müşteri çevirme bildirimi
+  const { lockLoading: teklifLockLoading, lockConflict: teklifLock, forceAcquire: forceTeklifLock } = useLock("teklif", form?.id ?? null);
 
   // ── Yurt Dışı Fatura state ──
   const [faturaForm, setFaturaForm] = useState(null);
+  const { lockLoading: faturaLockLoading, lockConflict: faturaLock, forceAcquire: forceFaturaLock } = useLock("fatura", faturaForm?.id ?? null);
   const [faturaConfirmDel, setFaturaConfirmDel] = useState(null);
   const liveFaturalar = useMemo(() => withoutDeleted(faturalar).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")), [faturalar]);
   const [faturaSearch, setFaturaSearch] = useState("");
@@ -263,7 +266,7 @@ export const Documents = ({
   const makeEmptyFatura = () => {
     const fCfg = appSettings?.evrakFormConfig?.fatura;
     const fd = fCfg?.fieldDefaults || {};
-    const fv = (key, fallback) => fd[key]?.TR ?? fd[key] ?? fallback;
+    const fv = (key, fallback) => fd[key]?.EN ?? fd[key]?.TR ?? fd[key] ?? fallback;
     return {
       id: null,
       no: "",
@@ -278,8 +281,8 @@ export const Documents = ({
       currency: "USD",
       kur: "",
       origin:      fv("origin",      "Türkiye"),
-      payment:     fv("payment",     ""),
-      delivery:    fv("delivery",    ""),
+      payment:     fv("payment",     "T/T in advance"),
+      delivery:    fv("delivery",    "CIF Istanbul"),
       paketAdedi:  fv("paketAdedi",  "1"),
       brutAgirlik: fv("brutAgirlik", "180 KG"),
       olculer:     fv("olculer",     "70x100x80 CM"),
@@ -430,6 +433,8 @@ export const Documents = ({
     }
     const dil = t.dil || "TR";
     const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
+    const fdP = evrakFormConfig?.proforma?.fieldDefaults || {};
+    const fvP = (key, fallback) => fdP[key]?.[dil] ?? fdP[key]?.TR ?? fallback;
     const newForm = {
       ...t,
       id: null,
@@ -438,12 +443,12 @@ export const Documents = ({
       parentTeklifId: t.id,
       dil,
       kdvOrani: dil === "EN" ? "0" : t.kdvOrani,
-      odemeSekli: D.odemeSekli,
-      teslimSekli: D.teslimSekli,
-      teslimSuresi: D.teslimSuresi,
-      ek: D.ek,
+      odemeSekli: fvP("odemeSekli", D.odemeSekli),
+      teslimSekli: fvP("teslimSekli", D.teslimSekli),
+      teslimSuresi: fvP("teslimSuresi", D.teslimSuresi),
+      ek: fvP("ek", D.ek),
       not: "",
-      teslimYeri: t.teslimYeri || D.teslimYeri,
+      teslimYeri: t.teslimYeri || fvP("teslimYeri", D.teslimYeri),
       gtipNo: t.gtipNo || factory?.gtipNo || "",
       teklifGecerlilik: "",
       durum: "taslak",
@@ -915,6 +920,10 @@ export const Documents = ({
         <Modal wide maxWidth={1100} maxHeight="90vh"
           title={faturaForm.id ? "Faturayı Düzenle" : "Yeni Yurt Dışı Fatura"}
           onClose={() => setFaturaForm(null)}>
+          {(faturaLock && faturaForm.id) ? (
+            <LockConflict lockedBy={faturaLock.lockedBy} lockedAt={faturaLock.lockedAt}
+              onForce={forceFaturaLock} onCancel={() => setFaturaForm(null)} />
+          ) : <>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 16 }}>
             <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
@@ -1102,6 +1111,7 @@ export const Documents = ({
               </div>
             </div>
           </div>
+          </>}
         </Modal>
         );
       })()}
@@ -1111,6 +1121,10 @@ export const Documents = ({
       <Modal wide maxWidth={1180} maxHeight="88vh"
         title={form.id ? "Belgeyi Düzenle" : (form.type === "teklif" ? "Yeni Teklif" : "Yeni Proforma")}
         onClose={() => setForm(null)}>
+        {(teklifLock && form.id) ? (
+          <LockConflict lockedBy={teklifLock.lockedBy} lockedAt={teklifLock.lockedAt}
+            onForce={forceTeklifLock} onCancel={() => setForm(null)} />
+        ) : <>
         {/* Durum + Kaydet */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           {form.type === "teklif" && form.durum === "onaylandi" && form.id && !form.satisTamam && (() => {
@@ -1274,16 +1288,18 @@ export const Documents = ({
                       <select value={form.dil} onChange={e => {
                         const dil = e.target.value;
                         const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
+                        const fd = evrakFormConfig?.[form.type]?.fieldDefaults || {};
+                        const fv = (key, fallback) => fd[key]?.[dil] ?? fd[key]?.TR ?? fallback;
                         setForm(p => ({
                           ...p, dil,
                           kdvOrani: dil === "EN" ? "0" : p.kdvOrani,
-                          odemeSekli: D.odemeSekli,
-                          teslimSekli: D.teslimSekli,
-                          teslimSuresi: D.teslimSuresi,
-                          not: p.type === "proforma" ? p.not : D.notTeklif,
-                          ek: D.ek,
-                          teklifGecerlilik: p.type === "teklif" ? D.teklifGecerlilik : "",
-                          teslimYeri: p.type === "proforma" ? D.teslimYeri : p.teslimYeri,
+                          odemeSekli: fv("odemeSekli", D.odemeSekli),
+                          teslimSekli: fv("teslimSekli", D.teslimSekli),
+                          teslimSuresi: fv("teslimSuresi", D.teslimSuresi),
+                          not: p.type === "proforma" ? p.not : fv("not", D.notTeklif),
+                          ek: fv("ek", D.ek),
+                          teklifGecerlilik: p.type === "teklif" ? fv("teklifGecerlilik", D.teklifGecerlilik) : "",
+                          teslimYeri: p.type === "proforma" ? fv("teslimYeri", D.teslimYeri) : p.teslimYeri,
                         }));
                       }} style={inputStyle}>
                         <option value="TR">Türkçe (TR)</option>
@@ -1504,6 +1520,7 @@ export const Documents = ({
         <Btn variant="ghost" onClick={() => setForm(null)}>Vazgeç</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
+      </>}
       </Modal>
       )}
     </div>
@@ -2027,7 +2044,8 @@ function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "", fatura
       : [];
   const bankHtml = bankalar.map((b, bi) => `
     ${bi > 0 ? `<div style="border-top:1px solid #e2e8f0;margin:5px 0;"></div>` : ""}
-    ${b.bankaAdi ? `<div>${b.bankaAdi}${b.swift ? `  ·  SWIFT: <b>${b.swift}</b>` : ""}</div>` : ""}
+    ${b.bankaAdi ? `<div>${b.bankaAdi}</div>` : ""}
+    ${b.swift ? `<div>SWIFT: <b>${b.swift}</b></div>` : ""}
     ${b.hesapAdi ? `<div>Account Name: <b>${b.hesapAdi}</b></div>` : ""}
     ${b.ibanTL  ? `<div>IBAN (TRY): <b style="font-family:monospace;">${b.ibanTL}</b></div>` : ""}
     ${b.ibanEUR ? `<div>IBAN (EUR): <b style="font-family:monospace;">${b.ibanEUR}</b></div>` : ""}

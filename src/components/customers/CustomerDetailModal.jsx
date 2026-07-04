@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
+import { CUR_SYM, ODEME_YONTEMLERI, SALE_TYPE_STYLE } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu,
   isPartSaleBorcluMu, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi,
-  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan,
+  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi,
 } from "../../lib/utils";
 import {
   printServiceForm as printServiceFormTemplate,
@@ -14,16 +14,10 @@ import {
   buildSandikEtiketiHtml,
   DEFAULT_SANDIK_TRANSLATIONS,
 } from "../../lib/printTemplates";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict } from "../ui";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
-
-const SALE_TYPE_STYLE = {
-  "Faturalı Yurtiçi":  { bg: "#d1fae5", fg: "#065f46" },
-  "Faturalı Yurtdışı": { bg: "#dbeafe", fg: "#1d4ed8" },
-  "Faturasız Yurtiçi": { bg: "#fef3c7", fg: "#92400e" },
-  "Faturasız Yurtdışı":{ bg: "#fde68a", fg: "#7c2d12" },
-};
+import { useLock } from "../../hooks/useLock";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -32,6 +26,7 @@ export const CustomerDetailModal = ({
   onOpenEdit,
   onOpenAddForFirm,
   isCustomer,
+  canDo = () => true,
   customers, setCustomers,
   services, setServices,
   partSales, setPartSales,
@@ -58,6 +53,8 @@ export const CustomerDetailModal = ({
   const [sandikModal, setSandikModal] = useState(null);
   const [mailDraft, setMailDraft] = useState(null);
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
+
+  const { lockConflict: detailLock, forceAcquire: forceDetailLock } = useLock("customer", detailView?.id ?? null);
 
   const todayStr = today();
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -551,7 +548,11 @@ export const CustomerDetailModal = ({
 
   return (
     <>
-      <Modal wide maxWidth={1080} title={detailView.name} onClose={onClose} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
+      <Modal wide maxWidth={1080} title={detailView.name} onClose={onClose} footer={detailLock ? null : (<Btn variant="ghost" onClick={onClose}>Kapat</Btn>)}>
+        {detailLock ? (
+          <LockConflict lockedBy={detailLock.lockedBy} lockedAt={detailLock.lockedAt}
+            onForce={forceDetailLock} onCancel={onClose} />
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: hasMultiple ? "220px 1fr" : "1fr", gap: 20, alignItems: "start" }}>
           {hasMultiple && (
             <div>
@@ -653,7 +654,7 @@ export const CustomerDetailModal = ({
                 ["Adres", detailView.adres],
                 ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
                 ["Model", detailView.model],
-                ["Makina Kalıp Çapı", detailView.kalipCapi ? `${detailView.kalipCapi.en || ""}×${detailView.kalipCapi.yukseklik || ""}×${detailView.kalipCapi.boy || ""}`.replace(/^×+|×+$/g, "") : ""],
+                ["Makina Kalıp Çapı", fmtKalipCapi(detailView.kalipCapi)],
                 ["Konveyör Saç", detailView.konveyorSacId ? (parts.find(p => String(p.id) === String(detailView.konveyorSacId))?.ad || "") : ""],
                 ["Bant", detailView.bantSecimiId ? (parts.find(p => String(p.id) === String(detailView.bantSecimiId))?.ad || "") : ""],
                 ...(Array.isArray(detailView.bantlar) ? detailView.bantlar.map((b, i) => {
@@ -673,7 +674,7 @@ export const CustomerDetailModal = ({
                     <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{isBant ? "Bant" : k}</div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
                     {sub && <div style={{ fontSize: 10.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>{sub}</div>}
-                    {isBant && (
+                    {isBant && canDo("cust_detail_edit") && (
                       <button
                         onClick={() => setCustomers(p => p.map(c => c.id === detailView.id ? { ...c, bantlar: (c.bantlar || []).filter((_, i) => i !== bantIdx) } : c))}
                         title="Eski bant verisini kaldır"
@@ -706,21 +707,23 @@ export const CustomerDetailModal = ({
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>
-                  <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>
-                  <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>
+                  {canDo("cust_payment_add") && <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>}
+                  {canDo("cust_service_add") && <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>}
+                  {canDo("cust_kalip_add") && <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: detailView.id, name: "", satanFirma: detailView.name, adres: "", city: "", country: "Türkiye", saleDate: today(), aciklama: "" })}>
-                    <Icon name="customers" size={12} /> Yeni Sahip
-                  </Btn>
-                  {isCustomer && (
+                  {canDo("cust_detail_new_owner") && (
+                    <Btn small variant="ghost" onClick={() => setNewOwnerForm({ _machineId: detailView.id, name: "", satanFirma: detailView.name, adres: "", city: "", country: "Türkiye", saleDate: today(), aciklama: "" })}>
+                      <Icon name="customers" size={12} /> Yeni Sahip
+                    </Btn>
+                  )}
+                  {isCustomer && canDo("cust_detail_add_machine") && (
                     <Btn small variant="ghost" onClick={() => { onClose(); onOpenAddForFirm(detailView); }}>
                       <Icon name="plus" size={12} /> Bu Firmaya Makina Ekle
                     </Btn>
                   )}
-                  <Btn small variant="ghost" onClick={openSandikEtiket}><Icon name="print" size={12} /> Sandık Etiketi</Btn>
-                  <Btn small onClick={() => { onClose(); onOpenEdit(detailView); }}><Icon name="edit" size={12} /> Düzenle</Btn>
+                  {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={openSandikEtiket}><Icon name="print" size={12} /> Sandık Etiketi</Btn>}
+                  {canDo("cust_detail_edit") && <Btn small onClick={() => onOpenEdit(detailView)}><Icon name="edit" size={12} /> Düzenle</Btn>}
                 </div>
               </div>
             </div>
@@ -746,11 +749,13 @@ export const CustomerDetailModal = ({
                       <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "right" }}>
                         Devir tarihi<br /><b style={{ color: "#475569" }}>{fmtTR(o.soldDate)}</b>
                       </div>
-                      <button onClick={() => openEditPrevOwner(detailView.id, i, o)} title="Bu kaydı düzelt"
-                        style={{ border: "none", background: "transparent", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
-                        <Icon name="edit" size={14} />
-                      </button>
-                      {i === detailView.prevOwners.length - 1 && (
+                      {canDo("cust_detail_new_owner") && (
+                        <button onClick={() => openEditPrevOwner(detailView.id, i, o)} title="Bu kaydı düzelt"
+                          style={{ border: "none", background: "transparent", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
+                          <Icon name="edit" size={14} />
+                        </button>
+                      )}
+                      {i === detailView.prevOwners.length - 1 && canDo("cust_detail_new_owner") && (
                         <button onClick={() => setConfirmUndoOwnerId(detailView.id)} title="Son devri geri al"
                           style={{ border: "none", background: "transparent", cursor: "pointer", color: "#dc2626", padding: 4 }}>
                           <Icon name="refresh" size={14} />
@@ -772,8 +777,8 @@ export const CustomerDetailModal = ({
                   <span style={{ fontSize: 11, background: "#fff", color: "#64748b", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Btn small variant="ghost" onClick={() => openPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>
-                  <Btn small variant="ghost" onClick={() => openPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>
+                  {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => openPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
+                  {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => openPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
                 </div>
               </div>
               {detailTimelineEvents.length === 0 ? (
@@ -796,30 +801,38 @@ export const CustomerDetailModal = ({
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 1 }}>
                           {ev.kind === "service" && sv ? (
                             <>
-                              <span onClick={() => openEditService(sv)} title="Düzenlemek için tıklayın"
-                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                              <button onClick={() => openPrintOrPick("servis", sv)} title="Servis Formu Yazdır"
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                <Icon name="print" size={11} /> Yazdır
-                              </button>
-                              <button onClick={() => openPrintOrPick("mail_servis", sv)} title="Servis Formu E-posta Gönder"
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                <Icon name="mail" size={11} /> E-posta
-                              </button>
-                              <button onClick={() => setConfirmDeleteServiceId(sv.id)} title="Servis kaydını sil"
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                <Icon name="trash" size={11} /> Sil
-                              </button>
+                              <span onClick={canDo("cust_service_edit") ? () => openEditService(sv) : undefined} title={canDo("cust_service_edit") ? "Düzenlemek için tıklayın" : undefined}
+                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_service_edit") ? "pointer" : "default", textDecoration: canDo("cust_service_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                              {canDo("cust_detail_print") && (
+                                <button onClick={() => openPrintOrPick("servis", sv)} title="Servis Formu Yazdır"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                  <Icon name="print" size={11} /> Yazdır
+                                </button>
+                              )}
+                              {canDo("cust_detail_mail") && (
+                                <button onClick={() => openPrintOrPick("mail_servis", sv)} title="Servis Formu E-posta Gönder"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                  <Icon name="mail" size={11} /> E-posta
+                                </button>
+                              )}
+                              {canDo("cust_service_delete") && (
+                                <button onClick={() => setConfirmDeleteServiceId(sv.id)} title="Servis kaydını sil"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                  <Icon name="trash" size={11} /> Sil
+                                </button>
+                              )}
                             </>
                           ) : ev.kind === "part" && psList ? (
                             psList.length === 1 ? (
                               <>
-                                <span onClick={() => openEditPartSale(psList[0])} title="Düzenlemek için tıklayın"
-                                  style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                                <button onClick={() => setConfirmDeletePartSaleId(psList[0].id)} title="Extra Kalıp kaydını sil"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                  <Icon name="trash" size={11} /> Sil
-                                </button>
+                                <span onClick={canDo("cust_kalip_edit") ? () => openEditPartSale(psList[0]) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
+                                  style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                                {canDo("cust_kalip_delete") && (
+                                  <button onClick={() => setConfirmDeletePartSaleId(psList[0].id)} title="Extra Kalıp kaydını sil"
+                                    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                    <Icon name="trash" size={11} /> Sil
+                                  </button>
+                                )}
                               </>
                             ) : (
                               <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
@@ -828,18 +841,20 @@ export const CustomerDetailModal = ({
                             )
                           ) : ev.kind === "payment" && payment ? (
                             <>
-                              <span onClick={() => openEditPayment(payment)} title="Düzenlemek için tıklayın"
-                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: "pointer", textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                              {payment.yontem === "Çek" && (
+                              <span onClick={canDo("cust_payment_edit") ? () => openEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
+                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
+                              {payment.yontem === "Çek" && canDo("cust_payment_edit") && (
                                 <button onClick={() => toggleCekTahsil(payment)}
                                   style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: payment.tahsilEdildi ? "#bbf7d0" : "#fde68a", background: payment.tahsilEdildi ? "#f0fdf4" : "#fffbeb", color: payment.tahsilEdildi ? "#15803d" : "#92400e" }}>
                                   {payment.tahsilEdildi ? "Tahsil Edildi" : "Beklemede · işaretle: Tahsil Edildi"}
                                 </button>
                               )}
-                              <button onClick={() => setConfirmDeletePaymentId(payment.id)} title="Ödemeyi sil"
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                <Icon name="trash" size={11} /> Sil
-                              </button>
+                              {canDo("cust_payment_edit") && (
+                                <button onClick={() => setConfirmDeletePaymentId(payment.id)} title="Ödemeyi sil"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                                  <Icon name="trash" size={11} /> Sil
+                                </button>
+                              )}
                             </>
                           ) : (
                             <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
@@ -862,8 +877,8 @@ export const CustomerDetailModal = ({
                                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
                                   {psList.length > 1 && (
                                     <>
-                                      <span onClick={() => openEditPartSale(p)} title="Düzenlemek için tıklayın"
-                                        style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#fed7aa" }}>
+                                      <span onClick={canDo("cust_kalip_edit") ? () => openEditPartSale(p) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
+                                        style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "#fed7aa" }}>
                                         {p.ad}{p.olcu ? ` (${p.olcu})` : ""}
                                       </span>
                                       <span style={{ fontSize: 11, color: "#94a3b8" }}>· {p.tarih ? fmtTR(p.tarih) : "tarih yok"}</span>
@@ -873,11 +888,13 @@ export const CustomerDetailModal = ({
                                     {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
                                     {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")}
                                   </span>
-                                  <button onClick={() => togglePartSaleOdendi(p)}
-                                    style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "#fecaca" : "#bbf7d0", background: p.odendi === false ? "#fef2f2" : "#f0fdf4", color: p.odendi === false ? "#dc2626" : "#15803d" }}>
-                                    {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                                  </button>
-                                  {psList.length > 1 && (
+                                  {canDo("cust_kalip_payment") && (
+                                    <button onClick={() => togglePartSaleOdendi(p)}
+                                      style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "#fecaca" : "#bbf7d0", background: p.odendi === false ? "#fef2f2" : "#f0fdf4", color: p.odendi === false ? "#dc2626" : "#15803d" }}>
+                                      {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                                    </button>
+                                  )}
+                                  {psList.length > 1 && canDo("cust_kalip_delete") && (
                                     <button onClick={() => setConfirmDeletePartSaleId(p.id)} title="Bu kalıp kaydını sil"
                                       style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}>
                                       <Icon name="trash" size={10} />
@@ -956,10 +973,12 @@ export const CustomerDetailModal = ({
                                 </>
                               );
                             })()}
-                            <button onClick={() => toggleServisOdendi(sv)}
-                              style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: sv.odendi === false ? "#fecaca" : "#bbf7d0", background: sv.odendi === false ? "#fef2f2" : "#f0fdf4", color: sv.odendi === false ? "#dc2626" : "#15803d" }}>
-                              {sv.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                            </button>
+                            {canDo("cust_service_payment") && (
+                              <button onClick={() => toggleServisOdendi(sv)}
+                                style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: sv.odendi === false ? "#fecaca" : "#bbf7d0", background: sv.odendi === false ? "#fef2f2" : "#f0fdf4", color: sv.odendi === false ? "#dc2626" : "#15803d" }}>
+                                {sv.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -970,6 +989,7 @@ export const CustomerDetailModal = ({
             </div>
           </div>
         </div>
+        )}
 
       </Modal>
 
