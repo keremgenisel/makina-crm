@@ -13,14 +13,15 @@ const ACTION_LABELS = {
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
 };
 
-const PER_PAGE = 50;
+const PER_PAGE = 10;
 
 export function SettingsAuditLog({ serverPermissions }) {
   const isServerMode = !!serverPermissions;
 
   const [rows, setRows]         = useState([]);
   const [total, setTotal]       = useState(0);
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [loadErr, setLoadErr]   = useState(null);
   const [page, setPage]         = useState(1);
   const [fUser, setFUser]       = useState("");
   const [fEntity, setFEntity]   = useState("");
@@ -29,6 +30,7 @@ export function SettingsAuditLog({ serverPermissions }) {
 
   const load = useCallback(async (p = 1) => {
     setLoading(true);
+    setLoadErr(null);
     const offset = (p - 1) * PER_PAGE;
     const filters = {
       limit: PER_PAGE, offset,
@@ -49,12 +51,18 @@ export function SettingsAuditLog({ serverPermissions }) {
         if (filters.dateTo)   params.set("dateTo", filters.dateTo);
         const res = await window.appServer?.apiRequest({ method: "GET", path: `/api/audit?${params}` });
         result = res?.ok ? res.data : null;
+        if (!result) setLoadErr(res?.error || "Sunucudan veri alınamadı");
       } else {
-        const res = await window.auditLog?.get(filters);
-        result = res?.ok ? res : null;
+        if (!window.auditLog) { setLoadErr("İşlem geçmişi IPC bağlantısı mevcut değil"); setLoading(false); return; }
+        const res = await window.auditLog.get(filters);
+        if (!res?.ok) { setLoadErr("Veritabanı erişim hatası — yerel mod aktif olmayabilir"); setLoading(false); return; }
+        result = res;
       }
       if (result) { setRows(result.rows || []); setTotal(result.total || 0); }
-    } catch {}
+    } catch (err) {
+      console.error("audit log yükleme hatası:", err);
+      setLoadErr(String(err?.message || err));
+    }
     setLoading(false);
   }, [isServerMode, fUser, fEntity, fDateFrom, fDateTo]);
 
@@ -90,7 +98,10 @@ export function SettingsAuditLog({ serverPermissions }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>İşlem Geçmişi</h3>
-        <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="ghost" onClick={() => { setPage(1); load(1); }}><Icon name="refresh" size={14} /> Yenile</Btn>
+          <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
+        </div>
       </div>
 
       {/* Filtreler */}
@@ -105,6 +116,11 @@ export function SettingsAuditLog({ serverPermissions }) {
         <Btn variant="ghost" onClick={() => { setFUser(""); setFEntity(""); setFDateFrom(""); setFDateTo(""); }}>Sıfırla</Btn>
       </div>
 
+      {loadErr && (
+        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fee2e2", color: "#991b1b", fontSize: 13, fontWeight: 600 }}>
+          Yükleme hatası: {loadErr}
+        </div>
+      )}
       {loading ? (
         <div style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Yükleniyor...</div>
       ) : rows.length === 0 ? (

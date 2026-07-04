@@ -218,11 +218,13 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                       {canDoStock("stock_parca_add") && <Btn small onClick={() => { setForm({ partId: String(part.id), miktar: "1", notlar: "" }); setModal("ekle"); }}
                         style={{ fontSize: 11 }}>+ Ekle</Btn>}
                       {canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>}
-                      <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
-                        title={isPinned ? "Dashboarddan çıkar" : "Dashboarda ekle"}
-                        style={{ fontSize: 11, padding: "3px 7px" }}>
-                        {isPinned ? "★" : "☆"}
-                      </Btn>
+                      {canDoStock("stock_parca_pin") && (
+                        <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
+                          title={isPinned ? "Dashboarddan çıkar" : "Dashboarda ekle"}
+                          style={{ fontSize: 11, padding: "3px 7px" }}>
+                          {isPinned ? "★" : "☆"}
+                        </Btn>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -281,7 +283,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
               <Field label="Not (opsiyonel)">
                 <Input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} placeholder="Örn: Sayım sonucu..." />
               </Field>
-              {(() => {
+              {canDoStock("stock_parca_pin") && (() => {
                 const isPinned = pinnedPartIds.includes(String(form.partId));
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer" }}

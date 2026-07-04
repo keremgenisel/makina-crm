@@ -806,7 +806,7 @@ function writeAuditEntry({ ts, username, role, action, entity, entity_id, entity
 }
 
 function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, dateTo } = {}) {
-  if (!db) return [];
+  if (!db) return { rows: [], total: 0 };
   let where = "WHERE 1=1";
   const params = [];
   if (username) { where += " AND username = ?"; params.push(username); }

@@ -177,6 +177,7 @@ const STOCK_ACTION_GROUPS = [
   { grup: "Parça / Yedek Parça Stoğu", items: [
     { id: "stock_parca_add",  label: "Stoğa parça ekle" },
     { id: "stock_parca_edit", label: "Stok miktarı düzelt" },
+    { id: "stock_parca_pin",  label: "Parçayı dashboarda ekle/çıkar" },
   ]},
   { grup: "Kalıp Üretim", items: [
     { id: "stock_uretim_add",    label: "Yeni form oluştur" },

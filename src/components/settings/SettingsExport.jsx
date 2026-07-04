@@ -5,7 +5,7 @@ import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, flash }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [] }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -236,6 +236,63 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       downloadCSV(rows, "faturalar.csv"); flash("ok", "Fatura listesi Excel (CSV) olarak indirildi.");
     }
   };
+  const exportTeklifler = async (mode = "download") => {
+    const head = ["Teklif No", "Tarih", "Durum", "Tür", "Firma", "Ülke", "Şehir", "Para Birimi", "Not"];
+    const rows = [head, ...teklifler.map(t => [
+      t.no || "", t.tarih || "", t.durum || "", t.tur || "",
+      t.firma || "", t.country || "", t.city || "", t.currency || "", t.not || "",
+    ])];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Teklifler"); openExportMailXLSXBase64(b64, "teklifler.xlsx", "Teklifler"); return; }
+      await downloadXlsx(rows, "teklifler.xlsx", "Teklifler"); flash("ok", "Teklif listesi Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "teklifler.csv", "Teklifler"); return; }
+      downloadCSV(rows, "teklifler.csv"); flash("ok", "Teklif listesi CSV olarak indirildi.");
+    }
+  };
+  const exportUretimFormlari = async (mode = "download") => {
+    const head = ["Form No", "Tarih", "Ürün", "Model", "Miktar", "Durum", "Not"];
+    const rows = [head, ...uretimFormlari.map(f => [
+      f.no || f.id || "", f.tarih || f.date || "", f.urun || f.product || "",
+      f.model || "", f.miktar || f.quantity || "", f.durum || f.status || "", f.not || f.note || "",
+    ])];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Üretim Formları"); openExportMailXLSXBase64(b64, "uretim-formlari.xlsx", "Üretim Formları"); return; }
+      await downloadXlsx(rows, "uretim-formlari.xlsx", "Üretim Formları"); flash("ok", "Üretim formları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "uretim-formlari.csv", "Üretim Formları"); return; }
+      downloadCSV(rows, "uretim-formlari.csv"); flash("ok", "Üretim formları CSV olarak indirildi.");
+    }
+  };
+  const exportPartStock = async (mode = "download") => {
+    const head = ["Yedek Parça", "Stok Miktarı (adet)", "Son Güncelleme"];
+    const rows = [head, ...partStock.map(s => {
+      const part = parts.find(p => String(p.id) === String(s.partId)) || {};
+      return [part.ad || s.partId, s.miktar ?? 0, s.sonGuncelleme || ""];
+    })];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Parça Stoğu"); openExportMailXLSXBase64(b64, "parca-stogu.xlsx", "Parça Stoğu"); return; }
+      await downloadXlsx(rows, "parca-stogu.xlsx", "Parça Stoğu"); flash("ok", "Parça stoğu Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "parca-stogu.csv", "Parça Stoğu"); return; }
+      downloadCSV(rows, "parca-stogu.csv"); flash("ok", "Parça stoğu CSV olarak indirildi.");
+    }
+  };
+  const exportPartStockLog = async (mode = "download") => {
+    const head = ["Yedek Parça", "Tarih", "İşlem Tipi", "Miktar", "Not"];
+    const rows = [head, ...partStockLog.map(l => {
+      const part = parts.find(p => String(p.id) === String(l.partId)) || {};
+      const tip = l.tip === "stok_girisi" ? "Stok Girişi" : l.tip === "manuel_duzelt" ? "Manuel Düzeltme" : (l.tip || "");
+      return [part.ad || l.partId, l.tarih || "", tip, l.miktar ?? "", l.notlar || ""];
+    })];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Stok Hareketleri"); openExportMailXLSXBase64(b64, "stok-hareketleri.xlsx", "Stok Hareketleri"); return; }
+      await downloadXlsx(rows, "stok-hareketleri.xlsx", "Stok Hareketleri"); flash("ok", "Stok hareketleri Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "stok-hareketleri.csv", "Stok Hareketleri"); return; }
+      downloadCSV(rows, "stok-hareketleri.csv"); flash("ok", "Stok hareketleri CSV olarak indirildi.");
+    }
+  };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -337,6 +394,10 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
             { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
             { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
+            { title: "Parça Stoğu", desc: `Güncel parça stok miktarları (${partStock.length} parça).`, onClick: exportPartStock },
+            { title: "Stok Hareketleri", desc: `Parça stok giriş ve düzeltme geçmişi (${partStockLog.length} kayıt).`, onClick: exportPartStockLog },
+            { title: "Teklifler", desc: `Oluşturulan teklif kayıtları (${teklifler.length} kayıt).`, onClick: exportTeklifler },
+            { title: "Üretim Formları", desc: `Kalıp üretim formları (${uretimFormlari.length} kayıt).`, onClick: exportUretimFormlari },
             { title: "Yurt Dışı Faturalar", desc: `Düzenlenen yurt dışı faturalar (${faturalar.length} kayıt).`, onClick: exportFaturalar },
           ] },
         ].map(g => (

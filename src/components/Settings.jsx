@@ -123,9 +123,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
+          uretimFormlari={rawUretimFormlari}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          setUretimFormlari={setUretimFormlari}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -181,6 +183,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <SettingsExport
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} flash={flash}
+          teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
         />
       )}
 

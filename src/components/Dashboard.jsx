@@ -2,7 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null }) => {
+  const perms = useMemo(() => {
+    if (!serverPermissions || serverPermissions.role === "admin") return null;
+    try { return JSON.parse(serverPermissions.permissions || "null"); } catch { return null; }
+  }, [serverPermissions]);
+  const canCust = (action) => !perms || perms.customerActions === null || perms.customerActions?.includes(action);
+
   const effectiveTur = (t) => {
     if (t?.tur) return t.tur;
     const rows = t?.satirlar || [];
@@ -184,17 +190,17 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-                  {tur === "makina" && !t.customerId && onDonusturTeklif && (
+                  {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
                     <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
                       {busy ? "..." : "Müşteri Ekle"}
                     </Btn>
                   )}
-                  {tur === "makina" && t.customerId && onDonusturMakina && (
+                  {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
                     <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
                       {busy ? "..." : "Makina Ekle"}
                     </Btn>
                   )}
-                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && (
+                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && canCust("cust_kalip_add") && (
                     <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "#e5e7eb" : "#0891b2", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
                       {busy ? "..." : "Satışa Dönüştür"}
                     </Btn>

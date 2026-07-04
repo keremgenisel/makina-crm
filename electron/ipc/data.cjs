@@ -172,22 +172,30 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     const usePort = port || 3000;
     try {
       const { ips } = await embeddedServer.start(usePort, sqliteDb);
-      // Admin token al (kendi sunucumuzdan)
+      // Admin token al — önce 30 günlük internal endpoint; başarısız olursa normal login (8 saat)
       let adminToken = null;
       try {
-        const res = await fetch(`http://127.0.0.1:${usePort}/auth/login`, {
+        const r = await fetch(`http://127.0.0.1:${usePort}/auth/refresh-internal`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: username.trim(), password }),
+          body: JSON.stringify({ username: username.trim() }),
         });
-        const body = await res.json();
-        if (res.ok && body.token) {
-          adminToken = body.token;
-        } else {
-          console.warn("[setupAdmin] Dahili login başarısız:", body.error);
+        const body = await r.json();
+        if (body.token) { adminToken = body.token; }
+      } catch {}
+      if (!adminToken) {
+        try {
+          const res = await fetch(`http://127.0.0.1:${usePort}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: username.trim(), password }),
+          });
+          const body = await res.json();
+          if (res.ok && body.token) adminToken = body.token;
+          else console.warn("[setupAdmin] Dahili login başarısız:", body.error);
+        } catch (loginErr) {
+          console.warn("[setupAdmin] Dahili login isteği başarısız:", loginErr.message);
         }
-      } catch (loginErr) {
-        console.warn("[setupAdmin] Dahili login isteği başarısız:", loginErr.message);
       }
       saveServerConfig(app, { mode: "server", port: usePort, username: username.trim(), ...(adminToken ? { adminToken } : {}) });
       return { ok: true, ips, port: usePort };
@@ -203,7 +211,18 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     try {
       const { ips } = await embeddedServer.start(usePort, sqliteDb);
       const cfg = loadServerConfig(app) || {};
-      saveServerConfig(app, { ...cfg, mode: "server", port: usePort });
+      // Token yenile
+      let adminToken = cfg.adminToken;
+      try {
+        const r = await fetch(`http://127.0.0.1:${usePort}/auth/refresh-internal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: cfg.username }),
+        });
+        const body = await r.json();
+        if (body.token) adminToken = body.token;
+      } catch {}
+      saveServerConfig(app, { ...cfg, mode: "server", port: usePort, adminToken });
       return { ok: true, port: usePort, ips };
     } catch (err) { return { error: err.message }; }
   });
@@ -257,9 +276,18 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
     // Sunucu modu config varsa gömülü sunucuyu otomatik başlat
     if (blob && cfg?.mode === "server" && cfg?.port && !embeddedServer.isRunning()) {
-      embeddedServer.start(cfg.port, sqliteDb).catch(err =>
-        console.error("Otomatik sunucu başlatma hatası:", err)
-      );
+      embeddedServer.start(cfg.port, sqliteDb).then(async () => {
+        // Admin token süresi dolmuş olabilir — loopback üzerinden yenile
+        try {
+          const r = await fetch(`http://127.0.0.1:${cfg.port}/auth/refresh-internal`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: cfg.username }),
+          });
+          const body = await r.json();
+          if (body.token) saveServerConfig(app, { ...(loadServerConfig(app) || {}), adminToken: body.token });
+        } catch (e) { console.warn("Admin token yenileme hatası:", e.message); }
+      }).catch(err => console.error("Otomatik sunucu başlatma hatası:", err));
     }
 
     return blob;

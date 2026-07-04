@@ -101,6 +101,22 @@ function buildApp() {
     }
   });
 
+  // POST /auth/refresh-internal — yalnızca loopback; sunucu PC kendi admin tokenini yeniler (şifre gerekmez)
+  app.post("/auth/refresh-internal", (req, res) => {
+    try {
+      const ip = req.ip || req.socket?.remoteAddress || "";
+      if (!ip.includes("127.0.0.1") && !ip.includes("::1") && ip !== "::ffff:127.0.0.1") {
+        return res.status(403).json({ error: "Yalnızca yerel erişim" });
+      }
+      const { username } = req.body || {};
+      if (!username) return res.status(400).json({ error: "username gerekli" });
+      const user = db?.getUserByUsername(username);
+      if (!user || user.role !== "admin") return res.status(403).json({ error: "Admin kullanıcı bulunamadı" });
+      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, getSecret(), { expiresIn: "30d" });
+      res.json({ token });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // GET /api/version — hafif polling endpoint: versiyon + güncel izinler
   app.get("/api/version", requireAuth, (req, res) => {
     try {
