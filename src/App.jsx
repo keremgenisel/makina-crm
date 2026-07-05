@@ -539,7 +539,11 @@ export default function App() {
       if (Array.isArray(data.notes)) setNotes(data.notes);
       if (Array.isArray(data.parts)) setParts(data.parts);
       if (Array.isArray(data.partSales)) setPartSales(data.partSales);
-      if (Array.isArray(data.teklifler)) setTeklifler(data.teklifler);
+      // satisTamam tek yönlüdür — yükleme sırasında yerel true değerini sunucunun false'u ezmesin
+      if (Array.isArray(data.teklifler)) setTeklifler(prev => {
+        const prevMap = new Map(prev.map(t => [t.id, t]));
+        return data.teklifler.map(t => (prevMap.get(t.id)?.satisTamam && !t.satisTamam) ? { ...t, satisTamam: true } : t);
+      });
       if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
       if (Array.isArray(data.partStock)) setPartStock(data.partStock);
       if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
