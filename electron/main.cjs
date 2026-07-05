@@ -116,17 +116,22 @@ function wireUpdaterEvents() {
 }
 
 function createWindow() {
-  // ── Açılış (splash) ekranı ──
-  const splash = new BrowserWindow({
-    width: 460, height: 360, frame: false, transparent: true,
-    resizable: false, alwaysOnTop: true, skipTaskbar: true, center: true,
-  });
-  splash.loadFile(path.join(__dirname, "splash.html"));
-  splash.webContents.once("did-finish-load", () => {
-    splash.webContents.executeJavaScript(
-      `var el = document.querySelector(".version"); if (el) el.textContent = "CRM Sistemi · v${app.getVersion()}";`
-    ).catch(() => {});
-  });
+  const startHidden = process.argv.includes("--hidden");
+
+  // ── Açılış (splash) ekranı — açılışta otomatik başlatılıyorsa atla ──
+  let splash = null;
+  if (!startHidden) {
+    splash = new BrowserWindow({
+      width: 460, height: 360, frame: false, transparent: true,
+      resizable: false, alwaysOnTop: true, skipTaskbar: true, center: true,
+    });
+    splash.loadFile(path.join(__dirname, "splash.html"));
+    splash.webContents.once("did-finish-load", () => {
+      splash.webContents.executeJavaScript(
+        `var el = document.querySelector(".version"); if (el) el.textContent = "CRM Sistemi · v${app.getVersion()}";`
+      ).catch(() => {});
+    });
+  }
 
   // ── Ana pencere ──
   mainWin = new BrowserWindow({
@@ -218,7 +223,8 @@ function createWindow() {
   });
 
   mainWin.once("ready-to-show", () => {
-    setTimeout(() => { splash.destroy(); mainWin.show(); mainWin.focus(); }, 1200);
+    if (startHidden) return; // tray'de gizli bekle, pencereyi gösterme
+    setTimeout(() => { splash?.destroy(); mainWin.show(); mainWin.focus(); }, 1200);
   });
 
   wireUpdaterEvents();

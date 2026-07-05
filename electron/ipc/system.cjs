@@ -148,6 +148,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
   ipcMain.handle("applock:resetWithRecoveryCode", (_e, recoveryCode, newPassword) => applock.resetWithRecoveryCode(recoveryCode, newPassword));
   ipcMain.handle("applock:getDataForBackup", () => applock.getDataForBackup());
   ipcMain.handle("applock:restoreFromBackup", (_e, data) => applock.restoreFromBackup(data));
+  ipcMain.handle("applock:setLockOnClose", (_e, val) => applock.setLockOnClose(val));
 
   // ── Hata günlüğü ──
   ipcMain.handle("error:log", (_e, entry) => {
@@ -162,6 +163,16 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
     }
   });
   ipcMain.handle("error:readLog", () => readErrorLog(app));
+
+  ipcMain.handle("app:getOpenAtLogin", () => {
+    if (!app.isPackaged) return { openAtLogin: false, devMode: true };
+    return { openAtLogin: app.getLoginItemSettings().openAtLogin };
+  });
+  ipcMain.handle("app:setOpenAtLogin", (_e, val) => {
+    if (!app.isPackaged) return { ok: false, devMode: true };
+    app.setLoginItemSettings({ openAtLogin: !!val, args: val ? ["--hidden"] : [] });
+    return { ok: true };
+  });
 }
 
 module.exports = { registerSystemHandlers };

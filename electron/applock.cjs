@@ -36,7 +36,14 @@ const genRecoveryCode = () => {
 
 function getStatus() {
   const cfg = readConfig();
-  return { enabled: !!cfg?.enabled };
+  return { enabled: !!cfg?.enabled, lockOnClose: cfg?.lockOnClose !== false };
+}
+
+function setLockOnClose(val) {
+  const cfg = readConfig();
+  if (!cfg?.enabled) return { ok: false, error: "Kilit etkin değil." };
+  writeConfig({ ...cfg, lockOnClose: !!val });
+  return { ok: true };
 }
 
 function setup(password) {
@@ -115,4 +122,4 @@ function restoreFromBackup(data) {
   }
 }
 
-module.exports = { getStatus, setup, verify, disable, changePassword, resetWithRecoveryCode, getDataForBackup, restoreFromBackup };
+module.exports = { getStatus, setup, verify, disable, changePassword, resetWithRecoveryCode, getDataForBackup, restoreFromBackup, setLockOnClose };

@@ -13,7 +13,8 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
 
   const loadAppLockStatus = async () => {
     if (!window.appLock) return;
-    setAppLockStatus(await window.appLock.status());
+    const s = await window.appLock.status();
+    setAppLockStatus({ lockOnClose: true, ...s });
   };
   useEffect(() => { loadAppLockStatus(); }, []);
 
@@ -97,13 +98,23 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
                     <span style={{ fontSize: 13, color: "#0f172a" }}>Hareketsizlik sonrası otomatik kilitle</span>
                   </label>
                   {!!appSettings.autoLockMinutes && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 27 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 27, marginBottom: 10 }}>
                       <input type="number" min={1} max={120} value={appSettings.autoLockMinutes}
                         onChange={e => setAppSettings(p => ({ ...p, autoLockMinutes: Math.max(1, parseInt(e.target.value) || 5) }))}
                         style={{ width: 68, padding: "6px 10px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", textAlign: "center" }} />
                       <span style={{ fontSize: 13, color: "#64748b" }}>dakika sonra kilitle</span>
                     </div>
                   )}
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <input type="checkbox" checked={appLockStatus.lockOnClose !== false}
+                      onChange={async e => {
+                        const val = e.target.checked;
+                        await window.appLock?.setLockOnClose(val);
+                        setAppLockStatus(p => ({ ...p, lockOnClose: val }));
+                      }}
+                      style={{ width: 17, height: 17, accentColor: "#e85d1a", cursor: "pointer" }} />
+                    <span style={{ fontSize: 13, color: "#0f172a" }}>Kapatılıp açılınca da kilitle</span>
+                  </label>
                 </div>
               </>
             )}

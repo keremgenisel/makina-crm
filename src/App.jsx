@@ -38,6 +38,8 @@ export default function App() {
   const [custNewPrefill, setCustNewPrefill] = useState(null); // teklif→müşteri dönüşümü: yeni müşteri formu önceden doldurulur
   const [dealerFilter, setDealerFilter] = useState("all"); // dashboard'dan filtreyle gelme: all|borclu
   const [stockDefaultSubTab, setStockDefaultSubTab] = useState("makina"); // dashboard'dan üretim sekmesine yönlendirme
+  const [savedServerUrl, setSavedServerUrl] = useState(""); // giriş ekranı için önceki sunucu adresi
+  const [savedUsername, setSavedUsername] = useState(""); // giriş ekranı için önceki kullanıcı adı
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
   const [loaded, setLoaded] = useState(false);
@@ -53,7 +55,11 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(null);
   useEffect(() => {
     if (!window.appLock) { setUnlocked(true); return; }
-    window.appLock.status().then(s => setUnlocked(!s?.enabled)).catch(() => setUnlocked(true));
+    window.appLock.status().then(s => {
+      if (!s?.enabled) { setUnlocked(true); return; }
+      // lockOnClose=false ise kapatılıp açılınca kilit sorulmaz, sadece hareketsizlik kilidi çalışır
+      setUnlocked(s.lockOnClose === false);
+    }).catch(() => setUnlocked(true));
   }, []);
 
   // ── Hareketsizlik sonrası otomatik kilit ──
@@ -99,8 +105,9 @@ export default function App() {
   useEffect(() => {
     if (!window.appServer) { setServerMode("none"); return; }
     window.appServer.getConfig().then(cfg => {
-      if (cfg?.username) setAuditUsername(cfg.username);
+      if (cfg?.username) { setAuditUsername(cfg.username); setSavedUsername(cfg.username); }
       if (!cfg?.serverUrl) { setServerMode("none"); return; }
+      setSavedServerUrl(cfg.serverUrl);
       const active = cfg.isActive ? "active" : "login";
       setServerMode(active);
       if (cfg.isActive) setServerPermissions({ role: cfg.role, permissions: cfg.permissions ?? null });
@@ -537,7 +544,7 @@ export default function App() {
   if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
 
   if (serverMode === null) return null; // sunucu durumu kontrol edilirken bekle
-  if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} />;
+  if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} initialUrl={savedServerUrl} initialUsername={savedUsername} />;
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>

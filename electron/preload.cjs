@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld("appUpdater", {
 
 contextBridge.exposeInMainWorld("appControl", {
   uninstall: () => ipcRenderer.invoke("app:uninstall"),
+  getOpenAtLogin: () => ipcRenderer.invoke("app:getOpenAtLogin"),
+  setOpenAtLogin: (val) => ipcRenderer.invoke("app:setOpenAtLogin", val),
 });
 
 contextBridge.exposeInMainWorld("appMail", {
@@ -81,6 +83,7 @@ contextBridge.exposeInMainWorld("appLock", {
   resetWithRecoveryCode: (recoveryCode, newPassword) => ipcRenderer.invoke("applock:resetWithRecoveryCode", recoveryCode, newPassword),
   getDataForBackup: () => ipcRenderer.invoke("applock:getDataForBackup"),
   restoreFromBackup: (data) => ipcRenderer.invoke("applock:restoreFromBackup", data),
+  setLockOnClose: (val) => ipcRenderer.invoke("applock:setLockOnClose", val),
 });
 
 contextBridge.exposeInMainWorld("appServer", {

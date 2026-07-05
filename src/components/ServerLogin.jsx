@@ -2,9 +2,9 @@ import { useState } from "react";
 
 // Sunucu modunda oturum açma ekranı.
 // Uygulamanın mevcut renk/buton tasarımını kullanır.
-export function ServerLogin({ onLogin }) {
-  const [serverUrl, setServerUrl] = useState("");
-  const [username, setUsername] = useState("");
+export function ServerLogin({ onLogin, initialUrl = "", initialUsername = "" }) {
+  const [serverUrl, setServerUrl] = useState(initialUrl);
+  const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

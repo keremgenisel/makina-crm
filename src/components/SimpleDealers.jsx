@@ -8,6 +8,13 @@ import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog
 import { useLock } from "../hooks/useLock";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null }) => {
+  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
+  const _allowedDealerActions = _isAdmin ? null : (() => {
+    try { return JSON.parse(serverPermissions?.permissions || "null")?.dealerActions ?? null; }
+    catch { return null; }
+  })();
+  const canDo = action => !_allowedDealerActions || _allowedDealerActions.includes(action);
+
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
@@ -207,7 +214,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Bayiler</h2>
-        <Btn onClick={openAdd}><Icon name="plus" size={14} /> Bayi/Servis Ekle</Btn>
+        {canDo("dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Bayi/Servis Ekle</Btn>}
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         {[
@@ -284,8 +291,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 <td style={{ padding: "13px 16px", fontSize: 13 }}>{d.country && d.city ? `${d.country} / ${d.city}` : d.city || d.country || "—"}</td>
                 <td style={{ padding: "13px 16px" }} onClick={e => e.stopPropagation()}>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <Btn small variant="ghost" onClick={() => openEdit(d)}><Icon name="edit" size={12} /></Btn>
-                    <Btn small variant="danger" onClick={() => setConfirmId(d.id)}><Icon name="trash" size={12} /></Btn>
+                    {canDo("dealer_edit") && <Btn small variant="ghost" onClick={() => openEdit(d)}><Icon name="edit" size={12} /></Btn>}
+                    {canDo("dealer_delete") && <Btn small variant="danger" onClick={() => setConfirmId(d.id)}><Icon name="trash" size={12} /></Btn>}
                   </div>
                 </td>
               </tr>

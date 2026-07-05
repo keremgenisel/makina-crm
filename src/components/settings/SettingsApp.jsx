@@ -3,6 +3,21 @@ import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 
 export const SettingsApp = ({ version, flash }) => {
+  // ── Açılışta otomatik başlat ──
+  const [openAtLogin, setOpenAtLoginState] = useState(null); // null=yükleniyor
+  const [openAtLoginDevMode, setOpenAtLoginDevMode] = useState(false);
+  useEffect(() => {
+    window.appControl?.getOpenAtLogin?.().then(r => {
+      setOpenAtLoginState(!!r?.openAtLogin);
+      setOpenAtLoginDevMode(!!r?.devMode);
+    }).catch(() => setOpenAtLoginState(false));
+  }, []);
+  const toggleOpenAtLogin = async (val) => {
+    setOpenAtLoginState(val);
+    await window.appControl?.setOpenAtLogin?.(val);
+    flash(val ? "ok" : "ok", val ? "Uygulama Windows başlangıcına eklendi." : "Uygulama Windows başlangıcından kaldırıldı.");
+  };
+
   // ── Uygulama güncellemesi (electron-updater) ──
   // idle | checking | uptodate | available | downloading | downloaded | error | devmode
   const [appUpd, setAppUpd] = useState({ state: "idle", latest: null, progress: 0, error: null });
@@ -124,6 +139,39 @@ export const SettingsApp = ({ version, flash }) => {
           </div>
         </Modal>
       )}
+
+      {/* ── Sistem: Otomatik Başlat ── */}
+      <Section title="Sistem" icon="settings">
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          Bu bilgisayar açıldığında Altunmak CRM otomatik olarak arka planda başlar ve görev
+          çubuğu simge tepsisinde (sistem saati yanında) bekler. Sunucu olarak kullanılan
+          bilgisayarlarda açık bırakılması önerilir.
+        </div>
+        {openAtLoginDevMode ? (
+          <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+            Bu özellik yalnızca kurulu uygulamada çalışır.
+          </div>
+        ) : (
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: openAtLogin === null ? "default" : "pointer" }}>
+            <input type="checkbox"
+              checked={!!openAtLogin}
+              disabled={openAtLogin === null}
+              onChange={e => toggleOpenAtLogin(e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+              Bilgisayar açılışında otomatik başlat
+            </span>
+            {openAtLogin && (
+              <span style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#16a34a", borderRadius: 6, padding: "2px 8px" }}>Aktif</span>
+            )}
+          </label>
+        )}
+        {openAtLogin && !openAtLoginDevMode && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#64748b", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "8px 12px" }}>
+            Uygulama başladığında pencere gizli açılır — görev çubuğundaki simge tepsisine çift tıklayarak açabilirsiniz.
+          </div>
+        )}
+      </Section>
 
     </>
   );
