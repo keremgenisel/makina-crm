@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "2.50.0",
+  "version": "2.51.0",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -11,7 +11,8 @@
     "build": "vite build",
     "build:win": "vite build && electron-builder --win",
     "preview": "vite preview",
-    "release": "vite build && electron-builder --win --publish always"
+    "release": "vite build && electron-builder --win --publish always",
+    "postrelease": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -127,7 +127,9 @@ export default function App() {
     mergeNew(setPartSales, "partSales");
     mergeNew(setServices, "services");
     mergeNew(setUretimFormlari, "uretimFormlari");
-    // Müşterilerde yeni kalıp girdileri
+    // Yeni müşteri/makina kayıtları
+    mergeNew(setCustomers, "customers");
+    // Müşterilerde güncellenen kalıp girdileri (mevcut müşteriye yeni kalıp eklendi)
     setCustomers(prev => prev.map(c => {
       const mc = (myData.customers || []).find(x => x.id === c.id);
       if (!mc) return c;
@@ -136,11 +138,12 @@ export default function App() {
       if (!nks.length) return c;
       return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
     }));
-    // Tekliflerde durum değişikliklerini koru
+    // Tekliflerde durum veya satisTamam değişikliklerini koru
     setTeklifler(prev => prev.map(t => {
       const mine = (myData.teklifler || []).find(x => x.id === t.id);
-      if (!mine || mine.durum === t.durum) return t;
-      return { ...t, durum: mine.durum, satisTamam: mine.satisTamam ?? t.satisTamam };
+      if (!mine) return t;
+      if (mine.durum === t.durum && mine.satisTamam === t.satisTamam) return t;
+      return { ...t, durum: mine.durum, satisTamam: mine.satisTamam };
     }));
   };
 
