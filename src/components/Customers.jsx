@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction } from "../lib/audit";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
+import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { Icon, Btn, ConfirmDialog, Pagination } from "./ui";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
@@ -29,22 +30,14 @@ export const Customers = ({
   useEffect(() => { if (initialDetailId != null) setDetailViewId(initialDetailId); }, [initialDetailId]);
   const [confirmId, setConfirmId] = useState(null);
 
-  const isCustomerTab = isCustomer;
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
   const factoryName = factory?.name || "Altuntaş Makina";
 
-  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
-  const _allowedCustomerActions = _isAdmin ? null : (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.customerActions ?? null; }
-    catch { return null; }
-  })();
-  const _allowedDealerActions = _isAdmin ? null : (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.dealerActions ?? null; }
-    catch { return null; }
-  })();
+  const _perms = parsePermissions(serverPermissions);
   const canDo = action => {
-    if (action.startsWith("dealer_")) return !_allowedDealerActions || _allowedDealerActions.includes(action);
-    return !_allowedCustomerActions || _allowedCustomerActions.includes(action);
+    if (!_perms) return true;
+    const group = action.startsWith("dealer_") ? _perms.dealerActions : _perms.customerActions;
+    return !group || group.includes(action);
   };
 
   const firmCount = useMemo(() => {
@@ -402,8 +395,8 @@ export const Customers = ({
           { v: "all", l: "Hepsi", count: customers.length },
           { v: "warranty-active", l: "Garantisi Devam Eden", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
           { v: "warranty", l: "Garantisi Bitenler", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
-          ...(isCustomerTab ? [{ v: "debt", l: "Borçlu Firmalar", count: debtorIds.size }] : []),
-          ...(isCustomerTab ? [{ v: "serial-pending", l: "Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
+          ...(isCustomer ? [{ v: "debt", l: "Borçlu Firmalar", count: debtorIds.size }] : []),
+          ...(isCustomer ? [{ v: "serial-pending", l: "Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
         ].map(f => (
           <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
             style={{
@@ -415,7 +408,7 @@ export const Customers = ({
             {f.l} ({f.count})
           </button>
         ))}
-        {isCustomerTab && (
+        {isCustomer && (
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
             style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer", marginLeft: "auto",
@@ -466,7 +459,7 @@ export const Customers = ({
               const warrantySoon = warrantyOk && c.warrantyEnd <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
               const warrantyColor = !c.warrantyEnd ? "#cbd5e1" : !warrantyOk ? "#dc2626" : warrantySoon ? "#f59e0b" : "#16a34a";
               const hasKalanBorc = parseMoney(c.kalanBorc) > 0;
-              const hasDebt = isCustomerTab && debtorIds.has(c.id);
+              const hasDebt = isCustomer && debtorIds.has(c.id);
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fef2f2" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}
@@ -480,7 +473,7 @@ export const Customers = ({
                         <div style={{ fontWeight: 600, fontSize: 13, color: "#dc2626", textDecoration: "line-through", opacity: .85 }}>{c.prevOwners[0].name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontWeight: 700, fontSize: 14, color: "#059669", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}>{c.name}</span>
-                          {isCustomerTab && firmCount[trLower(c.name)] > 1 && (
+                          {isCustomer && firmCount[trLower(c.name)] > 1 && (
                             <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                           )}
                         </div>
@@ -488,7 +481,7 @@ export const Customers = ({
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{c.name}</span>
-                        {isCustomerTab && firmCount[trLower(c.name)] > 1 && (
+                        {isCustomer && firmCount[trLower(c.name)] > 1 && (
                           <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                         )}
                       </div>
@@ -549,7 +542,7 @@ export const Customers = ({
           onOpenEdit={openEdit}
           canDo={canDo}
           onOpenAddForFirm={openAddForFirm}
-          isCustomer={isCustomerTab}
+          isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
           services={services} setServices={setServices}
           partSales={partSales} setPartSales={setPartSales}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Btn, Icon, Modal, Field } from "../ui";
 import { Section } from "./Section";
-import { DEFAULT_TRANSLATIONS } from "../Documents";
+import { DEFAULT_TRANSLATIONS } from "../../lib/printTemplates";
 import { uid } from "../../lib/utils";
 export const DEFAULT_EVRAK_FORM_CONFIG = {
   teklif: {

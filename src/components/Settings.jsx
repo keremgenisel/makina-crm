@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parsePermissions } from "../lib/permissions";
 import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -14,7 +15,7 @@ import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
 import { SettingsOptimize } from "./settings/SettingsOptimize";
-import { SettingsKdv } from "./settings/SettingsDanger";
+import { SettingsKdv } from "./settings/SettingsKdv";
 import { SettingsCompany } from "./settings/SettingsCompany";
 import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
@@ -41,13 +42,9 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const [msg, setMsg] = useState(null);
   const [settingsTab, setSettingsTab] = useState("app"); // "app" | "models" | ...
 
-  const isAdmin = !serverPermissions || serverPermissions.role === "admin";
-
-  // Per-user settings: permissions JSON'ındaki settings alanı varsa onu kullan, yoksa kısıtlama yok.
-  const perUserSettings = (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.settings ?? null; } catch { return null; }
-  })();
-  const clientVisible = isAdmin ? null : perUserSettings;
+  const _perms = parsePermissions(serverPermissions);
+  const isAdmin = !_perms;
+  const clientVisible = isAdmin ? null : (_perms?.settings ?? null);
 
   const visibleGroups = SETTINGS_GROUPS.map(g => ({
     ...g,

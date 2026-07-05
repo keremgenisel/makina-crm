@@ -13,7 +13,6 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
   const [customEnd, setCustomEnd] = useState("");
   const [moneyVisible, setMoneyVisible] = useState(false);
   const M = v => moneyVisible ? v : "———";
-  const rangeLabels = RANGE_LABELS;
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,
   // bir {TRY,USD,EUR} nesnesini TL'ye çevirip toplar. Hesaplama dışında render'da da (MultiCard) kullanılıyor.
@@ -370,7 +369,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
       {/* Tarih aralığı filtresi */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
-        {Object.entries(rangeLabels).map(([k, l]) => (
+        {Object.entries(RANGE_LABELS).map(([k, l]) => (
           <button key={k} onClick={() => setRange(k)}
             style={{ padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
               border: "1px solid", borderColor: range === k ? "#e85d1a" : "#e2e8f0",
@@ -390,7 +389,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         </div>
       )}
       <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
-        Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{rangeLabels[range]}</b> · {totalMakina} satış kaydı
+        Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{RANGE_LABELS[range]}</b> · {totalMakina} satış kaydı
       </div>
       {/* KDV Dönemleri: seçili aralıkta birden fazla dönem varsa hangi tarihten itibaren hangi oranın geçerli olduğu gösterilir */}
       <div style={{ fontSize: 12, color: "#0d9488", fontWeight: 600, marginBottom: 20 }}>

@@ -600,7 +600,7 @@ export default function App() {
             const active = tab === t.id;
             return (
               <button key={t.id} className="nav-btn" onClick={() => {
-                const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } if (t.id === "dealers") setDealerFilter("all"); setTab(t.id); };
+                const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } if (t.id === "dealers") setDealerFilter("all"); if (t.id === "stock") setStockDefaultSubTab("makina"); setTab(t.id); };
                 if (tab === "notes" && t.id !== "notes" && notesRef.current) notesRef.current.guardNavigation(go);
                 else go();
               }} style={{

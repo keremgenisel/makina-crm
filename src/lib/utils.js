@@ -128,7 +128,7 @@ export const extractKDV = (kdvDahilTutar, date, kdvRates = DEFAULT_KDV_RATES) =>
 export const fmtCur = (n, cur = "TRY") => {
   const sym = CUR_SYM[cur] || "₺";
   const num = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n || 0);
-  return cur === "TRY" ? `${sym}${num}` : `${sym}${num}`;
+  return `${sym}${num}`;
 };
 // Serbest metin para alanını sayıya çevir: "450.000 ₺" → 450000, "%5" → 0 (yüzde sayılmaz), "" → 0
 export const parseMoney = (s) => {
@@ -305,3 +305,20 @@ export const mergeAndUpdate = (partStock, pid, newMiktar, extraFields = {}) => {
 };
 
 export const withoutDeleted = arr => (arr || []).filter(x => !x.deletedAt);
+
+export const addYearsToDateStr = (dateStr, years) => {
+  if (!dateStr) return "";
+  return `${parseInt(dateStr.slice(0, 4)) + years}${dateStr.slice(4)}`;
+};
+
+export const getFactoryName = (factory) => factory?.name || "Altuntaş Makina";
+
+// Teklif türünü satır içeriğinden çıkarır — Documents.jsx ve Dashboard.jsx'te paylaşılır
+export const effectiveTeklifTur = (t) => {
+  if (t?.tur) return t.tur;
+  const rows = t?.satirlar || [];
+  if (rows.some(r => r.selectedModel)) return "makina";
+  if (rows.some(r => r.selectedPart)) return "parca";
+  if (rows.some(r => r.selectedKalip)) return "kalip";
+  return "diger";
+};

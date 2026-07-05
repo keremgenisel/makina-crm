@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DEFAULT_TRANSLATIONS, DEFAULT_FATURA_TRANSLATIONS } from "../Documents";
+import { DEFAULT_TRANSLATIONS, DEFAULT_FATURA_TRANSLATIONS } from "../../lib/printTemplates";
 import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDIK_TRANSLATIONS } from "../../lib/printTemplates";
 import { Btn, Icon } from "../ui";
 import { Section } from "./Section";

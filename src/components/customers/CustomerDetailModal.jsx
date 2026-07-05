@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { logAction } from "../../lib/audit";
-import { CUR_SYM, ODEME_YONTEMLERI, SALE_TYPE_STYLE } from "../../lib/constants";
+import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
-  sumPayments, calcKalanBorc, parcaAdi, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu,
-  isPartSaleBorcluMu, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint, isAltuntasServisi,
+  sumPayments, calcKalanBorc, isServisUcretliMi, isParcaUcretliMi, isServisBorcluMu,
+  isPartSaleBorcluMu, sumBekleyenCek, isCekVadesiGecmis, stripAutoPrint,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi,
 } from "../../lib/utils";
 import {
@@ -19,6 +19,9 @@ import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, 
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { useLock } from "../../hooks/useLock";
+import { PaymentSection } from "./detail/PaymentSection";
+import { OwnershipSection } from "./detail/OwnershipSection";
+import { MachineTimeline } from "./detail/MachineTimeline";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -605,59 +608,19 @@ export const CustomerDetailModal = ({
           )}
 
           <div>
-            {(detailCiro > 0 || detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0 || detailBekleyenCek > 0) && (
-              <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
-                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px" }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Toplam Bedel</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>{fmtCur(detailCiro, detailView.currency)}</div>
-                </div>
-                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: "3px solid #16a34a", borderRadius: 12, padding: "14px 18px" }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Kapora/Ödeme Alınan</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#15803d" }}>{fmtCur(detailToplamOdeme, detailView.currency)}</div>
-                </div>
-                <div style={{
-                  background: detailKalanBorcToplam > 0 ? "#fef2f2" : "#f0fdf4",
-                  border: `1px solid ${detailKalanBorcToplam > 0 ? "#fecaca" : "#bbf7d0"}`,
-                  borderTop: `3px solid ${detailKalanBorcToplam > 0 ? "#dc2626" : "#16a34a"}`,
-                  borderRadius: 12, padding: "14px 18px",
-                }}>
-                  <div style={{ fontSize: 11, color: detailKalanBorcToplam > 0 ? "#991b1b" : "#15803d", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Kalan Borç</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: detailKalanBorcToplam > 0 ? "#dc2626" : "#15803d" }}>
-                    {detailKalanBorcToplam > 0 ? fmtCur(detailKalanBorcToplam, detailView.currency) : "✓ Borç Yok"}
-                  </div>
-                  {detailEkBorcAyniPB > 0 && (
-                    <div style={{ fontSize: 10.5, color: "#991b1b", marginTop: 5 }}>
-                      ({fmtCur(Math.max(detailKalanBorc, 0), detailView.currency)} makina + {fmtCur(detailEkBorcAyniPB, detailView.currency)} servis/parça/kalıp)
-                    </div>
-                  )}
-                  {detailView.isResale && detailBorcFromPrevOwner && (
-                    <div style={{ fontSize: 10.5, color: "#991b1b", marginTop: 5, fontStyle: "italic" }}>
-                      Bu borcun bir kısmı/tamamı önceki sahip <b>{detailView.prevOwners[detailView.prevOwners.length - 1].name}</b>'den kalmış olabilir.
-                    </div>
-                  )}
-                </div>
-              </div>
-              {detailEkBorcDigerPB.length > 0 && (
-                <div style={{ fontSize: 11.5, color: "#991b1b", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 12px", marginTop: 10, fontWeight: 600 }}>
-                  Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var (yukarıdaki toplama dahil edilmedi):{" "}
-                  {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}
-                </div>
-              )}
-              {detailBekleyenCek > 0 && (
-                <div style={{
-                  fontSize: 11.5, fontWeight: 600, borderRadius: 8, padding: "8px 12px", marginTop: 10,
-                  color: detailCekVadesiGecmisVar ? "#991b1b" : "#92400e",
-                  background: detailCekVadesiGecmisVar ? "#fef2f2" : "#fffbeb",
-                  border: `1px solid ${detailCekVadesiGecmisVar ? "#fecaca" : "#fde68a"}`,
-                }}>
-                  {detailCekVadesiGecmisVar
-                    ? <>Vadesi geçti! {fmtCur(detailBekleyenCek, detailMainCur)} çek tahsil edilmedi.</>
-                    : <>{fmtCur(detailBekleyenCek, detailMainCur)} tahsil edilecek çek bekliyor.</>}
-                </div>
-              )}
-              </div>
-            )}
+            <PaymentSection
+              detailView={detailView}
+              detailCiro={detailCiro}
+              detailToplamOdeme={detailToplamOdeme}
+              detailKalanBorcToplam={detailKalanBorcToplam}
+              detailKalanBorc={detailKalanBorc}
+              detailEkBorcAyniPB={detailEkBorcAyniPB}
+              detailEkBorcDigerPB={detailEkBorcDigerPB}
+              detailBekleyenCek={detailBekleyenCek}
+              detailCekVadesiGecmisVar={detailCekVadesiGecmisVar}
+              detailMainCur={detailMainCur}
+              detailBorcFromPrevOwner={detailBorcFromPrevOwner}
+            />
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 16 }}>
               {[
@@ -750,265 +713,31 @@ export const CustomerDetailModal = ({
               </div>
             </div>
 
-            {detailView.prevOwners?.length > 0 && (
-              <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, marginBottom: 10, color: "#0f172a", fontSize: 13 }}>Sahiplik Geçmişi</div>
-                {detailView.prevOwners.map((o, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: "1px solid #fde8d2" }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>{i + 1}. Sahip: {o.name}</div>
-                      <div style={{ fontSize: 11, color: "#92400e" }}>
-                        {o.country || ""}{o.city ? ` / ${o.city}` : ""}{o.satisYapan ? ` · Satış: ${resolveSatisYapan(o.satisYapan, factory)}` : ""}{o.phone ? ` · Tel: ${o.phone}` : ""}{o.email ? ` · ${o.email}` : ""}
-                      </div>
-                      {(o.yetkili1Ad || o.yetkili2Ad) && (
-                        <div style={{ fontSize: 11, color: "#92400e" }}>
-                          {[o.yetkili1Ad && `${o.yetkili1Ad}${o.yetkili1Tel ? ` (${o.yetkili1Tel})` : ""}`, o.yetkili2Ad && `${o.yetkili2Ad}${o.yetkili2Tel ? ` (${o.yetkili2Tel})` : ""}`].filter(Boolean).join(" · ")}
-                        </div>
-                      )}
-                      {o.aciklama && <div style={{ fontSize: 11, color: "#92400e", marginTop: 2, fontStyle: "italic" }}>"{o.aciklama}"</div>}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "right" }}>
-                        Devir tarihi<br /><b style={{ color: "#475569" }}>{fmtTR(o.soldDate)}</b>
-                      </div>
-                      {canDo("cust_detail_new_owner") && (
-                        <button onClick={() => openEditPrevOwner(detailView.id, i, o)} title="Bu kaydı düzelt"
-                          style={{ border: "none", background: "transparent", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
-                          <Icon name="edit" size={14} />
-                        </button>
-                      )}
-                      {i === detailView.prevOwners.length - 1 && canDo("cust_detail_new_owner") && (
-                        <button onClick={() => setConfirmUndoOwnerId(detailView.id)} title="Son devri geri al"
-                          style={{ border: "none", background: "transparent", cursor: "pointer", color: "#dc2626", padding: 4 }}>
-                          <Icon name="refresh" size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div style={{ paddingTop: 8, fontSize: 12, fontWeight: 700, color: "#059669" }}>
-                  Mevcut Sahip: {detailView.name}
-                </div>
-              </div>
-            )}
+            <OwnershipSection
+              detailView={detailView}
+              factory={factory}
+              canDo={canDo}
+              onEditPrevOwner={openEditPrevOwner}
+              onRequestUndoOwner={setConfirmUndoOwnerId}
+            />
 
-            <div style={{ background: "#f8fafc", borderRadius: 12, padding: "16px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <Icon name="service" size={15} /> Makina Geçmişi
-                  <span style={{ fontSize: 11, background: "#fff", color: "#64748b", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => openPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
-                  {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => openPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
-                </div>
-              </div>
-              {detailTimelineEvents.length === 0 ? (
-                <div style={{ color: "#94a3b8", fontSize: 13, padding: "8px 0" }}>Bu makinaya ait kayıt bulunmuyor.</div>
-              ) : (
-                detailTimelineEvents.map((ev, i) => {
-                  const last = i === detailTimelineEvents.length - 1;
-                  const sv = ev.sv;
-                  const ps = ev.ps;
-                  const psList = ev.psList;
-                  const payment = ev.payment;
-                  return (
-                    <div key={i} style={{ display: "flex", gap: 14, position: "relative", paddingBottom: last ? 0 : 18 }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div style={{ width: 14, height: 14, borderRadius: "50%", background: ev.color, flexShrink: 0, marginTop: 3, border: "3px solid #fff", boxShadow: `0 0 0 2px ${ev.color}33` }} />
-                        {!last && <div style={{ width: 2, flex: 1, background: "#e2e8f0", marginTop: 4 }} />}
-                      </div>
-                      <div style={{ flex: 1, paddingBottom: 4 }}>
-                        <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{ev.date ? fmtTR(ev.date) : "tarih yok"}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 1 }}>
-                          {ev.kind === "service" && sv ? (
-                            <>
-                              <span onClick={canDo("cust_service_edit") ? () => openEditService(sv) : undefined} title={canDo("cust_service_edit") ? "Düzenlemek için tıklayın" : undefined}
-                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_service_edit") ? "pointer" : "default", textDecoration: canDo("cust_service_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                              {canDo("cust_detail_print") && (
-                                <button onClick={() => openPrintOrPick("servis", sv)} title="Servis Formu Yazdır"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                  <Icon name="print" size={11} /> Yazdır
-                                </button>
-                              )}
-                              {canDo("cust_detail_mail") && (
-                                <button onClick={() => openPrintOrPick("mail_servis", sv)} title="Servis Formu E-posta Gönder"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                  <Icon name="mail" size={11} /> E-posta
-                                </button>
-                              )}
-                              {canDo("cust_service_delete") && (
-                                <button onClick={() => setConfirmDeleteServiceId(sv.id)} title="Servis kaydını sil"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                  <Icon name="trash" size={11} /> Sil
-                                </button>
-                              )}
-                            </>
-                          ) : ev.kind === "part" && psList ? (
-                            psList.length === 1 ? (
-                              <>
-                                <span onClick={canDo("cust_kalip_edit") ? () => openEditPartSale(psList[0]) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
-                                  style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                                {canDo("cust_kalip_delete") && (
-                                  <button onClick={() => setConfirmDeletePartSaleId(psList[0].id)} title="Extra Kalıp kaydını sil"
-                                    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                    <Icon name="trash" size={11} /> Sil
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
-                                {ev.title} <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>({psList.length} kalıp)</span>
-                              </span>
-                            )
-                          ) : ev.kind === "payment" && payment ? (
-                            <>
-                              <span onClick={canDo("cust_payment_edit") ? () => openEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
-                                style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "#e2e8f0" }}>{ev.title}</span>
-                              {payment.yontem === "Çek" && canDo("cust_payment_edit") && (
-                                <button onClick={() => toggleCekTahsil(payment)}
-                                  style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: payment.tahsilEdildi ? "#bbf7d0" : "#fde68a", background: payment.tahsilEdildi ? "#f0fdf4" : "#fffbeb", color: payment.tahsilEdildi ? "#15803d" : "#92400e" }}>
-                                  {payment.tahsilEdildi ? "Tahsil Edildi" : "Beklemede · işaretle: Tahsil Edildi"}
-                                </button>
-                              )}
-                              {canDo("cust_payment_edit") && (
-                                <button onClick={() => setConfirmDeletePaymentId(payment.id)} title="Ödemeyi sil"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-                                  <Icon name="trash" size={11} /> Sil
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
-                          )}
-                          {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "#f1f5f9", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "#475569" }}>{ev.tip}</span>}
-                          {sv?.islemFirma && !isAltuntasServisi(sv, factoryName) && (
-                            <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "#fef3c7", color: "#92400e" }}>
-                              Anlaşmalı Servis: {sv.islemFirma}
-                            </span>
-                          )}
-                          {sv?.tech && <span style={{ fontSize: 12, color: "#64748b" }}>· {sv.tech}</span>}
-                          {sv?.repairPlace && <span style={{ fontSize: 11, color: "#94a3b8" }}>· {sv.repairPlace}</span>}
-                        </div>
-                        {ev.desc && <div style={{ fontSize: 12, color: "#64748b", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
-                        {psList && (
-                          <div style={{ marginTop: 4 }}>
-                            {psList.map(p => {
-                              const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates);
-                              return (
-                                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
-                                  {psList.length > 1 && (
-                                    <>
-                                      <span onClick={canDo("cust_kalip_edit") ? () => openEditPartSale(p) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
-                                        style={{ fontSize: 13, fontWeight: 600, color: "#c2410c", cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "#fed7aa" }}>
-                                        {p.ad}{p.olcu ? ` (${p.olcu})` : ""}
-                                      </span>
-                                      <span style={{ fontSize: 11, color: "#94a3b8" }}>· {p.tarih ? fmtTR(p.tarih) : "tarih yok"}</span>
-                                    </>
-                                  )}
-                                  <span style={{ fontSize: 12, color: "#64748b" }}>
-                                    {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
-                                    {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")}
-                                  </span>
-                                  {canDo("cust_kalip_payment") && (
-                                    <button onClick={() => togglePartSaleOdendi(p)}
-                                      style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "#fecaca" : "#bbf7d0", background: p.odendi === false ? "#fef2f2" : "#f0fdf4", color: p.odendi === false ? "#dc2626" : "#15803d" }}>
-                                      {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                                    </button>
-                                  )}
-                                  {psList.length > 1 && canDo("cust_kalip_delete") && (
-                                    <button onClick={() => setConfirmDeletePartSaleId(p.id)} title="Bu kalıp kaydını sil"
-                                      style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}>
-                                      <Icon name="trash" size={10} />
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                            {psList.length > 1 && (() => {
-                              const toplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : parseMoney(p.ucret)), 0);
-                              const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates)), 0);
-                              return (
-                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8", marginTop: 5 }}>
-                                  Toplam: {fmtCur(toplam, psList[0].currency)}{kdvToplam > 0 ? ` · KDV dahil: ${fmtCur(toplam + kdvToplam, psList[0].currency)}` : ""}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-                        {sv?.yapilanIsler && (
-                          <div style={{ marginTop: 5 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Yapılan İşler / Parça Değişimleri</div>
-                            <div style={{ fontSize: 13, color: "#475569", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.yapilanIsler}</div>
-                          </div>
-                        )}
-                        {sv?.degisenParcalar?.length > 0 && (
-                          <div style={{ marginTop: 5 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Değişen Parçalar</div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
-                              {sv.degisenParcalar.map((p, i) => {
-                                const ad = parcaAdi(p);
-                                const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
-                                const isDisTedarik = typeof p === "object" && !!p.disTedarik;
-                                return (
-                                  <span key={i} style={{ fontSize: 11, fontWeight: 600, color: isDisTedarik ? "#ea580c" : "#1d4ed8", background: isDisTedarik ? "#fff7ed" : "#eff6ff", border: `1px solid ${isDisTedarik ? "#fed7aa" : "#bfdbfe"}`, borderRadius: 12, padding: "2px 9px" }}>
-                                    {ad}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        {sv?.musteriTalimati && (
-                          <div style={{ marginTop: 5 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Müşteri Talimatı</div>
-                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.musteriTalimati}</div>
-                          </div>
-                        )}
-                        {sv?.fabrikaNotu && (
-                          <div style={{ marginTop: 5 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>Fabrika Notu</div>
-                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{sv.fabrikaNotu}</div>
-                          </div>
-                        )}
-                        {sv && (svUcretliMi(sv) || svParcaUcretliMi(sv)) && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
-                            {(() => {
-                              const servisVar = svUcretliMi(sv);
-                              const parcaVar = svParcaUcretliMi(sv);
-                              const sameCurrency = !servisVar || !parcaVar || sv.currency === (sv.parcaCurrency || sv.currency);
-                              if (sameCurrency) {
-                                const toplam = (servisVar ? parseMoney(sv.servisUcreti) : 0) + (parcaVar ? parseMoney(sv.parcaUcreti) : 0);
-                                const kdv = calcKDV(sv.faturaTipi, toplam, sv.date, kdvRates);
-                                const label = servisVar && parcaVar ? "Servis ve Yedek Parça Ücreti" : servisVar ? "Servis Ücreti" : "Yedek Parça Ücreti";
-                                return (
-                                  <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>
-                                    {label}: {fmtCur(toplam, sv.currency)}
-                                    {kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}
-                                  </span>
-                                );
-                              }
-                              return (
-                                <>
-                                  {servisVar && <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Servis Ücreti: {fmtCur(sv.servisUcreti, sv.currency)}</span>}
-                                  {parcaVar && <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 700 }}>Parça Ücreti: {fmtCur(sv.parcaUcreti, sv.parcaCurrency)}</span>}
-                                </>
-                              );
-                            })()}
-                            {canDo("cust_service_payment") && (
-                              <button onClick={() => toggleServisOdendi(sv)}
-                                style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: sv.odendi === false ? "#fecaca" : "#bbf7d0", background: sv.odendi === false ? "#fef2f2" : "#f0fdf4", color: sv.odendi === false ? "#dc2626" : "#15803d" }}>
-                                {sv.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <MachineTimeline
+              detailView={detailView}
+              detailTimelineEvents={detailTimelineEvents}
+              factoryName={factoryName}
+              kdvRates={kdvRates}
+              canDo={canDo}
+              onEditService={openEditService}
+              onPrintOrPick={openPrintOrPick}
+              onDeleteService={setConfirmDeleteServiceId}
+              onEditPartSale={openEditPartSale}
+              onDeletePartSale={setConfirmDeletePartSaleId}
+              onEditPayment={openEditPayment}
+              onToggleCekTahsil={toggleCekTahsil}
+              onDeletePayment={setConfirmDeletePaymentId}
+              onToggleServisOdendi={toggleServisOdendi}
+              onTogglePartSaleOdendi={togglePartSaleOdendi}
+            />
           </div>
         </div>
         )}

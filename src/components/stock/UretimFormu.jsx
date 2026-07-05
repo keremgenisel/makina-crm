@@ -305,6 +305,7 @@ export function UretimFormu({
         musteriAdi: cust?.name || "",
         sehir: cust?.city || "",
         makinaKodu: cust?.model || "",
+        makinaKalipCapi: fmtKalipCapi(cust?.kalipCapi) || "",
         kalipOlcusu: ps.olcu || "",
         kaynakTip: "extra_kalip",
         kaynakId: ps.id,

@@ -2,18 +2,15 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction } from "../lib/audit";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
+import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null }) => {
-  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
-  const _allowedDealerActions = _isAdmin ? null : (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.dealerActions ?? null; }
-    catch { return null; }
-  })();
-  const canDo = action => !_allowedDealerActions || _allowedDealerActions.includes(action);
+  const _perms = parsePermissions(serverPermissions);
+  const canDo = action => !_perms || !_perms.dealerActions || _perms.dealerActions.includes(action);
 
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});

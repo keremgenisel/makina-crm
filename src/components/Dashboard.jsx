@@ -1,22 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur } from "../lib/utils";
+import { parsePermissions } from "../lib/permissions";
 import { StatCard, Modal, Btn } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null }) => {
-  const perms = useMemo(() => {
-    if (!serverPermissions || serverPermissions.role === "admin") return null;
-    try { return JSON.parse(serverPermissions.permissions || "null"); } catch { return null; }
-  }, [serverPermissions]);
+  const perms = useMemo(() => parsePermissions(serverPermissions), [serverPermissions]);
   const canCust = (action) => !perms || perms.customerActions === null || perms.customerActions?.includes(action);
-
-  const effectiveTur = (t) => {
-    if (t?.tur) return t.tur;
-    const rows = t?.satirlar || [];
-    if (rows.some(r => r.selectedModel)) return "makina";
-    if (rows.some(r => r.selectedPart)) return "parca";
-    if (rows.some(r => r.selectedKalip)) return "kalip";
-    return "diger";
-  };
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
@@ -104,7 +93,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     teklifler.filter(t => {
       if (t.durum !== "onaylandi" || t.deletedAt || t.satisTamam) return false;
       if (!t.customerId) return true; // müşteri bağlanmamış → her zaman göster
-      const tur = effectiveTur(t);
+      const tur = effectiveTeklifTur(t);
       return tur === "makina" || tur === "parca" || tur === "kalip"; // bağlı + işlem gerektiren tur
     }),
   [teklifler]);
@@ -187,7 +176,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             <span>⚡</span> İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
           </div>
           {donusturBekleyenlar.map(t => {
-            const tur = effectiveTur(t);
+            const tur = effectiveTeklifTur(t);
             const busy     = teklifBusy.has(t.id);
             const conflict = teklifConflict[t.id];
             return (
