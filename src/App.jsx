@@ -119,8 +119,9 @@ export default function App() {
     if (!window.appServer) return;
     const u1 = window.appServer.onVersionUpdate(v => { dataVersionRef.current = v; });
     const u2 = window.appServer.onConflict(() => {
-      showToast("Başka bir kullanıcı veriyi güncelledi. Uygulama yeniden yükleniyor...", "err");
-      setTimeout(() => window.location.reload(), 2500);
+      showToast("Veri çakışması tespit edildi. Güncel veriler yükleniyor...", "warn");
+      clearTimeout(saveTimer.current);
+      loadFromStorageRef.current?.();
     });
     const u3 = window.appServer.onSessionExpired(() => {
       showToast("Oturum süresi doldu. Lütfen tekrar giriş yapın.", "err");
@@ -129,7 +130,10 @@ export default function App() {
     const u4 = window.appServer.onError(_msg => {
       if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
     });
-    const u5 = window.appServer.onDataChanged?.(() => { loadFromStorageRef.current?.(); });
+    const u5 = window.appServer.onDataChanged?.(() => {
+      clearTimeout(saveTimer.current);
+      loadFromStorageRef.current?.();
+    });
     return () => { u1?.(); u2?.(); u3?.(); u4?.(); u5?.(); };
   }, []);
 
