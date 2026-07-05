@@ -138,12 +138,12 @@ export default function App() {
       if (!nks.length) return c;
       return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
     }));
-    // Tekliflerde durum veya satisTamam değişikliklerini koru
+    // satisTamam tek yönlüdür (false→true), sunucunun true değerini asla sıfırlama
     setTeklifler(prev => prev.map(t => {
+      if (t.satisTamam) return t; // sunucu zaten true set etmiş, dokunma
       const mine = (myData.teklifler || []).find(x => x.id === t.id);
-      if (!mine) return t;
-      if (mine.durum === t.durum && mine.satisTamam === t.satisTamam) return t;
-      return { ...t, durum: mine.durum, satisTamam: mine.satisTamam };
+      if (!mine?.satisTamam) return t; // yerel de false veya teklif yok
+      return { ...t, satisTamam: true }; // yerel true ama sunucu false → uygula
     }));
   };
 
@@ -240,7 +240,11 @@ export default function App() {
         }
         // Veri versiyonu değiştiyse state'i yenile
         if (typeof sv === "number" && sv !== dataVersionRef.current) {
+          clearTimeout(saveTimer.current);
+          const myPending = pendingSave.current;
+          pendingSave.current = null;
           await loadFromStorageRef.current?.();
+          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
         }
       } catch {
         // Network error — sunucu erişilemiyor
