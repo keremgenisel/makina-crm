@@ -166,7 +166,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
 
   ipcMain.handle("app:getOpenAtLogin", () => {
     if (!app.isPackaged) return { openAtLogin: false, devMode: true };
-    return { openAtLogin: app.getLoginItemSettings().openAtLogin };
+    return { openAtLogin: app.getLoginItemSettings({ args: ["--hidden"] }).openAtLogin };
   });
   ipcMain.handle("app:setOpenAtLogin", (_e, val) => {
     if (!app.isPackaged) return { ok: false, devMode: true };
