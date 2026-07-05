@@ -367,6 +367,12 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     } catch { e.returnValue = false; }
   });
 
+  // ── Hafif versiyon kontrolü (sunucu PC polling için) ─────────────────────
+  ipcMain.handle("crm:getVersion", () => {
+    if (!sqliteDb.isActive()) return null;
+    return sqliteDb.getDataVersion();
+  });
+
   // ── Manuel yedekleme ──────────────────────────────────────────────────────
   ipcMain.handle("crm:backup", async (_e, data) => {
     const date = new Date().toISOString().split("T")[0];

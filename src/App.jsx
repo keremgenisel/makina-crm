@@ -45,6 +45,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
   const suppressSaveRef = useRef(false); // reload sırasında debounced save'in tetiklenmesini engeller
+  const lastAttemptedSaveRef = useRef(null); // çakışmada yerel değişiklikleri birleştirmek için son save datası
   const [serverOnline, setServerOnline] = useState(true);
   const serverOnlineRef = useRef(true); // polling effect closure'ında stale state'den kaçınmak için
   const failedSaveRef = useRef(null);   // sunucu kpalıyken başarısız olan son save datası
@@ -114,14 +115,47 @@ export default function App() {
     }).catch(() => setServerMode("none"));
   }, []);
 
+  // ── Yerel değişiklikleri sunucu verisinin üzerine birleştirir (çakışma/yeniden yükleme sonrası) ──
+  const mergeLocalIntoReloaded = (myData) => {
+    if (!myData) return;
+    // Yeni kayıtlar: ID bazında eksik olanları ekle
+    const mergeNew = (setter, key) => setter(prev => {
+      const ids = new Set(prev.map(x => x.id));
+      const adds = (myData[key] || []).filter(x => !ids.has(x.id));
+      return adds.length ? [...prev, ...adds] : prev;
+    });
+    mergeNew(setPartSales, "partSales");
+    mergeNew(setServices, "services");
+    mergeNew(setUretimFormlari, "uretimFormlari");
+    // Müşterilerde yeni kalıp girdileri
+    setCustomers(prev => prev.map(c => {
+      const mc = (myData.customers || []).find(x => x.id === c.id);
+      if (!mc) return c;
+      const eIds = new Set((c.kaliplar || []).map(k => k.partSaleId).filter(Boolean));
+      const nks = (mc.kaliplar || []).filter(k => k.partSaleId && !eIds.has(k.partSaleId));
+      if (!nks.length) return c;
+      return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
+    }));
+    // Tekliflerde durum değişikliklerini koru
+    setTeklifler(prev => prev.map(t => {
+      const mine = (myData.teklifler || []).find(x => x.id === t.id);
+      if (!mine || mine.durum === t.durum) return t;
+      return { ...t, durum: mine.durum, satisTamam: mine.satisTamam ?? t.satisTamam };
+    }));
+  };
+
   // ── Sunucu olayları: çakışma / oturum sona erme / versiyon güncelleme ──
   useEffect(() => {
     if (!window.appServer) return;
     const u1 = window.appServer.onVersionUpdate(v => { dataVersionRef.current = v; });
-    const u2 = window.appServer.onConflict(() => {
-      showToast("Veri çakışması tespit edildi. Güncel veriler yükleniyor...", "warn");
+    const u2 = window.appServer.onConflict(async () => {
+      showToast("Veri çakışması tespit edildi. Birleştiriliyor...", "warn");
       clearTimeout(saveTimer.current);
-      loadFromStorageRef.current?.();
+      const myData = lastAttemptedSaveRef.current;
+      lastAttemptedSaveRef.current = null;
+      await loadFromStorageRef.current?.();
+      // Suppress 700ms bittikten sonra merge yap ki save effect tetiklensin
+      if (myData) setTimeout(() => mergeLocalIntoReloaded(myData), 750);
     });
     const u3 = window.appServer.onSessionExpired(() => {
       showToast("Oturum süresi doldu. Lütfen tekrar giriş yapın.", "err");
@@ -130,11 +164,35 @@ export default function App() {
     const u4 = window.appServer.onError(_msg => {
       if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
     });
-    const u5 = window.appServer.onDataChanged?.(() => {
+    const u5 = window.appServer.onDataChanged?.(async () => {
       clearTimeout(saveTimer.current);
-      loadFromStorageRef.current?.();
+      const myPending = pendingSave.current;
+      pendingSave.current = null;
+      await loadFromStorageRef.current?.();
+      if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
     });
     return () => { u1?.(); u2?.(); u3?.(); u4?.(); u5?.(); };
+  }, []);
+
+  // ── Sunucu PC polling: istemci kaydetmelerini 5 saniyede yakala ──────────
+  useEffect(() => {
+    if (!window.appServer || !window.crmStorage?.getVersion) return;
+    let isSvr = false;
+    window.appServer.getConfig().then(cfg => { isSvr = !!cfg?.isServer; }).catch(() => {});
+    const id = setInterval(async () => {
+      if (!isSvr || suppressSaveRef.current) return;
+      try {
+        const v = await window.crmStorage.getVersion();
+        if (typeof v === "number" && v !== dataVersionRef.current) {
+          clearTimeout(saveTimer.current);
+          const myPending = pendingSave.current;
+          pendingSave.current = null;
+          await loadFromStorageRef.current?.();
+          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(id);
   }, []);
 
   // ── Token otomatik yenileme: 8 saatlik JWT'nin dolmasını önlemek için 7 saatte bir ──
@@ -499,10 +557,12 @@ export default function App() {
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
+      const saveData = pendingSave.current;
       pendingSave.current = null;
-      const ok = await window.crmStorage.save(data);
-      if (ok) { failedSaveRef.current = null; }
-      else if (serverMode === "active") { failedSaveRef.current = data; }
+      lastAttemptedSaveRef.current = saveData;
+      const ok = await window.crmStorage.save(saveData || data);
+      if (ok) { failedSaveRef.current = null; lastAttemptedSaveRef.current = null; }
+      else if (serverMode === "active") { failedSaveRef.current = saveData || data; }
     }, 500);
     return () => clearTimeout(saveTimer.current);
   }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded]);
