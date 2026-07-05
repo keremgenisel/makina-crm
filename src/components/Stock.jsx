@@ -12,12 +12,14 @@ export const Stock = ({
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
-  customers = [],
+  customers = [], setCustomers = null,
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
+  partSales = [], setPartSales = null,
   serverPermissions = null,
+  defaultSubTab = "makina",
 }) => {
-  const [subTab, setSubTab] = useState("makina");
+  const [subTab, setSubTab] = useState(defaultSubTab || "makina");
 
   const TABS = [
     ["makina", "Makina Stoğu"],
@@ -64,7 +66,10 @@ export const Stock = ({
       {subTab === "uretim" && (
         <UretimFormu
           uretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari}
-          customers={customers} kalipDefs={kalipDefs} showToast={showToast}
+          customers={customers} setCustomers={setCustomers}
+          kalipDefs={kalipDefs}
+          partSales={partSales} setPartSales={setPartSales}
+          showToast={showToast}
           canDoStock={canDoStock} serverPermissions={serverPermissions} />
       )}
     </div>

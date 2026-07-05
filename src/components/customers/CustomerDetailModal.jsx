@@ -307,7 +307,7 @@ export const CustomerDetailModal = ({
     };
     if (pkForm.id) {
       const k = satirlar[0];
-      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat) };
+      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder };
       setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields } : x));
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
@@ -316,7 +316,7 @@ export const CustomerDetailModal = ({
       showToast("Kayıt güncellendi.");
     } else {
       const batchId = uid();
-      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat) }));
+      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder }));
       setPartSales(p => [...p, ...yeniKayitlar]);
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }

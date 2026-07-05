@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Btn, Icon } from "../ui";
 
 const ENTITY_LABELS = {
@@ -23,21 +23,30 @@ export function SettingsAuditLog({ serverPermissions }) {
   const [loading, setLoading]   = useState(true);
   const [loadErr, setLoadErr]   = useState(null);
   const [page, setPage]         = useState(1);
-  const [fUser, setFUser]       = useState("");
-  const [fEntity, setFEntity]   = useState("");
-  const [fDateFrom, setFDateFrom] = useState("");
-  const [fDateTo, setFDateTo]   = useState("");
 
-  const load = useCallback(async (p = 1) => {
+  // Filtre alanları — kullanıcı değiştirir, "Filtrele" veya Enter ile arama tetiklenir
+  const [fUser, setFUser]         = useState("");
+  const [fEntity, setFEntity]     = useState("");
+  const [fDateFrom, setFDateFrom] = useState("");
+  const [fDateTo, setFDateTo]     = useState("");
+
+  // Aktif (uygulanan) filtreler — bunlar değişince veri yüklenir
+  const [activeFilters, setActiveFilters] = useState({ fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" });
+
+  const genRef = useRef(0);
+
+  async function fetchData(p, filters) {
+    const gen = ++genRef.current;
     setLoading(true);
     setLoadErr(null);
     const offset = (p - 1) * PER_PAGE;
-    const filters = {
-      limit: PER_PAGE, offset,
-      username: fUser.trim() || undefined,
-      entity: fEntity || undefined,
-      dateFrom: fDateFrom || undefined,
-      dateTo: fDateTo || undefined,
+    const req = {
+      limit: PER_PAGE,
+      offset,
+      username: filters.fUser?.trim() || undefined,
+      entity: filters.fEntity || undefined,
+      dateFrom: filters.fDateFrom || undefined,
+      dateTo: filters.fDateTo || undefined,
     };
     try {
       let result;
@@ -45,30 +54,67 @@ export function SettingsAuditLog({ serverPermissions }) {
         const params = new URLSearchParams();
         params.set("limit", PER_PAGE);
         params.set("offset", offset);
-        if (filters.username) params.set("username", filters.username);
-        if (filters.entity)   params.set("entity", filters.entity);
-        if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-        if (filters.dateTo)   params.set("dateTo", filters.dateTo);
+        if (req.username) params.set("username", req.username);
+        if (req.entity)   params.set("entity", req.entity);
+        if (req.dateFrom) params.set("dateFrom", req.dateFrom);
+        if (req.dateTo)   params.set("dateTo", req.dateTo);
         const res = await window.appServer?.apiRequest({ method: "GET", path: `/api/audit?${params}` });
         result = res?.ok ? res.data : null;
-        if (!result) setLoadErr(res?.error || "Sunucudan veri alınamadı");
+        if (!result && gen === genRef.current) setLoadErr(res?.error || "Sunucudan veri alınamadı");
       } else {
-        if (!window.auditLog) { setLoadErr("İşlem geçmişi IPC bağlantısı mevcut değil"); setLoading(false); return; }
-        const res = await window.auditLog.get(filters);
-        if (!res?.ok) { setLoadErr("Veritabanı erişim hatası — yerel mod aktif olmayabilir"); setLoading(false); return; }
+        if (!window.auditLog) {
+          if (gen === genRef.current) { setLoadErr("İşlem geçmişi IPC bağlantısı mevcut değil"); setLoading(false); }
+          return;
+        }
+        const res = await window.auditLog.get(req);
+        if (!res?.ok) {
+          if (gen === genRef.current) { setLoadErr("Veritabanı erişim hatası — yerel mod aktif olmayabilir"); setLoading(false); }
+          return;
+        }
         result = res;
       }
-      if (result) { setRows(result.rows || []); setTotal(result.total || 0); }
+      if (gen === genRef.current && result) {
+        setRows(result.rows || []);
+        setTotal(result.total || 0);
+      }
     } catch (err) {
       console.error("audit log yükleme hatası:", err);
-      setLoadErr(String(err?.message || err));
+      if (gen === genRef.current) setLoadErr(String(err?.message || err));
     }
-    setLoading(false);
-  }, [isServerMode, fUser, fEntity, fDateFrom, fDateTo]);
+    if (gen === genRef.current) setLoading(false);
+  }
 
-  useEffect(() => { setPage(1); load(1); }, [load]);
+  // Aktif filtreler veya sayfa değişince veri çek
+  useEffect(() => {
+    fetchData(page, activeFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, activeFilters]);
 
-  const go = (p) => { setPage(p); load(p); };
+  // Filtre uygula
+  const applyFilters = () => {
+    const f = { fUser, fEntity, fDateFrom, fDateTo };
+    setPage(1);
+    setActiveFilters(f);
+  };
+
+  // Filtreleri sıfırla
+  const resetFilters = () => {
+    const empty = { fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" };
+    setFUser(""); setFEntity(""); setFDateFrom(""); setFDateTo("");
+    setPage(1);
+    setActiveFilters(empty);
+  };
+
+  const yenile = () => {
+    fetchData(page, activeFilters);
+  };
+
+  const go = (p) => {
+    setPage(p);
+    // page değişimi useEffect'i tetikler
+  };
+
+  const onKeyDown = (e) => { if (e.key === "Enter") applyFilters(); };
 
   const fmtTs = (ts) => {
     if (!ts) return "—";
@@ -90,6 +136,7 @@ export function SettingsAuditLog({ serverPermissions }) {
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const hasActiveFilter = activeFilters.fUser || activeFilters.fEntity || activeFilters.fDateFrom || activeFilters.fDateTo;
   const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none" };
   const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
@@ -99,22 +146,38 @@ export function SettingsAuditLog({ serverPermissions }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>İşlem Geçmişi</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <Btn variant="ghost" onClick={() => { setPage(1); load(1); }}><Icon name="refresh" size={14} /> Yenile</Btn>
+          <Btn variant="ghost" onClick={yenile}><Icon name="refresh" size={14} /> Yenile</Btn>
           <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
         </div>
       </div>
 
       {/* Filtreler */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        <input value={fUser} onChange={e => setFUser(e.target.value)} placeholder="Kullanıcı adı" style={{ ...inp, width: 140 }} />
-        <select value={fEntity} onChange={e => setFEntity(e.target.value)} style={{ ...inp }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
+        <input
+          value={fUser} onChange={e => setFUser(e.target.value)} onKeyDown={onKeyDown}
+          placeholder="Kullanıcı adı" style={{ ...inp, width: 140 }}
+        />
+        <select value={fEntity} onChange={e => setFEntity(e.target.value)} onKeyDown={onKeyDown} style={{ ...inp }}>
           <option value="">Tüm bölümler</option>
           {Object.entries(ENTITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
         <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
-        <Btn variant="ghost" onClick={() => { setFUser(""); setFEntity(""); setFDateFrom(""); setFDateTo(""); }}>Sıfırla</Btn>
+        <Btn onClick={applyFilters}>Ara</Btn>
+        {hasActiveFilter && (
+          <Btn variant="ghost" onClick={resetFilters}>Sıfırla</Btn>
+        )}
       </div>
+
+      {hasActiveFilter && (
+        <div style={{ marginBottom: 10, fontSize: 12, color: "#7c3aed", background: "#f5f3ff", padding: "6px 12px", borderRadius: 6, display: "inline-flex", gap: 6 }}>
+          Filtre aktif
+          {activeFilters.fUser && <span>· Kullanıcı: <b>{activeFilters.fUser}</b></span>}
+          {activeFilters.fEntity && <span>· Bölüm: <b>{ENTITY_LABELS[activeFilters.fEntity] || activeFilters.fEntity}</b></span>}
+          {activeFilters.fDateFrom && <span>· Başlangıç: <b>{activeFilters.fDateFrom}</b></span>}
+          {activeFilters.fDateTo && <span>· Bitiş: <b>{activeFilters.fDateTo}</b></span>}
+        </div>
+      )}
 
       {loadErr && (
         <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fee2e2", color: "#991b1b", fontSize: 13, fontWeight: 600 }}>

@@ -9,11 +9,15 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const emptyForm = () => ({
   id: uid(),
-  tarih: todayStr(),
+  baslangicTarihi: todayStr(),
+  bitisTarihi: todayStr(),
+  kapali: false,
   not: "",
   createdAt: todayStr(),
   satirlar: [],
 });
+
+const fmtDate = d => d ? d.split("-").reverse().join(".") : "—";
 
 const emptyRow = () => ({
   id: uid(),
@@ -29,6 +33,9 @@ const emptyRow = () => ({
   kalipOlcusu: "",
   makinaKalipCapi: "",
   tamamlandi: false,
+  kaynakTip: null,   // "musteri" | "extra_kalip" | null (manuel)
+  kaynakId: null,    // customer.id veya partSale.id
+  kalipIdx: null,    // kaynak dizisindeki index
 });
 
 const thSt = {
@@ -76,6 +83,9 @@ function groupByMusteri(satirlar) {
 
 function buildPrintHtml(form) {
   const groups = groupByMusteri(form.satirlar || []);
+  const bas = form.baslangicTarihi || form.tarih || "";
+  const bit = form.bitisTarihi || form.tarih || "";
+  const tarihStr = bas ? (bas === bit ? fmtDate(bas) : `${fmtDate(bas)} – ${fmtDate(bit)}`) : "";
 
   const colHeaders = `
     <tr>
@@ -111,11 +121,11 @@ function buildPrintHtml(form) {
   }).join("");
 
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
-  <title>Kalıp Üretim Formu — ${form.tarih}</title>
+  <title>Kalıp Üretim Formu — ${tarihStr}</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; margin: 0; padding: 18px; color: #1a1a1a; }
-    @media print { @page { margin: 10mm 12mm; size: A4 landscape; } body { padding: 0; } }
+    @media print { @page { margin: 10mm 12mm; size: A4 portrait; } body { padding: 0; } }
     h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
     .meta { font-size: 10.5px; color: #555; margin-bottom: 14px; }
     table { width: 100%; border-collapse: collapse; }
@@ -123,7 +133,7 @@ function buildPrintHtml(form) {
   </style>
 </head><body>
   <h2>KALIP ÜRETİM FORMU</h2>
-  <div class="meta">Tarih: <b>${form.tarih}</b>${form.not ? `&nbsp;·&nbsp;${form.not}` : ""}</div>
+  <div class="meta">Dönem: <b>${tarihStr}</b>${form.not ? `&nbsp;·&nbsp;${form.not}` : ""}</div>
   <table>
     <tbody>
       ${bodyRows || `<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">Satır yok</td></tr>`}
@@ -132,7 +142,12 @@ function buildPrintHtml(form) {
 </body></html>`;
 }
 
-export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers = [], kalipDefs = [], showToast = () => {}, canDoStock = () => true, serverPermissions = null }) {
+export function UretimFormu({
+  uretimFormlari = [], setUretimFormlari,
+  customers = [], kalipDefs = [],
+  partSales = [], setPartSales = null, setCustomers = null,
+  showToast = () => {}, canDoStock = () => true, serverPermissions = null,
+}) {
   const [editId, setEditId] = useState(null);
   const [form, setForm]     = useState(null);
   const lockEntityId = editId !== null && editId !== "new" ? editId : null;
@@ -152,18 +167,46 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
   };
 
   const openEdit = (f) => {
-    setForm({ ...f, satirlar: f.satirlar.map(r => ({ ...r })) });
+    const baslangicTarihi = f.baslangicTarihi || f.tarih || todayStr();
+    const bitisTarihi = f.bitisTarihi || f.tarih || todayStr();
+    setForm({ ...f, baslangicTarihi, bitisTarihi, kapali: !!f.kapali, satirlar: f.satirlar.map(r => ({ ...r })) });
     setEditId(f.id);
   };
 
   const saveForm = () => {
     if (!form) return;
     const isUpdate = uretimFormlari.some(f => f.id === form.id && !f.deletedAt);
+
+    // Kaynaklarda uretimFormId işaretle
+    const custUpdates = {}; // { custId: Set<kalipIdx> }
+    const psIds = new Set(); // partSale id'leri (her biri zaten tek kalıp)
+    for (const r of form.satirlar) {
+      if (!r.kaynakTip || r.kaynakId == null) continue;
+      if (r.kaynakTip === "musteri" && r.kalipIdx != null) {
+        (custUpdates[r.kaynakId] ??= new Set()).add(r.kalipIdx);
+      } else if (r.kaynakTip === "extra_kalip") {
+        psIds.add(r.kaynakId);
+      }
+    }
+    if (Object.keys(custUpdates).length > 0 && setCustomers) {
+      setCustomers(prev => prev.map(c => {
+        if (!custUpdates[c.id]) return c;
+        return { ...c, kaliplar: (c.kaliplar || []).map((k, i) =>
+          custUpdates[c.id].has(i) ? { ...k, uretimFormId: form.id } : k
+        )};
+      }));
+    }
+    if (psIds.size > 0 && setPartSales) {
+      setPartSales(prev => prev.map(ps =>
+        psIds.has(ps.id) ? { ...ps, uretimFormId: form.id } : ps
+      ));
+    }
+
     setUretimFormlari(prev => {
       const idx = prev.findIndex(f => f.id === form.id);
       return idx >= 0 ? prev.map(f => f.id === form.id ? form : f) : [...prev, form];
     });
-    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: "uretim_formu", entityId: form.id, entityName: form.tarih });
+    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: "uretim_formu", entityId: form.id, entityName: form.baslangicTarihi });
     showToast("Form kaydedildi.");
   };
 
@@ -172,7 +215,7 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
     const f = uretimFormlari.find(x => x.id === id);
     setUretimFormlari(prev => prev.map(x => x.id === id ? { ...x, deletedAt: now } : x));
     setDelConfirm(null);
-    logAction({ serverPermissions, action: "silindi", entity: "uretim_formu", entityId: id, entityName: f?.tarih });
+    logAction({ serverPermissions, action: "silindi", entity: "uretim_formu", entityId: id, entityName: f?.baslangicTarihi });
     showToast("Form çöp kutusuna taşındı.");
   };
 
@@ -191,6 +234,91 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
 
   const toggleDone = (rowId) =>
     setForm(f => ({ ...f, satirlar: f.satirlar.map(r => r.id === rowId ? { ...r, tamamlandi: !r.tamamlandi } : r) }));
+
+  // ── Bekleyen kalıpları getir ───────────────────────────────────────────────
+  const collectPending = () => {
+    if (!form) return;
+    if (form.kapali) { showToast("Bu dönem sonlandırılmış, yeni kalıp eklenemez."); return; }
+    const { baslangicTarihi, bitisTarihi } = form;
+    if (!baslangicTarihi || !bitisTarihi) {
+      showToast("Önce tarih aralığını belirleyin.");
+      return;
+    }
+
+    // Hangi kaynaklar bu formda zaten var?
+    const already = new Set(
+      form.satirlar
+        .filter(r => r.kaynakTip && r.kaynakId != null)
+        .map(r => r.kaynakTip === "musteri"
+          ? `musteri:${r.kaynakId}:${r.kalipIdx}`
+          : `extra_kalip:${r.kaynakId}`)
+    );
+
+    const newRows = [];
+
+    // Müşteri kalıpları — installDate tarih aralığında
+    for (const c of customers) {
+      if (c.deletedAt) continue;
+      const tarih = c.installDate || "";
+      if (!tarih || tarih < baslangicTarihi || tarih > bitisTarihi) continue;
+      (c.kaliplar || []).forEach((k, i) => {
+        if (!k.uretimFormGonder) return;
+        if (k.uretimFormId) return; // başka bir forma zaten eklendi
+        if (already.has(`musteri:${c.id}:${i}`)) return;
+        const def = kalipDefs.find(d => d.ad === k.ad);
+        newRows.push({
+          ...emptyRow(),
+          kalipDefId: def?.id ?? null,
+          kalipKodu: def?.kod || "",
+          kalipAdi: k.ad || "",
+          kalipResim: def?.resim || "",
+          musteriId: c.id,
+          musteriAdi: c.name || "",
+          sehir: c.city || "",
+          makinaKodu: c.model || "",
+          makinaKalipCapi: fmtKalipCapi(c.kalipCapi) || "",
+          kalipOlcusu: k.olcu || "",
+          kaynakTip: "musteri",
+          kaynakId: c.id,
+          kalipIdx: i,
+        });
+      });
+    }
+
+    // Extra kalıp satışı kalıpları — her partSale kaydı tek bir kalıptır
+    for (const ps of partSales) {
+      if (ps.deletedAt) continue;
+      if (!ps.uretimFormGonder) continue;
+      if (ps.uretimFormId) continue;
+      const tarih = ps.tarih || "";
+      if (!tarih || tarih < baslangicTarihi || tarih > bitisTarihi) continue;
+      if (already.has(`extra_kalip:${ps.id}`)) continue;
+      const cust = customers.find(c => c.id === ps.customerId);
+      const def = kalipDefs.find(d => d.ad === ps.ad);
+      newRows.push({
+        ...emptyRow(),
+        kalipDefId: def?.id ?? null,
+        kalipKodu: def?.kod || "",
+        kalipAdi: ps.ad || "",
+        kalipResim: def?.resim || "",
+        musteriId: cust?.id ?? null,
+        musteriAdi: cust?.name || "",
+        sehir: cust?.city || "",
+        makinaKodu: cust?.model || "",
+        kalipOlcusu: ps.olcu || "",
+        kaynakTip: "extra_kalip",
+        kaynakId: ps.id,
+        kalipIdx: null,
+      });
+    }
+
+    if (newRows.length === 0) {
+      showToast("Bu tarih aralığında bekleyen yeni kalıp yok.");
+      return;
+    }
+    setForm(f => ({ ...f, satirlar: [...f.satirlar, ...newRows] }));
+    showToast(`${newRows.length} kalıp eklendi.`);
+  };
 
   // ── Satır ekleme modal ─────────────────────────────────────────────────────
   const openAddModal = () => {
@@ -294,24 +422,55 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
     return (
       <div>
         {/* Araç çubuğu */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
           <Btn small onClick={() => { saveForm(); setEditId(null); setForm(null); }}>
             <Icon name="check" size={13} /> Kaydet
           </Btn>
           <Btn small variant="ghost" onClick={() => { setEditId(null); setForm(null); }}>← Geri</Btn>
           <div style={{ flex: 1 }} />
+          {!form.kapali ? (
+            <Btn small variant="ghost" onClick={() => {
+              const closed = { ...form, kapali: true };
+              setForm(closed);
+              setUretimFormlari(prev => {
+                const idx = prev.findIndex(f => f.id === closed.id);
+                return idx >= 0 ? prev.map(f => f.id === closed.id ? closed : f) : [...prev, closed];
+              });
+              setEditId(null);
+              setForm(null);
+              showToast("Dönem sonlandırıldı.");
+            }} style={{ color: "#b45309", borderColor: "#fde68a", background: "#fffbeb" }}>
+              Dönemi Sonlandır
+            </Btn>
+          ) : (
+            <Btn small variant="ghost" onClick={() => setForm(f => ({ ...f, kapali: false }))}
+              style={{ color: "#065f46", borderColor: "#a7f3d0", background: "#ecfdf5" }}>
+              Dönemi Yeniden Aç
+            </Btn>
+          )}
           <Btn small variant="ghost" onClick={printForm}><Icon name="print" size={13} /> Yazdır</Btn>
         </div>
+        {form.kapali && (
+          <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 14px", marginBottom: 14, fontSize: 13, color: "#92400e", fontWeight: 600 }}>
+            Bu dönem sonlandırılmış. Düzenleyebilir ama yeni kalıp ekleyemezsiniz.
+          </div>
+        )}
 
         {/* Form başlık alanı */}
-        <div style={{ display: "flex", gap: 14, marginBottom: 18, alignItems: "flex-end" }}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 18, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>TARİH</div>
-            <input type="date" value={form.tarih}
-              onChange={e => setForm(f => ({ ...f, tarih: e.target.value }))}
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>BAŞLANGIÇ TARİHİ</div>
+            <input type="date" value={form.baslangicTarihi || ""}
+              onChange={e => setForm(f => ({ ...f, baslangicTarihi: e.target.value }))}
               style={{ border: "1.5px solid #e2e8f0", borderRadius: 7, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>BİTİŞ TARİHİ</div>
+            <input type="date" value={form.bitisTarihi || ""}
+              onChange={e => setForm(f => ({ ...f, bitisTarihi: e.target.value }))}
+              style={{ border: "1.5px solid #e2e8f0", borderRadius: 7, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>NOT (opsiyonel)</div>
             <input value={form.not} onChange={e => setForm(f => ({ ...f, not: e.target.value }))}
               placeholder="Bu periyot hakkında not..."
@@ -326,13 +485,13 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
               {form.satirlar.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ textAlign: "center", padding: 28, color: "#94a3b8", fontSize: 13 }}>
-                    Henüz satır yok. "Satır Ekle" ile başlayın.
+                    Henüz satır yok. "Bekleyen Kalıpları Getir" veya "Manuel Satır Ekle" ile başlayın.
                   </td>
                 </tr>
               )}
               {groupByMusteri(form.satirlar).map((g, gi) => (
                 <>
-                  {/* Müşteri başlık satırı — koyu (#1e293b gibi) */}
+                  {/* Müşteri başlık satırı */}
                   <tr key={`g-${gi}`}>
                     <td colSpan={6} style={{
                       padding: "6px 12px",
@@ -347,7 +506,7 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
                       {g.musteriAdi || "—"}{g.sehir ? ` — ${g.sehir}` : ""}{g.makinaKodu ? ` — ${g.makinaKodu}` : ""}
                     </td>
                   </tr>
-                  {/* Sütun başlıkları — her gruptan sonra tekrar */}
+                  {/* Sütun başlıkları */}
                   <tr key={`g-cols-${gi}`}>
                     <th style={{ ...thSt, background: "#334155", width: 90 }}>Kalıp Kodu</th>
                     <th style={{ ...thSt, background: "#334155" }}>Kalıp</th>
@@ -356,8 +515,8 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
                     <th style={{ ...thSt, background: "#334155", width: 50, textAlign: "center" }}>Bitti</th>
                     <th style={{ ...thSt, background: "#334155", width: 32 }}></th>
                   </tr>
-                  {/* Kalıp satırları — açık gri (#e8edf3 gibi) */}
-                  {g.rows.map((r, i) => (
+                  {/* Kalıp satırları */}
+                  {g.rows.map((r) => (
                     <tr key={r.id} style={{ background: r.tamamlandi ? "#f0fdf4" : "#e8edf3" }}>
                       <td style={tdSt}>
                         <input value={r.kalipKodu} onChange={e => updateRow(r.id, "kalipKodu", e.target.value)}
@@ -406,12 +565,19 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
           </table>
         </div>
 
-        <Btn small onClick={openAddModal}><Icon name="plus" size={13} /> Satır Ekle</Btn>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Btn small onClick={collectPending}>
+            <Icon name="refresh" size={13} /> Bekleyen Kalıpları Getir
+          </Btn>
+          <Btn small variant="ghost" onClick={openAddModal}>
+            <Icon name="plus" size={13} /> Manuel Satır Ekle
+          </Btn>
+        </div>
 
-        {/* ── Satır Ekleme Modalı ── */}
+        {/* ── Satır Ekleme Modalı (manuel) ── */}
         {addModal && (
           <Modal
-            title="Satır Ekle"
+            title="Manuel Satır Ekle"
             onClose={() => setAddModal(false)}
             width={780}
             footer={
@@ -542,7 +708,11 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
   // ══════════════════════════════════════════════════════════════════════════
   // FORM LİSTESİ GÖRÜNÜMÜ
   // ══════════════════════════════════════════════════════════════════════════
-  const sorted = [...uretimFormlari].sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
+  const sorted = [...uretimFormlari].sort((a, b) => {
+    const aDate = a.baslangicTarihi || a.tarih || "";
+    const bDate = b.baslangicTarihi || b.tarih || "";
+    return bDate.localeCompare(aDate);
+  });
 
   return (
     <div>
@@ -561,8 +731,8 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-              {["Tarih", "Not", "Satır", "Tamamlanan", ""].map((h, i) => (
-                <th key={i} style={{ padding: "9px 12px", textAlign: i >= 2 ? "center" : "left", fontWeight: 700, color: "#64748b", fontSize: 12 }}>{h}</th>
+              {["Dönem", "Durum", "Not", "Satır", "Tamamlanan", ""].map((h, i) => (
+                <th key={i} style={{ padding: "9px 12px", textAlign: i >= 3 ? "center" : "left", fontWeight: 700, color: "#64748b", fontSize: 12 }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -570,9 +740,18 @@ export function UretimFormu({ uretimFormlari = [], setUretimFormlari, customers 
             {sorted.map((f, i) => {
               const done = f.satirlar.filter(r => r.tamamlandi).length;
               const allDone = f.satirlar.length > 0 && done === f.satirlar.length;
+              const bas = f.baslangicTarihi || f.tarih || "";
+              const bit = f.bitisTarihi || f.tarih || "";
+              const donemStr = bas === bit ? fmtDate(bas) : `${fmtDate(bas)} – ${fmtDate(bit)}`;
               return (
                 <tr key={f.id} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600 }}>{f.tarih}</td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600 }}>{donemStr || "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    {f.kapali
+                      ? <span style={{ fontSize: 11, fontWeight: 700, background: "#fee2e2", color: "#b91c1c", padding: "3px 8px", borderRadius: 20 }}>Kapalı</span>
+                      : <span style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#15803d", padding: "3px 8px", borderRadius: 20 }}>Açık</span>
+                    }
+                  </td>
                   <td style={{ padding: "10px 12px", color: "#64748b" }}>{f.not || "—"}</td>
                   <td style={{ padding: "10px 12px", textAlign: "center" }}>{f.satirlar.length}</td>
                   <td style={{ padding: "10px 12px", textAlign: "center" }}>

@@ -201,7 +201,7 @@ export const CustomerAddEditForm = ({
 
       <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>
         {(form.kaliplar || []).map((k, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap" }}>{i + 1}.</span>
             <Select value={k.ad || ""}
               onChange={e => setForm(p => {
@@ -218,6 +218,16 @@ export const CustomerAddEditForm = ({
                 arr[i] = { ...arr[i], olcu: e.target.value };
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
               })} />
+            <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "#475569", cursor: "pointer" }}>
+              <input type="checkbox" checked={!!k.uretimFormGonder}
+                onChange={e => setForm(p => {
+                  const arr = [...(p.kaliplar || [])];
+                  arr[i] = { ...arr[i], uretimFormGonder: e.target.checked };
+                  return { ...p, kaliplar: arr };
+                })}
+                style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+              Üretim formuna gönder
+            </label>
             <button type="button" title="Bu kalıbı sil"
               onClick={() => setForm(p => {
                 const arr = (p.kaliplar || []).filter((_, idx) => idx !== i);
@@ -228,7 +238,7 @@ export const CustomerAddEditForm = ({
         ))}
         <button type="button"
           onClick={() => setForm(p => {
-            const arr = [...(p.kaliplar || []), { ad: "", olcu: "" }];
+            const arr = [...(p.kaliplar || []), { ad: "", olcu: "", uretimFormGonder: false }];
             return { ...p, kaliplar: arr, kalipSayisi: arr.length };
           })}
           style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "#fff7ed", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>

@@ -81,7 +81,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
             <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."
               onPick={k => {
                 const olcu = selectedCust?.kaliplar?.find(kk => kk.ad === k.ad)?.olcu || "";
-                setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu, fiyat: "" }] }));
+                setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu, fiyat: "", uretimFormGonder: false }] }));
               }} />
           )}
         </Field>
@@ -103,7 +103,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {kaliplar.length > 0 && (
         <Field label={isEdit ? "Kalıp Ölçüsü ve Fiyatı" : `Seçilen Kalıplar (${kaliplar.length})`}>
           {kaliplar.map((k, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr" : "1fr 110px 110px 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr auto" : "1fr 110px 110px auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
               {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "#c2410c" }}>{k.ad}</span>}
               <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm"
                 onChange={e => setForm(prev => {
@@ -117,6 +117,16 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                   arr[i] = { ...arr[i], fiyat: v };
                   return { ...prev, kaliplar: arr };
                 })} />
+              <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "#475569", cursor: "pointer" }}>
+                <input type="checkbox" checked={!!k.uretimFormGonder}
+                  onChange={e => setForm(prev => {
+                    const arr = [...(prev.kaliplar || [])];
+                    arr[i] = { ...arr[i], uretimFormGonder: e.target.checked };
+                    return { ...prev, kaliplar: arr };
+                  })}
+                  style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                Üretim formuna gönder
+              </label>
               {!isEdit && (
                 <button type="button" title="Bu kalıbı kaldır"
                   onClick={() => setForm(prev => ({ ...prev, kaliplar: (prev.kaliplar || []).filter((_, idx) => idx !== i) }))}

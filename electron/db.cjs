@@ -213,6 +213,8 @@ const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
 const APP_SETTINGS_AUTOLOCK_COLUMN = [["autoLockMinutes", "INTEGER"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
+const URETIM_FORMLARI_DONEM_COLUMNS = [["baslangicTarihi", "TEXT"], ["bitisTarihi", "TEXT"]];
+const URETIM_FORMLARI_KAPALI_COLUMN = [["kapali", "INTEGER"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
@@ -425,9 +427,11 @@ function populateAll(conn, data) {
 
   if (Array.isArray(data.uretimFormlari)) {
     conn.prepare(`DELETE FROM uretim_formlari`).run();
-    const stmtU = conn.prepare(`INSERT INTO uretim_formlari (id, tarih, notField, createdAt, satirlar, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+    const stmtU = conn.prepare(`INSERT INTO uretim_formlari (id, tarih, baslangicTarihi, bitisTarihi, kapali, notField, createdAt, satirlar, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const u of data.uretimFormlari) {
-      stmtU.run(u.id, u.tarih ?? null, u.not ?? null, u.createdAt ?? null, json(u.satirlar ?? []), u.deletedAt ?? null);
+      const bas = u.baslangicTarihi ?? u.tarih ?? null;
+      const bit = u.bitisTarihi ?? u.tarih ?? null;
+      stmtU.run(u.id, bas, bas, bit, u.kapali ? 1 : 0, u.not ?? null, u.createdAt ?? null, json(u.satirlar ?? []), u.deletedAt ?? null);
     }
   }
 
@@ -483,6 +487,8 @@ function migrateFromJsonIfNeeded() {
       ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
       for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
       ensureColumns(db, "users", USERS_PERMISSIONS_COLUMN);
+      ensureColumns(db, "uretim_formlari", URETIM_FORMLARI_DONEM_COLUMNS);
+      ensureColumns(db, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
       active = true;
     } catch (err) {
       console.error("SQLite açılamadı, JSON moduna geçiliyor:", err);
@@ -689,8 +695,12 @@ function readBlobFromDb() {
     satirlar: parseJsonCol(satirlar, []),
   }));
 
-  const uretimFormlari = db.prepare(`SELECT * FROM uretim_formlari`).all().map(({ notField, satirlar, ...rest }) => ({
+  const uretimFormlari = db.prepare(`SELECT * FROM uretim_formlari`).all().map(({ notField, satirlar, baslangicTarihi, bitisTarihi, tarih, kapali, ...rest }) => ({
     ...rest,
+    tarih: baslangicTarihi || tarih || null,
+    baslangicTarihi: baslangicTarihi || tarih || null,
+    bitisTarihi: bitisTarihi || tarih || null,
+    kapali: !!kapali,
     not: notField,
     satirlar: parseJsonCol(satirlar, []),
   }));

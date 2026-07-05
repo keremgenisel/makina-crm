@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis } from "../lib/utils";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null }) => {
   const perms = useMemo(() => {
     if (!serverPermissions || serverPermissions.role === "admin") return null;
     try { return JSON.parse(serverPermissions.permissions || "null"); } catch { return null; }
@@ -109,6 +109,19 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     }),
   [teklifler]);
 
+  const pendingKaliplarCount = useMemo(() => {
+    let count = 0;
+    for (const c of customers) {
+      for (const k of (c.kaliplar || [])) {
+        if (k.uretimFormGonder && !k.uretimFormId) count++;
+      }
+    }
+    for (const ps of partSales) {
+      if (ps.uretimFormGonder && !ps.uretimFormId && !ps.deletedAt) count++;
+    }
+    return count;
+  }, [customers, partSales]);
+
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
   // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
   const cekRozeti = (customerId) => {
@@ -162,6 +175,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <StatCard label="Stoktaki Makina"   value={stock.length}      sub="Görmek için tıkla" color="#8b5cf6" onClick={onGoStock} />
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
         <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="#ef4444" onClick={onGoExpired} />
+        {pendingKaliplarCount > 0 && (
+          <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="#7c3aed" onClick={onGoUretim || undefined} />
+        )}
       </div>
 
       {/* Müşteriye Dönüşecek Teklifler */}
