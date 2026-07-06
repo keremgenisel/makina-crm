@@ -191,7 +191,8 @@ export const Customers = ({
   };
   const save = () => {
     if (modal === "add") {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, fromTeklifId, ...clean } = form;
+      // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
@@ -233,7 +234,7 @@ export const Customers = ({
           : s
         ));
       }
-      if (fromTeklifId && onCustomerLinked) onCustomerLinked(newId, fromTeklifId);
+      if (clean.fromTeklifId && onCustomerLinked) onCustomerLinked(newId, clean.fromTeklifId);
       logAction({ serverPermissions, action: "olusturuldu", entity: "musteri", entityId: newId, entityName: clean.name, detail: { model: clean.model, serialNo: clean.serialNo } });
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
     } else {

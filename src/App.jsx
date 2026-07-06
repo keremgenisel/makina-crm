@@ -43,6 +43,7 @@ export default function App() {
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
   const [loaded, setLoaded] = useState(false);
+  const [saveTrigger, setSaveTrigger] = useState(0); // her load sonrası save effect'i yeniden tetikler
   const saveTimer = useRef(null);
   const suppressSaveRef = useRef(false); // reload sırasında debounced save'in tetiklenmesini engeller
   const lastAttemptedSaveRef = useRef(null); // çakışmada yerel değişiklikleri birleştirmek için son save datası
@@ -552,8 +553,11 @@ export default function App() {
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
     } catch (err) { console.error(err); } finally {
-      // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver
-      setTimeout(() => { suppressSaveRef.current = false; }, 700);
+      // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver;
+      // saveTrigger artışı save effect'i yeniden tetikler — reload sonrası sadece
+      // satisTamam/flag değişikliği varsa merge state değişikliği üretmez ve save
+      // effect normalde çalışmazdı
+      setTimeout(() => { suppressSaveRef.current = false; setSaveTrigger(n => n + 1); }, 700);
     }
   };
 
@@ -576,13 +580,15 @@ export default function App() {
       else if (serverMode === "active") { failedSaveRef.current = saveData || data; }
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded]);
+  }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded, saveTrigger]);
   useEffect(() => {
     const flush = () => {
-      if (pendingSave.current && window.crmStorage?.flushSave) {
+      const toFlush = pendingSave.current || lastAttemptedSaveRef.current;
+      if (toFlush && window.crmStorage?.flushSave) {
         clearTimeout(saveTimer.current);
-        window.crmStorage.flushSave(pendingSave.current);
+        window.crmStorage.flushSave(toFlush);
         pendingSave.current = null;
+        lastAttemptedSaveRef.current = null;
       }
       window.crmLocks?.releaseAll?.().catch?.(() => {});
     };
@@ -732,7 +738,7 @@ export default function App() {
         {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} customers={liveCustomers} setCustomers={setCustomers} kalipDefs={liveKalipDefs} uretimFormlari={liveUretimFormlari} setUretimFormlari={setUretimFormlari} partSales={livePartSales} setPartSales={setPartSales} serverPermissions={serverPermissions} defaultSubTab={stockDefaultSubTab} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
         {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={serverPermissions} />}
-        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={serverPermissions} />}
+        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={serverPermissions} />}
         {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} serverPermissions={serverPermissions} />}
       </div>
     </div>

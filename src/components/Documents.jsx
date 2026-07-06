@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur } from "../lib/utils";
+import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { logAction } from "../lib/audit";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict } from "./ui";
@@ -193,6 +193,7 @@ export const Documents = ({
   teklifler, setTeklifler,
   faturalar = [], setFaturalar,
   customers,
+  partSales = [],
   allModels = [],
   factory,
   appSettings = {},
@@ -374,6 +375,11 @@ export const Documents = ({
 
   // ── Liste filtresi ──
   const liveTeklifler = useMemo(() => withoutDeleted(teklifler), [teklifler]);
+  // Açık formdaki teklif daha önce CRM'e aktarılmış mı — form snapshot'ı yerine canlı kayıt
+  // üzerinden bakılır ki modal açıkken başka yerden yapılan dönüştürme de anında yansısın
+  const formKullanildi = form?.type === "teklif" && form.id
+    ? teklifKullanildiMi(liveTeklifler.find(x => x.id === form.id) || form, customers, partSales)
+    : false;
   const filtered = useMemo(() =>
     liveTeklifler.filter(t => t.type === subTab).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
   [liveTeklifler, subTab]);
@@ -514,6 +520,9 @@ export const Documents = ({
     const isUpdate = !!form.id;
     if (!entry.id) entry.id = uid();
     const prevEntry = isUpdate ? liveTeklifler.find(t => t.id === entry.id) : null;
+    // satisTamam tek yönlüdür: form açıkken teklif başka yerden dönüştürülmüş olabilir,
+    // eski form snapshot'ının true değerini false'a geri çevirmesine izin verme
+    if (prevEntry?.satisTamam && !entry.satisTamam) entry.satisTamam = true;
     let linkedUpdated = false;
     setTeklifler(p => {
       const idx = p.findIndex(t => t.id === entry.id);
@@ -547,7 +556,7 @@ export const Documents = ({
         entry.satisTamam = false;
         setTeklifler(p => p.map(t => t.id === entry.id ? entry : t));
       }
-      if (!entry.satisTamam && prevEntry?.durum !== "onaylandi") {
+      if (!teklifKullanildiMi(entry, customers, partSales) && prevEntry?.durum !== "onaylandi") {
         if (tur === "makina" || ((tur === "parca" || tur === "kalip") && entry.customerId)) {
           setDonusturBanner(entry);
         }
@@ -822,7 +831,7 @@ export const Documents = ({
                             <Icon name="arrowRight" size={12} />
                           </Btn>
                         )}
-                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !t.satisTamam && (() => {
+                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !teklifKullanildiMi(t, customers, partSales) && (() => {
                           const rTur = effectiveTur(t);
                           if (rTur === "makina" && !t.customerId && onDonusturTeklif)
                             return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }} title="Yeni müşteri kaydı oluştur" style={{ color: "#16a34a" }}><Icon name="userPlus" size={12} /></Btn>;
@@ -832,8 +841,8 @@ export const Documents = ({
                             return <Btn small variant="ghost" onClick={() => onKaydetSatis(t)} title="CRM'e satış kaydet" style={{ color: "#0891b2" }}><Icon name="check" size={12} /></Btn>;
                           return null;
                         })()}
-                        {subTab === "teklif" && (t.satisTamam || t.customerId) && (
-                          <span title={t.satisTamam ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "#d1fae5", color: "#065f46", lineHeight: 1.6 }}>✓ {t.satisTamam ? "Kaydedildi" : "Bağlı"}</span>
+                        {subTab === "teklif" && (teklifKullanildiMi(t, customers, partSales) || t.customerId) && (
+                          <span title={teklifKullanildiMi(t, customers, partSales) ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "#d1fae5", color: "#065f46", lineHeight: 1.6 }}>✓ {teklifKullanildiMi(t, customers, partSales) ? "Kaydedildi" : "Bağlı"}</span>
                         )}
                         {canDoEvrak(subTab === "teklif" ? "evrak_teklif_delete" : "evrak_proforma_delete") && <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>}
                       </div>
@@ -946,7 +955,7 @@ export const Documents = ({
         ) : <>
         {/* Durum + Kaydet */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          {form.type === "teklif" && form.durum === "onaylandi" && form.id && !form.satisTamam && (() => {
+          {form.type === "teklif" && form.durum === "onaylandi" && form.id && !formKullanildi && (() => {
             const fTur = effectiveTur(form);
             const saved = liveTeklifler.find(x => x.id === form.id);
             if (fTur === "makina" && !form.customerId && onDonusturTeklif)
@@ -980,8 +989,8 @@ export const Documents = ({
               return <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#fef9c3", color: "#854d0e", fontWeight: 600 }}>Kaydetmek için müşteri seçin</span>;
             return <div />;
           })()}
-          {form.satisTamam && <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ CRM'e kaydedildi</span>}
-          {!form.satisTamam && form.type === "teklif" && form.customerId && effectiveTur(form) === "makina" && (
+          {formKullanildi && <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ CRM'e kaydedildi</span>}
+          {!formKullanildi && form.type === "teklif" && form.customerId && effectiveTur(form) === "makina" && (
             <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ Müşteriye Bağlı</span>
           )}
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>

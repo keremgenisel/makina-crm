@@ -313,6 +313,18 @@ export const addYearsToDateStr = (dateStr, years) => {
 
 export const getFactoryName = (factory) => factory?.name || "Altuntaş Makina";
 
+// Onaylı teklif daha önce CRM'e aktarılmış mı? satisTamam bayrağına ek olarak,
+// tekliften doğan kayıtların kendisi de kalıcı kanıt sayılır: makina kaydındaki
+// fromTeklifId ve parça/kalıp satışlarındaki teklifId. Böylece bayrak herhangi
+// bir senkronizasyon/yükleme yolunda kaybolsa bile teklif ikinci kez kullanılamaz.
+export const teklifKullanildiMi = (t, customers = [], partSales = []) => {
+  if (!t) return false;
+  if (t.satisTamam) return true;
+  if (customers.some(c => !c.deletedAt && c.fromTeklifId === t.id)) return true;
+  if (partSales.some(ps => !ps.deletedAt && ps.teklifId === t.id)) return true;
+  return false;
+};
+
 // Teklif türünü satır içeriğinden çıkarır — Documents.jsx ve Dashboard.jsx'te paylaşılır
 export const effectiveTeklifTur = (t) => {
   if (t?.tur) return t.tur;

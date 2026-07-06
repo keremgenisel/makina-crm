@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { StatCard, Modal, Btn } from "./ui";
 
@@ -91,12 +91,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
   const donusturBekleyenlar = useMemo(() =>
     teklifler.filter(t => {
-      if (t.durum !== "onaylandi" || t.deletedAt || t.satisTamam) return false;
+      if (t.durum !== "onaylandi" || t.deletedAt || teklifKullanildiMi(t, customers, partSales)) return false;
       if (!t.customerId) return true; // müşteri bağlanmamış → her zaman göster
       const tur = effectiveTeklifTur(t);
       return tur === "makina" || tur === "parca" || tur === "kalip"; // bağlı + işlem gerektiren tur
     }),
-  [teklifler]);
+  [teklifler, customers, partSales]);
 
   const pendingKaliplarCount = useMemo(() => {
     let count = 0;
