@@ -234,7 +234,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
       kdvMakina, kdvServis, kdvParca, kdvKalip,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [customers, services, partSales, range, customStart, customEnd, kdvRates, rates, factoryName]);
 
   const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
@@ -468,6 +468,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         </div>
         <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
           <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı</div>
+          {/* Gelir kolonu BİLEREK yok (kullanıcı kararı): satıcı bazında ciro gösterilmek
+              istenmiyor, yalnızca adet. bySeller.gelir yine de hesaplanır çünkü satırlar
+              gelire göre sıralanıyor — kolonu "eksik" sanıp geri ekleme. */}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "#f8fafc" }}>
               {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}

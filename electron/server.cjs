@@ -310,7 +310,7 @@ function buildApp() {
   });
 
   // Global hata yakalayıcı (Express 4 fallback)
-  // eslint-disable-next-line no-unused-vars
+   
   app.use((err, _req, res, _next) => {
     console.error("[server] Beklenmeyen hata:", err);
     res.status(500).json({ error: err.message || "Sunucu hatası" });

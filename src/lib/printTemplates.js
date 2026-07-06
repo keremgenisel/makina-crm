@@ -515,7 +515,7 @@ export function buildSandikEtiketiHtml(gonderen, alici, lang = "TR", translation
   <div style="font-size:13pt;font-weight:900;letter-spacing:1px;margin-bottom:8mm;">${L.alici}</div>
   <div style="font-size:28pt;font-weight:900;color:#e85d1a;margin-bottom:6mm;line-height:1.15;">${esc(a.firmaAdi || "—")}</div>
   ${aliciRows.map(r => `<div style="font-size:16pt;color:#e85d1a;margin-bottom:4mm;line-height:1.3;"><b>${r.label}</b> ${r.val}</div>`).join("")}
-<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };<\/script>
+<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</script>
 </body>
 </html>`;
 }

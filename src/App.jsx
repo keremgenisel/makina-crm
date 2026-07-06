@@ -4,7 +4,8 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, wasMintedHere, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
+import { buildMergePlan } from "./lib/merge";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
 import { Icon } from "./components/ui";
@@ -124,59 +125,16 @@ export default function App() {
   }, []);
 
   // ── Yerel değişiklikleri sunucu verisinin üzerine birleştirir (çakışma/yeniden yükleme sonrası) ──
-  // serverData: az önce sunucudan yüklenen blob — ID/seri çakışması kararları buna göre verilir
+  // serverData: az önce sunucudan yüklenen blob. Karar mantığı saf ve test edilebilir
+  // (src/lib/merge.js buildMergePlan); burada yalnızca plan state'e uygulanır.
   const mergeLocalIntoReloaded = (myData, serverData) => {
-    if (!myData || !serverData) return;
-    const KEYS = ["customers", "teklifler", "partSales", "services", "payments", "uretimFormlari", "faturalar"];
-    // Yeniden atanacak ID'ler iki tarafın da maksimumundan sonra gelsin
-    bumpId(...KEYS.flatMap(k => [serverData[k] || [], myData[k] || []]));
-
-    // 1. geçiş: eklenecekler ve ID yeniden atamaları.
-    // Aynı ID sunucuda da varsa üç durum: içerik birebir aynı → zaten kaydedilmiş, atla;
-    // farklı ve ID'yi bu süreç üretti → iki PC aynı numarayı üretti, kaybedilmesin diye
-    // yeni ID ver; farklı ama ID bizim değil → mevcut kaydın düzenlenme çakışması, kapsam
-    // dışı (entity kilitleri koruyor), eski davranış korunur (sunucu kazanır).
-    const maps = {}; // key → Map(eskiId → yeniId)
-    const adds = {}; // key → eklenecek kayıtlar
-    for (const key of KEYS) {
-      const byId = new Map((serverData[key] || []).map(x => [x.id, x]));
-      maps[key] = new Map();
-      adds[key] = [];
-      for (const rec of (myData[key] || [])) {
-        const existing = byId.get(rec.id);
-        if (!existing) { adds[key].push(rec); continue; }
-        if (JSON.stringify(existing) === JSON.stringify(rec)) continue;
-        if (!wasMintedHere(rec.id)) continue;
-        const nid = uid();
-        maps[key].set(rec.id, nid);
-        adds[key].push({ ...rec, id: nid });
-      }
+    const plan = buildMergePlan(myData, serverData);
+    if (!plan) return;
+    const { adds, maps, stockDeductIds, serialConflicts } = plan;
+    for (const sc of serialConflicts) {
+      showToast(`Seri no çakışması: ${sc.serialNo} başka bir müşteriye atandı. "${sc.name}" kaydı seri no bekliyor olarak eklendi.`, "warn");
     }
-
-    // 2. geçiş: yeniden atanan ID'lere işaret eden referansları düzelt
     const remapRef = (map, val) => (map.has(val) ? map.get(val) : val);
-    adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
-    adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId) }));
-    adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
-    adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
-    adds.customers = adds.customers.map(c => ({
-      ...c,
-      kaliplar: (c.kaliplar || []).map(k => k.partSaleId ? { ...k, partSaleId: remapRef(maps.partSales, k.partSaleId) } : k),
-    }));
-
-    // Seri no çakışması: eklenecek müşteri, sunucudaki silinmemiş başka bir müşteriyle aynı
-    // seri numarayı taşıyorsa makina iki kez satılmış olur — kaydı "seri no bekliyor"
-    // durumuna düşür (mevcut rozet/filtre/sonradan-seri-atama akışına girer) ve uyar.
-    const serverSerials = new Set((serverData.customers || []).filter(c => !c.deletedAt && c.serialNo).map(c => c.serialNo));
-    const stockDeductIds = new Set();
-    adds.customers = adds.customers.map(c => {
-      if (c.serialNo && serverSerials.has(c.serialNo)) {
-        showToast(`Seri no çakışması: ${c.serialNo} başka bir müşteriye atandı. "${c.name}" kaydı seri no bekliyor olarak eklendi.`, "warn");
-        return { ...c, serialNo: "", seriNoBekliyor: true, sourceStockId: null };
-      }
-      if (c.sourceStockId != null) stockDeductIds.add(c.sourceStockId);
-      return c;
-    });
 
     // Uygula — 750ms bekleme sırasında oluşmuş yerel eklerle çarpışmamak için prev'e karşı
     // ID kontrolü korunur
@@ -269,7 +227,7 @@ export default function App() {
           const loadedBlob = await loadFromStorageRef.current?.();
           if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending, loadedBlob), 750);
         }
-      } catch {}
+      } catch (err) { console.warn("Sunucu PC versiyon kontrolü başarısız:", err?.message); }
     }, 5000);
     return () => clearInterval(id);
   }, []);
@@ -707,12 +665,12 @@ export default function App() {
     };
     if (isDue()) {
       (async () => {
-        const [mailConfig, mailLog, appLockData] = await Promise.all([
+        // appLock yedeğe bilerek dahil edilmez — makinaya özgü, şifre özetleri dosyada gezmesin
+        const [mailConfig, mailLog] = await Promise.all([
           window.appMail?.getConfigForBackup?.() ?? null,
           window.appMail?.getAllLog?.() ?? [],
-          window.appLock?.getDataForBackup?.() ?? null,
-        ]).catch(() => [null, [], null]);
-        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, mailConfig, mailLog, appLockData }).catch(() => false);
+        ]).catch(() => [null, []]);
+        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, mailConfig, mailLog }).catch(() => false);
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }

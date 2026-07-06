@@ -18,12 +18,13 @@ export const SettingsBackup = ({
     try {
       // appSettings dışındaki makineye özgü alanlar (yedek klasörü, zamanlama) restore'da atlanır.
       // SMTP şifresi safeStorage ile şifreli olduğundan yedeklenmez, sadece host/port/email alınır.
-      const [mailConfig, mailLog, appLockData] = await Promise.all([
+      // Uygulama kilidi (appLock) yedeğe BİLEREK dahil edilmez: makinaya özgü bir ayardır ve
+      // şifre özetlerinin yedek dosyasında gezmesi offline kırma riski oluşturur.
+      const [mailConfig, mailLog] = await Promise.all([
         window.appMail?.getConfigForBackup?.() ?? null,
         window.appMail?.getAllLog?.() ?? [],
-        window.appLock?.getDataForBackup?.() ?? null,
       ]);
-      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, mailConfig, mailLog, appLockData };
+      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, mailConfig, mailLog };
       if (window.crmStorage?.backup) {
         const ok = await window.crmStorage.backup(data);
         if (ok) flash("ok", "Yedek başarıyla kaydedildi.");
@@ -113,10 +114,8 @@ export const SettingsBackup = ({
     if (Array.isArray(restoreData?.mailLog) && window.appMail?.restoreFullLog) {
       await window.appMail.restoreFullLog(restoreData.mailLog).catch(() => {});
     }
-    // Uygulama kilidi
-    if (restoreData?.appLockData && window.appLock?.restoreFromBackup) {
-      await window.appLock.restoreFromBackup(restoreData.appLockData).catch(() => {});
-    }
+    // Uygulama kilidi bilerek geri YÜKLENMEZ (yedeğe de yazılmıyor): makinaya özgü ayar.
+    // Eski yedeklerde appLockData olsa bile yok sayılır — bu makinanın kilidi değişmez.
 
     setRestoreData(null);
     const smtpNote = smtpRestored ? " E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli." : "";

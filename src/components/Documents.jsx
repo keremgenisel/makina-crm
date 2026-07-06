@@ -368,7 +368,7 @@ export const Documents = ({
         const rateStr = rate.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         setFaturaForm(p => p ? ({ ...p, kur: `1 ${currency} = ${rateStr} TL (${todayFmt})` }) : p);
       }
-    } catch {}
+    } catch { showToast("Döviz kuru alınamadı, kuru elle girebilirsiniz.", "warn"); }
   };
 
   const printFatura = (f) => {
@@ -448,7 +448,7 @@ export const Documents = ({
           satirlar: (p.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) })),
         }) : p);
       }
-    } catch {}
+    } catch { showToast("Döviz kuru alınamadı, kuru elle girebilirsiniz.", "warn"); }
   };
 
   // ── Form açma ──

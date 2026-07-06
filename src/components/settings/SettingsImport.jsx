@@ -9,7 +9,7 @@ const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip
 export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
   const parseCSV = (text) => {
-    text = text.replace(/^﻿/, "");
+    text = text.replace(/^\uFEFF/, ""); // BOM temizliği
     const delim = (text.split("\n")[0].split(";").length >= text.split("\n")[0].split(",").length) ? ";" : ",";
     const rows = []; let row = []; let cur = ""; let inQ = false;
     for (let i = 0; i < text.length; i++) {
@@ -43,7 +43,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
     // Saat/zaman ekini at: "15.04.2024 00:00:00" veya "2024-04-15T00:00:00"
     s = s.split("T")[0].split(" ")[0].trim();
     // gg.aa.yyyy / gg/aa/yyyy / gg-aa-yyyy (tek hane de olur)
-    let m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+    let m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
     if (m) {
       let a = parseInt(m[1], 10), b = parseInt(m[2], 10);
       let yil = m[3];
@@ -55,7 +55,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
       return `${yil}-${String(ay).padStart(2, "0")}-${String(gun).padStart(2, "0")}`;
     }
     // yyyy-aa-gg / yyyy.aa.gg / yyyy/aa/gg
-    m = s.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})$/);
+    m = s.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
     if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
     // Excel seri numarası (örn. 45397 = 15.04.2024). 1900 tarih sistemi.
     if (/^\d{4,6}$/.test(s)) {

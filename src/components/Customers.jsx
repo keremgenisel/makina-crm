@@ -167,7 +167,7 @@ export const Customers = ({
       openAddWithPrefill(openNewPrefill);
       onPrefillConsumed?.();
     }
-  }, [openNewPrefill]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openNewPrefill]);  
 
   const openAddForFirm = (base) => {
     const start = today();

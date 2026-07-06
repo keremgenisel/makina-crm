@@ -45,7 +45,7 @@ export function useFormDraft(draftKey, form, setForm, { stripFn = null, restoreF
       clearTimeout(timer.current);
     }
     // draftKey form açıkken değişmez (kayıt bazlı); form açılış/kapanışında çalışması yeterli
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [!!form, draftKey]);
 
   // Form içeriği değiştikçe debounce ile taslağa yaz
@@ -66,7 +66,7 @@ export function useFormDraft(draftKey, form, setForm, { stripFn = null, restoreF
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [form]);
 
   const restoreDraft = () => {

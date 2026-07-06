@@ -17,7 +17,7 @@ npm run preview       # vite preview of the built renderer (no electron shell)
 npm run release       # build:win + electron-builder --publish always (pushes to GitHub Releases, needs GH_TOKEN env var)
 ```
 
-There is no test suite, no lint script, and no TypeScript config in this repo — don't assume `npm test` or `npm run lint` exist.
+`npm test` (vitest) runs the test suite: `tests/merge.test.js` covers the pure conflict-merge planner (`src/lib/merge.js`) under node; `tests/db-electron.test.js` spawns Electron to exercise the real SQLite layer (`scripts/tests/db-roundtrip.cjs` — migration, field roundtrip, table-skip integrity, audit retention), because better-sqlite3 is built against Electron's ABI and won't load under plain node. `npm run lint` (ESLint 9 flat config, `eslint.config.mjs`) targets real errors only — warnings are informational, keep the error count at zero. There is still no TypeScript.
 
 To cut a new auto-update release: bump `"version"` in `package.json`, then run `set GH_TOKEN=ghp_...` (Windows) and `npm run release`. Auto-update (electron-updater) only works in the installed/packaged app, never in `npm run dev` or an unpacked build — `electron/main.cjs` explicitly checks `app.isPackaged` before touching the updater.
 

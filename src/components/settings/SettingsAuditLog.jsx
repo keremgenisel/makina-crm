@@ -90,7 +90,7 @@ export function SettingsAuditLog({ serverPermissions }) {
   // Aktif filtreler veya sayfa değişince veri çek
   useEffect(() => {
     fetchData(page, activeFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [page, activeFilters]);
 
   // Filtre uygula

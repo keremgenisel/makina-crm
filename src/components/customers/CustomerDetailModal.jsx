@@ -200,7 +200,7 @@ export const CustomerDetailModal = ({
       detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
       detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName]);
 
   // ── Servis parça stok ──
@@ -251,7 +251,7 @@ export const CustomerDetailModal = ({
       ? sv.degisenParcalar.map(ad => ({ ad, fiyat: sv.degisenParcalar.length ? parseMoney(sv.parcaUcreti) / sv.degisenParcalar.length : 0 }))
       : (sv.degisenParcalar || []);
     const cust = customers.find(c => c.id === sv.customerId);
-    setSvForm({ degisenParcalar: [], parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
+    setSvForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
     setSvModal({ edit: sv });
   };
   const saveService = (parcaUcretsizMi) => {
