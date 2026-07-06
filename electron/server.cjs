@@ -2,7 +2,7 @@
 // PostgreSQL gerekmez; mevcut SQLite (electron/db.cjs) kullanılır.
 // Yalnızca "sunucu PC"de çalışır; diğer PC'ler HTTP ile bağlanır.
 const express  = require("express");
-const cors     = require("cors");
+const compression = require("compression");
 const bcrypt   = require("bcryptjs");
 const jwt      = require("jsonwebtoken");
 const crypto   = require("crypto");
@@ -29,6 +29,9 @@ function requireAuth(req, res, next) {
     if (db) {
       const u = db.getUserByUsername(payload.username);
       if (!u || !u.is_active) return res.status(401).json({ error: "Oturum gerekli" });
+      // Şifre değiştiyse eski token'lar geçersiz: token_version her şifre değişiminde
+      // artar, token'daki tv eşleşmiyorsa (eski tv veya tv'siz eski token) oturum düşer
+      if ((payload.tv ?? 0) !== (u.token_version ?? 1)) return res.status(401).json({ error: "Oturum gerekli" });
     }
     req.user = payload;
     next();
@@ -40,6 +43,26 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ── Giriş denemesi sınırı (brute-force koruması) ─────────────────────────────
+// IP başına 5 dakikalık pencerede en fazla 10 BAŞARISIZ deneme; başarılı giriş sayacı
+// sıfırlar. Bellek içi tutulur (sunucu yeniden başlayınca sıfırlanır, LAN için yeterli).
+const LOGIN_WINDOW_MS = 5 * 60 * 1000;
+const LOGIN_MAX_FAILS = 10;
+const loginFails = new Map(); // ip → { count, resetAt }
+function loginRateCheck(ip) {
+  const now = Date.now();
+  const rec = loginFails.get(ip);
+  if (!rec || now > rec.resetAt) return true;
+  return rec.count < LOGIN_MAX_FAILS;
+}
+function loginRateFail(ip) {
+  const now = Date.now();
+  const rec = loginFails.get(ip);
+  if (!rec || now > rec.resetAt) loginFails.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+  else rec.count += 1;
+}
+function loginRateSuccess(ip) { loginFails.delete(ip); }
+
 // ── Tüm pencerelere event yayını ──────────────────────────────────────────────
 function broadcast(channel, ...args) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -50,22 +73,30 @@ function broadcast(channel, ...args) {
 // ── Express app ───────────────────────────────────────────────────────────────
 function buildApp() {
   const app = express();
-  app.use(cors());
-  app.use(express.json({ limit: "50mb" }));
+  // CORS bilinçli olarak yok: istemciler tarayıcı değil, Electron ana sürecinden fetch
+  // yapar (Origin başlığı yok) — CORS başlığı yayınlamak yalnızca saldırı yüzeyini büyütür.
+  // gzip: veri blob'u JSON+base64 ağırlıklı, sıkıştırma ağ trafiğini ~%70-90 azaltır.
+  app.use(compression());
+  // Büyük gövde yalnızca veri kaydetmede gerekli; diğer tüm endpoint'ler küçük JSON alır
+  app.use("/api/data", express.json({ limit: "50mb" }));
+  app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false }));
 
   // POST /auth/login
   app.post("/auth/login", async (req, res) => {
     try {
+      const ip = req.ip || req.socket?.remoteAddress || "?";
+      if (!loginRateCheck(ip)) return res.status(429).json({ error: "Çok fazla başarısız deneme. 5 dakika sonra tekrar deneyin." });
       const { username, password } = req.body || {};
       if (!username || !password) return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli" });
       if (!db || !db.isActive()) return res.status(503).json({ error: "Veritabanı henüz hazır değil" });
       const user = db.getUserByUsername(username);
-      if (!user || !user.is_active) return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" });
+      if (!user || !user.is_active) { loginRateFail(ip); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
       const ok = await bcrypt.compare(password, user.password);
-      if (!ok) return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" });
-      const token = signToken({ id: user.id, username: user.username, role: user.role });
+      if (!ok) { loginRateFail(ip); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      loginRateSuccess(ip);
+      const token = signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
       res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/login hatası:", err);
@@ -78,7 +109,7 @@ function buildApp() {
     try {
       const { id, username, role } = req.user;
       const u = db?.getUserByUsername(username);
-      res.json({ token: signToken({ id, username, role }), user: { id, username, role, permissions: u?.permissions ?? null } });
+      res.json({ token: signToken({ id, username, role, tv: u?.token_version ?? 1 }), user: { id, username, role, permissions: u?.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/me hatası:", err);
       res.status(500).json({ error: err.message });
@@ -94,7 +125,10 @@ function buildApp() {
       if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       if (!await bcrypt.compare(currentPassword, user.password)) return res.status(401).json({ error: "Mevcut şifre hatalı" });
       db.updateUser(user.id, { password: await bcrypt.hash(newPassword, 10) });
-      res.json({ ok: true, token: signToken({ id: user.id, username: user.username, role: user.role }) });
+      // Şifre değişimi token_version'ı artırdı — yeni token GÜNCEL tv ile imzalanır,
+      // böylece kullanıcı kendi şifresini değiştirince kendi oturumu düşmez
+      const fresh = db.getUserByUsername(user.username);
+      res.json({ ok: true, token: signToken({ id: user.id, username: user.username, role: user.role, tv: fresh?.token_version ?? 1 }) });
     } catch (err) {
       console.error("[server] /auth/me/password hatası:", err);
       res.status(500).json({ error: err.message });
@@ -112,7 +146,7 @@ function buildApp() {
       if (!username) return res.status(400).json({ error: "username gerekli" });
       const user = db?.getUserByUsername(username);
       if (!user || user.role !== "admin") return res.status(403).json({ error: "Admin kullanıcı bulunamadı" });
-      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, getSecret(), { expiresIn: "30d" });
+      const token = jwt.sign({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 }, getSecret(), { expiresIn: "30d" });
       res.json({ token });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
@@ -262,6 +296,16 @@ function buildApp() {
       const { limit, offset, username, entity, dateFrom, dateTo } = req.query;
       const result = db.getAuditLog({ limit: Number(limit) || 100, offset: Number(offset) || 0, username: username || undefined, entity: entity || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined });
       res.json({ ok: true, ...result });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // DELETE /api/audit — işlem geçmişini tamamen temizler, sadece admin
+  app.delete("/api/audit", requireAuth, requireAdmin, (req, res) => {
+    try {
+      const deleted = db.clearAuditLog();
+      // Kimin temizlediği izlensin diye temizlik sonrası tek kayıt bırakılır
+      db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action: "temizlendi", entity: "islem_gecmisi", entity_id: null, entity_name: `${deleted} kayıt silindi`, detail: null });
+      res.json({ ok: true, deleted });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 

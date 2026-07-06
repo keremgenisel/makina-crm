@@ -9,9 +9,19 @@ export const CustomerAddEditForm = ({
   stock, models, kalipDefs = [], dealers, factory,
   kdvRates, payments, geoData, loadingGeo,
   addLabel, entity, parts = [],
+  draftBar = null,
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
   const { lockLoading, lockConflict, forceAcquire } = useLock("customer", modal?.edit?.id ?? null);
+
+  // Seri no yarışı önleyici kilit: stoktan bir seri seçildiği anda o seri kilitlenir,
+  // başka kullanıcı aynı seriyi seçerse uyarı görür ve kaydedemez. Kilit fail-open
+  // olduğu için tek başına garanti değildir — asıl güvence App.jsx'teki çakışma
+  // birleştirmesinin seri no kontrolü; bu katman çakışmayı daha oluşmadan engeller.
+  const isStockSerialPick = !form._manualSerial && !form._stokSerisiz && !!form.serialNo && !!form.model
+    && (modal === "add" || (modal?.edit && form.seriNoBekliyor && !modal.edit.serialNo));
+  const { lockConflict: serialLock, forceAcquire: forceSerialLock } =
+    useLock("stok-seri", isStockSerialPick ? `${form.model}::${form.serialNo}` : null);
 
   const getKitAutoFill = (stockEntry) => {
     if (!stockEntry?.parcalar?.length) return {};
@@ -39,6 +49,7 @@ export const CustomerAddEditForm = ({
 
   return (
     <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}>
+      {draftBar}
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
         <Icon name="customers" size={15} />
         <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Firma Bilgileri</span>
@@ -148,6 +159,14 @@ export const CustomerAddEditForm = ({
                 {form._stokSerisiz ? (
                   <div style={{ fontSize: 11, color: "#d97706", marginTop: 5, fontWeight: 600 }}>
                     Seri no'suz satış yapılıyor, stoktan 1 adet düşülecek. Seri no'yu sonra "Müşteriyi Düzenle" bölümünden girebilirsiniz.
+                  </div>
+                ) : serialLock ? (
+                  <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5, fontWeight: 700 }}>
+                    ⚠ Bu seri no şu anda {serialLock.lockedBy || "başka bir kullanıcı"} tarafından işleniyor. Kaydetmek için farklı bir seri seçin
+                    <button onClick={forceSerialLock}
+                      style={{ marginLeft: 6, fontSize: 11, color: "#dc2626", background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", padding: "1px 8px", fontWeight: 700 }}>
+                      veya devral
+                    </button>
                   </div>
                 ) : (
                   <div style={{ fontSize: 11, color: "#059669", marginTop: 5, fontWeight: 600 }}>
@@ -411,7 +430,7 @@ export const CustomerAddEditForm = ({
 
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+        <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
     </Modal>
   );

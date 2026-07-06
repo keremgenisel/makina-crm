@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
+import { makeCanDo } from "../lib/permissions";
 import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
 import { UretimFormu }   from "./stock/UretimFormu";
@@ -27,12 +28,7 @@ export const Stock = ({
     ["uretim", "Kalıp Üretim"],
   ];
 
-  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
-  const _allowedStockActions = _isAdmin ? null : (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.stockActions ?? null; }
-    catch { return null; }
-  })();
-  const canDoStock = action => !_allowedStockActions || _allowedStockActions.includes(action);
+  const canDoStock = makeCanDo(serverPermissions, "stockActions");
 
   return (
     <div>

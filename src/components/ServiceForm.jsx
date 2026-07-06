@@ -7,7 +7,7 @@ import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } 
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
@@ -42,6 +42,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
   return (
     <Modal title={title} onClose={onCancel}>
+      {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "#fff7ed" }}>

@@ -2,15 +2,14 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction } from "../lib/audit";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
-import { parsePermissions } from "../lib/permissions";
+import { makeCanDo } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null }) => {
-  const _perms = parsePermissions(serverPermissions);
-  const canDo = action => !_perms || !_perms.dealerActions || _perms.dealerActions.includes(action);
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true }) => {
+  const canDo = makeCanDo(serverPermissions, "dealerActions");
 
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -246,7 +245,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             </tr>
           </thead>
           <tbody>
-            {/* Fabrika — her zaman en üstte, düzenlenebilir ama silinemez */}
+            {/* Fabrika — her zaman en üstte, sadece sunucu PC'de düzenlenebilir, silinemez */}
             <tr style={{ borderBottom: "2px solid #d1fae5", background: "#f0fdf4" }}>
               <td style={{ padding: "13px 16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -262,7 +261,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <td style={{ padding: "13px 16px", fontSize: 13, color: "#065f46" }}>{factory?.phone || "—"}</td>
               <td style={{ padding: "13px 16px", fontSize: 13, color: "#065f46" }}>{factory?.country && factory?.city ? `${factory.country} / ${factory.city}` : factory?.country || "Türkiye"}</td>
               <td style={{ padding: "13px 16px" }}>
-                <Btn small variant="ghost" onClick={openFactoryEdit}><Icon name="edit" size={12} /></Btn>
+                {canEditFactory && <Btn small variant="ghost" onClick={openFactoryEdit}><Icon name="edit" size={12} /></Btn>}
               </td>
             </tr>
             {paged.map(d => (

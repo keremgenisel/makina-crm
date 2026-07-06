@@ -4,8 +4,9 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, wasMintedHere, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
 import { setAuditUsername } from "./lib/audit";
+import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
 import { Icon } from "./components/ui";
 import { LockScreen } from "./components/LockScreen";
 import { ServerLogin } from "./components/ServerLogin";
@@ -90,6 +91,11 @@ export default function App() {
   const [serverMode, setServerMode] = useState(null);
   const [serverPermissions, setServerPermissions] = useState(null); // { role, permissions (JSON string | null) }
 
+  // ── Salt okunur mod: istemci sunucuya ulaşamıyorsa (evde/bağlantı koptu) düzenleme kilitlenir ──
+  // Veri önbellekten veya son yüklemeden görüntülenmeye devam eder; bağlantı dönünce kendiliğinden açılır.
+  const readOnly = serverMode === "active" && !serverOnline;
+  const effectivePermissions = readOnly ? READONLY_SERVER_PERMISSIONS : serverPermissions;
+
   // ── Tab izin filtresi: yerel mod / sunucu PC / admin → tüm tablar; user rolü → izin listesi ──
   const visibleTabs = useMemo(() => {
     if (serverMode !== "active") return TABS; // yerel mod veya sunucu PC
@@ -118,29 +124,90 @@ export default function App() {
   }, []);
 
   // ── Yerel değişiklikleri sunucu verisinin üzerine birleştirir (çakışma/yeniden yükleme sonrası) ──
-  const mergeLocalIntoReloaded = (myData) => {
-    if (!myData) return;
-    // Yeni kayıtlar: ID bazında eksik olanları ekle
-    const mergeNew = (setter, key) => setter(prev => {
-      const ids = new Set(prev.map(x => x.id));
-      const adds = (myData[key] || []).filter(x => !ids.has(x.id));
-      return adds.length ? [...prev, ...adds] : prev;
+  // serverData: az önce sunucudan yüklenen blob — ID/seri çakışması kararları buna göre verilir
+  const mergeLocalIntoReloaded = (myData, serverData) => {
+    if (!myData || !serverData) return;
+    const KEYS = ["customers", "teklifler", "partSales", "services", "payments", "uretimFormlari", "faturalar"];
+    // Yeniden atanacak ID'ler iki tarafın da maksimumundan sonra gelsin
+    bumpId(...KEYS.flatMap(k => [serverData[k] || [], myData[k] || []]));
+
+    // 1. geçiş: eklenecekler ve ID yeniden atamaları.
+    // Aynı ID sunucuda da varsa üç durum: içerik birebir aynı → zaten kaydedilmiş, atla;
+    // farklı ve ID'yi bu süreç üretti → iki PC aynı numarayı üretti, kaybedilmesin diye
+    // yeni ID ver; farklı ama ID bizim değil → mevcut kaydın düzenlenme çakışması, kapsam
+    // dışı (entity kilitleri koruyor), eski davranış korunur (sunucu kazanır).
+    const maps = {}; // key → Map(eskiId → yeniId)
+    const adds = {}; // key → eklenecek kayıtlar
+    for (const key of KEYS) {
+      const byId = new Map((serverData[key] || []).map(x => [x.id, x]));
+      maps[key] = new Map();
+      adds[key] = [];
+      for (const rec of (myData[key] || [])) {
+        const existing = byId.get(rec.id);
+        if (!existing) { adds[key].push(rec); continue; }
+        if (JSON.stringify(existing) === JSON.stringify(rec)) continue;
+        if (!wasMintedHere(rec.id)) continue;
+        const nid = uid();
+        maps[key].set(rec.id, nid);
+        adds[key].push({ ...rec, id: nid });
+      }
+    }
+
+    // 2. geçiş: yeniden atanan ID'lere işaret eden referansları düzelt
+    const remapRef = (map, val) => (map.has(val) ? map.get(val) : val);
+    adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
+    adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId) }));
+    adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
+    adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
+    adds.customers = adds.customers.map(c => ({
+      ...c,
+      kaliplar: (c.kaliplar || []).map(k => k.partSaleId ? { ...k, partSaleId: remapRef(maps.partSales, k.partSaleId) } : k),
+    }));
+
+    // Seri no çakışması: eklenecek müşteri, sunucudaki silinmemiş başka bir müşteriyle aynı
+    // seri numarayı taşıyorsa makina iki kez satılmış olur — kaydı "seri no bekliyor"
+    // durumuna düşür (mevcut rozet/filtre/sonradan-seri-atama akışına girer) ve uyar.
+    const serverSerials = new Set((serverData.customers || []).filter(c => !c.deletedAt && c.serialNo).map(c => c.serialNo));
+    const stockDeductIds = new Set();
+    adds.customers = adds.customers.map(c => {
+      if (c.serialNo && serverSerials.has(c.serialNo)) {
+        showToast(`Seri no çakışması: ${c.serialNo} başka bir müşteriye atandı. "${c.name}" kaydı seri no bekliyor olarak eklendi.`, "warn");
+        return { ...c, serialNo: "", seriNoBekliyor: true, sourceStockId: null };
+      }
+      if (c.sourceStockId != null) stockDeductIds.add(c.sourceStockId);
+      return c;
     });
-    mergeNew(setPartSales, "partSales");
-    mergeNew(setServices, "services");
-    mergeNew(setUretimFormlari, "uretimFormlari");
-    // Yeni müşteri/makina kayıtları
-    mergeNew(setCustomers, "customers");
-    // Yeni teklif/proforma ve fatura kayıtları — bunlar birleştirilmediği için çakışma
-    // anında kullanıcının yeni eklediği teklif sunucu verisiyle ezilip kayboluyordu
-    mergeNew(setTeklifler, "teklifler");
-    mergeNew(setFaturalar, "faturalar");
+
+    // Uygula — 750ms bekleme sırasında oluşmuş yerel eklerle çarpışmamak için prev'e karşı
+    // ID kontrolü korunur
+    const apply = (setter, key) => {
+      if (!adds[key].length) return;
+      setter(prev => {
+        const ids = new Set(prev.map(x => x.id));
+        const toAdd = adds[key].filter(x => !ids.has(x.id));
+        return toAdd.length ? [...prev, ...toAdd] : prev;
+      });
+    };
+    apply(setCustomers, "customers");
+    apply(setTeklifler, "teklifler");
+    apply(setPartSales, "partSales");
+    apply(setServices, "services");
+    apply(setPayments, "payments");
+    apply(setUretimFormlari, "uretimFormlari");
+    apply(setFaturalar, "faturalar");
+
+    // Birleştirilen müşterilerin kaynak stok satırları düşülür — yoksa sunucudan gelen
+    // stok listesi, az önce satılan makinayı tekrar "satılabilir" olarak diriltir
+    if (stockDeductIds.size) setStock(prev => prev.filter(s => !stockDeductIds.has(s.id)));
+
     // Müşterilerde güncellenen kalıp girdileri (mevcut müşteriye yeni kalıp eklendi)
     setCustomers(prev => prev.map(c => {
       const mc = (myData.customers || []).find(x => x.id === c.id);
       if (!mc) return c;
       const eIds = new Set((c.kaliplar || []).map(k => k.partSaleId).filter(Boolean));
-      const nks = (mc.kaliplar || []).filter(k => k.partSaleId && !eIds.has(k.partSaleId));
+      const nks = (mc.kaliplar || [])
+        .filter(k => k.partSaleId && !eIds.has(remapRef(maps.partSales, k.partSaleId)))
+        .map(k => maps.partSales.has(k.partSaleId) ? { ...k, partSaleId: maps.partSales.get(k.partSaleId) } : k);
       if (!nks.length) return c;
       return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
     }));
@@ -165,9 +232,9 @@ export default function App() {
       clearTimeout(saveTimer.current);
       const myData = lastAttemptedSaveRef.current;
       lastAttemptedSaveRef.current = null;
-      await loadFromStorageRef.current?.();
+      const loadedBlob = await loadFromStorageRef.current?.();
       // Suppress 700ms bittikten sonra merge yap ki save effect tetiklensin
-      if (myData) setTimeout(() => mergeLocalIntoReloaded(myData), 750);
+      if (myData) setTimeout(() => mergeLocalIntoReloaded(myData, loadedBlob), 750);
     });
     const u3 = window.appServer.onSessionExpired(() => {
       showToast("Oturum süresi doldu. Lütfen tekrar giriş yapın.", "err");
@@ -180,8 +247,8 @@ export default function App() {
       clearTimeout(saveTimer.current);
       const myPending = pendingSave.current;
       pendingSave.current = null;
-      await loadFromStorageRef.current?.();
-      if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
+      const loadedBlob = await loadFromStorageRef.current?.();
+      if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending, loadedBlob), 750);
     });
     return () => { u1?.(); u2?.(); u3?.(); u4?.(); u5?.(); };
   }, []);
@@ -199,8 +266,8 @@ export default function App() {
           clearTimeout(saveTimer.current);
           const myPending = pendingSave.current;
           pendingSave.current = null;
-          await loadFromStorageRef.current?.();
-          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
+          const loadedBlob = await loadFromStorageRef.current?.();
+          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending, loadedBlob), 750);
         }
       } catch {}
     }, 5000);
@@ -252,8 +319,8 @@ export default function App() {
           clearTimeout(saveTimer.current);
           const myPending = pendingSave.current;
           pendingSave.current = null;
-          await loadFromStorageRef.current?.();
-          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending), 750);
+          const loadedBlob = await loadFromStorageRef.current?.();
+          if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending, loadedBlob), 750);
         }
       } catch {
         // Network error — sunucu erişilemiyor
@@ -469,9 +536,12 @@ export default function App() {
   loadFromStorageRef.current = async () => {
     suppressSaveRef.current = true; // yükleme sırasında debounced save tetiklenmesin
     try {
-      if (!window.crmStorage) return;
+      if (!window.crmStorage) return null;
       const data = await window.crmStorage.load();
-      if (!data) return;
+      if (!data) return null;
+      // Sunucuya ulaşılamadı, veri yerel önbellekten geldi → hemen salt okunur moda geç
+      // (10 sn'lik poll'u beklemeden); bağlantı dönünce poll serverOnline'ı geri açar
+      if (data.__fromCache) { serverOnlineRef.current = false; setServerOnline(false); }
       // Çöp Kutusu: retention süresinden eski deletedAt'li kayıtlar yüklenirken kalıcı olarak süzülür
       if (Array.isArray(data.customers)) data.customers = purgeOldTrash(data.customers);
       if (Array.isArray(data.payments)) data.payments = purgeOldTrash(data.payments);
@@ -566,7 +636,8 @@ export default function App() {
       setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
-    } catch (err) { console.error(err); } finally {
+      return data; // çakışma birleştirmesi (mergeLocalIntoReloaded) sunucu verisini buradan alır
+    } catch (err) { console.error(err); return null; } finally {
       // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver.
       // saveTrigger SADECE yükleme sırasında sunucu verisi yerel değerle ezildiyse artar
       // (postLoadNeedsSaveRef) — her yüklemede koşulsuz kaydetmek, kayıt→versiyon artışı→
@@ -586,6 +657,9 @@ export default function App() {
   const pendingSave = useRef(null);
   useEffect(() => {
     if (!loaded || !window.crmStorage || suppressSaveRef.current) return;
+    // Salt okunur mod: sunucuya ulaşılamıyorken hiçbir şey kaydedilmez/kuyruklanmaz
+    // (önbellekten gösterilen veriyi sunucuya geri yazmaya çalışmak veri kaybettirir)
+    if (serverMode === "active" && !serverOnlineRef.current) return;
     const data = { customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
@@ -594,13 +668,19 @@ export default function App() {
       pendingSave.current = null;
       lastAttemptedSaveRef.current = saveData;
       const ok = await window.crmStorage.save(saveData || data);
-      if (ok) { failedSaveRef.current = null; lastAttemptedSaveRef.current = null; }
+      if (ok) {
+        failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
+        clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
+      }
       else if (serverMode === "active") { failedSaveRef.current = saveData || data; }
     }, 500);
     return () => clearTimeout(saveTimer.current);
   }, [customers, dealers, stock, kalipDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded, saveTrigger]);
   useEffect(() => {
     const flush = () => {
+      // Salt okunur modda flush yok: flushSave versiyon kontrolü yapmadan yazar,
+      // önbellekten gösterilen bayat verinin sunucuyu ezmesine izin verilmez
+      if (serverOnlineRef.current === false) { window.crmLocks?.releaseAll?.().catch?.(() => {}); return; }
       const toFlush = pendingSave.current || lastAttemptedSaveRef.current;
       if (toFlush && window.crmStorage?.flushSave) {
         clearTimeout(saveTimer.current);
@@ -632,7 +712,7 @@ export default function App() {
           window.appMail?.getAllLog?.() ?? [],
           window.appLock?.getDataForBackup?.() ?? null,
         ]).catch(() => [null, [], null]);
-        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, appSettings, mailConfig, mailLog, appLockData }).catch(() => false);
+        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, mailConfig, mailLog, appLockData }).catch(() => false);
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }
@@ -750,14 +830,23 @@ export default function App() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
-        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} onDismissTeklif={handleDismissTeklif} serverPermissions={serverPermissions} uretimFormlari={liveUretimFormlari} onGoUretim={() => { setStockDefaultSubTab("uretim"); setTab("stock"); }} />}
-        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} serverPermissions={serverPermissions} />}
-        {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} serverPermissions={serverPermissions} />}
-        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} customers={liveCustomers} setCustomers={setCustomers} kalipDefs={liveKalipDefs} uretimFormlari={liveUretimFormlari} setUretimFormlari={setUretimFormlari} partSales={livePartSales} setPartSales={setPartSales} serverPermissions={serverPermissions} defaultSubTab={stockDefaultSubTab} />}
+        {readOnly && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fef3c7", border: "1.5px solid #f59e0b", borderRadius: 10, padding: "12px 16px", marginBottom: 20 }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e" }}>Sunucuya bağlanılamıyor, salt okunur mod</div>
+              <div style={{ fontSize: 12, color: "#a16207", marginTop: 2 }}>Veriler son başarılı bağlantıdan gösteriliyor, değişiklik yapılamaz. Bağlantı kurulunca bu uyarı kendiliğinden kalkar.</div>
+            </div>
+          </div>
+        )}
+        {tab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={liveTeklifler} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} onDismissTeklif={handleDismissTeklif} serverPermissions={effectivePermissions} uretimFormlari={liveUretimFormlari} onGoUretim={() => { setStockDefaultSubTab("uretim"); setTab("stock"); }} />}
+        {tab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} serverPermissions={effectivePermissions} />}
+        {tab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} serverPermissions={effectivePermissions} canEditFactory={serverMode !== "active"} />}
+        {tab === "stock"     && <Stock stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} customers={liveCustomers} setCustomers={setCustomers} kalipDefs={liveKalipDefs} uretimFormlari={liveUretimFormlari} setUretimFormlari={setUretimFormlari} partSales={livePartSales} setPartSales={setPartSales} serverPermissions={effectivePermissions} defaultSubTab={stockDefaultSubTab} />}
         {tab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} />}
-        {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={serverPermissions} />}
-        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={serverPermissions} />}
-        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} serverPermissions={serverPermissions} />}
+        {tab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} />}
+        {tab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} />}
+        {tab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} serverPermissions={effectivePermissions} />}
       </div>
     </div>
   );

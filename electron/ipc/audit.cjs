@@ -8,6 +8,13 @@ function registerAuditHandlers(ipcMain, db) {
     try { return { ok: true, ...db.getAuditLog(filters || {}) }; }
     catch (err) { console.error("audit:get hatası:", err); return { ok: false, rows: [], total: 0 }; }
   });
+
+  // Sadece yerel mod / sunucu PC'den çağrılır (renderer'da panel zaten sadece admin'e açık);
+  // istemci PC'ler DELETE /api/audit üzerinden requireAdmin ile geçer
+  ipcMain.handle("audit:clear", () => {
+    try { return { ok: true, deleted: db.clearAuditLog() }; }
+    catch (err) { console.error("audit:clear hatası:", err); return { ok: false, deleted: 0 }; }
+  });
 }
 
 module.exports = { registerAuditHandlers };

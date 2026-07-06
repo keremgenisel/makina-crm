@@ -29,7 +29,15 @@ export const kalipText = (c) => {
   return c?.kalip || "—";
 };
 let nextId = 100;
-export const uid = () => ++nextId;
+// Bu süreçte (bu PC'de, bu oturumda) üretilip henüz sunucuya/diske BAŞARIYLA yazılmamış
+// ID'ler. Çakışma birleştirmesi "aynı ID, farklı içerik" gördüğünde bunun bizim yeni
+// eklediğimiz bir kayıt mı (→ yeni ID verilip kurtarılır) yoksa mevcut bir kaydın
+// düzenlenmesi mi (→ kapsam dışı, kilit sistemi koruyor) olduğunu buradan ayırt eder.
+// Başarılı her kayıttan sonra temizlenir (o andan itibaren ID'ler artık sunucuda).
+const mintedIds = new Set();
+export const uid = () => { const v = ++nextId; mintedIds.add(v); return v; };
+export const wasMintedHere = (id) => mintedIds.has(id);
+export const clearMintedIds = () => mintedIds.clear();
 export const getIdCounter = () => nextId;
 export const setIdCounter = (n) => { if (n > nextId) nextId = n; };
 // Mevcut kayıtların max ID'sini görüp sayacı ileri çeker — çakışmayı önler
@@ -312,6 +320,15 @@ export const addYearsToDateStr = (dateStr, years) => {
 };
 
 export const getFactoryName = (factory) => factory?.name || "Altuntaş Makina";
+
+// Tarayıcı-modu dosya indirme (Electron yazdırma API'si yokken yedek yol) — Blob + geçici <a>
+export const downloadFile = (filename, content, mime = "text/html;charset=utf-8") => {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
 
 // Onaylı teklif daha önce CRM'e aktarılmış mı? satisTamam bayrağına ek olarak,
 // tekliften doğan kayıtların kendisi de kalıcı kanıt sayılır: makina kaydındaki

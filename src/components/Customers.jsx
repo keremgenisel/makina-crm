@@ -4,7 +4,8 @@ import { logAction } from "../lib/audit";
 import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
-import { Icon, Btn, ConfirmDialog, Pagination } from "./ui";
+import { useFormDraft } from "../hooks/useFormDraft";
+import { Icon, Btn, ConfirmDialog, Pagination, DraftRestoreBar } from "./ui";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 
@@ -23,6 +24,9 @@ export const Customers = ({
   const [sortDir, setSortDir] = useState("asc");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  // Elektrik kesintisine karşı form taslağı — anahtar kayıt bazlı (bkz. useFormDraft)
+  const draftKey = modal === "add" ? "customer:new" : modal?.edit ? `customer:${modal.edit.id}` : null;
+  const { draft, restoreDraft, discardDraft, clearDraft } = useFormDraft(draftKey, modal ? form : null, setForm);
   const [listFilter, setListFilter] = useState(initialFilter || "all");
   useEffect(() => { setListFilter(initialFilter || "all"); }, [initialFilter]);
   const [groupByFirm, setGroupByFirm] = useState(false);
@@ -189,6 +193,25 @@ export const Customers = ({
     setModal({ edit: c });
     setDetailViewId(null); // detay modalı onDetailClosed tetiklemeden kapat — hem çift kilit sorununu çözer, hem dashboard'a geri dönme olmaz
   };
+  // Makina stoğu düşümü — ekleme ve "seri no sonradan atandı" düzenlemesi aynı mantığı
+  // paylaşır: seçilen (veya serisiz) stok satırını düşer ve kaynağı müşteriye
+  // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar
+  const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
+    if (_stokSerisiz) {
+      const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
+      if (srcEntry) clean.sourceStockId = srcEntry.id;
+      setStock(p => {
+        const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
+        if (idx === -1) return p;
+        return p.filter((_, i) => i !== idx);
+      });
+    } else if (clean.serialNo && !_manualSerial) {
+      const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
+      if (srcEntry) clean.sourceStockId = srcEntry.id;
+      setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
+    }
+  };
+
   const save = () => {
     if (modal === "add") {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
@@ -208,21 +231,7 @@ export const Customers = ({
         }));
         setPayments(p => [...yeniOdemeler, ...p]);
       }
-      if (setStock) {
-        if (_stokSerisiz) {
-          const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-          if (srcEntry) clean.sourceStockId = srcEntry.id;
-          setStock(p => {
-            const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
-            if (idx === -1) return p;
-            return p.filter((_, i) => i !== idx);
-          });
-        } else if (clean.serialNo && !_manualSerial) {
-          const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-          if (srcEntry) clean.sourceStockId = srcEntry.id;
-          setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
-        }
-      }
+      if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
       // Konveyör Saç / Bant seçimi varsa partStock'tan 1 adet düş (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
       const deductPartIds = [
         !_konveyorFromKit ? clean.konveyorSacId : null,
@@ -243,21 +252,7 @@ export const Customers = ({
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
-      if (wasSerialPending && setStock) {
-        if (_stokSerisiz) {
-          const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-          if (srcEntry) clean.sourceStockId = srcEntry.id;
-          setStock(p => {
-            const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
-            if (idx === -1) return p;
-            return p.filter((_, i) => i !== idx);
-          });
-        } else if (clean.serialNo && !_manualSerial) {
-          const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-          if (srcEntry) clean.sourceStockId = srcEntry.id;
-          setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
-        }
-      }
+      if (wasSerialPending && setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
       // Konveyör Saç / Bant değişmişse eski stoğu geri al, yeni seçimi düş (kit'ten gelenleri atlat)
       if (setPartStock) {
         const oldIds = [modal?.edit?.konveyorSacId, modal?.edit?.bantSecimiId].filter(Boolean);
@@ -280,6 +275,7 @@ export const Customers = ({
       logAction({ serverPermissions, action: "duzenlendi", entity: "musteri", entityId: clean.id, entityName: clean.name });
       showToast("Müşteri bilgileri düzenlendi.");
     }
+    clearDraft();
     setModal(null);
   };
   const del = id => setConfirmId(id);
@@ -569,7 +565,8 @@ export const Customers = ({
 
       {modal && (
         <CustomerAddEditForm
-          modal={modal} form={form} setForm={setForm} save={save} onClose={() => setModal(null)}
+          modal={modal} form={form} setForm={setForm} save={save} onClose={() => { clearDraft(); setModal(null); }}
+          draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}
           geoData={geoData} loadingGeo={loadingGeo}

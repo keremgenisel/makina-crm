@@ -1,7 +1,9 @@
 let _localUsername = "yerel";
 export function setAuditUsername(name) { _localUsername = name || "yerel"; }
 
-// Fire-and-forget — hata fırlatmaz, asla UI'ı bloklamaz
+// Fire-and-forget — hata fırlatmaz, asla UI'ı bloklamaz. Yine de promise'i döndürür ki
+// yazımın tamamlanmasını beklemek isteyen nadir çağıranlar (örn. geçmiş temizleme sonrası
+// listeyi yenilemeden önce) await edebilsin.
 export function logAction({ serverPermissions, action, entity, entityId, entityName, detail } = {}) {
   try {
     const entry = {
@@ -14,10 +16,9 @@ export function logAction({ serverPermissions, action, entity, entityId, entityN
     };
     if (serverPermissions) {
       // İstemci modu: sunucu JWT'den username'i alır
-      window.appServer?.apiRequest({ method: "POST", path: "/api/audit", body: entry });
-    } else {
-      // Yerel veya sunucu PC modu — gerçek admin adını kullan
-      window.auditLog?.log({ ...entry, username: _localUsername, role: "admin" });
+      return window.appServer?.apiRequest({ method: "POST", path: "/api/audit", body: entry });
     }
-  } catch {}
+    // Yerel veya sunucu PC modu — gerçek admin adını kullan
+    return window.auditLog?.log({ ...entry, username: _localUsername, role: "admin" });
+  } catch { return undefined; }
 }

@@ -8,7 +8,7 @@ import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null }) => {
   const [custSearch, setCustSearch] = useState("");
 
   const isEdit = !!form.id;
@@ -25,6 +25,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
 
   return (
     <Modal title={title} onClose={onCancel}>
+      {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "#fff7ed" }}>

@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
-import { parsePermissions } from "../lib/permissions";
+import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
+import { makeCanDo } from "../lib/permissions";
 import { logAction } from "../lib/audit";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict } from "./ui";
+import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict, DraftRestoreBar } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
+import { useFormDraft } from "../hooks/useFormDraft";
 import LOGO_B64 from "../assets/logo.avif?inline";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, CURRENCIES } from "../lib/constants";
 import { buildPrintHtml, buildFaturaHtml } from "../lib/printTemplates";
@@ -210,10 +211,7 @@ export const Documents = ({
   const effectiveTur = effectiveTeklifTur;
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
 
-  const _perms = parsePermissions(serverPermissions);
-  const _isAdmin = !_perms;
-  const _allowedEvrakActions = _perms ? (_perms.evrakActions ?? null) : null;
-  const canDoEvrak = action => !_allowedEvrakActions || _allowedEvrakActions.includes(action);
+  const canDoEvrak = makeCanDo(serverPermissions, "evrakActions");
 
   const isFieldHidden = (type, section, key) =>
     (evrakFormConfig?.[type]?.hiddenFields?.[section] || []).includes(key);
@@ -249,13 +247,41 @@ export const Documents = ({
     setForm(p => p ? ({ ...p, customFieldValues: { ...(p.customFieldValues || {}), [cfId]: val } }) : p);
 
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma" | "fatura"
-  const [form, setForm] = useState(null); // null = form kapalı
+  const [form, _setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
   const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → müşteri çevirme bildirimi
   const { lockLoading: teklifLockLoading, lockConflict: teklifLock, forceAcquire: forceTeklifLock } = useLock("teklif", form?.id ?? null);
 
+  // ── Teklif resimleri: kayıtta ve taslakta SOYULUR, kullanım anında doldurulur ──
+  // subItem'lardaki base64 ürün resimleri model/kalıp/parça tanımının kopyasıdır; her
+  // teklife gömmek veri blob'unu (dolayısıyla her kaydetmeyi ve istemci yüklemesini)
+  // katlıyordu. Kalıcı kayıtta resim tutulmaz; form açılırken, yazdırırken ve maile
+  // eklerken satırın seçili tanımından yeniden doldurulur.
+  const stripTeklifImages = (f) => ({
+    ...f,
+    satirlar: (f.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(({ resim, ...it }) => it) })),
+  });
+  const hydrateTeklifImages = (f) => ({
+    ...f,
+    satirlar: (f.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(it => {
+      if (it.resim) return it;
+      let resim = "";
+      if (it.type === "makina" && r.selectedModel) resim = allModels.find(m => m.model === r.selectedModel)?.resim || "";
+      else if (it.type === "kalip" && r.selectedKalip) resim = kalipDefs.find(k => k.ad === r.selectedKalip)?.resim || "";
+      else if (it.type === "parca" && r.selectedPart) resim = parts.find(p => String(p.id) === String(r.selectedPart))?.resim || "";
+      return resim ? { ...it, resim } : it;
+    }) })),
+  });
+  const teklifDraftKey = form ? `${form.type || "teklif"}:${form.id ?? "new"}` : null;
+  const teklifDraft = useFormDraft(teklifDraftKey, form, _setForm, { stripFn: stripTeklifImages, restoreFn: hydrateTeklifImages });
+  // null ile kapatmak = Kaydet ya da bilerek Vazgeç → taslak silinir (çökmede bu yol çalışmaz, taslak kalır)
+  const setForm = (v) => { if (v === null) teklifDraft.clearDraft(); _setForm(v); };
+
   // ── Yurt Dışı Fatura state ──
-  const [faturaForm, setFaturaForm] = useState(null);
+  const [faturaForm, _setFaturaForm] = useState(null);
+  const faturaDraftKey = faturaForm ? `fatura:${faturaForm.id ?? "new"}` : null;
+  const faturaDraft = useFormDraft(faturaDraftKey, faturaForm, _setFaturaForm);
+  const setFaturaForm = (v) => { if (v === null) faturaDraft.clearDraft(); _setFaturaForm(v); };
   const { lockLoading: faturaLockLoading, lockConflict: faturaLock, forceAcquire: forceFaturaLock } = useLock("fatura", faturaForm?.id ?? null);
   const [faturaConfirmDel, setFaturaConfirmDel] = useState(null);
   const liveFaturalar = useMemo(() => withoutDeleted(faturalar).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")), [faturalar]);
@@ -353,8 +379,7 @@ export const Documents = ({
     if (window.appPrint?.printHtml) {
       window.appPrint.printHtml(html, null, `Invoice-${(f.firma || "").replace(/\s+/g, "-")}-${f.no || f.tarih || ""}.pdf`);
     } else {
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `invoice-${f.no || f.tarih || "belge"}.html`; a.click();
+      downloadFile(`invoice-${f.no || f.tarih || "belge"}.html`, html);
     }
   };
 
@@ -433,7 +458,8 @@ export const Documents = ({
   };
 
   const openEdit = (t) => {
-    setForm({ ...t, satirlar: (t.satirlar || []).map(migrateRow) });
+    // Kayıtta resim tutulmadığı için form açılırken tanımlardan doldurulur (küçük önizlemeler)
+    setForm(hydrateTeklifImages({ ...t, satirlar: (t.satirlar || []).map(migrateRow) }));
     setCustSearch("");
   };
 
@@ -467,7 +493,7 @@ export const Documents = ({
       createdAt: today(),
       satirlar: (t.satirlar || []).map(r => ({ ...migrateRow(r), rowId: String(uid()) })),
     };
-    setForm(newForm);
+    setForm(hydrateTeklifImages(newForm));
     setCustSearch("");
     setSubTab("proforma");
     if (newForm.currency !== "TRY") fetchAndSetRate(newForm.currency);
@@ -516,7 +542,7 @@ export const Documents = ({
   const save = () => {
     if (!form.firma.trim()) { showToast("Firma adı girilmedi.", "err"); return; }
     if (form.type === "teklif" && !form.no.trim()) { showToast("Teklif numarası girilmedi.", "err"); return; }
-    const entry = { ...form };
+    const entry = stripTeklifImages({ ...form }); // resimler kayıtta tutulmaz, kullanım anında doldurulur
     const isUpdate = !!form.id;
     if (!entry.id) entry.id = uid();
     const prevEntry = isUpdate ? liveTeklifler.find(t => t.id === entry.id) : null;
@@ -634,16 +660,15 @@ export const Documents = ({
   const docDefaultName = (doc) =>
     `${doc.type === "proforma" ? "Proforma" : "Teklif"}-${(doc.firma || "").replace(/\s+/g, "-") || "belge"}-${doc.no || doc.tarih || ""}.pdf`;
 
-  const printDoc = (doc) => {
+  const printDoc = (rawDoc) => {
+    const doc = hydrateTeklifImages(rawDoc); // kayıtta resim yok, yazdırma için doldur
     const kase = appSettings?.kaseResmi || "";
     const htmlPrint = buildPrintHtml(doc, factory, appSettings?.translations, "", evrakFormConfig);
     const htmlPdf   = kase ? buildPrintHtml(doc, factory, appSettings?.translations, kase, evrakFormConfig) : null;
     if (window.appPrint?.printHtml) {
       window.appPrint.printHtml(htmlPrint, htmlPdf, docDefaultName(doc));
     } else {
-      const blob = new Blob([htmlPrint], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `${doc.type}-${doc.no || doc.tarih}.html`; a.click();
+      downloadFile(`${doc.type}-${doc.no || doc.tarih}.html`, htmlPrint);
     }
   };
 
@@ -651,7 +676,8 @@ export const Documents = ({
   const [mailDraft, setMailDraft] = useState(null);
   const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
 
-  const openMailDoc = (doc) => {
+  const openMailDoc = (rawDoc) => {
+    const doc = hydrateTeklifImages(rawDoc); // kayıtta resim yok, mail eki için doldur
     const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "", evrakFormConfig));
     const typeLabel = doc.type === "proforma" ? "Proforma" : "Teklif";
     setMailDraft({
@@ -935,6 +961,7 @@ export const Documents = ({
       {faturaForm && <FaturaFormModal
         faturaForm={faturaForm}
         setFaturaForm={setFaturaForm}
+        draftBar={<DraftRestoreBar draft={faturaDraft.draft} onRestore={faturaDraft.restoreDraft} onDiscard={faturaDraft.discardDraft} />}
         faturaLock={faturaLock}
         forceFaturaLock={forceFaturaLock}
         saveFatura={saveFatura}
@@ -953,6 +980,7 @@ export const Documents = ({
           <LockConflict lockedBy={teklifLock.lockedBy} lockedAt={teklifLock.lockedAt}
             onForce={forceTeklifLock} onCancel={() => setForm(null)} />
         ) : <>
+        <DraftRestoreBar draft={teklifDraft.draft} onRestore={teklifDraft.restoreDraft} onDiscard={teklifDraft.discardDraft} />
         {/* Durum + Kaydet */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           {form.type === "teklif" && form.durum === "onaylandi" && form.id && !formKullanildi && (() => {

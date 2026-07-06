@@ -84,6 +84,23 @@ export const PasswordInput = (props) => {
 export const Warn = ({ children }) => children ? (
   <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>⚠ {children}</div>
 ) : null;
+// Elektrik kesintisi/çökme sonrası bulunan form taslağını geri yükleme şeridi (bkz. useFormDraft)
+export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
+  if (!draft) return null;
+  let saat = "";
+  try { saat = new Date(draft.ts).toLocaleString("tr-TR"); } catch { /* yoksay */ }
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
+      <span style={{ fontSize: 12, color: "#854d0e", fontWeight: 600 }}>
+        ⚡ Yarım kalan taslak bulundu{saat ? ` (${saat})` : ""}. Devam etmek ister misiniz?
+      </span>
+      <div style={{ display: "flex", gap: 6 }}>
+        <Btn small onClick={onRestore}>Geri Yükle</Btn>
+        <Btn small variant="ghost" onClick={onDiscard}>Yoksay</Btn>
+      </div>
+    </div>
+  );
+};
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_RE = /^[0-9+()\s-]{7,}$/;
 export const Select = ({ children, ...props }) => (

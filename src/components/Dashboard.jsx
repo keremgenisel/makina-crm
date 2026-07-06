@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
-import { parsePermissions } from "../lib/permissions";
+import { makeCanDo } from "../lib/permissions";
 import { StatCard, Modal, Btn } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null }) => {
-  const perms = useMemo(() => parsePermissions(serverPermissions), [serverPermissions]);
-  const canCust = (action) => !perms || perms.customerActions === null || perms.customerActions?.includes(action);
+  const canCust = makeCanDo(serverPermissions, "customerActions");
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri

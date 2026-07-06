@@ -139,6 +139,7 @@ contextBridge.exposeInMainWorld("appServer", {
 contextBridge.exposeInMainWorld("auditLog", {
   log: (entry) => ipcRenderer.invoke("audit:log", entry),
   get: (filters) => ipcRenderer.invoke("audit:get", filters),
+  clear: () => ipcRenderer.invoke("audit:clear"),
 });
 
 contextBridge.exposeInMainWorld("crmLocks", {

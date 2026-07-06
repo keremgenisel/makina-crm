@@ -3,6 +3,17 @@ import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalip
 import { COUNTRY_EN } from "./constants";
 
 const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Teklif/fatura şablonları kullanıcı alanlarını onlarca noktada enterpole ediyor; alan alan
+// esc() çağırmak unutulmaya açık (ve unutulmuştu). Bu yüzden bu şablonlara giren veri
+// nesneleri giriş noktasında DERİN kaçıştan geçirilir: tüm metin alanları HTML-güvenli
+// olur, boş/sayı/null alanlar dokunulmadan kalır (falsy kontrolleri bozulmaz).
+const escStr = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const escDeep = (v) => {
+  if (typeof v === "string") return escStr(v);
+  if (Array.isArray(v)) return v.map(escDeep);
+  if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v)) o[k] = escDeep(v[k]); return o; }
+  return v;
+};
 const latinize = (s) => (s || "").replace(/İ/g, "I").replace(/ı/g, "i").replace(/Ş/g, "S").replace(/ş/g, "s").replace(/Ğ/g, "G").replace(/ğ/g, "g").replace(/Ç/g, "C").replace(/ç/g, "c");
 
 // Servis tipi ve tamir yeri çevirisi için sabit eşlemeler
@@ -618,6 +629,8 @@ export const DEFAULT_FATURA_TRANSLATIONS = {
 
 // ── Print HTML ────────────────────────────────────────────────────────────────
 export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "", evrakFormConfig = null) {
+  // Kullanıcı verisi tek noktadan HTML-güvenli hale getirilir (bkz. escDeep)
+  form = escDeep(form); factory = escDeep(factory); translations = escDeep(translations || {}); evrakFormConfig = escDeep(evrakFormConfig);
   const f = factory || {};
   const bankalar = (Array.isArray(f.bankalar) && f.bankalar.length > 0)
     ? f.bankalar
@@ -1034,6 +1047,8 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
 }
 
 export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "", faturaT = {}, faturaCfg = null) {
+  // Kullanıcı verisi tek noktadan HTML-güvenli hale getirilir (bkz. escDeep)
+  fatura = escDeep(fatura); factory = escDeep(factory); faturaT = escDeep(faturaT || {}); faturaCfg = escDeep(faturaCfg);
   const L = { ...DEFAULT_FATURA_TRANSLATIONS, ...faturaT };
   const f = factory || {};
   const cur = fatura.currency || "USD";

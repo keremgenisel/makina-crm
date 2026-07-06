@@ -15,10 +15,11 @@ import {
   buildSandikEtiketiHtml,
   DEFAULT_SANDIK_TRANSLATIONS,
 } from "../../lib/printTemplates";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar } from "../ui";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { useLock } from "../../hooks/useLock";
+import { useFormDraft } from "../../hooks/useFormDraft";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
@@ -47,6 +48,11 @@ export const CustomerDetailModal = ({
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
   const [pkForm, setPkForm] = useState(null);
+  // Elektrik kesintisine karşı form taslakları (bkz. useFormDraft)
+  const svDraftKey = svModal ? (svModal === "add" ? `servis:${detailView?.id}:new` : `servis:${svForm.id}`) : null;
+  const svDraft = useFormDraft(svDraftKey, svModal ? svForm : null, setSvForm);
+  const pkDraftKey = pkForm ? (pkForm.id ? `kalipsatis:${pkForm.id}` : `kalipsatis:${detailView?.id}:new`) : null;
+  const pkDraft = useFormDraft(pkDraftKey, pkForm, setPkForm);
   const [paymentForm, setPaymentForm] = useState(null);
   const [newOwnerForm, setNewOwnerForm] = useState(null);
   const [editPrevOwnerForm, setEditPrevOwnerForm] = useState(null);
@@ -268,6 +274,7 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "duzenlendi", entity: "servis", entityId: svForm.id, entityName: detailView?.name });
       showToast("Servis talebi düzenlendi.");
     }
+    svDraft.clearDraft();
     setSvModal(null);
   };
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
@@ -327,6 +334,7 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: yeniKayitlar[0]?.id, entityName: selectedCust.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
     }
+    pkDraft.clearDraft();
     setPkForm(null);
   };
   const togglePartSaleOdendi = (ps) => {
@@ -1017,7 +1025,8 @@ export const CustomerDetailModal = ({
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
-          onSave={saveService} onCancel={() => setSvModal(null)}
+          onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
+          draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}
         />
       )}
 
@@ -1025,7 +1034,8 @@ export const CustomerDetailModal = ({
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
-          onSave={savePartSale} onCancel={() => setPkForm(null)}
+          onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
+          draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
       )}
 

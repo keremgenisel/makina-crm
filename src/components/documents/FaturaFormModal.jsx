@@ -17,6 +17,7 @@ export const FaturaFormModal = ({
   fetchFaturaRate,
   appSettings,
   allModels,
+  draftBar = null,
 }) => {
   const fCfg = appSettings?.evrakFormConfig?.fatura;
   const isFH = (section, key) => (fCfg?.hiddenFields?.[section] || []).includes(key);
@@ -30,6 +31,7 @@ export const FaturaFormModal = ({
         <LockConflict lockedBy={faturaLock.lockedBy} lockedAt={faturaLock.lockedAt}
           onForce={forceFaturaLock} onCancel={() => setFaturaForm(null)} />
       ) : <>
+      {draftBar}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 16 }}>
         <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

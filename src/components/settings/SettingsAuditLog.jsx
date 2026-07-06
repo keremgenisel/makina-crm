@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { Btn, Icon } from "../ui";
+import { Btn, Icon, ConfirmDialog } from "../ui";
+import { logAction } from "../../lib/audit";
 
 const ENTITY_LABELS = {
   musteri: "Müşteri", bayi: "Bayi", servis: "Servis", kalip_satisi: "Kalıp Satışı",
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
+  islem_gecmisi: "İşlem Geçmişi",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
+  temizlendi: "Temizlendi",
 };
 
 const PER_PAGE = 10;
@@ -109,6 +112,31 @@ export function SettingsAuditLog({ serverPermissions }) {
     fetchData(page, activeFilters);
   };
 
+  // Tüm geçmişi sil (panel sadece admin'e render edildiği için ek izin kontrolü gerekmez)
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing]         = useState(false);
+  const clearAll = async () => {
+    setConfirmClear(false);
+    setClearing(true);
+    try {
+      if (isServerMode) {
+        // Sunucu endpoint'i silme sonrası "temizlendi" kaydını kendisi yazar
+        const res = await window.appServer?.apiRequest({ method: "DELETE", path: "/api/audit" });
+        if (!res?.ok) { setLoadErr(res?.error || "Geçmiş silinemedi"); setClearing(false); return; }
+      } else {
+        const res = await window.auditLog?.clear();
+        if (!res?.ok) { setLoadErr("Geçmiş silinemedi — veritabanı erişim hatası"); setClearing(false); return; }
+        // Kimin temizlediği izlensin diye tek kayıt bırak, listeyi yenilemeden önce yazımı bekle
+        await logAction({ serverPermissions, action: "temizlendi", entity: "islem_gecmisi", entityName: `${res.deleted ?? 0} kayıt silindi` });
+      }
+      setPage(1);
+      await fetchData(1, activeFilters);
+    } catch (err) {
+      setLoadErr(String(err?.message || err));
+    }
+    setClearing(false);
+  };
+
   const go = (p) => {
     setPage(p);
     // page değişimi useEffect'i tetikler
@@ -148,8 +176,19 @@ export function SettingsAuditLog({ serverPermissions }) {
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="ghost" onClick={yenile}><Icon name="refresh" size={14} /> Yenile</Btn>
           <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
+          <Btn variant="danger" onClick={() => setConfirmClear(true)} disabled={clearing}>
+            <Icon name="trash" size={14} /> {clearing ? "Siliniyor..." : "Geçmişi Sil"}
+          </Btn>
         </div>
       </div>
+
+      {confirmClear && (
+        <ConfirmDialog
+          message="Tüm işlem geçmişi kalıcı olarak silinecek ve geri alınamaz. Aktif filtreden bağımsız olarak bütün kayıtlar silinir."
+          onConfirm={clearAll}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
 
       {/* Filtreler */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>

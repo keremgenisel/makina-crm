@@ -1,22 +1,59 @@
 const path            = require("path");
 const fs              = require("fs");
 const bcrypt          = require("bcryptjs");
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, safeStorage } = require("electron");
 const embeddedServer  = require("../server.cjs");
 
 const getDataPath         = (app) => path.join(app.getPath("userData"), "data.json");
 const getServerConfigPath = (app) => path.join(app.getPath("userData"), "server-config.json");
 
+// ── Token şifreleme (safeStorage: Windows DPAPI / macOS Keychain) ────────────
+// Oturum token'ları diskte düz metin durmasın; dosyayı kopyalayan biri oturumu
+// ele geçiremesin. Bellekte ve tüm çağıranlarda düz alan adları (token/adminToken)
+// kullanılmaya devam eder: yazarken şifrelenir, okurken çözülür. safeStorage
+// kullanılamıyorsa düz metne düşülür; eski düz metin config'ler okunmaya devam eder
+// ve ilk kayıtta şifreli biçime geçer.
+const TOKEN_FIELDS = ["token", "adminToken"];
+function encryptTokens(cfg) {
+  if (!cfg) return cfg;
+  let available = false;
+  try { available = safeStorage?.isEncryptionAvailable?.(); } catch { /* app hazır değil */ }
+  if (!available) return cfg;
+  const out = { ...cfg };
+  for (const f of TOKEN_FIELDS) {
+    if (typeof out[f] === "string" && out[f]) {
+      try {
+        out[f + "Enc"] = safeStorage.encryptString(out[f]).toString("base64");
+        delete out[f];
+      } catch { /* şifrelenemedi — düz bırak */ }
+    }
+  }
+  return out;
+}
+function decryptTokens(cfg) {
+  if (!cfg) return cfg;
+  const out = { ...cfg };
+  for (const f of TOKEN_FIELDS) {
+    const enc = out[f + "Enc"];
+    if (enc && !out[f]) {
+      try { out[f] = safeStorage.decryptString(Buffer.from(enc, "base64")); }
+      catch { /* çözülemedi (örn. başka makinaya kopyalanmış) — alan boş kalır, yeniden giriş gerekir */ }
+    }
+    delete out[f + "Enc"];
+  }
+  return out;
+}
+
 // ── server-config.json yardımcıları ──────────────────────────────────────────
 function loadServerConfig(app) {
   try {
     const p = getServerConfigPath(app);
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+    if (fs.existsSync(p)) return decryptTokens(JSON.parse(fs.readFileSync(p, "utf-8")));
   } catch {}
   return null;
 }
 function saveServerConfig(app, cfg) {
-  try { fs.writeFileSync(getServerConfigPath(app), JSON.stringify(cfg, null, 2), "utf-8"); }
+  try { fs.writeFileSync(getServerConfigPath(app), JSON.stringify(encryptTokens(cfg), null, 2), "utf-8"); }
   catch (err) { console.error("server-config kaydedilemedi:", err); }
 }
 
@@ -36,6 +73,33 @@ function saveData(app, data) {
     fs.renameSync(tmp, p);
     return true;
   } catch (err) { console.error("Veri kaydedilemedi:", err); return false; }
+}
+
+// ── Sunucu verisi yerel önbelleği (istemci modu, salt okunur mod için) ────────
+// Sunucudan başarılı her yüklemede blob buraya yazılır; sunucuya ulaşılamayınca
+// (laptop evde, sunucu kapalı, ağ arızası) uygulama boş açılmak yerine bu
+// önbellekten __fromCache işaretiyle yüklenir ve renderer salt okunur moda geçer.
+const getServerCachePath = (app) => path.join(app.getPath("userData"), "server-cache.json");
+let lastCacheWrite = 0;
+const CACHE_WRITE_MIN_MS = 60000; // blob büyük olabilir — her dataChanged yüklemesinde diske yazma
+
+function writeServerCache(app, blob) {
+  const now = Date.now();
+  if (now - lastCacheWrite < CACHE_WRITE_MIN_MS) return;
+  try {
+    const p = getServerCachePath(app);
+    const tmp = p + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(blob), "utf-8");
+    fs.renameSync(tmp, p);
+    lastCacheWrite = now;
+  } catch (err) { console.error("Sunucu önbelleği yazılamadı:", err); }
+}
+function readServerCache(app) {
+  try {
+    const p = getServerCachePath(app);
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+  } catch (err) { console.error("Sunucu önbelleği okunamadı:", err); }
+  return null;
 }
 
 // ── Event yayını ─────────────────────────────────────────────────────────────
@@ -255,10 +319,15 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
           throw new Error(errMsg);
         }
         const blob = await res.json();
+        writeServerCache(app, blob); // salt okunur mod için son başarılı veri
         return blob;
       } catch (err) {
         console.error("Sunucudan yüklenemedi:", err);
         broadcast("server:error", err.message);
+        // Sunucuya ulaşılamıyor — son başarılı veri önbellekte varsa salt okunur
+        // görüntüleme için onu döndür (renderer __fromCache işaretiyle kilitlenir)
+        const cached = readServerCache(app);
+        if (cached) return { ...cached, __fromCache: true };
         return null;
       }
     }

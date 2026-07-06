@@ -1,18 +1,14 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { logAction } from "../lib/audit";
-import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { withDeleted } from "../lib/utils";
+import { makeCanDo } from "../lib/permissions";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
 export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, serverPermissions = null }, ref) => {
-  const _isAdmin = !serverPermissions || serverPermissions.role === "admin";
-  const _allowedNotActions = _isAdmin ? null : (() => {
-    try { return JSON.parse(serverPermissions?.permissions || "null")?.notActions ?? null; }
-    catch { return null; }
-  })();
-  const canDoNot = action => !_allowedNotActions || _allowedNotActions.includes(action);
+  const canDoNot = makeCanDo(serverPermissions, "notActions");
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState(""); // düzenlenen içerik (kaydet'e kadar geçici)
@@ -125,16 +121,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               );
             })}
           </div>
-          {/* Sayfalama — 5'ten fazla not varsa */}
-          {filtered.length > PER_PAGE && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 10 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}
-                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: safePage <= 1 ? "#f8fafc" : "#fff", color: safePage <= 1 ? "#cbd5e1" : "#475569", cursor: safePage <= 1 ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>‹ Önceki</button>
-              <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{safePage} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}
-                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: safePage >= totalPages ? "#f8fafc" : "#fff", color: safePage >= totalPages ? "#cbd5e1" : "#475569", cursor: safePage >= totalPages ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>Sonraki ›</button>
-            </div>
-          )}
+          <Pagination total={filtered.length} page={safePage} setPage={setPage} perPage={PER_PAGE} />
         </div>
 
         {/* SAĞ: editör */}
