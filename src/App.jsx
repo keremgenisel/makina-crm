@@ -43,7 +43,8 @@ export default function App() {
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
   const [loaded, setLoaded] = useState(false);
-  const [saveTrigger, setSaveTrigger] = useState(0); // her load sonrası save effect'i yeniden tetikler
+  const [saveTrigger, setSaveTrigger] = useState(0); // load sırasında yerel değer sunucuyu ezdiyse save effect'i yeniden tetikler
+  const postLoadNeedsSaveRef = useRef(false); // yükleme, sunucudan farklı yerel veri korudu mu
   const saveTimer = useRef(null);
   const suppressSaveRef = useRef(false); // reload sırasında debounced save'in tetiklenmesini engeller
   const lastAttemptedSaveRef = useRef(null); // çakışmada yerel değişiklikleri birleştirmek için son save datası
@@ -130,6 +131,10 @@ export default function App() {
     mergeNew(setUretimFormlari, "uretimFormlari");
     // Yeni müşteri/makina kayıtları
     mergeNew(setCustomers, "customers");
+    // Yeni teklif/proforma ve fatura kayıtları — bunlar birleştirilmediği için çakışma
+    // anında kullanıcının yeni eklediği teklif sunucu verisiyle ezilip kayboluyordu
+    mergeNew(setTeklifler, "teklifler");
+    mergeNew(setFaturalar, "faturalar");
     // Müşterilerde güncellenen kalıp girdileri (mevcut müşteriye yeni kalıp eklendi)
     setCustomers(prev => prev.map(c => {
       const mc = (myData.customers || []).find(x => x.id === c.id);
@@ -139,12 +144,15 @@ export default function App() {
       if (!nks.length) return c;
       return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
     }));
-    // satisTamam tek yönlüdür (false→true), sunucunun true değerini asla sıfırlama
+    // satisTamam ve deletedAt tek yönlüdür: yereldeki true/silme işaretini sunucu verisi ezmesin
+    // (deletedAt olmadan, kullanıcının sildiği teklif çakışma sonrası geri geliyordu)
     setTeklifler(prev => prev.map(t => {
-      if (t.satisTamam) return t; // sunucu zaten true set etmiş, dokunma
       const mine = (myData.teklifler || []).find(x => x.id === t.id);
-      if (!mine?.satisTamam) return t; // yerel de false veya teklif yok
-      return { ...t, satisTamam: true }; // yerel true ama sunucu false → uygula
+      if (!mine) return t;
+      let out = t;
+      if (mine.satisTamam && !out.satisTamam) out = { ...out, satisTamam: true };
+      if (mine.deletedAt && !out.deletedAt) out = { ...out, deletedAt: mine.deletedAt };
+      return out;
     }));
   };
 
@@ -543,7 +551,13 @@ export default function App() {
       // satisTamam tek yönlüdür — yükleme sırasında yerel true değerini sunucunun false'u ezmesin
       if (Array.isArray(data.teklifler)) setTeklifler(prev => {
         const prevMap = new Map(prev.map(t => [t.id, t]));
-        return data.teklifler.map(t => (prevMap.get(t.id)?.satisTamam && !t.satisTamam) ? { ...t, satisTamam: true } : t);
+        return data.teklifler.map(t => {
+          if (prevMap.get(t.id)?.satisTamam && !t.satisTamam) {
+            postLoadNeedsSaveRef.current = true; // sunucudan farklıyız, yükleme sonrası kaydet
+            return { ...t, satisTamam: true };
+          }
+          return t;
+        });
       });
       if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
       if (Array.isArray(data.partStock)) setPartStock(data.partStock);
@@ -553,11 +567,15 @@ export default function App() {
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
     } catch (err) { console.error(err); } finally {
-      // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver;
-      // saveTrigger artışı save effect'i yeniden tetikler — reload sonrası sadece
-      // satisTamam/flag değişikliği varsa merge state değişikliği üretmez ve save
-      // effect normalde çalışmazdı
-      setTimeout(() => { suppressSaveRef.current = false; setSaveTrigger(n => n + 1); }, 700);
+      // debounce süresi (500ms) geçtikten sonra tekrar normal kaydetmeye izin ver.
+      // saveTrigger SADECE yükleme sırasında sunucu verisi yerel değerle ezildiyse artar
+      // (postLoadNeedsSaveRef) — her yüklemede koşulsuz kaydetmek, kayıt→versiyon artışı→
+      // diğer PC yeniden yükler→o da kaydeder şeklinde iki PC arasında sonsuz döngü
+      // yaratıyor ve kullanıcı kayıtlarını sürekli 409 çakışmasına sokuyordu
+      setTimeout(() => {
+        suppressSaveRef.current = false;
+        if (postLoadNeedsSaveRef.current) { postLoadNeedsSaveRef.current = false; setSaveTrigger(n => n + 1); }
+      }, 700);
     }
   };
 
