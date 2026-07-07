@@ -17,6 +17,8 @@ export const FaturaFormModal = ({
   fetchFaturaRate,
   appSettings,
   allModels,
+  kalipDefs = [],
+  parts = [],
   draftBar = null,
 }) => {
   const fCfg = appSettings?.evrakFormConfig?.fatura;
@@ -122,8 +124,8 @@ export const FaturaFormModal = ({
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f8fafc" }}>
-              {["Model", "Ürün Adı", "Seri No", "Adet", `Birim Fiyat (${faturaForm.currency})`, "Tutar", ""].map((h, i) => (
-                <th key={i} style={{ padding: "6px 8px", textAlign: i >= 3 && i <= 5 ? "center" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+              {["Ürün Seç", "KOD", "Ürün Adı", "Tanım", "Seri No", "Adet", `Birim Fiyat (${faturaForm.currency})`, "Tutar", ""].map((h, i) => (
+                <th key={i} style={{ padding: "6px 8px", textAlign: i >= 5 && i <= 7 ? "center" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -133,33 +135,60 @@ export const FaturaFormModal = ({
               const upd = (patch) => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.map((s, i) => i === idx ? { ...s, ...patch } : s) }));
               return (
                 <tr key={r.id || idx} style={{ borderTop: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "6px 8px", width: 150 }}>
-                    <select value={r.model} onChange={e => {
-                      const modelVal = e.target.value;
-                      const found = allModels.find(m => m.model === modelVal);
-                      upd({ model: modelVal, aciklama: found ? (found.urunAdiEN || found.urunAdi || "") : r.aciklama });
+                  <td style={{ padding: "6px 8px", width: 130 }}>
+                    <select value={r.urunKey || ""} onChange={e => {
+                      const key = e.target.value;
+                      if (!key) { upd({ urunKey: "" }); return; }
+                      const [tip, id] = key.split("::");
+                      // Seçim kod/ad/tanım/resim alanlarını EN öncelikli doldurur; hepsi elle düzenlenebilir
+                      if (tip === "makina") {
+                        const m = allModels.find(x => x.model === id);
+                        if (m) upd({ urunKey: key, urunTip: "makina", model: m.model, aciklama: m.urunAdiEN || m.urunAdi || m.model, tanim: m.tanimEN || m.tanim || "", resim: m.resim || "" });
+                      } else if (tip === "kalip") {
+                        const k = kalipDefs.find(x => x.ad === id);
+                        if (k) upd({ urunKey: key, urunTip: "kalip", model: k.kod || "", aciklama: k.urunAdiEN || k.urunAdi || k.ad, tanim: k.tanimEN || k.tanim || "", resim: k.resim || "" });
+                      } else if (tip === "parca") {
+                        const pt = parts.find(x => String(x.id) === id);
+                        if (pt) upd({ urunKey: key, urunTip: "parca", model: pt.kod || "", aciklama: pt.adEN || pt.ad || "", tanim: pt.tanimEN || pt.tanim || "", resim: pt.resim || "" });
+                      }
                     }} style={{ ...inputStyle, padding: "6px 8px" }}>
                       <option value="">Seçiniz</option>
-                      {allModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
+                      <optgroup label="Makinalar">
+                        {allModels.map(m => <option key={`m${m.model}`} value={`makina::${m.model}`}>{m.model}</option>)}
+                      </optgroup>
+                      <optgroup label="Kalıplar">
+                        {kalipDefs.map(k => <option key={`k${k.id ?? k.ad}`} value={`kalip::${k.ad}`}>{k.ad}</option>)}
+                      </optgroup>
+                      <optgroup label="Parçalar">
+                        {parts.map(pt => <option key={`p${pt.id}`} value={`parca::${pt.id}`}>{pt.ad}</option>)}
+                      </optgroup>
                     </select>
                   </td>
-                  <td style={{ padding: "6px 8px" }}>
+                  <td style={{ padding: "6px 8px", width: 90 }}>
+                    <input value={r.model || ""} onChange={e => upd({ model: e.target.value })}
+                      style={{ ...inputStyle, padding: "6px 8px", fontFamily: "monospace" }} placeholder="KOD" />
+                  </td>
+                  <td style={{ padding: "6px 8px", minWidth: 150 }}>
                     <input value={r.aciklama} onChange={e => upd({ aciklama: e.target.value })}
                       style={{ ...inputStyle, padding: "6px 8px" }} placeholder="Ürün adı (İngilizce)" />
                   </td>
-                  <td style={{ padding: "6px 8px", width: 110 }}>
+                  <td style={{ padding: "6px 8px", minWidth: 150 }}>
+                    <textarea value={r.tanim || ""} onChange={e => upd({ tanim: e.target.value })} rows={2}
+                      style={{ ...inputStyle, padding: "6px 8px", resize: "vertical", fontFamily: "inherit" }} placeholder="Tanım (İngilizce)" />
+                  </td>
+                  <td style={{ padding: "6px 8px", width: 90 }}>
                     <input value={r.seriNo || ""} onChange={e => upd({ seriNo: e.target.value })}
                       style={{ ...inputStyle, padding: "6px 8px" }} placeholder="S/N" />
                   </td>
-                  <td style={{ padding: "6px 8px", width: 64 }}>
+                  <td style={{ padding: "6px 8px", width: 56 }}>
                     <input type="number" min="1" value={r.adet} onChange={e => upd({ adet: e.target.value })}
                       style={{ ...inputStyle, padding: "6px 8px", textAlign: "center" }} />
                   </td>
-                  <td style={{ padding: "6px 8px", width: 140 }}>
+                  <td style={{ padding: "6px 8px", width: 110 }}>
                     <input value={r.birimFiyat} onChange={e => upd({ birimFiyat: e.target.value })}
                       style={{ ...inputStyle, padding: "6px 8px", textAlign: "right" }} placeholder="0" />
                   </td>
-                  <td style={{ padding: "6px 8px", textAlign: "right", width: 120, fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+                  <td style={{ padding: "6px 8px", textAlign: "right", width: 100, fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
                     {tutar > 0 ? tutar.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
                   </td>
                   <td style={{ padding: "6px 8px", width: 32 }}>
@@ -171,7 +200,7 @@ export const FaturaFormModal = ({
             })}
           </tbody>
         </table>
-        <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: [...(p.satirlar || []), { id: uid(), model: "", aciklama: "", seriNo: "", adet: "1", birimFiyat: "" }] }))}
+        <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: [...(p.satirlar || []), { id: uid(), urunKey: "", urunTip: "", model: "", aciklama: "", tanim: "", seriNo: "", adet: "1", birimFiyat: "" }] }))}
           style={{ marginTop: 10, fontSize: 13, color: "#e85d1a", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
           <Icon name="plus" size={13} /> Satır Ekle
         </button>

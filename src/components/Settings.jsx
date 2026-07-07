@@ -12,6 +12,7 @@ import { SettingsServer } from "./settings/SettingsServer";
 import { SettingsMail } from "./settings/SettingsMail";
 import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
+import { SettingsTakip } from "./settings/SettingsTakip";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
 import { SettingsOptimize } from "./settings/SettingsOptimize";
@@ -27,7 +28,7 @@ const SETTINGS_GROUPS = [
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
-  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
 ];
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
@@ -35,7 +36,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
-  rawUretimFormlari = [], setUretimFormlari = null,
+  rawGorusmeler, setGorusmeler, rawUretimFormlari = [], setUretimFormlari = null,
   serverPermissions = null,
 }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
@@ -120,7 +121,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
-          uretimFormlari={rawUretimFormlari}
+          uretimFormlari={rawUretimFormlari} gorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
@@ -165,6 +166,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
+      {settingsTab === "takip" && <SettingsTakip appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "evrak" && <SettingsDocuments appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
@@ -181,7 +183,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
-        />
+         gorusmeler={rawGorusmeler}/>
       )}
 
       {settingsTab === "import" && (
@@ -211,7 +213,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           setTeklifler={setTeklifler} setFaturalar={setFaturalar} setUretimFormlari={setUretimFormlari}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
-        />
+         rawGorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}/>
       )}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}

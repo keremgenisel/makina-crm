@@ -3,7 +3,7 @@ import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSale
 import { makeCanDo } from "../lib/permissions";
 import { StatCard, Modal, Btn } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
@@ -88,14 +88,18 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
   }, [customers, services, partSales, todayStr, factoryName]);
 
-  const donusturBekleyenlar = useMemo(() =>
-    teklifler.filter(t => {
+  const donusturBekleyenlar = useMemo(() => {
+    const bekleyenler = teklifler.filter(t => {
       if (t.durum !== "onaylandi" || t.deletedAt || teklifKullanildiMi(t, customers, partSales)) return false;
       if (!t.customerId) return true; // müşteri bağlanmamış → her zaman göster
       const tur = effectiveTeklifTur(t);
       return tur === "makina" || tur === "parca" || tur === "kalip"; // bağlı + işlem gerektiren tur
-    }),
-  [teklifler, customers, partSales]);
+    });
+    // Teklif + ondan türeyen proforma ikisi birden bekliyorsa yalnız proforma gösterilir
+    // (belge zincirinin son hali); proforma listede yoksa teklif görünmeye devam eder
+    const proformaParentIds = new Set(bekleyenler.filter(t => t.type === "proforma" && t.parentTeklifId).map(t => t.parentTeklifId));
+    return bekleyenler.filter(t => !(t.type !== "proforma" && proformaParentIds.has(t.id)));
+  }, [teklifler, customers, partSales]);
 
   const pendingKaliplarCount = useMemo(() => {
     let count = 0;
@@ -110,6 +114,39 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     return count;
   }, [customers, partSales]);
 
+  // Aranacaklar: takip tarihi gelmiş/geçmiş, tamamlanmamış görüşmeler (F7)
+  const aranacaklar = useMemo(() =>
+    gorusmeler
+      .filter(g => !g.deletedAt && g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr)
+      .sort((a, b) => (a.takipTarihi || "").localeCompare(b.takipTarihi || "")),
+  [gorusmeler, todayStr]);
+
+  // Takip edilecek teklifler: gönderildi durumunda X günden uzun süredir cevapsız (F5)
+  const takipTeklifler = useMemo(() => {
+    const esik = new Date(); esik.setDate(esik.getDate() - (teklifTakipGun || 7));
+    const esikStr = esik.toISOString().slice(0, 10);
+    return teklifler
+      .filter(t => t.type === "teklif" && t.durum === "gonderildi" && !t.deletedAt && !t.takipKapali && t.tarih && t.tarih <= esikStr)
+      .sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
+  }, [teklifler, teklifTakipGun]);
+  const gunFarki = (tarih) => Math.max(0, Math.floor((new Date(todayStr) - new Date(tarih)) / 86400000));
+
+  // Beklenen tahsilat: önümüzdeki 7 gün + gecikenler — tahsil edilmemiş çekler ve açık taksitler (F3+F10)
+  const beklenenTahsilat = useMemo(() => {
+    const limit = new Date(); limit.setDate(limit.getDate() + (tahsilatTakipGun || 7));
+    const limitStr = limit.toISOString().slice(0, 10);
+    const items = [];
+    payments.forEach(p => {
+      if (p.yontem === "Çek" && !p.tahsilEdildi && !p.deletedAt && p.vadeTarihi && p.vadeTarihi <= limitStr)
+        items.push({ key: `cek-${p.id}`, tip: "Çek", customerId: p.customerId, vade: p.vadeTarihi, tutar: p.tutar, currency: p.currency });
+    });
+    customers.forEach(c => (c.odemePlani || []).forEach(r => {
+      if (!r.odemeId && r.vadeTarihi && r.vadeTarihi <= limitStr)
+        items.push({ key: `tk-${c.id}-${r.id}`, tip: "Taksit", customerId: c.id, vade: r.vadeTarihi, tutar: r.tutar, currency: c.currency });
+    }));
+    return items.sort((a, b) => (a.vade || "").localeCompare(b.vade || ""));
+  }, [payments, customers, tahsilatTakipGun]);
+
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
   // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
   const cekRozeti = (customerId) => {
@@ -123,103 +160,21 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
   return (
     <div>
-      {/* Aksiyon gerektiren uyarılar — her zaman 4 kart, eşit boyut */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-          <button onClick={() => setShowDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #dc2626", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: "#dc2626", lineHeight: 1, marginBottom: 6 }}>{borcluCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu Firma</div>
-            </div>
-            <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
-          </button>
-          <button onClick={() => setShowDealerDebtors(true)} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #f59e0b", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: "#f59e0b", lineHeight: 1, marginBottom: 6 }}>{borcluBayiCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Borçlu Bayi/Servis</div>
-            </div>
-            <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
-          </button>
-          <button onClick={onGoWarrantyActive} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #16a34a", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: "#16a34a", lineHeight: 1, marginBottom: 6 }}>{garantiDevamCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Garantisi Devam Eden</div>
-            </div>
-            <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
-          </button>
-          <button onClick={onGoSerialPending} style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "none", borderLeft: "4px solid #0891b2", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: "#0891b2", lineHeight: 1, marginBottom: 6 }}>{seriNoBekleyenCount}</div>
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Seri No Bekleyen</div>
-            </div>
-            <span style={{ color: "#cbd5e1", fontSize: 22 }}>›</span>
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
+      {/* 10 sayı kutusu — 5 üstte, 5 altta (tasarım: revize 2) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
         <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="#e85d1a" onClick={onGoCustomers} />
         <StatCard label="Toplam Bayi"       value={dealers.length}    sub="Görmek için tıkla" color="#3b82f6" onClick={onGoDealers} />
         <StatCard label="Stoktaki Makina"   value={stock.length}      sub="Görmek için tıkla" color="#8b5cf6" onClick={onGoStock} />
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
         <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="#ef4444" onClick={onGoExpired} />
-        {pendingKaliplarCount > 0 && (
-          <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="#7c3aed" onClick={onGoUretim || undefined} />
-        )}
+        <StatCard label="Borçlu Firma"       value={borcluCount}       sub="Görmek için tıkla" color="#dc2626" onClick={() => setShowDebtors(true)} />
+        <StatCard label="Borçlu Bayi/Servis" value={borcluBayiCount}   sub="Görmek için tıkla" color="#f59e0b" onClick={() => setShowDealerDebtors(true)} />
+        <StatCard label="Garantisi Devam Eden" value={garantiDevamCount} sub="Görmek için tıkla" color="#16a34a" onClick={onGoWarrantyActive} />
+        <StatCard label="Seri No Bekleyen"   value={seriNoBekleyenCount} sub="Görmek için tıkla" color="#0891b2" onClick={onGoSerialPending} />
+        <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="#7c3aed" onClick={onGoUretim || undefined} />
       </div>
 
-      {/* Müşteriye Dönüşecek Teklifler */}
-      {donusturBekleyenlar.length > 0 && (
-        <div style={{ background: "#fff7ed", border: "1.5px solid #fed7aa", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <span>⚡</span> İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
-          </div>
-          {donusturBekleyenlar.map(t => {
-            const tur = effectiveTeklifTur(t);
-            const busy     = teklifBusy.has(t.id);
-            const conflict = teklifConflict[t.id];
-            return (
-              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #fed7aa" }}>
-                <div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
-                  <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
-                  {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
-                  <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "#fed7aa", color: "#92400e", fontWeight: 700 }}>
-                    {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
-                  </span>
-                  {conflict && (
-                    <span style={{ fontSize: 11, marginLeft: 10, color: "#b91c1c", fontWeight: 600 }}>
-                      🔒 {conflict} işliyor
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-                  {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
-                      {busy ? "..." : "Müşteri Ekle"}
-                    </Btn>
-                  )}
-                  {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
-                      {busy ? "..." : "Makina Ekle"}
-                    </Btn>
-                  )}
-                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && canCust("cust_kalip_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "#e5e7eb" : "#0891b2", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
-                      {busy ? "..." : "Satışa Dönüştür"}
-                    </Btn>
-                  )}
-                  {(tur === "parca" || tur === "kalip") && !t.customerId && (
-                    <span style={{ fontSize: 11, color: "#b45309", fontWeight: 600 }}>Müşteri bağlayın</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Son Satışlar */}
         <div style={{ background: "#fff", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
           <div style={{ fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>Son Satışlar</div>
@@ -265,6 +220,139 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           {services.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Henüz servis kaydı yok.</div>}
         </div>
       </div>
+
+      {/* Sıra 2: Onaylı Teklifler | Takip Edilecek Teklifler (50/50) */}
+      {(donusturBekleyenlar.length > 0 || takipTeklifler.length > 0) && (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, alignItems: "start" }}>
+      {donusturBekleyenlar.length > 0 && (
+        <div style={{ background: "#fff", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
+          </div>
+          {donusturBekleyenlar.map(t => {
+            const tur = effectiveTeklifTur(t);
+            const busy     = teklifBusy.has(t.id);
+            const conflict = teklifConflict[t.id];
+            return (
+              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
+                  <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
+                  {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
+                  <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "#fed7aa", color: "#92400e", fontWeight: 700 }}>
+                    {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
+                  </span>
+                  {t.type === "proforma" && (
+                    <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>Proforma</span>
+                  )}
+                  {conflict && (
+                    <span style={{ fontSize: 11, marginLeft: 10, color: "#b91c1c", fontWeight: 600 }}>
+                      🔒 {conflict} işliyor
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+                  {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Müşteri Ekle"}
+                    </Btn>
+                  )}
+                  {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Makina Ekle"}
+                    </Btn>
+                  )}
+                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && canCust("cust_kalip_add") && (
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "#e5e7eb" : "#0891b2", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                      {busy ? "..." : "Satışa Dönüştür"}
+                    </Btn>
+                  )}
+                  {(tur === "parca" || tur === "kalip") && !t.customerId && (
+                    <span style={{ fontSize: 11, color: "#b45309", fontWeight: 600 }}>Müşteri bağlayın</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {takipTeklifler.length > 0 && (
+        <div style={{ background: "#fff", borderTop: "3px solid #1d4ed8", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+            Takip Edilecek Teklifler ({takipTeklifler.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· {teklifTakipGun} günden eski, cevapsız</span>
+          </div>
+          {takipTeklifler.map(t => (
+            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{t.firma || "—"}</span>
+                <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8 }}>{t.no || ""}</span>
+                <span style={{ fontSize: 11, color: "#64748b", marginLeft: 6 }}>· {gunFarki(t.tarih)} gün önce gönderildi</span>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {onOpenTeklif && <Btn small variant="ghost" onClick={() => onOpenTeklif(t.id)}>Teklifi Aç</Btn>}
+                {onDismissTakip && <Btn small variant="ghost" onClick={() => onDismissTakip(t)} title="Bu teklif için bir daha hatırlatma">Takipten Kaldır</Btn>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      </div>
+      )}
+
+      {/* Sıra 3: Aranacaklar | Beklenen Tahsilat (50/50) */}
+      {(aranacaklar.length > 0 || beklenenTahsilat.length > 0) && (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, alignItems: "start" }}>
+      {aranacaklar.length > 0 && (
+        <div style={{ background: "#fff", borderTop: "3px solid #7c3aed", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+            Aranacaklar ({aranacaklar.length})
+          </div>
+          {aranacaklar.map(g => {
+            const gecikmeGun = gunFarki(g.takipTarihi);
+            return (
+              <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+                <div style={{ cursor: "pointer", flex: 1 }} onClick={() => goToCustomer(g.customerId)} title="Müşteri detayını aç">
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{custName(g.customerId)}</span>
+                  <span style={{ fontSize: 12, color: "#64748b", marginLeft: 8 }}>{(g.not || "").slice(0, 80)}{(g.not || "").length > 80 ? "…" : ""}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikmeGun > 0 ? "#b91c1c" : "#7c3aed" }}>
+                    {gecikmeGun > 0 ? `${gecikmeGun} gün gecikti` : "bugün"}
+                  </span>
+                </div>
+                {setGorusmeler && canCust("cust_gorusme_add") && (
+                  <Btn small variant="ghost" title="Takibi tamamlandı işaretle"
+                    onClick={() => setGorusmeler(p => p.map(x => x.id === g.id ? { ...x, tamamlandi: true } : x))}>✓</Btn>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {beklenenTahsilat.length > 0 && (
+        <div style={{ background: "#fff", borderTop: "3px solid #16a34a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#15803d", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+            Beklenen Tahsilat ({beklenenTahsilat.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· önümüzdeki {tahsilatTakipGun || 7} gün + gecikenler</span>
+          </div>
+          {beklenenTahsilat.map(item => {
+            const gecikti = item.vade < todayStr;
+            return (
+              <div key={item.key} onClick={() => goToCustomer(item.customerId)} title="Müşteri detayını aç"
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9", cursor: "pointer" }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{custName(item.customerId)}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: item.tip === "Çek" ? "#fef3c7" : "#dbeafe", color: item.tip === "Çek" ? "#92400e" : "#1d4ed8" }}>{item.tip}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikti ? "#b91c1c" : "#15803d" }}>
+                    {gecikti ? `⚠ ${fmtTR(item.vade)} (gecikti)` : fmtTR(item.vade)}
+                  </span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>{fmtCur(item.tutar, item.currency)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      </div>
+      )}
+
 
       {/* Sol alt: döviz kurları · Sağ alt: saat & tarih */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 28, flexWrap: "wrap", gap: 16 }}>

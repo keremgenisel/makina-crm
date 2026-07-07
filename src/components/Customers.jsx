@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction } from "../lib/audit";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan } from "../lib/utils";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -13,6 +13,7 @@ export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
+  gorusmeler = [], setGorusmeler = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
@@ -481,6 +482,9 @@ export const Customers = ({
                         {isCustomer && firmCount[trLower(c.name)] > 1 && (
                           <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                         )}
+                        {isCustomer && taksitGecikmisMi(c) && (
+                          <span style={{ fontSize: 10, fontWeight: 800, background: "#fee2e2", color: "#b91c1c", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠ Taksit Gecikti</span>
+                        )}
                       </div>
                     )}
                     {c.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, maxWidth: 260, wordBreak: "break-word", overflowWrap: "break-word" }}>{c.adres}</div>}
@@ -533,6 +537,7 @@ export const Customers = ({
 
       {detailView && (
         <CustomerDetailModal
+          gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
           detailView={detailView}
           onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
           onSwitchMachine={setDetailViewId}

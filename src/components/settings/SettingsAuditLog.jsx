@@ -6,7 +6,7 @@ const ENTITY_LABELS = {
   musteri: "Müşteri", bayi: "Bayi", servis: "Servis", kalip_satisi: "Kalıp Satışı",
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
-  islem_gecmisi: "İşlem Geçmişi",
+  islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi",

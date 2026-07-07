@@ -8,7 +8,7 @@ import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
 
   const [modal, setModal] = useState(null);
@@ -17,6 +17,14 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
   const { lockLoading: dealerLockLoading, lockConflict: dealerLock, forceAcquire: forceDealerLock } = useLock("dealer", modal?.edit?.id ?? null);
   const [dealerFilter, setDealerFilter] = useState(initialFilter); // all | bayi | anlasmali | borclu
+  // Genel aramadan gelen derin bağlantı: belirli bayinin detayını doğrudan aç
+  useEffect(() => {
+    if (openDetailId == null) return;
+    const d = dealers.find(x => x.id === openDetailId);
+    if (d) setDetailView(d);
+    onOpenDetailConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDetailId, dealers]);
   useEffect(() => { setDealerFilter(initialFilter); }, [initialFilter]);
   const factoryName = factory?.name || "Altuntaş Makina";
 
@@ -217,7 +225,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           { v: "all", l: "Tümü", count: dealers.length },
           { v: "bayi", l: "Bayiler", count: dealers.filter(d => d.bayiMi !== false).length },
           { v: "anlasmali", l: "Anlaşmalı Servisler", count: dealers.filter(d => d.anlasmaliServisMi).length },
-          { v: "borclu", l: "₺ Borçlu", count: dealers.filter(dealerHasDebt).length },
+          { v: "borclu", l: "Borçlu", count: dealers.filter(dealerHasDebt).length },
         ].map(f => (
           <button key={f.v} onClick={() => { setDealerFilter(f.v); setPage(1); }}
             style={{

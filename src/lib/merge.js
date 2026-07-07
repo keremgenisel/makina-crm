@@ -18,7 +18,7 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // - Eklenen müşterilerin sourceStockId'leri toplanır: stok düşümü korunur (yoksa
 //   sunucudan gelen stok listesi satılan makinayı geri diriltir).
 
-export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "uretimFormlari", "faturalar"];
+export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "uretimFormlari", "faturalar"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -47,6 +47,7 @@ export function buildMergePlan(myData, serverData) {
   const remapRef = (map, val) => (map.has(val) ? map.get(val) : val);
   adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
   adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId) }));
+  adds.gorusmeler = adds.gorusmeler.map(g => ({ ...g, customerId: remapRef(maps.customers, g.customerId) }));
   adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
   adds.customers = adds.customers.map(c => ({

@@ -2,16 +2,68 @@ import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
-import { Modal, Pagination, Icon } from "./ui";
+import { Modal, Pagination, Icon, Btn } from "./ui";
+import { buildAylikRaporHtml } from "../lib/printTemplates";
+import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi } from "../lib/utils";
+import { makeCanDo } from "../lib/permissions";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments = [], teklifler = [], serverPermissions = null }) => {
+  const canDoFin = makeCanDo(serverPermissions, "financeActions");
+  // Tarih aralığı pilleri kullanıcı iznine bağlı — izinli aralık listesi
+  const izinliAraliklar = Object.keys(RANGE_LABELS).filter(k => canDoFin("fin_range_" + k));
   const factoryName = factory?.name || "Altuntaş Makina";
   const [range, setRange] = useState("all"); // all | thisMonth | thisYear | lastYear | custom
+  // Aktif aralık izinli değilse ilk izinli aralığa düş (hiç izin yoksa Bu Ay'a)
+  useEffect(() => {
+    if (izinliAraliklar.includes(range)) return;
+    setRange(izinliAraliklar[0] || "thisMonth");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [izinliAraliklar.join(","), range]);
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [moneyVisible, setMoneyVisible] = useState(false);
+  // ── Aylık Faaliyet Raporu (yazdırma önizlemesi / PDF) ──
+  const oncekiAy = (() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
+  const [raporAy, setRaporAy] = useState(oncekiAy);
+  const aylikRapor = () => {
+    const [yil, ay] = raporAy.split("-").map(Number);
+    const ayIci = (t) => t && t.slice(0, 7) === raporAy;
+    const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
+
+    const satislar = customers.filter(c => !c.isResale && ayIci(c.installDate));
+    const satisTutar = {}; satislar.forEach(c => paraEkle(satisTutar, c.currency, c.fabrikaSatisBedeli));
+    const modelMap = {}; satislar.forEach(c => { const k = c.model || "Belirtilmemiş"; modelMap[k] = (modelMap[k] || 0) + 1; });
+
+    const ayOdemeler = payments.filter(p => !p.deletedAt && ayIci(p.tarih));
+    const tahsilatTutar = {}; ayOdemeler.forEach(p => paraEkle(tahsilatTutar, p.currency, p.tutar));
+
+    const borclular = customers.filter(c => customerHasAnyDebt(c, services, partSales, factoryName));
+    const acikBorc = {}; customers.forEach(c => { if (parseMoney(c.kalanBorc) > 0) paraEkle(acikBorc, c.currency, c.kalanBorc); });
+
+    const aySevisler = services.filter(sv => !sv.deletedAt && ayIci(sv.date));
+    const servisTutar = {}; aySevisler.forEach(sv => { paraEkle(servisTutar, sv.currency, sv.servisUcreti); if (!sv.parcaUcretsizMi) paraEkle(servisTutar, sv.parcaCurrency || sv.currency, sv.parcaUcreti); });
+    const servisTipMap = {}; aySevisler.forEach(sv => { const k = sv.type || "Diğer"; servisTipMap[k] = (servisTipMap[k] || 0) + 1; });
+
+    const rapor = {
+      ayEtiketi: new Date(yil, ay - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
+      olusturmaTarihi: new Date().toLocaleDateString("tr-TR"),
+      satisAdet: satislar.length, satisTutar,
+      modelKirilimi: Object.entries(modelMap).sort((a, b) => b[1] - a[1]).map(([model, adet]) => ({ model, adet })),
+      tahsilatAdet: ayOdemeler.length, tahsilatTutar,
+      cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
+      borcluFirma: borclular.length, acikBorc,
+      gecikenCek: payments.filter(p => !p.deletedAt && isCekVadesiGecmis(p)).length,
+      gecikenTaksit: customers.filter(c => taksitGecikmisMi(c)).length,
+      servisAdet: aySevisler.length, servisTutar,
+      servisKirilimi: Object.entries(servisTipMap).map(([tip, adet]) => ({ tip, adet })),
+      teklifAdet: teklifler.filter(t => !t.deletedAt && t.type === "teklif" && ayIci(t.tarih)).length,
+      bekleyenTeklif: teklifler.filter(t => !t.deletedAt && t.type === "teklif" && t.durum === "gonderildi").length,
+    };
+    const html = buildAylikRaporHtml(rapor, factory);
+    if (window.appPrint?.printHtml) window.appPrint.printHtml(html, null, `Aylik-Rapor-${raporAy}.pdf`);
+  };
   const M = v => moneyVisible ? v : "———";
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,
@@ -360,6 +412,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Finans</h2>
+        {canDoFin("fin_rapor") && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
+          <input type="month" value={raporAy} onChange={e => setRaporAy(e.target.value)}
+            style={{ padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc" }} />
+          <Btn small variant="ghost" onClick={aylikRapor} title="Seçili ayın faaliyet raporunu yazdır/PDF kaydet"><Icon name="print" size={13} /> Aylık Rapor</Btn>
+        </div>
+        )}
         <button onClick={() => setMoneyVisible(v => !v)} title={moneyVisible ? "Tutarları gizle" : "Tutarları göster"}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid #e2e8f0", background: moneyVisible ? "#f0fdf4" : "#f8fafc", color: moneyVisible ? "#16a34a" : "#94a3b8", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
           <Icon name={moneyVisible ? "eye" : "eyeOff"} size={15} />
@@ -369,7 +428,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
       {/* Tarih aralığı filtresi */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
-        {Object.entries(RANGE_LABELS).map(([k, l]) => (
+        {Object.entries(RANGE_LABELS).filter(([k]) => izinliAraliklar.includes(k)).map(([k, l]) => (
           <button key={k} onClick={() => setRange(k)}
             style={{ padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
               border: "1px solid", borderColor: range === k ? "#e85d1a" : "#e2e8f0",
@@ -424,7 +483,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
         <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
         <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri (KDV hariç)" />
-        <div onClick={() => setShowAnlasmaliModal(true)} style={{ cursor: "pointer" }} title="Detay için tıklayın">
+        <div onClick={canDoFin("fin_anlasmali_detay") ? () => setShowAnlasmaliModal(true) : undefined} style={{ cursor: "pointer" }} title="Detay için tıklayın">
           <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç) · detay için tıklayın" />
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />

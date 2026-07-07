@@ -23,6 +23,7 @@ export const MachineTimeline = ({
   onDeletePayment,
   onToggleServisOdendi,
   onTogglePartSaleOdendi,
+  onTahsilTaksit = null,
 }) => (
   <div style={{ background: "#f8fafc", borderRadius: 12, padding: "16px 18px" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
@@ -107,6 +108,19 @@ export const MachineTimeline = ({
                       <button onClick={() => onDeletePayment(payment.id)} title="Ödemeyi sil"
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                         <Icon name="trash" size={11} /> Sil
+                      </button>
+                    )}
+                  </>
+                ) : ev.kind === "taksit" && ev.taksit ? (
+                  <>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>{ev.title}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", border: "1px solid", borderColor: ev.taksitGecikti ? "#fecaca" : "#fde68a", background: ev.taksitGecikti ? "#fef2f2" : "#fffbeb", color: ev.taksitGecikti ? "#b91c1c" : "#92400e" }}>
+                      {ev.taksitGecikti ? "⚠ Gecikti" : "Bekliyor"}
+                    </span>
+                    {onTahsilTaksit && canDo("cust_taksit_tahsil") && (
+                      <button onClick={() => onTahsilTaksit(ev.taksit)} title="Taksiti tahsil et (ödeme kaydı oluşturur)"
+                        style={{ fontSize: 11, fontWeight: 700, color: "#15803d", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 6, padding: "2px 10px", cursor: "pointer" }}>
+                        Tahsil Et
                       </button>
                     )}
                   </>

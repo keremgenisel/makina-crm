@@ -278,6 +278,9 @@ export const sumBekleyenCek = (customerId, payments = []) =>
   payments.filter(p => p.customerId === customerId && p.yontem === "Çek" && !p.tahsilEdildi).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
 // Tahsil edilmemiş bir çekin vade tarihi geçmiş mi
 export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi && !!p.vadeTarihi && p.vadeTarihi < today();
+// Ödeme planında vadesi geçmiş açık (tahsil edilmemiş) taksit var mı — satır rozeti ve
+// Dashboard tahsilat takvimi için. Taksit bir ödeme kaydına bağlanınca (odemeId) kapanır.
+export const taksitGecikmisMi = (c) => (c?.odemePlani || []).some(r => !r.odemeId && r.vadeTarihi && r.vadeTarihi < today());
 // Kalan Borç = Ciro - (o makinaya yapılan, alınmış sayılan ödemelerin toplamı). En yakın tam liraya
 // yuvarlanır (KDV yüzdesi tam sayı vermeyince ortaya çıkan kuruş artıkları "borçlu" sayılmasın) ve
 // 0'ın altına düşürülmez — bu uygulamada "fazla ödeme/alacak" diye bir kavram takip edilmiyor.

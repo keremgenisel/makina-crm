@@ -1,4 +1,4 @@
-import { fmtCur } from "../../../lib/utils";
+import { fmtCur, fmtTR } from "../../../lib/utils";
 
 export const PaymentSection = ({
   detailView,
@@ -10,11 +10,15 @@ export const PaymentSection = ({
   detailEkBorcDigerPB,
   detailBekleyenCek,
   detailCekVadesiGecmisVar,
+  detailEnYakinCekVade = "",
+  detailBekleyenTaksit = 0,
+  detailTaksitGecikmisVar = false,
+  detailEnYakinTaksitVade = "",
   detailMainCur,
   detailBorcFromPrevOwner,
 }) => {
   if (!detailView) return null;
-  if (detailCiro === 0 && detailKalanBorcToplam === 0 && detailEkBorcDigerPB.length === 0 && detailBekleyenCek === 0) return null;
+  if (detailCiro === 0 && detailKalanBorcToplam === 0 && detailEkBorcDigerPB.length === 0 && detailBekleyenCek === 0 && detailBekleyenTaksit === 0) return null;
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -64,7 +68,19 @@ export const PaymentSection = ({
         }}>
           {detailCekVadesiGecmisVar
             ? <>Vadesi geçti! {fmtCur(detailBekleyenCek, detailMainCur)} çek tahsil edilmedi.</>
-            : <>{fmtCur(detailBekleyenCek, detailMainCur)} tahsil edilecek çek bekliyor.</>}
+            : <>{fmtCur(detailBekleyenCek, detailMainCur)} tahsil edilecek çek bekliyor{detailEnYakinCekVade ? <> (en yakın vade {fmtTR(detailEnYakinCekVade)})</> : null}.</>}
+        </div>
+      )}
+      {detailBekleyenTaksit > 0 && (
+        <div style={{
+          fontSize: 11.5, fontWeight: 600, borderRadius: 8, padding: "8px 12px", marginTop: 10,
+          color: detailTaksitGecikmisVar ? "#991b1b" : "#92400e",
+          background: detailTaksitGecikmisVar ? "#fef2f2" : "#fffbeb",
+          border: `1px solid ${detailTaksitGecikmisVar ? "#fecaca" : "#fde68a"}`,
+        }}>
+          {detailTaksitGecikmisVar
+            ? <>Vadesi geçti! {fmtCur(detailBekleyenTaksit, detailMainCur)} taksit tahsil edilmedi.</>
+            : <>{fmtCur(detailBekleyenTaksit, detailMainCur)} taksit bekliyor{detailEnYakinTaksitVade ? <> (en yakın vade {fmtTR(detailEnYakinTaksitVade)})</> : null}.</>}
         </div>
       )}
     </div>

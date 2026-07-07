@@ -45,6 +45,9 @@ const Database = require(path.join(root, "node_modules", "better-sqlite3"));
   raw.close();
 }
 
+// Beklenmeyen hata Electron'u açık bırakıp test zaman aşımına yol açmasın
+process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e.message); process.exit(1); });
+
 const dbmod = require(path.join(root, "electron", "db.cjs"));
 dbmod.migrateFromJsonIfNeeded();
 check("sqlite aktif", dbmod.isActive());
@@ -57,23 +60,34 @@ check("audit temizliği: 1 kayıt kaldı", dbmod.getAuditLog({}).total === 1);
 
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
-  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101,
+  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850,
+    odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     kaliplar: [{ ad: "Hamburger", olcu: "10", uretimFormGonder: true, uretimFormId: 77 }] }],
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88 }],
   payments: [], dealers: [{ id: 3, name: "Bayi X" }],
+  gorusmeler: [
+    { id: 7, customerId: 500, tarih: "2026-07-01", tur: "Telefon", not: "Fiyat bekliyor", takipTarihi: "2026-07-10", tamamlandi: false, kullanici: "kerem" },
+    { id: 8, customerId: 500, tarih: "2026-07-02", tur: "Ziyaret", not: "Silinen görüşme", deletedAt: "2026-07-03T10:00:00.000Z" },
+  ],
   stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], notes: [], parts: [],
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
     { id: 102, type: "teklif", no: "T-2", firma: "F2", durum: "taslak", satirlar: [] },
   ],
+  appSettings: { autoBackup: false, teklifTakipGun: 1, tahsilatTakipGun: 14, autoLockMinutes: 5 },
 });
 blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
 check("satisTamam undefined korunur", blob.teklifler.find(t => t.id === 102)?.satisTamam === undefined);
+check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);
 check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales.find(p => p.id === 600); return ps?.teklifId === 101 && ps?.uretimFormGonder === true && ps?.uretimFormId === 88; })());
+check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");
+check("gorusme tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 7); return g?.customerId === 500 && g?.not === "Fiyat bekliyor" && g?.takipTarihi === "2026-07-10" && g?.tamamlandi === false && g?.kullanici === "kerem"; })());
+check("gorusme deletedAt tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 8); return g?.deletedAt === "2026-07-03T10:00:00.000Z" && (blob.gorusmeler || []).find(x => x.id === 7)?.deletedAt == null; })());
+check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
 
 // ── Tablo atlama bütünlüğü ───────────────────────────────────────────────────
 const v2 = { ...JSON.parse(JSON.stringify(blob)), teklifler: blob.teklifler.map(t => t.id === 102 ? { ...t, durum: "gonderildi" } : t) };

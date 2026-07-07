@@ -132,12 +132,20 @@ const GROUPS = [
 
   // ─── SANDIK ETİKETİ ─────────────────────────────────────────────────────────
   { divider: "Sandık Etiketi" },
+  // Etiket her zaman çift dilli basılır: EN / TR yan yana (ör. "FROM / GÖNDEREN").
   { label: "Etiket Alanları", ns: "sandik", keys: [
-    { key: "gonderen", label: "Gönderen Başlığı" },
-    { key: "alici",    label: "Alıcı Başlığı" },
-    { key: "adres",    label: "Adres Etiketi" },
-    { key: "tel",      label: "Telefon Etiketi" },
-    { key: "yetkili",  label: "Yetkili Etiketi" },
+    { key: "baslik",      label: "Başlık" },
+    { key: "gonderen",    label: "Gönderen Başlığı" },
+    { key: "alici",       label: "Alıcı Başlığı" },
+    { key: "varis",       label: "Varış Başlığı" },
+    { key: "model",       label: "Model Etiketi" },
+    { key: "seriNo",      label: "Seri No Etiketi" },
+    { key: "brutKg",      label: "Brüt Kg Etiketi" },
+    { key: "tel",         label: "Telefon Etiketi" },
+    { key: "yetkili",     label: "Yetkili Etiketi" },
+    { key: "kirilabilir", label: "Kırılabilir" },
+    { key: "buTaraf",     label: "Bu Taraf Üstte" },
+    { key: "kuruTutun",   label: "Kuru Tutun" },
   ]},
 
   // ─── MAKİNA RAPORU ──────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { logAction } from "../lib/audit";
@@ -207,6 +207,8 @@ export const Documents = ({
   onDonusturMakina = null,
   onKaydetSatis = null,
   serverPermissions = null,
+  openDocId = null,
+  onDocOpenConsumed = null,
 }) => {
   const effectiveTur = effectiveTeklifTur;
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
@@ -278,9 +280,37 @@ export const Documents = ({
   const setForm = (v) => { if (v === null) teklifDraft.clearDraft(); _setForm(v); };
 
   // ── Yurt Dışı Fatura state ──
+  // Fatura satırlarındaki ürün resimleri de teklifle aynı desenle yönetilir:
+  // kayıtta/taslakta soyulur, form açılırken ve yazdırırken tanımlardan doldurulur
+  const stripFaturaImages = (f) => ({ ...f, satirlar: (f.satirlar || []).map(({ resim, ...r }) => r) });
+  const hydrateFaturaImages = (f) => ({
+    ...f,
+    satirlar: (f.satirlar || []).map(r => {
+      // Eşleşen tanımı bul: resim + Ürün Seç değeri (urunKey) birlikte türetilir.
+      // Böylece proformadan dönüştürülen ve eski kayıtlı satırlarda da seçim dolu gelir.
+      let out = { ...r };
+      const kalip = (r.urunTip === "kalip" || !r.urunTip)
+        ? kalipDefs.find(x => (x.kod && x.kod === r.model) || x.urunAdiEN === r.aciklama || x.ad === r.aciklama)
+        : null;
+      const parca = (r.urunTip === "parca" || (!r.urunTip && !kalip))
+        ? parts.find(x => x.kod && x.kod === r.model)
+        : null;
+      const makina = (r.urunTip === "makina" || (!r.urunTip && !kalip && !parca)) && r.model
+        ? allModels.find(x => x.model === r.model)
+        : null;
+      if (r.urunTip === "kalip" || (!r.urunTip && kalip)) {
+        if (kalip) { out.urunTip = "kalip"; if (!out.urunKey) out.urunKey = `kalip::${kalip.ad}`; if (!out.resim) out.resim = kalip.resim || ""; }
+      } else if (r.urunTip === "parca" || (!r.urunTip && parca)) {
+        if (parca) { out.urunTip = "parca"; if (!out.urunKey) out.urunKey = `parca::${parca.id}`; if (!out.resim) out.resim = parca.resim || ""; }
+      } else if (makina) {
+        out.urunTip = "makina"; if (!out.urunKey) out.urunKey = `makina::${makina.model}`; if (!out.resim) out.resim = makina.resim || "";
+      }
+      return out;
+    }),
+  });
   const [faturaForm, _setFaturaForm] = useState(null);
   const faturaDraftKey = faturaForm ? `fatura:${faturaForm.id ?? "new"}` : null;
-  const faturaDraft = useFormDraft(faturaDraftKey, faturaForm, _setFaturaForm);
+  const faturaDraft = useFormDraft(faturaDraftKey, faturaForm, _setFaturaForm, { stripFn: stripFaturaImages, restoreFn: hydrateFaturaImages });
   const setFaturaForm = (v) => { if (v === null) faturaDraft.clearDraft(); _setFaturaForm(v); };
   const { lockLoading: faturaLockLoading, lockConflict: faturaLock, forceAcquire: forceFaturaLock } = useLock("fatura", faturaForm?.id ?? null);
   const [faturaConfirmDel, setFaturaConfirmDel] = useState(null);
@@ -306,7 +336,7 @@ export const Documents = ({
       sehir: "",
       vatId: "",
       localTaxNo: "",
-      satirlar: [{ id: uid(), model: "", aciklama: "", seriNo: "", adet: "1", birimFiyat: "" }],
+      satirlar: [{ id: uid(), urunKey: "", urunTip: "", model: "", aciklama: "", tanim: "", seriNo: "", adet: "1", birimFiyat: "" }],
       currency: "USD",
       kur: "",
       origin:      fv("origin",      "Türkiye"),
@@ -337,7 +367,7 @@ export const Documents = ({
   const saveFatura = () => {
     if (!faturaForm) return;
     if (!faturaForm.firma.trim()) { showToast("Firma adı girilmedi.", "err"); return; }
-    const entry = { ...faturaForm };
+    const entry = stripFaturaImages({ ...faturaForm }); // resimler kayıtta tutulmaz, kullanım anında doldurulur
     if (!entry.id) { entry.id = uid(); entry.createdAt = today(); }
     setFaturalar(p => {
       const idx = p.findIndex(f => f.id === entry.id);
@@ -375,6 +405,7 @@ export const Documents = ({
     const total = calcFaturaTotal(f);
     const kase = appSettings?.kaseResmi || "";
     const fCfg = appSettings?.evrakFormConfig?.fatura || null;
+    f = hydrateFaturaImages(f); // kayıtta resim yok, yazdırma için doldur
     const html = buildFaturaHtml(f, factory, total, LOGO_B64, kase, appSettings?.translations?.fatura || {}, fCfg);
     if (window.appPrint?.printHtml) {
       window.appPrint.printHtml(html, null, `Invoice-${(f.firma || "").replace(/\s+/g, "-")}-${f.no || f.tarih || ""}.pdf`);
@@ -463,6 +494,18 @@ export const Documents = ({
     setCustSearch("");
   };
 
+  // Genel arama / Dashboard teklif takibi: belirli bir belgeyi doğrudan aç
+  useEffect(() => {
+    if (openDocId == null) return;
+    const t = liveTeklifler.find(x => x.id === openDocId);
+    if (t) {
+      setSubTab(t.type === "proforma" ? "proforma" : "teklif");
+      openEdit(t);
+    }
+    onDocOpenConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDocId, liveTeklifler]);
+
   const convertToProforma = (t) => {
     const existingProforma = liveTeklifler.find(p => p.type === "proforma" && p.parentTeklifId === t.id);
     if (existingProforma) {
@@ -509,14 +552,16 @@ export const Documents = ({
         .filter(item => item.kod || item.makinaAdi || parseMoney(item.birimFiyat) > 0)
         .map(item => ({
           id: String(uid()),
+          urunTip: item.type || "",
           model: item.kod || "",
-          aciklama: [item.makinaAdi, item.tanim].filter(Boolean).join(", "),
+          aciklama: item.makinaAdi || "",
+          tanim: item.tanim || "",
           seriNo: "",
           adet: String(item.miktar || 1),
           birimFiyat: item.birimFiyat || "",
         }))
       );
-    setFaturaForm({
+    setFaturaForm(hydrateFaturaImages({
       ...base,
       parentProformaId: proforma.id,
       firma:      proforma.firma         || "",
@@ -531,7 +576,7 @@ export const Documents = ({
       payment:    proforma.odemeSekli    || base.payment,
       delivery:   [proforma.teslimSekli, proforma.teslimYeri].filter(Boolean).join(" – ") || base.delivery,
       satirlar:   satirlar.length > 0 ? satirlar : base.satirlar,
-    });
+    }));
     setSubTab("fatura");
     if (cur !== "TRY") fetchFaturaRate(cur);
   };
@@ -843,7 +888,7 @@ export const Documents = ({
                         {subTab === "proforma" && canDoEvrak("evrak_proforma_convert") && t.dil === "EN" && (() => {
                           const hasFatura = liveFaturalar.some(f => f.parentProformaId === t.id);
                           return (
-                            <Btn small variant="ghost" onClick={() => !hasFatura && convertToFatura(t)}
+                            <Btn small variant="ghost" onClick={() => convertToFatura(t)}
                               title={hasFatura ? "Fatura oluşturuldu" : "Faturaya Dönüştür"}
                               style={{ color: hasFatura ? "#94a3b8" : "#0369a1", opacity: hasFatura ? 0.5 : 1, cursor: hasFatura ? "default" : "pointer" }}>
                               <Icon name="arrowRight" size={12} />
@@ -926,7 +971,7 @@ export const Documents = ({
                       </td>
                       <td style={{ padding: "10px 12px" }}>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-                          {canDoEvrak("evrak_fatura_edit") && <Btn small variant="ghost" onClick={() => setFaturaForm({ ...fat })}><Icon name="edit" size={12} /></Btn>}
+                          {canDoEvrak("evrak_fatura_edit") && <Btn small variant="ghost" onClick={() => setFaturaForm(hydrateFaturaImages({ ...fat }))}><Icon name="edit" size={12} /></Btn>}
                           {canDoEvrak("evrak_fatura_print") && <Btn small variant="ghost" onClick={() => printFatura(fat)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>}
                           {canDoEvrak("evrak_fatura_delete") && <Btn small variant="danger" onClick={() => setFaturaConfirmDel(fat.id)}><Icon name="trash" size={12} /></Btn>}
                         </div>
@@ -961,6 +1006,8 @@ export const Documents = ({
       {faturaForm && <FaturaFormModal
         faturaForm={faturaForm}
         setFaturaForm={setFaturaForm}
+        kalipDefs={kalipDefs}
+        parts={parts}
         draftBar={<DraftRestoreBar draft={faturaDraft.draft} onRestore={faturaDraft.restoreDraft} onDiscard={faturaDraft.discardDraft} />}
         faturaLock={faturaLock}
         forceFaturaLock={forceFaturaLock}

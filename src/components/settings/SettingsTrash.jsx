@@ -7,9 +7,9 @@ import { Section } from "./Section";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
-  rawTeklifler = [], rawFaturalar = [], rawUretimFormlari = [],
+  rawTeklifler = [], rawFaturalar = [], rawUretimFormlari = [], rawGorusmeler = [],
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
-  setTeklifler, setFaturalar, setUretimFormlari = null,
+  setTeklifler, setFaturalar, setUretimFormlari = null, setGorusmeler = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -86,6 +86,8 @@ export const SettingsTrash = ({
   const purgeFatura = (f) => { setFaturalar?.(p => p.filter(x => x.id !== f.id)); showToast("Fatura kalıcı olarak silindi."); };
   const restoreUretimFormu = (u) => { setUretimFormlari?.(p => p.map(x => x.id === u.id ? { ...x, deletedAt: undefined } : x)); showToast("Üretim formu geri alındı."); };
   const purgeUretimFormu = (u) => { setUretimFormlari?.(p => p.filter(x => x.id !== u.id)); showToast("Üretim formu kalıcı olarak silindi."); };
+  const restoreGorusme = (g) => { setGorusmeler?.(p => p.map(x => x.id === g.id ? { ...x, deletedAt: undefined } : x)); showToast("Görüşme kaydı geri alındı."); };
+  const purgeGorusme = (g) => { setGorusmeler?.(p => p.filter(x => x.id !== g.id)); showToast("Görüşme kaydı kalıcı olarak silindi."); };
   const emptyTrash = () => {
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
@@ -100,6 +102,7 @@ export const SettingsTrash = ({
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
     setUretimFormlari?.(p => p.filter(x => !x.deletedAt));
+    setGorusmeler?.(p => p.filter(x => !x.deletedAt));
     showToast("Çöp kutusu boşaltıldı.");
   };
 
@@ -121,9 +124,10 @@ export const SettingsTrash = ({
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
+    rawGorusmeler.filter(g => g.deletedAt).forEach(g => items.push({ key: `gorusme-${g.id}`, type: "Görüşme", label: `${trashCustomerName(g.customerId)} · ${(g.not || "").slice(0, 50)}`, deletedAt: g.deletedAt, restore: () => restoreGorusme(g), purge: () => purgeGorusme(g) }));
     rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${u.tarih || "—"}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari]);
+  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

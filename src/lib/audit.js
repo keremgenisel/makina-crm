@@ -1,5 +1,7 @@
 let _localUsername = "yerel";
 export function setAuditUsername(name) { _localUsername = name || "yerel"; }
+// Görüşme kayıtları gibi "kim yaptı" alanı taşıyan kayıtlar için — App açılışta config'ten set eder
+export function getAuditUsername() { return _localUsername; }
 
 // Fire-and-forget — hata fırlatmaz, asla UI'ı bloklamaz. Yine de promise'i döndürür ki
 // yazımın tamamlanmasını beklemek isteyen nadir çağıranlar (örn. geçmiş temizleme sonrası

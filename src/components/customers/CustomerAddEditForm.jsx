@@ -422,6 +422,36 @@ export const CustomerAddEditForm = ({
       </Field>
       </div>
 
+      {/* Ödeme planı: taksit vadeleri. Muhasebeye dokunmaz (kalan borç ödemelerden hesaplanır),
+          sadece zamanlama katmanıdır — vadesi geçen açık taksit rozet ve Dashboard uyarısı üretir */}
+      <Field label="Ödeme Planı (isteğe bağlı taksit vadeleri)">
+        {(form.odemePlani || []).map((r, i) => (
+          <div key={r.id ?? i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+            <input type="date" value={r.vadeTarihi || ""} disabled={!!r.odemeId}
+              onChange={e => setForm(p => ({ ...p, odemePlani: p.odemePlani.map((x, xi) => xi === i ? { ...x, vadeTarihi: e.target.value } : x) }))}
+              style={{ padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: r.odemeId ? "#f1f5f9" : "#f8fafc" }} />
+            <div style={{ width: 160 }}>
+              {r.odemeId
+                ? <div style={{ padding: "8px 10px", fontSize: 13, fontWeight: 600, color: "#64748b" }}>{fmtCur(r.tutar, form.currency)}</div>
+                : <MoneyInput value={r.tutar} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, odemePlani: p.odemePlani.map((x, xi) => xi === i ? { ...x, tutar: v } : x) }))} />}
+            </div>
+            {r.odemeId
+              ? <span style={{ fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "3px 8px", borderRadius: 6 }}>✓ Ödendi</span>
+              : <button onClick={() => setForm(p => ({ ...p, odemePlani: p.odemePlani.filter((_, xi) => xi !== i) }))}
+                  style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 15, padding: "0 4px" }} title="Taksiti sil">✕</button>}
+          </div>
+        ))}
+        <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, odemePlani: [...(p.odemePlani || []), { id: Date.now() + Math.random(), vadeTarihi: "", tutar: "", odemeId: null }] }))}>
+          <Icon name="plus" size={12} /> Taksit Ekle
+        </Btn>
+        {(form.odemePlani || []).length > 0 && (
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>
+            Plan toplamı: <b>{fmtCur((form.odemePlani || []).reduce((s, r) => s + parseMoney(r.tutar), 0), form.currency)}</b>.
+            Taksitler kalan borcu değiştirmez; tahsilat, detay görünümündeki "Tahsil Et" ile ödeme kaydına dönüşür.
+          </div>
+        )}
+      </Field>
+
       <Field label="Açıklama">
         <textarea value={form.aciklama || ""} onChange={e => setForm(p => ({ ...p, aciklama: e.target.value }))}
           placeholder="Bu satış / makina ile ilgili açıklama, notlar..."

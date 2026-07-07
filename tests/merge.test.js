@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { buildMergePlan } from "../src/lib/merge";
 import { uid, clearMintedIds, setIdCounter } from "../src/lib/utils";
 
-const bosSunucu = { customers: [], teklifler: [], partSales: [], services: [], payments: [], uretimFormlari: [], faturalar: [] };
+const bosSunucu = { customers: [], teklifler: [], partSales: [], services: [], payments: [], gorusmeler: [], uretimFormlari: [], faturalar: [] };
 const blob = (parcalar) => ({ ...bosSunucu, ...parcalar });
 
 beforeEach(() => {
@@ -76,6 +76,17 @@ describe("buildMergePlan", () => {
     const plan = buildMergePlan(my, bosSunucu);
     expect(plan.adds.customers[0].serialNo).toBe("SN-99");
     expect([...plan.stockDeductIds]).toEqual([77]);
+  });
+
+  it("görüşme kaydı birleştirmede korunur ve customerId remap edilir", () => {
+    const cid = uid();
+    const my = blob({
+      customers: [{ id: cid, name: "Benim", kaliplar: [] }],
+      gorusmeler: [{ id: cid + 5, customerId: cid, tur: "Telefon", not: "ara" }],
+    });
+    const server = blob({ customers: [{ id: cid, name: "Rakip", kaliplar: [] }] });
+    const plan = buildMergePlan(my, server);
+    expect(plan.adds.gorusmeler[0].customerId).toBe(plan.adds.customers[0].id);
   });
 
   it("partSale ID'si yeniden atanınca müşteri kalıbındaki partSaleId da düzeltilir", () => {

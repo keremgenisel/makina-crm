@@ -120,11 +120,25 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
       else if (byNameModel.has(trLower(name) + "|" + trLower(cell(7)))) mevcut = byNameModel.get(trLower(name) + "|" + trLower(cell(7)));
       const cid = mevcut ? mevcut.id : (++idc); // mevcutsa ID'sini koru (güncelle), değilse yeni
       if (mevcut) guncellenecek++;
+      // Ödeme planı (index 32): "gg.aa.yyyy:tutar; gg.aa.yyyy:tutar" çiftleri
+      const planRaw = cell(32);
+      let odemePlani = mevcut?.odemePlani;
+      if (planRaw) {
+        const taksitler = planRaw.split(";").map(x => x.trim()).filter(Boolean).map(pair => {
+          const i2 = pair.indexOf(":");
+          const vd = i2 >= 0 ? pair.slice(0, i2).trim() : pair.trim();
+          const tt = i2 >= 0 ? pair.slice(i2 + 1).trim() : "";
+          return { id: ++idc, vadeTarihi: trDate(vd) || "", tutar: moneyNum(tt), odemeId: null };
+        }).filter(t => t.vadeTarihi || t.tutar);
+        if (taksitler.length) odemePlani = taksitler;
+      }
+      // Brüt kg (index 33): sandık etiketi brüt ağırlığı
+      const brutKg = moneyNum(cell(33)) || mevcut?.brutKg || null;
       newCustomers.push({
         id: cid,
         kalipSayisi: parseInt(cell(0), 10) || kaliplar.length || 1,
         satisYapan: cell(1) || "Altuntaş Makina",
-        name, phone: cell(3), email: mevcut?.email || "",
+        name, phone: cell(3), email: cell(31) || mevcut?.email || "",
         adres: cell(4), country: cell(5) || "Türkiye", city: cell(6),
         model: cell(7), currency, kaliplar,
         ...(kalipCapi ? { kalipCapi } : {}),
@@ -135,6 +149,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         serialNo, aciklama: cell(20),
         yetkili1Ad: cell(27) || mevcut?.yetkili1Ad || "", yetkili1Tel: cell(28) || mevcut?.yetkili1Tel || "",
         yetkili2Ad: cell(29) || mevcut?.yetkili2Ad || "", yetkili2Tel: cell(30) || mevcut?.yetkili2Tel || "",
+        ...(odemePlani ? { odemePlani } : {}),
+        ...(brutKg ? { brutKg } : {}),
         // Seri no boşsa "bekliyor" işareti (sonradan girilmesi için hatırlatma)
         ...(serialNo ? { seriNoBekliyor: false } : { seriNoBekliyor: true }),
         ...(mevcut?.isResale ? { isResale: mevcut.isResale, prevOwners: mevcut.prevOwners } : {}),
@@ -278,7 +294,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
     const ornek = ["2", "Altuntaş Makina", "Örnek Gıda A.Ş.", "0532 000 00 00", "Atatürk Cad. No:1", "Türkiye", "İstanbul",
       "AK140_DSC", "50 x 80 x 115", "TL", "Faturalı Yurtiçi", "Hamburger; Adana Köfte", "15.04.2024", "15.04.2026", "850000", "650000", "0", "25000", "0", "AK140-2026-001", "Örnek kayıt",
       "10.01.2025", "Periyodik bakım yapıldı", "05.06.2025", "Bıçak değişti", "", "",
-      "Ahmet Yılmaz", "0532 111 11 11", "", ""];
+      "Ahmet Yılmaz", "0532 111 11 11", "", "",
+      "ornek@firma.com", "15.05.2024:200000; 15.06.2024:200000", "850"];
     try {
       const XLSX = await import("xlsx");
       const ws = XLSX.utils.aoa_to_sheet([IMPORT_HEADERS, ornek]);

@@ -39,6 +39,23 @@ const kalipTextEN = (c) => {
 };
 
 // ── Varsayılan çeviriler — Servis Formu ──────────────────────────────────────
+// Evrak başlığında logo altındaki firma bilgi bloğu (Ayarlar > Firma Bilgileri'nden gelir):
+// firma adı (kalın), adres, "Şehir, Ülke", telefon · e-posta. Alanlar çağıran tarafından
+// escape edilmiş olmalı (escDeep) — burada tekrar escape edilmez.
+const firmaBlok = (f, nameSize = 13, textSize = 9) => {
+  if (!f) return "";
+  const ad = f.evrakFirmaAdi || f.name || "";
+  const adres = f.adres || f.address || "";
+  const loc = [f.city, f.country].filter(Boolean).join(", ");
+  const iletisim = [f.phone, f.email].filter(Boolean).join("  ·  ");
+  return [
+    ad ? `<div style="font-size:${nameSize}px;font-weight:800;color:#1a1a1a;margin-top:4px;line-height:1.4;">${ad}</div>` : "",
+    adres ? `<div style="font-size:${textSize}px;color:#555;margin-top:2px;line-height:1.5;">${adres}</div>` : "",
+    loc ? `<div style="font-size:${textSize}px;color:#555;">${loc}</div>` : "",
+    iletisim ? `<div style="font-size:${textSize}px;color:#555;">${iletisim}</div>` : "",
+  ].join("");
+};
+
 export const DEFAULT_SERVIS_TRANSLATIONS = {
   TR: {
     title: "Servis Formu",
@@ -211,7 +228,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
 // forEmail: true ise "Teslim Eden"/"Teslim Alan" imza alanları çıkarılır
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {}, kaseResmi = "" } = {}) {
+export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {}, kaseResmi = "", factory = null } = {}) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_SERVIS_TRANSLATIONS[lang] || DEFAULT_SERVIS_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -278,8 +295,9 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 <body>
   <div class="header">
     <div>
-      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block;margin-bottom:4px" />
-      <div class="sub">${esc(L.title)}</div>
+      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block" />
+      ${firmaBlok(factory ? escDeep(factory) : null, 11, 8.5)}
+      <div class="sub" style="margin-top:4px">${esc(L.title)}</div>
     </div>
     <div class="right">
       <div>${esc(L.formNoLabel)} ${esc(String(sv.id))}</div>
@@ -343,11 +361,11 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 }
 
 // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
-export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "") {
+export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "", factory = null) {
   const cust = customers.find(c => c.id === sv.customerId) || {};
   const defaultName = `servis-formu-${(cust.serialNo || cust.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi: "" }));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi })) : null;
+  const htmlPrint = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi: "", factory }));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi, factory })) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;
@@ -365,7 +383,7 @@ export function printServiceForm(sv, customers, kdvRates, translations = {}, kas
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = []) {
+export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_MAKINA_TRANSLATIONS[lang] || DEFAULT_MAKINA_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -429,8 +447,9 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
 <body>
   <div class="header">
     <div>
-      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block;margin-bottom:4px" />
-      <div class="sub">${esc(L.subBaslik)}</div>
+      <img src="${LOGO}" alt="Altuntaş Makina" style="height:34px;display:block" />
+      ${firmaBlok(factory ? escDeep(factory) : null, 11, 8.5)}
+      <div class="sub" style="margin-top:4px">${esc(L.subBaslik)}</div>
     </div>
     <div class="right">
       <div>${esc(L.raporTarihiLabel)} ${todayTR()}</div>
@@ -466,26 +485,47 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
 }
 
 export const DEFAULT_SANDIK_TRANSLATIONS = {
-  TR: { gonderen: "GÖNDEREN:", alici: "ALICI :", adres: "Adres:", tel: "Telefon:", yetkili: "Yetkili:" },
-  EN: { gonderen: "SENDER:", alici: "RECIPIENT:", adres: "Address:", tel: "Phone:", yetkili: "Contact:" },
+  TR: { baslik: "SANDIK ETİKETİ", gonderen: "GÖNDEREN", alici: "ALICI", varis: "VARIŞ", model: "MODEL", seriNo: "SERİ NO", brutKg: "BRÜT KG", tel: "Tel", yetkili: "Yetkili", kirilabilir: "KIRILABİLİR", buTaraf: "BU TARAF ÜSTTE", kuruTutun: "KURU TUTUN" },
+  EN: { baslik: "PACKING LABEL", gonderen: "FROM", alici: "TO", varis: "DESTINATION", model: "MODEL", seriNo: "SERIAL NO", brutKg: "GROSS KG", tel: "Tel", yetkili: "Contact", kirilabilir: "FRAGILE", buTaraf: "THIS SIDE UP", kuruTutun: "KEEP DRY" },
 };
 
-// Sandık Üstü Etiketi — A4 HTML
-export function buildSandikEtiketiHtml(gonderen, alici, lang = "TR", translations = {}) {
+// Sandık Üstü Etiketi — A4, her zaman çift dilli (EN / TR): FROM / GÖNDEREN, TO / ALICI,
+// dev DESTINATION / VARIŞ bandı, MODEL · SERIAL NO · elle doldurulan GROSS KG şeridi,
+// altta standart taşıma işaretleri (kırılabilir / bu taraf üstte / kuru tutun).
+export function buildSandikEtiketiHtml(gonderen, alici, translations = {}) {
   const g = gonderen || {};
   const a = alici || {};
-  const isTR = lang !== "EN";
-  const def = isTR ? DEFAULT_SANDIK_TRANSLATIONS.TR : DEFAULT_SANDIK_TRANSLATIONS.EN;
-  const saved = isTR ? (translations?.TR || {}) : (translations?.EN || {});
-  const L = { ...def, ...saved };
-  const konum = [a.city, a.country].filter(Boolean).join(" / ");
-  const aliciRows = [];
-  if (a.adres || konum) aliciRows.push({ label: L.adres, val: [a.adres, konum].filter(Boolean).map(esc).join(" / ") });
-  if (a.tel) aliciRows.push({ label: L.tel, val: esc(a.tel) });
-  if (a.yetkili1Ad) aliciRows.push({ label: L.yetkili, val: esc(a.yetkili1Ad) });
-  if (a.yetkili1Tel) aliciRows.push({ label: L.tel, val: esc(a.yetkili1Tel) });
-  if (a.yetkili2Ad) aliciRows.push({ label: L.yetkili, val: esc(a.yetkili2Ad) });
-  if (a.yetkili2Tel) aliciRows.push({ label: L.tel, val: esc(a.yetkili2Tel) });
+  const LTR = { ...DEFAULT_SANDIK_TRANSLATIONS.TR, ...(translations?.TR || {}) };
+  const LEN = { ...DEFAULT_SANDIK_TRANSLATIONS.EN, ...(translations?.EN || {}) };
+  // Çift dilli etiket: "EN / TR". İki dilde aynıysa (MODEL gibi) tek yazılır; eski
+  // kayıtlı çevirilerdeki sondaki ":" temizlenir.
+  const bi = (k) => {
+    const en = String(LEN[k] || "").replace(/\s*:\s*$/, "").trim();
+    const tr = String(LTR[k] || "").replace(/\s*:\s*$/, "").trim();
+    if (!en) return tr;
+    if (!tr || en.toLocaleLowerCase("tr-TR") === tr.toLocaleLowerCase("tr-TR")) return en;
+    return `${en} / ${tr}`;
+  };
+  // Varış: şehir dev; ülke yurtdışıysa İngilizce adıyla (nakliyeci için), yurtiçiyse Türkçe.
+  const sehir = String(a.city || "").toLocaleUpperCase("tr-TR");
+  const ulkeAd = (a.country && a.country !== "Türkiye" && COUNTRY_EN[a.country]) ? COUNTRY_EN[a.country] : (a.country || "");
+  const ulke = String(ulkeAd).toLocaleUpperCase("tr-TR");
+  const bosluk = "___________";
+  const gonderenSatirlar = [
+    g.adres ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.adres)}</div>` : "",
+    (g.city || g.country) ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc([g.city, g.country].filter(Boolean).join(", "))}</div>` : "",
+    g.tel ? `<div style="font-size:9pt;color:#333;line-height:1.55;"><b>${bi("tel")}:</b> ${esc(g.tel)}</div>` : "",
+    g.email ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.email)}</div>` : "",
+  ].join("");
+  const aliciSatirlar = [
+    a.adres ? `<div style="font-size:10pt;line-height:1.6;">${esc(a.adres)}</div>` : "",
+    a.tel ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("tel")}:</b> ${esc(a.tel)}</div>` : "",
+    a.yetkili1Ad ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("yetkili")}:</b> ${esc(a.yetkili1Ad)}${a.yetkili1Tel ? " · " + esc(a.yetkili1Tel) : ""}</div>` : "",
+    a.yetkili2Ad ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("yetkili")}:</b> ${esc(a.yetkili2Ad)}${a.yetkili2Tel ? " · " + esc(a.yetkili2Tel) : ""}</div>` : "",
+  ].join("");
+  const ikonKirilabilir = `<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8"><path d="M8 3h8l-1.5 6a2.5 2.5 0 0 1-5 0L8 3z"/><path d="M12 11v8M8 21h8"/></svg></div>`;
+  const ikonBuTaraf = `<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8"><path d="M7 21V9M7 9l-3 3M7 9l3 3M17 21V9M17 9l-3 3M17 9l3 3"/></svg></div>`;
+  const ikonKuru = `<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8"><path d="M4 12a8 8 0 0 1 16 0H4z"/><path d="M12 12v6a2 2 0 0 1-4 0M12 4V2"/></svg></div>`;
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -493,38 +533,66 @@ export function buildSandikEtiketiHtml(gonderen, alici, lang = "TR", translation
 <title>Sandık Etiketi</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; padding: 18mm 20mm; }
-  @media print { @page { margin: 0; size: A4 portrait; } body { padding: 18mm 20mm; } }
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; }
+  .page { border: 1.6mm solid #000; margin: 10mm; height: 277mm; display: flex; flex-direction: column; }
+  .kutuBaslik { font-size: 8.5pt; font-weight: 900; letter-spacing: 2px; background: #eee; padding: 1.8mm 4.5mm; border-bottom: 0.4mm solid #000; }
+  .ic { width: 12mm; height: 12mm; border: 0.6mm solid #000; display: flex; align-items: center; justify-content: center; }
+  .ic svg { width: 8mm; height: 8mm; }
+  @media print { @page { margin: 0; size: A4 portrait; } .page { margin: 10mm; } }
 </style>
 </head>
 <body>
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16mm;">
-    <tr>
-      <td valign="top">
-        <div style="font-size:13pt;font-weight:900;letter-spacing:1px;margin-bottom:8mm;">${L.gonderen}</div>
-        ${g.ad ? `<div style="font-size:12pt;font-weight:700;margin-bottom:3px;">${esc(g.ad)}</div>` : ""}
-        ${g.adres ? `<div style="font-size:10pt;color:#444;line-height:1.5;margin-bottom:3px;"><b>${L.adres}</b> ${esc(g.adres)}</div>` : ""}
-        ${g.tel ? `<div style="font-size:10pt;color:#444;"><b>${L.tel}</b> ${esc(g.tel)}</div>` : ""}
-      </td>
-      <td align="right" valign="top" style="padding-left:10mm;">
-        <img src="${LOGO}" alt="Logo" style="height:80px;display:block;margin-left:auto;">
-      </td>
-    </tr>
-  </table>
-  <hr style="border:none;border-top:2px solid #000;margin-bottom:16mm;">
-  <div style="font-size:13pt;font-weight:900;letter-spacing:1px;margin-bottom:8mm;">${L.alici}</div>
-  <div style="font-size:28pt;font-weight:900;color:#e85d1a;margin-bottom:6mm;line-height:1.15;">${esc(a.firmaAdi || "—")}</div>
-  ${aliciRows.map(r => `<div style="font-size:16pt;color:#e85d1a;margin-bottom:4mm;line-height:1.3;"><b>${r.label}</b> ${r.val}</div>`).join("")}
+<div class="page">
+  <div style="display:flex;border-bottom:1.6mm solid #000;">
+    <div style="flex:1;padding:5mm 6mm;display:flex;align-items:center;">
+      <img src="${LOGO}" alt="Logo" style="height:60px;object-fit:contain;display:block;">
+    </div>
+    <div style="width:62mm;border-left:1.6mm solid #000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;">
+      <div style="font-size:11pt;font-weight:900;letter-spacing:1.5px;">${esc(LEN.baslik)}</div>
+      <div style="font-size:11pt;font-weight:900;letter-spacing:1.5px;margin-top:1.5mm;">${esc(LTR.baslik)}</div>
+    </div>
+  </div>
+  <div style="display:flex;border-bottom:1mm solid #000;">
+    <div style="flex:1;border-right:1mm solid #000;display:flex;flex-direction:column;">
+      <div class="kutuBaslik">${bi("gonderen")}</div>
+      <div style="padding:3mm 4.5mm;">
+        ${g.ad ? `<div style="font-size:11pt;font-weight:800;margin-bottom:1.5mm;">${esc(g.ad)}</div>` : ""}
+        ${gonderenSatirlar}
+      </div>
+    </div>
+    <div style="flex:1.3;display:flex;flex-direction:column;">
+      <div class="kutuBaslik">${bi("alici")}</div>
+      <div style="padding:3mm 4.5mm;">
+        <div style="font-size:15pt;font-weight:900;margin-bottom:1.5mm;">${esc(a.firmaAdi || "—")}</div>
+        ${aliciSatirlar}
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1mm solid #000;text-align:center;padding:5mm;overflow:hidden;">
+    <div style="font-size:10pt;font-weight:900;letter-spacing:3px;color:#555;">${bi("varis")}</div>
+    ${sehir ? `<div style="font-size:${sehir.length > 14 ? "34pt" : "50pt"};font-weight:900;line-height:1.05;margin-top:4mm;overflow-wrap:anywhere;">${esc(sehir)}</div>` : ""}
+    ${ulke ? `<div style="font-size:20pt;font-weight:800;letter-spacing:${ulke.length > 14 ? "2px" : "7px"};margin-top:2.5mm;overflow-wrap:anywhere;">${esc(ulke)}</div>` : ""}
+  </div>
+  <div style="display:flex;border-bottom:1mm solid #000;text-align:center;">
+    <div style="flex:1.3;padding:2.5mm;border-right:0.4mm solid #000;"><div style="color:#666;font-size:7.5pt;font-weight:800;letter-spacing:1px;">${bi("model")}</div><div style="font-size:11pt;font-weight:800;margin-top:1mm;">${a.model ? esc(a.model) : bosluk}</div></div>
+    <div style="flex:1.3;padding:2.5mm;border-right:0.4mm solid #000;"><div style="color:#666;font-size:7.5pt;font-weight:800;letter-spacing:1px;">${bi("seriNo")}</div><div style="font-size:11pt;font-weight:800;margin-top:1mm;">${a.serialNo ? esc(a.serialNo) : bosluk}</div></div>
+    <div style="flex:1;padding:2.5mm;"><div style="color:#666;font-size:7.5pt;font-weight:800;letter-spacing:1px;">${bi("brutKg")}</div><div style="font-size:11pt;font-weight:800;margin-top:1mm;">${a.brutKg ? esc(String(a.brutKg)) : bosluk}</div></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8mm;padding:3.5mm;">
+    <div style="display:flex;gap:4mm;">${ikonKirilabilir}${ikonBuTaraf}${ikonKuru}</div>
+    <div style="font-size:8pt;color:#444;line-height:1.6;">${bi("kirilabilir")} &nbsp;·&nbsp; ${bi("buTaraf")} &nbsp;·&nbsp; ${bi("kuruTutun")}</div>
+  </div>
+</div>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</script>
 </body>
 </html>`;
 }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = []) {
+export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts)) : null;
+  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts, factory));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts, factory)) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;
@@ -699,6 +767,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
 
   const companyName = f.evrakFirmaAdi || f.name || "ALTUNTAŞ MAKİNA SANAYİ";
   const companyAddr = f.adres || "Topçular mah. Keresteciler sit. İşgören sok. No:33/2-3 Eyüp / İSTANBUL";
+  const companyLoc = [f.city, f.country].filter(Boolean).join(", "); // Şehir, Ülke sırası
   const companyPhone = f.phone || "";
   const companyEmail = f.email || "";
 
@@ -708,10 +777,8 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
     <tr>
       <td style="vertical-align:top;padding-right:20px;">
-        ${!enProforma ? `<img src="${LOGO}" style="height:56px;object-fit:contain;display:block;" alt="logo" />` : ""}
-        <div style="font-size:${enProforma ? "13px;font-weight:800;color:#1a1a1a" : "9px;color:#555"};margin-top:${enProforma ? "0" : "4px"};line-height:1.5;">${enProforma ? companyName : companyAddr}</div>
-        ${!enProforma && [companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:9px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
-        ${enProforma ? `<div style="font-size:9px;color:#555;margin-top:3px;line-height:1.5;">${companyAddr}</div>${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:9px;color:#555;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}` : ""}
+        <img src="${LOGO}" style="height:56px;object-fit:contain;display:block;" alt="logo" />
+        ${firmaBlok({ name: companyName, adres: companyAddr, city: f.city, country: f.country, phone: companyPhone, email: companyEmail })}
       </td>
       <td style="text-align:right;vertical-align:middle;white-space:nowrap;">
         <div style="display:inline-block;background:${BRAND};color:#fff;padding:7px 16px;border-radius:6px;text-align:center;">
@@ -811,6 +878,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
           <div style="padding:10px 12px;">
             <div style="font-weight:700;font-size:11px;margin-bottom:4px;">${companyName}</div>
             ${companyAddr ? `<div style="font-size:9.5px;color:#475569;line-height:1.7;">${companyAddr}</div>` : ""}
+            ${companyLoc ? `<div style="font-size:9.5px;color:#475569;">${companyLoc}</div>` : ""}
             ${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:9px;color:#64748b;margin-top:4px;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
           </div>
         </div>
@@ -1080,10 +1148,12 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
     const tutar = adet * fiyat;
     const desc = r.aciklama || "";
     const modelCode = r.model ? `<b style="font-family:monospace;font-size:9px;">${r.model}</b>${desc ? "<br>" : ""}` : "";
+    const tanimHtml = r.tanim ? `<div style="font-size:8.5px;color:#64748b;line-height:1.5;margin-top:2px;">${String(r.tanim).replace(/\n/g, "<br>")}</div>` : "";
+    const resimHtml = r.resim ? `<img src="${r.resim}" style="width:60px;height:45px;object-fit:contain;display:block;margin:4px 0;border-radius:4px;border:1px solid #e8ecf0;">` : "";
     const bg = i % 2 === 0 ? "#fff" : "#f8fafc";
     return `<tr style="background:${bg};">
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;color:#888;font-size:9.5px;">${i + 1}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;">${modelCode}${desc}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;">${resimHtml}${modelCode}${desc}${tanimHtml}</td>
       ${hasSeriNo ? `<td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;font-family:monospace;font-size:9.5px;">${r.seriNo || "—"}</td>` : ""}
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;">${r.adet || 1}</td>
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;">${cur} ${fmt2(fiyat)}</td>
@@ -1099,7 +1169,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
   const packingText = packingParts.join(" / ");
 
   const logo = logoB64 ? `<img src="${logoB64}" style="height:56px;object-fit:contain;" alt="logo">` : "";
-  const fromLines = [f.evrakFirmaAdi || f.name || "Altuntaş Makina", f.adres || f.address || "", [f.country, f.city].filter(Boolean).join(", "), f.phone || "", f.email || ""].filter(Boolean).join("<br>");
+  const fromLines = [f.evrakFirmaAdi || f.name || "Altuntaş Makina", f.adres || f.address || "", [f.city, f.country].filter(Boolean).join(", "), f.phone || "", f.email || ""].filter(Boolean).join("<br>");
   const toLines = [
     fatura.firma || "—",
     !isH("alici", "adres") && fatura.adres ? fatura.adres.replace(/\n/g, "<br>") : "",
@@ -1130,7 +1200,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
   </style></head><body>
   <table style="width:100%;margin-bottom:16px;">
     <tr>
-      <td style="vertical-align:top;">${logo}</td>
+      <td style="vertical-align:top;">${logo}${firmaBlok(f, 12)}</td>
       <td style="text-align:right;vertical-align:top;">
         <div style="font-size:22px;font-weight:900;letter-spacing:2px;color:#1a1a1a;">${L.title}</div>
         <div style="margin-top:4px;font-size:10px;">
@@ -1148,7 +1218,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
           <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">${L.fromLabel}</div>
           <div style="padding:10px 12px;">
             <div style="font-weight:700;font-size:11px;margin-bottom:4px;">${f.evrakFirmaAdi || f.name || ""}</div>
-            ${[f.adres || f.address || "", [f.country, f.city].filter(Boolean).join(", ")].filter(Boolean).length ? `<div style="font-size:9.5px;color:#475569;line-height:1.7;">${[f.adres || f.address || "", [f.country, f.city].filter(Boolean).join(", ")].filter(Boolean).join("<br>")}</div>` : ""}
+            ${[f.adres || f.address || "", [f.city, f.country].filter(Boolean).join(", ")].filter(Boolean).length ? `<div style="font-size:9.5px;color:#475569;line-height:1.7;">${[f.adres || f.address || "", [f.city, f.country].filter(Boolean).join(", ")].filter(Boolean).join("<br>")}</div>` : ""}
             ${[f.phone, f.email].filter(Boolean).length ? `<div style="font-size:9px;color:#64748b;margin-top:4px;">${[f.phone, f.email].filter(Boolean).join("  ·  ")}</div>` : ""}
           </div>
         </div>
@@ -1207,4 +1277,54 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
     </tr>
   </table>
   </body></html>`;
+}
+
+// ── Aylık Faaliyet Raporu ─────────────────────────────────────────────────────
+// Finance.jsx hesaplanmış özet verir; burada yalnızca sunum yapılır (escDeep ile güvenli)
+export function buildAylikRaporHtml(rapor, factory) {
+  rapor = escDeep(rapor); factory = escDeep(factory);
+  const paraSatir = (obj) => Object.entries(obj || {}).filter(([, v]) => v > 0)
+    .map(([cur, v]) => `${v.toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ${cur}`).join(" + ") || "—";
+  const kutu = (baslik, icerik) => `
+    <div style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;">
+      <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 12px;">${baslik}</div>
+      <div style="padding:10px 12px;">${icerik}</div>
+    </div>`;
+  const st = (label, deger) => `<tr><td style="padding:3px 8px 3px 0;color:#64748b;font-size:11px;">${label}</td><td style="padding:3px 0;font-weight:700;font-size:12px;">${deger}</td></tr>`;
+
+  const modelRows = (rapor.modelKirilimi || []).map(m =>
+    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${m.model}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${m.adet}</td></tr>`).join("");
+  const servisRows = (rapor.servisKirilimi || []).map(x =>
+    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.tip}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet}</td></tr>`).join("");
+
+  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
+<title>Aylık Rapor ${rapor.ayEtiketi}</title>
+<style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}</style>
+</head><body>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:16px;">
+    <div>
+      <div style="font-size:18px;font-weight:800;">Aylık Faaliyet Raporu</div>
+      <div style="font-size:13px;color:#475569;">${rapor.ayEtiketi}</div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#64748b;">
+      <div style="font-weight:700;font-size:13px;color:#1a1a1a;">${factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina"}</div>
+      ${factory?.adres ? `<div>${factory.adres}</div>` : ""}
+      ${[factory?.city, factory?.country].filter(Boolean).length ? `<div>${[factory?.city, factory?.country].filter(Boolean).join(", ")}</div>` : ""}
+      ${[factory?.phone, factory?.email].filter(Boolean).length ? `<div>${[factory?.phone, factory?.email].filter(Boolean).join("  ·  ")}</div>` : ""}
+      <div>Oluşturma: ${rapor.olusturmaTarihi}</div>
+    </div>
+  </div>
+
+  ${kutu("SATIŞLAR", `<table>${st("Satılan makina", rapor.satisAdet + " adet")}${st("Satış tutarı", paraSatir(rapor.satisTutar))}</table>
+    ${modelRows ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">MODEL KIRILIMI</div><table>${modelRows}</table>` : ""}`)}
+
+  ${kutu("TAHSİLAT", `<table>${st("Alınan ödeme", rapor.tahsilatAdet + " kayıt")}${st("Tahsilat tutarı", paraSatir(rapor.tahsilatTutar))}${st("Tahsil edilen çek", rapor.cekTahsilAdet + " adet")}</table>`)}
+
+  ${kutu("ALACAK DURUMU (dönem sonu)", `<table>${st("Borçlu firma", rapor.borcluFirma + " firma")}${st("Açık makina borcu", paraSatir(rapor.acikBorc))}${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}</table>`)}
+
+  ${kutu("SERVİS", `<table>${st("Servis kaydı", rapor.servisAdet + " adet")}${st("Ücretli servis tutarı", paraSatir(rapor.servisTutar))}</table>
+    ${servisRows ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">TİP KIRILIMI</div><table>${servisRows}</table>` : ""}`)}
+
+  ${kutu("TEKLİFLER", `<table>${st("Ay içinde verilen teklif", rapor.teklifAdet + " adet")}${st("Cevap bekleyen toplam teklif", rapor.bekleyenTeklif + " adet")}</table>`)}
+</body></html>`;
 }

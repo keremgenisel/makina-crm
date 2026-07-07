@@ -38,8 +38,18 @@ CREATE TABLE IF NOT EXISTS customers (
   kalip TEXT, kalipSayisi INTEGER, extraKalipFiyati TEXT, deletedAt TEXT,
   bantlar TEXT,
   konveyorSacId TEXT, bantSecimiId TEXT, sourceStockId INTEGER,
-  fromTeklifId INTEGER
+  fromTeklifId INTEGER,
+  odemePlani TEXT,
+  brutKg REAL
 );
+
+CREATE TABLE IF NOT EXISTS gorusmeler (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER REFERENCES customers(id),
+  tarih TEXT, tur TEXT, notField TEXT,
+  takipTarihi TEXT, tamamlandi INTEGER, kullanici TEXT, deletedAt TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_gorusmeler_customer ON gorusmeler(customer_id);
 
 CREATE TABLE IF NOT EXISTS customer_kaliplar (
   id INTEGER PRIMARY KEY,
@@ -122,7 +132,8 @@ CREATE TABLE IF NOT EXISTS teklifler (
   teslimYeri TEXT, gtipNo TEXT,
   durum TEXT, createdAt TEXT, deletedAt TEXT,
   parentTeklifId INTEGER,
-  satisTamam INTEGER, tur TEXT, country TEXT, city TEXT, modelYiliDegeri TEXT, customFieldValues TEXT
+  satisTamam INTEGER, tur TEXT, country TEXT, city TEXT, modelYiliDegeri TEXT, customFieldValues TEXT,
+  takipKapali INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT);
@@ -220,7 +231,11 @@ const CUSTOMERS_FROM_TEKLIF_COLUMN = [["fromTeklifId", "INTEGER"]];
 // Üretim formu takibi: kalıp/parça satırının üretim formuna gönderilme işareti ve bağlandığı form
 const PART_SALES_TEKLIF_URETIM_COLUMNS = [["teklifId", "INTEGER"], ["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
 const KALIPLAR_URETIM_COLUMNS = [["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
+// Ödeme planı (taksit vadeleri, JSON) ve teklif takip hatırlatmasından çıkarma işareti
+const CUSTOMERS_ODEME_PLANI_COLUMN = [["odemePlani", "TEXT"]];
+const TEKLIFLER_TAKIP_COLUMN = [["takipKapali", "INTEGER"]];
 const CUSTOMERS_BANTLAR_COLUMN = [["bantlar", "TEXT"]];
+const CUSTOMERS_BRUT_KG_COLUMN = [["brutKg", "REAL"]]; // sandık etiketi brüt ağırlık
 const CUSTOMERS_PART_SECIMLERI_COLUMNS = [["konveyorSacId", "TEXT"], ["bantSecimiId", "TEXT"]];
 const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
@@ -228,6 +243,8 @@ const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
 const APP_SETTINGS_AUTOLOCK_COLUMN = [["autoLockMinutes", "INTEGER"]];
+// Takip süreleri: teklif hatırlatma eşiği ve beklenen tahsilat penceresi (gün) — Ayarlar > Tanımlar > Takip Süreleri
+const APP_SETTINGS_TAKIP_COLUMNS = [["teklifTakipGun", "INTEGER"], ["tahsilatTakipGun", "INTEGER"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -239,7 +256,7 @@ const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari"];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "teklifler", "faturalar"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -272,11 +289,11 @@ function populateAll(conn, data, skip = new Set()) {
     INSERT INTO customers (id, name, phone, email, adres, city, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
-      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId)
+      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg)
     VALUES (@id, @name, @phone, @email, @adres, @city, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
-      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId)
+      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order, uretimFormGonder, uretimFormId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -286,6 +303,7 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM services`).run();
     conn.prepare(`DELETE FROM part_sales`).run();
     conn.prepare(`DELETE FROM payments`).run();
+    conn.prepare(`DELETE FROM gorusmeler`).run();
     conn.prepare(`DELETE FROM customer_kaliplar`).run();
     conn.prepare(`DELETE FROM customers`).run();
     for (const c of data.customers) {
@@ -305,6 +323,8 @@ function populateAll(conn, data, skip = new Set()) {
         bantSecimiId: c.bantSecimiId ?? null,
         sourceStockId: c.sourceStockId ?? null,
         fromTeklifId: c.fromTeklifId ?? null,
+        odemePlani: json(c.odemePlani ?? []),
+        brutKg: c.brutKg ?? null,
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx, toInt(k.uretimFormGonder), k.uretimFormId ?? null);
@@ -357,6 +377,14 @@ function populateAll(conn, data, skip = new Set()) {
     const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const p of data.payments) {
       stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null, p.deletedAt ?? null);
+    }
+  }
+
+  if (Array.isArray(data.gorusmeler) && !skip.has("gorusmeler")) {
+    conn.prepare(`DELETE FROM gorusmeler`).run();
+    const stmt = conn.prepare(`INSERT INTO gorusmeler (id, customer_id, tarih, tur, notField, takipTarihi, tamamlandi, kullanici, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const g of data.gorusmeler) {
+      stmt.run(g.id, g.customerId ?? null, g.tarih ?? null, g.tur ?? null, g.not ?? null, g.takipTarihi ?? null, toInt(g.tamamlandi), g.kullanici ?? null, g.deletedAt ?? null);
     }
   }
 
@@ -416,9 +444,9 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
     conn.prepare(`DELETE FROM teklifler`).run();
-    const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId, satisTamam, tur, country, city, modelYiliDegeri, customFieldValues) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId, satisTamam, tur, country, city, modelYiliDegeri, customFieldValues, takipKapali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const t of data.teklifler) {
-      stmt.run(t.id, t.type ?? null, t.no ?? null, t.tarih ?? null, t.dil ?? null, t.currency ?? null, t.customerId ?? null, t.firma ?? null, t.yetkili ?? null, t.tel ?? null, t.vergiNo ?? null, t.vergiDairesi ?? null, t.adres ?? null, t.email ?? null, t.authority ?? null, t.forwarder ?? null, json(t.satirlar ?? []), t.iskonto ?? null, t.kdvOrani ?? null, t.odemeSekli ?? null, t.teslimSekli ?? null, t.teslimSuresi ?? null, t.teslimTarihi ?? null, t.not ?? null, t.ek ?? null, t.teklifGecerlilik ?? null, t.kur ?? null, t.kurRate ?? null, t.teslimYeri ?? null, t.gtipNo ?? null, t.durum ?? null, t.createdAt ?? null, t.deletedAt ?? null, t.parentTeklifId ?? null, toIntTriState(t.satisTamam), t.tur ?? null, t.country ?? null, t.city ?? null, t.modelYiliDegeri ?? null, json(t.customFieldValues ?? {}));
+      stmt.run(t.id, t.type ?? null, t.no ?? null, t.tarih ?? null, t.dil ?? null, t.currency ?? null, t.customerId ?? null, t.firma ?? null, t.yetkili ?? null, t.tel ?? null, t.vergiNo ?? null, t.vergiDairesi ?? null, t.adres ?? null, t.email ?? null, t.authority ?? null, t.forwarder ?? null, json(t.satirlar ?? []), t.iskonto ?? null, t.kdvOrani ?? null, t.odemeSekli ?? null, t.teslimSekli ?? null, t.teslimSuresi ?? null, t.teslimTarihi ?? null, t.not ?? null, t.ek ?? null, t.teklifGecerlilik ?? null, t.kur ?? null, t.kurRate ?? null, t.teslimYeri ?? null, t.gtipNo ?? null, t.durum ?? null, t.createdAt ?? null, t.deletedAt ?? null, t.parentTeklifId ?? null, toIntTriState(t.satisTamam), t.tur ?? null, t.country ?? null, t.city ?? null, t.modelYiliDegeri ?? null, json(t.customFieldValues ?? {}), toInt(t.takipKapali));
     }
   }
 
@@ -434,8 +462,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null);
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null);
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -497,7 +525,10 @@ function migrateFromJsonIfNeeded() {
       ensureColumns(db, "kalip_defs", KALIP_DEFS_RESIM_COLUMN);
       ensureColumns(db, "teklifler", TEKLIFLER_NEW_COLUMNS);
       ensureColumns(db, "teklifler", TEKLIFLER_CONVERT_COLUMNS);
+      ensureColumns(db, "teklifler", TEKLIFLER_TAKIP_COLUMN);
       ensureColumns(db, "customers", CUSTOMERS_FROM_TEKLIF_COLUMN);
+      ensureColumns(db, "customers", CUSTOMERS_ODEME_PLANI_COLUMN);
+      ensureColumns(db, "customers", CUSTOMERS_BRUT_KG_COLUMN);
       ensureColumns(db, "part_sales", PART_SALES_TEKLIF_URETIM_COLUMNS);
       ensureColumns(db, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
       ensureColumns(db, "customers", CUSTOMERS_BANTLAR_COLUMN);
@@ -508,6 +539,7 @@ function migrateFromJsonIfNeeded() {
       ensureColumns(db, "app_settings", APP_SETTINGS_PINNED_COLUMN);
       ensureColumns(db, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
       ensureColumns(db, "app_settings", APP_SETTINGS_AUTOLOCK_COLUMN);
+      ensureColumns(db, "app_settings", APP_SETTINGS_TAKIP_COLUMNS);
       ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
       ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
       for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
@@ -612,6 +644,7 @@ function readBlobFromDb() {
     prevOwners: parseJsonCol(c.prevOwners, []),
     kaliplar: kaliplarByCustomer.get(c.id) || [],
     bantlar: parseJsonCol(c.bantlar, []),
+    odemePlani: parseJsonCol(c.odemePlani, []),
   }));
 
   const dealers = db.prepare(`SELECT * FROM dealers`).all().map((d) => ({
@@ -666,6 +699,11 @@ function readBlobFromDb() {
     // tahsilEdildi sadece Çek ödemelerinde anlamlı; SQLite'tan 0/1/null gelir, isPaymentReceived/
     // isCekVadesiGecmis === true ile kıyasladığı için gerçek boolean'a çevrilmesi gerekiyor.
     return { ...rest, customerId: customer_id, not: note, ...(rest.yontem === "Çek" ? { tahsilEdildi: toBool(tahsilEdildi) } : {}) };
+  });
+
+  const gorusmeler = db.prepare(`SELECT * FROM gorusmeler`).all().map((row) => {
+    const { customer_id, notField, tamamlandi, ...rest } = row;
+    return { ...rest, customerId: customer_id, not: notField, tamamlandi: toBool(tamamlandi) };
   });
 
   const kalipDefs = db.prepare(`SELECT * FROM kalip_defs`).all();
@@ -740,7 +778,7 @@ function readBlobFromDb() {
 
   return {
     customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
-    services, notes, parts, partSales, payments, teklifler, appSettings, nextId,
+    services, notes, parts, partSales, payments, gorusmeler, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari,
   };
 }
@@ -750,7 +788,7 @@ function readBlobFromDb() {
 // büyüdükçe tek karakterlik düzenleme bile pahalıya mal oluyordu. Süreç yeniden
 // başlayınca önbellek boş başlar ve ilk kayıt her bölümü yazar (güvenli taraf).
 const lastWrittenHash = new Map();
-const BLOB_SECTIONS = ["customers", "services", "partSales", "payments", "dealers", "stock", "notes", "parts", "partStock", "partStockLog", "kalipDefs", "standardModels", "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari"];
+const BLOB_SECTIONS = ["customers", "services", "partSales", "payments", "dealers", "stock", "notes", "parts", "partStock", "partStockLog", "gorusmeler", "kalipDefs", "standardModels", "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari"];
 
 function writeBlobToDb(data) {
   const skip = new Set();
@@ -763,7 +801,7 @@ function writeBlobToDb(data) {
   }
   // customers bloğu FK zinciri gereği services/part_sales/payments tablolarını da siler;
   // customers yeniden yazılacaksa bu üçü atlanamaz (yoksa silinip geri yazılmazlar)
-  if (!skip.has("customers")) { skip.delete("services"); skip.delete("partSales"); skip.delete("payments"); }
+  if (!skip.has("customers")) { skip.delete("services"); skip.delete("partSales"); skip.delete("payments"); skip.delete("gorusmeler"); }
   db.transaction(() => populateAll(db, data, skip))();
   // Özetler yalnızca transaction başarıyla bittikten sonra kesinleşir — hata/rollback
   // durumunda bir sonraki kayıt bölümü yeniden yazar

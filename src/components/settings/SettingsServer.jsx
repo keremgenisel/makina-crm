@@ -96,6 +96,10 @@ function parseNotActionsPerms(permissions) {
   try { return JSON.parse(permissions || "null")?.notActions ?? null; } catch { return null; }
 }
 
+function parseFinanceActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.financeActions ?? null; } catch { return null; }
+}
+
 const CUSTOMER_ACTION_GROUPS = [
   { grup: "Müşteri Listesi", items: [
     { id: "cust_add",    label: "Yeni müşteri ekle" },
@@ -123,7 +127,12 @@ const CUSTOMER_ACTION_GROUPS = [
   ]},
   { grup: "Ödemeler / Kapora", items: [
     { id: "cust_payment_add",  label: "Kapora / ödeme ekle" },
+    { id: "cust_taksit_tahsil", label: "Taksit tahsil et" },
     { id: "cust_payment_edit", label: "Ödeme düzenle / sil" },
+  ]},
+  { grup: "Görüşmeler", items: [
+    { id: "cust_gorusme_add",  label: "Görüşme kaydı ekle/tamamla" },
+    { id: "cust_gorusme_del",  label: "Görüşme kaydı sil" },
   ]},
 ];
 
@@ -168,6 +177,20 @@ const NOT_ACTION_GROUPS = [
   ]},
 ];
 
+const FINANCE_ACTION_GROUPS = [
+  { grup: "Finans — Tarih Aralıkları", items: [
+    { id: "fin_range_all",       label: "Tüm Zamanlar" },
+    { id: "fin_range_thisMonth", label: "Bu Ay" },
+    { id: "fin_range_thisYear",  label: "Bu Yıl" },
+    { id: "fin_range_lastYear",  label: "Geçen Yıl" },
+    { id: "fin_range_custom",    label: "Özel Tarih" },
+  ]},
+  { grup: "Finans — İşlemler", items: [
+    { id: "fin_rapor",           label: "Aylık rapor oluştur" },
+    { id: "fin_anlasmali_detay", label: "Anlaşmalı servis detayını aç" },
+  ]},
+];
+
 const STOCK_ACTION_GROUPS = [
   { grup: "Makina Stoğu", items: [
     { id: "stock_makina_add",    label: "Stoğa makina ekle" },
@@ -195,6 +218,7 @@ function UserManager({ flash, settingsGroups = [] }) {
   const allStockActionIds  = STOCK_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
   const allEvrakActionIds  = EVRAK_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
   const allNotActionIds    = NOT_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allFinanceActionIds = FINANCE_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
 
   const [users, setUsers]         = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -215,6 +239,8 @@ function UserManager({ flash, settingsGroups = [] }) {
   const [editEvrakActionsOn, setEditEvrakActionsOn]   = useState(false);
   const [editNotActions, setEditNotActions]           = useState([]);
   const [editNotActionsOn, setEditNotActionsOn]       = useState(false);
+  const [editFinanceActions, setEditFinanceActions]     = useState([]);
+  const [editFinanceActionsOn, setEditFinanceActionsOn] = useState(false);
   const [changePwId, setChangePwId]                 = useState(null);
   const [newPw, setNewPw]                           = useState("");
   const [changingPw, setChangingPw]                 = useState(false);
@@ -264,6 +290,9 @@ function UserManager({ flash, settingsGroups = [] }) {
     const notActions    = parseNotActionsPerms(u.permissions);
     setEditNotActions(notActions ?? [...allNotActionIds]);
     setEditNotActionsOn(notActions !== null);
+    const financeActions = parseFinanceActionsPerms(u.permissions);
+    setEditFinanceActions(financeActions ?? [...allFinanceActionIds]);
+    setEditFinanceActionsOn(financeActions !== null);
     setEditPermsId(u.id);
     setChangePwId(null);
   };
@@ -274,7 +303,8 @@ function UserManager({ flash, settingsGroups = [] }) {
     const stockActionsVal  = editStockActionsOn  ? editStockActions  : null;
     const evrakActionsVal  = editEvrakActionsOn  ? editEvrakActions  : null;
     const notActionsVal    = editNotActionsOn    ? editNotActions    : null;
-    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal, dealerActions: dealerActionsVal, stockActions: stockActionsVal, evrakActions: evrakActionsVal, notActions: notActionsVal });
+    const financeActionsVal = editFinanceActionsOn ? editFinanceActions : null;
+    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal, dealerActions: dealerActionsVal, stockActions: stockActionsVal, evrakActions: evrakActionsVal, notActions: notActionsVal, financeActions: financeActionsVal });
     const res = await window.appServer.apiRequest({ method: "PATCH", path: `/api/users/${u.id}`, body: { permissions } });
     if (res?.ok) { flash("ok", "İzinler güncellendi."); setEditPermsId(null); load(); }
     else flash("err", "Güncellenemedi");
@@ -588,6 +618,35 @@ function UserManager({ flash, settingsGroups = [] }) {
                                     {g.items.map(item => (
                                       <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editNotActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editNotActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
                                         <input type="checkbox" checked={editNotActions.includes(item.id)} onChange={e => setEditNotActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+                                        {item.label}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
+                          )}
+                        </div>
+
+                        {/* Finans işlemleri — per-user */}
+                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
+                            <input type="checkbox" checked={editFinanceActionsOn}
+                              onChange={e => { setEditFinanceActionsOn(e.target.checked); if (e.target.checked) setEditFinanceActions([...allFinanceActionIds]); }}
+                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Finans işlemlerini bu kullanıcı için özelleştir</span>
+                          </label>
+                          {editFinanceActionsOn ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {FINANCE_ACTION_GROUPS.map(g => (
+                                <div key={g.grup}>
+                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {g.items.map(item => (
+                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editFinanceActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editFinanceActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                        <input type="checkbox" checked={editFinanceActions.includes(item.id)} onChange={e => setEditFinanceActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
                                         {item.label}
                                       </label>
                                     ))}

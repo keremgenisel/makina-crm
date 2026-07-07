@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { logAction } from "../../lib/audit";
+import { logAction, getAuditUsername } from "../../lib/audit";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
@@ -37,6 +37,7 @@ export const CustomerDetailModal = ({
   services, setServices,
   partSales, setPartSales,
   payments, setPayments,
+  gorusmeler = [], setGorusmeler = null,
   setStock,
   setPartStock, setPartStockLog,
   parts = [], models = [], dealers, factory,
@@ -73,7 +74,7 @@ export const CustomerDetailModal = ({
   const {
     detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
     detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
-    detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
+    detailKalanBorcToplam, detailBekleyenCek, detailEnYakinCekVade, detailBekleyenTaksit, detailTaksitGecikmisVar, detailEnYakinTaksitVade, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
     detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
   } = useMemo(() => {
     const detailHistory = detailView
@@ -122,6 +123,17 @@ export const CustomerDetailModal = ({
           payment: p,
         });
       });
+      // Ödeme planı: yalnızca AÇIK taksitler gösterilir — tahsil edilince taksit eventi
+      // kaybolur, yerine normal Kapora/Ödeme eventi gelir (çift gösterim olmaz)
+      (detailView.odemePlani || []).filter(r => !r.odemeId).forEach(r => {
+        const gecikti = r.vadeTarihi && r.vadeTarihi < todayStr;
+        ev.push({
+          kind: "taksit", date: r.vadeTarihi || todayStr, color: gecikti ? "#dc2626" : "#f59e0b",
+          title: "Taksit Vadesi",
+          desc: `${fmtCur(r.tutar, detailView.currency)}${gecikti ? " · Vadesi geçti" : " · Bekliyor"}`,
+          taksit: r, taksitGecikti: gecikti,
+        });
+      });
       if (detailView.warrantyEnd) {
         const dolmus = detailView.warrantyEnd < todayStr;
         ev.push({
@@ -161,6 +173,12 @@ export const CustomerDetailModal = ({
     const detailEkBorcDigerPB = Object.entries(detailEkBorcByCur).filter(([cur]) => cur !== detailMainCur);
     const detailKalanBorcToplam = detailKalanBorc + detailEkBorcAyniPB;
     const detailBekleyenCek = detailView ? sumBekleyenCek(detailView.id, payments) : 0;
+    // Açık taksitler: sarı şerit için toplam + en yakın vade + gecikme durumu
+    const acikTaksitler = detailView ? (detailView.odemePlani || []).filter(r => !r.odemeId) : [];
+    const detailBekleyenTaksit = acikTaksitler.reduce((t, r) => t + parseMoney(r.tutar), 0);
+    const detailTaksitGecikmisVar = acikTaksitler.some(r => r.vadeTarihi && r.vadeTarihi < todayStr);
+    const detailEnYakinTaksitVade = acikTaksitler.map(r => r.vadeTarihi).filter(Boolean).sort()[0] || "";
+    const detailEnYakinCekVade = detailView ? (payments.filter(pm => pm.customerId === detailView.id && pm.yontem === "Çek" && !pm.tahsilEdildi).map(pm => pm.vadeTarihi).filter(Boolean).sort()[0] || "") : "";
     const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && p.yontem === "Çek" && !p.tahsilEdildi) : [];
     const detailCekVadesiGecmisVar = detailBekleyenCekler.some(isCekVadesiGecmis);
     const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
@@ -197,7 +215,7 @@ export const CustomerDetailModal = ({
     return {
       detailHistory, detailTimelineEvents, detailModelInfo, detailWarrantyOk,
       detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
-      detailKalanBorcToplam, detailBekleyenCek, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
+      detailKalanBorcToplam, detailBekleyenCek, detailEnYakinCekVade, detailBekleyenTaksit, detailTaksitGecikmisVar, detailEnYakinTaksitVade, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
       detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
     };
      
@@ -359,8 +377,50 @@ export const CustomerDetailModal = ({
   };
 
   // ── Ödemeler ──
+  // ── Görüşme kayıtları: telefon/ziyaret notları + takip tarihi ("aranacaklar") ──
+  const [gorusmeForm, setGorusmeForm] = useState(null);
+  const [gorusmelerAcik, setGorusmelerAcik] = useState(false); // akordeon: varsayılan kapalı
+  const [confirmDeleteGorusmeId, setConfirmDeleteGorusmeId] = useState(null);
+  const detailGorusmeler = useMemo(
+    () => gorusmeler.filter(g => !g.deletedAt && g.customerId === detailView?.id).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "")),
+    [gorusmeler, detailView?.id]
+  );
+  const saveGorusme = () => {
+    if (!setGorusmeler || !gorusmeForm?.not?.trim()) { showToast("Görüşme notu boş olamaz.", "err"); return; }
+    bumpId(gorusmeler, customers, services, partSales, payments);
+    const rec = {
+      id: uid(), customerId: detailView.id, tarih: gorusmeForm.tarih || today(),
+      tur: gorusmeForm.tur || "Gelen Arama", not: gorusmeForm.not.trim(),
+      takipTarihi: gorusmeForm.takipTarihi || "", tamamlandi: false, kullanici: getAuditUsername(),
+    };
+    setGorusmeler(p => [rec, ...p]);
+    logAction({ serverPermissions, action: "olusturuldu", entity: "gorusme", entityId: rec.id, entityName: detailView?.name, detail: { tur: rec.tur } });
+    showToast("Görüşme kaydedildi.");
+    setGorusmeForm(null);
+  };
+  const toggleGorusmeTamam = (g) => {
+    if (!setGorusmeler) return;
+    setGorusmeler(p => p.map(x => x.id === g.id ? { ...x, tamamlandi: !x.tamamlandi } : x));
+  };
+  const deleteGorusme = (id) => {
+    if (!setGorusmeler) return;
+    setGorusmeler(p => withDeleted(p, x => x.id === id));
+    logAction({ serverPermissions, action: "silindi", entity: "gorusme", entityId: id, entityName: detailView?.name });
+    showToast("Görüşme silindi.");
+  };
+
   const openAddPayment = () => {
     setPaymentForm({ customerId: detailView.id, tarih: today(), satirlar: [], currency: detailView.currency || "TRY", not: "" });
+  };
+  // Taksit tahsilatı: ödeme formu taksit tutarıyla önceden doldurulur; kaydedilince
+  // savePayment içinde taksit oluşan ödeme kaydına bağlanır (odemeId) ve kapanır
+  const tahsilTaksit = (taksit) => {
+    setPaymentForm({
+      customerId: detailView.id, tarih: today(), currency: detailView.currency || "TRY",
+      not: `Taksit tahsilatı (vade ${taksit.vadeTarihi ? fmtTR(taksit.vadeTarihi) : "-"})`,
+      satirlar: [{ id: 1, tutar: String(taksit.tutar ?? ""), yontem: "Nakit" }],
+      _taksitId: taksit.id,
+    });
   };
   const openEditPayment = (p) => {
     setPaymentForm({
@@ -397,6 +457,12 @@ export const CustomerDetailModal = ({
         ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
       }));
       newPayments = [...yeniKayitlar, ...payments];
+      // Taksit tahsilatıysa taksiti oluşan ödeme kaydına bağla (plan satırı kapanır)
+      if (paymentForm._taksitId != null && yeniKayitlar[0]) {
+        setCustomers(p => p.map(c => c.id === customerId
+          ? { ...c, odemePlani: (c.odemePlani || []).map(r => r.id === paymentForm._taksitId ? { ...r, odemeId: yeniKayitlar[0].id } : r) }
+          : c));
+      }
       logAction({ serverPermissions, action: "olusturuldu", entity: "odeme", entityId: yeniKayitlar[0]?.id, entityName: detailView?.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     }
@@ -410,6 +476,10 @@ export const CustomerDetailModal = ({
     const newPayments = payments.filter(x => x.id !== id);
     setPayments(p => withDeleted(p, x => x.id === id));
     if (payment) syncKalanBorc(payment.customerId, newPayments);
+    // Ödeme bir taksite bağlıysa taksit tekrar "bekliyor" durumuna döner
+    if (payment) setCustomers(p => p.map(c => c.id === payment.customerId
+      ? { ...c, odemePlani: (c.odemePlani || []).map(r => r.odemeId === id ? { ...r, odemeId: null } : r) }
+      : c));
     logAction({ serverPermissions, action: "silindi", entity: "odeme", entityId: id, entityName: detailView?.name });
     showToast("Ödeme silindi.");
   };
@@ -499,7 +569,7 @@ export const CustomerDetailModal = ({
   const kaseResmi = appSettings?.kaseResmi || "";
 
   const openSandikEtiket = () => setSandikModal({
-    gonderen: { ad: factory?.evrakFirmaAdi || factory?.name || "", tel: factory?.phone || "", adres: factory?.adres || "" },
+    gonderen: { ad: factory?.evrakFirmaAdi || factory?.name || "", tel: factory?.phone || "", email: factory?.email || "", adres: factory?.adres || "", city: factory?.city || "", country: factory?.country || "" },
     alici: {
       firmaAdi: detailView.name || "",
       adres: detailView.adres || "",
@@ -510,28 +580,33 @@ export const CustomerDetailModal = ({
       yetkili1Tel: detailView.yetkili1Tel || "",
       yetkili2Ad: detailView.yetkili2Ad || "",
       yetkili2Tel: detailView.yetkili2Tel || "",
+      model: detailView.model || "",
+      serialNo: detailView.serialNo || "",
+      brutKg: detailView.brutKg || "",
     },
   });
 
-  const printSandikEtiket = (lang = "TR") => {
+  const printSandikEtiket = () => {
     const sandikT = appSettings?.translations?.sandik || {};
-    const html = buildSandikEtiketiHtml(sandikModal.gonderen, sandikModal.alici, lang, sandikT);
+    // Brüt kg makina kaydına yazılır: bir sonraki etikette ve dışa aktarımda dolu gelir.
+    const kg = parseMoney(sandikModal.alici.brutKg) || null;
+    if ((detailView?.brutKg ?? null) !== kg) setCustomers(p => p.map(c => c.id === detailView.id ? { ...c, brutKg: kg } : c));
+    const html = buildSandikEtiketiHtml(sandikModal.gonderen, { ...sandikModal.alici, brutKg: kg }, sandikT);
     if (window.appPrint) { window.appPrint.printHtml(html, null, "sandik-etiketi.pdf"); return; }
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
-  const sandikIsYurtdisi = sandikModal && sandikModal.alici.country && sandikModal.alici.country !== "Türkiye";
 
-  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi);
+  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi, factory);
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts);
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory);
   };
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory));
     setMailDraft({
       to: detailView.email || "",
       subject: `Makina Servis ve Yedek Parça Geçmişi Raporu - ${detailView.name}`,
@@ -543,7 +618,7 @@ export const CustomerDetailModal = ({
   };
   const openMailServiceForm = (sv, lang = "TR") => {
     const cust = customers.find(c => c.id === sv.customerId);
-    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang), kaseResmi }));
+    const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang), kaseResmi, factory }));
     setMailDraft({
       to: cust?.email || "",
       subject: `Servis Formu - ${cust?.name || ""}`,
@@ -626,9 +701,87 @@ export const CustomerDetailModal = ({
               detailEkBorcDigerPB={detailEkBorcDigerPB}
               detailBekleyenCek={detailBekleyenCek}
               detailCekVadesiGecmisVar={detailCekVadesiGecmisVar}
+              detailEnYakinCekVade={detailEnYakinCekVade}
+              detailBekleyenTaksit={detailBekleyenTaksit}
+              detailTaksitGecikmisVar={detailTaksitGecikmisVar}
+              detailEnYakinTaksitVade={detailEnYakinTaksitVade}
               detailMainCur={detailMainCur}
               detailBorcFromPrevOwner={detailBorcFromPrevOwner}
             />
+
+
+            {/* Görüşme kayıtları: telefon/ziyaret notları; takip tarihi verilenler Dashboard "Aranacaklar"a düşer */}
+            {isCustomer && setGorusmeler && (
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gorusmelerAcik || gorusmeForm ? 8 : 0 }}>
+                  <div onClick={() => setGorusmelerAcik(a => !a)}
+                    style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}>
+                    <span style={{ fontSize: 10 }}>{gorusmelerAcik || gorusmeForm ? "▾" : "▸"}</span>
+                    Görüşmeler ({detailGorusmeler.length})
+                    {detailGorusmeler.some(g => g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr) && (
+                      <span style={{ fontSize: 10, fontWeight: 800, background: "#fee2e2", color: "#b91c1c", borderRadius: 6, padding: "2px 8px", textTransform: "none", letterSpacing: 0 }}>takip bekliyor</span>
+                    )}
+                  </div>
+                  {canDo("cust_gorusme_add") && !gorusmeForm && (
+                    <Btn small variant="ghost" onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
+                      <Icon name="plus" size={12} /> Yeni Görüşme
+                    </Btn>
+                  )}
+                </div>
+                {(gorusmelerAcik || gorusmeForm) && <>
+                {gorusmeForm && (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                      <Select value={gorusmeForm.tur} onChange={e => setGorusmeForm(p => ({ ...p, tur: e.target.value }))}>
+                        {["Gelen Arama", "Giden Arama", "Ziyaret", "E-posta", "Diğer"].map(t => <option key={t} value={t}>{t}</option>)}
+                      </Select>
+                      <input type="date" value={gorusmeForm.tarih} onChange={e => setGorusmeForm(p => ({ ...p, tarih: e.target.value }))}
+                        style={{ padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#fff" }} />
+                    </div>
+                    <Input value={gorusmeForm.not} onChange={e => setGorusmeForm(p => ({ ...p, not: e.target.value }))} placeholder="Görüşme notu (ne konuşuldu, ne bekleniyor)" />
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12, color: "#64748b" }}>Takip tarihi (opsiyonel):</span>
+                      <input type="date" value={gorusmeForm.takipTarihi} onChange={e => setGorusmeForm(p => ({ ...p, takipTarihi: e.target.value }))}
+                        style={{ padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#fff" }} />
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                        <Btn small variant="ghost" onClick={() => setGorusmeForm(null)}>Vazgeç</Btn>
+                        <Btn small onClick={saveGorusme}>Kaydet</Btn>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {detailGorusmeler.length === 0 && !gorusmeForm && (
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>Henüz görüşme kaydı yok.</div>
+                )}
+                {detailGorusmeler.map(g => {
+                  const takipGecikti = g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr;
+                  return (
+                    <div key={g.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "7px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+                      <span style={{ fontSize: 11, color: "#64748b", whiteSpace: "nowrap", paddingTop: 2 }}>{fmtTR(g.tarih)}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, background: "#f1f5f9", color: "#475569", borderRadius: 6, padding: "2px 6px", whiteSpace: "nowrap" }}>{g.tur}</span>
+                      <div style={{ flex: 1 }}>
+                        <div>{g.not}</div>
+                        {g.takipTarihi && (
+                          <div style={{ fontSize: 11, marginTop: 2, fontWeight: 600, color: g.tamamlandi ? "#16a34a" : takipGecikti ? "#b91c1c" : "#92400e" }}>
+                            {g.tamamlandi ? "✓ Takip tamamlandı" : `${takipGecikti ? "⚠ " : ""}Takip: ${fmtTR(g.takipTarihi)}`}
+                          </div>
+                        )}
+                        {g.kullanici && <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 2 }}>{g.kullanici}</div>}
+                      </div>
+                      {g.takipTarihi && canDo("cust_gorusme_add") && (
+                        <Btn small variant="ghost" onClick={() => toggleGorusmeTamam(g)} title={g.tamamlandi ? "Takibi yeniden aç" : "Takibi tamamlandı işaretle"}>
+                          {g.tamamlandi ? "↺" : "✓"}
+                        </Btn>
+                      )}
+                      {canDo("cust_gorusme_del") && (
+                        <Btn small variant="ghost" onClick={() => setConfirmDeleteGorusmeId(g.id)} title="Görüşmeyi sil"><Icon name="trash" size={11} /></Btn>
+                      )}
+                    </div>
+                  );
+                })}
+                </>}
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginBottom: 16 }}>
               {[
@@ -745,6 +898,7 @@ export const CustomerDetailModal = ({
               onDeletePayment={setConfirmDeletePaymentId}
               onToggleServisOdendi={toggleServisOdendi}
               onTogglePartSaleOdendi={togglePartSaleOdendi}
+              onTahsilTaksit={tahsilTaksit}
             />
           </div>
         </div>
@@ -1021,6 +1175,14 @@ export const CustomerDetailModal = ({
         />
       )}
 
+      {confirmDeleteGorusmeId != null && (
+        <ConfirmDialog
+          message="Bu görüşme kaydı Çöp Kutusu'na taşınacak. Ayarlar'dan 30 gün içinde geri alabilirsiniz."
+          onConfirm={() => { deleteGorusme(confirmDeleteGorusmeId); setConfirmDeleteGorusmeId(null); }}
+          onCancel={() => setConfirmDeleteGorusmeId(null)}
+        />
+      )}
+
       {svModal && (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
@@ -1040,11 +1202,11 @@ export const CustomerDetailModal = ({
       )}
 
       {sandikModal && (
-        <Modal title="Sandık Etiketi" onClose={() => setSandikModal(null)}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+        <Modal title="Sandık Etiketi" wide onClose={() => setSandikModal(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Gönderen</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: 8 }}>
                 <Field label="Şirket Adı"><Input value={sandikModal.gonderen.ad} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, ad: e.target.value } }))} /></Field>
                 <Field label="Telefon"><Input value={sandikModal.gonderen.tel} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, tel: e.target.value } }))} /></Field>
                 <Field label="Adres"><Input value={sandikModal.gonderen.adres} onChange={e => setSandikModal(p => ({ ...p, gonderen: { ...p.gonderen, adres: e.target.value } }))} /></Field>
@@ -1052,28 +1214,31 @@ export const CustomerDetailModal = ({
             </div>
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Alıcı</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 <Field label="Firma Adı"><Input value={sandikModal.alici.firmaAdi} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, firmaAdi: e.target.value } }))} /></Field>
                 <Field label="Adres"><Input value={sandikModal.alici.adres} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, adres: e.target.value } }))} /></Field>
-                <Field label="Şehir"><Input value={sandikModal.alici.city} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, city: e.target.value } }))} /></Field>
-                <Field label="Ülke"><Input value={sandikModal.alici.country} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, country: e.target.value } }))} /></Field>
                 <Field label="Telefon"><Input value={sandikModal.alici.tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, tel: e.target.value } }))} /></Field>
+                <Field label="Ülke"><Input value={sandikModal.alici.country} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, country: e.target.value } }))} /></Field>
+                <Field label="Şehir"><Input value={sandikModal.alici.city} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, city: e.target.value } }))} /></Field>
+                <div />
                 <Field label="Yetkili 1 - Ad Soyad"><Input value={sandikModal.alici.yetkili1Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Ad: e.target.value } }))} /></Field>
                 <Field label="Yetkili 1 - Telefon"><Input value={sandikModal.alici.yetkili1Tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili1Tel: e.target.value } }))} /></Field>
+                <div />
                 <Field label="Yetkili 2 - Ad Soyad"><Input value={sandikModal.alici.yetkili2Ad} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili2Ad: e.target.value } }))} /></Field>
                 <Field label="Yetkili 2 - Telefon"><Input value={sandikModal.alici.yetkili2Tel} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, yetkili2Tel: e.target.value } }))} /></Field>
               </div>
             </div>
+            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Makina</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                <Field label="Model"><Input value={sandikModal.alici.model} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, model: e.target.value } }))} /></Field>
+                <Field label="Seri No"><Input value={sandikModal.alici.serialNo} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, serialNo: e.target.value } }))} /></Field>
+                <Field label="Brüt Ağırlık (kg)"><Input value={sandikModal.alici.brutKg} onChange={e => setSandikModal(p => ({ ...p, alici: { ...p.alici, brutKg: e.target.value } }))} /></Field>
+              </div>
+            </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <Btn variant="ghost" onClick={() => setSandikModal(null)}>İptal</Btn>
-              {sandikIsYurtdisi ? (
-                <>
-                  <Btn variant="ghost" onClick={() => printSandikEtiket("TR")}><Icon name="print" size={14} /> Türkçe</Btn>
-                  <Btn onClick={() => printSandikEtiket("EN")}><Icon name="print" size={14} /> English</Btn>
-                </>
-              ) : (
-                <Btn onClick={() => printSandikEtiket("TR")}><Icon name="print" size={14} /> Yazdır</Btn>
-              )}
+              <Btn onClick={printSandikEtiket}><Icon name="print" size={14} /> Yazdır</Btn>
             </div>
           </div>
         </Modal>

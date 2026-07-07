@@ -41,4 +41,5 @@ export const IMPORT_HEADERS = [
   "Komisyon", "Extra Kalıp Fiyatı", "Kalan Borç", "Seri Numarası", "Açıklama",
   "Servis1 Tarih", "Servis1 Yapılan İş", "Servis2 Tarih", "Servis2 Yapılan İş", "Servis3 Tarih", "Servis3 Yapılan İş",
   "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon",
+  "E-posta", "Ödeme Planı (vade:tutar; ...)", "Brüt Kg",
 ];
