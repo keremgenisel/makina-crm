@@ -146,7 +146,7 @@ const makeEmpty = (type, teklifler, factory, dil = "TR", evrakFormConfig = null)
 };
 
 const makeSubItem = (type) => ({ id: String(uid()), type, kod: "", makinaAdi: "", tanim: "", miktar: 1, birimFiyat: "", tlKarsiligi: "" });
-const makeRow = () => ({ rowId: String(uid()), selectedModel: "", selectedKalip: "", selectedPart: "", subItems: [makeSubItem("makina")] });
+const makeRow = () => ({ rowId: String(uid()), pickTip: "", selectedModel: "", selectedKalip: "", selectedPart: "", subItems: [makeSubItem("makina")] });
 
 const migrateRow = (r) => {
   if (r.subItems) return { ...r, subItems: r.subItems.filter(i => i.type !== "bant") };
@@ -698,6 +698,13 @@ export const Documents = ({
       const subItems = existing ? r.subItems.map(i => i.type === "parca" ? updated : i) : [...r.subItems, updated];
       return { ...r, selectedPart: String(partId), subItems };
     }) }));
+  };
+
+  // Tür seçimi (fatura formundaki iki aşamalı akışın aynısı): tür değişince satır sıfırlanır,
+  // seçilen türün boş alt satırı açılır (alanlar listeden seçmeden elle de doldurulabilir).
+  const pickTur = (rowId, tip) => {
+    setForm(p => ({ ...p, satirlar: p.satirlar.map(r => r.rowId !== rowId ? r
+      : { rowId: r.rowId, pickTip: tip, selectedModel: "", selectedKalip: "", selectedPart: "", subItems: tip ? [makeSubItem(tip)] : [] }) }));
   };
 
 
@@ -1266,14 +1273,33 @@ export const Documents = ({
                   const kalipItem  = row.subItems?.find(i => i.type === "kalip");
                   const parcaItem  = row.subItems?.find(i => i.type === "parca");
                   const hasModel = !!row.selectedModel;
-                  const hasAnySelected = !!(row.selectedModel || row.selectedKalip || row.selectedPart);
-                  const slots = [
-                    ...(hasModel || !hasAnySelected ? [{ type: "makina", item: makinaItem }] : []),
-                    ...(kalipDefs.length > 0 && (row.selectedKalip || hasModel || !hasAnySelected) ? [{ type: "kalip", item: kalipItem }] : []),
-                    ...(parts.length > 0 && (row.selectedPart || hasModel || !hasAnySelected) ? [{ type: "parca", item: parcaItem }] : []),
-                  ];
-                  const visibleSlots = slots.length > 0 ? slots : [{ type: "makina", item: makinaItem }];
-                  const totalSpan = visibleSlots.length;
+                  // Fatura formundaki iki aşamalı seçim: önce tür, sonra o türün listesi.
+                  // pickTip olmayan eski satırlarda tür, mevcut seçimden/elle girilmiş içerikten çıkarılır.
+                  const doluMu = (it) => !!(it && (it.kod || it.makinaAdi || it.tanim || parseMoney(it.birimFiyat) > 0));
+                  const tip = row.pickTip !== undefined ? row.pickTip
+                    : (hasModel || doluMu(makinaItem)) ? "makina"
+                    : (row.selectedKalip || kalipItem) ? "kalip"
+                    : (row.selectedPart || parcaItem) ? "parca" : "";
+                  // Fatura formundaki gibi her satır tek ürün taşır: yeni ürün "Satır Ekle" ile ayrı satırda eklenir.
+                  // Kalıp/parça alt yuvaları yalnızca eski kayıtlardan gelen gruplu satırlarda (alt öğe zaten doluysa) gösterilir.
+                  const slots = tip === "makina" ? [
+                    { type: "makina", item: makinaItem },
+                    ...(kalipItem ? [{ type: "kalip", item: kalipItem }] : []),
+                    ...(parcaItem ? [{ type: "parca", item: parcaItem }] : []),
+                  ] : tip === "kalip" ? [
+                    { type: "kalip", item: kalipItem },
+                    ...(parcaItem ? [{ type: "parca", item: parcaItem }] : []),
+                  ] : tip === "parca" ? [{ type: "parca", item: parcaItem }] : [];
+                  const visibleSlots = slots;
+                  const totalSpan = Math.max(visibleSlots.length, 1);
+                  const turSelect = (
+                    <select value={tip} onChange={e => pickTur(row.rowId, e.target.value)} style={{ ...inputStyle, fontSize: 12 }}>
+                      <option value="">— Tür Seç —</option>
+                      <option value="makina">Makina</option>
+                      {kalipDefs.length > 0 && <option value="kalip">Kalıp</option>}
+                      {parts.length > 0 && <option value="parca">Yedek Parça</option>}
+                    </select>
+                  );
 
                   const renderDataCells = (item) => item ? (
                     <>
@@ -1320,9 +1346,20 @@ export const Documents = ({
                     <td colSpan={showTL ? 5 : 4} style={{ padding: "8px", color: "#cbd5e1", fontSize: 11 }}>— seçilmedi —</td>
                   );
 
+                  if (visibleSlots.length === 0) return (
+                    <tr key={row.rowId} style={{ borderBottom: "1px solid #e2e8f0", verticalAlign: "middle" }}>
+                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid #f1f5f9" }}>{turSelect}</td>
+                      <td colSpan={showTL ? 6 : 5} style={{ padding: "8px", color: "#cbd5e1", fontSize: 11 }}>— önce tür seçin —</td>
+                      <td style={{ padding: "6px 8px", verticalAlign: "top" }}>
+                        <Btn small variant="danger" onClick={() => removeRow(row.rowId)}><Icon name="trash" size={11} /></Btn>
+                      </td>
+                    </tr>
+                  );
+
                   return visibleSlots.map(({ type, item }, idx) => (
                     <tr key={`${row.rowId}-${type}`} style={{ borderBottom: idx === totalSpan - 1 ? "1px solid #e2e8f0" : "1px dashed #f1f5f9", verticalAlign: "middle" }}>
                       <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid #f1f5f9" }}>
+                        {idx === 0 && <div style={{ marginBottom: 4 }}>{turSelect}</div>}
                         {type === "makina" && (
                           <select value={row.selectedModel || ""} onChange={e => pickModel(row.rowId, e.target.value)}
                             style={{ ...inputStyle, fontSize: 12 }}>

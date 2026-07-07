@@ -135,34 +135,49 @@ export const FaturaFormModal = ({
               const upd = (patch) => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.map((s, i) => i === idx ? { ...s, ...patch } : s) }));
               return (
                 <tr key={r.id || idx} style={{ borderTop: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "6px 8px", width: 130 }}>
-                    <select value={r.urunKey || ""} onChange={e => {
-                      const key = e.target.value;
-                      if (!key) { upd({ urunKey: "" }); return; }
-                      const [tip, id] = key.split("::");
-                      // Seçim kod/ad/tanım/resim alanlarını EN öncelikli doldurur; hepsi elle düzenlenebilir
-                      if (tip === "makina") {
-                        const m = allModels.find(x => x.model === id);
-                        if (m) upd({ urunKey: key, urunTip: "makina", model: m.model, aciklama: m.urunAdiEN || m.urunAdi || m.model, tanim: m.tanimEN || m.tanim || "", resim: m.resim || "" });
-                      } else if (tip === "kalip") {
-                        const k = kalipDefs.find(x => x.ad === id);
-                        if (k) upd({ urunKey: key, urunTip: "kalip", model: k.kod || "", aciklama: k.urunAdiEN || k.urunAdi || k.ad, tanim: k.tanimEN || k.tanim || "", resim: k.resim || "" });
-                      } else if (tip === "parca") {
-                        const pt = parts.find(x => String(x.id) === id);
-                        if (pt) upd({ urunKey: key, urunTip: "parca", model: pt.kod || "", aciklama: pt.adEN || pt.ad || "", tanim: pt.tanimEN || pt.tanim || "", resim: pt.resim || "" });
-                      }
-                    }} style={{ ...inputStyle, padding: "6px 8px" }}>
-                      <option value="">Seçiniz</option>
-                      <optgroup label="Makinalar">
-                        {allModels.map(m => <option key={`m${m.model}`} value={`makina::${m.model}`}>{m.model}</option>)}
-                      </optgroup>
-                      <optgroup label="Kalıplar">
-                        {kalipDefs.map(k => <option key={`k${k.id ?? k.ad}`} value={`kalip::${k.ad}`}>{k.ad}</option>)}
-                      </optgroup>
-                      <optgroup label="Parçalar">
-                        {parts.map(pt => <option key={`p${pt.id}`} value={`parca::${pt.id}`}>{pt.ad}</option>)}
-                      </optgroup>
+                  <td style={{ padding: "6px 8px", width: 150 }}>
+                    {/* Teklif formundaki gibi iki aşamalı seçim: önce tür, sonra o türün listesi */}
+                    <select value={r.urunTip || ""} onChange={e => upd({ urunTip: e.target.value, urunKey: "" })}
+                      style={{ ...inputStyle, padding: "6px 8px", marginBottom: 4 }}>
+                      <option value="">— Tür Seç —</option>
+                      <option value="makina">Makina</option>
+                      <option value="kalip">Kalıp</option>
+                      <option value="parca">Yedek Parça</option>
                     </select>
+                    {r.urunTip === "makina" && (
+                      <select value={r.urunKey || ""} onChange={e => {
+                        const key = e.target.value;
+                        if (!key) { upd({ urunKey: "" }); return; }
+                        // Seçim kod/ad/tanım/resim alanlarını EN öncelikli doldurur; hepsi elle düzenlenebilir
+                        const m = allModels.find(x => `makina::${x.model}` === key);
+                        if (m) upd({ urunKey: key, model: m.model, aciklama: m.urunAdiEN || m.urunAdi || m.model, tanim: m.tanimEN || m.tanim || "", resim: m.resim || "" });
+                      }} style={{ ...inputStyle, padding: "6px 8px" }}>
+                        <option value="">— Model Seç —</option>
+                        {allModels.map(m => <option key={`m${m.model}`} value={`makina::${m.model}`}>{m.model}</option>)}
+                      </select>
+                    )}
+                    {r.urunTip === "kalip" && (
+                      <select value={r.urunKey || ""} onChange={e => {
+                        const key = e.target.value;
+                        if (!key) { upd({ urunKey: "" }); return; }
+                        const k = kalipDefs.find(x => `kalip::${x.ad}` === key);
+                        if (k) upd({ urunKey: key, model: k.kod || "", aciklama: k.urunAdiEN || k.urunAdi || k.ad, tanim: k.tanimEN || k.tanim || "", resim: k.resim || "" });
+                      }} style={{ ...inputStyle, padding: "6px 8px" }}>
+                        <option value="">— Kalıp Seç —</option>
+                        {kalipDefs.map(k => <option key={`k${k.id ?? k.ad}`} value={`kalip::${k.ad}`}>{k.ad}</option>)}
+                      </select>
+                    )}
+                    {r.urunTip === "parca" && (
+                      <select value={r.urunKey || ""} onChange={e => {
+                        const key = e.target.value;
+                        if (!key) { upd({ urunKey: "" }); return; }
+                        const pt = parts.find(x => `parca::${x.id}` === key);
+                        if (pt) upd({ urunKey: key, model: pt.kod || "", aciklama: pt.adEN || pt.ad || "", tanim: pt.tanimEN || pt.tanim || "", resim: pt.resim || "" });
+                      }} style={{ ...inputStyle, padding: "6px 8px" }}>
+                        <option value="">— Yedek Parça Seç —</option>
+                        {parts.map(pt => <option key={`p${pt.id}`} value={`parca::${pt.id}`}>{pt.ad}</option>)}
+                      </select>
+                    )}
                   </td>
                   <td style={{ padding: "6px 8px", width: 90 }}>
                     <input value={r.model || ""} onChange={e => upd({ model: e.target.value })}
