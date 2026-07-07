@@ -5,6 +5,7 @@ import { StatCard, Modal, Btn } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
+  const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
@@ -290,7 +291,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {onOpenTeklif && <Btn small variant="ghost" onClick={() => onOpenTeklif(t.id)}>Teklifi Aç</Btn>}
-                {onDismissTakip && <Btn small variant="ghost" onClick={() => onDismissTakip(t)} title="Bu teklif için bir daha hatırlatma">Takipten Kaldır</Btn>}
+                {onDismissTakip && canEvrak("evrak_teklif_edit") && <Btn small variant="ghost" onClick={() => onDismissTakip(t)} title="Bu teklif için bir daha hatırlatma">Takipten Kaldır</Btn>}
               </div>
             </div>
           ))}
