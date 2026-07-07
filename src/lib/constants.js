@@ -117,7 +117,7 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "2.66.0";
+export const APP_VERSION = "2.67.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

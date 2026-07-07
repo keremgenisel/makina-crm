@@ -500,7 +500,9 @@ export const Documents = ({
     const t = liveTeklifler.find(x => x.id === openDocId);
     if (t) {
       setSubTab(t.type === "proforma" ? "proforma" : "teklif");
-      openEdit(t);
+      // Düzenleme izni yoksa formu açma: listedeki satır tıklaması da aynı izinle kapalı,
+      // arama/anasayfa derin bağlantısı o kapıyı delmemeli. Liste görünümü yeterli.
+      if (canDoEvrak(t.type === "proforma" ? "evrak_proforma_edit" : "evrak_teklif_edit")) openEdit(t);
     }
     onDocOpenConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps

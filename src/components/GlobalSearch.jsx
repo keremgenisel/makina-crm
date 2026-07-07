@@ -6,7 +6,9 @@ import { Icon } from "./ui";
 // Sidebar'daki kutu ve Ctrl/Cmd+K kısayolu aynı paleti açar. Müşteri/makina
 // (ad, seri no, telefon, yetkili, model), teklif/proforma (no, firma), bayi ve
 // makina stoğu üzerinde arar; sonuca tıklayınca ilgili ekran doğrudan açılır.
-export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock }) => {
+// allowedTabs: kullanıcının erişebildiği sekme id'leri — izinli olmayan sekmenin
+// verisi aramada hiç gösterilmez (kısıtlı kullanıcı aramadan o alana sızamaz).
+export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock, allowedTabs = null }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const inputRef = useRef(null);
@@ -28,13 +30,14 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
     const query = trLower(q.trim());
     if (query.length < 2) return null;
     const has = (v) => trLower(String(v || "")).includes(query);
+    const izinli = (tabId) => !Array.isArray(allowedTabs) || allowedTabs.includes(tabId);
     return {
-      musteriler: customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model))).slice(0, 8),
-      belgeler:   teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))).slice(0, 8),
-      bayiler:    dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))).slice(0, 6),
-      makinalar:  stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))).slice(0, 6),
+      musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model))).slice(0, 8) : [],
+      belgeler:   izinli("evrak") ? teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))).slice(0, 8) : [],
+      bayiler:    izinli("dealers") ? dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))).slice(0, 6) : [],
+      makinalar:  izinli("stock") ? stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))).slice(0, 6) : [],
     };
-  }, [q, customers, teklifler, dealers, stock]);
+  }, [q, customers, teklifler, dealers, stock, allowedTabs]);
 
   const bos = results && !results.musteriler.length && !results.belgeler.length && !results.bayiler.length && !results.makinalar.length;
   const pick = (fn, arg) => { setOpen(false); fn?.(arg); };
