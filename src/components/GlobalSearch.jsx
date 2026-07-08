@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { trLower, fmtTR } from "../lib/utils";
+import { aramaNormalize, fmtTR } from "../lib/utils";
 import { Icon } from "./ui";
 
 // ── Genel arama ──────────────────────────────────────────────────────────────
@@ -27,9 +27,9 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
   }, [open]);
 
   const results = useMemo(() => {
-    const query = trLower(q.trim());
+    const query = aramaNormalize(q.trim());
     if (query.length < 2) return null;
-    const has = (v) => trLower(String(v || "")).includes(query);
+    const has = (v) => aramaNormalize(String(v || "")).includes(query);
     const izinli = (tabId) => !Array.isArray(allowedTabs) || allowedTabs.includes(tabId);
     return {
       musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))).slice(0, 8) : [],
@@ -77,10 +77,10 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                     <b>{c.name}</b>
                     <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{c.model || ""}{c.serialNo ? ` · S/N ${c.serialNo}` : ""}{c.installDate ? ` · ${fmtTR(c.installDate)}` : ""}</span>
                     {(() => {
-                      const query = trLower(q.trim());
-                      const eski = (c.prevOwners || []).find(o => trLower(String(o.name || "")).includes(query));
+                      const query = aramaNormalize(q.trim());
+                      const eski = (c.prevOwners || []).find(o => aramaNormalize(String(o.name || "")).includes(query));
                       // Kayıt aramaya yalnızca eski sahibi üzerinden yakalandıysa nedenini göster
-                      return eski && !trLower(String(c.name || "")).includes(query)
+                      return eski && !aramaNormalize(String(c.name || "")).includes(query)
                         ? <span style={{ color: "#b45309", marginLeft: 8, fontSize: 11.5 }}>eski sahibi: {eski.name}</span>
                         : null;
                     })()}

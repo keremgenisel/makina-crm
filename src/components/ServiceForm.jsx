@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -34,9 +34,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
-        trLower(c.name).includes(trLower(custSearch)) ||
-        trLower(c.contact).includes(trLower(custSearch)) ||
-        trLower(c.serialNo).includes(trLower(custSearch))
+        aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
+        aramaNormalize(c.contact).includes(aramaNormalize(custSearch)) ||
+        aramaNormalize(c.serialNo).includes(aramaNormalize(custSearch))
       ).slice(0, 6)
     : [];
 

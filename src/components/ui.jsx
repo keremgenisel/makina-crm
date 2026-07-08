@@ -1,6 +1,6 @@
 import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
-import { trLower } from "../lib/utils";
+import { aramaNormalize } from "../lib/utils";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -132,7 +132,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
   const [justAdded, setJustAdded] = useState(null);
   // Sonuç sayısı sınırlanmıyor — panel zaten scrollable (maxHeight:220, overflowY:auto); eski sabit
   // limit (8) bazı öğelerin (örn. 150 parçalık listede 8'den sonrası) hiç görünmemesine yol açıyordu.
-  const filtered = q.trim() ? items.filter(it => trLower(getLabel(it)).includes(trLower(q))) : items;
+  const filtered = q.trim() ? items.filter(it => aramaNormalize(getLabel(it)).includes(aramaNormalize(q))) : items;
   const pick = (it) => {
     onPick(it);
     setQ("");
@@ -229,7 +229,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
     setTimeout(() => inputRef.current?.focus(), 30);
     return () => { document.removeEventListener("mousedown", onDoc); window.removeEventListener("keydown", onKey); };
   }, [open]);
-  const filtered = q.trim() ? options.filter(o => trLower(o.label).includes(trLower(q))) : options;
+  const filtered = q.trim() ? options.filter(o => aramaNormalize(o.label).includes(aramaNormalize(q))) : options;
   const secili = options.find(o => o.value === value);
   const satir = { display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", fontSize: 13, cursor: "pointer", background: "none" };
   return (

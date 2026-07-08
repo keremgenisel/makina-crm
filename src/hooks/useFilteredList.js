@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower } from "../lib/utils";
+import { aramaNormalize } from "../lib/utils";
 
 // Liste ekranlarında tekrar eden "ara + filtrele + sırala + sayfala" mantığını tek yerde toplar.
 // searchFields: item üzerindeki düz alan adları (örn. ["name", "city"]).
@@ -12,12 +12,12 @@ export const useFilteredList = (data, { searchFields, searchFn, filterFn, sortFn
   // Arama değişince sayfa 1'e dönsün (önceki sayfada kalıp boş liste görmeyi önler).
   const setSearch = (v) => { setSearchRaw(v); setPage(1); };
 
-  const q = trLower((search || "").trim());
+  const q = aramaNormalize((search || "").trim());
   let filtered = data.filter(item => {
     if (filterFn && !filterFn(item)) return false;
     if (!q) return true;
     if (searchFn) return searchFn(item, q);
-    return (searchFields || []).some(f => trLower(item[f]).includes(q));
+    return (searchFields || []).some(f => aramaNormalize(item[f]).includes(q));
   });
   if (sortFn) filtered = [...filtered].sort(sortFn);
 

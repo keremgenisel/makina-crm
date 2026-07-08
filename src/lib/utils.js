@@ -21,6 +21,13 @@ export const addMonthsToDateStr = (dateStr, months) => {
 };
 // Türkçe büyük/küçük harf dönüşümü (İ→i, I→ı doğru çalışır)
 export const trLower = (s) => (s || "").toLocaleLowerCase("tr");
+// Arama için Türkçe karakter katlaması: küçült + aksanı ASCII'ye indir. Böylece kullanıcı
+// Türkçe karakter yazsa da yazmasa da eşleşir ("sisli"↔"Şişli", "altuntas"↔"Altuntaş",
+// "isik"↔"IŞIK"). trLower İ→i, I→ı yaptığı için sonra ı→i katlaması ikisini de kapsar.
+// YALNIZCA arama eşleştirmesinde kullanılır; dedup/sıralama/benzersizlik kontrolleri trLower
+// kullanmaya devam etmeli (aksi halde farklı isimler yanlışlıkla aynı sayılır).
+export const aramaNormalize = (s) =>
+  trLower(s).replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
 // Kalıp bilgisini okunur metne çevir (yeni dizi formatı + eski tek metin uyumlu)
 export const kalipText = (c) => {
   if (Array.isArray(c?.kaliplar) && c.kaliplar.length) {

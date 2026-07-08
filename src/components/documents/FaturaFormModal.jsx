@@ -201,7 +201,7 @@ export const FaturaFormModal = ({
                       style={{ ...inputStyle, padding: "6px 8px", textAlign: "right" }} placeholder="0" />
                   </td>
                   <td style={{ padding: "6px 8px", textAlign: "right", width: 100, fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-                    {tutar > 0 ? tutar.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                    {tutar > 0 ? tutar.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
                   </td>
                   <td style={{ padding: "6px 8px", width: 32 }}>
                     <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.filter((_, i) => i !== idx) }))}
@@ -252,7 +252,7 @@ export const FaturaFormModal = ({
           <div style={{ marginTop: 16, padding: "12px 16px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0", textAlign: "right" }}>
             <div style={{ fontSize: 13, color: "#475569", marginBottom: 4 }}>TOTAL</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>
-              {calcFaturaTotal(faturaForm).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {faturaForm.currency}
+              {calcFaturaTotal(faturaForm).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {faturaForm.currency}
             </div>
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, fontStyle: "italic" }}>
               {numberToWordsEN(calcFaturaTotal(faturaForm), faturaForm.currency)}

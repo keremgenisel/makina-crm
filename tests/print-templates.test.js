@@ -59,4 +59,21 @@ describe("FROM kutusu içeriği (EN proforma + yurt dışı fatura)", () => {
     expect(html).toContain("EMAIL");
     expect(html).not.toContain(">WEB<");
   });
+
+  it("yurt dışı fatura, faturaFirmaAdi doluysa onu kullanır; boşsa evrak adına düşer", () => {
+    const fatura = { no: "INV-1", tarih: "2026-07-08", currency: "USD", firma: "ACME GmbH", satirlar: [] };
+    const ile = buildFaturaHtml(fatura, { ...factory, faturaFirmaAdi: "ALTUNMAK MACHINERY LTD." }, 1000, "");
+    expect(ile).toContain("ALTUNMAK MACHINERY LTD.");
+    const bosuz = buildFaturaHtml(fatura, { ...factory, faturaFirmaAdi: "" }, 1000, "");
+    expect(bosuz).toContain("ALTUNTAŞ MAKİNA"); // evrakFirmaAdi'ye düşer
+    expect(bosuz).not.toContain("ALTUNMAK MACHINERY LTD.");
+  });
+
+  it("yurt dışı fatura tutarları Türkçe biçimde (nokta binlik, virgül ondalık)", () => {
+    const fatura = { no: "INV-1", tarih: "2026-07-08", currency: "USD", firma: "ACME GmbH",
+      satirlar: [{ model: "AK100", adet: 1, birimFiyat: "100000" }] };
+    const html = buildFaturaHtml(fatura, factory, 100000, "");
+    expect(html).toContain("100.000,00");
+    expect(html).not.toContain("100,000.00");
+  });
 });

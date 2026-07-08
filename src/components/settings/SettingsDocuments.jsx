@@ -122,7 +122,9 @@ const SECTIONS = {
 // Hangi bölümlerde hangi alanların varsayılan değeri düzenlenebilir
 const FIELD_DEFAULTS_META = {
   teklif: {
-    belge: [],
+    belge: [
+      { key: "modelYiliDegeri", label: "Model Yılı", biDil: true },
+    ],
     kosullar: [
       { key: "odemeSekli", label: "Ödeme Şekli", biDil: true },
       { key: "teslimSekli", label: "Teslim Şekli", biDil: true },
@@ -134,6 +136,7 @@ const FIELD_DEFAULTS_META = {
   },
   proforma: {
     belge: [
+      { key: "modelYiliDegeri", label: "Model Yılı", biDil: true },
       { key: "odemeSekli",  label: "Ödeme Şekli",  biDil: true },
       { key: "teslimSekli", label: "Teslim Şekli", biDil: true },
       { key: "teslimYeri",  label: "Teslim Yeri",  biDil: true, multiline: true },
@@ -145,7 +148,6 @@ const FIELD_DEFAULTS_META = {
     belge: [
       { key: "payment",  label: "Ödeme Şekli",  biDil: true },
       { key: "delivery", label: "Teslim Şekli", biDil: true },
-      { key: "gtipNo",   label: "GTİP No",      biDil: false },
       { key: "origin",   label: "Menşei",       biDil: false },
     ],
     paketleme: [

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
+import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
@@ -111,7 +111,7 @@ const nextDocNo = (teklifler, type) => {
   return `${prefix}${String(max + 1).padStart(5, "0")}`;
 };
 
-const makeEmpty = (type, teklifler, factory, dil = "TR", evrakFormConfig = null) => {
+export const makeEmpty = (type, teklifler, factory, dil = "TR", evrakFormConfig = null) => {
   const D = FORM_DEFAULTS[dil] || FORM_DEFAULTS.TR;
   const fd = evrakFormConfig?.[type]?.fieldDefaults || {};
   const fv = (key, fallback) => fd[key]?.[dil] ?? fd[key]?.TR ?? fallback;
@@ -135,7 +135,7 @@ const makeEmpty = (type, teklifler, factory, dil = "TR", evrakFormConfig = null)
     kur: "",
     teslimYeri: fv("teslimYeri", type === "proforma" ? D.teslimYeri : ""),
     gtipNo: factory?.gtipNo || "",
-    modelYiliDegeri: "",
+    modelYiliDegeri: fv("modelYiliDegeri", ""),
     durum: "taslak",
     createdAt: today(),
     customFieldValues: Object.fromEntries(
@@ -319,8 +319,8 @@ export const Documents = ({
   const [faturaSearch, setFaturaSearch] = useState("");
   const filteredFaturalar = useMemo(() => {
     if (!faturaSearch.trim()) return liveFaturalar;
-    const q = trLower(faturaSearch.trim());
-    return liveFaturalar.filter(f => trLower(f.firma || "").includes(q) || trLower(f.no || "").includes(q));
+    const q = aramaNormalize(faturaSearch.trim());
+    return liveFaturalar.filter(f => aramaNormalize(f.firma || "").includes(q) || aramaNormalize(f.no || "").includes(q));
   }, [liveFaturalar, faturaSearch]);
 
   const makeEmptyFatura = () => {
@@ -346,7 +346,7 @@ export const Documents = ({
       paketAdedi:  fv("paketAdedi",  "1"),
       brutAgirlik: fv("brutAgirlik", "180 KG"),
       olculer:     fv("olculer",     "70x100x80 CM"),
-      gtipNo:      factory?.gtipNo  || fv("gtipNo", ""),
+      gtipNo:      factory?.gtipNo  || "",
       not: "",
       createdAt: today(),
     };
@@ -419,10 +419,10 @@ export const Documents = ({
   const [custSearch, setCustSearch] = useState("");
   const custResults = useMemo(() => {
     if (!custSearch.trim()) return [];
-    const q = trLower(custSearch.trim());
+    const q = aramaNormalize(custSearch.trim());
     const seen = new Set();
     return customers.filter(c => {
-      if (!trLower(c.name || "").includes(q)) return false;
+      if (!aramaNormalize(c.name || "").includes(q)) return false;
       const key = trLower(c.name || "");
       if (seen.has(key)) return false;
       seen.add(key);
@@ -441,7 +441,7 @@ export const Documents = ({
     liveTeklifler.filter(t => t.type === subTab).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
   [liveTeklifler, subTab]);
   const { search, setSearch, page, setPage, filtered: searched, paged } = useFilteredList(filtered, {
-    searchFn: (t, q) => trLower(t.firma || "").includes(q) || trLower(t.no || "").includes(q),
+    searchFn: (t, q) => aramaNormalize(t.firma || "").includes(q) || aramaNormalize(t.no || "").includes(q),
     perPage: PER_PAGE,
   });
 
@@ -1244,6 +1244,7 @@ export const Documents = ({
                         setForm(p => ({
                           ...p, dil,
                           kdvOrani: dil === "EN" ? "0" : p.kdvOrani,
+                          modelYiliDegeri: fv("modelYiliDegeri", p.modelYiliDegeri),
                           odemeSekli: fv("odemeSekli", D.odemeSekli),
                           teslimSekli: fv("teslimSekli", D.teslimSekli),
                           teslimSuresi: fv("teslimSuresi", D.teslimSuresi),

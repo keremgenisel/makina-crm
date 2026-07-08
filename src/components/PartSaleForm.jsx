@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, trLower, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
 
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
@@ -17,9 +17,9 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
-        trLower(c.name).includes(trLower(custSearch)) ||
-        trLower(c.model).includes(trLower(custSearch)) ||
-        trLower(c.serialNo).includes(trLower(custSearch))
+        aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
+        aramaNormalize(c.model).includes(aramaNormalize(custSearch)) ||
+        aramaNormalize(c.serialNo).includes(aramaNormalize(custSearch))
       ).slice(0, 6)
     : [];
 

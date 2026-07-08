@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { today, fmtTR, uid, mergeAndUpdate, totalMiktar } from "../../lib/utils";
+import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict } from "../ui";
@@ -40,7 +40,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
   [pinnedPartIds, rows]);
 
   const { search, setSearch, page, setPage, filtered: filteredRows, paged: pagedRows } = useFilteredList(rows, {
-    searchFn: (r, q) => r.part.ad.toLowerCase().includes(q) || (r.part.models || []).some(m => m.toLowerCase().includes(q)),
+    searchFn: (r, q) => aramaNormalize(r.part.ad).includes(q) || (r.part.models || []).some(m => aramaNormalize(m).includes(q)),
     perPage: PER_PAGE,
   });
 

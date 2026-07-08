@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower, withDeleted } from "../lib/utils";
+import { trLower, aramaNormalize, withDeleted } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -16,7 +16,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
     ...customModels.map(m => ({ m, isStd: false })),
   ];
   const { search, setSearch, page, setPage, filtered, paged: pagedModels } = useFilteredList(allModels, {
-    searchFn: (item, q) => trLower(item.m.model).includes(q),
+    searchFn: (item, q) => aramaNormalize(item.m.model).includes(q),
     perPage: PER_PAGE,
   });
 

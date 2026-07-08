@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -61,7 +61,12 @@ export const Customers = ({
   }, [customers, services, partSales, factoryName]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
-    searchFields: ["name", "city", "satisYapan", "contact", "country", "serialNo", "model"],
+    // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
+    searchFn: (c, q) => {
+      const alanlar = ["name", "city", "satisYapan", "contact", "country", "serialNo", "model"];
+      if (alanlar.some(f => aramaNormalize(c[f]).includes(q))) return true;
+      return (c.prevOwners || []).some(o => aramaNormalize(String(o.name || "")).includes(q));
+    },
     filterFn: c => {
       if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();
       if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();

@@ -1,7 +1,7 @@
 // Saf yardımcı fonksiyon testleri (src/lib/utils.js) — framework'süz, Node ortamında koşar.
 import { describe, it, expect } from "vitest";
 import {
-  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm,
+  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -77,6 +77,33 @@ describe("numberToWordsEN", () => {
     expect(s).toContain("one thousand");
     expect(s).toContain("two hundred");
     expect(s).toContain("fifty");
+  });
+});
+
+describe("aramaNormalize — Türkçe karakter katlamalı arama", () => {
+  const eslesir = (veri, sorgu) => aramaNormalize(veri).includes(aramaNormalize(sorgu));
+
+  it("altı Türkçe harfi ASCII karşılığına indirir", () => {
+    expect(aramaNormalize("Çığöşü ÇIĞÖŞÜ")).toBe("cigosu cigosu");
+  });
+
+  it("Türkçe karakter yazılmadan da eşleşir (ve tersi)", () => {
+    expect(eslesir("Şişli", "sisli")).toBe(true);
+    expect(eslesir("Altuntaş", "altuntas")).toBe(true);
+    expect(eslesir("Çetin", "cetin")).toBe(true);
+    expect(eslesir("Güneş", "gunes")).toBe(true);
+    expect(eslesir("Öztürk", "ozturk")).toBe(true);
+    expect(eslesir("IŞIK MAKİNA", "isik")).toBe(true);
+    expect(eslesir("altuntas", "Altuntaş")).toBe(true);
+  });
+
+  it("büyük I / İ ayrımından kaynaklı sorunları da çözer", () => {
+    expect(eslesir("ISTANBUL", "istanbul")).toBe(true);
+    expect(eslesir("İstanbul", "istanbul")).toBe(true);
+  });
+
+  it("alakasız sorgu eşleşmez", () => {
+    expect(eslesir("Şişli", "kadikoy")).toBe(false);
   });
 });
 

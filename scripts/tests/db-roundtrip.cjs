@@ -75,7 +75,7 @@ dbmod.writeBlobToDb({
     { id: 8, customerId: 500, tarih: "2026-07-02", tur: "Ziyaret", not: "Silinen görüşme", deletedAt: "2026-07-03T10:00:00.000Z" },
   ],
   stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], notes: [], parts: [],
-  factory: { name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com" },
+  factory: { name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com", faturaFirmaAdi: "ALTUNMAK MACHINERY LTD." },
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
     { id: 102, type: "teklif", no: "T-2", firma: "F2", durum: "taslak", satirlar: [] },
@@ -88,6 +88,7 @@ blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
 check("satisTamam undefined korunur", blob.teklifler.find(t => t.id === 102)?.satisTamam === undefined);
 check("factory.web tam turu", blob.factory?.web === "www.altunmak.com");
+check("factory.faturaFirmaAdi tam turu", blob.factory?.faturaFirmaAdi === "ALTUNMAK MACHINERY LTD.");
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);

@@ -24,7 +24,7 @@ const migrateBankalar = (factory) => {
 
 export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
-    evrakFirmaAdi: "", contact: "", phone: "", email: "", web: "", adres: "", country: "", city: "",
+    evrakFirmaAdi: "", faturaFirmaAdi: "", contact: "", phone: "", email: "", web: "", adres: "", country: "", city: "",
     gtipNo: "",
     bankalar: [emptyBank()],
   });
@@ -34,6 +34,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     if (!factory) return;
     setForm({
       evrakFirmaAdi: factory.evrakFirmaAdi ?? factory.name ?? "",
+      faturaFirmaAdi: factory.faturaFirmaAdi || "",
       contact: factory.contact || "",
       phone: factory.phone || "",
       email: factory.email || "",
@@ -50,6 +51,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     setFactory(prev => ({
       ...prev,
       evrakFirmaAdi: (form.evrakFirmaAdi || "").trim(),
+      faturaFirmaAdi: (form.faturaFirmaAdi || "").trim(),
       contact: form.contact,
       phone: form.phone,
       email: form.email,
@@ -87,6 +89,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Evrak'ta Görünen Firma Adı"><Input {...f("evrakFirmaAdi")} placeholder="Altuntaş Makina Sanayi" /></Field>
+          <Field label="Yurt Dışı Fatura Firma Adı"><Input {...f("faturaFirmaAdi")} placeholder="Boş ise Evrak firma adı kullanılır" /></Field>
           <Field label="Yetkili / Sorumlu"><Input {...f("contact")} placeholder="Mehmet Altuntaş" /></Field>
           <Field label="Telefon"><Input {...f("phone")} placeholder="0212 493 35 86" /></Field>
           <Field label="E-posta"><Input {...f("email")} placeholder="info@altunmak.com" /></Field>

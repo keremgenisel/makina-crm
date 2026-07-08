@@ -1128,8 +1128,11 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
   fatura = escDeep(fatura); factory = escDeep(factory); faturaT = escDeep(faturaT || {}); faturaCfg = escDeep(faturaCfg);
   const L = { ...DEFAULT_FATURA_TRANSLATIONS, ...faturaT };
   const f = factory || {};
+  // Yurt dışı faturaya özel firma adı: yalnızca burada kullanılır (teklif/proforma etkilenmez).
+  // Boş ise normal evrak firma adına düşer (geriye dönük uyumlu).
+  const faturaFirma = f.faturaFirmaAdi || f.evrakFirmaAdi || f.name || "Altuntaş Makina";
   const cur = fatura.currency || "USD";
-  const fmt2 = (n) => (parseMoney(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt2 = (n) => (parseMoney(n) || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const amountWords = numberToWordsEN(total, cur);
   const isH = (section, key) => (faturaCfg?.hiddenFields?.[section] || []).includes(key);
 
@@ -1158,20 +1161,23 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
     const desc = r.aciklama || "";
     const modelCode = r.model ? `<b style="font-family:monospace;font-size:9px;">${r.model}</b>${desc ? "<br>" : ""}` : "";
     const tanimHtml = r.tanim ? `<div style="font-size:8.5px;color:#64748b;line-height:1.5;">${String(r.tanim).replace(/\n/g, "<br>")}</div>` : "";
-    const resimHtml = r.resim ? `<img src="${r.resim}" style="width:60px;height:45px;object-fit:contain;display:block;margin:4px 0;border-radius:4px;border:1px solid #e8ecf0;">` : "";
+    const resimHtml = r.resim ? `<img src="${r.resim}" style="width:90px;height:68px;object-fit:contain;display:block;border-radius:4px;border:1px solid #e8ecf0;">` : "";
     const bg = i % 2 === 0 ? "#fff" : "#f8fafc";
     return `<tr style="background:${bg};">
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;color:#888;font-size:9.5px;">${i + 1}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;">
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div style="flex-shrink:0;min-width:70px;">${resimHtml}${modelCode}${desc}</div>
-          ${tanimHtml ? `<div style="flex:1;padding-top:4px;">${tanimHtml}</div>` : ""}
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;color:#888;font-size:9.5px;vertical-align:top;">${i + 1}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;vertical-align:top;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="flex-shrink:0;${resimHtml ? "width:90px;" : "max-width:140px;"}">
+            ${resimHtml}
+            <div style="${resimHtml ? "margin-top:4px;" : ""}font-size:10px;font-weight:600;line-height:1.35;">${modelCode}${desc}</div>
+          </div>
+          ${tanimHtml ? `<div style="flex:1;min-width:0;">${tanimHtml}</div>` : ""}
         </div>
       </td>
-      ${hasSeriNo ? `<td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;font-family:monospace;font-size:9.5px;">${r.seriNo || "—"}</td>` : ""}
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;">${r.adet || 1}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;">${cur} ${fmt2(fiyat)}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;font-weight:700;">${cur} ${fmt2(tutar)}</td>
+      ${hasSeriNo ? `<td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;font-family:monospace;font-size:9.5px;vertical-align:top;">${r.seriNo || "—"}</td>` : ""}
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;vertical-align:top;">${r.adet || 1}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;vertical-align:top;white-space:nowrap;">${cur} ${fmt2(fiyat)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;font-weight:700;vertical-align:top;white-space:nowrap;">${cur} ${fmt2(tutar)}</td>
     </tr>`;
   }).join("");
 
@@ -1214,7 +1220,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
   </style></head><body>
   <table style="width:100%;margin-bottom:16px;">
     <tr>
-      <td style="vertical-align:top;">${logo}${firmaBlok(f, 12)}</td>
+      <td style="vertical-align:top;">${logo}${firmaBlok({ ...f, evrakFirmaAdi: faturaFirma }, 12)}</td>
       <td style="text-align:right;vertical-align:top;">
         <div style="font-size:22px;font-weight:900;letter-spacing:2px;color:#1a1a1a;">${L.title}</div>
         <div style="margin-top:4px;font-size:10px;">
@@ -1233,7 +1239,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
           <table style="width:100%;border-collapse:collapse;font-size:10px;">
             <tr>
               <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:35%;">COMPANY</td>
-              <td style="padding:4px 8px 2px;font-weight:700;font-size:11px;color:#1a1a1a;">${f.evrakFirmaAdi || f.name || "—"}</td>
+              <td style="padding:4px 8px 2px;font-weight:700;font-size:11px;color:#1a1a1a;">${faturaFirma}</td>
             </tr>
             ${(f.adres || f.address) ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">ADDRESS</td><td style="padding:2px 8px;">${String(f.adres || f.address).replace(/\n/g, "<br>")}</td></tr>` : ""}
             ${[f.city, f.country].filter(Boolean).length ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">COUNTRY / CITY</td><td style="padding:2px 8px;">${[f.city, f.country].filter(Boolean).join(", ")}</td></tr>` : ""}
