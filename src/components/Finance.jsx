@@ -4,6 +4,7 @@ import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasSe
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
+import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 
@@ -28,39 +29,11 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
   const oncekiAy = (() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
   const [raporAy, setRaporAy] = useState(oncekiAy);
   const aylikRapor = () => {
-    const [yil, ay] = raporAy.split("-").map(Number);
-    const ayIci = (t) => t && t.slice(0, 7) === raporAy;
-    const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
-
-    const satislar = customers.filter(c => !c.isResale && ayIci(c.installDate));
-    const satisTutar = {}; satislar.forEach(c => paraEkle(satisTutar, c.currency, c.fabrikaSatisBedeli));
-    const modelMap = {}; satislar.forEach(c => { const k = c.model || "Belirtilmemiş"; modelMap[k] = (modelMap[k] || 0) + 1; });
-
-    const ayOdemeler = payments.filter(p => !p.deletedAt && ayIci(p.tarih));
-    const tahsilatTutar = {}; ayOdemeler.forEach(p => paraEkle(tahsilatTutar, p.currency, p.tutar));
-
-    const borclular = customers.filter(c => customerHasAnyDebt(c, services, partSales, factoryName));
-    const acikBorc = {}; customers.forEach(c => { if (parseMoney(c.kalanBorc) > 0) paraEkle(acikBorc, c.currency, c.kalanBorc); });
-
-    const aySevisler = services.filter(sv => !sv.deletedAt && ayIci(sv.date));
-    const servisTutar = {}; aySevisler.forEach(sv => { paraEkle(servisTutar, sv.currency, sv.servisUcreti); if (!sv.parcaUcretsizMi) paraEkle(servisTutar, sv.parcaCurrency || sv.currency, sv.parcaUcreti); });
-    const servisTipMap = {}; aySevisler.forEach(sv => { const k = sv.type || "Diğer"; servisTipMap[k] = (servisTipMap[k] || 0) + 1; });
-
-    const rapor = {
-      ayEtiketi: new Date(yil, ay - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }),
-      olusturmaTarihi: new Date().toLocaleDateString("tr-TR"),
-      satisAdet: satislar.length, satisTutar,
-      modelKirilimi: Object.entries(modelMap).sort((a, b) => b[1] - a[1]).map(([model, adet]) => ({ model, adet })),
-      tahsilatAdet: ayOdemeler.length, tahsilatTutar,
-      cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
-      borcluFirma: borclular.length, acikBorc,
-      gecikenCek: payments.filter(p => !p.deletedAt && isCekVadesiGecmis(p)).length,
-      gecikenTaksit: customers.filter(c => taksitGecikmisMi(c)).length,
-      servisAdet: aySevisler.length, servisTutar,
-      servisKirilimi: Object.entries(servisTipMap).map(([tip, adet]) => ({ tip, adet })),
-      teklifAdet: teklifler.filter(t => !t.deletedAt && t.type === "teklif" && ayIci(t.tarih)).length,
-      bekleyenTeklif: teklifler.filter(t => !t.deletedAt && t.type === "teklif" && t.durum === "gonderildi").length,
-    };
+    // Hesap motoru saf ve testli (src/lib/aylikRapor.js); seçilen ay + önceki ay birlikte
+    const veri = { customers, services, partSales, payments, teklifler };
+    const secenekler = { factoryName, kdvRates, factory };
+    const rapor = hesaplaAylikRapor(veri, raporAy, secenekler);
+    rapor.onceki = hesaplaAylikRapor(veri, oncekiAyStr(raporAy), secenekler);
     const html = buildAylikRaporHtml(rapor, factory);
     if (window.appPrint?.printHtml) window.appPrint.printHtml(html, null, `Aylik-Rapor-${raporAy}.pdf`);
   };
@@ -550,12 +523,13 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
       {showAnlasmaliModal && (
         <Modal title="Anlaşmalı Servislere Satılan Parça Detayı" onClose={() => { setShowAnlasmaliModal(false); setAnlasmaliSearch(""); }}>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
             <input
               value={anlasmaliSearch}
               onChange={e => { setAnlasmaliSearch(e.target.value); setAnlasmaliPage(1); }}
               placeholder="Müşteri firma veya servis firması ara..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
             />
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>

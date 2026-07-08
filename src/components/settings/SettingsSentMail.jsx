@@ -68,7 +68,7 @@ export const SettingsSentMail = () => {
 
   return (
     <>
-      <Section title="Gönderilen E-postalar" icon="mail">
+      <Section title="Gönderilen E-postalar" icon="mail" collapsible defaultOpen>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Servis formu, makina raporu, dışa aktarım veya bayi e-postası olarak gönderilen tüm e-postaların kaydı (en yeni üstte).
         </div>
@@ -130,7 +130,7 @@ export const SettingsSentMail = () => {
       </Section>
 
       {/* ── E-posta Çöp Kutusu ── */}
-      <Section title="Silinen E-postalar" icon="trash">
+      <Section title="Silinen E-postalar" icon="trash" collapsible>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Silinen e-posta kayıtları buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>

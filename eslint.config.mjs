@@ -48,11 +48,12 @@ export default [
 
   // Testler (vitest, node)
   {
-    files: ["tests/**/*.js"],
+    files: ["tests/**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "module",
-      globals: globals.node,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: { ...globals.node, ...globals.browser },
     },
     rules: { ...js.configs.recommended.rules },
   },

@@ -53,6 +53,7 @@ const firmaBlok = (f, nameSize = 13, textSize = 9) => {
     adres ? `<div style="font-size:${textSize}px;color:#555;margin-top:2px;line-height:1.5;">${adres}</div>` : "",
     loc ? `<div style="font-size:${textSize}px;color:#555;">${loc}</div>` : "",
     iletisim ? `<div style="font-size:${textSize}px;color:#555;">${iletisim}</div>` : "",
+    f.web ? `<div style="font-size:${textSize}px;color:#555;">${f.web}</div>` : "",
   ].join("");
 };
 
@@ -514,12 +515,13 @@ export function buildSandikEtiketiHtml(gonderen, alici, translations = {}) {
   const gonderenSatirlar = [
     g.adres ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.adres)}</div>` : "",
     (g.city || g.country) ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc([g.city, g.country].filter(Boolean).join(", "))}</div>` : "",
-    g.tel ? `<div style="font-size:9pt;color:#333;line-height:1.55;"><b>${bi("tel")}:</b> ${esc(g.tel)}</div>` : "",
+    g.tel ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.tel)}</div>` : "",
     g.email ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.email)}</div>` : "",
+    g.web ? `<div style="font-size:9pt;color:#333;line-height:1.55;">${esc(g.web)}</div>` : "",
   ].join("");
   const aliciSatirlar = [
     a.adres ? `<div style="font-size:10pt;line-height:1.6;">${esc(a.adres)}</div>` : "",
-    a.tel ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("tel")}:</b> ${esc(a.tel)}</div>` : "",
+    a.tel ? `<div style="font-size:10pt;line-height:1.6;">${esc(a.tel)}</div>` : "",
     a.yetkili1Ad ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("yetkili")}:</b> ${esc(a.yetkili1Ad)}${a.yetkili1Tel ? " · " + esc(a.yetkili1Tel) : ""}</div>` : "",
     a.yetkili2Ad ? `<div style="font-size:10pt;line-height:1.6;"><b>${bi("yetkili")}:</b> ${esc(a.yetkili2Ad)}${a.yetkili2Tel ? " · " + esc(a.yetkili2Tel) : ""}</div>` : "",
   ].join("");
@@ -778,7 +780,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
     <tr>
       <td style="vertical-align:top;padding-right:20px;">
         <img src="${LOGO}" style="height:56px;object-fit:contain;display:block;" alt="logo" />
-        ${firmaBlok({ name: companyName, adres: companyAddr, city: f.city, country: f.country, phone: companyPhone, email: companyEmail })}
+        ${firmaBlok({ name: companyName, adres: companyAddr, city: f.city, country: f.country, phone: companyPhone, email: companyEmail, web: f.web })}
       </td>
       <td style="text-align:right;vertical-align:middle;white-space:nowrap;">
         <div style="display:inline-block;background:${BRAND};color:#fff;padding:7px 16px;border-radius:6px;text-align:center;">
@@ -869,18 +871,25 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
 
   // ── EN PROFORMA BİLGİ TABLOSU ─────────────────────────────────────────────
   const vergiStr = [form.vergiNo, form.vergiDairesi].filter(Boolean).join(" / ");
+  const showModelYiliEN = !isHiddenPrint("belge", "modelYiliDegeri");
   const infoSectionEN = `
-  <table style="width:100%;border-collapse:collapse;margin-bottom:${(form.currency !== "TRY" && form.kur) || form.teslimYeri ? "6px" : "10px"};font-size:10px;">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? "6px" : "10px"};font-size:10px;">
     <tr>
       <td style="width:50%;vertical-align:top;padding-right:8px;">
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;height:100%;">
           <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">FROM</div>
-          <div style="padding:10px 12px;">
-            <div style="font-weight:700;font-size:11px;margin-bottom:4px;">${companyName}</div>
-            ${companyAddr ? `<div style="font-size:9.5px;color:#475569;line-height:1.7;">${companyAddr}</div>` : ""}
-            ${companyLoc ? `<div style="font-size:9.5px;color:#475569;">${companyLoc}</div>` : ""}
-            ${[companyPhone, companyEmail].filter(Boolean).length ? `<div style="font-size:9px;color:#64748b;margin-top:4px;">${[companyPhone, companyEmail].filter(Boolean).join("  ·  ")}</div>` : ""}
-          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <tr>
+              <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:35%;">COMPANY</td>
+              <td style="padding:4px 8px 2px;font-weight:700;font-size:11px;color:#1a1a1a;">${companyName}</td>
+            </tr>
+            ${companyAddr ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">ADDRESS</td><td style="padding:2px 8px;">${companyAddr}</td></tr>` : ""}
+            ${companyLoc ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">COUNTRY / CITY</td><td style="padding:2px 8px;">${companyLoc}</td></tr>` : ""}
+            ${companyPhone ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">PHONE</td><td style="padding:2px 8px;">${companyPhone}</td></tr>` : ""}
+            ${companyEmail ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">EMAIL</td><td style="padding:2px 8px;">${companyEmail}</td></tr>` : ""}
+            ${showModelYiliEN ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.modelYiliLabel}</td><td style="padding:2px 8px;">${form.modelYiliDegeri || L.newUnused}</td></tr>` : ""}
+            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr><td style="padding:2px 8px 4px;color:#888;font-size:9px;font-weight:600;">${fl("belge", "kur")}</td><td style="padding:2px 8px 4px;">${form.kur}</td></tr>` : ""}
+          </table>
         </div>
       </td>
       <td style="width:50%;vertical-align:top;">
@@ -901,7 +910,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
       </td>
     </tr>
   </table>
-  ${(form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur")) || (form.teslimYeri && !isHiddenPrint("belge", "teslimYeri")) ? `<div style="display:flex;gap:20px;font-size:9.5px;color:#475569;margin-bottom:10px;">${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<span>${fl("belge", "kur")}: <strong>${form.kur}</strong></span>` : ""}${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<span>${fl("belge", "teslimYeri")}: <strong>${form.teslimYeri}</strong></span>` : ""}</div>` : ""}`;
+  ${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<div style="display:flex;gap:20px;font-size:9.5px;color:#475569;margin-bottom:10px;"><span>${fl("belge", "teslimYeri")}: <strong>${form.teslimYeri}</strong></span></div>` : ""}`;
 
   // ── ÜRÜN TABLOSU ──────────────────────────────────────────────────────────
   const allItems = (form.satirlar || [])
@@ -1148,12 +1157,17 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
     const tutar = adet * fiyat;
     const desc = r.aciklama || "";
     const modelCode = r.model ? `<b style="font-family:monospace;font-size:9px;">${r.model}</b>${desc ? "<br>" : ""}` : "";
-    const tanimHtml = r.tanim ? `<div style="font-size:8.5px;color:#64748b;line-height:1.5;margin-top:2px;">${String(r.tanim).replace(/\n/g, "<br>")}</div>` : "";
+    const tanimHtml = r.tanim ? `<div style="font-size:8.5px;color:#64748b;line-height:1.5;">${String(r.tanim).replace(/\n/g, "<br>")}</div>` : "";
     const resimHtml = r.resim ? `<img src="${r.resim}" style="width:60px;height:45px;object-fit:contain;display:block;margin:4px 0;border-radius:4px;border:1px solid #e8ecf0;">` : "";
     const bg = i % 2 === 0 ? "#fff" : "#f8fafc";
     return `<tr style="background:${bg};">
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;color:#888;font-size:9.5px;">${i + 1}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;">${resimHtml}${modelCode}${desc}${tanimHtml}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <div style="flex-shrink:0;min-width:70px;">${resimHtml}${modelCode}${desc}</div>
+          ${tanimHtml ? `<div style="flex:1;padding-top:4px;">${tanimHtml}</div>` : ""}
+        </div>
+      </td>
       ${hasSeriNo ? `<td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;font-family:monospace;font-size:9.5px;">${r.seriNo || "—"}</td>` : ""}
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;">${r.adet || 1}</td>
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:right;">${cur} ${fmt2(fiyat)}</td>
@@ -1216,11 +1230,16 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
       <td style="width:50%;vertical-align:top;padding-right:8px;">
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;height:100%;">
           <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:9.5px;letter-spacing:.5px;padding:4px 8px;">${L.fromLabel}</div>
-          <div style="padding:10px 12px;">
-            <div style="font-weight:700;font-size:11px;margin-bottom:4px;">${f.evrakFirmaAdi || f.name || ""}</div>
-            ${[f.adres || f.address || "", [f.city, f.country].filter(Boolean).join(", ")].filter(Boolean).length ? `<div style="font-size:9.5px;color:#475569;line-height:1.7;">${[f.adres || f.address || "", [f.city, f.country].filter(Boolean).join(", ")].filter(Boolean).join("<br>")}</div>` : ""}
-            ${[f.phone, f.email].filter(Boolean).length ? `<div style="font-size:9px;color:#64748b;margin-top:4px;">${[f.phone, f.email].filter(Boolean).join("  ·  ")}</div>` : ""}
-          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <tr>
+              <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:35%;">COMPANY</td>
+              <td style="padding:4px 8px 2px;font-weight:700;font-size:11px;color:#1a1a1a;">${f.evrakFirmaAdi || f.name || "—"}</td>
+            </tr>
+            ${(f.adres || f.address) ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">ADDRESS</td><td style="padding:2px 8px;">${String(f.adres || f.address).replace(/\n/g, "<br>")}</td></tr>` : ""}
+            ${[f.city, f.country].filter(Boolean).length ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">COUNTRY / CITY</td><td style="padding:2px 8px;">${[f.city, f.country].filter(Boolean).join(", ")}</td></tr>` : ""}
+            ${f.phone ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">PHONE</td><td style="padding:2px 8px;">${f.phone}</td></tr>` : ""}
+            ${f.email ? `<tr><td style="padding:2px 8px 4px;color:#888;font-size:9px;font-weight:600;">EMAIL</td><td style="padding:2px 8px 4px;">${f.email}</td></tr>` : ""}
+          </table>
         </div>
       </td>
       <td style="width:50%;vertical-align:top;">
@@ -1291,9 +1310,15 @@ export function buildAylikRaporHtml(rapor, factory) {
       <div style="padding:10px 12px;">${icerik}</div>
     </div>`;
   const st = (label, deger) => `<tr><td style="padding:3px 8px 3px 0;color:#64748b;font-size:11px;">${label}</td><td style="padding:3px 0;font-weight:700;font-size:12px;">${deger}</td></tr>`;
+  // Önceki ay karşılaştırma eki: satır değerinin yanına küçük gri "geçen ay: X"
+  const o = rapor.onceki || null;
+  const ga = (val) => o ? `<span style="font-weight:400;color:#94a3b8;font-size:10px;"> · geçen ay: ${val}</span>` : "";
+  const altBaslik = (t) => `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">${t}</div>`;
 
   const modelRows = (rapor.modelKirilimi || []).map(m =>
-    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${m.model}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${m.adet}</td></tr>`).join("");
+    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${m.model}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${m.adet} adet</td><td style="padding:3px 0;font-size:11px;text-align:right;color:#475569;">${paraSatir(m.gelir)}</td></tr>`).join("");
+  const saticiRows = (rapor.satisYapanKirilimi || []).map(x =>
+    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.ad}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet} adet</td></tr>`).join("");
   const servisRows = (rapor.servisKirilimi || []).map(x =>
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.tip}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet}</td></tr>`).join("");
 
@@ -1305,26 +1330,63 @@ export function buildAylikRaporHtml(rapor, factory) {
     <div>
       <div style="font-size:18px;font-weight:800;">Aylık Faaliyet Raporu</div>
       <div style="font-size:13px;color:#475569;">${rapor.ayEtiketi}</div>
+      <div style="font-size:11px;color:#94a3b8;">Dönem: ${rapor.donem}</div>
     </div>
     <div style="text-align:right;font-size:11px;color:#64748b;">
       <div style="font-weight:700;font-size:13px;color:#1a1a1a;">${factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina"}</div>
       ${factory?.adres ? `<div>${factory.adres}</div>` : ""}
       ${[factory?.city, factory?.country].filter(Boolean).length ? `<div>${[factory?.city, factory?.country].filter(Boolean).join(", ")}</div>` : ""}
       ${[factory?.phone, factory?.email].filter(Boolean).length ? `<div>${[factory?.phone, factory?.email].filter(Boolean).join("  ·  ")}</div>` : ""}
+      ${factory?.web ? `<div>${factory.web}</div>` : ""}
       <div>Oluşturma: ${rapor.olusturmaTarihi}</div>
     </div>
   </div>
 
-  ${kutu("SATIŞLAR", `<table>${st("Satılan makina", rapor.satisAdet + " adet")}${st("Satış tutarı", paraSatir(rapor.satisTutar))}</table>
-    ${modelRows ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">MODEL KIRILIMI</div><table>${modelRows}</table>` : ""}`)}
+  ${kutu("SATIŞLAR", `<table>
+    ${st("Satılan makina", `${rapor.satisAdet} adet${ga(`${o?.satisAdet} adet`)}`)}
+    ${rapor.ikinciElAdet > 0 || o?.ikinciElAdet > 0 ? st("2. el devir", `${rapor.ikinciElAdet} adet${ga(`${o?.ikinciElAdet} adet`)}`) : ""}
+    ${st("Fabrika satış bedeli", `${paraSatir(rapor.satisTutar)}${ga(paraSatir(o?.satisTutar))}`)}
+    ${st("Fatura bedeli", paraSatir(rapor.faturaTutar))}
+    ${st("Makina KDV'si", paraSatir(rapor.satisKdv))}
+    ${st("Ödenen komisyon", paraSatir(rapor.komisyonTutar))}
+  </table>
+  ${modelRows ? `${altBaslik("MODEL KIRILIMI")}<table>${modelRows}</table>` : ""}
+  ${saticiRows ? `${altBaslik("SATIŞ YAPAN KIRILIMI")}<table>${saticiRows}</table>` : ""}`)}
 
-  ${kutu("TAHSİLAT", `<table>${st("Alınan ödeme", rapor.tahsilatAdet + " kayıt")}${st("Tahsilat tutarı", paraSatir(rapor.tahsilatTutar))}${st("Tahsil edilen çek", rapor.cekTahsilAdet + " adet")}</table>`)}
+  ${kutu("DİĞER SATIŞLAR", `<table>
+    ${st("Extra kalıp satışı", `${rapor.extraKalipAdet} adet · ${paraSatir(rapor.extraKalipTutar)}${ga(paraSatir(o?.extraKalipTutar))}`)}
+    ${st("Extra kalıp KDV'si", paraSatir(rapor.extraKalipKdv))}
+    ${st("Yedek parça satışı", `${rapor.yedekParcaAdet} adet · ${paraSatir(rapor.yedekParcaTutar)}`)}
+    ${st("Anlaşmalı servislere parça", paraSatir(rapor.anlasmaliParcaTutar))}
+  </table>`)}
 
-  ${kutu("ALACAK DURUMU (dönem sonu)", `<table>${st("Borçlu firma", rapor.borcluFirma + " firma")}${st("Açık makina borcu", paraSatir(rapor.acikBorc))}${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}</table>`)}
+  ${kutu("SERVİS", `<table>
+    ${st("Servis kaydı", `${rapor.servisAdet} adet${ga(`${o?.servisAdet} adet`)}`)}
+    ${st("İşçilik geliri", `${paraSatir(rapor.iscilikTutar)}${ga(paraSatir(o?.iscilikTutar))}`)}
+    ${st("Parça geliri (Altuntaş servisi)", paraSatir(rapor.servisParcaTutar))}
+    ${st("Servis + parça KDV'si", paraSatir(rapor.servisKdv))}
+  </table>
+  ${servisRows ? `${altBaslik("TİP KIRILIMI")}<table>${servisRows}</table>` : ""}`)}
 
-  ${kutu("SERVİS", `<table>${st("Servis kaydı", rapor.servisAdet + " adet")}${st("Ücretli servis tutarı", paraSatir(rapor.servisTutar))}</table>
-    ${servisRows ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">TİP KIRILIMI</div><table>${servisRows}</table>` : ""}`)}
+  ${kutu("TAHSİLAT (gerçekleşen)", `<table>
+    ${st("Gerçekleşen tahsilat", `${rapor.tahsilatAdet} kayıt · ${paraSatir(rapor.tahsilatTutar)}${ga(paraSatir(o?.tahsilatTutar))}`)}
+    ${st("Ay içinde alınan, vadesi bekleyen çek", `${rapor.bekleyenCekAdet} adet · ${paraSatir(rapor.bekleyenCekTutar)}`)}
+    ${st("Ay içinde tahsil edilen çek", rapor.cekTahsilAdet + " adet")}
+  </table>
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Çekler tahsil edildikleri ayın tahsilatına sayılır; vadesi bekleyenler ayrı satırda gösterilir.</div>`)}
 
-  ${kutu("TEKLİFLER", `<table>${st("Ay içinde verilen teklif", rapor.teklifAdet + " adet")}${st("Cevap bekleyen toplam teklif", rapor.bekleyenTeklif + " adet")}</table>`)}
+  ${kutu("ALACAK DURUMU (rapor tarihi itibarıyla)", `<table>
+    ${st("Borçlu firma", rapor.borcluFirma + " firma")}
+    ${st("Toplam alacak (makina + servis + kalıp, KDV dahil)", paraSatir(rapor.acikBorc))}
+    ${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}
+    ${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}
+  </table>
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Bu bölüm seçilen aya değil, raporun oluşturulduğu andaki güncel duruma aittir.</div>`)}
+
+  ${kutu("TEKLİFLER", `<table>
+    ${st("Ay içinde verilen teklif", `${rapor.teklifAdet} adet${ga(`${o?.teklifAdet} adet`)}`)}
+    ${st("Bunlardan bugüne kadar onaylanan / satışa dönen", rapor.onaylananTeklif + " adet")}
+    ${st("Cevap bekleyen toplam teklif", rapor.bekleyenTeklif + " adet")}
+  </table>`)}
 </body></html>`;
 }

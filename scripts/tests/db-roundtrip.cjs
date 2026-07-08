@@ -57,6 +57,10 @@ let blob = dbmod.readBlobFromDb();
 check("migration: eski teklif satisTamam undefined", blob.teklifler.find(t => t.id === 101)?.satisTamam === undefined);
 // Audit retention: 14 aylık silindi, güncel kaldı
 check("audit temizliği: 1 kayıt kaldı", dbmod.getAuditLog({}).total === 1);
+// Genel arama (q): entity_name/detay içinde geçen metinle filtreler
+dbmod.writeAuditEntry({ ts: new Date().toISOString(), username: "kerem", role: "admin", action: "duzenlendi", entity: "musteri", entity_id: 500, entity_name: "Genisel Catering", detail: null });
+check("audit genel arama (q) eşleşir", dbmod.getAuditLog({ q: "Genisel" }).total === 1);
+check("audit genel arama (q) eşleşmezse boş", dbmod.getAuditLog({ q: "olmayanmetin" }).total === 0);
 
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
@@ -71,15 +75,19 @@ dbmod.writeBlobToDb({
     { id: 8, customerId: 500, tarih: "2026-07-02", tur: "Ziyaret", not: "Silinen görüşme", deletedAt: "2026-07-03T10:00:00.000Z" },
   ],
   stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], notes: [], parts: [],
+  factory: { name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com" },
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
     { id: 102, type: "teklif", no: "T-2", firma: "F2", durum: "taslak", satirlar: [] },
   ],
-  appSettings: { autoBackup: false, teklifTakipGun: 1, tahsilatTakipGun: 14, autoLockMinutes: 5 },
+  appSettings: { autoBackup: false, teklifTakipGun: 1, tahsilatTakipGun: 14, autoLockMinutes: 5,
+    translations: { fatura: { title: "COMMERCIAL INVOICE" } },
+    mailTemplates: { teklifProforma: { konu: "Özel Konu {no}", metin: "Özel metin" } } },
 });
 blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
 check("satisTamam undefined korunur", blob.teklifler.find(t => t.id === 102)?.satisTamam === undefined);
+check("factory.web tam turu", blob.factory?.web === "www.altunmak.com");
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);
@@ -87,6 +95,7 @@ check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales
 check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");
 check("gorusme tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 7); return g?.customerId === 500 && g?.not === "Fiyat bekliyor" && g?.takipTarihi === "2026-07-10" && g?.tamamlandi === false && g?.kullanici === "kerem"; })());
 check("gorusme deletedAt tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 8); return g?.deletedAt === "2026-07-03T10:00:00.000Z" && (blob.gorusmeler || []).find(x => x.id === 7)?.deletedAt == null; })());
+check("appSettings translations/mailTemplates tam turu", blob.appSettings?.translations?.fatura?.title === "COMMERCIAL INVOICE" && blob.appSettings?.mailTemplates?.teklifProforma?.konu === "Özel Konu {no}");
 check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
 
 // ── Tablo atlama bütünlüğü ───────────────────────────────────────────────────

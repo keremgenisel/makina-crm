@@ -27,23 +27,21 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
         ve tüm kullanıcılar için geçerli olur.
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <input type="number" min="1" max="90" value={teklifGun} onChange={e => setTeklifGun(e.target.value)} style={inp} />
+      {/* Sabit kolonlu grid: kutular ve metinler iki satırda da aynı hizada başlar */}
+      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: "14px 12px", alignItems: "start", marginBottom: 16 }}>
+        <input type="number" min="1" max="90" value={teklifGun} onChange={e => setTeklifGun(e.target.value)} style={{ ...inp, width: "100%", boxSizing: "border-box" }} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Teklif takip eşiği (gün)</div>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>Gönderilen teklif bu kadar gün cevapsız kalırsa "Takip Edilecek Teklifler" kutusuna düşer.</div>
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Gönderilen teklif bu kadar gün cevapsız kalırsa "Takip Edilecek Teklifler" kutusuna düşer.</div>
         </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <input type="number" min="1" max="90" value={tahsilatGun} onChange={e => setTahsilatGun(e.target.value)} style={inp} />
+        <input type="number" min="1" max="90" value={tahsilatGun} onChange={e => setTahsilatGun(e.target.value)} style={{ ...inp, width: "100%", boxSizing: "border-box" }} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Beklenen tahsilat penceresi (gün)</div>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>Vadesi bu kadar gün içinde olan çek ve taksitler "Beklenen Tahsilat" kutusunda gösterilir (gecikenler her zaman görünür).</div>
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Vadesi bu kadar gün içinde olan çek ve taksitler "Beklenen Tahsilat" kutusunda gösterilir (gecikenler her zaman görünür).</div>
         </div>
       </div>
 
-      <Btn onClick={kaydet} disabled={!degisti}><Icon name="check" size={14} /> Kaydet</Btn>
+      <Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn>
     </Section>
   );
 };

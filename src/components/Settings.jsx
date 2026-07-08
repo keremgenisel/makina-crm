@@ -10,6 +10,7 @@ import { SettingsBackup } from "./settings/SettingsBackup";
 import { SettingsSecurity } from "./settings/SettingsSecurity";
 import { SettingsServer } from "./settings/SettingsServer";
 import { SettingsMail } from "./settings/SettingsMail";
+import { SettingsMailTemplates } from "./settings/SettingsMailTemplates";
 import { SettingsSentMail } from "./settings/SettingsSentMail";
 import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsTakip } from "./settings/SettingsTakip";
@@ -26,7 +27,7 @@ import { SettingsAuditLog } from "./settings/SettingsAuditLog";
 const SETTINGS_GROUPS = [
   { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }] },
-  { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
+  { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
 ];
@@ -132,7 +133,12 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "security" && <SettingsSecurity flash={flash} appSettings={appSettings} setAppSettings={setAppSettings} />}
       {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} />}
-      {settingsTab === "auditlog" && isAdmin && <SettingsAuditLog serverPermissions={serverPermissions} />}
+      {settingsTab === "auditlog" && isAdmin && <SettingsAuditLog serverPermissions={serverPermissions} flash={flash} geriAl={{
+        musteri: [rawCustomers, setCustomers], bayi: [rawDealers, setDealers], servis: [rawServices, setServices],
+        kalip_satisi: [rawPartSales, setPartSales], odeme: [rawPayments, setPayments], not: [rawNotes, setNotes],
+        stok_makina: [rawStock, setStock], teklif: [rawTeklifler, setTeklifler], proforma: [rawTeklifler, setTeklifler],
+        fatura: [rawFaturalar, setFaturalar], uretim_formu: [rawUretimFormlari, setUretimFormlari],
+      }} />}
 
       {settingsTab === "models" && (
         <Section title="Makina Modelleri" icon="machine">
@@ -175,13 +181,14 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "danger" && <SettingsDanger flash={flash} />}
 
       {settingsTab === "eposta" && <SettingsMail flash={flash} />}
+      {settingsTab === "mailsablon" && <SettingsMailTemplates appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "sentmail" && <SettingsSentMail />}
 
       {settingsTab === "export" && (
         <SettingsExport
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
-          notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} flash={flash}
+          notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
          gorusmeler={rawGorusmeler}/>
       )}

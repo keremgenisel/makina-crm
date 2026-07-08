@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { today, uid, parseMoney, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
+import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
-import { logAction } from "../lib/audit";
+import { renderMailTemplate } from "../lib/mailTemplates";
+import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict, DraftRestoreBar } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
@@ -375,7 +376,7 @@ export const Documents = ({
     });
     const isFaturaUpdate = !!faturaForm.id && liveFaturalar.some(f => f.id === faturaForm.id);
     setFaturaForm(null);
-    logAction({ serverPermissions, action: isFaturaUpdate ? "duzenlendi" : "olusturuldu", entity: "fatura", entityId: entry.id, entityName: entry.firma });
+    logAction({ serverPermissions, action: isFaturaUpdate ? "duzenlendi" : "olusturuldu", entity: "fatura", entityId: entry.id, entityName: entry.firma, detail: isFaturaUpdate ? { onceki: snapshotOnceki(liveFaturalar.find(f => f.id === entry.id)) } : undefined });
     showToast("Fatura kaydedildi.");
   };
 
@@ -455,43 +456,55 @@ export const Documents = ({
   };
 
   // ── Döviz kuru API'den çek ──
-  const calcTL = (birimFiyat, rate) => {
-    const num = parseMoney(birimFiyat);
-    if (!num || !rate) return "";
-    const tl = num * rate;
-    const isWhole = tl % 1 === 0;
-    return tl.toLocaleString("tr-TR", { minimumFractionDigits: isWhole ? 0 : 2, maximumFractionDigits: 2 });
-  };
+  // Verilen kura göre tüm satırların TL karşılığını yeniden hesaplar (API'den kur çekince).
+  const recalcSatirlarTL = (satirlar, rate) =>
+    (satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) }));
 
-  const fetchAndSetRate = async (currency) => {
-    if (!currency || currency === "TRY") return;
+  // Kur alanı elle değiştirilince, yazılan sayısal kurdan TL karşılıkları yeniden
+  // hesaplanır. Hem teklif (2. sayfa koşullar) hem proforma (belge) kur inputu kullanır.
+  const applyManualKur = (kurText) => setForm(p => applyKurToForm(p, kurText));
+
+  const fetchAndSetRate = async (currency, { overwrite = true } = {}) => {
+    // TL belgelerde dönüşüm yok ama "Kur (Bugün)" alanına bilgi olarak güncel EUR kuru yazılır
+    // (Türkçe teklif/proformada kur elle aranmasın diye). kurRate ve TL karşılığı hesapları
+    // yalnızca dövizli belgelerde güncellenir.
+    const bilgiAmacli = !currency || currency === "TRY";
+    const kurCur = bilgiAmacli ? "EUR" : currency;
     try {
-      const res = await fetch(`https://open.er-api.com/v6/latest/${currency}`);
+      const res = await fetch(`https://open.er-api.com/v6/latest/${kurCur}`);
       const data = await res.json();
       const rate = data?.rates?.TRY;
       if (rate) {
         const todayFmt = new Date().toLocaleDateString("tr-TR");
         const rateStr = rate.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        setForm(p => p ? ({
-          ...p,
-          kur: `1 ${currency} = ${rateStr} TL (${todayFmt})`,
-          kurRate: rate,
-          satirlar: (p.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) })),
-        }) : p);
+        const kurText = `1 ${kurCur} = ${rateStr} TL (${todayFmt})`;
+        if (bilgiAmacli) {
+          setForm(p => p ? ({ ...p, kur: (overwrite || !p.kur) ? kurText : p.kur }) : p);
+        } else {
+          setForm(p => p ? ({
+            ...p,
+            kur: (overwrite || !p.kur) ? kurText : p.kur,
+            kurRate: rate,
+            satirlar: recalcSatirlarTL(p.satirlar, rate),
+          }) : p);
+        }
       }
     } catch { showToast("Döviz kuru alınamadı, kuru elle girebilirsiniz.", "warn"); }
   };
 
   // ── Form açma ──
   const openNew = (type) => {
-    setForm(makeEmpty(type, liveTeklifler, factory, "TR", evrakFormConfig));
+    const nf = makeEmpty(type, liveTeklifler, factory, "TR", evrakFormConfig);
+    setForm(nf);
     setCustSearch("");
+    fetchAndSetRate(nf.currency); // TL belgede EUR kuru bilgi olarak dolar
   };
 
   const openEdit = (t) => {
     // Kayıtta resim tutulmadığı için form açılırken tanımlardan doldurulur (küçük önizlemeler)
     setForm(hydrateTeklifImages({ ...t, satirlar: (t.satirlar || []).map(migrateRow) }));
     setCustSearch("");
+    if (!t.kur) fetchAndSetRate(t.currency, { overwrite: false }); // kayıtlı kuru ezme, boşsa doldur
   };
 
   // Genel arama / Dashboard teklif takibi: belirli bir belgeyi doğrudan aç
@@ -541,7 +554,7 @@ export const Documents = ({
     setForm(hydrateTeklifImages(newForm));
     setCustSearch("");
     setSubTab("proforma");
-    if (newForm.currency !== "TRY") fetchAndSetRate(newForm.currency);
+    fetchAndSetRate(newForm.currency, { overwrite: newForm.currency !== "TRY" });
   };
 
   const convertToFatura = (proforma) => {
@@ -620,7 +633,7 @@ export const Documents = ({
     });
     const linkedLabel = entry.type === "teklif" ? "Bağlı proforma da güncellendi." : "Bağlı teklif de güncellendi.";
     const logEntity = entry.type === "teklif" ? "teklif" : "proforma";
-    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: logEntity, entityId: entry.id, entityName: entry.firma, detail: { no: entry.no, durum: entry.durum } });
+    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: logEntity, entityId: entry.id, entityName: entry.firma, detail: { no: entry.no, durum: entry.durum, ...(isUpdate ? { onceki: snapshotOnceki(liveTeklifler.find(t => t.id === entry.id)) } : {}) } });
     showToast(isUpdate ? (linkedUpdated ? `Belge güncellendi. ${linkedLabel}` : "Belge güncellendi.") : "Belge kaydedildi.");
     if (entry.type === "teklif" && entry.durum === "onaylandi") {
       const tur = effectiveTur(entry);
@@ -733,14 +746,40 @@ export const Documents = ({
   const openMailDoc = (rawDoc) => {
     const doc = hydrateTeklifImages(rawDoc); // kayıtta resim yok, mail eki için doldur
     const html = stripAutoPrint(buildPrintHtml(doc, factory, appSettings?.translations, appSettings?.kaseResmi || "", evrakFormConfig));
-    const typeLabel = doc.type === "proforma" ? "Proforma" : "Teklif";
+    const enMi = doc.dil === "EN";
+    const typeLabel = doc.type === "proforma" ? (enMi ? "Proforma Invoice" : "Proforma") : (enMi ? "Quotation" : "Teklif");
+    const sablon = renderMailTemplate(appSettings?.mailTemplates, enMi ? "teklifProformaEN" : "teklifProforma", {
+      tur: typeLabel, firma: doc.firma || "", no: doc.no || doc.tarih || "", tarih: fmtTR(doc.tarih) || "",
+      firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
+    });
     setMailDraft({
       to: doc.email || "",
-      subject: `${typeLabel} — ${doc.firma || ""} — ${doc.no || doc.tarih || ""}`,
-      text: `Sayın ${doc.firma || ""},\n\n${typeLabel} formunuz ekte yer almaktadır.\n\nİyi günler dileriz.\n${factory?.firmaAdi || "Altuntaş Makina"}`,
+      subject: sablon.konu,
+      text: sablon.metin,
       pdfHtml: html,
       pdfFileName: `${doc.type}-${(doc.no || doc.tarih || "belge").replace(/\s+/g, "-")}.pdf`,
       type: doc.type,
+    });
+    setMailSendState({ state: "idle", error: null });
+  };
+
+  const openMailFatura = (rawFat) => {
+    const fat = hydrateFaturaImages(rawFat); // kayıtta resim yok, mail eki için doldur
+    const total = calcFaturaTotal(fat);
+    const fCfg = appSettings?.evrakFormConfig?.fatura || null;
+    const html = stripAutoPrint(buildFaturaHtml(fat, factory, total, LOGO_B64, appSettings?.kaseResmi || "", appSettings?.translations?.fatura || {}, fCfg));
+    // Yurt dışı faturanın alıcısı yabancı: konu ve metin İngilizce hazırlanır, modalda düzenlenebilir
+    const sablon = renderMailTemplate(appSettings?.mailTemplates, "fatura", {
+      firma: fat.firma || "Sir/Madam", no: fat.no || fat.tarih || "", tarih: fat.tarih || "",
+      firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntas Makina",
+    });
+    setMailDraft({
+      to: fat.email || "",
+      subject: sablon.konu,
+      text: sablon.metin,
+      pdfHtml: html,
+      pdfFileName: `invoice-${(fat.no || fat.tarih || "belge").replace(/\s+/g, "-")}.pdf`,
+      type: "fatura",
     });
     setMailSendState({ state: "idle", error: null });
   };
@@ -982,6 +1021,7 @@ export const Documents = ({
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                           {canDoEvrak("evrak_fatura_edit") && <Btn small variant="ghost" onClick={() => setFaturaForm(hydrateFaturaImages({ ...fat }))}><Icon name="edit" size={12} /></Btn>}
                           {canDoEvrak("evrak_fatura_print") && <Btn small variant="ghost" onClick={() => printFatura(fat)} title="Yazdır / PDF Kaydet"><Icon name="print" size={12} /></Btn>}
+                          {canDoEvrak("evrak_fatura_mail") && <Btn small variant="ghost" onClick={() => openMailFatura(fat)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>}
                           {canDoEvrak("evrak_fatura_delete") && <Btn small variant="danger" onClick={() => setFaturaConfirmDel(fat.id)}><Icon name="trash" size={12} /></Btn>}
                         </div>
                       </td>
@@ -1090,7 +1130,6 @@ export const Documents = ({
               style={{ width: 130, padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
               {DURUM_OPTS.map(d => <option key={d} value={d}>{DURUM_LABEL[d]}</option>)}
             </select>
-            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>
         </div>
 
@@ -1233,7 +1272,7 @@ export const Documents = ({
                   if (key === "kdvOrani") return <div key={key}><Field label="KDV Oranı (%)"><input {...f("kdvOrani")} type="number" min="0" max="100" style={inputStyle} /></Field></div>;
                   if (key === "gtipNo") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "gtipNo", "GTIP No")}><input {...f("gtipNo")} style={inputStyle} placeholder="8438 50 00 00 00" /></Field></div>;
                   if (key === "modelYiliDegeri") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "modelYiliDegeri", "Model Yılı")}><input {...f("modelYiliDegeri")} style={inputStyle} placeholder={`${new Date().getFullYear()} — Yeni ve Kullanılmamıştır`} /></Field></div>;
-                  if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "kur", "Kur (Bugün)")}><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field></div>;
+                  if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "kur", "Kur (Bugün)")}><input value={form.kur ?? ""} onChange={e => applyManualKur(e.target.value)} style={inputStyle} placeholder="1 EUR = 38,50 TL" /></Field></div>;
                   if (key === "teslimYeri") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "teslimYeri", "Teslim Yeri / Gümrük Notu")}><textarea {...f("teslimYeri")} style={taStyle} /></Field></div>;
                   if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "not", "Not (Proforma)")}><textarea {...f("not")} style={taStyle} /></Field></div>;
                   if (key === "ek") return <div key={key} style={ws}><Field label={getFieldLabel(form.type, "belge", "ek", "Ek Bilgi")}><textarea {...f("ek")} style={taStyle} /></Field></div>;
@@ -1449,7 +1488,7 @@ export const Documents = ({
               if (key === "teslimSuresi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimSuresi", "Teslim Süresi")}><input {...f("teslimSuresi")} style={inputStyle} /></Field></div>;
               if (key === "teslimTarihi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimTarihi", "Teslim Tarihi")}><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field></div>;
               if (key === "teklifGecerlilik") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teklifGecerlilik", "Teklif Geçerlilik Süresi")}><input {...f("teklifGecerlilik")} style={inputStyle} /></Field></div>;
-              if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "kur", "Kur (Bugün)")}><input {...f("kur")} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field></div>;
+              if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "kur", "Kur (Bugün)")}><input value={form.kur ?? ""} onChange={e => applyManualKur(e.target.value)} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field></div>;
               if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "not", "Not")}><textarea {...f("not")} style={taStyle} /></Field></div>;
               return null;
             })}
@@ -1457,8 +1496,8 @@ export const Documents = ({
         </div>
       )}
 
-      {/* Alt kaydet */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingBottom: 20 }}>
+      {/* Alt kaydet: yapışkan — uzun formda kaydırırken hep görünür, tek Kaydet */}
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={() => setForm(null)}>Vazgeç</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

@@ -1,5 +1,5 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
-import { logAction } from "../lib/audit";
+import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { withDeleted } from "../lib/utils";
@@ -10,6 +10,7 @@ import { makeCanDo } from "../lib/permissions";
 export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, serverPermissions = null }, ref) => {
   const canDoNot = makeCanDo(serverPermissions, "notActions");
   const [selectedId, setSelectedId] = useState(null);
+  const [newMode, setNewMode] = useState(false); // yeni not editörü açık ama kayıt HENÜZ oluşturulmadı
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState(""); // düzenlenen içerik (kaydet'e kadar geçici)
   const [page, setPage] = useState(1);
@@ -18,7 +19,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   const { lockLoading: noteLockLoading, lockConflict: noteLock, forceAcquire: forceNoteLock } = useLock("note", selectedId);
   const PER_PAGE = 5;
   const selected = notes.find(n => n.id === selectedId) || null;
-  const dirty = selected && draft !== (selected.content || "");
+  const dirty = newMode ? draft.trim() !== "" : (selected && draft !== (selected.content || ""));
 
   // Kaydedilmemiş değişiklik varken not değiştirmek/yeni not açmak taslağı sessizce siler —
   // dirty ise işlemi onaya bağla, değilse direkt uygula
@@ -26,7 +27,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   useImperativeHandle(ref, () => ({ guardNavigation: guarded }));
 
   // Not seçilince taslağı doldur
-  const selectNote = (n) => { setSelectedId(n.id); setDraft(n.content || ""); };
+  const selectNote = (n) => { setNewMode(false); setSelectedId(n.id); setDraft(n.content || ""); };
   const requestSelectNote = (n) => { if (n.id !== selectedId) guarded(() => selectNote(n)); };
 
   const baslik = (c) => {
@@ -41,6 +42,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   const fmtZaman = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);
+    if (isNaN(d)) return ""; // eski/bozuk zaman damgası: "Invalid Date" basma, boş bırak
     return d.toLocaleDateString("tr-TR") + " " + d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
   };
 
@@ -56,19 +58,28 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   const paged = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const createNewNote = () => {
-    const nid = Date.now();
-    const yeni = { id: nid, content: "", updatedAt: nid };
-    setNotes(p => [yeni, ...p]);
-    setSelectedId(nid);
+    setNewMode(true);
+    setSelectedId(null);
     setDraft("");
     setPage(1);
-    logAction({ serverPermissions, action: "olusturuldu", entity: "not", entityId: nid });
   };
   const yeniNot = () => guarded(createNewNote);
   const kaydet = () => {
+    const icerik = draft.trim();
+    if (newMode) {
+      if (!icerik) { showToast("Boş not kaydedilmedi, önce bir şeyler yazın.", "warn"); return; }
+      const nid = Date.now();
+      setNotes(p => [{ id: nid, content: draft, updatedAt: nid }, ...p]);
+      logAction({ serverPermissions, action: "olusturuldu", entity: "not", entityId: nid, entityName: draft.split("\n")[0].trim().slice(0, 60) });
+      setNewMode(false);
+      setDraft("");
+      showToast("Not kaydedildi.");
+      return;
+    }
     if (!selected) return;
+    if (!icerik) { showToast("Not boş bırakılamaz. Notu kaldırmak için listeden silin.", "warn"); return; }
     setNotes(p => p.map(n => n.id === selected.id ? { ...n, content: draft, updatedAt: Date.now() } : n));
-    logAction({ serverPermissions, action: "duzenlendi", entity: "not", entityId: selected.id, entityName: draft.split("\n")[0].trim().slice(0, 60) || "Yeni Not" });
+    logAction({ serverPermissions, action: "duzenlendi", entity: "not", entityId: selected.id, entityName: draft.split("\n")[0].trim().slice(0, 60) || "Yeni Not", detail: { onceki: snapshotOnceki(notes.find(n => n.id === selected.id)) } });
     setSelectedId(null);
     setDraft("");
     showToast("Not kaydedildi.");
@@ -93,8 +104,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               <Icon name="edit" size={15} /> Yeni Not
             </button>
           )}
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Notlarda ara..."
-            style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 13, marginBottom: 10, boxSizing: "border-box", outline: "none" }} />
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Notlarda ara..."
+              style={{ width: "100%", padding: "9px 12px 9px 32px", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 13, boxSizing: "border-box", outline: "none", background: "#f8fafc" }} />
+          </div>
           <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
@@ -131,14 +145,14 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               <LockConflict lockedBy={noteLock.lockedBy} lockedAt={noteLock.lockedAt}
                 onForce={forceNoteLock} onCancel={() => { setSelectedId(null); setDraft(""); }} />
             </div>
-          ) : selected ? (
+          ) : (selected || newMode) ? (
             <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>Son düzenleme: {fmtZaman(selected.updatedAt)}</span>
-                {canDoNot("not_edit") ? (
-                  <button onClick={kaydet} disabled={!dirty}
-                    style={{ padding: "8px 18px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: dirty ? "pointer" : "not-allowed", background: dirty ? "#16a34a" : "#e2e8f0", color: dirty ? "#fff" : "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon name="check" size={14} /> {dirty ? "Kaydet" : "Kaydedildi"}
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>{newMode ? "Yeni not (kaydedilmedi)" : `Son düzenleme: ${fmtZaman(selected.updatedAt)}`}</span>
+                {canDoNot(newMode ? "not_add" : "not_edit") ? (
+                  <button onClick={kaydet}
+                    style={{ padding: "8px 18px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: "#16a34a", color: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="check" size={14} /> Kaydet
                   </button>
                 ) : (
                   <span style={{ fontSize: 12, color: "#94a3b8" }}>Salt okunur</span>

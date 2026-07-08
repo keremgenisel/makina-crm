@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
   takipKapali INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT);
+CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
@@ -245,13 +245,16 @@ const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
 const APP_SETTINGS_AUTOLOCK_COLUMN = [["autoLockMinutes", "INTEGER"]];
 // Takip süreleri: teklif hatırlatma eşiği ve beklenen tahsilat penceresi (gün) — Ayarlar > Tanımlar > Takip Süreleri
 const APP_SETTINGS_TAKIP_COLUMNS = [["teklifTakipGun", "INTEGER"], ["tahsilatTakipGun", "INTEGER"]];
+// translations bugüne kadar hiç kolon olmadığı için kaydedilmiyordu (sessiz alan kaybı) —
+// mailTemplates ile birlikte kalıcı hale getirildi.
+const APP_SETTINGS_JSON_COLUMNS = [["translations", "TEXT"], ["mailTemplates", "TEXT"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
 const USERS_TOKEN_VERSION_COLUMN = [["token_version", "INTEGER NOT NULL DEFAULT 1"]];
 const URETIM_FORMLARI_DONEM_COLUMNS = [["baslangicTarihi", "TEXT"], ["bitisTarihi", "TEXT"]];
 const URETIM_FORMLARI_KAPALI_COLUMN = [["kapali", "INTEGER"]];
-const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"]];
+const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"], ["web", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
@@ -453,17 +456,17 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.factory && !skip.has("factory")) {
     conn.prepare(`DELETE FROM factory`).run();
     const f = data.factory;
-    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi, web) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(f.name ?? null, f.contact ?? null, f.phone ?? null, f.email ?? null, f.adres ?? null, f.country ?? null, f.city ?? null, f.note ?? null,
            f.bankaAdi ?? null, f.hesapAdi ?? null, f.swift ?? null, f.ibanTL ?? null, f.ibanEUR ?? null, f.ibanUSD ?? null, f.gtipNo ?? null,
-           Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null);
+           Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null, f.web ?? null);
   }
 
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null);
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null));
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -496,6 +499,56 @@ function writeFailMarker(err) {
   } catch { /* yoksay */ }
 }
 
+// Şema oluşturulduktan sonra (SCHEMA_SQL) sonradan eklenen tüm sütunları ekler.
+// SCHEMA_SQL'deki CREATE TABLE'lar zamanla eksik kaldığı için bu ayrı adım şart:
+// hem mevcut DB açılışında (migration), hem temiz kurulumda, hem de JSON→SQLite
+// geçişinde ÇAĞRILMALI — yoksa temiz kurulan bir bilgisayarda ilk oturumda yeni
+// sütunlar (ör. uretim_formlari.baslangicTarihi) olmadan kayıt yazma çöker.
+// ensureColumns idempotent (var olan sütunu atlar), tekrar çağrılması zararsız.
+function applyColumnMigrations(conn) {
+  ensureColumns(conn, "payments", PAYMENTS_NEW_COLUMNS);
+  ensureColumns(conn, "dealers", DEALERS_NEW_COLUMNS);
+  ensureColumns(conn, "services", SERVICES_NEW_COLUMNS);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_NEW_COLUMNS);
+  ensureColumns(conn, "parts", PARTS_NEW_COLUMNS);
+  ensureColumns(conn, "parts", PARTS_EXTRA_COLUMNS);
+  ensureColumns(conn, "standard_models", MODELS_NEW_COLUMNS);
+  ensureColumns(conn, "custom_models", MODELS_NEW_COLUMNS);
+  ensureColumns(conn, "standard_models", MODELS_URUN_COLUMNS);
+  ensureColumns(conn, "custom_models", MODELS_URUN_COLUMNS);
+  ensureColumns(conn, "standard_models", MODELS_RESIM_COLUMN);
+  ensureColumns(conn, "custom_models", MODELS_RESIM_COLUMN);
+  ensureColumns(conn, "standard_models", MODELS_BANTLAR_COLUMN);
+  ensureColumns(conn, "custom_models", MODELS_BANTLAR_COLUMN);
+  ensureColumns(conn, "kalip_defs", KALIP_DEFS_NEW_COLUMNS);
+  ensureColumns(conn, "kalip_defs", KALIP_DEFS_RESIM_COLUMN);
+  ensureColumns(conn, "teklifler", TEKLIFLER_NEW_COLUMNS);
+  ensureColumns(conn, "teklifler", TEKLIFLER_CONVERT_COLUMNS);
+  ensureColumns(conn, "teklifler", TEKLIFLER_TAKIP_COLUMN);
+  ensureColumns(conn, "customers", CUSTOMERS_FROM_TEKLIF_COLUMN);
+  ensureColumns(conn, "customers", CUSTOMERS_ODEME_PLANI_COLUMN);
+  ensureColumns(conn, "customers", CUSTOMERS_BRUT_KG_COLUMN);
+  ensureColumns(conn, "part_sales", PART_SALES_TEKLIF_URETIM_COLUMNS);
+  ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
+  ensureColumns(conn, "customers", CUSTOMERS_BANTLAR_COLUMN);
+  ensureColumns(conn, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
+  ensureColumns(conn, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
+  ensureColumns(conn, "parts", PARTS_TIP_RESIM_COLUMNS);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_PINNED_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_AUTOLOCK_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_TAKIP_COLUMNS);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_JSON_COLUMNS);
+  ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
+  ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
+  for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
+  ensureColumns(conn, "users", USERS_PERMISSIONS_COLUMN);
+  ensureColumns(conn, "users", USERS_TOKEN_VERSION_COLUMN);
+  ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_DONEM_COLUMNS);
+  ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
+}
+
 function migrateFromJsonIfNeeded() {
   if (!Database) return; // native modül yüklenemedi, eski JSON modunda kal
 
@@ -507,46 +560,7 @@ function migrateFromJsonIfNeeded() {
       db.pragma("foreign_keys = ON");
       // Sonradan eklenen yeni tabloları oluşturur (CREATE TABLE IF NOT EXISTS idempotent — var olanları bozmaz).
       db.exec(SCHEMA_SQL);
-      ensureColumns(db, "payments", PAYMENTS_NEW_COLUMNS);
-      ensureColumns(db, "dealers", DEALERS_NEW_COLUMNS);
-      ensureColumns(db, "services", SERVICES_NEW_COLUMNS);
-      ensureColumns(db, "app_settings", APP_SETTINGS_NEW_COLUMNS);
-      ensureColumns(db, "parts", PARTS_NEW_COLUMNS);
-      ensureColumns(db, "parts", PARTS_EXTRA_COLUMNS);
-      ensureColumns(db, "standard_models", MODELS_NEW_COLUMNS);
-      ensureColumns(db, "custom_models", MODELS_NEW_COLUMNS);
-      ensureColumns(db, "standard_models", MODELS_URUN_COLUMNS);
-      ensureColumns(db, "custom_models", MODELS_URUN_COLUMNS);
-      ensureColumns(db, "standard_models", MODELS_RESIM_COLUMN);
-      ensureColumns(db, "custom_models", MODELS_RESIM_COLUMN);
-      ensureColumns(db, "standard_models", MODELS_BANTLAR_COLUMN);
-      ensureColumns(db, "custom_models", MODELS_BANTLAR_COLUMN);
-      ensureColumns(db, "kalip_defs", KALIP_DEFS_NEW_COLUMNS);
-      ensureColumns(db, "kalip_defs", KALIP_DEFS_RESIM_COLUMN);
-      ensureColumns(db, "teklifler", TEKLIFLER_NEW_COLUMNS);
-      ensureColumns(db, "teklifler", TEKLIFLER_CONVERT_COLUMNS);
-      ensureColumns(db, "teklifler", TEKLIFLER_TAKIP_COLUMN);
-      ensureColumns(db, "customers", CUSTOMERS_FROM_TEKLIF_COLUMN);
-      ensureColumns(db, "customers", CUSTOMERS_ODEME_PLANI_COLUMN);
-      ensureColumns(db, "customers", CUSTOMERS_BRUT_KG_COLUMN);
-      ensureColumns(db, "part_sales", PART_SALES_TEKLIF_URETIM_COLUMNS);
-      ensureColumns(db, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
-      ensureColumns(db, "customers", CUSTOMERS_BANTLAR_COLUMN);
-      ensureColumns(db, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
-      ensureColumns(db, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
-      ensureColumns(db, "parts", PARTS_TIP_RESIM_COLUMNS);
-      ensureColumns(db, "app_settings", APP_SETTINGS_KASE_COLUMN);
-      ensureColumns(db, "app_settings", APP_SETTINGS_PINNED_COLUMN);
-      ensureColumns(db, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
-      ensureColumns(db, "app_settings", APP_SETTINGS_AUTOLOCK_COLUMN);
-      ensureColumns(db, "app_settings", APP_SETTINGS_TAKIP_COLUMNS);
-      ensureColumns(db, "factory", FACTORY_NEW_COLUMNS);
-      ensureColumns(db, "stock", STOCK_NEW_COLUMNS);
-      for (const table of TABLES_WITH_TRASH) ensureColumns(db, table, DELETED_AT_COLUMN);
-      ensureColumns(db, "users", USERS_PERMISSIONS_COLUMN);
-      ensureColumns(db, "users", USERS_TOKEN_VERSION_COLUMN);
-      ensureColumns(db, "uretim_formlari", URETIM_FORMLARI_DONEM_COLUMNS);
-      ensureColumns(db, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
+      applyColumnMigrations(db);
       pruneAuditLog(db);
       active = true;
     } catch (err) {
@@ -562,9 +576,12 @@ function migrateFromJsonIfNeeded() {
 
   const jsonPath = getJsonPath();
   if (!fs.existsSync(jsonPath)) {
-    // Temiz kurulum: boş şema oluştur
+    // Temiz kurulum: boş şema oluştur + sonradan eklenen sütunları da uygula
+    // (yoksa ilk oturumda yeni sütunlar eksik kalır, kayıt yazma çöker).
     const conn = new Database(dbPath);
+    conn.pragma("foreign_keys = ON");
     conn.exec(SCHEMA_SQL);
+    applyColumnMigrations(conn);
     db = conn;
     active = true;
     return;
@@ -600,6 +617,7 @@ function migrateFromJsonIfNeeded() {
     conn = new Database(tmpPath);
     conn.pragma("journal_mode = WAL");
     conn.exec(SCHEMA_SQL);
+    applyColumnMigrations(conn); // populateAll yeni sütunlara yazdığı için geçişten ÖNCE şart
     conn.transaction(() => populateAll(conn, parsed))();
     conn.close();
 
@@ -753,8 +771,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
@@ -788,7 +806,8 @@ function readBlobFromDb() {
 // büyüdükçe tek karakterlik düzenleme bile pahalıya mal oluyordu. Süreç yeniden
 // başlayınca önbellek boş başlar ve ilk kayıt her bölümü yazar (güvenli taraf).
 const lastWrittenHash = new Map();
-const BLOB_SECTIONS = ["customers", "services", "partSales", "payments", "dealers", "stock", "notes", "parts", "partStock", "partStockLog", "gorusmeler", "kalipDefs", "standardModels", "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari"];
+// Tek kaynak: electron/serverAuth.cjs (sunucu yetki denetimi de aynı listeyi kullanır)
+const { BLOB_SECTIONS } = require("./serverAuth.cjs");
 
 function writeBlobToDb(data) {
   const skip = new Set();
@@ -930,12 +949,17 @@ function clearAuditLog() {
   return db.prepare(`DELETE FROM audit_log`).run().changes;
 }
 
-function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, dateTo } = {}) {
+function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, dateTo, q } = {}) {
   if (!db) return { rows: [], total: 0 };
   let where = "WHERE 1=1";
   const params = [];
   if (username) { where += " AND username = ?"; params.push(username); }
   if (entity)   { where += " AND entity = ?";   params.push(entity); }
+  if (q) { // genel arama: kayıt adı, kullanıcı, detay, eylem ve bölümde geçen metin
+    where += " AND (entity_name LIKE ? OR username LIKE ? OR detail LIKE ? OR action LIKE ? OR entity LIKE ?)";
+    const pat = `%${String(q).trim()}%`;
+    params.push(pat, pat, pat, pat, pat);
+  }
   if (dateFrom) { where += " AND ts >= ?";       params.push(dateFrom); }
   if (dateTo)   { where += " AND ts <= ?";       params.push(dateTo + "T23:59:59Z"); }
   const rows = db.prepare(`SELECT * FROM audit_log ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);

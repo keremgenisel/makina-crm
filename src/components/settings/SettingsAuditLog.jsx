@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Btn, Icon, ConfirmDialog } from "../ui";
+import { Btn, Icon, ConfirmDialog, Modal } from "../ui";
 import { logAction } from "../../lib/audit";
 
 const ENTITY_LABELS = {
@@ -13,12 +13,12 @@ const ACTION_LABELS = {
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
-  temizlendi: "Temizlendi",
+  temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
 };
 
 const PER_PAGE = 10;
 
-export function SettingsAuditLog({ serverPermissions }) {
+export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () => {} }) {
   const isServerMode = !!serverPermissions;
 
   const [rows, setRows]         = useState([]);
@@ -28,13 +28,14 @@ export function SettingsAuditLog({ serverPermissions }) {
   const [page, setPage]         = useState(1);
 
   // Filtre alanları — kullanıcı değiştirir, "Filtrele" veya Enter ile arama tetiklenir
+  const [fQ, setFQ]               = useState("");
   const [fUser, setFUser]         = useState("");
   const [fEntity, setFEntity]     = useState("");
   const [fDateFrom, setFDateFrom] = useState("");
   const [fDateTo, setFDateTo]     = useState("");
 
   // Aktif (uygulanan) filtreler — bunlar değişince veri yüklenir
-  const [activeFilters, setActiveFilters] = useState({ fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" });
+  const [activeFilters, setActiveFilters] = useState({ fQ: "", fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" });
 
   const genRef = useRef(0);
 
@@ -46,6 +47,7 @@ export function SettingsAuditLog({ serverPermissions }) {
     const req = {
       limit: PER_PAGE,
       offset,
+      q: filters.fQ?.trim() || undefined,
       username: filters.fUser?.trim() || undefined,
       entity: filters.fEntity || undefined,
       dateFrom: filters.fDateFrom || undefined,
@@ -57,6 +59,7 @@ export function SettingsAuditLog({ serverPermissions }) {
         const params = new URLSearchParams();
         params.set("limit", PER_PAGE);
         params.set("offset", offset);
+        if (req.q)        params.set("q", req.q);
         if (req.username) params.set("username", req.username);
         if (req.entity)   params.set("entity", req.entity);
         if (req.dateFrom) params.set("dateFrom", req.dateFrom);
@@ -95,15 +98,15 @@ export function SettingsAuditLog({ serverPermissions }) {
 
   // Filtre uygula
   const applyFilters = () => {
-    const f = { fUser, fEntity, fDateFrom, fDateTo };
+    const f = { fQ, fUser, fEntity, fDateFrom, fDateTo };
     setPage(1);
     setActiveFilters(f);
   };
 
   // Filtreleri sıfırla
   const resetFilters = () => {
-    const empty = { fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" };
-    setFUser(""); setFEntity(""); setFDateFrom(""); setFDateTo("");
+    const empty = { fQ: "", fUser: "", fEntity: "", fDateFrom: "", fDateTo: "" };
+    setFQ(""); setFUser(""); setFEntity(""); setFDateFrom(""); setFDateTo("");
     setPage(1);
     setActiveFilters(empty);
   };
@@ -144,6 +147,32 @@ export function SettingsAuditLog({ serverPermissions }) {
 
   const onKeyDown = (e) => { if (e.key === "Enter") applyFilters(); };
 
+  // ── Geri alma (düzenleme öncesi anlık görüntüden) ───────────────────────────
+  const [onizle, setOnizle] = useState(null); // { row, onceki }
+  const [confirmUndo, setConfirmUndo] = useState(false);
+  const parseDetail = (r) => { try { return JSON.parse(r.detail || "null") || {}; } catch { return {}; } };
+  const goster = (v) => {
+    if (v === null || v === undefined || v === "") return "—";
+    if (typeof v === "boolean") return v ? "evet" : "hayır";
+    const str = typeof v === "object" ? JSON.stringify(v) : String(v);
+    return str.length > 90 ? str.slice(0, 90) + "…" : str;
+  };
+  const geriAlUygula = () => {
+    const [dizi, setter] = geriAl?.[onizle.row.entity] || [];
+    const id = onizle.row.entity_id;
+    setConfirmUndo(false);
+    if (!setter || !(dizi || []).find(x => x.id === id)) {
+      flash("err", "Kayıt bulunamadı, geri alınamadı (silinmiş olabilir).");
+      return;
+    }
+    // deletedAt korunur: geri alma silme durumunu değiştirmez, yalnızca düzenlemeyi geri sarar.
+    setter(p => p.map(x => x.id === id ? { ...onizle.onceki, id, deletedAt: x.deletedAt } : x));
+    logAction({ serverPermissions, action: "geri_alindi", entity: onizle.row.entity, entityId: id, entityName: onizle.row.entity_name });
+    flash("ok", "Kayıt, düzenleme öncesi haline döndürüldü.");
+    setOnizle(null);
+    setTimeout(() => fetchData(page, activeFilters), 500); // yeni "geri alındı" satırı görünsün
+  };
+
   const fmtTs = (ts) => {
     if (!ts) return "—";
     try { return new Date(ts).toLocaleString("tr-TR"); } catch { return ts; }
@@ -164,7 +193,7 @@ export function SettingsAuditLog({ serverPermissions }) {
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const hasActiveFilter = activeFilters.fUser || activeFilters.fEntity || activeFilters.fDateFrom || activeFilters.fDateTo;
+  const hasActiveFilter = activeFilters.fQ || activeFilters.fUser || activeFilters.fEntity || activeFilters.fDateFrom || activeFilters.fDateTo;
   const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none" };
   const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
@@ -191,16 +220,27 @@ export function SettingsAuditLog({ serverPermissions }) {
       )}
 
       {/* Filtreler */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
+      {/* Filtreler: üst satır metin filtreleri, alt satır tarih aralığı + Ara */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <div style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+          <input
+            value={fQ} onChange={e => setFQ(e.target.value)} onKeyDown={onKeyDown}
+            placeholder="Ara: kayıt adı, detay..." style={{ ...inp, width: "100%", boxSizing: "border-box", paddingLeft: 32 }}
+          />
+        </div>
         <input
           value={fUser} onChange={e => setFUser(e.target.value)} onKeyDown={onKeyDown}
-          placeholder="Kullanıcı adı" style={{ ...inp, width: 140 }}
+          placeholder="Kullanıcı adı" style={{ ...inp, width: "100%", boxSizing: "border-box" }}
         />
-        <select value={fEntity} onChange={e => setFEntity(e.target.value)} onKeyDown={onKeyDown} style={{ ...inp }}>
+        <select value={fEntity} onChange={e => setFEntity(e.target.value)} onKeyDown={onKeyDown} style={{ ...inp, width: "100%", boxSizing: "border-box" }}>
           <option value="">Tüm bölümler</option>
           {Object.entries(ENTITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
+        <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
         <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
         <Btn onClick={applyFilters}>Ara</Btn>
         {hasActiveFilter && (
@@ -211,6 +251,7 @@ export function SettingsAuditLog({ serverPermissions }) {
       {hasActiveFilter && (
         <div style={{ marginBottom: 10, fontSize: 12, color: "#7c3aed", background: "#f5f3ff", padding: "6px 12px", borderRadius: 6, display: "inline-flex", gap: 6 }}>
           Filtre aktif
+          {activeFilters.fQ && <span>· Arama: <b>{activeFilters.fQ}</b></span>}
           {activeFilters.fUser && <span>· Kullanıcı: <b>{activeFilters.fUser}</b></span>}
           {activeFilters.fEntity && <span>· Bölüm: <b>{ENTITY_LABELS[activeFilters.fEntity] || activeFilters.fEntity}</b></span>}
           {activeFilters.fDateFrom && <span>· Başlangıç: <b>{activeFilters.fDateFrom}</b></span>}
@@ -238,6 +279,7 @@ export function SettingsAuditLog({ serverPermissions }) {
                 <th style={thStyle}>Bölüm</th>
                 <th style={thStyle}>Kayıt</th>
                 <th style={thStyle}>Detay</th>
+                <th style={thStyle} />
               </tr>
             </thead>
             <tbody>
@@ -259,13 +301,70 @@ export function SettingsAuditLog({ serverPermissions }) {
                     {r.entity_name || (r.entity_id ? `#${r.entity_id}` : "—")}
                   </td>
                   <td style={{ ...tdStyle, fontSize: 12, color: "#94a3b8", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {r.detail ? (() => { try { const d = JSON.parse(r.detail); return Object.entries(d).map(([k,v]) => `${k}: ${v}`).join(", "); } catch { return r.detail; } })() : "—"}
+                    {r.detail ? (() => { try { const d = JSON.parse(r.detail); const oz = Object.entries(d).filter(([k]) => k !== "onceki").map(([k, v]) => `${k}: ${v}`).join(", "); return oz || "—"; } catch { return r.detail; } })() : "—"}
+                  </td>
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                    {r.action === "duzenlendi" && geriAl?.[r.entity] && parseDetail(r).onceki && (
+                      <Btn small variant="ghost" onClick={() => setOnizle({ row: r, onceki: parseDetail(r).onceki })}>Öncesi</Btn>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Düzenleme öncesi önizleme + geri al */}
+      {onizle && (() => {
+        const mevcut = (geriAl?.[onizle.row.entity]?.[0] || []).find(x => x.id === onizle.row.entity_id);
+        const anahtarlar = [...new Set([...Object.keys(onizle.onceki || {}), ...Object.keys(mevcut || {})])]
+          .filter(k => k !== "id" && JSON.stringify(onizle.onceki?.[k]) !== JSON.stringify(mevcut?.[k]));
+        return (
+          <Modal title={`Düzenleme Öncesi — ${onizle.row.entity_name || "#" + onizle.row.entity_id}`} onClose={() => setOnizle(null)}>
+            <div style={{ fontSize: 12.5, color: "#64748b", marginBottom: 12 }}>
+              {fmtTs(onizle.row.ts)} tarihli düzenlemenin öncesi ile kaydın ŞU ANKİ hali karşılaştırılıyor (sadece farklı alanlar).
+            </div>
+            {!mevcut ? (
+              <div style={{ fontSize: 13, color: "#b45309", marginBottom: 14 }}>Kayıt şu an bulunamıyor (silinmiş olabilir), geri alma yapılamaz.</div>
+            ) : anahtarlar.length === 0 ? (
+              <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 14 }}>Kayıt zaten düzenleme öncesi haliyle aynı.</div>
+            ) : (
+              <div style={{ overflowX: "auto", marginBottom: 14 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+                  <thead><tr style={{ background: "#f8fafc" }}>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Alan</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Önceki</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Şimdiki</th>
+                  </tr></thead>
+                  <tbody>
+                    {anahtarlar.map(k => (
+                      <tr key={k} style={{ borderTop: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>{k}</td>
+                        <td style={{ padding: "6px 10px", color: "#166534", background: "#f0fdf4" }}>{goster(onizle.onceki?.[k])}</td>
+                        <td style={{ padding: "6px 10px", color: "#991b1b", background: "#fef2f2" }}>{goster(mevcut?.[k])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <Btn variant="ghost" onClick={() => setOnizle(null)}>Kapat</Btn>
+              {mevcut && anahtarlar.length > 0 && (
+                <Btn variant="danger" onClick={() => setConfirmUndo(true)}><Icon name="refresh" size={14} /> Geri Al</Btn>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+      {confirmUndo && onizle && (
+        <ConfirmDialog
+          confirmLabel="Geri Al" confirmIcon="check"
+          message={`"${onizle.row.entity_name || "#" + onizle.row.entity_id}" kaydı ${fmtTs(onizle.row.ts)} tarihli düzenlemeden ÖNCEKİ haline döndürülecek. Sonrasında yapılmış tüm değişiklikler bu kayıtta kaybolur.`}
+          onConfirm={geriAlUygula}
+          onCancel={() => setConfirmUndo(false)}
+        />
       )}
 
       {/* Sayfalama */}

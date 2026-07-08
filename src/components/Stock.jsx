@@ -6,6 +6,7 @@ import { PartStokTab }   from "./stock/PartStokTab";
 import { UretimFormu }   from "./stock/UretimFormu";
 
 export const Stock = ({
+  factory = null,
   stock, setStock,
   models = ALTUNMAK_MODELS,
   showToast = () => {},
@@ -65,7 +66,7 @@ export const Stock = ({
           customers={customers} setCustomers={setCustomers}
           kalipDefs={kalipDefs}
           partSales={partSales} setPartSales={setPartSales}
-          showToast={showToast}
+          showToast={showToast} appSettings={appSettings} factory={factory}
           canDoStock={canDoStock} serverPermissions={serverPermissions} />
       )}
     </div>

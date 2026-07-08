@@ -8,6 +8,7 @@ const jwt      = require("jsonwebtoken");
 const crypto   = require("crypto");
 const os       = require("os");
 const { BrowserWindow } = require("electron");
+const { kisitliMi, degisenBolumler, yazmaYetkisiVar } = require("./serverAuth.cjs");
 
 let httpServer = null;
 let db         = null; // electron/db.cjs referansı
@@ -100,7 +101,7 @@ function buildApp() {
       res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/login hatası:", err);
-      res.status(500).json({ error: "Giriş işlemi başarısız: " + (err.message || "bilinmeyen hata") });
+      res.status(500).json({ error: "Giriş işlemi başarısız" });
     }
   });
 
@@ -112,7 +113,7 @@ function buildApp() {
       res.json({ token: signToken({ id, username, role, tv: u?.token_version ?? 1 }), user: { id, username, role, permissions: u?.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/me hatası:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 
@@ -131,15 +132,19 @@ function buildApp() {
       res.json({ ok: true, token: signToken({ id: user.id, username: user.username, role: user.role, tv: fresh?.token_version ?? 1 }) });
     } catch (err) {
       console.error("[server] /auth/me/password hatası:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 
   // POST /auth/refresh-internal — yalnızca loopback; sunucu PC kendi admin tokenini yeniler (şifre gerekmez)
+  // GÜVENLİK: kaynak adres yalnızca gerçek soket adresinden (req.socket.remoteAddress) okunur,
+  // asla req.ip/X-Forwarded-For'dan değil. Bu endpoint 30 günlük admin token verdiği için
+  // "trust proxy" ASLA açılmamalı; açılırsa XFF sahteleyen uzak biri buradan admin olabilir.
+  const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
   app.post("/auth/refresh-internal", (req, res) => {
     try {
-      const ip = req.ip || req.socket?.remoteAddress || "";
-      if (!ip.includes("127.0.0.1") && !ip.includes("::1") && ip !== "::ffff:127.0.0.1") {
+      const ip = req.socket?.remoteAddress || "";
+      if (!LOOPBACK.has(ip)) {
         return res.status(403).json({ error: "Yalnızca yerel erişim" });
       }
       const { username } = req.body || {};
@@ -148,7 +153,7 @@ function buildApp() {
       if (!user || user.role !== "admin") return res.status(403).json({ error: "Admin kullanıcı bulunamadı" });
       const token = jwt.sign({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 }, getSecret(), { expiresIn: "30d" });
       res.json({ token });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // GET /api/version — hafif polling endpoint: versiyon + güncel izinler
@@ -157,7 +162,7 @@ function buildApp() {
       const u = db?.getUserByUsername(req.user.username);
       res.json({ dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null });
     }
-    catch (err) { res.status(500).json({ error: err.message }); }
+    catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // GET /api/data
@@ -168,7 +173,7 @@ function buildApp() {
       res.json({ ...blob, dataVersion: db.getDataVersion() });
     } catch (err) {
       console.error("[server] /api/data GET hatası:", err);
-      res.status(500).json({ error: "Veri okunamadı: " + (err.message || "bilinmeyen hata") });
+      res.status(500).json({ error: "Veri okunamadı" });
     }
   });
 
@@ -178,6 +183,15 @@ function buildApp() {
     if (!data || typeof data !== "object") return res.status(400).json({ error: "Geçersiz veri" });
     try {
       if (!db || !db.isActive()) return res.status(503).json({ error: "Veritabanı henüz hazır değil" });
+      // Yetki: kısıtlı kullanıcı yalnızca izinli olduğu bölümleri değiştirebilir.
+      // İzin sistemi arayüzde de var; bu, elle HTTP isteğiyle atlatmayı engeller.
+      // Tam yetkili/admin kullanıcı pahalı fark denetimini atlar.
+      const u = db.getUserByUsername(req.user.username);
+      if (kisitliMi(u?.permissions ?? null, u?.role ?? req.user.role)) {
+        const changed = degisenBolumler(db.readBlobFromDb(), data);
+        const yetki = yazmaYetkisiVar(u?.permissions ?? null, u?.role ?? req.user.role, changed);
+        if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
+      }
       const serverVersion = db.getDataVersion();
       if (clientVersion !== undefined && clientVersion !== null && clientVersion !== serverVersion) {
         return res.status(409).json({ error: "Başka bir kullanıcı veriyi güncelledi.", serverVersion });
@@ -189,14 +203,14 @@ function buildApp() {
       res.json({ ok: true, newVersion });
     } catch (err) {
       console.error("[server] /api/data POST hatası:", err);
-      res.status(500).json({ error: "Veri kaydedilemedi: " + (err.message || "bilinmeyen hata") });
+      res.status(500).json({ error: "Veri kaydedilemedi" });
     }
   });
 
   // GET /api/users (admin)
   app.get("/api/users", requireAuth, requireAdmin, (_req, res) => {
     try { res.json(db.getAllUsers()); }
-    catch (err) { console.error("[server] /api/users GET hatası:", err); res.status(500).json({ error: err.message }); }
+    catch (err) { console.error("[server] /api/users GET hatası:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // POST /api/users (admin)
@@ -204,12 +218,13 @@ function buildApp() {
     try {
       const { username, password, role = "user", permissions } = req.body || {};
       if (!username?.trim() || !password || !["admin", "user"].includes(role)) return res.status(400).json({ error: "Geçersiz parametre" });
+      if (password.length < 6) return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
       if (db.getUserByUsername(username.trim())) return res.status(409).json({ error: "Bu kullanıcı adı zaten mevcut" });
       const id = db.createUser(username.trim(), await bcrypt.hash(password, 10), role, permissions ?? null);
       res.status(201).json({ id, username: username.trim(), role, is_active: 1, permissions: permissions ?? null });
     } catch (err) {
       console.error("[server] /api/users POST hatası:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 
@@ -218,6 +233,7 @@ function buildApp() {
     try {
       const id = parseInt(req.params.id);
       const { is_active, role, password, permissions } = req.body || {};
+      if (password && password.length < 6) return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
       const fields = {};
       if (is_active !== undefined)  fields.is_active = is_active;
       if (role && ["admin", "user"].includes(role)) fields.role = role;
@@ -227,7 +243,7 @@ function buildApp() {
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users PATCH hatası:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 
@@ -240,14 +256,14 @@ function buildApp() {
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users DELETE hatası:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 
   // GET /api/locks — aktif kilitler
   app.get("/api/locks", requireAuth, (_req, res) => {
     try { res.json(db.listLocks()); }
-    catch (err) { res.status(500).json({ error: err.message }); }
+    catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // POST /api/lock — kilit al
@@ -258,7 +274,7 @@ function buildApp() {
       const result = db.acquireLock(entityType, String(entityId), req.user.username, force);
       if (result.ok) { broadcast("server:locksChanged"); res.json({ ok: true }); }
       else res.status(423).json(result);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // DELETE /api/lock — kilit bırak
@@ -269,7 +285,7 @@ function buildApp() {
       db.releaseLock(entityType, String(entityId), req.user.username);
       broadcast("server:locksChanged");
       res.json({ ok: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // DELETE /api/locks/all — kullanıcının tüm kilitlerini bırak
@@ -278,7 +294,7 @@ function buildApp() {
       db.releaseAllLocksByUser(req.user.username);
       broadcast("server:locksChanged");
       res.json({ ok: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // POST /api/audit — istemci tarafından çağrılır; username JWT'den alınır
@@ -287,16 +303,16 @@ function buildApp() {
       const { action, entity, entity_id, entity_name, detail } = req.body;
       db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action, entity, entity_id, entity_name, detail });
       res.json({ ok: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // GET /api/audit — sadece admin
   app.get("/api/audit", requireAuth, requireAdmin, (req, res) => {
     try {
-      const { limit, offset, username, entity, dateFrom, dateTo } = req.query;
-      const result = db.getAuditLog({ limit: Number(limit) || 100, offset: Number(offset) || 0, username: username || undefined, entity: entity || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined });
+      const { limit, offset, username, entity, dateFrom, dateTo, q } = req.query;
+      const result = db.getAuditLog({ limit: Number(limit) || 100, offset: Number(offset) || 0, username: username || undefined, entity: entity || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, q: q || undefined });
       res.json({ ok: true, ...result });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // DELETE /api/audit — işlem geçmişini tamamen temizler, sadece admin
@@ -306,14 +322,14 @@ function buildApp() {
       // Kimin temizlediği izlensin diye temizlik sonrası tek kayıt bırakılır
       db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action: "temizlendi", entity: "islem_gecmisi", entity_id: null, entity_name: `${deleted} kayıt silindi`, detail: null });
       res.json({ ok: true, deleted });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // Global hata yakalayıcı (Express 4 fallback)
    
   app.use((err, _req, res, _next) => {
     console.error("[server] Beklenmeyen hata:", err);
-    res.status(500).json({ error: err.message || "Sunucu hatası" });
+    res.status(500).json({ error: "Sunucu hatası" });
   });
 
   return app;

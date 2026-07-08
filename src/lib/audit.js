@@ -24,3 +24,15 @@ export function logAction({ serverPermissions, action, entity, entityId, entityN
     return window.auditLog?.log({ ...entry, username: _localUsername, role: "admin" });
   } catch { return undefined; }
 }
+
+// Geri alma için düzenleme ÖNCESİ kaydın anlık görüntüsü (detail.onceki'ye konur).
+// Base64 resim taşıyan dev kayıtlar audit'i şişirmesin: ~200KB üstü anlık görüntü atlanır
+// (o kayıt için "Öncesi/Geri Al" görünmez, diğer her şey normal loglanır).
+export const snapshotOnceki = (kayit) => {
+  if (!kayit || typeof kayit !== "object") return undefined;
+  try {
+    const json = JSON.stringify(kayit);
+    if (json.length > 200000) return undefined;
+    return JSON.parse(json);
+  } catch { return undefined; }
+};

@@ -107,7 +107,8 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
       )}
 
       {addOpen && (
-        <Modal title="Yeni Kalıp Ekle" onClose={() => setAddOpen(false)}>
+        <Modal wide title="Yeni Kalıp Ekle" onClose={() => setAddOpen(false)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Kalıp Adı">
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
             <Warn>{!form.ad.trim() ? "Kalıp adı girilmedi" : ""}</Warn>
@@ -115,10 +116,10 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Kod">
             <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
           </Field>
-          <Field label="Ürün Adı (TR) — Teklif ve proformada görünür">
+          <Field label="Ürün Adı (TR) — Teklifte görünür">
             <Input value={form.urunAdi || ""} onChange={e => setForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Adana Köfte Kalıbı" />
           </Field>
-          <Field label="Ürün Adı (EN) — Proforma ve yurtdışı teklifler için">
+          <Field label="Ürün Adı (EN) — Proforma için">
             <Input value={form.urunAdiEN || ""} onChange={e => setForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Adana Kebab Mold" />
           </Field>
           <Field label="Tanım (TR)">
@@ -131,18 +132,20 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
+          </div>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+      </div>
         </Modal>
       )}
 
       {editId !== null && (
-        <Modal title="Kalıbı Düzenle" onClose={cancelEdit}>
+        <Modal wide title="Kalıbı Düzenle" onClose={cancelEdit}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Kalıp Adı">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
             <Warn>{!(editForm.ad || "").trim() ? "Kalıp adı girilmedi" : ""}</Warn>
@@ -150,10 +153,10 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Kod">
             <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
           </Field>
-          <Field label="Ürün Adı (TR) — Teklif ve proformada görünür">
+          <Field label="Ürün Adı (TR) — Teklifte görünür">
             <Input value={editForm.urunAdi || ""} onChange={e => setEditForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Adana Köfte Kalıbı" />
           </Field>
-          <Field label="Ürün Adı (EN) — Proforma ve yurtdışı teklifler için">
+          <Field label="Ürün Adı (EN) — Proforma için">
             <Input value={editForm.urunAdiEN || ""} onChange={e => setEditForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Adana Kebab Mold" />
           </Field>
           <Field label="Tanım (TR)">
@@ -166,13 +169,14 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
+          </div>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+      </div>
         </Modal>
       )}
     </div>

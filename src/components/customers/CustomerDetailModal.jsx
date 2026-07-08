@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { logAction, getAuditUsername } from "../../lib/audit";
+import { logAction, getAuditUsername, snapshotOnceki } from "../../lib/audit";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
@@ -20,6 +20,7 @@ import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
+import { renderMailTemplate } from "../../lib/mailTemplates";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
@@ -289,7 +290,7 @@ export const CustomerDetailModal = ({
       restoreServiceParts(svForm.id);
       setServices(p => p.map(s => s.id === svForm.id ? rec : s));
       deductServiceParts(rec.degisenParcalar, svForm.id);
-      logAction({ serverPermissions, action: "duzenlendi", entity: "servis", entityId: svForm.id, entityName: detailView?.name });
+      logAction({ serverPermissions, action: "duzenlendi", entity: "servis", entityId: svForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(services.find(x => x.id === svForm.id)) } });
       showToast("Servis talebi düzenlendi.");
     }
     svDraft.clearDraft();
@@ -340,7 +341,7 @@ export const CustomerDetailModal = ({
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
         : c));
-      logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad } });
+      logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad, onceki: snapshotOnceki(partSales.find(x => x.id === pkForm.id)) } });
       showToast("Kayıt güncellendi.");
     } else {
       const batchId = uid();
@@ -445,7 +446,7 @@ export const CustomerDetailModal = ({
         tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
-      logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name });
+      logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(payments.find(x => x.id === paymentForm.id)) } });
       showToast("Ödeme güncellendi.");
     } else {
       const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
@@ -569,7 +570,7 @@ export const CustomerDetailModal = ({
   const kaseResmi = appSettings?.kaseResmi || "";
 
   const openSandikEtiket = () => setSandikModal({
-    gonderen: { ad: factory?.evrakFirmaAdi || factory?.name || "", tel: factory?.phone || "", email: factory?.email || "", adres: factory?.adres || "", city: factory?.city || "", country: factory?.country || "" },
+    gonderen: { ad: factory?.evrakFirmaAdi || factory?.name || "", tel: factory?.phone || "", email: factory?.email || "", web: factory?.web || "", adres: factory?.adres || "", city: factory?.city || "", country: factory?.country || "" },
     alici: {
       firmaAdi: detailView.name || "",
       adres: detailView.adres || "",
@@ -607,10 +608,13 @@ export const CustomerDetailModal = ({
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
     const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory));
+    const sablon = renderMailTemplate(appSettings?.mailTemplates, lang === "EN" ? "makinaRaporuEN" : "makinaRaporu", {
+      firma: detailView.name || "", firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
+    });
     setMailDraft({
       to: detailView.email || "",
-      subject: `Makina Servis ve Yedek Parça Geçmişi Raporu - ${detailView.name}`,
-      text: `Sayın ${detailView.name},\n\nMakinanıza ait servis ve yedek parça geçmişi raporu ekte yer almaktadır.\n\nİyi günler dileriz.\nAltuntaş Makina`,
+      subject: sablon.konu,
+      text: sablon.metin,
       pdfHtml: html,
       pdfFileName: `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`,
     });
@@ -619,10 +623,13 @@ export const CustomerDetailModal = ({
   const openMailServiceForm = (sv, lang = "TR") => {
     const cust = customers.find(c => c.id === sv.customerId);
     const html = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { forEmail: true, translations: servisT(lang), kaseResmi, factory }));
+    const sablon = renderMailTemplate(appSettings?.mailTemplates, lang === "EN" ? "servisFormuEN" : "servisFormu", {
+      firma: cust?.name || "", firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
+    });
     setMailDraft({
       to: cust?.email || "",
-      subject: `Servis Formu - ${cust?.name || ""}`,
-      text: `Sayın ${cust?.name || ""},\n\nServis formunuz ekte yer almaktadır.\n\nİyi günler dileriz.\nAltuntaş Makina`,
+      subject: sablon.konu,
+      text: sablon.metin,
       pdfHtml: html,
       pdfFileName: `servis-formu-${(cust?.serialNo || cust?.name || "kayit").replace(/\s+/g, "-")}.pdf`,
     });
@@ -864,7 +871,7 @@ export const CustomerDetailModal = ({
                     </Btn>
                   )}
                   {isCustomer && canDo("cust_detail_add_machine") && (
-                    <Btn small variant="ghost" onClick={() => { onClose(); onOpenAddForFirm(detailView); }}>
+                    <Btn small variant="ghost" onClick={() => onOpenAddForFirm(detailView)}>
                       <Icon name="plus" size={12} /> Bu Firmaya Makina Ekle
                     </Btn>
                   )}
@@ -907,7 +914,7 @@ export const CustomerDetailModal = ({
       </Modal>
 
       {newOwnerForm && (
-        <Modal title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
+        <Modal wide title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
           <div style={{ fontSize: 13, color: "#64748b", background: "#fff7ed", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5 }}>
             Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
             Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur.
@@ -919,6 +926,7 @@ export const CustomerDetailModal = ({
               {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
             </div>
           )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Yeni Sahip (Satın Alan)">
             <Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" />
             <Warn>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</Warn>
@@ -935,25 +943,24 @@ export const CustomerDetailModal = ({
               ]}
             />
           </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Field label="Telefon">
               <Input value={newOwnerForm.phone || ""} onChange={e => setNewOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" />
               <Warn>{newOwnerForm.phone && !PHONE_RE.test(newOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
             </Field>
             <Field label="Devir Tarihi"><Input type="date" value={newOwnerForm.saleDate || ""} onChange={e => setNewOwnerForm(p => ({ ...p, saleDate: e.target.value }))} /></Field>
+            <Field label="E-posta">
+              <Input value={newOwnerForm.email || ""} onChange={e => setNewOwnerForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
+              <Warn>{newOwnerForm.email && !EMAIL_RE.test(newOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            </Field>
           </div>
-          <Field label="E-posta">
-            <Input value={newOwnerForm.email || ""} onChange={e => setNewOwnerForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-            <Warn>{newOwnerForm.email && !EMAIL_RE.test(newOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
-          </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 1 - Ad Soyad"><Input value={newOwnerForm.yetkili1Ad || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 1 - Telefon">
               <Input value={newOwnerForm.yetkili1Tel || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili1Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
               <Warn>{newOwnerForm.yetkili1Tel && !PHONE_RE.test(newOwnerForm.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
             </Field>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 2 - Ad Soyad"><Input value={newOwnerForm.yetkili2Ad || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili2Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 2 - Telefon">
               <Input value={newOwnerForm.yetkili2Tel || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili2Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
@@ -970,10 +977,10 @@ export const CustomerDetailModal = ({
               placeholder="Devir ile ilgili not (isteğe bağlı)..."
               style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 50, boxSizing: "border-box", fontFamily: "inherit" }} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setNewOwnerForm(null)}>İptal</Btn>
             <Btn onClick={saveNewOwner}><Icon name="check" size={14} /> Devri Tamamla</Btn>
-          </div>
+      </div>
         </Modal>
       )}
 

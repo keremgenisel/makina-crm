@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { uid } from "../../lib/utils";
-import { logAction } from "../../lib/audit";
+import { uid, stripAutoPrint } from "../../lib/utils";
+import { renderMailTemplate } from "../../lib/mailTemplates";
+import { logAction, snapshotOnceki } from "../../lib/audit";
 import { fmtKalipCapi } from "../../lib/utils";
-import { Btn, Icon, Modal, LockConflict } from "../ui";
+import { Btn, Icon, Modal, LockConflict, Field, Input, Warn, EMAIL_RE } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -147,6 +148,7 @@ export function UretimFormu({
   customers = [], kalipDefs = [],
   partSales = [], setPartSales = null, setCustomers = null,
   showToast = () => {}, canDoStock = () => true, serverPermissions = null,
+  appSettings = null, factory = null,
 }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm]     = useState(null);
@@ -206,7 +208,7 @@ export function UretimFormu({
       const idx = prev.findIndex(f => f.id === form.id);
       return idx >= 0 ? prev.map(f => f.id === form.id ? form : f) : [...prev, form];
     });
-    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: "uretim_formu", entityId: form.id, entityName: form.baslangicTarihi });
+    logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: "uretim_formu", entityId: form.id, entityName: form.baslangicTarihi, detail: isUpdate ? { onceki: snapshotOnceki(uretimFormlari.find(x => x.id === form.id)) } : undefined });
     showToast("Form kaydedildi.");
   };
 
@@ -218,6 +220,83 @@ export function UretimFormu({
     logAction({ serverPermissions, action: "silindi", entity: "uretim_formu", entityId: id, entityName: f?.baslangicTarihi });
     showToast("Form çöp kutusuna taşındı.");
   };
+
+  // ── E-posta: form PDF eki ile taslak (diğer evraklardaki akışın aynısı) ──
+  const [mailDraft, setMailDraft] = useState(null);
+  const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
+  const openMailForm = (f) => {
+    const sablon = renderMailTemplate(appSettings?.mailTemplates, "uretimFormu", {
+      tarih: f.baslangicTarihi || "", firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
+    });
+    setMailDraft({
+      to: "", subject: sablon.konu, text: sablon.metin,
+      pdfHtml: stripAutoPrint(buildPrintHtml(f)),
+      pdfFileName: `uretim-formu-${(f.baslangicTarihi || "form").replace(/\s+/g, "-")}.pdf`,
+    });
+    setMailSendState({ state: "idle", error: null });
+  };
+  const previewMailAttachment = () => {
+    if (!mailDraft?.pdfHtml) return;
+    if (window.appPrint) { window.appPrint.printHtml(mailDraft.pdfHtml); return; }
+    const blob = new Blob([mailDraft.pdfHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+  const sendMailDraft = async () => {
+    if (!window.appMail || !mailDraft) return;
+    if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
+    setMailSendState({ state: "sending", error: null });
+    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName, type: "uretim" });
+    if (res?.ok) {
+      setMailSendState({ state: "idle", error: null });
+      setMailDraft(null);
+      showToast("E-posta gönderildi.");
+    } else {
+      setMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
+    }
+  };
+
+  // Mail modalı hem düzenleme hem liste görünümünde çizilmeli (iki ayrı return var)
+  const mailModal = mailDraft && (
+    <Modal title="E-posta Gönder" onClose={() => setMailDraft(null)}>
+      {!window.appMail ? (
+        <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+          Bu özellik yalnızca kurulu uygulamada çalışır.
+        </div>
+      ) : (
+        <>
+          <Field label="Kime">
+            <Input value={mailDraft.to} onChange={e => setMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
+            <Warn>{mailDraft.to && !EMAIL_RE.test(mailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
+          </Field>
+          <Field label="Konu">
+            <Input value={mailDraft.subject} onChange={e => setMailDraft(p => ({ ...p, subject: e.target.value }))} />
+          </Field>
+          <Field label="Mesaj">
+            <textarea value={mailDraft.text} onChange={e => setMailDraft(p => ({ ...p, text: e.target.value }))}
+              style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
+          </Field>
+          <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {mailDraft.pdfFileName} otomatik ek olarak gönderilecek.
+            <button onClick={previewMailAttachment} type="button"
+              style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>
+              Eki Önizle
+            </button>
+          </div>
+          {mailSendState.state === "error" && (
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginTop: 12, marginBottom: 12 }}>Hata: {mailSendState.error}</div>
+          )}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <Btn variant="ghost" onClick={() => setMailDraft(null)}>İptal</Btn>
+            <Btn onClick={sendMailDraft} disabled={mailSendState.state === "sending"}>
+              <Icon name="mail" size={14} /> {mailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
+            </Btn>
+          </div>
+        </>
+      )}
+    </Modal>
+  );
 
   const printSaved = (f) => {
     const html = buildPrintHtml(f);
@@ -450,6 +529,7 @@ export function UretimFormu({
             </Btn>
           )}
           <Btn small variant="ghost" onClick={printForm}><Icon name="print" size={13} /> Yazdır</Btn>
+          {canDoStock("stock_uretim_mail") && <Btn small variant="ghost" onClick={() => form && openMailForm(form)}><Icon name="mail" size={13} /> E-posta</Btn>}
         </div>
         {form.kapali && (
           <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 14px", marginBottom: 14, fontSize: 13, color: "#92400e", fontWeight: 600 }}>
@@ -595,11 +675,14 @@ export function UretimFormu({
               {/* ── Sol: Müşteri paneli ── */}
               <div style={{ borderRight: "1px solid #f1f5f9", paddingRight: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 0.5, marginBottom: 8 }}>MÜŞTERİ</div>
-                <input
-                  value={custSearch} onChange={e => setCustSearch(e.target.value)}
-                  placeholder="Firma ara..."
-                  style={{ width: "100%", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "7px 10px", fontSize: 13, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }}
-                />
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+                  <input
+                    value={custSearch} onChange={e => setCustSearch(e.target.value)}
+                    placeholder="Firma ara..."
+                    style={{ width: "100%", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "7px 10px 7px 32px", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", background: "#f8fafc" }}
+                  />
+                </div>
                 <div style={{ maxHeight: 260, overflowY: "auto" }}>
                   {filtCusts.map(c => {
                     const isSel = selMusteri?.id === c.id;
@@ -702,6 +785,7 @@ export function UretimFormu({
             </div>
           </Modal>
         )}
+        {mailModal}
       </div>
     );
   }
@@ -764,6 +848,7 @@ export function UretimFormu({
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                       {canDoStock("stock_uretim_edit") && <Btn small variant="ghost" onClick={() => openEdit(f)}><Icon name="edit" size={12} /></Btn>}
                       {canDoStock("stock_uretim_print") && <Btn small variant="ghost" onClick={() => printSaved(f)}><Icon name="print" size={12} /></Btn>}
+                      {canDoStock("stock_uretim_mail") && <Btn small variant="ghost" onClick={() => openMailForm(f)} title="E-posta ile Gönder"><Icon name="mail" size={12} /></Btn>}
                       {canDoStock("stock_uretim_delete") && <Btn small variant="danger" onClick={() => setDelConfirm(f.id)}><Icon name="trash" size={12} /></Btn>}
                     </div>
                   </td>
@@ -773,6 +858,8 @@ export function UretimFormu({
           </tbody>
         </table>
       )}
+
+      {mailModal}
 
       {delConfirm && (
         <Modal title="Formu Sil" onClose={() => setDelConfirm(null)} width={360}

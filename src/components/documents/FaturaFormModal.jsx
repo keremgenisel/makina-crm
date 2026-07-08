@@ -34,9 +34,6 @@ export const FaturaFormModal = ({
           onForce={forceFaturaLock} onCancel={() => setFaturaForm(null)} />
       ) : <>
       {draftBar}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 16 }}>
-        <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Sol: Alıcı bilgileri */}
@@ -262,6 +259,12 @@ export const FaturaFormModal = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Yapışkan kaydet çubuğu: uzun formda kaydırırken hep görünür */}
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+        <Btn variant="ghost" onClick={() => setFaturaForm(null)}>Vazgeç</Btn>
+        <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
       </>}
     </Modal>

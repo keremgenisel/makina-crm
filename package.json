@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "2.68.0",
+  "version": "2.69.0",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "release": "vite build && electron-builder --win --publish always",
     "postrelease": "electron-rebuild -f -w better-sqlite3",
+    "bakim": "node scripts/bakim.cjs",
     "test": "vitest run",
     "lint": "eslint src electron scripts"
   },
@@ -32,6 +33,8 @@
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
     "@eslint/js": "^9.39.4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.1.0",
     "cross-env": "^7.0.3",
@@ -41,6 +44,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.10",
     "wait-on": "^8.0.1"

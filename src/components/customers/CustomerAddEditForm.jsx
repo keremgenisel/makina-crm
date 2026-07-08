@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
 export const CustomerAddEditForm = ({
@@ -222,15 +222,13 @@ export const CustomerAddEditForm = ({
         {(form.kaliplar || []).map((k, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap" }}>{i + 1}.</span>
-            <Select value={k.ad || ""}
-              onChange={e => setForm(p => {
+            <SearchSelect value={k.ad || ""} placeholder="Kalıp seçin..." searchPlaceholder="Kalıp ara..."
+              options={kalipDefs.map(d => ({ value: d.ad, label: d.ad }))}
+              onChange={val => setForm(p => {
                 const arr = [...(p.kaliplar || [])];
-                arr[i] = { ...arr[i], ad: e.target.value };
+                arr[i] = { ...arr[i], ad: val };
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
-              })}>
-              <option value="">Kalıp seçin...</option>
-              {kalipDefs.map(d => <option key={d.id} value={d.ad}>{d.ad}</option>)}
-            </Select>
+              })} />
             <Input value={k.olcu || ""} placeholder="Ölçü (örn: 55x125 mm)"
               onChange={e => setForm(p => {
                 const arr = [...(p.kaliplar || [])];
@@ -458,7 +456,7 @@ export const CustomerAddEditForm = ({
           style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
       </Field>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 20, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
         <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

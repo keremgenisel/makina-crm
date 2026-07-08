@@ -153,6 +153,39 @@ export const parseMoney = (s) => {
   const n = parseFloat(t);
   return isNaN(n) ? 0 : n;
 };
+// Serbest metin kur alanından ("1 EUR = 38,50 TL") sayısal kuru çıkarır.
+// "=" işaretinden sonraki ilk sayı esas alınır (baştaki "1 EUR"i yutmamak için);
+// "=" yoksa metindeki ilk sayı. Türkçe ondalık (virgül) parseMoney ile çözülür.
+// Geçerli pozitif kur bulunamazsa null döner.
+export const parseKurRate = (text) => {
+  if (text == null) return null;
+  const s = String(text);
+  const afterEq = s.match(/=\s*([0-9][0-9.,]*)/);
+  const raw = afterEq ? afterEq[1] : (s.match(/[0-9][0-9.,]*/) || [null])[0];
+  if (!raw) return null;
+  const n = parseMoney(raw);
+  return n > 0 ? n : null;
+};
+// Birim fiyatın kur ile TL karşılığını biçimlendirilmiş string olarak döner ("" = hesaplanamaz).
+export const calcTL = (birimFiyat, rate) => {
+  const num = parseMoney(birimFiyat);
+  if (!num || !rate) return "";
+  const tl = num * rate;
+  const isWhole = tl % 1 === 0;
+  return tl.toLocaleString("tr-TR", { minimumFractionDigits: isWhole ? 0 : 2, maximumFractionDigits: 2 });
+};
+// Kur alanı (serbest metin) değişince form'u günceller: kuru yazar, dövizli belgede
+// (TRY dışı) sayısal kuru çözüp kurRate'i ve tüm satırların TL karşılığını yeniden hesaplar.
+// Saf fonksiyon (React'e bağımsız), evrak kur inputları bunu ortak kullanır.
+export const applyKurToForm = (form, kurText) => {
+  if (!form) return form;
+  const rate = parseKurRate(kurText);
+  if (form.currency === "TRY" || !rate) return { ...form, kur: kurText };
+  return {
+    ...form, kur: kurText, kurRate: rate,
+    satirlar: (form.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) })),
+  };
+};
 // Kalıp sayısını güvenli al
 export const kalipCount = (c) => {
   if (Array.isArray(c?.kaliplar) && c.kaliplar.length) return c.kaliplar.length;
@@ -254,6 +287,35 @@ export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makin
   isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && sv.odendi === false;
 // Extra Kalıp satışı borçlu mu
 export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
+// ── Mükerrer kayıt tespiti ───────────────────────────────────────────────────
+// Telefonu karşılaştırma anahtarına indir: rakamları ayıkla, son 10 hane (0/ülke kodu farkları elenir)
+const telAnahtar = (t) => { const d = String(t || "").replace(/\D/g, ""); return d.length >= 7 ? d.slice(-10) : ""; };
+// Firma adını karşılaştırma anahtarına indir: tr küçük harf, noktalama ve yaygın şirket ekleri atılır
+const FIRMA_EKLERI = new Set(["as", "aş", "ltd", "şti", "sti", "san", "tic", "sanayi", "ticaret", "limited", "şirketi", "sirketi", "ve"]);
+export const firmaAnahtar = (ad) => trLower(ad).replace(/ı/g, "i").replace(/[.,\-_/()&'"]/g, " ").split(/\s+/).filter(w => w.length > 1 && !FIRMA_EKLERI.has(w)).join(" ").trim();
+// Yeni kayıt eklerken benzer mevcut kayıtları bulur. Sinyaller güçlüden zayıfa:
+// seri no aynı; telefon aynı (phone/yetkili1Tel/yetkili2Tel çapraz); normalize isim + aynı model
+// (isim TEK başına uyarı üretmez — aynı firmanın ikinci makinası meşru; model alanı olmayan
+// kayıtlarda, örn. bayilerde, isim eşleşmesi yeterlidir çünkü ikisinin de modeli boştur).
+export const benzerKayitBul = (kayitlar = [], aday = {}) => {
+  const sonuc = [];
+  const adaySeri = trLower(String(aday.serialNo || "").trim());
+  const adayTeller = [aday.phone, aday.yetkili1Tel, aday.yetkili2Tel].map(telAnahtar).filter(Boolean);
+  const adayAd = firmaAnahtar(aday.name || "");
+  const adayModel = trLower(String(aday.model || "").trim());
+  for (const k of kayitlar) {
+    if (k.deletedAt) continue;
+    if (aday.id != null && k.id === aday.id) continue;
+    if (adaySeri && trLower(String(k.serialNo || "").trim()) === adaySeri) { sonuc.push({ kayit: k, sebep: "seri no aynı" }); continue; }
+    const kTeller = [k.phone, k.yetkili1Tel, k.yetkili2Tel].map(telAnahtar).filter(Boolean);
+    if (adayTeller.length && kTeller.some(t => adayTeller.includes(t))) { sonuc.push({ kayit: k, sebep: "telefon aynı" }); continue; }
+    if (adayAd && firmaAnahtar(k.name || "") === adayAd && trLower(String(k.model || "").trim()) === adayModel) {
+      sonuc.push({ kayit: k, sebep: adayModel ? "aynı firma + aynı model" : "firma adı aynı" });
+    }
+  }
+  return sonuc;
+};
+
 // Bir müşterinin herhangi bir kaynaktan (kalan borç / servis / parça / Extra Kalıp) borcu var mı
 export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina") => {
   if (parseMoney(customer.kalanBorc) > 0) return true;

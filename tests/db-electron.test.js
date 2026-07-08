@@ -9,17 +9,28 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const root = path.join(__dirname, "..");
 
+const runElectron = (script) => {
+  const electronBin = require(path.join(root, "node_modules", "electron"));
+  const r = spawnSync(electronBin, [path.join(root, "scripts", "tests", script)], {
+    encoding: "utf-8",
+    timeout: 120000,
+  });
+  if (r.status !== 0) {
+    console.error("STDOUT:\n" + r.stdout);
+    console.error("STDERR:\n" + r.stderr);
+  }
+  return r;
+};
+
 describe("SQLite katmanı (Electron altında)", () => {
   it("tam tur + migration + tablo atlama + audit temizliği", () => {
-    const electronBin = require(path.join(root, "node_modules", "electron"));
-    const r = spawnSync(electronBin, [path.join(root, "scripts", "tests", "db-roundtrip.cjs")], {
-      encoding: "utf-8",
-      timeout: 120000,
-    });
-    if (r.status !== 0) {
-      console.error("STDOUT:\n" + r.stdout);
-      console.error("STDERR:\n" + r.stderr);
-    }
+    const r = runElectron("db-roundtrip.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
+  it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
+    const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);

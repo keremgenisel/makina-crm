@@ -193,17 +193,20 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       )}
 
       {addOpen && (
-        <Modal title="Yeni Yedek Parça Ekle" onClose={() => setAddOpen(false)}>
+        <Modal wide title="Yeni Yedek Parça Ekle" onClose={() => setAddOpen(false)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <Field label="Yedek Parça Adı (TR)">
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
             <Warn>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
           </Field>
-          <Field label="Yedek Parça Adı (EN) — Proforma ve yurtdışı teklifler için">
+          <Field label="Yedek Parça Adı (EN)">
             <Input value={form.adEN || ""} onChange={e => setForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
           </Field>
           <Field label="Kod">
             <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
           </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Tanım (TR)">
             <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
@@ -214,38 +217,44 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
+          </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
           </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
+          </div>
           <Field label="Kullanıldığı Modeller">
             <ModelChips selected={form.models || []} allModels={allModels}
               onChange={models => setForm(p => ({ ...p, models }))} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+      </div>
         </Modal>
       )}
 
       {editId !== null && (
-        <Modal title="Yedek Parçayı Düzenle" onClose={cancelEdit}>
+        <Modal wide title="Yedek Parçayı Düzenle" onClose={cancelEdit}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <Field label="Yedek Parça Adı (TR)">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
             <Warn>{!(editForm.ad || "").trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
           </Field>
-          <Field label="Yedek Parça Adı (EN) — Proforma ve yurtdışı teklifler için">
+          <Field label="Yedek Parça Adı (EN)">
             <Input value={editForm.adEN || ""} onChange={e => setEditForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
           </Field>
           <Field label="Kod">
             <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
           </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Tanım (TR)">
             <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
@@ -256,23 +265,26 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
               placeholder="Technical specifications, dimensions etc."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
           </Field>
+          </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />
           </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
+          </div>
           <Field label="Kullanıldığı Modeller">
             <ModelChips selected={editForm.models || []} allModels={allModels}
               onChange={models => setEditForm(p => ({ ...p, models }))} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+      </div>
         </Modal>
       )}
     </div>

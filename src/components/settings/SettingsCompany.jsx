@@ -24,7 +24,7 @@ const migrateBankalar = (factory) => {
 
 export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
-    evrakFirmaAdi: "", contact: "", phone: "", email: "", adres: "", country: "", city: "",
+    evrakFirmaAdi: "", contact: "", phone: "", email: "", web: "", adres: "", country: "", city: "",
     gtipNo: "",
     bankalar: [emptyBank()],
   });
@@ -37,6 +37,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       contact: factory.contact || "",
       phone: factory.phone || "",
       email: factory.email || "",
+      web: factory.web || "",
       adres: factory.adres || "",
       country: factory.country || "",
       city: factory.city || "",
@@ -52,6 +53,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       contact: form.contact,
       phone: form.phone,
       email: form.email,
+      web: (form.web || "").trim(),
       adres: form.adres,
       country: form.country,
       city: form.city,
@@ -79,7 +81,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
   return (
     <>
-      <Section title="Firma Bilgileri" icon="settings">
+      <Section title="Firma Bilgileri" icon="settings" collapsible defaultOpen>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
@@ -88,6 +90,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           <Field label="Yetkili / Sorumlu"><Input {...f("contact")} placeholder="Mehmet Altuntaş" /></Field>
           <Field label="Telefon"><Input {...f("phone")} placeholder="0212 493 35 86" /></Field>
           <Field label="E-posta"><Input {...f("email")} placeholder="info@altunmak.com" /></Field>
+          <Field label="Web Sitesi"><Input {...f("web")} placeholder="www.altunmak.com" /></Field>
         </div>
         <Field label="Adres">
           <textarea {...f("adres")} placeholder="Topçular mah. Keresteciler sit. İşgören sok. No:33/2-3 Eyüp - İSTANBUL"
@@ -116,7 +119,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </div>
       </Section>
 
-      <Section title="Banka ve Ödeme Bilgileri" icon="finance">
+      <Section title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
           Teklif, proforma ve yurt dışı fatura belgelerinde ödeme bölümüne otomatik eklenir.
         </div>
@@ -165,7 +168,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
       </Section>
 
-      <Section title="Kaşe / İmza" icon="stamp">
+      <Section title="Kaşe / İmza" icon="stamp" collapsible>
         <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
           Teklif, proforma ve yurt dışı fatura çıktılarında görünür. Şeffaf arka planlı PNG önerilir.
         </div>
@@ -180,7 +183,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </Field>
       </Section>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", padding: "12px 0", marginTop: 4, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 

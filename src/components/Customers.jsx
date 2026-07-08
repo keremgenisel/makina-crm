@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
-import { logAction } from "../lib/audit";
-import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
+import { logAction, snapshotOnceki } from "../lib/audit";
+import { today, fmtTR, trLower, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -32,8 +32,11 @@ export const Customers = ({
   useEffect(() => { setListFilter(initialFilter || "all"); }, [initialFilter]);
   const [groupByFirm, setGroupByFirm] = useState(false);
   const [detailViewId, setDetailViewId] = useState(null);
+  // Detaydan açılan ekle/düzenle formu iptal edilirse aynı müşterinin detayına geri dönülür
+  const [returnDetailId, setReturnDetailId] = useState(null);
   useEffect(() => { if (initialDetailId != null) setDetailViewId(initialDetailId); }, [initialDetailId]);
   const [confirmId, setConfirmId] = useState(null);
+  const [dupWarn, setDupWarn] = useState(null); // benzer kayıt uyarısı: [{ kayit, sebep }]
 
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -171,6 +174,8 @@ export const Customers = ({
   }, [openNewPrefill]);  
 
   const openAddForFirm = (base) => {
+    setReturnDetailId(base.id);
+    setDetailViewId(null); // onDetailClosed tetiklenmeden kapat (dashboard'a dönme olmasın)
     const start = today();
     const end = `${parseInt(start.slice(0,4)) + 2}${start.slice(4)}`;
     setForm({
@@ -192,6 +197,7 @@ export const Customers = ({
       : (c.kalip ? [{ olcu: "", ad: c.kalip }] : [{ olcu: "", ad: "" }]);
     setForm({ ...c, kaliplar, kalipSayisi: c.kalipSayisi ?? kaliplar.length });
     setModal({ edit: c });
+    if (detailViewId != null) setReturnDetailId(detailViewId);
     setDetailViewId(null); // detay modalı onDetailClosed tetiklemeden kapat — hem çift kilit sorununu çözer, hem dashboard'a geri dönme olmaz
   };
   // Makina stoğu düşümü — ekleme ve "seri no sonradan atandı" düzenlemesi aynı mantığı
@@ -213,8 +219,10 @@ export const Customers = ({
     }
   };
 
-  const save = () => {
-    if (modal === "add") {
+  // Yeni müşteri ekleme gövdesi: save() mükerrer kontrolünden veya uyarı diyaloğundaki
+  // "Yine de Kaydet"ten çağrılır.
+  const doAdd = () => {
+    {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
       bumpId(customers, services, partSales, payments);
@@ -247,6 +255,18 @@ export const Customers = ({
       if (clean.fromTeklifId && onCustomerLinked) onCustomerLinked(newId, clean.fromTeklifId);
       logAction({ serverPermissions, action: "olusturuldu", entity: "musteri", entityId: newId, entityName: clean.name, detail: { model: clean.model, serialNo: clean.serialNo } });
       showToast(!clean.serialNo ? "Müşteri kaydedildi (seri no sonra atanacak)." : "Müşteri kaydedildi.");
+    }
+    clearDraft();
+    setModal(null);
+    setReturnDetailId(null);
+  };
+  const save = () => {
+    if (modal === "add") {
+      // Mükerrer kontrol: seri no / telefon / aynı firma+model eşleşmesi varsa önce uyar
+      const benzerler = benzerKayitBul(customers, form);
+      if (benzerler.length > 0) { setDupWarn(benzerler.slice(0, 3)); return; }
+      doAdd();
+      return;
     } else {
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
@@ -273,11 +293,12 @@ export const Customers = ({
           }));
         }
       }
-      logAction({ serverPermissions, action: "duzenlendi", entity: "musteri", entityId: clean.id, entityName: clean.name });
+      logAction({ serverPermissions, action: "duzenlendi", entity: "musteri", entityId: clean.id, entityName: clean.name, detail: { onceki: snapshotOnceki(modal?.edit) } });
       showToast("Müşteri bilgileri düzenlendi.");
     }
     clearDraft();
     setModal(null);
+    setReturnDetailId(null);
   };
   const del = id => setConfirmId(id);
   const confirmDel = () => {
@@ -409,7 +430,7 @@ export const Customers = ({
         {isCustomer && (
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
             style={{
-              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer", marginLeft: "auto",
+              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
               border: "1px solid", borderColor: groupByFirm ? "#3b82f6" : "#e2e8f0",
               background: groupByFirm ? "#3b82f6" : "#fff",
               color: groupByFirm ? "#fff" : "#64748b",
@@ -568,9 +589,21 @@ export const Customers = ({
         />
       )}
 
+      {dupWarn && (
+        <ConfirmDialog
+          confirmLabel="Yine de Kaydet" confirmIcon="check"
+          message={<span style={{ display: "block", textAlign: "left", whiteSpace: "pre-line" }}>{
+            `Benzer kayıt bulundu:\n${dupWarn.map(b => `• ${b.kayit.name}${b.kayit.model ? " · " + b.kayit.model : ""} — ${b.sebep}`).join("\n")}\n\nYine de yeni kayıt olarak kaydedilsin mi?`
+          }</span>}
+          onConfirm={() => { setDupWarn(null); doAdd(); }}
+          onCancel={() => setDupWarn(null)}
+        />
+      )}
+
       {modal && (
         <CustomerAddEditForm
-          modal={modal} form={form} setForm={setForm} save={save} onClose={() => { clearDraft(); setModal(null); }}
+          modal={modal} form={form} setForm={setForm} save={save}
+          onClose={() => { clearDraft(); setModal(null); if (returnDetailId != null) { setDetailViewId(returnDetailId); setReturnDetailId(null); } }}
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}

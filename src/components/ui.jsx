@@ -212,6 +212,64 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
   );
 };
 // Para girişi: değer SAYI olarak tutulur, ekranda binlik ayraçlı + ₺ gösterilir
+// Aranabilir açılır liste: uzun seçenek listelerinde (kalıp tanımları gibi) native
+// select yerine kullanılır. Üstte arama kutusu, altta en fazla ~10 satır görünür liste
+// (fazlası kaydırılır). options: [{ value, label }].
+export const SearchSelect = ({ value, onChange, options = [], placeholder = "Seçin...", searchPlaceholder = "Ara..." }) => {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const boxRef = useRef(null);
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (!open) { setQ(""); return; }
+    const onDoc = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    window.addEventListener("keydown", onKey);
+    setTimeout(() => inputRef.current?.focus(), 30);
+    return () => { document.removeEventListener("mousedown", onDoc); window.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const filtered = q.trim() ? options.filter(o => trLower(o.label).includes(trLower(q))) : options;
+  const secili = options.find(o => o.value === value);
+  const satir = { display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", fontSize: 13, cursor: "pointer", background: "none" };
+  return (
+    <div ref={boxRef} style={{ position: "relative" }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "left", cursor: "pointer", color: secili ? "#0f172a" : "#94a3b8", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{secili ? secili.label : placeholder}</span>
+        <span style={{ fontSize: 9, color: "#94a3b8", flexShrink: 0 }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 1300, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,.14)", overflow: "hidden" }}>
+          <div style={{ padding: 8, borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={13} /></span>
+              <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder={searchPlaceholder}
+                style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px 7px 28px", border: "1.5px solid #e85d1a", borderRadius: 7, fontSize: 13, outline: "none" }} />
+            </div>
+          </div>
+          <div style={{ maxHeight: 330, overflowY: "auto" }}>
+            {value && (
+              <button type="button" style={{ ...satir, color: "#94a3b8", fontSize: 12 }}
+                onClick={() => { onChange(""); setOpen(false); }}>— Seçimi kaldır —</button>
+            )}
+            {filtered.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12.5, color: "#94a3b8" }}>Sonuç bulunamadı.</div>}
+            {filtered.map(o => (
+              <button key={o.value} type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
+                onMouseLeave={e => e.currentTarget.style.background = o.value === value ? "#fff7ed" : "none"}
+                style={{ ...satir, background: o.value === value ? "#fff7ed" : "none", fontWeight: o.value === value ? 700 : 400 }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);
   const handle = (e) => {
@@ -285,7 +343,7 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
   );
 };
 
-export const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
+export const ConfirmDialog = ({ message, onConfirm, onCancel, confirmLabel = "Evet, Sil", confirmIcon = "trash" }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onCancel(); };
     window.addEventListener("keydown", onKey);
@@ -301,7 +359,7 @@ export const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
       <div style={{ fontSize: 13, color: "#64748b", marginBottom: 22 }}>{message}</div>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
         <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn variant="danger" onClick={onConfirm}><Icon name="trash" size={14} /> Evet, Sil</Btn>
+        <Btn variant="danger" onClick={onConfirm}><Icon name={confirmIcon} size={14} /> {confirmLabel}</Btn>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@ import { Icon } from "./ui";
 
 // ── Genel arama ──────────────────────────────────────────────────────────────
 // Sidebar'daki kutu ve Ctrl/Cmd+K kısayolu aynı paleti açar. Müşteri/makina
-// (ad, seri no, telefon, yetkili, model), teklif/proforma (no, firma), bayi ve
+// (ad, seri no, telefon, yetkili, model, eski sahip adı), teklif/proforma (no, firma), bayi ve
 // makina stoğu üzerinde arar; sonuca tıklayınca ilgili ekran doğrudan açılır.
 // allowedTabs: kullanıcının erişebildiği sekme id'leri — izinli olmayan sekmenin
 // verisi aramada hiç gösterilmez (kısıtlı kullanıcı aramadan o alana sızamaz).
@@ -32,7 +32,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
     const has = (v) => trLower(String(v || "")).includes(query);
     const izinli = (tabId) => !Array.isArray(allowedTabs) || allowedTabs.includes(tabId);
     return {
-      musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model))).slice(0, 8) : [],
+      musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))).slice(0, 8) : [],
       belgeler:   izinli("evrak") ? teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))).slice(0, 8) : [],
       bayiler:    izinli("dealers") ? dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))).slice(0, 6) : [],
       makinalar:  izinli("stock") ? stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))).slice(0, 6) : [],
@@ -59,9 +59,12 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
         <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 1200, display: "flex", justifyContent: "center", paddingTop: "10vh" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 620, height: "fit-content", maxHeight: "70vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
             <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "#fff" }}>
-              <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
-                placeholder="Müşteri, seri no, teklif no, telefon, bayi ara..."
-                style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", border: "2px solid #e85d1a", borderRadius: 10, fontSize: 14, outline: "none" }} />
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+                <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
+                  placeholder="Müşteri, seri no, teklif no, telefon, bayi ara..."
+                  style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", border: "2px solid #e85d1a", borderRadius: 10, fontSize: 14, outline: "none" }} />
+              </div>
             </div>
             {!results && <div style={{ padding: 18, fontSize: 13, color: "#94a3b8" }}>En az 2 karakter yazın.</div>}
             {bos && <div style={{ padding: 18, fontSize: 13, color: "#94a3b8" }}>Sonuç bulunamadı.</div>}
@@ -73,6 +76,14 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                     onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     <b>{c.name}</b>
                     <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{c.model || ""}{c.serialNo ? ` · S/N ${c.serialNo}` : ""}{c.installDate ? ` · ${fmtTR(c.installDate)}` : ""}</span>
+                    {(() => {
+                      const query = trLower(q.trim());
+                      const eski = (c.prevOwners || []).find(o => trLower(String(o.name || "")).includes(query));
+                      // Kayıt aramaya yalnızca eski sahibi üzerinden yakalandıysa nedenini göster
+                      return eski && !trLower(String(c.name || "")).includes(query)
+                        ? <span style={{ color: "#b45309", marginLeft: 8, fontSize: 11.5 }}>eski sahibi: {eski.name}</span>
+                        : null;
+                    })()}
                   </button>
                 ))}
               </div>

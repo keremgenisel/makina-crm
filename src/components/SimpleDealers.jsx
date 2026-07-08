@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
-import { logAction } from "../lib/audit";
-import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted } from "../lib/utils";
+import { logAction, snapshotOnceki } from "../lib/audit";
+import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
@@ -14,6 +14,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
+  const [dupWarn, setDupWarn] = useState(null); // benzer bayi uyarısı: [{ kayit, sebep }]
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
   const { lockLoading: dealerLockLoading, lockConflict: dealerLock, forceAcquire: forceDealerLock } = useLock("dealer", modal?.edit?.id ?? null);
   const [dealerFilter, setDealerFilter] = useState(initialFilter); // all | bayi | anlasmali | borclu
@@ -82,6 +83,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const openAdd  = () => { setForm({ name: "", contact: "", phone: "", email: "", adres: "", country: "Türkiye", city: "", note: "", bayiMi: true, anlasmaliServisMi: false }); setModal("add"); };
   const openEdit = d => { setForm({ bayiMi: true, anlasmaliServisMi: false, ...d }); setModal({ edit: d }); };
   const openFactoryEdit = () => { setForm({ ...factory }); setModal("factory"); };
+  // Yeni bayi ekleme gövdesi: save() mükerrer kontrolünden veya uyarı diyaloğundan çağrılır
+  const doAddDealer = () => {
+    bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]);
+    logAction({ serverPermissions, action: "olusturuldu", entity: "bayi", entityId: nid, entityName: form.name });
+    showToast("Bayi kaydedildi.");
+    setModal(null);
+  };
   const save = () => {
     if (modal === "factory") {
       const oldName = factory?.name;
@@ -110,14 +118,16 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     else {
       if (modal !== "factory" && !form.bayiMi && !form.anlasmaliServisMi) { showToast("En az biri seçili olmalı: Bayi veya Anlaşmalı Servis.", "err"); return; }
       if (modal === "add") {
-        bumpId(dealers); const nid = uid(); setDealers(p => p.some(d => d.id === nid) ? p : [{ ...form, id: nid }, ...p]);
-        logAction({ serverPermissions, action: "olusturuldu", entity: "bayi", entityId: nid, entityName: form.name });
-        showToast("Bayi kaydedildi.");
+        // Mükerrer kontrol: aynı isim veya aynı telefon varsa önce uyar
+        const benzerler = benzerKayitBul(dealers, { name: form.name, phone: form.phone });
+        if (benzerler.length > 0) { setDupWarn(benzerler.slice(0, 3)); return; }
+        doAddDealer();
+        return;
       } else {
         const oldName = modal.edit?.name;
         const newName = form.name;
         setDealers(p => p.map(d => d.id === form.id ? form : d));
-        logAction({ serverPermissions, action: "duzenlendi", entity: "bayi", entityId: form.id, entityName: newName });
+        logAction({ serverPermissions, action: "duzenlendi", entity: "bayi", entityId: form.id, entityName: newName, detail: { onceki: snapshotOnceki(modal?.edit) } });
         // Firma adı düzeltildiyse (yazım hatası vb.), bu adı referans alan eski servis/müşteri kayıtlarını
         // da güncelle — yoksa borç takibi, zaman çizelgesi ve "Satış Yapan" kırılımları eski/yeni isim
         // arasında bölünür (örn. bayi borçluyken adı düzeltilince borcu kaybolmuş gibi görünür).
@@ -364,12 +374,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e2e8f0" }}>
                 Servis Geçmişi ({dealerServices.length})
               </div>
-              <div style={{ marginBottom: 10 }}>
+              <div style={{ position: "relative", marginBottom: 10 }}>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
                 <input
                   value={dealerSvcSearch}
                   onChange={e => { setDealerSvcSearch(e.target.value); setSvcPage(1); }}
                   placeholder="Müşteri veya servis tipi ara..."
-                  style={{ width: "100%", padding: "7px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
+                  style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
                 />
               </div>
               {svcPaged.length === 0 && (
@@ -505,6 +516,17 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             </>
           )}
         </Modal>
+      )}
+
+      {dupWarn && (
+        <ConfirmDialog
+          confirmLabel="Yine de Kaydet" confirmIcon="check"
+          message={<span style={{ display: "block", textAlign: "left", whiteSpace: "pre-line" }}>{
+            `Benzer bayi bulundu:\n${dupWarn.map(b => `• ${b.kayit.name} — ${b.sebep}`).join("\n")}\n\nYine de yeni kayıt olarak kaydedilsin mi?`
+          }</span>}
+          onConfirm={() => { setDupWarn(null); doAddDealer(); }}
+          onCancel={() => setDupWarn(null)}
+        />
       )}
 
       {confirmId && (

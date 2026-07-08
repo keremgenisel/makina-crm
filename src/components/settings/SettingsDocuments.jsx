@@ -528,9 +528,6 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
-        <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
 
       {/* Genel Şartlar + Alt Not (sadece teklif) */}
       {docType === "teklif" && (
@@ -681,7 +678,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         );
       })}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 
@@ -740,16 +737,16 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 const Accordion = ({ label, sKey, openSections, toggle, badge, children }) => {
   const isOpen = openSections.has(sKey);
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div onClick={() => toggle(sKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: isOpen ? "8px 8px 0 0" : 8, cursor: "pointer", userSelect: "none" }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>{label}</span>
+    <div style={{ marginBottom: 12 }}>
+      <div onClick={() => toggle(sKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, marginBottom: isOpen ? 10 : 0, cursor: "pointer", userSelect: "none" }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>{label}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {badge && <span style={{ fontSize: 11, fontWeight: 700, background: "#e85d1a", color: "#fff", borderRadius: 8, padding: "1px 7px" }}>{badge}</span>}
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>{isOpen ? "▲" : "▼"}</span>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>{isOpen ? "▾" : "▸"}</span>
         </div>
       </div>
       {isOpen && (
-        <div style={{ border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", padding: "14px 16px" }}>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}>
           {children}
         </div>
       )}

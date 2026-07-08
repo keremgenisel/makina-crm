@@ -165,6 +165,7 @@ const EVRAK_ACTION_GROUPS = [
     { id: "evrak_fatura_add",    label: "Yeni fatura oluştur" },
     { id: "evrak_fatura_edit",   label: "Faturayı düzenle" },
     { id: "evrak_fatura_print",  label: "Yazdır / PDF kaydet" },
+    { id: "evrak_fatura_mail",   label: "E-posta ile gönder" },
     { id: "evrak_fatura_delete", label: "Faturayı sil" },
   ]},
 ];
@@ -206,6 +207,7 @@ const STOCK_ACTION_GROUPS = [
     { id: "stock_uretim_add",    label: "Yeni form oluştur" },
     { id: "stock_uretim_edit",   label: "Formu düzenle" },
     { id: "stock_uretim_print",  label: "Formu yazdır" },
+    { id: "stock_uretim_mail",   label: "E-posta ile gönder" },
     { id: "stock_uretim_delete", label: "Formu sil" },
   ]},
 ];

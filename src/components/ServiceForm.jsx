@@ -41,7 +41,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
     : [];
 
   return (
-    <Modal title={title} onClose={onCancel}>
+    <Modal wide title={title} onClose={onCancel}>
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
@@ -89,11 +89,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         <Warn>{!form.customerId ? "Müşteri seçilmedi" : ""}</Warn>
       </Field>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
         <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
         <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Tür">
           <Select value={form.type || "Periyodik Bakım"} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
             {SERVICE_TYPES.map(t => (
@@ -108,30 +106,37 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </Field>
       </div>
 
-      <Field label="İşlemi Yapan Firma">
-        <Select value={form.islemFirma || factoryName} onChange={e => setForm(p => ({ ...p, islemFirma: e.target.value }))}>
-          <option value={factoryName}>{factoryName}</option>
-          {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-        </Select>
-      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="İşlemi Yapan Firma">
+          <Select value={form.islemFirma || factoryName} onChange={e => setForm(p => ({ ...p, islemFirma: e.target.value }))}>
+            <option value={factoryName}>{factoryName}</option>
+            {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+          </Select>
+        </Field>
+        <Field label="Fatura Tipi">
+          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+          </Select>
+        </Field>
+      </div>
 
-      <Field label="Müşteri Talimatı / Açıklama">
-        <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
-          placeholder="Müşterinin talimatı / talebi..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
-      </Field>
-
-      <Field label="Fabrika Notu">
-        <textarea value={form.fabrikaNotu || ""} onChange={e => setForm(p => ({ ...p, fabrikaNotu: e.target.value }))}
-          placeholder="Fabrika dahili notu (yazdırılan formda görünür)..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
-      </Field>
-
-      <Field label="Yapılan İşler / Parça Değişimleri">
-        <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
-          placeholder="Yapılan işlemler, değişen parçalar..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 80, boxSizing: "border-box", fontFamily: "inherit" }} />
-      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <Field label="Müşteri Talimatı / Açıklama">
+          <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
+            placeholder="Müşterinin talimatı / talebi..."
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+        </Field>
+        <Field label="Fabrika Notu">
+          <textarea value={form.fabrikaNotu || ""} onChange={e => setForm(p => ({ ...p, fabrikaNotu: e.target.value }))}
+            placeholder="Fabrika dahili notu (yazdırılan formda görünür)..."
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+        </Field>
+        <Field label="Yapılan İşler / Parça Değişimleri">
+          <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
+            placeholder="Yapılan işlemler, değişen parçalar..."
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+        </Field>
+      </div>
 
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
@@ -215,11 +220,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </>
       )}
 
-      <Field label="Fatura Tipi">
-        <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-          {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-        </Select>
-      </Field>
       {(svUcretliTipi || !parcaUcretsizMi) && (
         <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>
           <Field label="Para Birimi">
@@ -290,7 +290,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
         <Btn onClick={() => onSave(parcaUcretsizMi)}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

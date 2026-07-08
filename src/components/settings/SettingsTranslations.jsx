@@ -141,7 +141,6 @@ const GROUPS = [
     { key: "model",       label: "Model Etiketi" },
     { key: "seriNo",      label: "Seri No Etiketi" },
     { key: "brutKg",      label: "Brüt Kg Etiketi" },
-    { key: "tel",         label: "Telefon Etiketi" },
     { key: "yetkili",     label: "Yetkili Etiketi" },
     { key: "kirilabilir", label: "Kırılabilir" },
     { key: "buTaraf",     label: "Bu Taraf Üstte" },
@@ -311,10 +310,6 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         Teklif, Proforma, Servis Formu ve Makina Raporu baskılarındaki etiketleri özelleştirin. Türkçe (TR) ve İngilizce (EN) ayrı ayrı düzenlenir.
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 16 }}>
-        <Btn variant="ghost" onClick={reset}><Icon name="trash" size={13} /> Varsayılana Sıfırla</Btn>
-        <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
 
       {GROUPS.map((g, i) => {
         if (g.divider) {
@@ -337,18 +332,18 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
             <div
               onClick={() => toggleGroup(groupId)}
               style={{
-                fontSize: 12, fontWeight: 700, color: "#475569", cursor: "pointer",
+                fontSize: 12, fontWeight: 800, color: "#475569", cursor: "pointer", textTransform: "uppercase", letterSpacing: .5,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "8px 12px", background: "#f8fafc",
-                borderRadius: isOpen ? "8px 8px 0 0" : 8,
+                padding: "10px 14px", background: "#f8fafc",
+                borderRadius: 10, marginBottom: isOpen ? 10 : 0,
                 border: "1px solid #e2e8f0",
                 userSelect: "none",
               }}>
               <span>{g.label}</span>
-              <span style={{ color: "#94a3b8", fontSize: 11 }}>{isOpen ? "▲" : "▼"}</span>
+              <span style={{ color: "#94a3b8", fontSize: 12 }}>{isOpen ? "▾" : "▸"}</span>
             </div>
             {isOpen && (
-              <div style={{ border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "hidden" }}>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
@@ -384,7 +379,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         );
       })}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={reset}><Icon name="trash" size={13} /> Varsayılana Sıfırla</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

@@ -161,6 +161,35 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
   return (
     <div>
+      {/* Üst şerit: solda döviz kurları (yan yana), sağda tarih & saat */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "stretch", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: "10px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: .5, textTransform: "uppercase" }}>Döviz Kurları</span>
+          {rates ? (
+            <>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💵 USD / TL</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#16a34a" }}>{rates.usd.toFixed(2)} ₺</span>
+              </div>
+              {rates.eur && (
+                <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                  <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💶 EUR / TL</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{rates.eur.toFixed(2)} ₺</span>
+                </div>
+              )}
+            </>
+          ) : ratesErr ? (
+            <span style={{ fontSize: 12, color: "#94a3b8" }}>Kurlar şu an alınamadı.</span>
+          ) : (
+            <span style={{ fontSize: 12, color: "#94a3b8" }}>Yükleniyor...</span>
+          )}
+        </div>
+        <div style={{ background: "linear-gradient(135deg, #1f0d02, #3d1c06)", borderRadius: 12, padding: "10px 20px", boxShadow: "0 4px 16px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#ff9d5c", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#d4a584", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
+        </div>
+      </div>
+
       {/* 10 sayı kutusu — 5 üstte, 5 altta (tasarım: revize 2) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
         <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="#e85d1a" onClick={onGoCustomers} />
@@ -354,38 +383,6 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       </div>
       )}
 
-
-      {/* Sol alt: döviz kurları · Sağ alt: saat & tarih */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 28, flexWrap: "wrap", gap: 16 }}>
-        {/* Döviz kurları */}
-        <div style={{ background: "#fff", borderRadius: 12, padding: "16px 22px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", minWidth: 220 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: .5, textTransform: "uppercase", marginBottom: 12 }}>Döviz Kurları</div>
-          {rates ? (
-            <div style={{ display: "flex", gap: 28 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💵 USD / TL</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#16a34a" }}>{rates.usd.toFixed(2)} ₺</div>
-              </div>
-              {rates.eur && (
-                <div>
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💶 EUR / TL</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#2563eb" }}>{rates.eur.toFixed(2)} ₺</div>
-                </div>
-              )}
-            </div>
-          ) : ratesErr ? (
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Kurlar şu an alınamadı.</div>
-          ) : (
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Yükleniyor...</div>
-          )}
-        </div>
-
-        {/* Saat & tarih */}
-        <div style={{ background: "linear-gradient(135deg, #1f0d02, #3d1c06)", borderRadius: 12, padding: "16px 26px", boxShadow: "0 4px 16px rgba(0,0,0,.2)", textAlign: "right", minWidth: 200 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#ff9d5c", fontVariantNumeric: "tabular-nums", letterSpacing: 1, lineHeight: 1.2 }}>{saat}</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#d4a584", fontVariantNumeric: "tabular-nums", letterSpacing: 1, lineHeight: 1.2, marginTop: 4 }}>{tarih}</div>
-        </div>
-      </div>
 
       {/* Borçlu Firmalar */}
       {showDebtors && (

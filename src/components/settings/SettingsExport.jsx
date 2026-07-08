@@ -1,26 +1,33 @@
 import { useState } from "react";
+import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount } from "../../lib/utils";
 import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [] }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [] }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
   const [exportMailDraft, setExportMailDraft] = useState(null); // null | { to, subject, text, attachmentBase64, attachmentFilename, mimeType }
   const [exportMailSendState, setExportMailSendState] = useState({ state: "idle", error: null });
+  const [acikGruplar, setAcikGruplar] = useState(() => new Set()); // rapor grupları akordeon
+  const exportSablon = (label) => renderMailTemplate(appSettings?.mailTemplates, "disaAktarim", {
+    belge: label, firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
+  });
   const openExportMailCSV = (rows, filename, label) => {
+    const sablon = exportSablon(label);
     setExportMailDraft({
-      to: "", subject: `${label} — Altuntaş Makina`, text: `Merhaba,\n\n${label} ekte yer almaktadır.\n\nİyi çalışmalar.`,
+      to: "", subject: sablon.konu, text: sablon.metin,
       attachmentBase64: utf8ToBase64(buildCSV(rows)), attachmentFilename: filename, mimeType: "text/csv;charset=utf-8",
     });
     setExportMailSendState({ state: "idle", error: null });
   };
   const openExportMailXLSXBase64 = (base64, filename, label) => {
+    const sablon = exportSablon(label);
     setExportMailDraft({
-      to: "", subject: `${label} — Altuntaş Makina`, text: `Merhaba,\n\n${label} ekte yer almaktadır.\n\nİyi çalışmalar.`,
+      to: "", subject: sablon.konu, text: sablon.metin,
       attachmentBase64: base64, attachmentFilename: filename, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
     setExportMailSendState({ state: "idle", error: null });
@@ -425,10 +432,16 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Yurt Dışı Faturalar", desc: `Düzenlenen yurt dışı faturalar (${faturalar.length} kayıt).`, onClick: exportFaturalar },
             { title: "Görüşmeler", desc: `Müşteri görüşme kayıtları (${gorusmeler.length} kayıt).`, onClick: exportGorusmeler },
           ] },
-        ].map(g => (
-          <div key={g.group} style={{ marginBottom: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>{g.group}</div>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+        ].map(g => {
+          const acik = acikGruplar.has(g.group);
+          return (
+          <div key={g.group} style={{ marginBottom: 14 }}>
+            <div onClick={() => setAcikGruplar(prev => { const n = new Set(prev); if (n.has(g.group)) n.delete(g.group); else n.add(g.group); return n; })}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: acik ? 10 : 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>{g.group} ({g.items.length})</span>
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>{acik ? "▾" : "▸"}</span>
+            </div>
+            {acik && <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
                   {g.items.map((card, i) => (
@@ -459,9 +472,10 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>}
           </div>
-        ))}
+          );
+        })}
       </Section>
 
       {/* Dışa aktarımı e-posta ile gönder — CSV/XLSX içerik otomatik ek olarak eklenir */}

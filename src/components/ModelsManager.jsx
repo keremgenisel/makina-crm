@@ -126,18 +126,20 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       )}
 
       {modelModal && (
-        <Modal title={modelModal.mode === "add" ? "Yeni Model Ekle" : "Modeli Düzenle"} onClose={() => setModelModal(null)}>
-          <Field label="Model Adı">
-            <Input value={mForm.model || ""} onChange={e => setMForm(p => ({ ...p, model: e.target.value }))} placeholder="Örn: AK160_DSC" />
-            <Warn>{!(mForm.model || "").trim() ? "Model adı girilmedi" : ""}</Warn>
-          </Field>
-          <Field label="Ürün Adı (TR) — Teklif ve proformada görünür">
-            <Input value={mForm.urunAdi || ""} onChange={e => setMForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Soğutmalı Buz Makinesi" />
-          </Field>
-          <Field label="Ürün Adı (EN) — Proforma ve yurtdışı teklifler için">
-            <Input value={mForm.urunAdiEN || ""} onChange={e => setMForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Water Cooled Ice Machine" />
-          </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Modal wide title={modelModal.mode === "add" ? "Yeni Model Ekle" : "Modeli Düzenle"} onClose={() => setModelModal(null)}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <Field label="Model Adı">
+              <Input value={mForm.model || ""} onChange={e => setMForm(p => ({ ...p, model: e.target.value }))} placeholder="Örn: AK160_DSC" />
+              <Warn>{!(mForm.model || "").trim() ? "Model adı girilmedi" : ""}</Warn>
+            </Field>
+            <Field label="Ürün Adı (TR) — Teklifte görünür">
+              <Input value={mForm.urunAdi || ""} onChange={e => setMForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Soğutmalı Buz Makinesi" />
+            </Field>
+            <Field label="Ürün Adı (EN) — Proforma için">
+              <Input value={mForm.urunAdiEN || ""} onChange={e => setMForm(p => ({ ...p, urunAdiEN: e.target.value }))} placeholder="Örn: Water Cooled Ice Machine" />
+            </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Field label="Soğutma">
               <Select value={mForm.sogutma || "Soğutmalı"} onChange={e => setMForm(p => ({ ...p, sogutma: e.target.value }))}>
                 <option>Soğutmalı</option>
@@ -145,8 +147,9 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               </Select>
             </Field>
             <Field label="Günlük Kapasite"><Input value={mForm.kapasite || ""} onChange={e => setMForm(p => ({ ...p, kapasite: e.target.value }))} placeholder="Örn: 2000 kg/gün" /></Field>
+            <Field label="Kalıp Çapı"><Input value={mForm.kalip || ""} onChange={e => setMForm(p => ({ ...p, kalip: e.target.value }))} placeholder="Örn: 14 cm" /></Field>
           </div>
-          <Field label="Kalıp Çapı"><Input value={mForm.kalip || ""} onChange={e => setMForm(p => ({ ...p, kalip: e.target.value }))} placeholder="Örn: 14 cm" /></Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Tanım (TR) — Teklif formunda otomatik dolar">
             <textarea value={mForm.tanim || ""} onChange={e => setMForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, dahil kalıp notu vb."
@@ -157,6 +160,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               placeholder="English technical description..."
               style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "#f8fafc", outline: "none" }} />
           </Field>
+          </div>
           <Field label="Resim (Teklif/Proforma'da görünür)">
             <ImageUpload value={mForm.resim || ""} onChange={v => setMForm(p => ({ ...p, resim: v }))} label={mForm.model} />
           </Field>
@@ -194,10 +198,10 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
             </Field>
           )}
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
             <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
+      </div>
         </Modal>
       )}
     </div>

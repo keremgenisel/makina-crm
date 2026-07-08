@@ -135,12 +135,12 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {kritikSayisi > 0 && (
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "#991b1b", fontWeight: 600 }}>
-              ⚠ {kritikSayisi} parça tükendi
+              {kritikSayisi} parça tükendi
             </div>
           )}
           {dusukSayisi > 0 && (
             <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "#92400e", fontWeight: 600 }}>
-              ⚡ {dusukSayisi} parçada stok azaldı (5 veya altı)
+              {dusukSayisi} parçada stok azaldı (5 veya altı)
             </div>
           )}
         </div>

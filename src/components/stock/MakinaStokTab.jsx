@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
-import { logAction } from "../../lib/audit";
+import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
@@ -81,7 +81,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       }
       setStock(p => p.map(s => s.id === stockId ? form : s));
       deductParts(form.parcalar || [], stockId);
-      logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model });
+      logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model, detail: { onceki: snapshotOnceki(stock.find(x => x.id === stockId)) } });
       showToast("Stok makinası düzenlendi.");
     }
     setModal(null);

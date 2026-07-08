@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../../lib/constants";
-import { today, looksLikeBackup, safeStandardModels, parseMoney } from "../../lib/utils";
+import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId } from "../../lib/utils";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 
@@ -76,52 +76,83 @@ export const SettingsBackup = ({
     }
   };
 
+  // ── Seçmeli geri yükleme paketleri ──────────────────────────────────────────
+  // Bölümler tek tek değil, ilişki bütünlüğü bozulmayacak paketler halinde seçilir:
+  // müşteri çocukları (servis/ödeme/kalıp satışı/görüşme) DB'de gerçek FK ile müşteriye
+  // bağlı olduğundan müşterilerden ayrı geri yüklenemez.
+  const RESTORE_PAKETLERI = [
+    { id: "musteri", ad: "Müşteri verileri", aciklama: "müşteriler, servisler, kalıp satışları, ödemeler, görüşmeler" },
+    { id: "evrak", ad: "Evraklar", aciklama: "teklifler, proformalar, faturalar" },
+    { id: "stok", ad: "Stok ve üretim", aciklama: "makina stoğu, parça stoğu ve geçmişi, üretim formları" },
+    { id: "bayi", ad: "Bayiler", aciklama: "" },
+    { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
+    { id: "not", ad: "Notlar", aciklama: "" },
+    { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
+  ];
+  const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
+  const paketToggle = (id) => setRestorePaketler(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
   const applyRestore = async () => {
+    const sec = (id) => restorePaketler.has(id);
     // KDV oranı tarihe bağlı dönemler hâline gelmeden önce kaydedilmiş eski yedeklerde Kalan Borç
     // kuruş artıkları veya (eski sabit orana göre girilmiş ödemelerden kalma) negatif "fazla ödeme"
     // bakiyeleri taşıyabilir — geri yüklerken bunlar da App.jsx'in normal yükleme akışındaki gibi temizlenir.
-    if (Array.isArray(restoreData?.customers)) {
+    if (sec("musteri") && Array.isArray(restoreData?.customers)) {
       setCustomers(restoreData.customers.map(c => ({ ...c, kalanBorc: Math.max(0, Math.round(parseMoney(c.kalanBorc))) })));
     }
-    if (Array.isArray(restoreData?.services)) setServices(restoreData.services);
-    if (Array.isArray(restoreData?.dealers)) setDealers(restoreData.dealers);
-    if (Array.isArray(restoreData?.stock) && setStock) setStock(restoreData.stock);
-    if (Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
-    if (Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
-    setStandardModels(safeStandardModels(restoreData?.standardModels));
-    if (restoreData?.factory) setFactory(restoreData.factory);
-    if (Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
-    if (Array.isArray(restoreData?.parts) && setParts) setParts(restoreData.parts);
-    if (Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
-    if (Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
-    if (Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
-    if (Array.isArray(restoreData?.faturalar) && setFaturalar) setFaturalar(restoreData.faturalar);
-    if (Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
-    if (Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
-    if (Array.isArray(restoreData?.uretimFormlari) && setUretimFormlari) setUretimFormlari(restoreData.uretimFormlari);
-    if (Array.isArray(restoreData?.gorusmeler) && setGorusmeler) setGorusmeler(restoreData.gorusmeler);
+    if (sec("musteri") && Array.isArray(restoreData?.services)) setServices(restoreData.services);
+    if (sec("musteri") && Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
+    if (sec("musteri") && Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
+    if (sec("musteri") && Array.isArray(restoreData?.gorusmeler) && setGorusmeler) setGorusmeler(restoreData.gorusmeler);
+    if (sec("evrak") && Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
+    if (sec("evrak") && Array.isArray(restoreData?.faturalar) && setFaturalar) setFaturalar(restoreData.faturalar);
+    if (sec("stok") && Array.isArray(restoreData?.stock) && setStock) setStock(restoreData.stock);
+    if (sec("stok") && Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
+    if (sec("stok") && Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
+    if (sec("stok") && Array.isArray(restoreData?.uretimFormlari) && setUretimFormlari) setUretimFormlari(restoreData.uretimFormlari);
+    if (sec("bayi") && Array.isArray(restoreData?.dealers)) setDealers(restoreData.dealers);
+    if (sec("tanim") && Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
+    if (sec("tanim") && Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
+    if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
+    if (sec("tanim") && Array.isArray(restoreData?.parts)) setParts?.(restoreData.parts);
+    if (sec("not") && Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
+    if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
-    if (restoreData?.appSettings) {
+    if (sec("ayar") && restoreData?.appSettings) {
       const { autoBackup, backupFolder, frequency, lastBackup, ...portableSettings } = restoreData.appSettings;
       setAppSettings(p => ({ ...p, ...portableSettings }));
     }
     // SMTP config (şifresiz): e-posta sunucu ayarları geri yüklenir, şifre tekrar girilmeli.
     let smtpRestored = false;
-    if (restoreData?.mailConfig && window.appMail?.restoreConfigFromBackup) {
+    if (sec("ayar") && restoreData?.mailConfig && window.appMail?.restoreConfigFromBackup) {
       await window.appMail.restoreConfigFromBackup(restoreData.mailConfig).catch(() => {});
       smtpRestored = true;
     }
     // E-posta logu
-    if (Array.isArray(restoreData?.mailLog) && window.appMail?.restoreFullLog) {
+    if (sec("ayar") && Array.isArray(restoreData?.mailLog) && window.appMail?.restoreFullLog) {
       await window.appMail.restoreFullLog(restoreData.mailLog).catch(() => {});
     }
     // Uygulama kilidi bilerek geri YÜKLENMEZ (yedeğe de yazılmıyor): makinaya özgü ayar.
     // Eski yedeklerde appLockData olsa bile yok sayılır — bu makinanın kilidi değişmez.
 
+    // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
+    // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
+    bumpId(
+      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "notes", "parts", "kalipDefs", "customModels"]
+        .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
+    );
+
     setRestoreData(null);
     const smtpNote = smtpRestored ? " E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli." : "";
-    flash("ok", "Yedek başarıyla yüklendi." + smtpNote);
+    const secilenAdlar = RESTORE_PAKETLERI.filter(pk => restorePaketler.has(pk.id)).map(pk => pk.ad);
+    flash("ok", secilenAdlar.length === RESTORE_PAKETLERI.length
+      ? "Yedek başarıyla yüklendi." + smtpNote
+      : `Seçilen bölümler yedekten yüklendi: ${secilenAdlar.join(", ")}.` + smtpNote);
   };
 
   return (
@@ -202,12 +233,39 @@ export const SettingsBackup = ({
               ⚠ Bu yedek, bu programın daha yeni bir sürümüyle alınmış. Bazı veriler düzgün yüklenmeyebilir.
             </div>
           )}
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>Geri yüklenecek bölümler</span>
+              <button onClick={() => setRestorePaketler(new Set(restorePaketler.size === RESTORE_PAKETLERI.length ? [] : RESTORE_PAKETLERI.map(pk => pk.id)))}
+                style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {restorePaketler.size === RESTORE_PAKETLERI.length ? "Tümünü Kaldır" : "Tümünü Seç"}
+              </button>
+            </div>
+            {RESTORE_PAKETLERI.map(pk => (
+              <label key={pk.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
+                <input type="checkbox" checked={restorePaketler.has(pk.id)} onChange={() => paketToggle(pk.id)}
+                  style={{ width: 16, height: 16, accentColor: "#e85d1a", cursor: "pointer" }} />
+                <span style={{ fontWeight: 600, color: "#0f172a" }}>{pk.ad}</span>
+                {pk.aciklama && <span style={{ fontSize: 11.5, color: "#94a3b8" }}>({pk.aciklama})</span>}
+              </label>
+            ))}
+          </div>
+          {restorePaketler.has("musteri") && !restorePaketler.has("evrak") && (
+            <div style={{ fontSize: 12.5, color: "#b45309", marginBottom: 8 }}>
+              ℹ Müşteriler yüklenip evraklar yüklenmezse, müşteri kayıtlarındaki kaynak teklif bağlantıları eski yedeğe göre kopuk kalabilir.
+            </div>
+          )}
+          {restorePaketler.has("musteri") && !restorePaketler.has("stok") && (
+            <div style={{ fontSize: 12.5, color: "#b45309", marginBottom: 8 }}>
+              ℹ Müşteriler yüklenip stok yüklenmezse, makinaların stok bağlantıları ve üretim formu bağlantıları eski yedeğe göre farklı kalabilir.
+            </div>
+          )}
           <div style={{ fontSize: 13, color: "#dc2626", fontWeight: 600, marginBottom: 20 }}>
-            ⚠ Mevcut tüm veriler bu yedekteki verilerle değiştirilecek. Bu işlem geri alınamaz.
+            ⚠ Seçilen bölümlerdeki mevcut veriler yedekteki verilerle değiştirilecek. Bu işlem geri alınamaz.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setRestoreData(null)}>Vazgeç</Btn>
-            <Btn variant="danger" onClick={applyRestore}><Icon name="check" size={14} /> Evet, Geri Yükle</Btn>
+            <Btn variant="danger" onClick={applyRestore} disabled={restorePaketler.size === 0}><Icon name="check" size={14} /> Evet, Geri Yükle</Btn>
           </div>
         </Modal>
       )}
