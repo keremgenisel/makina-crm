@@ -42,6 +42,14 @@ describe("FROM kutusu içeriği (EN proforma + yurt dışı fatura)", () => {
     expect(html).not.toContain("Date:"); // ayrı tarih şeridi kaldırıldı (tarih üstte)
   });
 
+  it("EN proforma Delivery Point ayrı şeritte değil, FROM kutusunun içinde satır olarak", () => {
+    const html = buildPrintHtml(enProforma({ teslimYeri: "FCA İstanbul" }), factory);
+    expect(html).toContain("Delivery Point");
+    expect(html).toContain("FCA İstanbul");
+    // Eski davranış: kutuların altında ayrı bir "Delivery Point: X" şeridi vardı.
+    expect(html).not.toContain("Delivery Point: <strong>");
+  });
+
   it("yurt dışı fatura FROM kutusunda başlıklar var; web satırı yok", () => {
     const fatura = { no: "INV-1", tarih: "2026-07-08", currency: "USD", firma: "ACME GmbH", satirlar: [] };
     const html = buildFaturaHtml(fatura, factory, 1000, "");

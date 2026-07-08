@@ -873,7 +873,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
   const vergiStr = [form.vergiNo, form.vergiDairesi].filter(Boolean).join(" / ");
   const showModelYiliEN = !isHiddenPrint("belge", "modelYiliDegeri");
   const infoSectionEN = `
-  <table style="width:100%;border-collapse:collapse;margin-bottom:${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? "6px" : "10px"};font-size:10px;">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10px;">
     <tr>
       <td style="width:50%;vertical-align:top;padding-right:8px;">
         <div style="background:#f8f9fa;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;height:100%;">
@@ -888,7 +888,8 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
             ${companyPhone ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">PHONE</td><td style="padding:2px 8px;">${companyPhone}</td></tr>` : ""}
             ${companyEmail ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">EMAIL</td><td style="padding:2px 8px;">${companyEmail}</td></tr>` : ""}
             ${showModelYiliEN ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.modelYiliLabel}</td><td style="padding:2px 8px;">${form.modelYiliDegeri || L.newUnused}</td></tr>` : ""}
-            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr><td style="padding:2px 8px 4px;color:#888;font-size:9px;font-weight:600;">${fl("belge", "kur")}</td><td style="padding:2px 8px 4px;">${form.kur}</td></tr>` : ""}
+            ${form.currency !== "TRY" && form.kur && !isHiddenPrint("belge", "kur") ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${fl("belge", "kur")}</td><td style="padding:2px 8px;">${form.kur}</td></tr>` : ""}
+            ${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<tr style="background:#fff;"><td style="padding:2px 8px 4px;color:#888;font-size:9px;font-weight:600;vertical-align:top;">${fl("belge", "teslimYeri")}</td><td style="padding:2px 8px 4px;">${String(form.teslimYeri).replace(/\n/g, "<br>")}</td></tr>` : ""}
           </table>
         </div>
       </td>
@@ -909,8 +910,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
         </div>
       </td>
     </tr>
-  </table>
-  ${form.teslimYeri && !isHiddenPrint("belge", "teslimYeri") ? `<div style="display:flex;gap:20px;font-size:9.5px;color:#475569;margin-bottom:10px;"><span>${fl("belge", "teslimYeri")}: <strong>${form.teslimYeri}</strong></span></div>` : ""}`;
+  </table>`;
 
   // ── ÜRÜN TABLOSU ──────────────────────────────────────────────────────────
   const allItems = (form.satirlar || [])
