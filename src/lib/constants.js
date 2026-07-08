@@ -15,6 +15,7 @@ export const ALTUNMAK_MODELS = [
 // ── Ülke Listesi (statik) ─────────────────────────────────────────────────
 export const COUNTRIES = [
   "Türkiye",
+  "Kuzey Kıbrıs Türk Cumhuriyeti",
   "ABD","Afganistan","Almanya","Arjantin","Arnavutluk","Avustralya","Avusturya","Azerbaycan",
   "BAE","Bahreyn","Belçika","Beyaz Rusya","Bosna Hersek","Brezilya","Bulgaristan",
   "Cezayir","Çek Cumhuriyeti","Çin","Danimarka","Endonezya","Estonya","Etiyopya",
@@ -31,7 +32,7 @@ export const COUNTRIES = [
 
 // Türkçe ülke adı → API'nin İngilizce adı (şehir sorgusu için)
 export const COUNTRY_EN = {
-  "Türkiye":"Türkiye","ABD":"United States","Afganistan":"Afghanistan","Almanya":"Germany","Arjantin":"Argentina","Arnavutluk":"Albania",
+  "Türkiye":"Türkiye","Kuzey Kıbrıs Türk Cumhuriyeti":"Northern Cyprus","ABD":"United States","Afganistan":"Afghanistan","Almanya":"Germany","Arjantin":"Argentina","Arnavutluk":"Albania",
   "Avustralya":"Australia","Avusturya":"Austria","Azerbaycan":"Azerbaijan","BAE":"United Arab Emirates",
   "Bahreyn":"Bahrain","Belçika":"Belgium","Beyaz Rusya":"Belarus","Bosna Hersek":"Bosnia and Herzegovina",
   "Brezilya":"Brazil","Bulgaristan":"Bulgaria","Cezayir":"Algeria","Çek Cumhuriyeti":"Czech Republic",
@@ -73,6 +74,15 @@ export const CITIES_TR = [
   "Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas",
   "Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak",
 ];
+
+// KKTC ilçeleri — API'de bulunmadığı için statik liste (Türkiye gibi her zaman dolu).
+export const CITIES_KKTC = ["Lefkoşa","Gazimağusa","Girne","Güzelyurt","İskele","Lefke"];
+
+// API'den şehir gelmeyen ülkeler için statik şehir listesi (Türkiye ve KKTC).
+export const staticCities = (country) =>
+  country === "Türkiye" ? CITIES_TR
+  : country === "Kuzey Kıbrıs Türk Cumhuriyeti" ? CITIES_KKTC
+  : [];
 
 // ── Seed Data ──────────────────────────────────────────────────────────────
 export const INIT_CUSTOMERS = [];
@@ -117,7 +127,7 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "2.71.0";
+export const APP_VERSION = "2.72.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

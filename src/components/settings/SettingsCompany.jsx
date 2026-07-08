@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Field, Input, Btn, Select, ImageUpload, ConfirmDialog } from "../ui";
-import { COUNTRIES, CITIES_TR } from "../../lib/constants";
+import { COUNTRIES, staticCities } from "../../lib/constants";
 import { Section } from "./Section";
 
 const emptyBank = () => ({
@@ -107,10 +107,10 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
             </Select>
           </Field>
           <Field label="Şehir">
-            {form.country === "Türkiye" ? (
+            {staticCities(form.country).length > 0 ? (
               <Select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))}>
                 <option value="">— Seçin —</option>
-                {CITIES_TR.map(c => <option key={c} value={c}>{c}</option>)}
+                {staticCities(form.country).map(c => <option key={c} value={c}>{c}</option>)}
               </Select>
             ) : (
               <Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} placeholder="Şehir" />

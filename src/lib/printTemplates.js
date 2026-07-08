@@ -1167,11 +1167,11 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;color:#888;font-size:9.5px;vertical-align:top;">${i + 1}</td>
       <td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;vertical-align:top;">
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="flex-shrink:0;${resimHtml ? "width:90px;" : "max-width:140px;"}">
+          <div style="flex-shrink:0;${resimHtml ? "width:90px;" : "max-width:140px;"}text-align:center;">
             ${resimHtml}
             <div style="${resimHtml ? "margin-top:4px;" : ""}font-size:10px;font-weight:600;line-height:1.35;">${modelCode}${desc}</div>
           </div>
-          ${tanimHtml ? `<div style="flex:1;min-width:0;">${tanimHtml}</div>` : ""}
+          ${tanimHtml ? `<div style="flex:1;min-width:0;text-align:center;"><div style="display:inline-block;text-align:left;">${tanimHtml}</div></div>` : ""}
         </div>
       </td>
       ${hasSeriNo ? `<td style="padding:5px 8px;border-bottom:1px solid #e8ecf0;text-align:center;font-family:monospace;font-size:9.5px;vertical-align:top;">${r.seriNo || "—"}</td>` : ""}

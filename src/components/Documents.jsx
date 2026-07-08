@@ -8,7 +8,7 @@ import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
 import LOGO_B64 from "../assets/logo.avif?inline";
-import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, CURRENCIES } from "../lib/constants";
+import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CURRENCIES } from "../lib/constants";
 import { buildPrintHtml, buildFaturaHtml } from "../lib/printTemplates";
 import { FaturaFormModal } from "./documents/FaturaFormModal";
 
@@ -358,7 +358,7 @@ export const Documents = ({
     const cands = [COUNTRY_EN[ulke], ulke, COUNTRY_ALT?.[ulke]].filter(Boolean);
     let cities = [];
     if (geoData) { for (const c of cands) { if (geoData[c]?.length) { cities = geoData[c]; break; } } }
-    if (!cities.length && ulke === "Türkiye") cities = CITIES_TR;
+    if (!cities.length) cities = staticCities(ulke);
     return cities;
   }, [faturaForm?.ulke, geoData]);
 
@@ -1189,7 +1189,7 @@ export const Documents = ({
                 const cands = form.country ? [COUNTRY_EN[form.country], form.country, COUNTRY_ALT[form.country]].filter(Boolean) : [];
                 let cityList = [];
                 if (geoData) { for (const cand of cands) { if (geoData[cand]?.length) { cityList = geoData[cand]; break; } } }
-                if (!cityList.length && form.country === "Türkiye") cityList = CITIES_TR;
+                if (!cityList.length) cityList = staticCities(form.country);
                 return (
                   <div key={key}>
                     <Field label={getFieldLabel(form.type, "alici", "city", "Şehir")}>

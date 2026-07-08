@@ -1,5 +1,73 @@
 import { useState, useEffect } from "react";
 import { Section } from "./Section";
+import { isTailscaleIp } from "../../lib/utils";
+
+// ── Uzaktan erişim (Tailscale) yardım kutusu ─────────────────────────────────
+// Tıklayınca açılan kısa bilgilendirme; hem sunucu hem istemci ekranında gösterilir.
+const TAILSCALE_AYARLAR = [
+  ["Allow incoming connections", "✓ (required)", "✗ (not needed)"],
+  ["Use Tailscale DNS settings", "✓ (default)", "✓ (default)"],
+  ["Use Tailscale subnets", "✓ (default)", "✓ (default)"],
+  ["Automatically install updates", "✓", "✓"],
+  ["Run unattended", "✓ (required)", "✗ (not needed)"],
+];
+function UzaktanErisimYardim() {
+  const [open, setOpen] = useState(false);
+  const tsTh = { textAlign: "left", padding: "5px 8px", background: "#f1f5f9", border: "1px solid #e2e8f0", fontWeight: 700, color: "#475569", fontSize: 11 };
+  const tsTd = { padding: "5px 8px", border: "1px solid #e2e8f0", color: "#475569" };
+  return (
+    <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none", padding: "10px 14px", background: "#f8fafc" }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>🌐 İnternet üzerinden (uzaktan) erişim nasıl kurulur?</span>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
+      </div>
+      {open && (
+        <div style={{ padding: "12px 14px", fontSize: 12.5, color: "#475569", lineHeight: 1.7 }}>
+          Fabrika dışından bağlanmak için ücretsiz <b>Tailscale</b> (tailscale.com) kullanılır. Kısaca:
+          <ol style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+            <li>Hem sunucu PC'ye hem de uzaktan bağlanacak bilgisayara Tailscale kurulur.</li>
+            <li>İkisinde de <b>aynı hesapla</b> giriş yapılır (Google/Microsoft).</li>
+            <li>Sunucu PC açık ve internete bağlı kalmalı; uyku kapalı olmalı.</li>
+            <li>Sunucunun Tailscale adresi (<span style={{ fontFamily: "monospace" }}>100.x.x.x</span>) bu ekranda "Uzaktan Erişim" başlığı altında görünür.</li>
+            <li>Bağlanan bilgisayarda, aşağıdaki bağlantı formuna bu <span style={{ fontFamily: "monospace" }}>100.x.x.x</span> adresi yazılır.</li>
+          </ol>
+          <div style={{ marginTop: 8, color: "#94a3b8" }}>Not: Fabrika içindeyken yerel ağ adresi (192.168...) kullanılabilir; Tailscale yalnızca uzaktan erişim içindir.</div>
+
+          <div style={{ marginTop: 14, fontWeight: 700, color: "#334155" }}>Tailscale ayarları (her PC'de tepsi simgesi &gt; Preferences)</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6, fontSize: 11.5 }}>
+              <thead>
+                <tr>
+                  <th style={tsTh}>Setting</th>
+                  <th style={{ ...tsTh, textAlign: "center" }}>Server PC</th>
+                  <th style={{ ...tsTh, textAlign: "center" }}>Client PC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TAILSCALE_AYARLAR.map(([s, srv, cli]) => (
+                  <tr key={s}>
+                    <td style={{ ...tsTd, fontFamily: "monospace" }}>{s}</td>
+                    <td style={{ ...tsTd, textAlign: "center", whiteSpace: "nowrap", color: srv.startsWith("✓") ? "#15803d" : "#b91c1c" }}>{srv}</td>
+                    <td style={{ ...tsTd, textAlign: "center", whiteSpace: "nowrap", color: cli.startsWith("✓") ? "#15803d" : "#b91c1c" }}>{cli}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            Sunucu PC'de ayrıca iki ayar (bu menüde değil):
+            <ol style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              <li><b>Windows güç ayarlarında uyku KAPALI</b> olmalı (uyuyan PC'ye erişilemez).</li>
+              <li><b>Admin panelde</b> (<span style={{ fontFamily: "monospace" }}>login.tailscale.com/admin</span>) bu cihaz için <b>key expiry KAPAT</b> (yoksa ~180 günde bir bağlantı düşer).</li>
+            </ol>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Sunucu modu kurulum bileşeni ─────────────────────────────────────────────
 function SetupWizard({ onDone, flash }) {
@@ -717,6 +785,8 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
     const running = cfg?.running;
     const ips     = cfg?.ips || [];
     const port    = cfg?.port;
+    const yerelIps = ips.filter(ip => !isTailscaleIp(ip));
+    const tailscaleIps = ips.filter(isTailscaleIp);
     return (
       <>
         <Section title="Bu PC Sunucu Olarak Çalışıyor" icon="settings">
@@ -726,14 +796,28 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             </div>
             {running && ips.length > 0 && (
               <div style={{ fontSize: 12, color: "#047857" }}>
-                <b>Diğer bilgisayarlar şu adresi kullanmalı:</b>
-                {ips.map(ip => (
-                  <div key={ip} style={{ fontFamily: "monospace", marginTop: 4, fontWeight: 700 }}>http://{ip}:{port}</div>
+                <b>Fabrika içi (Yerel Ağ) — bu bilgisayara bağlanmak için:</b>
+                {(yerelIps.length ? yerelIps : ["—"]).map(ip => (
+                  <div key={ip} style={{ fontFamily: "monospace", marginTop: 4, fontWeight: 700 }}>{ip === "—" ? "—" : `http://${ip}:${port}`}</div>
                 ))}
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed #6ee7b7" }}>
+                  <b>Uzaktan Erişim (Tailscale) — internet üzerinden bağlanmak için:</b>
+                  {tailscaleIps.length > 0 ? (
+                    <>
+                      {tailscaleIps.map(ip => (
+                        <div key={ip} style={{ fontFamily: "monospace", marginTop: 4, fontWeight: 700 }}>http://{ip}:{port}</div>
+                      ))}
+                      <div style={{ marginTop: 4, color: "#0f766e", fontSize: 11.5 }}>Bağlanacak bilgisayarda da Tailscale kurulu, açık ve aynı hesapla giriş yapılmış olmalı.</div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: 4, color: "#0f766e", fontSize: 11.5 }}>Uzaktan erişim için bu sunucu PC'ye de Tailscale kurun ve açın; adres burada görünecektir.</div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          {running && <UzaktanErisimYardim />}
+          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             {running ? (
               <button onClick={async () => { await window.appServer.stopServer(); reloadCfg(); flash("ok", "Sunucu durduruldu."); }}
                 style={{ padding: "9px 18px", background: "#fff", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -830,13 +914,20 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             if (result?.ok) { flash("ok", "Bağlandı. Yeniden yükleniyor..."); setTimeout(() => window.location.reload(), 800); }
             else flash("err", result?.error || "Giriş başarısız");
           }} style={{ display: "grid", gap: 14, maxWidth: 400 }}>
-            <div><label style={lbl}>Sunucu Adresi</label><input style={inp} type="text" value={serverUrl} onChange={e => setServerUrl(e.target.value)} placeholder="http://192.168.1.10:3000" /></div>
+            <div>
+              <label style={lbl}>Sunucu Adresi</label>
+              <input style={inp} type="text" value={serverUrl} onChange={e => setServerUrl(e.target.value)} placeholder="http://192.168.1.10:3000" />
+              <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 4, lineHeight: 1.5 }}>
+                Fabrika içindeyseniz yerel adresi (<span style={{ fontFamily: "monospace" }}>http://192.168...:3000</span>), uzaktan bağlanıyorsanız sunucunun Tailscale adresini (<span style={{ fontFamily: "monospace" }}>http://100.x.x.x:3000</span>) yazın. Uzaktan bağlantı için hem bu bilgisayarda hem sunucuda Tailscale açık olmalı.
+              </div>
+            </div>
             <div><label style={lbl}>Kullanıcı Adı</label><input style={inp} type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" /></div>
             <div><label style={lbl}>Şifre</label><input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" /></div>
             <button type="submit" disabled={connecting} style={{ padding: "10px 20px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: connecting ? .7 : 1, width: "fit-content" }}>
               {connecting ? "Bağlanıyor..." : "Bağlan"}
             </button>
           </form>
+          <UzaktanErisimYardim />
         </div>
       )}
     </Section>

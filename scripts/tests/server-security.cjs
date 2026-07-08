@@ -104,6 +104,11 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);
   check("admin GET /api/users → 200", (await api("/api/users", {}, adminTok)).status === 200);
 
+  // ── /api/version LAN adres bilgisi (aynı-ağ tespiti için) ───────────────────
+  const versionBody = await (await api("/api/version", {}, adminTok)).json();
+  check("/api/version serverLanIps dizi döner", Array.isArray(versionBody.serverLanIps));
+  check("/api/version serverPort döner", typeof versionBody.serverPort === "number");
+
   // ── Şifre uzunluğu ──────────────────────────────────────────────────────────
   check("kısa şifreyle kullanıcı ekleme → 400", (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "yeni", password: "123", role: "user" }) }, adminTok)).status === 400);
   check("geçerli şifreyle kullanıcı ekleme → 201", (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "yeni", password: "abcdef", role: "user" }) }, adminTok)).status === 201);

@@ -104,8 +104,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           </div>}
         </div>
 
-        {/* SAĞ İÇERİK */}
-        <div style={{ flex: 1, minWidth: 320, maxWidth: 760 }}>
+        {/* SAĞ İÇERİK — İşlem Geçmişi ve Parça/Yedek Parça tabloları geniş, tam görünsün */}
+        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "yedekparca") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: msg.type === "ok" ? "#d1fae5" : "#fee2e2", color: msg.type === "ok" ? "#065f46" : "#991b1b" }}>
@@ -161,7 +161,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       )}
 
       {settingsTab === "yedekparca" && (
-        <Section title="Parça/Yedek Parça Tanımları" icon="parts">
+        <Section title="Parça/Yedek Parça Tanımları" icon="parts" wide>
           <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>

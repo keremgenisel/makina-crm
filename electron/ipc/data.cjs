@@ -121,6 +121,15 @@ async function apiFetch(serverUrl, token, endpoint, options = {}) {
   });
 }
 
+// Bir adrese kısa timeout'la ulaşılabiliyor mu? (LAN erişilebilirlik yoklaması için)
+async function probeReachable(url, timeoutMs = 1500) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try { const r = await fetch(url, { signal: ctrl.signal }); return r.ok; }
+  catch { return false; }
+  finally { clearTimeout(t); }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
@@ -303,6 +312,28 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     port:    embeddedServer.getPort(),
     ips:     embeddedServer.getLocalIps(),
   }));
+
+  // ── İstemci: sunucuyla aynı yerel ağda mıyız? ─────────────────────────────
+  // Tailscale (100.x) adresiyle bağlı olsak bile, sunucunun LAN IP'sine (192.168.x)
+  // doğrudan ulaşabiliyorsak aynı ağdayız demektir. Sunucu LAN IP'lerini /api/version
+  // ile bildirir; her birini /health üzerinden yoklarız.
+  ipcMain.handle("server:checkLan", async () => {
+    const cfg = loadServerConfig(app);
+    if (cfg?.mode !== "client" || !cfg?.serverUrl || !cfg?.token) return { onLan: false };
+    try {
+      const res = await apiFetch(cfg.serverUrl, cfg.token, "/api/version");
+      if (!res.ok) return { onLan: false };
+      const body = await res.json();
+      const ips = Array.isArray(body?.serverLanIps) ? body.serverLanIps : [];
+      const port = body?.serverPort;
+      if (!ips.length || !port) return { onLan: false };
+      for (const ip of ips) {
+        const lanUrl = `http://${ip}:${port}`;
+        if (await probeReachable(`${lanUrl}/health`)) return { onLan: true, lanUrl };
+      }
+      return { onLan: false };
+    } catch { return { onLan: false }; }
+  });
 
   // ── Veri yükleme ──────────────────────────────────────────────────────────
   ipcMain.handle("crm:load", async () => {

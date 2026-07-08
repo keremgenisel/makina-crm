@@ -1,5 +1,5 @@
 import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
-import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, CITIES_TR, ODEME_YONTEMLERI } from "../lib/constants";
+import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, ODEME_YONTEMLERI } from "../lib/constants";
 import { aramaNormalize } from "../lib/utils";
 
 export const Icon = ({ name, size = 16 }) => {
@@ -400,7 +400,7 @@ export const CountryCityFields = ({ country, city, onCountry, onCity, geoData, l
     }
   }
   // API gelmediyse Türkiye için statik 81 il devreye girer
-  const cityList = fromApi.length > 0 ? fromApi : (country === "Türkiye" ? CITIES_TR : []);
+  const cityList = fromApi.length > 0 ? fromApi : staticCities(country);
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
       <Field label="Ülke">

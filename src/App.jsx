@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
@@ -98,6 +98,10 @@ export default function App() {
   // ── Salt okunur mod: istemci sunucuya ulaşamıyorsa (evde/bağlantı koptu) düzenleme kilitlenir ──
   // Veri önbellekten veya son yüklemeden görüntülenmeye devam eder; bağlantı dönünce kendiliğinden açılır.
   const readOnly = serverMode === "active" && !serverOnline;
+  // İstemci sunucuya Tailscale (100.x) adresi üzerinden mi bağlı? Menüde göstermek için.
+  const serverViaTailscale = isTailscaleServerUrl(savedServerUrl);
+  // Tailscale adresiyle bağlı olsak bile sunucuyla aynı yerel ağda mıyız? (LAN yoklaması)
+  const [sameLan, setSameLan] = useState(false);
   const effectivePermissions = readOnly ? READONLY_SERVER_PERMISSIONS : serverPermissions;
 
   // ── Tab izin filtresi: yerel mod / sunucu PC / admin → tüm tablar; user rolü → izin listesi ──
@@ -295,6 +299,18 @@ export default function App() {
     }, 10000);
     return () => clearInterval(id);
   }, [serverMode]);
+
+  // ── LAN yoklaması: Tailscale adresiyle bağlıyken aynı ağda mıyız? ──
+  // Sunucunun LAN adresine doğrudan ulaşabiliyorsak "Yerel Ağ" göster. Sadece Tailscale
+  // adresiyle bağlıyken anlamlı (LAN adresiyle bağlıysak zaten yereliz).
+  useEffect(() => {
+    if (serverMode !== "active" || !serverViaTailscale || !window.appServer?.checkLan) { setSameLan(false); return; }
+    let alive = true;
+    const check = async () => { try { const r = await window.appServer.checkLan(); if (alive) setSameLan(!!r?.onLan); } catch { /* yoksay */ } };
+    check();
+    const id = setInterval(check, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, [serverMode, serverViaTailscale, serverOnline]);
 
   // ── Global bildirim (toast) ──
   const [toast, setToast] = useState(null); // { type: "ok"|"err", text }
@@ -786,11 +802,16 @@ export default function App() {
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(232,93,26,.12)", fontSize: 11, color: "#7d614e", textAlign: "center", letterSpacing: .6 }}>
           {`v${appVersion}`}
           {serverMode === "active" && (
-            <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 10px", borderRadius: 7, background: serverOnline ? "rgba(22,163,74,.12)" : "rgba(220,38,38,.12)", border: `1px solid ${serverOnline ? "rgba(22,163,74,.25)" : "rgba(220,38,38,.25)"}` }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: serverOnline ? "#16a34a" : "#dc2626", flexShrink: 0, boxShadow: serverOnline ? "0 0 0 2px rgba(22,163,74,.25)" : "0 0 0 2px rgba(220,38,38,.25)" }} />
-              <span style={{ color: serverOnline ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 10px", borderRadius: 7, background: serverOnline ? "rgba(52,211,153,.13)" : "rgba(248,113,113,.13)", border: `1px solid ${serverOnline ? "rgba(52,211,153,.28)" : "rgba(248,113,113,.28)"}` }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: serverOnline ? "#34d399" : "#f87171", flexShrink: 0, boxShadow: serverOnline ? "0 0 0 2px rgba(52,211,153,.22)" : "0 0 0 2px rgba(248,113,113,.22)" }} />
+              <span style={{ color: serverOnline ? "#6ee7b7" : "#fca5a5", fontWeight: 600 }}>
                 {serverOnline ? "Sunucu bağlı" : "Sunucu kapalı"}
               </span>
+              {serverOnline && (serverKonumEtiketi({ viaTailscale: serverViaTailscale, sameLan }) === "tailscale" ? (
+                <span title="Sunucuya internet üzerinden (Tailscale) bağlısınız" style={{ fontSize: 10, fontWeight: 700, color: "#f0a36a", background: "rgba(232,93,26,.18)", border: "1px solid rgba(232,93,26,.35)", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>Tailscale</span>
+              ) : (
+                <span title={serverViaTailscale ? "Aynı ağdasınız — Tailscale adresiyle bağlısınız ama trafik yerel ağdan gidiyor" : "Sunucuya fabrika içi yerel ağdan bağlısınız"} style={{ fontSize: 10, fontWeight: 700, color: "#c99a76", background: "rgba(232,93,26,.10)", border: "1px solid rgba(232,93,26,.22)", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>Yerel Ağ</span>
+              ))}
             </div>
           )}
           {serverMode === "active" && (

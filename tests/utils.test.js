@@ -1,7 +1,7 @@
 // Saf yardımcı fonksiyon testleri (src/lib/utils.js) — framework'süz, Node ortamında koşar.
 import { describe, it, expect } from "vitest";
 import {
-  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize,
+  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -77,6 +77,36 @@ describe("numberToWordsEN", () => {
     expect(s).toContain("one thousand");
     expect(s).toContain("two hundred");
     expect(s).toContain("fifty");
+  });
+});
+
+describe("isTailscaleIp — Tailscale CGNAT aralığı (100.64.0.0/10)", () => {
+  it("Tailscale adreslerini tanır", () => {
+    expect(isTailscaleIp("100.101.3.4")).toBe(true);
+    expect(isTailscaleIp("100.64.0.1")).toBe(true);
+    expect(isTailscaleIp("100.127.255.255")).toBe(true);
+  });
+  it("yerel ağ ve aralık dışı 100.x adresleri tanımaz", () => {
+    expect(isTailscaleIp("192.168.1.10")).toBe(false);
+    expect(isTailscaleIp("10.0.0.5")).toBe(false);
+    expect(isTailscaleIp("100.5.0.1")).toBe(false);   // ikinci oktet < 64
+    expect(isTailscaleIp("100.128.0.1")).toBe(false); // ikinci oktet > 127
+    expect(isTailscaleIp("")).toBe(false);
+    expect(isTailscaleIp(null)).toBe(false);
+  });
+
+  it("isTailscaleServerUrl sunucu adresinden Tailscale bağlantısını tespit eder", () => {
+    expect(isTailscaleServerUrl("http://100.101.3.4:3000")).toBe(true);
+    expect(isTailscaleServerUrl("100.101.3.4:3000")).toBe(true); // protokolsüz
+    expect(isTailscaleServerUrl("http://192.168.1.10:3000")).toBe(false);
+    expect(isTailscaleServerUrl("")).toBe(false);
+    expect(isTailscaleServerUrl(null)).toBe(false);
+  });
+
+  it("serverKonumEtiketi: LAN adresi veya aynı ağ → lan; uzaktan Tailscale → tailscale", () => {
+    expect(serverKonumEtiketi({ viaTailscale: false, sameLan: false })).toBe("lan"); // LAN adresi
+    expect(serverKonumEtiketi({ viaTailscale: true, sameLan: true })).toBe("lan");   // Tailscale ama aynı ağda
+    expect(serverKonumEtiketi({ viaTailscale: true, sameLan: false })).toBe("tailscale"); // gerçekten uzakta
   });
 });
 

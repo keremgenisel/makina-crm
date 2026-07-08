@@ -193,6 +193,25 @@ export const applyKurToForm = (form, kurText) => {
     satirlar: (form.satirlar || []).map(r => ({ ...r, subItems: (r.subItems || []).map(item => ({ ...item, tlKarsiligi: calcTL(item.birimFiyat, rate) })) })),
   };
 };
+// Bir IP, Tailscale'in kullandığı CGNAT aralığında mı (100.64.0.0/10, yani ikinci oktet 64-127)?
+// Sunucu ekranında yerel ağ (fabrika içi) ile uzaktan erişim (Tailscale) adreslerini ayırmak için.
+export const isTailscaleIp = (ip) => {
+  const p = String(ip || "").split(".");
+  if (p.length !== 4 || p[0] !== "100") return false;
+  const o = Number(p[1]);
+  return o >= 64 && o <= 127;
+};
+// Sunucu adresi (ör. "http://100.101.3.4:3000" veya protokolsüz "100.101.3.4:3000")
+// Tailscale IP'sine mi işaret ediyor? Menüdeki "uzaktan bağlı" göstergesi için.
+export const isTailscaleServerUrl = (url) => {
+  const u = String(url || "");
+  try { return isTailscaleIp(new URL(u.includes("://") ? u : "http://" + u).hostname); }
+  catch { return false; }
+};
+// Menüdeki bağlantı konumu etiketi: LAN adresiyle bağlı VEYA (Tailscale adresiyle bağlı
+// olsa bile) sunucuyla aynı yerel ağdaysak "lan"; yalnızca uzaktan Tailscale ise "tailscale".
+export const serverKonumEtiketi = ({ viaTailscale, sameLan }) =>
+  (!viaTailscale || sameLan) ? "lan" : "tailscale";
 // Kalıp sayısını güvenli al
 export const kalipCount = (c) => {
   if (Array.isArray(c?.kaliplar) && c.kaliplar.length) return c.kaliplar.length;

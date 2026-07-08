@@ -160,7 +160,11 @@ function buildApp() {
   app.get("/api/version", requireAuth, (req, res) => {
     try {
       const u = db?.getUserByUsername(req.user.username);
-      res.json({ dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null });
+      // serverLanIps: istemci, aynı yerel ağda olup olmadığını bu adreslere ulaşarak test eder.
+      res.json({
+        dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null,
+        serverLanIps: getLocalIps().filter(ip => !isTailscaleIp(ip)), serverPort: getPort(),
+      });
     }
     catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -333,6 +337,15 @@ function buildApp() {
   });
 
   return app;
+}
+
+// Tailscale CGNAT aralığı (100.64.0.0/10) — src/lib/utils.js'teki isTailscaleIp'in CJS eşi.
+// LAN IP'lerini (fabrika içi) Tailscale IP'sinden ayırmak için.
+function isTailscaleIp(ip) {
+  const p = String(ip || "").split(".");
+  if (p.length !== 4 || p[0] !== "100") return false;
+  const o = Number(p[1]);
+  return o >= 64 && o <= 127;
 }
 
 // ── Ağ IP'lerini listele ──────────────────────────────────────────────────────

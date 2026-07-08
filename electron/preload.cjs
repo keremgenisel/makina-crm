@@ -98,6 +98,7 @@ contextBridge.exposeInMainWorld("appServer", {
   startServer:     (port) => ipcRenderer.invoke("server:startServer", port),
   stopServer:      () => ipcRenderer.invoke("server:stopServer"),
   getServerStatus: () => ipcRenderer.invoke("server:getServerStatus"),
+  checkLan:        () => ipcRenderer.invoke("server:checkLan"),
   onSessionExpired: (cb) => {
     const h = () => cb();
     ipcRenderer.removeAllListeners("server:sessionExpired");
