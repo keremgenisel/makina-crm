@@ -782,7 +782,7 @@ export default function App() {
   if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} initialUrl={savedServerUrl} initialUsername={savedUsername} />;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
       {/* Global bildirim (toast) */}
       {toast && (
         <div style={{
@@ -798,44 +798,6 @@ export default function App() {
       )}
       <style>{`@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
 
-      {/* ── Güncelleme şeridi: yeni sürüm yayınlandığında tüm ekranların üstünde görünür ── */}
-      {updBannerGorunur && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 14, flexShrink: 0,
-          background: "linear-gradient(90deg, #e85d1a, #f59e0b)", color: "#fff",
-          padding: "10px 20px", fontSize: 13.5, fontWeight: 600,
-          boxShadow: "0 2px 10px rgba(0,0,0,.18)", zIndex: 50,
-        }}>
-          <Icon name="download" size={17} />
-          {appUpd.state === "available" && (
-            <>
-              <span style={{ flex: 1 }}>
-                Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı (kurulu: v{appVersion}). Güncellemek için tıklayın, verileriniz korunur.
-              </span>
-              <button onClick={startAppUpdate} style={{ background: "#fff", color: "#c2410c", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                Güncelle
-              </button>
-              <button onClick={() => setUpdDismissed(appUpd.latest)} title="Daha sonra" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.4)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                Daha Sonra
-              </button>
-            </>
-          )}
-          {appUpd.state === "downloading" && (
-            <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-              Yeni sürüm indiriliyor... %{appUpd.progress}
-              <span style={{ flex: 1, maxWidth: 260, height: 7, background: "rgba(255,255,255,.3)", borderRadius: 6, overflow: "hidden" }}>
-                <span style={{ display: "block", height: 7, width: `${appUpd.progress}%`, background: "#fff", borderRadius: 6, transition: "width .3s" }} />
-              </span>
-            </span>
-          )}
-          {appUpd.state === "downloaded" && (
-            <span style={{ flex: 1 }}>Güncelleme indirildi, uygulama birazdan yeniden başlatılacak...</span>
-          )}
-        </div>
-      )}
-
-      {/* Sidebar + içerik satırı */}
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
       {/* Sidebar */}
       <style>{`
         .nav-btn { transition: all .18s ease; }
@@ -934,6 +896,43 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* İçerik kolonu: güncelleme şeridi (yalnız içeriğin üstünde, sidebar tam yükseklikte kalır) + ana içerik */}
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, minHeight: 0 }}>
+      {updBannerGorunur && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14, flexShrink: 0,
+          background: "linear-gradient(90deg, #e85d1a, #f59e0b)", color: "#fff",
+          padding: "10px 20px", fontSize: 13.5, fontWeight: 600,
+          boxShadow: "0 2px 10px rgba(0,0,0,.18)", zIndex: 50,
+        }}>
+          <Icon name="download" size={17} />
+          {appUpd.state === "available" && (
+            <>
+              <span style={{ flex: 1 }}>
+                Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı (kurulu: v{appVersion}). Güncellemek için tıklayın, verileriniz korunur.
+              </span>
+              <button onClick={startAppUpdate} style={{ background: "#fff", color: "#c2410c", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                Güncelle
+              </button>
+              <button onClick={() => setUpdDismissed(appUpd.latest)} title="Daha sonra" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.4)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Daha Sonra
+              </button>
+            </>
+          )}
+          {appUpd.state === "downloading" && (
+            <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+              Yeni sürüm indiriliyor... %{appUpd.progress}
+              <span style={{ flex: 1, maxWidth: 260, height: 7, background: "rgba(255,255,255,.3)", borderRadius: 6, overflow: "hidden" }}>
+                <span style={{ display: "block", height: 7, width: `${appUpd.progress}%`, background: "#fff", borderRadius: 6, transition: "width .3s" }} />
+              </span>
+            </span>
+          )}
+          {appUpd.state === "downloaded" && (
+            <span style={{ flex: 1 }}>Güncelleme indirildi, uygulama birazdan yeniden başlatılacak...</span>
+          )}
+        </div>
+      )}
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto", padding: 28 }}>
