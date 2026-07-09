@@ -29,7 +29,7 @@ export const SettingsDanger = ({ flash }) => {
   // "Evet, Kaldır" sonrası: uygulama kilidi açıksa önce şifre sor, değilse doğrudan kaldır
   const doUninstall = async () => {
     setConfirmUninstall(false);
-    const st = await window.appLock?.getStatus?.()?.catch(() => null);
+    const st = await window.appLock?.status?.()?.catch(() => null);
     if (st?.enabled) { setPw(""); setPwError(""); setLockRemaining(0); setAskPassword(true); }
     else await runUninstall();
   };

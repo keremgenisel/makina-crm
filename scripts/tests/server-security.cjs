@@ -55,6 +55,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
   });
   const login = async (u, p) => { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ username: u, password: p }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+  const login2fa = async (u, p, totpCode) => { const r = await api("/auth/login", { method: "POST", body: JSON.stringify({ username: u, password: p, totpCode }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
   // Güncel dataVersion (optimistic lock için). Kısmi blob gönderilir — DB katmanı
   // gönderilmeyen bölümleri korur, gönderilen bölümü tam-değiştirir.
   const curVer = async (tok) => (await (await api("/api/data", {}, tok)).json()).dataVersion;
@@ -132,6 +133,28 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const refRo = await api("/auth/refresh-internal", { method: "POST", body: JSON.stringify({ username: "ro" }) });
   check("refresh-internal admin olmayan → 403", refRo.status === 403);
 
+  // ── İki adımlı doğrulama (2FA / TOTP) uçtan uca ─────────────────────────────
+  const totp = require(path.join(root, "electron", "totp.cjs"));
+  const createTfa = await api("/api/users", { method: "POST", body: JSON.stringify({ username: "tfa", password: "tfapass1", role: "user" }) }, adminTok);
+  const tfaId = (await createTfa.json()).id;
+  const tfaTok = (await login("tfa", "tfapass1")).body.token;
+  const setupRes = await api("/auth/2fa/setup", { method: "POST" }, tfaTok);
+  const setupBody = await setupRes.json();
+  check("2fa/setup secret + QR döner", setupRes.status === 200 && !!setupBody.secret && String(setupBody.qr).startsWith("data:image"));
+  check("2fa/enable yanlış kod → 401", (await api("/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code: "000000" }) }, tfaTok)).status === 401);
+  const enableRes = await api("/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code: totp.currentToken(setupBody.secret) }) }, tfaTok);
+  const enableBody = await enableRes.json();
+  check("2fa/enable doğru kod → 8 kurtarma kodu", enableRes.status === 200 && Array.isArray(enableBody.recovery) && enableBody.recovery.length === 8);
+  const noCode = await login("tfa", "tfapass1");
+  check("2fa açık: kodsuz login → 401 requires2fa", noCode.status === 401 && noCode.body.requires2fa === true);
+  const withCode = await login2fa("tfa", "tfapass1", totp.currentToken(setupBody.secret));
+  check("2fa: doğru TOTP ile login başarılı", withCode.status === 200 && !!withCode.body.token);
+  const withRec = await login2fa("tfa", "tfapass1", enableBody.recovery[0]);
+  check("2fa: kurtarma kodu ile login başarılı", withRec.status === 200 && !!withRec.body.token);
+  check("2fa: kullanılmış kurtarma kodu tekrar → 401", (await login2fa("tfa", "tfapass1", enableBody.recovery[0])).status === 401);
+  check("admin 2fa sıfırla → 200", (await api(`/api/users/${tfaId}/2fa`, { method: "DELETE" }, adminTok)).status === 200);
+  check("sıfırlama sonrası kodsuz login çalışır", (await login("tfa", "tfapass1")).status === 200);
+
   // ── Yazma hız sınırı (DoS koruması): POST /api/data kullanıcı başına 60/dk ──
   // "yeni" kullanıcısı temiz sayaçla; gövde {} olduğu için handler 400 döner ama limiter
   // handler'dan ÖNCE sayar. 60 istekten sonra 429 gelmeli. (Login IP sayacına dokunmaz.)
@@ -148,6 +171,14 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   for (let i = 0; i < 10; i++) sonStatus = (await login("admin", "yanlisSifre")).status;
   check("10 yanlış deneme 401 döner", sonStatus === 401);
   check("11. deneme 429 (kilitlendi)", (await login("admin", "yanlisSifre")).status === 429);
+
+  // ── Kalıcılık: sunucu yeniden başlasa da kilit korunur (sayaç DB'de) ─────────
+  await server.stop();
+  const { port: port2 } = await server.start(0, dbmod);
+  const login2 = (u, p) => fetch(`http://127.0.0.1:${port2}/auth/login`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: u, password: p }),
+  }).then(r => r.status);
+  check("yeniden başlatma sonrası hâlâ kilitli (429) — kalıcı hız sınırı", (await login2("admin", "yanlisSifre")) === 429);
 
   await server.stop();
   fs.rmSync(tmpDir, { recursive: true, force: true });

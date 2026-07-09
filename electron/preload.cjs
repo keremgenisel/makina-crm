@@ -54,6 +54,19 @@ contextBridge.exposeInMainWorld("appControl", {
   uninstall: () => ipcRenderer.invoke("app:uninstall"),
   getOpenAtLogin: () => ipcRenderer.invoke("app:getOpenAtLogin"),
   setOpenAtLogin: (val) => ipcRenderer.invoke("app:setOpenAtLogin", val),
+  quit: () => ipcRenderer.invoke("app:quit"),
+  onConfirmQuit: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("app:confirmQuit");
+    ipcRenderer.on("app:confirmQuit", h);
+    return () => ipcRenderer.removeListener("app:confirmQuit", h);
+  },
+  onAlreadyRunning: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("app:alreadyRunning");
+    ipcRenderer.on("app:alreadyRunning", h);
+    return () => ipcRenderer.removeListener("app:alreadyRunning", h);
+  },
 });
 
 contextBridge.exposeInMainWorld("appMail", {

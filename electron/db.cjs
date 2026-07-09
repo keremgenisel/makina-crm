@@ -25,6 +25,8 @@ const SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+-- Hız sınırı sayaçları (login brute-force): sunucu yeniden başlasa da kilit korunsun diye kalıcı.
+CREATE TABLE IF NOT EXISTS rate_limit (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, reset_at INTEGER NOT NULL);
 
 CREATE TABLE IF NOT EXISTS customers (
   id INTEGER PRIMARY KEY,
@@ -252,6 +254,9 @@ const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
 const USERS_TOKEN_VERSION_COLUMN = [["token_version", "INTEGER NOT NULL DEFAULT 1"]];
+// İki adımlı doğrulama (TOTP): secret + açık mı + kurtarma kodu hash'leri (JSON) + son kabul
+// edilen kod (replay: aynı kod 30 sn içinde iki kez kullanılamasın).
+const USERS_TOTP_COLUMNS = [["totp_secret", "TEXT"], ["totp_enabled", "INTEGER NOT NULL DEFAULT 0"], ["totp_recovery", "TEXT"], ["totp_last_code", "TEXT"]];
 const URETIM_FORMLARI_DONEM_COLUMNS = [["baslangicTarihi", "TEXT"], ["bitisTarihi", "TEXT"]];
 const URETIM_FORMLARI_KAPALI_COLUMN = [["kapali", "INTEGER"]];
 const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"], ["web", "TEXT"], ["faturaFirmaAdi", "TEXT"]];
@@ -545,6 +550,7 @@ function applyColumnMigrations(conn) {
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
   ensureColumns(conn, "users", USERS_PERMISSIONS_COLUMN);
   ensureColumns(conn, "users", USERS_TOKEN_VERSION_COLUMN);
+  ensureColumns(conn, "users", USERS_TOTP_COLUMNS);
   ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_DONEM_COLUMNS);
   ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
 }
@@ -838,6 +844,24 @@ function setMetaValue(key, value) {
   if (!db) return;
   db.prepare("INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(key, String(value));
 }
+
+// ── Hız sınırı sayaçları (kalıcı, login brute-force için) ────────────────────
+function getRateBucket(bucket) {
+  if (!db) return null;
+  return db.prepare("SELECT bucket, count, reset_at FROM rate_limit WHERE bucket = ?").get(bucket) || null;
+}
+function setRateBucket(bucket, count, resetAt) {
+  if (!db) return;
+  db.prepare("INSERT INTO rate_limit (bucket,count,reset_at) VALUES (?,?,?) ON CONFLICT(bucket) DO UPDATE SET count=excluded.count, reset_at=excluded.reset_at").run(bucket, count, resetAt);
+}
+function deleteRateBucket(bucket) {
+  if (!db) return;
+  db.prepare("DELETE FROM rate_limit WHERE bucket = ?").run(bucket);
+}
+function pruneRateBuckets(now) {
+  if (!db) return;
+  db.prepare("DELETE FROM rate_limit WHERE reset_at < ?").run(now);
+}
 function getDataVersion() {
   const v = getMetaValue("dataVersion");
   return v ? parseInt(v) : 0;
@@ -853,9 +877,35 @@ function getUserByUsername(username) {
   if (!db) return null;
   return db.prepare("SELECT * FROM users WHERE username = ?").get(username);
 }
+function getUserById(id) {
+  if (!db) return null;
+  return db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+}
+// ── İki adımlı doğrulama (TOTP) ──────────────────────────────────────────────
+// Kurulum: secret'ı yaz ama henüz açma (enable=0). enable ile doğrulanınca aç + kurtarma kodları.
+function setUserTotpSecret(id, secret) {
+  if (!db) return;
+  db.prepare("UPDATE users SET totp_secret=?, totp_enabled=0, totp_recovery=NULL, totp_last_code=NULL WHERE id=?").run(secret, id);
+}
+function enableUserTotp(id, recoveryJson) {
+  if (!db) return;
+  db.prepare("UPDATE users SET totp_enabled=1, totp_recovery=? WHERE id=?").run(recoveryJson, id);
+}
+function setUserTotpRecovery(id, recoveryJson) {
+  if (!db) return;
+  db.prepare("UPDATE users SET totp_recovery=? WHERE id=?").run(recoveryJson, id);
+}
+function setUserTotpLastCode(id, code) {
+  if (!db) return;
+  db.prepare("UPDATE users SET totp_last_code=? WHERE id=?").run(code, id);
+}
+function disableUserTotp(id) {
+  if (!db) return;
+  db.prepare("UPDATE users SET totp_secret=NULL, totp_enabled=0, totp_recovery=NULL, totp_last_code=NULL WHERE id=?").run(id);
+}
 function getAllUsers() {
   if (!db) return [];
-  return db.prepare("SELECT id,username,role,is_active,permissions,created_at FROM users ORDER BY id").all();
+  return db.prepare("SELECT id,username,role,is_active,permissions,created_at,totp_enabled FROM users ORDER BY id").all();
 }
 function createUser(username, hash, role, permissions) {
   if (!db) throw new Error("DB aktif değil");
@@ -971,7 +1021,9 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 module.exports = {
   migrateFromJsonIfNeeded, isActive, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
-  getUserByUsername, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,
+  getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
+  getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,
+  setUserTotpSecret, enableUserTotp, setUserTotpRecovery, setUserTotpLastCode, disableUserTotp,
   acquireLock, releaseLock, listLocks, releaseAllLocksByUser,
   writeAuditEntry, getAuditLog, clearAuditLog,
 };

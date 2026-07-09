@@ -169,12 +169,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
                 <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💵 USD / TL</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#16a34a" }}>{rates.usd.toFixed(2)} ₺</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#16a34a", fontVariantNumeric: "tabular-nums" }}>{rates.usd.toFixed(2)} ₺</span>
               </div>
               {rates.eur && (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
                   <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💶 EUR / TL</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{rates.eur.toFixed(2)} ₺</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#2563eb", fontVariantNumeric: "tabular-nums" }}>{rates.eur.toFixed(2)} ₺</span>
                 </div>
               )}
             </>
@@ -185,8 +185,11 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           )}
         </div>
         <div style={{ background: "linear-gradient(135deg, #1f0d02, #3d1c06)", borderRadius: 12, padding: "10px 20px", boxShadow: "0 4px 16px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#ff9d5c", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#d4a584", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
+          {/* Eşit genişlikli (monospace) yazı tipi: her rakam aynı genişlikte olsun ki saniye
+              değişince metin genişliği (ve kutu) oynamasın. tabular-nums tek başına Windows'ta
+              (Segoe UI) yeterli olmuyordu. */}
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#ff9d5c", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#d4a584", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
         </div>
       </div>
 

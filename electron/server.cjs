@@ -12,7 +12,9 @@ const path     = require("path");
 const { BrowserWindow, safeStorage, app } = require("electron");
 const { kisitliMi, degisenBolumler, yazmaYetkisiVar, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
-const { rateAllow, rateHit, rateRetryAfter, rateReset } = require("./rateLimit.cjs");
+const { rateAllow, rateHit, rateRetryAfter, bucketAllow, bucketNext, bucketRetryAfter } = require("./rateLimit.cjs");
+const totp = require("./totp.cjs");
+const qrcode = require("qrcode");
 
 let httpServer = null;
 let db         = null; // electron/db.cjs referansı
@@ -69,28 +71,52 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// 2FA açık bir kullanıcı için verilen kodu doğrula: önce TOTP (replay: aynı kod iki kez
+// kullanılamaz), sonra tek kullanımlık kurtarma kodu (eşleşen hash listeden düşülür). true/false.
+function verify2fa(user, code) {
+  if (!code) return false;
+  const c = String(code).replace(/\s/g, "");
+  if (user.totp_secret && totp.verifyToken(c, user.totp_secret)) {
+    if (user.totp_last_code && c === user.totp_last_code) return false; // aynı kod tekrar kullanıldı
+    db.setUserTotpLastCode(user.id, c);
+    return true;
+  }
+  // Kurtarma kodu (telefon yoksa)
+  let hashes = [];
+  try { hashes = JSON.parse(user.totp_recovery || "[]"); } catch { hashes = []; }
+  const matched = totp.matchRecovery(c, hashes);
+  if (matched) {
+    db.setUserTotpRecovery(user.id, JSON.stringify(hashes.filter(h => h !== matched)));
+    return true;
+  }
+  return false;
+}
+
 // ── Giriş denemesi sınırı (brute-force koruması) ─────────────────────────────
 // 5 dakikalık pencerede en fazla 10 BAŞARISIZ deneme; HEM IP HEM kullanıcı adı başına ayrı
 // sayılır — böylece tek IP'den farklı kullanıcı denemeleri ile aynı kullanıcıya farklı
 // IP'lerden brute-force ayrı ayrı yakalanır. Başarılı giriş ilgili sayaçları sıfırlar.
-// Bellek içi (sunucu yeniden başlayınca sıfırlanır, LAN için yeterli).
+// KALICI: sayaçlar SQLite'ta (rate_limit tablosu) tutulur — sunucu yeniden başlasa da kilit
+// korunur (bellek içi olsaydı restart sayaçları unutup brute-force'a yeni hak verirdi).
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
 const LOGIN_MAX_FAILS = 10;
-const loginFails = new Map(); // "ip:X" / "user:Y" → { count, resetAt }
+const loginKeys = (ip, username) => username ? [`ip:${ip}`, `user:${username}`] : [`ip:${ip}`];
 // Engelliyse kalan süre (ms), değilse 0. IP veya kullanıcı adından hangisi sınırdaysa o döner.
 function loginBlockedMs(ip, username, now = Date.now()) {
-  const ipKey = `ip:${ip}`, userKey = `user:${username}`;
-  if (!rateAllow(loginFails, ipKey, now, LOGIN_MAX_FAILS, LOGIN_WINDOW_MS)) return rateRetryAfter(loginFails, ipKey, now);
-  if (username && !rateAllow(loginFails, userKey, now, LOGIN_MAX_FAILS, LOGIN_WINDOW_MS)) return rateRetryAfter(loginFails, userKey, now);
+  for (const key of loginKeys(ip, username)) {
+    const rec = db?.getRateBucket?.(key);
+    if (!bucketAllow(rec, now, LOGIN_MAX_FAILS)) return bucketRetryAfter(rec, now);
+  }
   return 0;
 }
 function loginRateFail(ip, username, now = Date.now()) {
-  rateHit(loginFails, `ip:${ip}`, now, LOGIN_WINDOW_MS);
-  if (username) rateHit(loginFails, `user:${username}`, now, LOGIN_WINDOW_MS);
+  for (const key of loginKeys(ip, username)) {
+    const next = bucketNext(db?.getRateBucket?.(key), now, LOGIN_WINDOW_MS);
+    db?.setRateBucket?.(key, next.count, next.reset_at);
+  }
 }
 function loginRateSuccess(ip, username) {
-  rateReset(loginFails, `ip:${ip}`);
-  if (username) rateReset(loginFails, `user:${username}`);
+  for (const key of loginKeys(ip, username)) db?.deleteRateBucket?.(key);
 }
 
 // ── Yazma uçları hız sınırı (DoS koruması) ────────────────────────────────────
@@ -148,6 +174,12 @@ function buildApp() {
       if (!user || !user.is_active) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
       const ok = await bcrypt.compare(password, user.password);
       if (!ok) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      // İkinci faktör (opsiyonel, kullanıcı başına): 2FA açıksa TOTP/kurtarma kodu da gerekir.
+      if (user.totp_enabled) {
+        const { totpCode } = req.body || {};
+        if (!totpCode) return res.status(401).json({ error: "İki adımlı doğrulama kodu gerekli", requires2fa: true });
+        if (!verify2fa(user, totpCode)) { loginRateFail(ip, username); return res.status(401).json({ error: "Doğrulama kodu hatalı", requires2fa: true }); }
+      }
       loginRateSuccess(ip, username);
       const token = signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
       res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
@@ -186,6 +218,49 @@ function buildApp() {
       console.error("[server] /auth/me/password hatası:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
+  });
+
+  // ── İki adımlı doğrulama (2FA / TOTP) — kullanıcı kendi hesabı için ──────────
+  // GET durum
+  app.get("/auth/2fa/status", requireAuth, (req, res) => {
+    try {
+      const u = db.getUserByUsername(req.user.username);
+      res.json({ enabled: !!u?.totp_enabled });
+    } catch { res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+  // POST kurulum: yeni secret üret (pending, enabled=0) + QR döndür
+  app.post("/auth/2fa/setup", requireAuth, writeLimiter(20), async (req, res) => {
+    try {
+      const u = db.getUserByUsername(req.user.username);
+      if (!u) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      const secret = totp.generateSecret();
+      db.setUserTotpSecret(u.id, secret);
+      const qr = await qrcode.toDataURL(totp.keyuri(u.username, secret));
+      res.json({ secret, qr });
+    } catch (err) { console.error("[server] 2fa/setup:", err); res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+  // POST etkinleştir: pending secret ile kodu doğrula, aç + tek seferlik kurtarma kodları ver
+  app.post("/auth/2fa/enable", requireAuth, writeLimiter(20), (req, res) => {
+    try {
+      const { code } = req.body || {};
+      const u = db.getUserByUsername(req.user.username);
+      if (!u?.totp_secret) return res.status(400).json({ error: "Önce kurulum yapın" });
+      if (!totp.verifyToken(code, u.totp_secret)) return res.status(401).json({ error: "Doğrulama kodu hatalı" });
+      const recovery = totp.generateRecoveryCodes(8);
+      db.enableUserTotp(u.id, JSON.stringify(recovery.map(totp.hashRecovery)));
+      res.json({ ok: true, recovery }); // düz kodlar yalnızca bir kez gösterilir
+    } catch (err) { console.error("[server] 2fa/enable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+  // POST kapat: mevcut şifre ile doğrula, 2FA'yı tamamen kaldır
+  app.post("/auth/2fa/disable", requireAuth, writeLimiter(20), async (req, res) => {
+    try {
+      const { password } = req.body || {};
+      const u = db.getUserByUsername(req.user.username);
+      if (!u) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      if (!password || !await bcrypt.compare(password, u.password)) return res.status(401).json({ error: "Şifre hatalı" });
+      db.disableUserTotp(u.id);
+      res.json({ ok: true });
+    } catch (err) { console.error("[server] 2fa/disable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
   // POST /auth/refresh-internal — yalnızca loopback; sunucu PC kendi admin tokenini yeniler (şifre gerekmez)
@@ -324,6 +399,17 @@ function buildApp() {
     }
   });
 
+  // DELETE /api/users/:id/2fa — admin bir kullanıcının 2FA'sını sıfırlar (telefon kaybı vb.)
+  app.delete("/api/users/:id/2fa", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
+    try {
+      db.disableUserTotp(parseInt(req.params.id));
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[server] /api/users/:id/2fa DELETE hatası:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   // GET /api/locks — aktif kilitler
   app.get("/api/locks", requireAuth, (_req, res) => {
     try { res.json(db.listLocks()); }
@@ -424,6 +510,7 @@ function start(port, sqliteDb) {
   return new Promise((resolve, reject) => {
     if (httpServer) { resolve({ port: getPort(), ips: getLocalIps() }); return; }
     db = sqliteDb;
+    try { db?.pruneRateBuckets?.(Date.now()); } catch { /* bakım, önemsiz */ } // süresi dolmuş hız-sınırı kayıtlarını temizle
     const expressApp = buildApp();
     httpServer = expressApp.listen(port, "0.0.0.0", () => {
       console.log(`Altunmak CRM Sunucu: http://0.0.0.0:${port}`);

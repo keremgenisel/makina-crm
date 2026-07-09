@@ -8,7 +8,7 @@ import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMo
 import { buildMergePlan } from "./lib/merge";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
-import { Icon } from "./components/ui";
+import { Icon, ConfirmDialog } from "./components/ui";
 import { LockScreen } from "./components/LockScreen";
 import { ServerLogin } from "./components/ServerLogin";
 import { Dashboard } from "./components/Dashboard";
@@ -325,6 +325,12 @@ export default function App() {
     clearTimeout(window.__toastTimer);
     window.__toastTimer = setTimeout(() => setToast(null), 3000);
   };
+
+  // ── Tray "Çıkış Yap": native pencere yerine uygulamanın kendi onay penceresi ──
+  const [confirmQuit, setConfirmQuit] = useState(false);
+  useEffect(() => window.appControl?.onConfirmQuit?.(() => setConfirmQuit(true)), []);
+  // Kısayola tekrar tıklanınca (zaten çalışıyor): native pencere yerine uygulama bildirimi
+  useEffect(() => window.appControl?.onAlreadyRunning?.(() => showToast("Altunmak CRM zaten çalışıyor.")), []);
 
   const handleDonusturTeklif = (t) => {
     const kaliplar = (t.satirlar || [])
@@ -797,6 +803,17 @@ export default function App() {
         </div>
       )}
       <style>{`@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
+
+      {/* Tray "Çıkış Yap" onayı — uygulamanın kendi tasarımıyla */}
+      {confirmQuit && (
+        <ConfirmDialog
+          title="Çıkış Yap"
+          icon="close"
+          message="Altunmak CRM'den çıkmak istediğinize emin misiniz? Sunucu modunda çalışıyorsanız diğer kullanıcılar bağlantıyı kaybeder."
+          confirmLabel="Çıkış Yap" confirmIcon="close"
+          onConfirm={() => window.appControl?.quit?.()}
+          onCancel={() => setConfirmQuit(false)} />
+      )}
 
       {/* Sidebar */}
       <style>{`

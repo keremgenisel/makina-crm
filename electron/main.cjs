@@ -81,6 +81,9 @@ ipcMain.handle("updater:install", () => {
   if (autoUpdater) autoUpdater.quitAndInstall(false, true);
 });
 
+// ── Uygulamadan çık (renderer onay penceresinden) ──
+ipcMain.handle("app:quit", () => { quitApp(); });
+
 // ── Uygulamayı kaldır: NSIS kaldırıcısını başlat ve çık ──
 ipcMain.handle("app:uninstall", () => {
   try {
@@ -203,13 +206,15 @@ function createWindow() {
     {
       label: "Çıkış Yap",
       click: () => {
-        const choice = dialog.showMessageBoxSync({
-          type: "question", buttons: ["Çıkış Yap", "Vazgeç"],
-          defaultId: 1, cancelId: 1, title: "Çıkış",
-          message: "Altunmak CRM'den çıkmak istediğinize emin misiniz?",
-          detail: "Sunucu modunda çalışıyorsanız diğer kullanıcılar bağlantıyı kaybeder.",
-        });
-        if (choice === 0) quitApp();
+        // Native OS penceresi yerine uygulamanın kendi onay penceresini (ConfirmDialog) göster:
+        // pencereyi öne getir ve renderer'a olay yolla. Pencere yoksa doğrudan çık.
+        if (mainWin && !mainWin.isDestroyed()) {
+          if (!mainWin.isVisible()) mainWin.show();
+          mainWin.focus();
+          mainWin.webContents.send("app:confirmQuit");
+        } else {
+          quitApp();
+        }
       },
     },
   ]));
@@ -247,16 +252,13 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
-    if (mainWin) {
+    // Kısayola tekrar tıklanınca ikinci pencere açılmaz: mevcut pencereyi öne getir ve
+    // native "zaten çalışıyor" penceresi yerine uygulamanın kendi bildirimini (toast) göster.
+    if (mainWin && !mainWin.isDestroyed()) {
       if (mainWin.isMinimized()) mainWin.restore();
       if (!mainWin.isVisible()) mainWin.show();
       mainWin.focus();
-      dialog.showMessageBox(mainWin, {
-        type: "info", title: "Altunmak CRM",
-        message: "Uygulama zaten çalışıyor",
-        detail: "Altunmak CRM arka planda çalışmaya devam ediyor. Görev çubuğundaki simgeye çift tıklayarak açabilirsiniz.",
-        buttons: ["Tamam"],
-      });
+      mainWin.webContents.send("app:alreadyRunning");
     }
   });
 

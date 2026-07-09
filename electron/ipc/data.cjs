@@ -212,16 +212,17 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   // ── İstemci: sunucuya giriş ───────────────────────────────────────────────
-  ipcMain.handle("server:login", async (_e, { serverUrl, username, password }) => {
+  ipcMain.handle("server:login", async (_e, { serverUrl, username, password, totpCode }) => {
     if (!serverUrl || !username || !password) return { error: "Tüm alanlar zorunludur" };
     try {
       const res = await fetch(`${serverUrl.replace(/\/$/, "")}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, totpCode }),
       });
       const body = await res.json();
-      if (!res.ok) return { error: body.error || "Giriş başarısız" };
+      // 2FA açıksa sunucu requires2fa döner — renderer kod alanını gösterir
+      if (!res.ok) return { error: body.error || "Giriş başarısız", requires2fa: !!body.requires2fa };
       resetFailover(); // yeni sunucu — eski LAN yedeği/aktif adres geçersiz
       saveServerConfig(app, { mode: "client", serverUrl, token: body.token, username: body.user.username, role: body.user.role, permissions: body.user.permissions ?? null });
       return { ok: true, user: body.user };

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Section } from "./Section";
+import { SettingsTwoFactor } from "./SettingsTwoFactor";
+import { ConfirmDialog } from "../ui";
 import { isTailscaleIp } from "../../lib/utils";
 
 // ── Uzaktan erişim (Tailscale) yardım kutusu ─────────────────────────────────
@@ -404,6 +406,13 @@ function UserManager({ flash, settingsGroups = [] }) {
     const res = await window.appServer.apiRequest({ method: "DELETE", path: `/api/users/${u.id}` });
     if (res?.ok) { load(); flash("ok", "Silindi."); } else flash("err", res?.error || "Silinemedi");
   };
+  const [confirm2fa, setConfirm2fa] = useState(null); // 2FA sıfırlama onayı bekleyen kullanıcı
+  const doReset2fa = async () => {
+    const u = confirm2fa; setConfirm2fa(null);
+    if (!u) return;
+    const res = await window.appServer.apiRequest({ method: "DELETE", path: `/api/users/${u.id}/2fa` });
+    if (res?.ok) { load(); flash("ok", "2FA sıfırlandı."); } else flash("err", res?.error || "Sıfırlanamadı");
+  };
 
   // İzin akordeonu — her bölüm katlanabilir. Config veri-güdümlü (7 tekrarlı blok yerine tek render).
   const chipStyle = (active, bg, border) => ({
@@ -478,6 +487,12 @@ function UserManager({ flash, settingsGroups = [] }) {
 
   return (
     <div style={{ marginTop: 20 }}>
+      {confirm2fa && (
+        <ConfirmDialog
+          message={`"${confirm2fa.username}" kullanıcısının iki adımlı doğrulaması sıfırlansın mı? Telefon kaybı gibi durumlarda kullanılır; kullanıcı isterse yeniden kurar.`}
+          confirmLabel="Evet, Sıfırla" confirmIcon="refresh"
+          onConfirm={doReset2fa} onCancel={() => setConfirm2fa(null)} />
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>Kullanıcılar</div>
         <button onClick={() => setShowAdd(v => !v)} style={{ padding: "6px 14px", background: "#e85d1a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -572,6 +587,11 @@ function UserManager({ flash, settingsGroups = [] }) {
                         <button onClick={() => toggle(u)} style={{ padding: "3px 9px", fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: "pointer", background: "#fff", border: "1px solid #e2e8f0", color: u.is_active ? "#dc2626" : "#16a34a" }}>
                           {u.is_active ? "Devre Dışı" : "Etkinleştir"}
                         </button>
+                        {u.totp_enabled ? (
+                          <button onClick={() => setConfirm2fa(u)} title="İki adımlı doğrulamayı sıfırla" style={{ padding: "3px 9px", fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: "pointer", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d" }}>
+                            2FA ✓ Sıfırla
+                          </button>
+                        ) : null}
                         <button onClick={() => del(u)} style={{ padding: "3px 9px", fontSize: 11, fontWeight: 600, borderRadius: 6, cursor: "pointer", background: "#fff", border: "1px solid #fecaca", color: "#dc2626" }}>
                           Sil
                         </button>
@@ -734,6 +754,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             </button>
           </div>
         </Section>
+        {running && <SettingsTwoFactor flash={flash} />}
         {running && <Section title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></Section>}
       </>
     );
@@ -765,6 +786,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             </button>
           </div>
         </Section>
+        <SettingsTwoFactor flash={flash} />
         {cfg?.role === "admin" && <Section title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></Section>}
       </>
     );

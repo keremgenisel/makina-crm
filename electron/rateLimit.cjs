@@ -25,4 +25,13 @@ function rateRetryAfter(state, key, now) {
 
 function rateReset(state, key) { state.delete(key); }
 
-module.exports = { rateAllow, rateHit, rateRetryAfter, rateReset };
+// ── Kalıcı sayaç çekirdeği (rec üzerinde saf) ────────────────────────────────
+// Login brute-force sayacı SQLite'ta saklanır (sunucu yeniden başlasa da kilit korunsun).
+// Bu fonksiyonlar bir DB satırı rec = { count, reset_at } | null üzerinde çalışır.
+function bucketAllow(rec, now, max) { return !rec || now > rec.reset_at || rec.count < max; }
+function bucketNext(rec, now, windowMs) {
+  return (!rec || now > rec.reset_at) ? { count: 1, reset_at: now + windowMs } : { count: rec.count + 1, reset_at: rec.reset_at };
+}
+function bucketRetryAfter(rec, now) { return rec && now <= rec.reset_at ? Math.max(0, rec.reset_at - now) : 0; }
+
+module.exports = { rateAllow, rateHit, rateRetryAfter, rateReset, bucketAllow, bucketNext, bucketRetryAfter };

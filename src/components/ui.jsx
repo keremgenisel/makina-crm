@@ -352,7 +352,7 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
   );
 };
 
-export const ConfirmDialog = ({ message, onConfirm, onCancel, confirmLabel = "Evet, Sil", confirmIcon = "trash" }) => {
+export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash", onConfirm, onCancel, confirmLabel = "Evet, Sil", confirmIcon = "trash" }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onCancel(); };
     window.addEventListener("keydown", onKey);
@@ -362,9 +362,9 @@ export const ConfirmDialog = ({ message, onConfirm, onCancel, confirmLabel = "Ev
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
     <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.2)", textAlign: "center" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <Icon name="trash" size={22} />
+        <Icon name={icon} size={22} />
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Emin misiniz?</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{title}</div>
       <div style={{ fontSize: 13, color: "#64748b", marginBottom: 22 }}>{message}</div>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
         <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
