@@ -132,6 +132,9 @@ export default function App() {
       const active = cfg.isActive ? "active" : "login";
       setServerMode(active);
       if (cfg.isActive) setServerPermissions({ role: cfg.role, permissions: cfg.permissions ?? null });
+      // Son çalışan adres LAN ise rozeti baştan "Yerel Ağ" göster (checkLan bitene kadar "Tailscale"
+      // flaşı olmasın). checkLan birazdan doğrular/günceller.
+      if (cfg.isActive && cfg.lastGoodUrl && !isTailscaleServerUrl(cfg.lastGoodUrl)) setSameLan(true);
     }).catch(() => setServerMode("none"));
   }, []);
 

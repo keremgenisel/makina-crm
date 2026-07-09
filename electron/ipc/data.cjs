@@ -138,8 +138,18 @@ function broadcast(channel, ...args) {
 //   düşmüş bir adres (ör. internet kesikken Tailscale) için her seferinde timeout beklenmesin.
 let failoverLanUrl = null;
 let lastGoodUrl = null;
+let appRef = null; // config yazımı için (persistLastGood)
 function setFailoverLan(url) { failoverLanUrl = url || null; }
 function resetFailover() { failoverLanUrl = null; lastGoodUrl = null; }
+// Son çalışan adresi config'e kaydet — böylece bir sonraki açılışta önce O denenir. Örn. istemci
+// Tailscale adresiyle yapılandırılmış ama fabrikada LAN'dan gidiyorsa, açılışta ölü Tailscale
+// adresini deneyip timeout beklemek yerine doğrudan LAN'dan bağlanır (kapalı görünme süresi biter).
+function persistLastGood(url) {
+  try {
+    const cfg = loadServerConfig(appRef);
+    if (cfg?.mode === "client" && cfg.lastGoodUrl !== url) saveServerConfig(appRef, { ...cfg, lastGoodUrl: url });
+  } catch { /* config yok/yazılamadı — önemsiz */ }
+}
 
 // ── HTTP yardımcısı (istemci modu) ───────────────────────────────────────────
 // serverUrl birincil adres; başarısız olursa (ağ hatası/timeout) bilinen LAN yedeğine
@@ -158,10 +168,10 @@ async function apiFetch(serverUrl, token, endpoint, options = {}) {
   let sonHata;
   for (const base of adaylar) {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000); // ölü adres için hızlı vazgeç, sonrakini dene
+    const t = setTimeout(() => ctrl.abort(), 5000); // ölü adres için hızlı vazgeç, sonrakini dene
     try {
       const res = await fetch(`${base}${endpoint}`, { ...opts, signal: ctrl.signal });
-      lastGoodUrl = base; // bu adres çalışıyor → sonraki isteklerde önce bunu dene
+      if (lastGoodUrl !== base) { lastGoodUrl = base; persistLastGood(base); } // değişince kalıcı kaydet
       return res;
     } catch (e) {
       sonHata = e; // bağlantı kurulamadı → sıradaki adayı (ör. LAN yedeği) dene
@@ -184,9 +194,17 @@ async function probeReachable(url, timeoutMs = 1500) {
 // ─────────────────────────────────────────────────────────────────────────────
 function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
-  // Açılışta önbellekteki LAN yedeği adresini yükle — böylece uygulama internet kesikken
-  // (Tailscale düşmüşken) açılsa bile aynı ağdaki sunucuya doğrudan LAN'dan ulaşabilir.
-  try { const boot = loadServerConfig(app); if (boot?.mode === "client" && boot?.lanUrl) setFailoverLan(boot.lanUrl); } catch { /* config yok */ }
+  // Açılışta önbellekteki LAN yedeği + son çalışan adresi yükle — böylece uygulama internet
+  // kesikken (Tailscale düşmüşken) açılsa bile aynı ağdaki sunucuya doğrudan (ölü adresi
+  // beklemeden) ulaşabilir.
+  appRef = app;
+  try {
+    const boot = loadServerConfig(app);
+    if (boot?.mode === "client") {
+      if (boot.lanUrl) setFailoverLan(boot.lanUrl);
+      if (boot.lastGoodUrl) lastGoodUrl = boot.lastGoodUrl;
+    }
+  } catch { /* config yok */ }
 
   // ── Yapılandırma okuma ────────────────────────────────────────────────────
   ipcMain.handle("server:getConfig", () => {
@@ -208,6 +226,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       username:    cfg.username    ?? null,
       role:        cfg.role        ?? null,
       permissions: cfg.permissions ?? null,
+      lastGoodUrl: cfg.lastGoodUrl ?? null, // rozeti açılışta doğru göstermek için (LAN mı Tailscale mi)
     };
   });
 
@@ -237,7 +256,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     resetFailover();
     const cfg = loadServerConfig(app);
     if (cfg?.mode === "client") {
-      const { token, username, role, permissions, lanUrl, ...rest } = cfg;
+      const { token, username, role, permissions, lanUrl, lastGoodUrl: _lg, ...rest } = cfg;
       saveServerConfig(app, rest);
     }
     return true;
