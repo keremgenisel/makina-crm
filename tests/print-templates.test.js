@@ -2,7 +2,8 @@
 // Regresyon: İngilizce proformada model yılı hiç görünmüyordu — EN proforma ayrı bir
 // düzen (infoSectionEN) kullanıyor ve model yılı satırı yalnızca TR/teklif düzeninde vardı.
 import { describe, it, expect } from "vitest";
-import { buildPrintHtml, buildFaturaHtml } from "../src/lib/printTemplates";
+import { buildPrintHtml, buildFaturaHtml, buildAylikRaporHtml } from "../src/lib/printTemplates";
+import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 
 const factory = { name: "Altuntaş Makina", evrakFirmaAdi: "ALTUNTAŞ MAKİNA", adres: "Eyüp / İstanbul", city: "İstanbul", country: "Türkiye", phone: "+90 212 000", email: "info@altunmak.com", web: "www.altunmak.com" };
 const enProforma = (over = {}) => ({ type: "proforma", dil: "EN", currency: "EUR", firma: "ACME GmbH", satirlar: [], kdvOrani: "0", ...over });
@@ -75,5 +76,61 @@ describe("FROM kutusu içeriği (EN proforma + yurt dışı fatura)", () => {
     const html = buildFaturaHtml(fatura, factory, 100000, "");
     expect(html).toContain("100.000,00");
     expect(html).not.toContain("100,000.00");
+  });
+});
+
+describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
+  const kdvRates = [{ from: "2000-01-01", rate: 20 }];
+  const veri = {
+    customers: [{ id: 1, name: "Acar Metal", model: "AK100", installDate: "2026-06-10", currency: "TRY", fabrikaSatisBedeli: 500000, faturaBedeli: 500000, faturali: "Faturalı Yurtiçi", kalanBorc: 120000 }],
+    services: [{ id: 10, customerId: 1, date: "2026-06-12", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: false }],
+    partSales: [{ id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-06-05", ucret: 25000, currency: "TRY", faturaTipi: "Faturasız Yurtiçi", odendi: true }],
+    payments: [{ id: 30, customerId: 1, tarih: "2026-06-08", tutar: 200000, currency: "TRY", yontem: "Nakit" }],
+    teklifler: [{ id: 40, type: "teklif", tarih: "2026-06-02", durum: "gonderildi", firma: "Acar Metal", currency: "TRY", satirlar: [{ subItems: [{ birimFiyat: "300000", miktar: 1 }] }] }],
+  };
+  const rapor = hesaplaAylikRapor(veri, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+  const html = buildAylikRaporHtml(rapor, { name: "Altuntaş Makina" });
+
+  it("her bölümün firma firma detay başlıkları ve firma adı render edilir", () => {
+    expect(html).toContain("SATILAN MAKİNALAR");
+    expect(html).toContain("SERVİS VERİLEN FİRMALAR");
+    expect(html).toContain("EXTRA KALIP ALAN FİRMALAR");
+    expect(html).toContain("KİMDEN TAHSİL EDİLDİ");
+    expect(html).toContain("BORÇLU FİRMALAR");
+    expect(html).toContain("VERİLEN TEKLİFLER");
+    expect(html).toContain("Acar Metal");
+    expect(html).toContain("300.000"); // teklif tutarı
+  });
+
+  it("gerçekleşen tahsilat açıklaması (sadece borçlulardan değil) raporda yer alır", () => {
+    expect(html).toContain("Gerçekleşen tahsilat nedir?");
+    expect(html).toContain("Sadece borçlulardan değil");
+  });
+
+  it("boş detay dizileri için tablo başlığı basılmaz", () => {
+    expect(html).not.toContain("YEDEK PARÇA ALAN FİRMALAR"); // fixture'da yedek parça yok
+    expect(html).not.toContain("ANLAŞMALI SERVİSLERE PARÇA"); // anlaşmalı parça yok
+  });
+
+  it("yönetici özeti ve KDV beyanname özeti kutuları raporda yer alır", () => {
+    expect(html).toContain("YÖNETİCİ ÖZETİ");
+    expect(html).toContain("Toplam ciro (net, KDV hariç)");
+    expect(html).toContain("Gerçekleşen tahsilat");
+    expect(html).toContain("KDV ÖZETİ (beyanname)");
+    expect(html).toContain("BU AY DOĞAN TOPLAM KDV");
+  });
+
+  it("rates verilince özet ≈ TL toplamı gösterir (çok dövizli veri)", () => {
+    const veriTL = {
+      customers: [
+        { id: 1, name: "Yerli", model: "AK100", installDate: "2026-06-10", currency: "TRY", fabrikaSatisBedeli: 500000, faturaBedeli: 500000, faturali: "Faturalı Yurtiçi", kalanBorc: 0 },
+        { id: 2, name: "İhracat", model: "AK140", installDate: "2026-06-12", currency: "EUR", fabrikaSatisBedeli: 10000, faturali: "Faturalı Yurtdışı", kalanBorc: 0 },
+      ],
+      services: [], partSales: [], payments: [], teklifler: [],
+    };
+    const raporTL = hesaplaAylikRapor(veriTL, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" }, rates: { usd: 40, eur: 45 } });
+    const htmlTL = buildAylikRaporHtml(raporTL, { name: "Altuntaş Makina" });
+    // 500.000 TRY + 10.000 EUR × 45 = 950.000 TL yaklaşık
+    expect(htmlTL).toContain("≈ 950.000 TL");
   });
 });

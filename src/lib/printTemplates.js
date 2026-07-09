@@ -1328,6 +1328,68 @@ export function buildAylikRaporHtml(rapor, factory) {
   const servisRows = (rapor.servisKirilimi || []).map(x =>
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.tip}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet}</td></tr>`).join("");
 
+  // ── Firma firma detay tabloları ──
+  const gun = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return mm ? `${mm[3]}.${mm[2]}.${mm[1]}` : (iso || "—"); };
+  // Detay tablosu: başlık + kolon başlıkları + satırlar (hücreler HTML). Boşsa hiç basılmaz.
+  const detayTablo = (baslik, basliklar, satirlar, hizalar = []) => {
+    if (!satirlar || !satirlar.length) return "";
+    const hiza = (i) => hizalar[i] || "left";
+    const th = basliklar.map((h, i) => `<th style="text-align:${hiza(i)};padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;">${h}</th>`).join("");
+    const tr = satirlar.map(hucreler => `<tr>${hucreler.map((c, i) => `<td style="text-align:${hiza(i)};padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;">${c ?? "—"}</td>`).join("")}</tr>`).join("");
+    return `${altBaslik(baslik)}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
+  };
+
+  const satisDetayTablo = detayTablo("SATILAN MAKİNALAR (firma firma)", ["Firma", "Model", "Fatura", "Tutar"],
+    (rapor.satisDetay || []).map(r => [r.firma, r.model, r.faturaTipi, paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
+  const extraKalipDetayTablo = detayTablo("EXTRA KALIP ALAN FİRMALAR", ["Firma", "Adet", "Tutar"],
+    (rapor.extraKalipDetay || []).map(r => [r.firma, r.adet, paraSatir(r.tutar)]), ["left", "right", "right"]);
+  const yedekParcaDetayTablo = detayTablo("YEDEK PARÇA ALAN FİRMALAR", ["Firma", "Miktar", "Tutar"],
+    (rapor.yedekParcaDetay || []).map(r => [r.firma, r.miktar, paraSatir(r.tutar)]), ["left", "right", "right"]);
+  const anlasmaliParcaDetayTablo = detayTablo("ANLAŞMALI SERVİSLERE PARÇA (firma firma)", ["Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"],
+    (rapor.anlasmaliParcaDetay || []).map(r => [r.firma, r.servisFirma, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "right", "right", "left"]);
+  const servisDetayTablo = detayTablo("SERVİS VERİLEN FİRMALAR (firma firma)", ["Firma", "Tip", "İşçilik", "Parça", "KDV", "Durum"],
+    (rapor.servisDetay || []).map(r => [r.firma, r.tip, paraSatir(r.iscilik), paraSatir(r.parca), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "right", "right", "right", "left"]);
+  const tahsilatDetayTablo = detayTablo("KİMDEN TAHSİL EDİLDİ", ["Firma", "Yöntem", "Tarih", "Tutar"],
+    (rapor.tahsilatDetay || []).map(r => [r.firma, r.yontem, gun(r.tarih), paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
+  const bekleyenCekDetayTablo = detayTablo("VADESİ BEKLEYEN ÇEKLER", ["Firma", "Vade", "Tutar"],
+    (rapor.bekleyenCekDetay || []).map(r => [r.firma, gun(r.vadeTarihi), paraSatir(r.tutar)]), ["left", "left", "right"]);
+  const alacakDetayTablo = detayTablo("BORÇLU FİRMALAR (firma firma)", ["Firma", "Kaynak", "Açık Borç"],
+    (rapor.alacakDetay || []).map(r => [r.firma, (r.kaynaklar || []).join(", "), paraSatir(r.tutar)]), ["left", "left", "right"]);
+  const teklifDetayTablo = detayTablo("VERİLEN TEKLİFLER (firma firma)", ["Firma", "Durum", "Tarih", "Tutar"],
+    (rapor.teklifDetay || []).map(r => [r.firma, r.durum, gun(r.tarih), paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
+
+  // ── Yönetici özeti + KDV beyanname özeti ──
+  const ozet = rapor.ozet || {};
+  const tl = (n) => (n == null ? "" : `${Math.round(n).toLocaleString("tr-TR")} TL`);
+  const dovizVar = (obj) => Object.keys(obj || {}).some(k => k !== "TRY" && obj[k]); // yalnızca yabancı para varsa ≈ TL göster
+  const ozetSatir = (label, obj, tlVal) => {
+    const yak = (tlVal != null && dovizVar(obj)) ? ` <span style="color:#94a3b8;font-weight:400;font-size:10px;">(≈ ${tl(tlVal)})</span>` : "";
+    return `<tr><td style="padding:5px 10px 5px 0;color:#475569;font-size:11.5px;">${label}</td><td style="padding:5px 0;font-weight:800;font-size:13.5px;text-align:right;white-space:nowrap;">${paraSatir(obj)}${yak}</td></tr>`;
+  };
+  const ozetKutusu = `
+    <div style="border:1px solid #f0b690;border-radius:8px;margin-bottom:12px;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#e85d1a,#f59e0b);color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:7px 12px;">YÖNETİCİ ÖZETİ</div>
+      <div style="padding:10px 14px;background:#fffaf5;">
+        <table>
+          ${ozetSatir("Toplam ciro (net, KDV hariç)", ozet.ciroNet, ozet.ciroNetTL)}
+          ${ozetSatir("Gerçekleşen tahsilat", ozet.tahsilat, ozet.tahsilatTL)}
+          ${ozetSatir("Açık alacak (güncel bakiye)", ozet.alacak, ozet.alacakTL)}
+          ${ozetSatir("Bu ay doğan KDV", ozet.toplamKdv, ozet.toplamKdvTL)}
+        </table>
+        <div style="font-size:10px;color:#94a3b8;margin-top:8px;padding-top:6px;border-top:1px solid #f1e4d6;">
+          ${rapor.satisAdet} makina · ${rapor.servisAdet} servis · ${rapor.tahsilatAdet} tahsilat kaydı · ${rapor.teklifAdet} teklif${ozet.ciroNetTL != null ? " · ≈ TL değerleri günün kuruyla yaklaşıktır" : ""}
+        </div>
+      </div>
+    </div>`;
+  const kdvOzetKutusu = kutu("KDV ÖZETİ (beyanname)", `<table>
+    ${st("Satış (makina) KDV'si", paraSatir(rapor.kdvKalemleri?.satis))}
+    ${st("Servis + parça KDV'si", paraSatir(rapor.kdvKalemleri?.servis))}
+    ${st("Extra kalıp KDV'si", paraSatir(rapor.kdvKalemleri?.extraKalip))}
+    ${st("Anlaşmalı servis parçası KDV'si", paraSatir(rapor.kdvKalemleri?.anlasmaliParca))}
+    <tr><td style="padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;">BU AY DOĞAN TOPLAM KDV</td><td style="padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;">${paraSatir(rapor.toplamKdv)}</td></tr>
+  </table>
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div>`);
+
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
 <title>Aylık Rapor ${rapor.ayEtiketi}</title>
 <style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}</style>
@@ -1348,6 +1410,9 @@ export function buildAylikRaporHtml(rapor, factory) {
     </div>
   </div>
 
+  ${ozetKutusu}
+  ${kdvOzetKutusu}
+
   ${kutu("SATIŞLAR", `<table>
     ${st("Satılan makina", `${rapor.satisAdet} adet${ga(`${o?.satisAdet} adet`)}`)}
     ${rapor.ikinciElAdet > 0 || o?.ikinciElAdet > 0 ? st("2. el devir", `${rapor.ikinciElAdet} adet${ga(`${o?.ikinciElAdet} adet`)}`) : ""}
@@ -1357,14 +1422,18 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Ödenen komisyon", paraSatir(rapor.komisyonTutar))}
   </table>
   ${modelRows ? `${altBaslik("MODEL KIRILIMI")}<table>${modelRows}</table>` : ""}
-  ${saticiRows ? `${altBaslik("SATIŞ YAPAN KIRILIMI")}<table>${saticiRows}</table>` : ""}`)}
+  ${saticiRows ? `${altBaslik("SATIŞ YAPAN KIRILIMI")}<table>${saticiRows}</table>` : ""}
+  ${satisDetayTablo}`)}
 
   ${kutu("DİĞER SATIŞLAR", `<table>
     ${st("Extra kalıp satışı", `${rapor.extraKalipAdet} adet · ${paraSatir(rapor.extraKalipTutar)}${ga(paraSatir(o?.extraKalipTutar))}`)}
     ${st("Extra kalıp KDV'si", paraSatir(rapor.extraKalipKdv))}
     ${st("Yedek parça satışı", `${rapor.yedekParcaAdet} adet · ${paraSatir(rapor.yedekParcaTutar)}`)}
     ${st("Anlaşmalı servislere parça", paraSatir(rapor.anlasmaliParcaTutar))}
-  </table>`)}
+  </table>
+  ${extraKalipDetayTablo}
+  ${yedekParcaDetayTablo}
+  ${anlasmaliParcaDetayTablo}`)}
 
   ${kutu("SERVİS", `<table>
     ${st("Servis kaydı", `${rapor.servisAdet} adet${ga(`${o?.servisAdet} adet`)}`)}
@@ -1372,14 +1441,21 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Parça geliri (Altuntaş servisi)", paraSatir(rapor.servisParcaTutar))}
     ${st("Servis + parça KDV'si", paraSatir(rapor.servisKdv))}
   </table>
-  ${servisRows ? `${altBaslik("TİP KIRILIMI")}<table>${servisRows}</table>` : ""}`)}
+  ${servisRows ? `${altBaslik("TİP KIRILIMI")}<table>${servisRows}</table>` : ""}
+  ${servisDetayTablo}`)}
 
-  ${kutu("TAHSİLAT (gerçekleşen)", `<table>
+  ${kutu("TAHSİLAT (gerçekleşen)", `<div style="font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#f8fafc;border-left:3px solid #0d9488;padding:6px 10px;">
+    <b>Gerçekleşen tahsilat nedir?</b> Bu ay kayda alınan ve fiilen tahsil edilen ödemelerdir: nakit/havale girildiği anda,
+    çekler ise ancak tahsil edildiklerinde sayılır. <b>Sadece borçlulardan değil,</b> o ay ödeme yapan tüm müşterileri kapsar.
+    Vadesi henüz gelmemiş/tahsil edilmemiş çekler bu tutara girmez, aşağıda ayrı gösterilir.
+  </div>
+  <table>
     ${st("Gerçekleşen tahsilat", `${rapor.tahsilatAdet} kayıt · ${paraSatir(rapor.tahsilatTutar)}${ga(paraSatir(o?.tahsilatTutar))}`)}
     ${st("Ay içinde alınan, vadesi bekleyen çek", `${rapor.bekleyenCekAdet} adet · ${paraSatir(rapor.bekleyenCekTutar)}`)}
     ${st("Ay içinde tahsil edilen çek", rapor.cekTahsilAdet + " adet")}
   </table>
-  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Çekler tahsil edildikleri ayın tahsilatına sayılır; vadesi bekleyenler ayrı satırda gösterilir.</div>`)}
+  ${tahsilatDetayTablo}
+  ${bekleyenCekDetayTablo}`)}
 
   ${kutu("ALACAK DURUMU (rapor tarihi itibarıyla)", `<table>
     ${st("Borçlu firma", rapor.borcluFirma + " firma")}
@@ -1387,12 +1463,14 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}
     ${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}
   </table>
+  ${alacakDetayTablo}
   <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Bu bölüm seçilen aya değil, raporun oluşturulduğu andaki güncel duruma aittir.</div>`)}
 
   ${kutu("TEKLİFLER", `<table>
     ${st("Ay içinde verilen teklif", `${rapor.teklifAdet} adet${ga(`${o?.teklifAdet} adet`)}`)}
     ${st("Bunlardan bugüne kadar onaylanan / satışa dönen", rapor.onaylananTeklif + " adet")}
     ${st("Cevap bekleyen toplam teklif", rapor.bekleyenTeklif + " adet")}
-  </table>`)}
+  </table>
+  ${teklifDetayTablo}`)}
 </body></html>`;
 }

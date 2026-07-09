@@ -39,6 +39,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   faturalar = [], setFaturalar = null, rawFaturalar = [],
   rawGorusmeler, setGorusmeler, rawUretimFormlari = [], setUretimFormlari = null,
   serverPermissions = null,
+  appUpd = null, onCheckUpdate = null, onStartUpdate = null,
 }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
@@ -113,7 +114,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </div>
       )}
 
-      {settingsTab === "app" && <SettingsApp version={version} flash={flash} />}
+      {settingsTab === "app" && <SettingsApp version={version} flash={flash} appUpd={appUpd} onCheckUpdate={onCheckUpdate} onStartUpdate={onStartUpdate} />}
 
       {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} setCustomers={setCustomers} setServices={setServices} flash={flash} />}
 

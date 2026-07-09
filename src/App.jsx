@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
@@ -244,10 +244,16 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Token otomatik yenileme: 8 saatlik JWT'nin dolmasını önlemek için 7 saatte bir ──
+  // ── Token otomatik yenileme ──
+  // Jeton 30 gün geçerli (server.cjs). Açılışta HEMEN bir kez yenilenir: böylece uygulama her
+  // açıldığında 30 günlük pencere baştan kayar ve PC uzun süre (gece/hafta sonu) kapalı kalıp
+  // açıldığında şifre tekrar sorulmaz. Ayrıca uygulama günlerce açık kalırsa jeton dolmasın diye
+  // günde bir yenilenir. (Jeton hâlâ geçerliyken /auth/me sessizce tazeler; süresi tümüyle dolduysa
+  // 401 → sessionExpired zaten devreye girer.)
   useEffect(() => {
     if (serverMode !== "active" || !window.appServer?.refreshToken) return;
-    const id = setInterval(() => window.appServer.refreshToken(), 7 * 60 * 60 * 1000);
+    window.appServer.refreshToken();
+    const id = setInterval(() => window.appServer.refreshToken(), 24 * 60 * 60 * 1000);
     return () => clearInterval(id);
   }, [serverMode]);
 
@@ -432,6 +438,71 @@ export default function App() {
       window.appUpdater.version().then(v => { if (v) setAppVersion(v); }).catch(() => {});
     }
   }, []);
+
+  // ── Uygulama güncellemesi: durum App seviyesinde TEK noktadan yönetilir ──
+  // Güncelleme olayları (updater:available vb.) burada dinlenir; böylece hangi sekmede
+  // olursak olalım (Ayarlar açık olmasa bile) yeni sürüm yakalanır ve tüm ekranda görünen
+  // üst şerit gösterilir. Ayarlar paneli (SettingsApp) aynı state'i prop olarak alır — böylece
+  // preload'ın removeAllListeners deseninin yol açtığı "tek dinleyici" çakışması da biter.
+  // state: idle | checking | uptodate | available | downloading | downloaded | error | devmode
+  const [appUpd, setAppUpd] = useState({ state: "idle", latest: null, progress: 0, error: null });
+  const [updDismissed, setUpdDismissed] = useState(null); // "Daha Sonra" ile kapatılan sürüm
+
+  useEffect(() => {
+    if (!window.appUpdater) return;
+    const offA = window.appUpdater.onAvailable((v) => setAppUpd(p => ({ ...p, state: "available", latest: v })));
+    const offP = window.appUpdater.onProgress((pct) => setAppUpd(p => ({ ...p, state: "downloading", progress: pct })));
+    const offD = window.appUpdater.onDownloaded(() => setAppUpd(p => ({ ...p, state: "downloaded" })));
+    const offE = window.appUpdater.onError((m) => setAppUpd(p => ({ ...p, state: "error", error: m })));
+    return () => { offA?.(); offP?.(); offD?.(); offE?.(); };
+  }, []);
+
+  // Açılışta + 6 saatte bir sessiz denetim. main.cjs zaten açılışta bir kez denetliyor, ama
+  // sunucu PC günlerce/haftalarca açık kalabildiği için periyodik denetim şart — yoksa o oturumda
+  // yayınlanan yeni sürüm hiç fark edilmezdi. Sonuç doğrudan burada state'e yazılır (bu yol
+  // main.cjs'in manuel emit'ine bağlı değil).
+  useEffect(() => {
+    if (!window.appUpdater?.check) return;
+    const tick = async () => {
+      try {
+        const res = await window.appUpdater.check();
+        if (res?.latest && surumDahaYeni(res.latest, appVersion)) setAppUpd(p => ({ ...p, state: "available", latest: res.latest }));
+      } catch { /* ağ hatası — yoksay, bir sonraki denetimde tekrar dener */ }
+    };
+    const t0 = setTimeout(tick, 8000); // açılış yoğunluğu geçsin
+    const id = setInterval(tick, 6 * 60 * 60 * 1000);
+    return () => { clearTimeout(t0); clearInterval(id); };
+  }, [appVersion]);
+
+  // İndirme tamamlanınca otomatik kur + yeniden başlat (veriler korunur)
+  useEffect(() => {
+    if (appUpd.state === "downloaded" && window.appUpdater) {
+      const t = setTimeout(() => window.appUpdater.install(), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [appUpd.state]);
+
+  const checkAppUpdate = async () => {
+    if (!window.appUpdater) { setAppUpd({ state: "devmode", latest: null, progress: 0, error: null }); return; }
+    setAppUpd({ state: "checking", latest: null, progress: 0, error: null });
+    const res = await window.appUpdater.check();
+    if (res?.error === "dev-mode") setAppUpd(p => ({ ...p, state: "devmode" }));
+    else if (res?.error) setAppUpd(p => ({ ...p, state: "error", error: res.error }));
+    else if (res?.latest && surumDahaYeni(res.latest, appVersion)) setAppUpd(p => ({ ...p, state: "available", latest: res.latest }));
+    else setAppUpd(p => ({ ...p, state: "uptodate" }));
+  };
+
+  const startAppUpdate = async () => {
+    if (!window.appUpdater) return;
+    setAppUpd(p => ({ ...p, state: "downloading", progress: 0 }));
+    await window.appUpdater.download();
+  };
+
+  // Üst şerit görünürlüğü saf yardımcıda (test edilebilir): daha yeni sürüm + kapatılmamış,
+  // ya da indirme/indirildi süreci.
+  const updBannerGorunur = guncellemeSeridiGorunur({
+    hasUpdater: !!window.appUpdater, state: appUpd.state, latest: appUpd.latest, current: appVersion, dismissed: updDismissed,
+  });
   const [customers, setCustomers] = useState(INIT_CUSTOMERS);
   const [dealers,   setDealers]   = useState(INIT_DEALERS);
   const [standardModels, setStandardModels] = useState(ALTUNMAK_MODELS); // düzenlenebilir standart modeller
@@ -711,7 +782,7 @@ export default function App() {
   if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} initialUrl={savedServerUrl} initialUsername={savedUsername} />;
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#f1f5f9" }}>
       {/* Global bildirim (toast) */}
       {toast && (
         <div style={{
@@ -726,6 +797,45 @@ export default function App() {
         </div>
       )}
       <style>{`@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
+
+      {/* ── Güncelleme şeridi: yeni sürüm yayınlandığında tüm ekranların üstünde görünür ── */}
+      {updBannerGorunur && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14, flexShrink: 0,
+          background: "linear-gradient(90deg, #e85d1a, #f59e0b)", color: "#fff",
+          padding: "10px 20px", fontSize: 13.5, fontWeight: 600,
+          boxShadow: "0 2px 10px rgba(0,0,0,.18)", zIndex: 50,
+        }}>
+          <Icon name="download" size={17} />
+          {appUpd.state === "available" && (
+            <>
+              <span style={{ flex: 1 }}>
+                Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı (kurulu: v{appVersion}). Güncellemek için tıklayın, verileriniz korunur.
+              </span>
+              <button onClick={startAppUpdate} style={{ background: "#fff", color: "#c2410c", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                Güncelle
+              </button>
+              <button onClick={() => setUpdDismissed(appUpd.latest)} title="Daha sonra" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.4)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Daha Sonra
+              </button>
+            </>
+          )}
+          {appUpd.state === "downloading" && (
+            <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+              Yeni sürüm indiriliyor... %{appUpd.progress}
+              <span style={{ flex: 1, maxWidth: 260, height: 7, background: "rgba(255,255,255,.3)", borderRadius: 6, overflow: "hidden" }}>
+                <span style={{ display: "block", height: 7, width: `${appUpd.progress}%`, background: "#fff", borderRadius: 6, transition: "width .3s" }} />
+              </span>
+            </span>
+          )}
+          {appUpd.state === "downloaded" && (
+            <span style={{ flex: 1 }}>Güncelleme indirildi, uygulama birazdan yeniden başlatılacak...</span>
+          )}
+        </div>
+      )}
+
+      {/* Sidebar + içerik satırı */}
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
       {/* Sidebar */}
       <style>{`
         .nav-btn { transition: all .18s ease; }
@@ -843,7 +953,8 @@ export default function App() {
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} />}
         {activeTab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
-        {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} serverPermissions={effectivePermissions} />}
+        {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
+      </div>
       </div>
     </div>
   );

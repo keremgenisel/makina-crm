@@ -19,7 +19,11 @@ function getSecret() {
   if (!s) { s = crypto.randomBytes(32).toString("hex"); db.setMetaValue("jwtSecret", s); }
   return s;
 }
-function signToken(payload) { return jwt.sign(payload, getSecret(), { expiresIn: "8h" }); }
+// İstemci oturum jetonu 30 gün geçerli — böylece PC gece/hafta sonu kapatılıp tekrar
+// açıldığında şifre tekrar sorulmaz (açılışta sessizce yenilenip süre kayar, bkz. App.jsx).
+// Güvenlik: jeton diskte şifreli saklanır ve şifre değişince token_version tüm eski
+// jetonları anında iptal eder. Sunucu PC'nin admin jetonu da (refresh-internal) 30 gün.
+function signToken(payload) { return jwt.sign(payload, getSecret(), { expiresIn: "30d" }); }
 
 function requireAuth(req, res, next) {
   const h = req.headers["authorization"];

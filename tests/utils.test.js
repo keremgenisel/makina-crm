@@ -1,7 +1,7 @@
 // Saf yardımcı fonksiyon testleri (src/lib/utils.js) — framework'süz, Node ortamında koşar.
 import { describe, it, expect } from "vitest";
 import {
-  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi,
+  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -107,6 +107,26 @@ describe("isTailscaleIp — Tailscale CGNAT aralığı (100.64.0.0/10)", () => {
     expect(serverKonumEtiketi({ viaTailscale: false, sameLan: false })).toBe("lan"); // LAN adresi
     expect(serverKonumEtiketi({ viaTailscale: true, sameLan: true })).toBe("lan");   // Tailscale ama aynı ağda
     expect(serverKonumEtiketi({ viaTailscale: true, sameLan: false })).toBe("tailscale"); // gerçekten uzakta
+  });
+
+  it("surumDahaYeni: semver karşılaştırması (ham string değil)", () => {
+    expect(surumDahaYeni("2.72.0", "2.70.0")).toBe(true);
+    expect(surumDahaYeni("2.10.0", "2.9.0")).toBe(true);   // string olsaydı yanlış olurdu
+    expect(surumDahaYeni("2.70.0", "2.70.0")).toBe(false); // eşit
+    expect(surumDahaYeni("2.68.0", "2.72.0")).toBe(false); // eski
+    expect(surumDahaYeni("v2.72.1", "2.72.0")).toBe(true); // baştaki v ve yama sürümü
+    expect(surumDahaYeni("", "2.70.0")).toBe(false);       // boş/bozuk
+  });
+
+  it("guncellemeSeridiGorunur: yalnızca gerçekten yeni + kapatılmamış sürümde, dev'de hiç", () => {
+    const t = (o) => guncellemeSeridiGorunur(o);
+    expect(t({ hasUpdater: false, state: "available", latest: "2.72.0", current: "2.70.0", dismissed: null })).toBe(false); // updater yok (dev)
+    expect(t({ hasUpdater: true, state: "available", latest: "2.72.0", current: "2.70.0", dismissed: null })).toBe(true);
+    expect(t({ hasUpdater: true, state: "available", latest: "2.72.0", current: "2.70.0", dismissed: "2.72.0" })).toBe(false); // "Daha Sonra" ile kapatıldı
+    expect(t({ hasUpdater: true, state: "available", latest: "2.70.0", current: "2.70.0", dismissed: null })).toBe(false); // güncel
+    expect(t({ hasUpdater: true, state: "downloading", latest: "2.72.0", current: "2.70.0", dismissed: "2.72.0" })).toBe(true); // süreç sürüyor, kapatılamaz
+    expect(t({ hasUpdater: true, state: "downloaded", latest: "2.72.0", current: "2.70.0", dismissed: "2.72.0" })).toBe(true);
+    expect(t({ hasUpdater: true, state: "idle", latest: null, current: "2.70.0", dismissed: null })).toBe(false);
   });
 });
 

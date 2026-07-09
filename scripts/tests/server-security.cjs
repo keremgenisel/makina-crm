@@ -70,6 +70,13 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const adminLogin = await login("admin", "admin123");
   check("admin girişi başarılı", adminLogin.status === 200 && !!adminLogin.body.token);
   const adminTok = adminLogin.body.token;
+  // İstemci oturum jetonu uzun ömürlü (30 gün) — PC gece/hafta sonu kapatılıp açıldığında
+  // şifre tekrar sorulmasın diye. JWT payload'ının exp-iat farkını doğrula (~30 gün).
+  {
+    const payload = JSON.parse(Buffer.from(adminTok.split(".")[1], "base64").toString("utf8"));
+    const omurGun = (payload.exp - payload.iat) / 86400;
+    check("giriş jetonu ~30 gün geçerli (uzun ömürlü oturum)", Math.abs(omurGun - 30) < 0.5);
+  }
   const roLogin = await login("ro", "ro12345");
   check("salt-okunur girişi başarılı", roLogin.status === 200 && !!roLogin.body.token);
   const roTok = roLogin.body.token;

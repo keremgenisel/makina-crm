@@ -212,6 +212,27 @@ export const isTailscaleServerUrl = (url) => {
 // olsa bile) sunucuyla aynı yerel ağdaysak "lan"; yalnızca uzaktan Tailscale ise "tailscale".
 export const serverKonumEtiketi = ({ viaTailscale, sameLan }) =>
   (!viaTailscale || sameLan) ? "lan" : "tailscale";
+// Semver karşılaştırması: latest, current'tan KESİN olarak daha yeni mi (2.72.0 > 2.70.0).
+// Güncelleme bildirimi yalnızca gerçekten daha yeni sürümde çıksın diye — ham string
+// eşitsizliği ("2.9.0" !== "2.10.0") yanıltıcı olurdu. Eksik/bozuk alanlar 0 sayılır.
+export const surumDahaYeni = (latest, current) => {
+  const parcala = (v) => String(v || "").trim().replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0);
+  const a = parcala(latest), b = parcala(current);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+};
+// Üst güncelleme şeridi görünür mü: updater yoksa (dev/tarayıcı) hiç gösterme; indirme/indirildi
+// sürerken her zaman göster; "available" ise yalnızca gerçekten daha yeni bir sürüm var VE o sürüm
+// "Daha Sonra" ile kapatılmadıysa göster.
+export const guncellemeSeridiGorunur = ({ hasUpdater, state, latest, current, dismissed }) => {
+  if (!hasUpdater) return false;
+  if (state === "downloading" || state === "downloaded") return true;
+  if (state === "available") return !!latest && surumDahaYeni(latest, current) && dismissed !== latest;
+  return false;
+};
 // Kalıp sayısını güvenli al
 export const kalipCount = (c) => {
   if (Array.isArray(c?.kaliplar) && c.kaliplar.length) return c.kaliplar.length;

@@ -80,6 +80,91 @@ describe("hesaplaAylikRapor", () => {
   });
 });
 
+describe("hesaplaAylikRapor firma firma detay dizileri", () => {
+  it("satisDetay: o ay makina satılan her firmayı model/tutar/fatura tipiyle listeler", () => {
+    expect(r.satisDetay).toHaveLength(1); // sadece A (B mayıs, C silinmiş, D 2.el)
+    expect(r.satisDetay[0]).toMatchObject({ firma: "A", model: "AK100", faturaTipi: "Faturalı" });
+    expect(r.satisDetay[0].tutar).toEqual({ TRY: 800000 });
+  });
+
+  it("servisDetay: her servis kaydını firma + işçilik/parça/KDV kırılımıyla verir", () => {
+    expect(r.servisDetay).toHaveLength(3);
+    const s10 = r.servisDetay.find(x => x.tip === "Garanti Dışı" && x.islemFirma === "Altuntaş Makina");
+    expect(s10).toMatchObject({ firma: "A", odendi: false });
+    expect(s10.iscilik).toEqual({ TRY: 5000 });
+    expect(s10.kdv).toEqual({ TRY: 1000 }); // 5000 × %20
+    // Garanti İçi servisin işçiliği tutar olarak 0
+    const s11 = r.servisDetay.find(x => x.tip === "Garanti İçi");
+    expect(s11.iscilik).toEqual({ TRY: 0 });
+  });
+
+  it("extraKalipDetay/yedekParcaDetay: alan firmaları listeler, başka ay hariç", () => {
+    expect(r.extraKalipDetay).toHaveLength(1);
+    expect(r.extraKalipDetay[0]).toMatchObject({ firma: "A", adet: 1 });
+    expect(r.extraKalipDetay[0].tutar).toEqual({ TRY: 25000 });
+    expect(r.yedekParcaDetay).toHaveLength(0);
+  });
+
+  it("tahsilatDetay: kimden tahsil edildiğini yöntemle listeler, bekleyen çek ayrı dizide", () => {
+    expect(r.tahsilatDetay).toHaveLength(2); // nakit 200.000 + tahsil edilmiş çek 50.000
+    expect(r.tahsilatDetay.map(x => x.yontem).sort()).toEqual(["Nakit", "Çek"]);
+    expect(r.tahsilatDetay.every(x => x.firma === "A")).toBe(true);
+    expect(r.bekleyenCekDetay).toHaveLength(1);
+    expect(r.bekleyenCekDetay[0].tutar).toEqual({ TRY: 150000 });
+  });
+
+  it("alacakDetay: firma firma açık borcu kaynaklarıyla toplar", () => {
+    expect(r.alacakDetay).toHaveLength(1);
+    expect(r.alacakDetay[0].firma).toBe("A");
+    expect(r.alacakDetay[0].tutar).toEqual({ TRY: 106000 }); // 100.000 bakiye + 6.000 servis (KDV dahil)
+    expect(r.alacakDetay[0].kaynaklar).toEqual(expect.arrayContaining(["Makina bakiyesi", "Servis"]));
+  });
+
+  it("teklifDetay: ay içi teklifleri durum etiketiyle listeler", () => {
+    expect(r.teklifDetay).toHaveLength(2);
+    expect(r.teklifDetay.map(x => x.durum).sort()).toEqual(["Gönderildi", "Onaylandı"]);
+  });
+
+  it("anlasmaliParcaDetay: Altuntaş dışı servisteki Altuntaş parçasını müşteri+servis firmasıyla verir", () => {
+    const veri2 = {
+      customers: [{ id: 1, name: "A", installDate: "2026-06-01", currency: "TRY", kalanBorc: 0 }],
+      services: [{
+        id: 50, customerId: 1, date: "2026-06-12", type: "Garanti Dışı", islemFirma: "Ege Servis",
+        parcaUcreti: 8000, parcaUcretiAltuntastan: 8000, parcaCurrency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: false,
+      }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const r2 = hesaplaAylikRapor(veri2, "2026-06", secenekler);
+    expect(r2.anlasmaliParcaDetay).toHaveLength(1);
+    expect(r2.anlasmaliParcaDetay[0]).toMatchObject({ firma: "A", servisFirma: "Ege Servis", odendi: false });
+    expect(r2.anlasmaliParcaDetay[0].tutar).toEqual({ TRY: 8000 });
+    expect(r2.anlasmaliParcaDetay[0].kdv).toEqual({ TRY: 1600 });
+  });
+});
+
+describe("hesaplaAylikRapor yönetici özeti + KDV beyanname özeti", () => {
+  it("ozet.ciroNet: makina + işçilik + parça + extra kalıp + yedek parça + anlaşmalı parça (KDV hariç)", () => {
+    // 800.000 makina + 5.000 işçilik + 25.000 extra kalıp = 830.000
+    expect(r.ozet.ciroNet).toEqual({ TRY: 830000 });
+    expect(r.ozet.tahsilat).toEqual({ TRY: 250000 });
+    expect(r.ozet.alacak.TRY).toBe(106000);
+  });
+
+  it("toplamKdv: satış + servis + extra kalıp + anlaşmalı parça KDV toplamı", () => {
+    // 120.000 makina KDV + 1.000 servis KDV (5.000×%20) + 0 (faturasız kalıp) + 0 anlaşmalı = 121.000
+    expect(r.toplamKdv).toEqual({ TRY: 121000 });
+    expect(r.kdvKalemleri.satis).toEqual({ TRY: 120000 });
+    expect(r.kdvKalemleri.servis).toEqual({ TRY: 1000 });
+  });
+
+  it("rates verilince ozet yaklaşık TL toplamı da hesaplar; verilmezse null", () => {
+    expect(r.ozet.ciroNetTL).toBeNull(); // ana fixture rates'siz çağrıldı
+    const rTL = hesaplaAylikRapor(veri, "2026-06", { ...secenekler, rates: { usd: 40, eur: 45 } });
+    expect(rTL.ozet.ciroNetTL).toBe(830000);   // hepsi TRY olduğu için TL == TRY
+    expect(rTL.ozet.toplamKdvTL).toBe(121000);
+  });
+});
+
 describe("oncekiAyStr", () => {
   it("bir ay geri gider, yıl sınırını aşar", () => {
     expect(oncekiAyStr("2026-06")).toBe("2026-05");

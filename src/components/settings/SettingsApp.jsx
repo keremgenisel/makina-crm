@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 
-export const SettingsApp = ({ version, flash }) => {
+// Güncelleme durumu (appUpd) ve işlemleri (onCheckUpdate/onStartUpdate) App.jsx'te TEK
+// noktadan yönetilir ve buraya prop olarak gelir — bu panel yalnızca onu gösterir. Böylece
+// güncelleme olayları bu sekme açık olmasa da yakalanır (üst şerit App'te) ve preload'ın
+// removeAllListeners deseninin yol açtığı "tek dinleyici" çakışması yaşanmaz.
+export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = null, onStartUpdate = null }) => {
   // ── Açılışta otomatik başlat ──
   const [openAtLogin, setOpenAtLoginState] = useState(null); // null=yükleniyor
   const [openAtLoginDevMode, setOpenAtLoginDevMode] = useState(false);
@@ -18,53 +22,15 @@ export const SettingsApp = ({ version, flash }) => {
     flash(val ? "ok" : "ok", val ? "Uygulama Windows başlangıcına eklendi." : "Uygulama Windows başlangıcından kaldırıldı.");
   };
 
-  // ── Uygulama güncellemesi (electron-updater) ──
-  // idle | checking | uptodate | available | downloading | downloaded | error | devmode
-  const [appUpd, setAppUpd] = useState({ state: "idle", latest: null, progress: 0, error: null });
-
-  useEffect(() => {
-    if (!window.appUpdater) return;
-    const offA = window.appUpdater.onAvailable((v) => setAppUpd(p => ({ ...p, state: "available", latest: v })));
-    const offP = window.appUpdater.onProgress((pct) => setAppUpd(p => ({ ...p, state: "downloading", progress: pct })));
-    const offD = window.appUpdater.onDownloaded(() => setAppUpd(p => ({ ...p, state: "downloaded" })));
-    const offE = window.appUpdater.onError((m) => setAppUpd(p => ({ ...p, state: "error", error: m })));
-    return () => {
-      if (typeof offA === "function") offA();
-      if (typeof offP === "function") offP();
-      if (typeof offD === "function") offD();
-      if (typeof offE === "function") offE();
-    };
-  }, []);
-
+  // Güncelleme durumu App'ten prop olarak gelir; App yoksa (eski çağrı/koruma) güvenli varsayılan.
+  const upd = appUpd || { state: window.appUpdater ? "idle" : "devmode", latest: null, progress: 0, error: null };
   const [askInstall, setAskInstall] = useState(false); // "yüklensin mi?" onay penceresi
 
   const checkAppUpdate = async () => {
-    if (!window.appUpdater) { setAppUpd({ state: "devmode", latest: null, progress: 0, error: null }); return; }
-    setAppUpd({ state: "checking", latest: null, progress: 0, error: null });
-    const res = await window.appUpdater.check();
-    if (res?.error === "dev-mode") setAppUpd(p => ({ ...p, state: "devmode" }));
-    else if (res?.error) setAppUpd(p => ({ ...p, state: "error", error: res.error }));
-    else if (res?.available) {
-      setAppUpd(p => ({ ...p, state: "available", latest: res.latest }));
-      setAskInstall(true); // güncelleme bulundu → kullanıcıya sor
-    }
-    else setAppUpd(p => ({ ...p, state: "uptodate" }));
+    if (!onCheckUpdate) return;
+    await onCheckUpdate();
   };
-
-  const startUpdate = async () => {
-    setAskInstall(false);
-    setAppUpd(p => ({ ...p, state: "downloading", progress: 0 }));
-    await window.appUpdater.download();
-    // indirme bitince onDownloaded tetiklenir → otomatik kurulum + yeniden başlatma
-  };
-
-  // İndirme tamamlanınca OTOMATİK kur ve yeniden başlat
-  useEffect(() => {
-    if (appUpd.state === "downloaded" && window.appUpdater) {
-      const t = setTimeout(() => window.appUpdater.install(), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [appUpd.state]);
+  const startUpdate = () => { setAskInstall(false); onStartUpdate?.(); };
 
   return (
     <>
@@ -75,48 +41,48 @@ export const SettingsApp = ({ version, flash }) => {
           tek tıkla indirip kurabilirsiniz. Verileriniz korunur.
         </div>
 
-        {appUpd.state === "idle" && (
+        {upd.state === "idle" && (
           <Btn onClick={checkAppUpdate}><Icon name="refresh" size={15} /> Yeni Sürüm Denetle</Btn>
         )}
-        {appUpd.state === "checking" && (
+        {upd.state === "checking" && (
           <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Denetleniyor...</div>
         )}
-        {appUpd.state === "uptodate" && (
+        {upd.state === "uptodate" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 14px", borderRadius: 10 }}>✓ Uygulama güncel</span>
             <Btn small variant="ghost" onClick={checkAppUpdate}><Icon name="refresh" size={12} /> Tekrar Denetle</Btn>
           </div>
         )}
-        {appUpd.state === "available" && (
+        {upd.state === "available" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#92400e", background: "#fef3c7", padding: "6px 14px", borderRadius: 10 }}>
-              Yeni sürüm hazır: v{appUpd.latest}
+              Yeni sürüm hazır: v{upd.latest}
             </span>
             <Btn onClick={() => setAskInstall(true)}><Icon name="download" size={15} /> Yükle</Btn>
           </div>
         )}
-        {appUpd.state === "downloading" && (
+        {upd.state === "downloading" && (
           <div style={{ maxWidth: 420 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>İndiriliyor... %{appUpd.progress}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>İndiriliyor... %{upd.progress}</div>
             <div style={{ height: 8, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ height: 8, width: `${appUpd.progress}%`, background: "#e85d1a", borderRadius: 6, transition: "width .3s" }} />
+              <div style={{ height: 8, width: `${upd.progress}%`, background: "#e85d1a", borderRadius: 6, transition: "width .3s" }} />
             </div>
           </div>
         )}
-        {appUpd.state === "downloaded" && (
+        {upd.state === "downloaded" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 14px", borderRadius: 10 }}>
             ✓ İndirildi — uygulama yeniden başlatılıyor...
           </span>
         )}
-        {appUpd.state === "error" && (
+        {upd.state === "error" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", background: "#fee2e2", padding: "6px 14px", borderRadius: 10 }}>
-              Denetlenemedi: {appUpd.error}
+              Denetlenemedi: {upd.error}
             </span>
             <Btn small variant="ghost" onClick={checkAppUpdate}><Icon name="refresh" size={12} /> Tekrar Dene</Btn>
           </div>
         )}
-        {appUpd.state === "devmode" && (
+        {upd.state === "devmode" && (
           <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
             Bu özellik yalnızca kurulu (Setup ile yüklenmiş) uygulamada çalışır — geliştirme modunda ve tarayıcıda devre dışıdır.
           </div>
@@ -127,7 +93,7 @@ export const SettingsApp = ({ version, flash }) => {
       {askInstall && (
         <Modal title="Güncelleme Bulundu" onClose={() => setAskInstall(false)}>
           <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 8 }}>
-            Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı (kurulu: v{version}).
+            Yeni sürüm <b>v{upd.latest}</b> yayınlandı (kurulu: v{version}).
           </div>
           <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
             Şimdi yüklensin mi? Güncelleme indirildikten sonra uygulama <b>otomatik olarak yeniden başlatılacak</b>.
