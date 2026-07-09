@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP,
-  degisenBolumler, kisitliMi, yazmaYetkisiVar,
+  degisenBolumler, kisitliMi, yazmaYetkisiVar, sonAdminiDusururMu,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 
@@ -86,5 +86,27 @@ describe("SECTION_GROUP kapsama (regresyon: yeni bölüm eklenirse haritaya da e
     for (const bolum of BLOB_SECTIONS) {
       expect(SECTION_GROUP[bolum], `${bolum} haritada yok`).toBeTruthy();
     }
+  });
+});
+
+describe("sonAdminiDusururMu — son-admin koruması", () => {
+  const tekAdmin = [{ id: 1, role: "admin", is_active: 1 }, { id: 2, role: "user", is_active: 1 }];
+  const ciftAdmin = [{ id: 1, role: "admin", is_active: 1 }, { id: 3, role: "admin", is_active: 1 }];
+
+  it("tek aktif admini user'a düşürme engellenir", () => {
+    expect(sonAdminiDusururMu(tekAdmin, 1, { role: "user" })).toBe(true);
+  });
+  it("tek aktif admini pasifleştirme engellenir", () => {
+    expect(sonAdminiDusururMu(tekAdmin, 1, { is_active: 0 })).toBe(true);
+    expect(sonAdminiDusururMu(tekAdmin, 1, { is_active: false })).toBe(true);
+  });
+  it("başka aktif admin varsa engellenmez", () => {
+    expect(sonAdminiDusururMu(ciftAdmin, 1, { role: "user" })).toBe(false);
+    expect(sonAdminiDusururMu(ciftAdmin, 1, { is_active: 0 })).toBe(false);
+  });
+  it("admin olmayanı veya admini kalıcı bırakmayan değişikliği etkilemez", () => {
+    expect(sonAdminiDusururMu(tekAdmin, 2, { is_active: 0 })).toBe(false); // hedef zaten user
+    expect(sonAdminiDusururMu(tekAdmin, 1, { permissions: "x" })).toBe(false); // rol/aktiflik değişmiyor
+    expect(sonAdminiDusururMu(tekAdmin, 1, { role: "admin", is_active: 1 })).toBe(false); // admin kalıyor
   });
 });

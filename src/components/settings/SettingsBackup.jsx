@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG } from "../../lib/constants";
+import { useState, useEffect } from "react";
+import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
 import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId } from "../../lib/utils";
-import { Icon, Btn, Modal } from "../ui";
+import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { Section } from "./Section";
 
 export const SettingsBackup = ({
@@ -13,24 +13,46 @@ export const SettingsBackup = ({
   version, appSettings, setAppSettings, flash,
 }) => {
   const [restoreData, setRestoreData] = useState(null); // onay bekleyen yedek
+  // Manuel yedek: şifreli/şifresiz seçim modalı
+  const [backupAsk, setBackupAsk] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState(null);
+  const [backupPw, setBackupPw] = useState("");
+  const [backupPw2, setBackupPw2] = useState("");
+  const [backupPwError, setBackupPwError] = useState("");
+  // Geri yükleme: şifreli yedek parola sorma
+  const [restoreEnvelope, setRestoreEnvelope] = useState(null);
+  const [restorePw, setRestorePw] = useState("");
+  const [restorePwError, setRestorePwError] = useState("");
+  // Otomatik yedek parolası durumu
+  const [autoPw, setAutoPw] = useState({ set: false, canEncrypt: true });
+  const [autoPwInput, setAutoPwInput] = useState("");
+  const [autoPwEditing, setAutoPwEditing] = useState(false);
+
+  const refreshAutoPwStatus = () => {
+    window.crmStorage?.autoBackupPasswordStatus?.().then(s => s && setAutoPw(s)).catch(() => {});
+  };
+  useEffect(() => { refreshAutoPwStatus(); }, []);
+
+  const buildBackupData = async () => {
+    // appSettings dışındaki makineye özgü alanlar (yedek klasörü, zamanlama) restore'da atlanır.
+    // SMTP şifresi safeStorage ile şifreli olduğundan yedeklenmez, sadece host/port/email alınır.
+    // Uygulama kilidi (appLock) yedeğe BİLEREK dahil edilmez: makinaya özgü bir ayardır ve
+    // şifre özetlerinin yedek dosyasında gezmesi offline kırma riski oluşturur.
+    const [mailConfig, mailLog] = await Promise.all([
+      window.appMail?.getConfigForBackup?.() ?? null,
+      window.appMail?.getAllLog?.() ?? [],
+    ]);
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, appSettings, mailConfig, mailLog };
+  };
 
   // ── Yedek Al ──
   const doBackup = async () => {
     try {
-      // appSettings dışındaki makineye özgü alanlar (yedek klasörü, zamanlama) restore'da atlanır.
-      // SMTP şifresi safeStorage ile şifreli olduğundan yedeklenmez, sadece host/port/email alınır.
-      // Uygulama kilidi (appLock) yedeğe BİLEREK dahil edilmez: makinaya özgü bir ayardır ve
-      // şifre özetlerinin yedek dosyasında gezmesi offline kırma riski oluşturur.
-      const [mailConfig, mailLog] = await Promise.all([
-        window.appMail?.getConfigForBackup?.() ?? null,
-        window.appMail?.getAllLog?.() ?? [],
-      ]);
-      const data = { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, appSettings, mailConfig, mailLog };
+      const data = await buildBackupData();
       if (window.crmStorage?.backup) {
-        const ok = await window.crmStorage.backup(data);
-        if (ok) flash("ok", "Yedek başarıyla kaydedildi.");
+        setPendingBackup(data); setBackupPw(""); setBackupPw2(""); setBackupPwError(""); setBackupAsk(true);
       } else {
-        // Tarayıcı modu: dosya olarak indir
+        // Tarayıcı modu: şifresiz indir (şifreleme yalnızca kurulu uygulamada)
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -43,12 +65,28 @@ export const SettingsBackup = ({
     }
   };
 
+  const saveBackup = async (encrypt) => {
+    if (encrypt) {
+      if (backupPw.length < 4) { setBackupPwError("Parola en az 4 karakter olmalı."); return; }
+      if (backupPw !== backupPw2) { setBackupPwError("Parolalar eşleşmiyor."); return; }
+    }
+    try {
+      const ok = await window.crmStorage.backup(pendingBackup, encrypt ? backupPw : undefined);
+      setBackupAsk(false); setPendingBackup(null);
+      if (ok) flash("ok", encrypt ? "Şifreli yedek kaydedildi. Parolayı güvenli saklayın; unutulursa geri yüklenemez." : "Yedek kaydedildi.");
+    } catch (err) { flash("err", "Yedek alınamadı: " + err.message); }
+  };
+
   // ── Yedek Yükle ──
   const doRestore = async () => {
     try {
       if (window.crmStorage?.restore) {
         const data = await window.crmStorage.restore();
         if (!data) return;
+        if (data.format === BACKUP_ENC_MARKER) { // şifreli yedek → parola sor
+          setRestoreEnvelope(data); setRestorePw(""); setRestorePwError("");
+          return;
+        }
         if (!looksLikeBackup(data)) { flash("err", "Seçilen dosya geçerli bir Altunmak CRM yedeği değil."); return; }
         setRestoreData(data);
       } else {
@@ -64,6 +102,7 @@ export const SettingsBackup = ({
             let parsed;
             try { parsed = JSON.parse(reader.result); }
             catch { flash("err", "Dosya okunamadı — geçerli bir yedek değil."); return; }
+            if (parsed.format === BACKUP_ENC_MARKER) { flash("err", "Şifreli yedek yalnızca kurulu uygulamada açılabilir."); return; }
             if (!looksLikeBackup(parsed)) { flash("err", "Seçilen dosya geçerli bir Altunmak CRM yedeği değil."); return; }
             setRestoreData(parsed);
           };
@@ -95,6 +134,26 @@ export const SettingsBackup = ({
     if (next.has(id)) next.delete(id); else next.add(id);
     return next;
   });
+
+  const saveAutoPw = async () => {
+    if (autoPwInput.length < 4) { flash("err", "Parola en az 4 karakter olmalı."); return; }
+    const res = await window.crmStorage.setAutoBackupPassword(autoPwInput);
+    if (res?.ok) { setAutoPwInput(""); setAutoPwEditing(false); refreshAutoPwStatus(); flash("ok", "Otomatik yedek parolası kaydedildi. Parolayı güvenli saklayın; unutulursa yedekler açılamaz."); }
+    else flash("err", res?.error || "Kaydedilemedi.");
+  };
+  const clearAutoPw = async () => {
+    const res = await window.crmStorage.setAutoBackupPassword("");
+    if (res?.ok) { refreshAutoPwStatus(); flash("ok", "Otomatik yedek şifrelemesi kapatıldı. Bundan sonraki yedekler şifresiz alınır."); }
+  };
+
+  const decryptAndRestore = async () => {
+    setRestorePwError("");
+    const res = await window.crmStorage.decryptBackup(restoreEnvelope, restorePw);
+    if (!res?.ok) { setRestorePwError(res?.error || "Çözülemedi."); return; }
+    if (!looksLikeBackup(res.data)) { setRestorePwError("Çözüldü ama geçerli bir yedek değil."); return; }
+    setRestoreEnvelope(null);
+    setRestoreData(res.data);
+  };
 
   const applyRestore = async () => {
     const sec = (id) => restorePaketler.has(id);
@@ -206,11 +265,42 @@ export const SettingsBackup = ({
                       <option value="monthly">Her ay</option>
                     </select>
                   </div>
-                  <div style={{ fontSize: 12, color: "#94a3b8" }}>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>
                     {appSettings.lastBackup
                       ? `Son otomatik yedek: ${appSettings.lastBackup}`
                       : "Henüz otomatik yedek alınmadı — klasör seçildiğinde ilk yedek hemen alınır."}
                     {" "}Yedekler uygulama açılışında, vakti geldiyse otomatik yazılır.
+                  </div>
+
+                  {/* Otomatik yedek şifreleme */}
+                  <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                      🔒 Otomatik yedek şifreleme {autoPw.set && <span style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#166534", borderRadius: 6, padding: "2px 8px", marginLeft: 4 }}>Açık</span>}
+                    </div>
+                    {!autoPw.canEncrypt ? (
+                      <div style={{ fontSize: 12, color: "#94a3b8" }}>Bu bilgisayarda güvenli depolama kullanılamadığı için otomatik yedek şifrelenemiyor.</div>
+                    ) : autoPw.set ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12.5, color: "#166534" }}>Otomatik yedekler bu bilgisayarda belirlenen parolayla şifreleniyor.</span>
+                        <Btn small variant="ghost" onClick={clearAutoPw}>Şifrelemeyi Kapat</Btn>
+                      </div>
+                    ) : autoPwEditing ? (
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <div style={{ minWidth: 200 }}>
+                            <PasswordInput value={autoPwInput} onChange={e => setAutoPwInput(e.target.value)} placeholder="Yedek parolası (min 4)" />
+                          </div>
+                          <Btn small onClick={saveAutoPw}>Kaydet</Btn>
+                          <Btn small variant="ghost" onClick={() => { setAutoPwEditing(false); setAutoPwInput(""); }}>Vazgeç</Btn>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#b45309", marginTop: 8 }}>Bu parolayı ayrıca güvenli bir yerde saklayın. Unutulursa şifreli yedekler geri yüklenemez.</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12.5, color: "#64748b" }}>Otomatik yedekler şu an şifresiz. Parola belirleyerek şifreleyebilirsiniz.</span>
+                        <Btn small onClick={() => { setAutoPwInput(""); setAutoPwEditing(true); }}>Parola Belirle</Btn>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -218,6 +308,46 @@ export const SettingsBackup = ({
           )}
         </div>
       </Section>
+
+      {/* Manuel yedek: şifreli/şifresiz seçimi */}
+      {backupAsk && (
+        <Modal title="Yedeği Şifrele" onClose={() => setBackupAsk(false)}>
+          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 14 }}>
+            Yedek dosyası düz metindir; şifrelerseniz dosya sızsa bile parolasız açılamaz. Şifreli yedeği
+            geri yüklerken bu parola sorulur, <b>unutulursa yedek açılamaz</b>.
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <PasswordInput value={backupPw} onChange={e => setBackupPw(e.target.value)} placeholder="Parola (min 4)" autoFocus />
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <PasswordInput value={backupPw2} onChange={e => setBackupPw2(e.target.value)} placeholder="Parola (tekrar)"
+              onKeyDown={e => { if (e.key === "Enter") saveBackup(true); }} />
+          </div>
+          {backupPwError && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 10 }}>✗ {backupPwError}</div>}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <Btn variant="ghost" onClick={() => saveBackup(false)}>Şifresiz Kaydet</Btn>
+            <Btn onClick={() => saveBackup(true)}><Icon name="lock" size={14} /> Şifreli Kaydet</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Geri yükleme: şifreli yedek parola sorma */}
+      {restoreEnvelope && (
+        <Modal title="Şifreli Yedek" onClose={() => setRestoreEnvelope(null)}>
+          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 14 }}>
+            Bu yedek şifreli. Açmak için yedeği alırken belirlediğiniz parolayı girin.
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <PasswordInput value={restorePw} onChange={e => setRestorePw(e.target.value)} placeholder="Yedek parolası" autoFocus
+              onKeyDown={e => { if (e.key === "Enter") decryptAndRestore(); }} />
+          </div>
+          {restorePwError && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 10 }}>✗ {restorePwError}</div>}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setRestoreEnvelope(null)}>Vazgeç</Btn>
+            <Btn onClick={decryptAndRestore}><Icon name="upload" size={14} /> Aç ve Devam Et</Btn>
+          </div>
+        </Modal>
+      )}
 
       {/* Geri yükleme onayı */}
       {restoreData && (

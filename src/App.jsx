@@ -920,7 +920,7 @@ export default function App() {
               {serverOnline && (serverKonumEtiketi({ viaTailscale: serverViaTailscale, sameLan }) === "tailscale" ? (
                 <span title="Sunucuya internet üzerinden (Tailscale) bağlısınız" style={{ fontSize: 10, fontWeight: 700, color: "#f0a36a", background: "rgba(232,93,26,.18)", border: "1px solid rgba(232,93,26,.35)", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>Tailscale</span>
               ) : (
-                <span title={serverViaTailscale ? "Aynı ağdasınız — Tailscale adresiyle bağlısınız ama trafik yerel ağdan gidiyor" : "Sunucuya fabrika içi yerel ağdan bağlısınız"} style={{ fontSize: 10, fontWeight: 700, color: "#c99a76", background: "rgba(232,93,26,.10)", border: "1px solid rgba(232,93,26,.22)", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>Yerel Ağ</span>
+                <span title={serverViaTailscale ? "Aynı ağdasınız; Tailscale adresiyle bağlısınız ama trafik yerel ağdan gidiyor" : "Sunucuya fabrika içi yerel ağdan bağlısınız"} style={{ fontSize: 10, fontWeight: 700, color: "#c99a76", background: "rgba(232,93,26,.10)", border: "1px solid rgba(232,93,26,.22)", borderRadius: 5, padding: "1px 6px", whiteSpace: "nowrap" }}>Yerel Ağ</span>
               ))}
             </div>
           )}

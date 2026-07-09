@@ -1,5 +1,17 @@
 // Dışa Aktar ve İçe Aktar sekmeleri arasında paylaşılan CSV yardımcıları.
-export const buildCSV = (rows) => "﻿" + rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+
+// CSV/Excel formül enjeksiyonu koruması: = + - @ ile ya da tab/CR ile başlayan hücreler Excel/
+// LibreOffice'te formül (hatta DDE ile komut) olarak yorumlanabilir. Böyle hücreleri başına '
+// ekleyerek metne zorlarız (OWASP önerisi). Düz sayılar (negatif/ondalık) ve +telefon dokunulmaz
+// kalır ki finans sütunları ve telefonlar bozulmasın (bunlar zaten formül tetiklemez).
+export const csvSafeCell = (x) => {
+  const s = String(x ?? "");
+  if (!/^[=+\-@\t\r]/.test(s)) return s;
+  if (/^[-+]?\d[\d.,]*$/.test(s)) return s; // düz sayı → güvenli, dokunma
+  return "'" + s;
+};
+
+export const buildCSV = (rows) => "﻿" + rows.map(r => r.map(x => `"${csvSafeCell(x).replace(/"/g, '""')}"`).join(";")).join("\n");
 
 export const downloadCSV = (rows, filename) => {
   const blob = new Blob([buildCSV(rows)], { type: "text/csv;charset=utf-8" });

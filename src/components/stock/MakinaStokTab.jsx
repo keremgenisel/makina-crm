@@ -210,7 +210,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       )}
 
       {modal && (
-        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)}>
+        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)} maxWidth={760}>
           {(stockLock && modal?.edit) ? (
             <LockConflict lockedBy={stockLock.lockedBy} lockedAt={stockLock.lockedAt}
               onForce={forceStockLock} onCancel={() => setModal(null)} />
@@ -261,22 +261,24 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <div style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginBottom: 4 }}>Parça eklenmedi — opsiyonel</div>
             )}
 
-            {(form.parcalar || []).map((row, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-                <select value={row.partId} onChange={e => updateParcaRow(i, "partId", e.target.value)}
-                  style={{ ...inputStyle, flex: 1 }}>
-                  <option value="">Parça seçin...</option>
-                  {availableParts.map(p => <option key={p.id} value={p.id}>{p.ad}</option>)}
-                  {row.partId && !availableParts.find(p => String(p.id) === String(row.partId)) && (
-                    <option value={row.partId}>{parts.find(p => String(p.id) === String(row.partId))?.ad || "?"}</option>
-                  )}
-                </select>
-                <input type="number" min="1" value={row.miktar} onChange={e => updateParcaRow(i, "miktar", e.target.value)}
-                  style={{ ...inputStyle, width: 70, textAlign: "center" }} />
-                <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>adet</span>
-                <Btn small variant="danger" onClick={() => removeParcaRow(i)}><Icon name="trash" size={11} /></Btn>
-              </div>
-            ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 8 }}>
+              {(form.parcalar || []).map((row, i) => (
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "6px 8px" }}>
+                  <select value={row.partId} onChange={e => updateParcaRow(i, "partId", e.target.value)}
+                    style={{ ...inputStyle, flex: 1, minWidth: 0 }}>
+                    <option value="">Parça seçin...</option>
+                    {availableParts.map(p => <option key={p.id} value={p.id}>{p.ad}</option>)}
+                    {row.partId && !availableParts.find(p => String(p.id) === String(row.partId)) && (
+                      <option value={row.partId}>{parts.find(p => String(p.id) === String(row.partId))?.ad || "?"}</option>
+                    )}
+                  </select>
+                  <input type="number" min="1" value={row.miktar} onChange={e => updateParcaRow(i, "miktar", e.target.value)}
+                    style={{ ...inputStyle, width: 56, textAlign: "center", flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>adet</span>
+                  <Btn small variant="danger" onClick={() => removeParcaRow(i)}><Icon name="trash" size={11} /></Btn>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>

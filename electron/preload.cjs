@@ -5,10 +5,13 @@ contextBridge.exposeInMainWorld("crmStorage", {
   save: (data) => ipcRenderer.invoke("crm:save", data),
   getVersion: () => ipcRenderer.invoke("crm:getVersion"),
   flushSave: (data) => ipcRenderer.sendSync("crm:flush-save", data),
-  backup: (data) => ipcRenderer.invoke("crm:backup", data),
+  backup: (data, password) => ipcRenderer.invoke("crm:backup", data, password),
   restore: () => ipcRenderer.invoke("crm:restore"),
   chooseFolder: () => ipcRenderer.invoke("crm:chooseFolder"),
   writeBackup: (folder, data) => ipcRenderer.invoke("crm:writeBackup", folder, data),
+  decryptBackup: (envelope, password) => ipcRenderer.invoke("backup:decrypt", envelope, password),
+  setAutoBackupPassword: (password) => ipcRenderer.invoke("backup:setAutoPassword", password),
+  autoBackupPasswordStatus: () => ipcRenderer.invoke("backup:autoPasswordStatus"),
 });
 
 contextBridge.exposeInMainWorld("appPrint", {

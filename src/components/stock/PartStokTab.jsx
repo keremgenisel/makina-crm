@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict } from "../ui";
+import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
 const PER_PAGE = 15;
@@ -89,8 +89,6 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
     showToast("Stok düzeltildi.");
     setModal(null);
   };
-
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", outline: "none", fontFamily: "inherit" };
 
   const kritikSayisi = rows.filter(r => r.miktar <= 0).length;
   const dusukSayisi  = rows.filter(r => r.miktar > 0 && r.miktar <= 5).length;
@@ -239,17 +237,18 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       <Pagination total={filteredRows.length} page={page} setPage={setPage} perPage={PER_PAGE} />
 
       {(modal === "ekle") && (
-        <Modal title="Stoğa Parça Ekle" onClose={() => setModal(null)} maxWidth={420}>
+        <Modal title="Stoğa Parça Ekle" onClose={() => setModal(null)} maxWidth={600} overflowVisible>
           {(partStokLock && form.partId) ? (
             <LockConflict lockedBy={partStokLock.lockedBy} lockedAt={partStokLock.lockedAt}
               onForce={forcePartStokLock} onCancel={() => setModal(null)} />
           ) : (
             <>
               <Field label="Yedek Parça">
-                <select value={form.partId} onChange={e => setForm(p => ({ ...p, partId: e.target.value }))} style={inputStyle}>
-                  <option value="">Parça seçin...</option>
-                  {parts.map(p => <option key={p.id} value={p.id}>{p.ad}</option>)}
-                </select>
+                <SearchSelect
+                  value={form.partId ? String(form.partId) : ""}
+                  onChange={val => setForm(p => ({ ...p, partId: val }))}
+                  options={parts.map(p => ({ value: String(p.id), label: p.ad }))}
+                  placeholder="Parça seçin..." searchPlaceholder="Parça ara..." initialLimit={10} />
                 <Warn>{!form.partId ? "Parça seçilmedi" : ""}</Warn>
               </Field>
               <Field label="Eklenecek Miktar (adet)">

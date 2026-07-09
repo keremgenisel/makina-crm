@@ -120,6 +120,9 @@ export const DEFAULT_KDV_RATES = [
 // ── Yedek dosyası şeması ──────────────────────────────────────────────
 export const BACKUP_SCHEMA_VERSION = 2;
 export const BACKUP_APP_TAG = "altunmak-crm";
+// Şifreli yedek zarfının işareti (electron/backupCrypto.cjs MARKER ile aynı olmalı) —
+// renderer, bir yedek dosyasının şifreli mi düz mü olduğunu bu alanla ayırt eder.
+export const BACKUP_ENC_MARKER = "altunmak-crm-encrypted";
 
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];
 export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "Fabrika Teslim"];
@@ -127,7 +130,7 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "2.73.0";
+export const APP_VERSION = "2.74.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

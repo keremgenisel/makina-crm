@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon, Input, PasswordInput, Btn } from "./ui";
 import { WorldDotMap } from "./WorldDotMap";
 
@@ -9,6 +9,14 @@ export const LockScreen = ({ onUnlock }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lockRemaining, setLockRemaining] = useState(0); // çok fazla yanlış deneme sonrası kalan bekleme (sn)
+
+  // Kilit süresi geri sayımı — her saniye azalır, 0'a inince giriş yeniden serbest
+  useEffect(() => {
+    if (lockRemaining <= 0) return;
+    const t = setInterval(() => setLockRemaining(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [lockRemaining > 0]);
 
   const [recoveryCode, setRecoveryCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -20,7 +28,10 @@ export const LockScreen = ({ onUnlock }) => {
     try {
       const res = await window.appLock.verify(password);
       if (res?.ok) onUnlock();
-      else setError(res?.error || "Şifre yanlış.");
+      else {
+        setError(res?.error || "Şifre yanlış.");
+        if (res?.retryAfterMs > 0) setLockRemaining(Math.ceil(res.retryAfterMs / 1000));
+      }
     } catch (err) {
       setError("Beklenmeyen hata: " + (err?.message || "uygulamayı yeniden başlatmayı deneyin."));
     } finally {
@@ -116,7 +127,8 @@ export const LockScreen = ({ onUnlock }) => {
             onKeyDown={e => { if (e.key === "Enter") submitLogin(); }} />
         </div>
         {error && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 14 }}>✗ {error}</div>}
-        <Btn onClick={submitLogin} disabled={busy}>{busy ? "Kontrol ediliyor..." : "Giriş"}</Btn>
+        {lockRemaining > 0 && <div style={{ fontSize: 12, color: "#b45309", marginBottom: 12 }}>Çok fazla yanlış deneme. {lockRemaining} sn sonra tekrar deneyin.</div>}
+        <Btn onClick={submitLogin} disabled={busy || lockRemaining > 0}>{busy ? "Kontrol ediliyor..." : lockRemaining > 0 ? `${lockRemaining} sn bekleyin` : "Giriş"}</Btn>
         <div style={{ marginTop: 16 }}>
           <span onClick={() => { setMode("recover"); setError(""); }}
             style={{ fontSize: 12, color: "#94a3b8", cursor: "pointer", textDecoration: "underline" }}>

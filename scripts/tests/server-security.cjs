@@ -111,10 +111,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);
   check("admin GET /api/users → 200", (await api("/api/users", {}, adminTok)).status === 200);
 
-  // ── /api/version LAN adres bilgisi (aynı-ağ tespiti için) ───────────────────
+  // ── /api/version: LAN adresleri yalnızca Tailscale (uzaktan) istemciye verilir ──
+  // Loopback (yerel/LAN benzeri) istek → fabrika iç IP'leri sızdırılmaz.
   const versionBody = await (await api("/api/version", {}, adminTok)).json();
-  check("/api/version serverLanIps dizi döner", Array.isArray(versionBody.serverLanIps));
-  check("/api/version serverPort döner", typeof versionBody.serverPort === "number");
+  check("/api/version yerel istemciye serverLanIps sızdırmaz", versionBody.serverLanIps === undefined);
+  check("/api/version yerel istemciye serverPort sızdırmaz", versionBody.serverPort === undefined);
+
+  // ── Son-admin koruması: tek aktif admini düşürme/pasifleştirme engellenir ──
+  const adminId = adminLogin.body.user.id;
+  check("tek admini user yapma → 400", (await api(`/api/users/${adminId}`, { method: "PATCH", body: JSON.stringify({ role: "user" }) }, adminTok)).status === 400);
+  check("tek admini pasifleştirme → 400", (await api(`/api/users/${adminId}`, { method: "PATCH", body: JSON.stringify({ is_active: 0 }) }, adminTok)).status === 400);
 
   // ── Şifre uzunluğu ──────────────────────────────────────────────────────────
   check("kısa şifreyle kullanıcı ekleme → 400", (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "yeni", password: "123", role: "user" }) }, adminTok)).status === 400);
@@ -125,6 +131,17 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("refresh-internal admin → token", refAdmin.status === 200 && !!(await refAdmin.json()).token);
   const refRo = await api("/auth/refresh-internal", { method: "POST", body: JSON.stringify({ username: "ro" }) });
   check("refresh-internal admin olmayan → 403", refRo.status === 403);
+
+  // ── Yazma hız sınırı (DoS koruması): POST /api/data kullanıcı başına 60/dk ──
+  // "yeni" kullanıcısı temiz sayaçla; gövde {} olduğu için handler 400 döner ama limiter
+  // handler'dan ÖNCE sayar. 60 istekten sonra 429 gelmeli. (Login IP sayacına dokunmaz.)
+  const yeniTok = (await login("yeni", "abcdef")).body.token;
+  let rl429 = false, rlLast = 0;
+  for (let i = 0; i < 65; i++) {
+    rlLast = (await api("/api/data", { method: "POST", body: "{}" }, yeniTok)).status;
+    if (rlLast === 429) rl429 = true;
+  }
+  check("POST /api/data 60/dk üstü → 429 (yazma hız sınırı)", rl429 && rlLast === 429);
 
   // ── Kaba kuvvet: en son (IP rate sayacını tüketir) ──────────────────────────
   let sonStatus = 0;

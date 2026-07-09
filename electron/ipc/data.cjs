@@ -3,6 +3,28 @@ const fs              = require("fs");
 const bcrypt          = require("bcryptjs");
 const { BrowserWindow, safeStorage } = require("electron");
 const embeddedServer  = require("../server.cjs");
+const { buildCandidates } = require("../failover.cjs");
+const { encryptBackup, decryptBackup } = require("../backupCrypto.cjs");
+
+// ── Otomatik yedek parolası (safeStorage ile o makinede şifreli saklanır) ─────
+// Belirlenmişse otomatik yedekler bununla şifrelenir; yoksa şifresiz yazılır.
+const getBackupPassPath = (app) => path.join(app.getPath("userData"), "backup-pass.enc");
+function canEncryptSafe() { try { return !!safeStorage?.isEncryptionAvailable?.(); } catch { return false; } }
+function saveAutoBackupPassword(app, password) {
+  const p = getBackupPassPath(app);
+  if (!password) { try { fs.unlinkSync(p); } catch { /* zaten yok */ } return { ok: true, cleared: true }; }
+  if (!canEncryptSafe()) return { ok: false, error: "Bu bilgisayarda güvenli depolama kullanılamıyor." };
+  try { fs.writeFileSync(p, safeStorage.encryptString(String(password))); return { ok: true }; }
+  catch (e) { return { ok: false, error: e.message }; }
+}
+function readAutoBackupPassword(app) {
+  try {
+    const p = getBackupPassPath(app);
+    if (fs.existsSync(p) && canEncryptSafe()) return safeStorage.decryptString(fs.readFileSync(p));
+  } catch { /* okunamadı */ }
+  return null;
+}
+function hasAutoBackupPassword(app) { try { return fs.existsSync(getBackupPassPath(app)); } catch { return false; } }
 
 const getDataPath         = (app) => path.join(app.getPath("userData"), "data.json");
 const getServerConfigPath = (app) => path.join(app.getPath("userData"), "server-config.json");
@@ -109,16 +131,45 @@ function broadcast(channel, ...args) {
   }
 }
 
+// ── Otomatik LAN yedeklemesi (failover) durumu ───────────────────────────────
+// failoverLanUrl: aynı yerel ağdayken keşfedilip config'e yazılan yedek LAN adresi
+//   (uygulama açılışında config'ten yüklenir, checkLan her başarılı yoklamada günceller).
+// lastGoodUrl: en son başarıyla ulaşılan adres — sonraki isteklerde önce bu denenir ki
+//   düşmüş bir adres (ör. internet kesikken Tailscale) için her seferinde timeout beklenmesin.
+let failoverLanUrl = null;
+let lastGoodUrl = null;
+function setFailoverLan(url) { failoverLanUrl = url || null; }
+function resetFailover() { failoverLanUrl = null; lastGoodUrl = null; }
+
 // ── HTTP yardımcısı (istemci modu) ───────────────────────────────────────────
+// serverUrl birincil adres; başarısız olursa (ağ hatası/timeout) bilinen LAN yedeğine
+// otomatik geçilir. HTTP yanıtı (200/4xx/5xx) DÖNERSE o adres çalışıyor sayılır ve
+// döndürülür — yalnızca bağlantı kurulamadığında sıradaki adaya geçilir.
 async function apiFetch(serverUrl, token, endpoint, options = {}) {
-  return fetch(`${serverUrl.replace(/\/$/, "")}${endpoint}`, {
+  const opts = {
     ...options,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       ...(options.headers || {}),
     },
-  });
+  };
+  const adaylar = buildCandidates(lastGoodUrl, serverUrl, failoverLanUrl);
+  let sonHata;
+  for (const base of adaylar) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000); // ölü adres için hızlı vazgeç, sonrakini dene
+    try {
+      const res = await fetch(`${base}${endpoint}`, { ...opts, signal: ctrl.signal });
+      lastGoodUrl = base; // bu adres çalışıyor → sonraki isteklerde önce bunu dene
+      return res;
+    } catch (e) {
+      sonHata = e; // bağlantı kurulamadı → sıradaki adayı (ör. LAN yedeği) dene
+    } finally {
+      clearTimeout(t);
+    }
+  }
+  throw sonHata || new Error("Sunucuya ulaşılamadı");
 }
 
 // Bir adrese kısa timeout'la ulaşılabiliyor mu? (LAN erişilebilirlik yoklaması için)
@@ -132,6 +183,10 @@ async function probeReachable(url, timeoutMs = 1500) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
+
+  // Açılışta önbellekteki LAN yedeği adresini yükle — böylece uygulama internet kesikken
+  // (Tailscale düşmüşken) açılsa bile aynı ağdaki sunucuya doğrudan LAN'dan ulaşabilir.
+  try { const boot = loadServerConfig(app); if (boot?.mode === "client" && boot?.lanUrl) setFailoverLan(boot.lanUrl); } catch { /* config yok */ }
 
   // ── Yapılandırma okuma ────────────────────────────────────────────────────
   ipcMain.handle("server:getConfig", () => {
@@ -167,6 +222,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       });
       const body = await res.json();
       if (!res.ok) return { error: body.error || "Giriş başarısız" };
+      resetFailover(); // yeni sunucu — eski LAN yedeği/aktif adres geçersiz
       saveServerConfig(app, { mode: "client", serverUrl, token: body.token, username: body.user.username, role: body.user.role, permissions: body.user.permissions ?? null });
       return { ok: true, user: body.user };
     } catch (err) {
@@ -177,9 +233,10 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
   // ── İstemci: oturum kapat ─────────────────────────────────────────────────
   ipcMain.handle("server:logout", () => {
+    resetFailover();
     const cfg = loadServerConfig(app);
     if (cfg?.mode === "client") {
-      const { token, username, role, permissions, ...rest } = cfg;
+      const { token, username, role, permissions, lanUrl, ...rest } = cfg;
       saveServerConfig(app, rest);
     }
     return true;
@@ -329,7 +386,13 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (!ips.length || !port) return { onLan: false };
       for (const ip of ips) {
         const lanUrl = `http://${ip}:${port}`;
-        if (await probeReachable(`${lanUrl}/health`)) return { onLan: true, lanUrl };
+        if (await probeReachable(`${lanUrl}/health`)) {
+          // LAN yedeğini önbelleğe al: internet/Tailscale sonradan düşse bile adres elde hazır olsun
+          setFailoverLan(lanUrl);
+          const cur = loadServerConfig(app);
+          if (cur && cur.lanUrl !== lanUrl) saveServerConfig(app, { ...cur, lanUrl });
+          return { onLan: true, lanUrl };
+        }
       }
       return { onLan: false };
     } catch { return { onLan: false }; }
@@ -474,7 +537,8 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   // ── Manuel yedekleme ──────────────────────────────────────────────────────
-  ipcMain.handle("crm:backup", async (_e, data) => {
+  // password verilirse yedek şifrelenir (manuel yedek; kullanıcı o an parola girer)
+  ipcMain.handle("crm:backup", async (_e, data, password) => {
     const date = new Date().toISOString().split("T")[0];
     const { canceled, filePath } = await dialog.showSaveDialog({
       title: "Yedek Kaydet",
@@ -482,7 +546,11 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       filters: [{ name: "JSON Yedek Dosyası", extensions: ["json"] }],
     });
     if (canceled || !filePath) return false;
-    try { fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8"); return true; }
+    try {
+      const payload = password ? encryptBackup(data, password) : data;
+      fs.writeFileSync(filePath, JSON.stringify(payload, null, password ? 0 : 2), "utf-8");
+      return true;
+    }
     catch (err) { console.error("Yedek yazılamadı:", err); return false; }
   });
 
@@ -497,10 +565,21 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   ipcMain.handle("crm:writeBackup", (_e, folder, data) => {
     try {
       if (!folder?.trim() || !fs.statSync(folder).isDirectory()) return false;
+      const pass = readAutoBackupPassword(app); // ayarlarda kayıtlıysa otomatik yedek şifrelenir
+      const payload = pass ? encryptBackup(data, pass) : data;
       const date = new Date().toISOString().split("T")[0];
-      fs.writeFileSync(path.join(folder, `altunmak-crm-otoyedek-${date}.json`), JSON.stringify(data, null, 2), "utf-8");
+      fs.writeFileSync(path.join(folder, `altunmak-crm-otoyedek-${date}.json`), JSON.stringify(payload, null, pass ? 0 : 2), "utf-8");
       return true;
     } catch (err) { console.error("Otomatik yedek yazılamadı:", err); return false; }
+  });
+
+  // Otomatik yedek parolası yönetimi
+  ipcMain.handle("backup:setAutoPassword", (_e, password) => saveAutoBackupPassword(app, password));
+  ipcMain.handle("backup:autoPasswordStatus", () => ({ set: hasAutoBackupPassword(app), canEncrypt: canEncryptSafe() }));
+  // Şifreli yedeği parola ile çöz (geri yüklerken)
+  ipcMain.handle("backup:decrypt", (_e, envelope, password) => {
+    try { return { ok: true, data: decryptBackup(envelope, password) }; }
+    catch { return { ok: false, error: "Parola yanlış veya dosya bozuk." }; }
   });
 
   ipcMain.handle("crm:restore", async () => {
@@ -510,6 +589,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       properties: ["openFile"],
     });
     if (canceled || !filePaths?.[0]) return null;
+    // Şifreli yedekse zarf nesnesi döner; renderer parola sorup backup:decrypt ile çözer.
     try { return JSON.parse(fs.readFileSync(filePaths[0], "utf-8")); }
     catch (err) { console.error("Yedek okunamadı:", err); return null; }
   });

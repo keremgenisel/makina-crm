@@ -215,7 +215,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
 // Aranabilir açılır liste: uzun seçenek listelerinde (kalıp tanımları gibi) native
 // select yerine kullanılır. Üstte arama kutusu, altta en fazla ~10 satır görünür liste
 // (fazlası kaydırılır). options: [{ value, label }].
-export const SearchSelect = ({ value, onChange, options = [], placeholder = "Seçin...", searchPlaceholder = "Ara..." }) => {
+export const SearchSelect = ({ value, onChange, options = [], placeholder = "Seçin...", searchPlaceholder = "Ara...", initialLimit = 0 }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const boxRef = useRef(null);
@@ -229,7 +229,11 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
     setTimeout(() => inputRef.current?.focus(), 30);
     return () => { document.removeEventListener("mousedown", onDoc); window.removeEventListener("keydown", onKey); };
   }, [open]);
-  const filtered = q.trim() ? options.filter(o => aramaNormalize(o.label).includes(aramaNormalize(q))) : options;
+  // Arama varsa tümünde filtrele; boşken initialLimit verilmişse yalnızca ilk N'i göster (uzun listeler
+  // baştan aşağı taşmasın, gerisi aramayla bulunur).
+  const matched = q.trim() ? options.filter(o => aramaNormalize(o.label).includes(aramaNormalize(q))) : options;
+  const filtered = (!q.trim() && initialLimit > 0) ? matched.slice(0, initialLimit) : matched;
+  const gizliSayisi = matched.length - filtered.length;
   const secili = options.find(o => o.value === value);
   const satir = { display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", fontSize: 13, cursor: "pointer", background: "none" };
   return (
@@ -248,7 +252,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
                 style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px 7px 28px", border: "1.5px solid #e85d1a", borderRadius: 7, fontSize: 13, outline: "none" }} />
             </div>
           </div>
-          <div style={{ maxHeight: 330, overflowY: "auto" }}>
+          <div style={{ maxHeight: 380, overflowY: "auto" }}>
             {value && (
               <button type="button" style={{ ...satir, color: "#94a3b8", fontSize: 12 }}
                 onClick={() => { onChange(""); setOpen(false); }}>— Seçimi kaldır —</button>
@@ -263,6 +267,11 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
                 {o.label}
               </button>
             ))}
+            {gizliSayisi > 0 && (
+              <div style={{ padding: "8px 12px", fontSize: 11.5, color: "#94a3b8", borderTop: "1px solid #f1f5f9", background: "#fafafa" }}>
+                +{gizliSayisi} sonuç daha — aramak için yazın
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -307,7 +316,7 @@ export const StatCard = ({ label, value, sub, color, onClick }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHeight }) => {
+export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHeight, overflowVisible }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -331,7 +340,7 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
         </div>
       </div>
     ) : (
-      <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: overflowVisible ? undefined : (maxHeight ?? (wide ? "94vh" : "90vh")), overflow: overflowVisible ? "visible" : undefined, overflowY: overflowVisible ? undefined : "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>

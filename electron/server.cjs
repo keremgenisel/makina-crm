@@ -7,17 +7,38 @@ const bcrypt   = require("bcryptjs");
 const jwt      = require("jsonwebtoken");
 const crypto   = require("crypto");
 const os       = require("os");
-const { BrowserWindow } = require("electron");
-const { kisitliMi, degisenBolumler, yazmaYetkisiVar } = require("./serverAuth.cjs");
+const fs       = require("fs");
+const path     = require("path");
+const { BrowserWindow, safeStorage, app } = require("electron");
+const { kisitliMi, degisenBolumler, yazmaYetkisiVar, sonAdminiDusururMu } = require("./serverAuth.cjs");
+const { planSecret } = require("./jwtSecret.cjs");
+const { rateAllow, rateHit, rateRetryAfter, rateReset } = require("./rateLimit.cjs");
 
 let httpServer = null;
 let db         = null; // electron/db.cjs referansı
 
-// ── JWT ───────────────────────────────────────────────────────────────────────
+// ── JWT imza anahtarı ─────────────────────────────────────────────────────────
+// Anahtar OS anahtarlığında (safeStorage: DPAPI/Keychain) şifreli dosyada tutulur; DB'de
+// düz metin bırakılmaz. Mevcut kurulumdaki eski DB anahtarı korunarak taşınır (token'lar
+// geçersiz olmasın). safeStorage kullanılamıyorsa eski davranışa (DB'de düz metin) düşülür.
+let cachedSecret = null;
+function jwtSecretFile() { return path.join(app.getPath("userData"), "jwt-secret.enc"); }
 function getSecret() {
-  let s = db.getMetaValue("jwtSecret");
-  if (!s) { s = crypto.randomBytes(32).toString("hex"); db.setMetaValue("jwtSecret", s); }
-  return s;
+  if (cachedSecret) return cachedSecret;
+  let canEncrypt = false;
+  try { canEncrypt = !!safeStorage?.isEncryptionAvailable?.(); } catch { canEncrypt = false; }
+  let fileSecret = null;
+  try { const p = jwtSecretFile(); if (canEncrypt && fs.existsSync(p)) fileSecret = safeStorage.decryptString(fs.readFileSync(p)); } catch { /* bozuk dosya → yeniden üret */ }
+  const dbSecret = db.getMetaValue("jwtSecret") || null;
+  const generated = crypto.randomBytes(32).toString("hex");
+  const plan = planSecret({ fileSecret, dbSecret, generated, canEncrypt });
+  try {
+    if (plan.writeFile) fs.writeFileSync(jwtSecretFile(), safeStorage.encryptString(plan.secret));
+    if (plan.clearDb) db.setMetaValue("jwtSecret", ""); // DB'deki düz metin anahtarı temizle
+    if (plan.dbFallback && !dbSecret) db.setMetaValue("jwtSecret", plan.secret); // safeStorage yoksa eski yol
+  } catch (e) { console.error("[server] jwtSecret kaydedilemedi:", e.message); }
+  cachedSecret = plan.secret;
+  return plan.secret;
 }
 // İstemci oturum jetonu 30 gün geçerli — böylece PC gece/hafta sonu kapatılıp tekrar
 // açıldığında şifre tekrar sorulmaz (açılışta sessizce yenilenip süre kayar, bkz. App.jsx).
@@ -49,24 +70,45 @@ function requireAdmin(req, res, next) {
 }
 
 // ── Giriş denemesi sınırı (brute-force koruması) ─────────────────────────────
-// IP başına 5 dakikalık pencerede en fazla 10 BAŞARISIZ deneme; başarılı giriş sayacı
-// sıfırlar. Bellek içi tutulur (sunucu yeniden başlayınca sıfırlanır, LAN için yeterli).
+// 5 dakikalık pencerede en fazla 10 BAŞARISIZ deneme; HEM IP HEM kullanıcı adı başına ayrı
+// sayılır — böylece tek IP'den farklı kullanıcı denemeleri ile aynı kullanıcıya farklı
+// IP'lerden brute-force ayrı ayrı yakalanır. Başarılı giriş ilgili sayaçları sıfırlar.
+// Bellek içi (sunucu yeniden başlayınca sıfırlanır, LAN için yeterli).
 const LOGIN_WINDOW_MS = 5 * 60 * 1000;
 const LOGIN_MAX_FAILS = 10;
-const loginFails = new Map(); // ip → { count, resetAt }
-function loginRateCheck(ip) {
-  const now = Date.now();
-  const rec = loginFails.get(ip);
-  if (!rec || now > rec.resetAt) return true;
-  return rec.count < LOGIN_MAX_FAILS;
+const loginFails = new Map(); // "ip:X" / "user:Y" → { count, resetAt }
+// Engelliyse kalan süre (ms), değilse 0. IP veya kullanıcı adından hangisi sınırdaysa o döner.
+function loginBlockedMs(ip, username, now = Date.now()) {
+  const ipKey = `ip:${ip}`, userKey = `user:${username}`;
+  if (!rateAllow(loginFails, ipKey, now, LOGIN_MAX_FAILS, LOGIN_WINDOW_MS)) return rateRetryAfter(loginFails, ipKey, now);
+  if (username && !rateAllow(loginFails, userKey, now, LOGIN_MAX_FAILS, LOGIN_WINDOW_MS)) return rateRetryAfter(loginFails, userKey, now);
+  return 0;
 }
-function loginRateFail(ip) {
-  const now = Date.now();
-  const rec = loginFails.get(ip);
-  if (!rec || now > rec.resetAt) loginFails.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
-  else rec.count += 1;
+function loginRateFail(ip, username, now = Date.now()) {
+  rateHit(loginFails, `ip:${ip}`, now, LOGIN_WINDOW_MS);
+  if (username) rateHit(loginFails, `user:${username}`, now, LOGIN_WINDOW_MS);
 }
-function loginRateSuccess(ip) { loginFails.delete(ip); }
+function loginRateSuccess(ip, username) {
+  rateReset(loginFails, `ip:${ip}`);
+  if (username) rateReset(loginFails, `user:${username}`);
+}
+
+// ── Yazma uçları hız sınırı (DoS koruması) ────────────────────────────────────
+// Kimliği doğrulanmış kullanıcı + uç başına dakikalık üst sınır. Ağır /api/data yazması
+// (blob) daha sıkı, küçük yazmalar daha gevşek. requireAuth'tan SONRA kullanılmalı (req.user).
+const writeRate = new Map();
+function writeLimiter(max, windowMs = 60 * 1000) {
+  return (req, res, next) => {
+    const key = `${req.path}:${req.user?.username || req.socket?.remoteAddress || "?"}`;
+    const now = Date.now();
+    if (!rateAllow(writeRate, key, now, max, windowMs)) {
+      res.set("Retry-After", String(Math.ceil(rateRetryAfter(writeRate, key, now) / 1000)));
+      return res.status(429).json({ error: "Çok fazla istek. Lütfen biraz bekleyin." });
+    }
+    rateHit(writeRate, key, now, windowMs);
+    next();
+  };
+}
 
 // ── Tüm pencerelere event yayını ──────────────────────────────────────────────
 function broadcast(channel, ...args) {
@@ -82,8 +124,10 @@ function buildApp() {
   // yapar (Origin başlığı yok) — CORS başlığı yayınlamak yalnızca saldırı yüzeyini büyütür.
   // gzip: veri blob'u JSON+base64 ağırlıklı, sıkıştırma ağ trafiğini ~%70-90 azaltır.
   app.use(compression());
-  // Büyük gövde yalnızca veri kaydetmede gerekli; diğer tüm endpoint'ler küçük JSON alır
-  app.use("/api/data", express.json({ limit: "50mb" }));
+  // Büyük gövde yalnızca veri kaydetmede gerekli; diğer tüm endpoint'ler küçük JSON alır.
+  // 32MB: tipik veri (resimler optimize edilince) birkaç MB; bu üst sınır bol marj bırakır
+  // ama tek istekte devasa payload ile bellek DoS'unu sınırlar.
+  app.use("/api/data", express.json({ limit: "32mb" }));
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false }));
@@ -91,16 +135,20 @@ function buildApp() {
   // POST /auth/login
   app.post("/auth/login", async (req, res) => {
     try {
-      const ip = req.ip || req.socket?.remoteAddress || "?";
-      if (!loginRateCheck(ip)) return res.status(429).json({ error: "Çok fazla başarısız deneme. 5 dakika sonra tekrar deneyin." });
+      const ip = req.socket?.remoteAddress || req.ip || "?";
       const { username, password } = req.body || {};
       if (!username || !password) return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli" });
+      const blockedMs = loginBlockedMs(ip, username);
+      if (blockedMs > 0) {
+        res.set("Retry-After", String(Math.ceil(blockedMs / 1000)));
+        return res.status(429).json({ error: "Çok fazla başarısız deneme. Lütfen biraz sonra tekrar deneyin." });
+      }
       if (!db || !db.isActive()) return res.status(503).json({ error: "Veritabanı henüz hazır değil" });
       const user = db.getUserByUsername(username);
-      if (!user || !user.is_active) { loginRateFail(ip); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      if (!user || !user.is_active) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
       const ok = await bcrypt.compare(password, user.password);
-      if (!ok) { loginRateFail(ip); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
-      loginRateSuccess(ip);
+      if (!ok) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      loginRateSuccess(ip, username);
       const token = signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
       res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
     } catch (err) {
@@ -122,7 +170,7 @@ function buildApp() {
   });
 
   // PATCH /auth/me/password — kendi şifresini değiştir
-  app.patch("/auth/me/password", requireAuth, async (req, res) => {
+  app.patch("/auth/me/password", requireAuth, writeLimiter(20), async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body || {};
       if (!currentPassword || !newPassword || newPassword.length < 6) return res.status(400).json({ error: "Geçersiz parametre" });
@@ -164,11 +212,17 @@ function buildApp() {
   app.get("/api/version", requireAuth, (req, res) => {
     try {
       const u = db?.getUserByUsername(req.user.username);
-      // serverLanIps: istemci, aynı yerel ağda olup olmadığını bu adreslere ulaşarak test eder.
-      res.json({
-        dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null,
-        serverLanIps: getLocalIps().filter(ip => !isTailscaleIp(ip)), serverPort: getPort(),
-      });
+      // serverLanIps yalnızca Tailscale üzerinden (uzaktan) bağlı istemciye verilir — LAN failover
+      // için gereklidir. Zaten LAN'dan bağlı istemci bu bilgiye ihtiyaç duymaz, o yüzden fabrika iç
+      // IP'lerini herkese sızdırmamak adına verilmez. İstemcinin nasıl bağlandığı gerçek soket
+      // adresinden okunur (req.socket.remoteAddress; IPv4-eşlemeli IPv6 öneki ayıklanır).
+      const clientIp = String(req.socket?.remoteAddress || "").replace(/^::ffff:/, "");
+      const body = { dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null };
+      if (isTailscaleIp(clientIp)) {
+        body.serverLanIps = getLocalIps().filter(ip => !isTailscaleIp(ip));
+        body.serverPort = getPort();
+      }
+      res.json(body);
     }
     catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -186,7 +240,7 @@ function buildApp() {
   });
 
   // POST /api/data — optimistic locking
-  app.post("/api/data", requireAuth, (req, res) => {
+  app.post("/api/data", requireAuth, writeLimiter(60), (req, res) => {
     const { data, dataVersion: clientVersion } = req.body || {};
     if (!data || typeof data !== "object") return res.status(400).json({ error: "Geçersiz veri" });
     try {
@@ -222,7 +276,7 @@ function buildApp() {
   });
 
   // POST /api/users (admin)
-  app.post("/api/users", requireAuth, requireAdmin, async (req, res) => {
+  app.post("/api/users", requireAuth, requireAdmin, writeLimiter(60), async (req, res) => {
     try {
       const { username, password, role = "user", permissions } = req.body || {};
       if (!username?.trim() || !password || !["admin", "user"].includes(role)) return res.status(400).json({ error: "Geçersiz parametre" });
@@ -237,11 +291,15 @@ function buildApp() {
   });
 
   // PATCH /api/users/:id (admin)
-  app.patch("/api/users/:id", requireAuth, requireAdmin, async (req, res) => {
+  app.patch("/api/users/:id", requireAuth, requireAdmin, writeLimiter(60), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { is_active, role, password, permissions } = req.body || {};
       if (password && password.length < 6) return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
+      // Son-admin koruması: sistemi yöneticisiz bırakacak rol düşürme/pasifleştirmeyi engelle
+      if (sonAdminiDusururMu(db.getAllUsers(), id, { role, is_active })) {
+        return res.status(400).json({ error: "Sistemde en az bir aktif yönetici kalmalı" });
+      }
       const fields = {};
       if (is_active !== undefined)  fields.is_active = is_active;
       if (role && ["admin", "user"].includes(role)) fields.role = role;
@@ -256,7 +314,7 @@ function buildApp() {
   });
 
   // DELETE /api/users/:id (admin)
-  app.delete("/api/users/:id", requireAuth, requireAdmin, (req, res) => {
+  app.delete("/api/users/:id", requireAuth, requireAdmin, writeLimiter(60), (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (id === req.user?.id) return res.status(400).json({ error: "Kendi hesabınızı silemezsiniz" });
@@ -275,7 +333,7 @@ function buildApp() {
   });
 
   // POST /api/lock — kilit al
-  app.post("/api/lock", requireAuth, (req, res) => {
+  app.post("/api/lock", requireAuth, writeLimiter(200), (req, res) => {
     try {
       const { entityType, entityId, force = false } = req.body || {};
       if (!entityType || entityId == null) return res.status(400).json({ error: "entityType ve entityId gerekli" });
@@ -286,7 +344,7 @@ function buildApp() {
   });
 
   // DELETE /api/lock — kilit bırak
-  app.delete("/api/lock", requireAuth, (req, res) => {
+  app.delete("/api/lock", requireAuth, writeLimiter(200), (req, res) => {
     try {
       const { entityType, entityId } = req.body || {};
       if (!entityType || entityId == null) return res.status(400).json({ error: "entityType ve entityId gerekli" });
@@ -297,7 +355,7 @@ function buildApp() {
   });
 
   // DELETE /api/locks/all — kullanıcının tüm kilitlerini bırak
-  app.delete("/api/locks/all", requireAuth, (req, res) => {
+  app.delete("/api/locks/all", requireAuth, writeLimiter(200), (req, res) => {
     try {
       db.releaseAllLocksByUser(req.user.username);
       broadcast("server:locksChanged");
@@ -306,7 +364,7 @@ function buildApp() {
   });
 
   // POST /api/audit — istemci tarafından çağrılır; username JWT'den alınır
-  app.post("/api/audit", requireAuth, (req, res) => {
+  app.post("/api/audit", requireAuth, writeLimiter(300), (req, res) => {
     try {
       const { action, entity, entity_id, entity_name, detail } = req.body;
       db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action, entity, entity_id, entity_name, detail });
@@ -324,7 +382,7 @@ function buildApp() {
   });
 
   // DELETE /api/audit — işlem geçmişini tamamen temizler, sadece admin
-  app.delete("/api/audit", requireAuth, requireAdmin, (req, res) => {
+  app.delete("/api/audit", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
     try {
       const deleted = db.clearAuditLog();
       // Kimin temizlediği izlensin diye temizlik sonrası tek kayıt bırakılır

@@ -111,7 +111,21 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections) {
   return { ok: true };
 }
 
+// Son-admin koruması: bir PATCH, hedef kullanıcı aktif admin iken onu user'a düşürüyor VEYA
+// pasifleştiriyorsa ve sistemde başka aktif admin kalmıyorsa true döner (istek engellenmeli).
+// Böylece sistemin yönetici olmadan kilitli kalması önlenir. is_active hem 1/0 hem true/false gelebilir.
+function sonAdminiDusururMu(users, targetId, patch = {}) {
+  const aktifAdmin = (u) => u.role === "admin" && (u.is_active === 1 || u.is_active === true);
+  const hedef = (users || []).find(u => String(u.id) === String(targetId));
+  if (!hedef || !aktifAdmin(hedef)) return false;
+  const rolDusuyor = patch.role !== undefined && patch.role !== "admin";
+  const pasiflesiyor = patch.is_active !== undefined && !patch.is_active;
+  if (!rolDusuyor && !pasiflesiyor) return false;
+  const baskaAktifAdmin = (users || []).some(u => String(u.id) !== String(targetId) && aktifAdmin(u));
+  return !baskaAktifAdmin;
+}
+
 module.exports = {
   BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI,
-  stableStringify, degisenBolumler, parsePerms, grupEngelli, kisitliMi, yazmaYetkisiVar,
+  stableStringify, degisenBolumler, parsePerms, grupEngelli, kisitliMi, yazmaYetkisiVar, sonAdminiDusururMu,
 };

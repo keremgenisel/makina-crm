@@ -63,6 +63,15 @@ function UzaktanErisimYardim() {
               <li><b>Admin panelde</b> (<span style={{ fontFamily: "monospace" }}>login.tailscale.com/admin</span>) bu cihaz için <b>key expiry KAPAT</b> (yoksa ~180 günde bir bağlantı düşer).</li>
             </ol>
           </div>
+
+          <div style={{ marginTop: 14, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontWeight: 800, color: "#991b1b", marginBottom: 4 }}>🔒 Güvenlik</div>
+            <ul style={{ margin: 0, paddingLeft: 18, color: "#7f1d1d" }}>
+              <li>Sunucuyu <b>doğrudan internete açmayın</b> (modem/router'da port yönlendirme yapmayın). Uzaktan erişim <b>yalnızca Tailscale</b> üzerinden olmalı; Tailscale bağlantıyı uçtan uca şifreler.</li>
+              <li>Fabrika Wi-Fi'si <b>WPA2/WPA3 şifreli</b> olmalı; sunucu ve istemci mümkünse <b>kablolu</b> bağlanmalı. Misafir/kamera gibi cihazlar ayrı ağda tutulmalı.</li>
+              <li>Yerel ağ içi trafik şifresizdir; yukarıdaki önlemlerle ağın güvenilir kalması önemlidir.</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>
@@ -314,6 +323,7 @@ function UserManager({ flash, settingsGroups = [] }) {
   const [changePwId, setChangePwId]                 = useState(null);
   const [newPw, setNewPw]                           = useState("");
   const [changingPw, setChangingPw]                 = useState(false);
+  const [openPerm, setOpenPerm]                     = useState([]); // açık akordeon bölümleri
 
   const load = async () => {
     setLoading(true);
@@ -365,6 +375,7 @@ function UserManager({ flash, settingsGroups = [] }) {
     setEditFinanceActionsOn(financeActions !== null);
     setEditPermsId(u.id);
     setChangePwId(null);
+    setOpenPerm([]); // her açılışta tüm akordeonlar kapalı başlasın
   };
   const savePerms = async (u) => {
     const settingsVal     = editSettingsOn     ? editSettings     : null;
@@ -393,6 +404,77 @@ function UserManager({ flash, settingsGroups = [] }) {
     const res = await window.appServer.apiRequest({ method: "DELETE", path: `/api/users/${u.id}` });
     if (res?.ok) { load(); flash("ok", "Silindi."); } else flash("err", res?.error || "Silinemedi");
   };
+
+  // İzin akordeonu — her bölüm katlanabilir. Config veri-güdümlü (7 tekrarlı blok yerine tek render).
+  const chipStyle = (active, bg, border) => ({
+    display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer",
+    background: active ? bg : "#fff", border: `1px solid ${active ? border : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px",
+  });
+  const grupBaslikStyle = { fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 };
+  const yesil = { activeBg: "#dcfce7", activeBorder: "#86efac", emptyText: "Varsayılan (tüm işlemler açık)" };
+  const permSections = [
+    { key: "settings", title: "Ayarlar bölümleri", on: editSettingsOn, selected: editSettings, setSelected: setEditSettings,
+      setOn: (v) => { setEditSettingsOn(v); if (v) setEditSettings([...allSettingIds]); },
+      flatItems: [...settingsGroups.flatMap(g => g.items), DANGER_SECTION], activeBg: "#fef3c7", activeBorder: "#fcd34d",
+      emptyText: "Varsayılan (genel ayar uygulanır)" },
+    { key: "customer", title: "Müşteri işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
+      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS, ...yesil },
+    { key: "dealer", title: "Bayi işlemleri", on: editDealerActionsOn, selected: editDealerActions, setSelected: setEditDealerActions,
+      setOn: (v) => { setEditDealerActionsOn(v); if (v) setEditDealerActions([...allDealerActionIds]); }, groups: DEALER_ACTION_GROUPS, ...yesil },
+    { key: "stock", title: "Stok işlemleri", on: editStockActionsOn, selected: editStockActions, setSelected: setEditStockActions,
+      setOn: (v) => { setEditStockActionsOn(v); if (v) setEditStockActions([...allStockActionIds]); }, groups: STOCK_ACTION_GROUPS, ...yesil },
+    { key: "evrak", title: "Evrak işlemleri", on: editEvrakActionsOn, selected: editEvrakActions, setSelected: setEditEvrakActions,
+      setOn: (v) => { setEditEvrakActionsOn(v); if (v) setEditEvrakActions([...allEvrakActionIds]); }, groups: EVRAK_ACTION_GROUPS, ...yesil },
+    { key: "not", title: "Notlar işlemleri", on: editNotActionsOn, selected: editNotActions, setSelected: setEditNotActions,
+      setOn: (v) => { setEditNotActionsOn(v); if (v) setEditNotActions([...allNotActionIds]); }, groups: NOT_ACTION_GROUPS, ...yesil },
+    { key: "finance", title: "Finans işlemleri", on: editFinanceActionsOn, selected: editFinanceActions, setSelected: setEditFinanceActions,
+      setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
+  ];
+  const permChekbox = (sec, item) => (
+    <label key={item.id} style={chipStyle(sec.selected.includes(item.id), sec.activeBg, sec.activeBorder)}>
+      <input type="checkbox" checked={sec.selected.includes(item.id)}
+        onChange={e => sec.setSelected(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
+      {item.label}
+    </label>
+  );
+  const renderPermAccordion = () => permSections.map(sec => {
+    const acik = openPerm.includes(sec.key);
+    return (
+      <div key={sec.key} style={{ border: "1px solid #e2e8f0", borderRadius: 8, marginBottom: 8, background: "#fff", overflow: "hidden" }}>
+        <div onClick={() => setOpenPerm(p => acik ? p.filter(k => k !== sec.key) : [...p, sec.key])}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", userSelect: "none" }}>
+          <span style={{ fontSize: 10, color: "#94a3b8", transform: acik ? "rotate(90deg)" : "none", transition: "transform .15s", display: "inline-block" }}>▶</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", flex: 1 }}>{sec.title}</span>
+          <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 9px", borderRadius: 99, background: sec.on ? "#dcfce7" : "#f1f5f9", color: sec.on ? "#166534" : "#94a3b8" }}>
+            {sec.on ? "Özel" : "Varsayılan"}
+          </span>
+        </div>
+        {acik && (
+          <div style={{ padding: "2px 12px 12px", borderTop: "1px solid #f1f5f9" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", margin: "10px 0" }}>
+              <input type="checkbox" checked={sec.on} onChange={e => sec.setOn(e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>Bu kullanıcı için özelleştir</span>
+            </label>
+            {!sec.on ? (
+              <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>{sec.emptyText}</div>
+            ) : sec.flatItems ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{sec.flatItems.map(item => permChekbox(sec, item))}</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {sec.groups.map(g => (
+                  <div key={g.grup}>
+                    <div style={grupBaslikStyle}>{g.grup}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{g.items.map(item => permChekbox(sec, item))}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  });
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -521,217 +603,34 @@ function UserManager({ flash, settingsGroups = [] }) {
                   )}
                   {editPermsId === u.id && (
                     <tr key={`${u.id}-perms`} style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
-                      <td colSpan={5} style={{ padding: "12px 14px" }}>
-                        {/* Sekmeler */}
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>Erişebileceği Sekmeler</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                          {ALL_TABS.map(t => (
-                            <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "#e0f2fe" : "#fff", border: `1px solid ${editTabs.includes(t.id) ? "#0ea5e9" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                              <input type="checkbox" checked={editTabs.includes(t.id)} onChange={e => setEditTabs(p => e.target.checked ? [...p, t.id] : p.filter(id => id !== t.id))} style={{ margin: 0 }} />
-                              {t.label}
-                            </label>
-                          ))}
-                        </div>
-
-                        {/* Ayarlar bölümleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editSettingsOn}
-                              onChange={e => { setEditSettingsOn(e.target.checked); if (e.target.checked) setEditSettings([...allSettingIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Ayarlar bölümlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editSettingsOn ? (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                              {[...settingsGroups.flatMap(g => g.items), DANGER_SECTION].map(item => (
-                                <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editSettings.includes(item.id) ? "#fef3c7" : "#fff", border: `1px solid ${editSettings.includes(item.id) ? "#fcd34d" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                  <input type="checkbox" checked={editSettings.includes(item.id)} onChange={e => setEditSettings(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                  {item.label}
+                      <td colSpan={5} style={{ padding: 0 }}>
+                        {/* Sınırlı yükseklikli panel: içerik kayar, alttaki Kaydet çubuğu sağda yapışık kalır */}
+                        <div style={{ display: "flex", flexDirection: "column", maxHeight: "62vh" }}>
+                          <div style={{ overflowY: "auto", padding: "12px 14px 6px" }}>
+                            {/* Sekmeler */}
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>Erişebileceği Sekmeler</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                              {ALL_TABS.map(t => (
+                                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "#e0f2fe" : "#fff", border: `1px solid ${editTabs.includes(t.id) ? "#0ea5e9" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                  <input type="checkbox" checked={editTabs.includes(t.id)} onChange={e => setEditTabs(p => e.target.checked ? [...p, t.id] : p.filter(id => id !== t.id))} style={{ margin: 0 }} />
+                                  {t.label}
                                 </label>
                               ))}
                             </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (genel ayar uygulanır)</div>
-                          )}
+                            {/* İzin akordeonları */}
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>İşlem İzinleri</div>
+                            {renderPermAccordion()}
+                          </div>
+                          {/* Yapışık alt çubuk */}
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "10px 14px", borderTop: "1px solid #e2e8f0", background: "#fff" }}>
+                            <button onClick={() => setEditPermsId(null)} style={{ padding: "7px 14px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", color: "#64748b" }}>
+                              İptal
+                            </button>
+                            <button onClick={() => savePerms(u)} style={{ padding: "7px 20px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                              Kaydet
+                            </button>
+                          </div>
                         </div>
-
-                        {/* Müşteri işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editActionsOn}
-                              onChange={e => { setEditActionsOn(e.target.checked); if (e.target.checked) setEditActions([...allActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Müşteri işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {CUSTOMER_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editActions.includes(item.id)} onChange={e => setEditActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        {/* Bayi işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editDealerActionsOn}
-                              onChange={e => { setEditDealerActionsOn(e.target.checked); if (e.target.checked) setEditDealerActions([...allDealerActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Bayi işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editDealerActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {DEALER_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editDealerActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editDealerActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editDealerActions.includes(item.id)} onChange={e => setEditDealerActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        {/* Stok işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editStockActionsOn}
-                              onChange={e => { setEditStockActionsOn(e.target.checked); if (e.target.checked) setEditStockActions([...allStockActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Stok işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editStockActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {STOCK_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editStockActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editStockActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editStockActions.includes(item.id)} onChange={e => setEditStockActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        {/* Evrak işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editEvrakActionsOn}
-                              onChange={e => { setEditEvrakActionsOn(e.target.checked); if (e.target.checked) setEditEvrakActions([...allEvrakActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Evrak işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editEvrakActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {EVRAK_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editEvrakActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editEvrakActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editEvrakActions.includes(item.id)} onChange={e => setEditEvrakActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        {/* Not işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editNotActionsOn}
-                              onChange={e => { setEditNotActionsOn(e.target.checked); if (e.target.checked) setEditNotActions([...allNotActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Notlar işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editNotActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {NOT_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editNotActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editNotActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editNotActions.includes(item.id)} onChange={e => setEditNotActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        {/* Finans işlemleri — per-user */}
-                        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10 }}>
-                            <input type="checkbox" checked={editFinanceActionsOn}
-                              onChange={e => { setEditFinanceActionsOn(e.target.checked); if (e.target.checked) setEditFinanceActions([...allFinanceActionIds]); }}
-                              style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Finans işlemlerini bu kullanıcı için özelleştir</span>
-                          </label>
-                          {editFinanceActionsOn ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {FINANCE_ACTION_GROUPS.map(g => (
-                                <div key={g.grup}>
-                                  <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 }}>{g.grup}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                    {g.items.map(item => (
-                                      <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editFinanceActions.includes(item.id) ? "#dcfce7" : "#fff", border: `1px solid ${editFinanceActions.includes(item.id) ? "#86efac" : "#e2e8f0"}`, borderRadius: 6, padding: "4px 10px" }}>
-                                        <input type="checkbox" checked={editFinanceActions.includes(item.id)} onChange={e => setEditFinanceActions(p => e.target.checked ? [...p, item.id] : p.filter(id => id !== item.id))} style={{ margin: 0 }} />
-                                        {item.label}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#94a3b8", paddingLeft: 4 }}>Varsayılan (tüm işlemler açık)</div>
-                          )}
-                        </div>
-
-                        <button onClick={() => savePerms(u)} style={{ padding: "6px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          Kaydet
-                        </button>
                       </td>
                     </tr>
                   )}

@@ -28,6 +28,17 @@ const recompressDataUrl = (dataUrl, maxPx, isKase = false) =>
 
 const kb = (str) => (str ? Math.round(str.length / 1024) : 0);
 
+// Resimleri kategori kırılımına ayırır (özet kutusundaki renkli sayaçlar için).
+// analyze VE optimize ikisi de bunu kullanır — optimize eskiden groups'suz stats yazıp
+// render'da Object.entries(undefined) ile çökmeye yol açıyordu (Analiz Et'e basılmadan
+// doğrudan Optimize Et'e basınca).
+const buildGroups = (imgs) => ({
+  "Makina modeli": imgs.filter(i => i.key === "customModel" || i.key === "standardModel"),
+  "Kalıp": imgs.filter(i => i.key === "kalip"),
+  "Parça/Yedek parça": imgs.filter(i => i.key === "part"),
+  "Kaşe/İmza": imgs.filter(i => i.key === "kase"),
+});
+
 const collectImages = (customModels, standardModels, kalipDefs, parts, appSettings) => {
   const imgs = [];
   customModels.forEach(m => { if (m.resim) imgs.push({ key: "customModel", id: m.model, isKase: false, dataUrl: m.resim }); });
@@ -51,13 +62,7 @@ export const SettingsOptimize = ({
 
   const analyze = () => {
     const imgs = collectImages(customModels, standardModels, kalipDefs, parts, appSettings);
-    const groups = {
-      "Makina modeli": imgs.filter(i => i.key === "customModel" || i.key === "standardModel"),
-      "Kalıp": imgs.filter(i => i.key === "kalip"),
-      "Parça/Yedek parça": imgs.filter(i => i.key === "part"),
-      "Kaşe/İmza": imgs.filter(i => i.key === "kase"),
-    };
-    setStats({ imgs, groups, beforeKb: imgs.reduce((s, i) => s + kb(i.dataUrl), 0), afterKb: null });
+    setStats({ imgs, groups: buildGroups(imgs), beforeKb: imgs.reduce((s, i) => s + kb(i.dataUrl), 0), afterKb: null });
   };
 
   const optimize = async () => {
@@ -90,7 +95,8 @@ export const SettingsOptimize = ({
     const savedKb = beforeKb - afterKb;
     const pct = beforeKb > 0 ? Math.round(savedKb / beforeKb * 100) : 0;
     setPhase("done");
-    setStats(s => ({ ...s, afterKb, savedKb, pct }));
+    // Tam stats yaz (groups dahil) — s null olsa bile (Analiz Et'e basılmadan) groups eksik kalmasın.
+    setStats({ imgs, groups: buildGroups(imgs), beforeKb, afterKb, savedKb, pct });
     flash("ok", `${imgs.length} resim optimize edildi, ${savedKb} KB tasarruf (%${pct}).`);
   };
 
@@ -106,7 +112,7 @@ export const SettingsOptimize = ({
       {stats && (
         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 18px", marginBottom: 16, fontSize: 13 }}>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: stats.afterKb != null ? 12 : 0 }}>
-            {Object.entries(stats.groups).map(([label, list]) => list.length > 0 && (
+            {Object.entries(stats.groups || {}).map(([label, list]) => list.length > 0 && (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: groupColor[label], flexShrink: 0 }} />
                 <span style={{ color: "#475569" }}>{label}:</span>

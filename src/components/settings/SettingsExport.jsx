@@ -387,8 +387,11 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
   return (
     <>
       <Section title="Dışa Aktar (Excel / CSV)" icon="download">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 18, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, lineHeight: 1.6 }}>
           Verilerinizi Excel'de açılabilen dosya olarak indirin. Türkçe karakterler korunur; dosyayı Excel'de çift tıklayarak açabilirsiniz.
+        </div>
+        <div style={{ fontSize: 12, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 12px", marginBottom: 18, lineHeight: 1.5 }}>
+          🔒 Dışa aktarılan dosyalar müşteri ve finansal bilgileri <b>düz metin</b> içerir. Yalnızca güvenli yerlerde saklayın ve gerekmedikçe paylaşmayın. (Dosyanın açılınca komut çalıştırmasına karşı hücreler zararsızlaştırılır.)
         </div>
 
         {/* Tümünü indir — içe aktarma şablonu formatında (geri yüklenebilir) */}

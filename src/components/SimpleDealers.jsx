@@ -319,7 +319,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
 
       {/* Bayi detay görüntüleme */}
       {detailView && (
-        <Modal title={detailView.name || "Bayi"} onClose={() => setDetailView(null)}>
+        <Modal title={detailView.name || "Bayi"} onClose={() => setDetailView(null)}
+          maxWidth={(!detailView._isFactory && detailView.anlasmaliServisMi) ? 1040 : 520}>
           {detailView._isFactory && (
             <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12, fontWeight: 700, color: "#065f46" }}>
               🏭 FABRİKA — Ana üretici
@@ -330,7 +331,9 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               {detailView.bayiMi !== false ? "BAYİ (Aynı zamanda Anlaşmalı Servis)" : "ANLAŞMALI SERVİS"}
             </div>
           )}
-          {!detailView._isFactory && dealerHasDebt(detailView) && (
+          {(() => {
+          const isServisli = !detailView._isFactory && detailView.anlasmaliServisMi;
+          const debtBox = (!detailView._isFactory && dealerHasDebt(detailView)) ? (
             <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 800, letterSpacing: .5, marginBottom: 4, textTransform: "uppercase" }}>Ödenmemiş Parça Borcu</div>
               {Object.entries(borcMap[detailView.name].byCur).filter(([, v]) => v > 0).map(([k, v]) => (
@@ -353,24 +356,26 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 ))}
               </div>
             </div>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-            {[
-              ["İletişim Kişisi", detailView.contact],
-              ["Telefon", detailView.phone],
-              ["E-posta", detailView.email],
-              ["Adres", detailView.adres],
-              ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
-              ["Not", detailView.note],
-            ].filter(([, v]) => v).map(([k, v]) => (
-              <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
-                <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{k}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
-              </div>
-            ))}
-          </div>
-          {!detailView._isFactory && detailView.anlasmaliServisMi && (
-            <div style={{ marginTop: 8 }}>
+          ) : null;
+          const infoGrid = (
+            <div style={{ display: "grid", gridTemplateColumns: isServisli ? "1fr" : "1fr 1fr", gap: 12, marginBottom: isServisli ? 0 : 16 }}>
+              {[
+                ["İletişim Kişisi", detailView.contact],
+                ["Telefon", detailView.phone],
+                ["E-posta", detailView.email],
+                ["Adres", detailView.adres],
+                ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
+                ["Not", detailView.note],
+              ].filter(([, v]) => v).map(([k, v]) => (
+                <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{k}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          );
+          const servisBlok = isServisli ? (
+            <div>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e2e8f0" }}>
                 Servis Geçmişi ({dealerServices.length})
               </div>
@@ -386,7 +391,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               {svcPaged.length === 0 && (
                 <div style={{ padding: "16px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Kayıt bulunamadı.</div>
               )}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {svcPaged.map(s => {
                   const cust = customers.find(c => c.id === s.customerId);
                   const parcaUcret = altuntasParcaBedeli(s);
@@ -458,7 +463,24 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </div>
               <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={5} />
             </div>
-          )}
+          ) : null;
+          return isServisli ? (
+            <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
+              <div style={{ width: 340, flexShrink: 0 }}>
+                {debtBox}
+                {infoGrid}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {servisBlok}
+              </div>
+            </div>
+          ) : (
+            <>
+              {debtBox}
+              {infoGrid}
+            </>
+          );
+          })()}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             {!detailView._isFactory && (
               <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
