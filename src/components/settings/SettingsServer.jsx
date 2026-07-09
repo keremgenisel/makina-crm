@@ -676,6 +676,8 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
   const [serverUrl, setServerUrl] = useState("");
   const [username, setUsername]   = useState("");
   const [password, setPassword]   = useState("");
+  const [totpCode, setTotpCode]   = useState("");
+  const [need2fa, setNeed2fa]     = useState(false); // sunucu 2FA kodu istedi mi
   const [connecting, setConnecting] = useState(false);
 
   const reloadCfg = async () => {
@@ -829,10 +831,12 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
           <form onSubmit={async (e) => {
             e.preventDefault();
             if (!serverUrl.trim() || !username.trim() || !password) { flash("err", "Tüm alanlar zorunlu"); return; }
+            if (need2fa && !totpCode.trim()) { flash("err", "Doğrulama kodu gerekli"); return; }
             setConnecting(true);
-            const result = await window.appServer.login({ serverUrl: serverUrl.trim(), username: username.trim(), password });
+            const result = await window.appServer.login({ serverUrl: serverUrl.trim(), username: username.trim(), password, totpCode: totpCode.trim() || undefined });
             setConnecting(false);
             if (result?.ok) { flash("ok", "Bağlandı. Yeniden yükleniyor..."); setTimeout(() => window.location.reload(), 800); }
+            else if (result?.requires2fa) { setNeed2fa(true); flash(totpCode ? "err" : "ok", totpCode ? (result?.error || "Doğrulama kodu hatalı") : "Bu hesapta iki adımlı doğrulama açık — authenticator kodunu girin."); }
             else flash("err", result?.error || "Giriş başarısız");
           }} style={{ display: "grid", gap: 14, maxWidth: 400 }}>
             <div>
@@ -844,6 +848,14 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             </div>
             <div><label style={lbl}>Kullanıcı Adı</label><input style={inp} type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" /></div>
             <div><label style={lbl}>Şifre</label><input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" /></div>
+            {need2fa && (
+              <div>
+                <label style={lbl}>Doğrulama Kodu (Authenticator)</label>
+                <input style={{ ...inp, letterSpacing: 4, textAlign: "center", fontSize: 18 }} type="text" inputMode="numeric" value={totpCode}
+                  onChange={e => setTotpCode(e.target.value)} placeholder="6 haneli kod" autoFocus autoComplete="one-time-code" />
+                <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 4 }}>Telefonunuzdaki authenticator kodunu girin. Telefon yoksa yedek kodlarınızdan birini yazabilirsiniz.</div>
+              </div>
+            )}
             <button type="submit" disabled={connecting} style={{ padding: "10px 20px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: connecting ? .7 : 1, width: "fit-content" }}>
               {connecting ? "Bağlanıyor..." : "Bağlan"}
             </button>
