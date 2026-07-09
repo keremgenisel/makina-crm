@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "2.75.1",
+  "version": "2.75.2",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,

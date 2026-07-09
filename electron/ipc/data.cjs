@@ -281,23 +281,24 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     } catch { return false; }
   });
 
-  // ── Genel API isteği (kullanıcı yönetimi, admin işlemleri) ───────────────
+  // ── Genel API isteği (polling, kullanıcı yönetimi, 2FA, admin işlemleri) ────
   ipcMain.handle("server:apiRequest", async (_e, { method, path: apiPath, body }) => {
     const cfg = loadServerConfig(app);
-    // Sunucu modundaysa gömülü sunucu üzerinden HTTP çek (localhost)
-    const baseUrl = cfg?.mode === "server"
-      ? `http://127.0.0.1:${embeddedServer.getPort()}`
-      : cfg?.serverUrl;
-    const token = cfg?.mode === "server"
-      ? cfg?.adminToken  // sunucu PC admin token'ı (aşağıda server:setupAdmin'de set edilir)
-      : cfg?.token;
-    if (!baseUrl || !token) return { error: "Sunucuya bağlı değil" };
+    const opts = { method: method || "GET", ...(body != null ? { body: JSON.stringify(body) } : {}) };
     try {
-      const res = await fetch(`${baseUrl}${apiPath}`, {
-        method: method || "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        ...(body != null ? { body: JSON.stringify(body) } : {}),
-      });
+      let res;
+      if (cfg?.mode === "server") {
+        // Sunucu PC: gömülü sunucuya loopback + admin token
+        if (!cfg?.adminToken) return { error: "Sunucuya bağlı değil" };
+        res = await fetch(`http://127.0.0.1:${embeddedServer.getPort()}${apiPath}`, {
+          ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.adminToken}` },
+        });
+      } else {
+        // İstemci: apiFetch failover'lı — Tailscale ölse de LAN yedeğine düşer (polling "Sunucu
+        // kapalı" göstermez). Düz fetch kullanılırsa yalnız cfg.serverUrl denenir ve failover atlanır.
+        if (!cfg?.serverUrl || !cfg?.token) return { error: "Sunucuya bağlı değil" };
+        res = await apiFetch(cfg.serverUrl, cfg.token, apiPath, opts);
+      }
       const data = await res.json();
       if (!res.ok) return { error: data.error || `HTTP ${res.status}`, status: res.status };
       return { ok: true, data, status: res.status };
@@ -397,6 +398,18 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   ipcMain.handle("server:checkLan", async () => {
     const cfg = loadServerConfig(app);
     if (cfg?.mode !== "client" || !cfg?.serverUrl || !cfg?.token) return { onLan: false };
+    // LAN doğrulanınca yalnız failover adresini değil lastGoodUrl'i de LAN yap: böylece polling/apiFetch
+    // ölü Tailscale adresini beklemeden hemen LAN'a yönelir ("Yerel Ağ ama Sunucu kapalı" durumu biter).
+    const markLan = (lanUrl) => {
+      setFailoverLan(lanUrl);
+      if (lastGoodUrl !== lanUrl) { lastGoodUrl = lanUrl; persistLastGood(lanUrl); }
+      const cur = loadServerConfig(app);
+      if (cur && cur.lanUrl !== lanUrl) saveServerConfig(app, { ...cur, lanUrl });
+    };
+    // 1) Bilinen LAN yedeğini DOĞRUDAN yokla (hızlı /health) — ölü Tailscale'e /api/version atmadan.
+    const cachedLan = cfg.lanUrl || failoverLanUrl;
+    if (cachedLan && await probeReachable(`${cachedLan}/health`)) { markLan(cachedLan); return { onLan: true, lanUrl: cachedLan }; }
+    // 2) Bilinen yoksa/erişilemezse: /api/version ile sunucunun LAN IP'lerini öğren ve her birini yokla.
     try {
       const res = await apiFetch(cfg.serverUrl, cfg.token, "/api/version");
       if (!res.ok) return { onLan: false };
@@ -406,13 +419,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (!ips.length || !port) return { onLan: false };
       for (const ip of ips) {
         const lanUrl = `http://${ip}:${port}`;
-        if (await probeReachable(`${lanUrl}/health`)) {
-          // LAN yedeğini önbelleğe al: internet/Tailscale sonradan düşse bile adres elde hazır olsun
-          setFailoverLan(lanUrl);
-          const cur = loadServerConfig(app);
-          if (cur && cur.lanUrl !== lanUrl) saveServerConfig(app, { ...cur, lanUrl });
-          return { onLan: true, lanUrl };
-        }
+        if (await probeReachable(`${lanUrl}/health`)) { markLan(lanUrl); return { onLan: true, lanUrl }; }
       }
       return { onLan: false };
     } catch { return { onLan: false }; }
