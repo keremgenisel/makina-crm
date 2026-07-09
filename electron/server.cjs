@@ -212,17 +212,15 @@ function buildApp() {
   app.get("/api/version", requireAuth, (req, res) => {
     try {
       const u = db?.getUserByUsername(req.user.username);
-      // serverLanIps yalnızca Tailscale üzerinden (uzaktan) bağlı istemciye verilir — LAN failover
-      // için gereklidir. Zaten LAN'dan bağlı istemci bu bilgiye ihtiyaç duymaz, o yüzden fabrika iç
-      // IP'lerini herkese sızdırmamak adına verilmez. İstemcinin nasıl bağlandığı gerçek soket
-      // adresinden okunur (req.socket.remoteAddress; IPv4-eşlemeli IPv6 öneki ayıklanır).
-      const clientIp = String(req.socket?.remoteAddress || "").replace(/^::ffff:/, "");
-      const body = { dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null };
-      if (isTailscaleIp(clientIp)) {
-        body.serverLanIps = getLocalIps().filter(ip => !isTailscaleIp(ip));
-        body.serverPort = getPort();
-      }
-      res.json(body);
+      // serverLanIps: istemci, aynı yerel ağda olup olmadığını bu adreslere ulaşarak test eder
+      // (rozet + LAN failover). Her kimliği doğrulanmış istemciye verilir; çünkü failover aynı ağdayken
+      // istekleri zaten LAN adresine kaydırır ve o durumda istek LAN'dan gelir. IP'ye göre kısıtlamak
+      // hem "Yerel Ağ" rozetini hem de LAN yedek adresinin keşfini bozuyordu (regresyon). Fabrika iç
+      // IP'leri düşük hassasiyetli ve istek zaten kimlik doğrulaması arkasında.
+      res.json({
+        dataVersion: db?.getDataVersion?.() ?? null, role: u?.role ?? req.user.role, permissions: u?.permissions ?? null,
+        serverLanIps: getLocalIps().filter(ip => !isTailscaleIp(ip)), serverPort: getPort(),
+      });
     }
     catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });

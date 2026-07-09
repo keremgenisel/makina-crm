@@ -111,11 +111,11 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);
   check("admin GET /api/users → 200", (await api("/api/users", {}, adminTok)).status === 200);
 
-  // ── /api/version: LAN adresleri yalnızca Tailscale (uzaktan) istemciye verilir ──
-  // Loopback (yerel/LAN benzeri) istek → fabrika iç IP'leri sızdırılmaz.
+  // ── /api/version LAN adres bilgisi (aynı-ağ tespiti + LAN failover için) ──────
+  // Her kimliği doğrulanmış istemciye verilir (IP kısıtlaması rozet + failover'ı bozuyordu).
   const versionBody = await (await api("/api/version", {}, adminTok)).json();
-  check("/api/version yerel istemciye serverLanIps sızdırmaz", versionBody.serverLanIps === undefined);
-  check("/api/version yerel istemciye serverPort sızdırmaz", versionBody.serverPort === undefined);
+  check("/api/version serverLanIps dizi döner", Array.isArray(versionBody.serverLanIps));
+  check("/api/version serverPort döner", typeof versionBody.serverPort === "number");
 
   // ── Son-admin koruması: tek aktif admini düşürme/pasifleştirme engellenir ──
   const adminId = adminLogin.body.user.id;
