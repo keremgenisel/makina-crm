@@ -8,6 +8,7 @@ afterEach(() => { cleanup(); delete window.securityLog; });
 import { SettingsSecurityLog } from "../../src/components/settings/SettingsSecurityLog";
 
 const ORNEK = [
+  { id: 4, ts: "2026-07-10T10:00:00Z", actor: "Cihaz: DESKTOP-AB1", action: "uygulama_kilidi_basarisiz", target: "kerem", ip: "192.168.1.7", detail: JSON.stringify({ sebep: "Yanlış şifre" }) },
   { id: 3, ts: "2026-07-10T09:00:00Z", actor: "admin", action: "giris_basarili", target: null, ip: "192.168.1.5", detail: JSON.stringify({ rol: "admin" }) },
   { id: 2, ts: "2026-07-10T08:00:00Z", actor: "deneme", action: "giris_basarisiz", target: null, ip: "192.168.1.9", detail: JSON.stringify({ sebep: "Yanlış şifre" }) },
   { id: 1, ts: "2026-07-10T07:00:00Z", actor: "admin", action: "kullanici_eklendi", target: "mehmet", ip: "192.168.1.5", detail: null },
@@ -15,7 +16,7 @@ const ORNEK = [
 
 describe("SettingsSecurityLog", () => {
   beforeEach(() => {
-    window.securityLog = { get: vi.fn(async () => ({ ok: true, rows: ORNEK, total: 3 })), clear: vi.fn(async () => ({ ok: true, deleted: 3 })) };
+    window.securityLog = { get: vi.fn(async () => ({ ok: true, rows: ORNEK, total: ORNEK.length })), clear: vi.fn(async () => ({ ok: true, deleted: ORNEK.length })) };
   });
 
   it("yerel modda kayıtları eylem etiketleriyle gösterir", async () => {
@@ -29,6 +30,14 @@ describe("SettingsSecurityLog", () => {
     expect(tablo.getByText("mehmet")).toBeTruthy();       // hedef sütunu
     expect(tablo.getByText("192.168.1.9")).toBeTruthy();  // IP sütunu
     expect(window.securityLog.get).toHaveBeenCalled();
+  });
+
+  it("app-lock satırında cihaz altında kullanıcı adını gösterir", async () => {
+    render(<SettingsSecurityLog serverPermissions={null} flash={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole("table")).toBeTruthy());
+    const tablo = within(screen.getByRole("table"));
+    expect(tablo.getByText("Cihaz: DESKTOP-AB1")).toBeTruthy(); // yapan = cihaz
+    expect(tablo.getByText("kullanıcı: kerem")).toBeTruthy();   // altında giriş yapan kullanıcı
   });
 
   it("boş sonuçta 'Kayıt bulunamadı' gösterir", async () => {

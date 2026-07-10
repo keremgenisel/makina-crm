@@ -61,6 +61,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const basarisiz = dbmod.getSecurityLog({ action: "uygulama_kilidi_basarisiz" });
   check("app-lock başarısız kaydı sunucuya işlendi (zaman damgası korunur)",
     basarisiz.total === 1 && basarisiz.rows[0].actor === "Cihaz: TESTPC" && basarisiz.rows[0].ts === "2026-07-10T06:00:00.000Z");
+  check("gönderen kullanıcı adı target'a yazıldı (cihaz sunucuda anlamsız)",
+    basarisiz.rows[0].target === "admin");
   check("app-lock başarılı kaydı da işlendi", dbmod.getSecurityLog({ action: "uygulama_kilidi_basarili" }).total === 1);
   check("gönderim sonrası kuyruk temizlendi", securityQueue.readQueue(qp).length === 0);
 

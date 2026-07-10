@@ -173,7 +173,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     { ts: new Date().toISOString(), actor: "Cihaz: TEST", action: "uygulama_kilidi_basarisiz", detail: JSON.stringify({ sebep: "Yanlış şifre" }) },
   ] }) }, adminTok)).json();
   check("ingest: sadece app-lock eylemi yazılır (sahte giriş reddedilir)", ingest.ok === true && ingest.yazilan === 1);
-  check("ingest edilen app-lock kaydı görünür", (await (await api("/api/security-log?action=uygulama_kilidi_basarisiz", {}, adminTok)).json()).total >= 1);
+  const ingestGoruntu = await (await api("/api/security-log?action=uygulama_kilidi_basarisiz", {}, adminTok)).json();
+  check("ingest edilen app-lock kaydı görünür", ingestGoruntu.total >= 1);
+  check("ingest'te gönderen kullanıcı adı target'a yazıldı", ingestGoruntu.rows.some(r => r.actor === "Cihaz: TEST" && r.target === "admin"));
   // Temizle (admin) → temizlik sonrası tek "gecmis_temizlendi" kaydı kalır
   check("admin DELETE /api/security-log → 200", (await api("/api/security-log", { method: "DELETE" }, adminTok)).status === 200);
   const secAfterClear = await (await api("/api/security-log", {}, adminTok)).json();

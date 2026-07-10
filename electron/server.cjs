@@ -549,9 +549,11 @@ function buildApp() {
       let yazilan = 0;
       for (const e of entries.slice(0, 500)) {
         if (!APPLOCK_ACTIONS.has(e?.action)) continue;
+        // actor = cihaz adı (istemciden), target = o istemcinin giriş yaptığı kullanıcı adı
+        // (JWT'den) — sunucuda cihaz adları anlamsız, kullanıcı adı kimliği belli eder.
         logSecurity({
           ts: e.ts, actor: e.actor || "İstemci cihaz", action: e.action,
-          target: null, ip, detail: e.detail || null,
+          target: req.user.username, ip, detail: e.detail || null,
         });
         yazilan++;
       }

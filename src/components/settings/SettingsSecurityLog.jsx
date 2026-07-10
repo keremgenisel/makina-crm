@@ -15,6 +15,7 @@ const ACTION_OPTIONS = Object.entries(ACTION_LABELS);
 
 const basariliMi = (a) => a === "giris_basarili" || a === "2fa_acildi" || a === "uygulama_kilidi_basarili";
 const basarisizMi = (a) => a === "giris_basarisiz" || a === "uygulama_kilidi_basarisiz";
+const appLockMi = (a) => a === "uygulama_kilidi_basarili" || a === "uygulama_kilidi_basarisiz";
 
 const PER_PAGE = 10;
 
@@ -220,7 +221,14 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
               {rows.map(r => (
                 <tr key={r.id}>
                   <td style={{ ...tdStyle, fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
-                  <td style={{ ...tdStyle, fontWeight: 600, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.actor || "—"}</td>
+                  <td style={{ ...tdStyle, fontWeight: 600, maxWidth: 200 }}>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.actor || "—"}</div>
+                    {appLockMi(r.action) && r.target && (
+                      <div style={{ fontSize: 11, fontWeight: 500, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        kullanıcı: {r.target}
+                      </div>
+                    )}
+                  </td>
                   <td style={tdStyle}>
                     <span style={{
                       display: "inline-block", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
@@ -231,7 +239,7 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
                       {ACTION_LABELS[r.action] || r.action}
                     </span>
                   </td>
-                  <td style={{ ...tdStyle, color: "#475569", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.target || "—"}</td>
+                  <td style={{ ...tdStyle, color: "#475569", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLockMi(r.action) ? "—" : (r.target || "—")}</td>
                   <td style={{ ...tdStyle, fontSize: 12, color: "#64748b", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap" }}>{r.ip || "—"}</td>
                   <td style={{ ...tdStyle, fontSize: 12, color: "#94a3b8", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detayGoster(r)}</td>
                 </tr>

@@ -16,6 +16,17 @@ function isClientMode(app) {
   } catch { return false; }
 }
 
+// Sunucu-config'teki kullanıcı adı (sunucu PC modunda admin adı). Yerel tek-kullanıcı
+// modda config olmayabilir → null. App-lock kaydına "hangi kullanıcının makinesi" bilgisini
+// eklemek için kullanılır (cihaz adı tek başına sunucuda anlamsız).
+function serverUsername(app) {
+  try {
+    const p = getServerConfigPath(app);
+    if (!fs.existsSync(p)) return null;
+    return JSON.parse(fs.readFileSync(p, "utf-8"))?.username || null;
+  } catch { return null; }
+}
+
 // App-lock denemesini kaydeder. Yerel/sunucu PC'de (db aktif) doğrudan security_log'a,
 // istemci PC'de (sunucuya giriş öncesi, token yok) yerel kuyruğa yazılır; kuyruk sunucuya
 // giriş yapılınca (data.cjs) gönderilir. Kilit kapalıysa hiç çağrılmaz.
@@ -28,7 +39,9 @@ function kaydetAppLock(app, db, basarili, sebep) {
   };
   try {
     if (!isClientMode(app) && db?.isActive?.()) {
-      db.writeSecurityEntry(entry);
+      // Sunucu PC/yerel: doğrudan yaz; kullanıcı adı config'ten (varsa) target'a.
+      // İstemcide ise username sunucuya gönderimde (ingest) JWT'den eklenir.
+      db.writeSecurityEntry({ ...entry, target: serverUsername(app) });
     } else {
       securityQueue.enqueue(getSecurityQueuePath(app), entry);
     }
