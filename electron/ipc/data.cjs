@@ -9,20 +9,25 @@ const securityQueue   = require("../securityQueue.cjs");
 
 const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
 
-// İstemci PC'de biriken app-lock denemelerini sunucuya gönderir (giriş sonrası).
-// Başarılı gönderimde kuyruk temizlenir; hata olursa kuyruk korunur, sonraki girişte tekrar denenir.
+// İstemci PC'de biriken app-lock denemelerini sunucuya gönderir. Login yalnızca ilk
+// kurulumda çağrıldığı için (sonraki açılışlar önbellek token'la bağlanır) bu, bağlantının
+// doğrulandığı her noktadan tetiklenir: boot, token yenileme ve polling. apiFetch failover'lı,
+// yani Tailscale ölse de LAN yedeğine düşer. Başarılı gönderimde kuyruk temizlenir; hata olursa
+// kuyruk korunur, bir sonraki tetikte tekrar denenir. Eşzamanlı çift gönderim in-flight ile önlenir.
+let securityFlushInFlight = false;
 async function flushSecurityQueue(app, serverUrl, token) {
+  if (securityFlushInFlight || !serverUrl || !token) return;
+  const p = getSecurityQueuePath(app);
+  const entries = securityQueue.readQueue(p);
+  if (!entries.length) return; // kuyruk temizlendiyse dosya yok → hızlı çıkış
+  securityFlushInFlight = true;
   try {
-    const p = getSecurityQueuePath(app);
-    const entries = securityQueue.readQueue(p);
-    if (!entries.length) return;
-    const res = await fetch(`${serverUrl.replace(/\/$/, "")}/api/security-log/ingest`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ entries }),
+    const res = await apiFetch(serverUrl, token, "/api/security-log/ingest", {
+      method: "POST", body: JSON.stringify({ entries }),
     });
     if (res.ok) securityQueue.clearQueue(p);
   } catch (err) { console.error("Güvenlik kuyruğu gönderilemedi:", err); }
+  finally { securityFlushInFlight = false; }
 }
 
 // ── Otomatik yedek parolası (safeStorage ile o makinede şifreli saklanır) ─────
@@ -222,6 +227,9 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     if (boot?.mode === "client") {
       if (boot.lanUrl) setFailoverLan(boot.lanUrl);
       if (boot.lastGoodUrl) lastGoodUrl = boot.lastGoodUrl;
+      // Açılıştaki app-lock denemeleri önbellek token'la bağlıysa hemen gönderilsin
+      // (login çağrılmadığı için tek dayanak buydu). Erişilemezse polling tekrar dener.
+      if (boot.token) flushSecurityQueue(app, boot.serverUrl, boot.token);
     }
   } catch { /* config yok */ }
 
@@ -297,6 +305,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (!res.ok) return false;
       const body = await res.json();
       saveServerConfig(app, { ...cfg, token: body.token });
+      flushSecurityQueue(app, cfg.serverUrl, body.token); // bağlantı doğrulandı — bekleyen app-lock kayıtlarını gönder
       return true;
     } catch { return false; }
   });
@@ -318,6 +327,9 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
         // kapalı" göstermez). Düz fetch kullanılırsa yalnız cfg.serverUrl denenir ve failover atlanır.
         if (!cfg?.serverUrl || !cfg?.token) return { error: "Sunucuya bağlı değil" };
         res = await apiFetch(cfg.serverUrl, cfg.token, apiPath, opts);
+        // Bağlantı çalışıyor (polling/admin isteği başarılı) — bekleyen app-lock kuyruğunu gönder.
+        // ingest yolunu tetiklemez (o apiFetch ile doğrudan gider), sonsuz döngü olmaz.
+        if (apiPath !== "/api/security-log/ingest") flushSecurityQueue(app, cfg.serverUrl, cfg.token);
       }
       const data = await res.json();
       if (!res.ok) return { error: data.error || `HTTP ${res.status}`, status: res.status };
@@ -699,4 +711,4 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 }
 
-module.exports = { registerDataHandlers };
+module.exports = { registerDataHandlers, flushSecurityQueue, getSecurityQueuePath };
