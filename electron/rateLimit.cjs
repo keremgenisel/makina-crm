@@ -34,4 +34,18 @@ function bucketNext(rec, now, windowMs) {
 }
 function bucketRetryAfter(rec, now) { return rec && now <= rec.reset_at ? Math.max(0, rec.reset_at - now) : 0; }
 
-module.exports = { rateAllow, rateHit, rateRetryAfter, rateReset, bucketAllow, bucketNext, bucketRetryAfter };
+// ── Kademeli (artan) kilit — app-lock mantığının kalıcı sürümü ────────────────
+// Sabit-pencere yerine kümülatif sayaç: her başarısız denemede kilit süresi artar
+// (lockoutFn ile). rec = { count, reset_at } | null; count = kümülatif başarısız sayısı,
+// reset_at = mevcut kilidin bittiği an. Kilitliyken blockedMs > 0. forgiveMs kadar
+// hareketsizlikten sonra sayaç sıfırlanır (dürüst kullanıcı kalıcı kilitlenmesin);
+// başarılı giriş sayacı tamamen siler (bunu çağıran yapar).
+function escalatingBlockedMs(rec, now) { return rec && now < rec.reset_at ? rec.reset_at - now : 0; }
+function escalatingNext(rec, now, lockoutFn, forgiveMs) {
+  // Kilit bitiminden bu yana forgiveMs'ten fazla geçtiyse (uzun süre denenmediyse) baştan başla.
+  const forgiven = !rec || (now - rec.reset_at) > forgiveMs;
+  const count = forgiven ? 1 : rec.count + 1;
+  return { count, reset_at: now + lockoutFn(count) };
+}
+
+module.exports = { rateAllow, rateHit, rateRetryAfter, rateReset, bucketAllow, bucketNext, bucketRetryAfter, escalatingBlockedMs, escalatingNext };

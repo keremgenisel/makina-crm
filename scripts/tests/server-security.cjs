@@ -155,6 +155,30 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("admin 2fa sıfırla → 200", (await api(`/api/users/${tfaId}/2fa`, { method: "DELETE" }, adminTok)).status === 200);
   check("sıfırlama sonrası kodsuz login çalışır", (await login("tfa", "tfapass1")).status === 200);
 
+  // ── Kullanıcı Geçmişi (security_log): giriş/yönetim/2FA olayları + ingest ────
+  check("token'sız GET /api/security-log → 401", (await api("/api/security-log")).status === 401);
+  check("salt-okunur GET /api/security-log → 403", (await api("/api/security-log", {}, roTok)).status === 403);
+  const secAll = await (await api("/api/security-log?limit=200", {}, adminTok)).json();
+  check("admin GET /api/security-log → kayıtlar döner", Array.isArray(secAll.rows) && secAll.total > 0);
+  check("giriş başarılı olayı kaydedildi", secAll.rows.some(r => r.action === "giris_basarili" && r.actor === "admin"));
+  check("başarısız giriş olayı kaydedildi (yanlış 2FA)", secAll.rows.some(r => r.action === "giris_basarisiz"));
+  check("başarılı girişte IP yazıldı", secAll.rows.some(r => r.action === "giris_basarili" && !!r.ip));
+  check("kullanıcı ekleme olayı kaydedildi", secAll.rows.some(r => r.action === "kullanici_eklendi" && r.target === "yeni"));
+  check("2FA sıfırlama olayı kaydedildi", secAll.rows.some(r => r.action === "2fa_sifirlandi" && r.target === "tfa"));
+  const secByAction = await (await api("/api/security-log?action=giris_basarili", {}, adminTok)).json();
+  check("action filtresi yalnız giris_basarili döner", secByAction.rows.every(r => r.action === "giris_basarili"));
+  // ingest: yalnız app-lock eylemleri kabul edilir; sahte "giris_basarili" enjeksiyonu reddedilir
+  const ingest = await (await api("/api/security-log/ingest", { method: "POST", body: JSON.stringify({ entries: [
+    { ts: new Date().toISOString(), actor: "Cihaz: TEST", action: "giris_basarili" },
+    { ts: new Date().toISOString(), actor: "Cihaz: TEST", action: "uygulama_kilidi_basarisiz", detail: JSON.stringify({ sebep: "Yanlış şifre" }) },
+  ] }) }, adminTok)).json();
+  check("ingest: sadece app-lock eylemi yazılır (sahte giriş reddedilir)", ingest.ok === true && ingest.yazilan === 1);
+  check("ingest edilen app-lock kaydı görünür", (await (await api("/api/security-log?action=uygulama_kilidi_basarisiz", {}, adminTok)).json()).total >= 1);
+  // Temizle (admin) → temizlik sonrası tek "gecmis_temizlendi" kaydı kalır
+  check("admin DELETE /api/security-log → 200", (await api("/api/security-log", { method: "DELETE" }, adminTok)).status === 200);
+  const secAfterClear = await (await api("/api/security-log", {}, adminTok)).json();
+  check("temizlik sonrası yalnız 'gecmis_temizlendi' kaydı kalır", secAfterClear.total === 1 && secAfterClear.rows[0].action === "gecmis_temizlendi");
+
   // ── Yazma hız sınırı (DoS koruması): POST /api/data kullanıcı başına 60/dk ──
   // "yeni" kullanıcısı temiz sayaçla; gövde {} olduğu için handler 400 döner ama limiter
   // handler'dan ÖNCE sayar. 60 istekten sonra 429 gelmeli. (Login IP sayacına dokunmaz.)
@@ -166,19 +190,24 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   }
   check("POST /api/data 60/dk üstü → 429 (yazma hız sınırı)", rl429 && rlLast === 429);
 
-  // ── Kaba kuvvet: en son (IP rate sayacını tüketir) ──────────────────────────
-  let sonStatus = 0;
-  for (let i = 0; i < 10; i++) sonStatus = (await login("admin", "yanlisSifre")).status;
-  check("10 yanlış deneme 401 döner", sonStatus === 401);
-  check("11. deneme 429 (kilitlendi)", (await login("admin", "yanlisSifre")).status === 429);
+  // ── Kaba kuvvet: kademeli (artan) kilit — en son (IP+kullanıcı sayacını tüketir) ──
+  // İlk 2 yanlış serbest (401). 3. yanlış kilidi kurar (yine 401 döner ama bundan sonrası
+  // kilitli). Sonraki hızlı deneme 429 olmalı.
+  let ilk429 = -1;
+  for (let i = 1; i <= 6; i++) {
+    const st = (await login("admin", "yanlisSifre")).status;
+    if (st === 429) { ilk429 = i; break; }
+  }
+  check("ilk 2 deneme kademeli kilide takılmaz (401)", ilk429 === -1 || ilk429 >= 3);
+  check("birkaç yanlıştan sonra 429 (kademeli kilit devreye girer)", ilk429 >= 3 && ilk429 <= 6);
 
-  // ── Kalıcılık: sunucu yeniden başlasa da kilit korunur (sayaç DB'de) ─────────
+  // ── Kalıcılık: kademeli sayaç DB'de tutulur, sunucu yeniden başlasa da korunur ──
+  const bucketOnce = dbmod.getRateBucket("user:admin");
+  check("kademeli sayaç DB'ye yazıldı (kullanıcı adı başına)", !!bucketOnce && bucketOnce.count >= 3);
   await server.stop();
-  const { port: port2 } = await server.start(0, dbmod);
-  const login2 = (u, p) => fetch(`http://127.0.0.1:${port2}/auth/login`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: u, password: p }),
-  }).then(r => r.status);
-  check("yeniden başlatma sonrası hâlâ kilitli (429) — kalıcı hız sınırı", (await login2("admin", "yanlisSifre")) === 429);
+  await server.start(0, dbmod);
+  const bucketSonra = dbmod.getRateBucket("user:admin");
+  check("yeniden başlatmada kademeli sayaç korunur (kalıcı kilit)", !!bucketSonra && bucketSonra.count >= 3);
 
   await server.stop();
   fs.rmSync(tmpDir, { recursive: true, force: true });

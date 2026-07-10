@@ -23,10 +23,11 @@ import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
 import { SettingsDocuments } from "./settings/SettingsDocuments";
 import { SettingsAuditLog } from "./settings/SettingsAuditLog";
+import { SettingsSecurityLog } from "./settings/SettingsSecurityLog";
 
 const SETTINGS_GROUPS = [
   { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
-  { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }] },
+  { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
@@ -134,6 +135,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "security" && <SettingsSecurity flash={flash} appSettings={appSettings} setAppSettings={setAppSettings} />}
       {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} />}
+      {settingsTab === "securitylog" && isAdmin && <SettingsSecurityLog serverPermissions={serverPermissions} flash={flash} />}
       {settingsTab === "auditlog" && isAdmin && <SettingsAuditLog serverPermissions={serverPermissions} flash={flash} geriAl={{
         musteri: [rawCustomers, setCustomers], bayi: [rawDealers, setDealers], servis: [rawServices, setServices],
         kalip_satisi: [rawPartSales, setPartSales], odeme: [rawPayments, setPayments], not: [rawNotes, setNotes],

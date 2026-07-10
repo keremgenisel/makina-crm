@@ -5,6 +5,25 @@ const { BrowserWindow, safeStorage } = require("electron");
 const embeddedServer  = require("../server.cjs");
 const { buildCandidates } = require("../failover.cjs");
 const { encryptBackup, decryptBackup } = require("../backupCrypto.cjs");
+const securityQueue   = require("../securityQueue.cjs");
+
+const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
+
+// İstemci PC'de biriken app-lock denemelerini sunucuya gönderir (giriş sonrası).
+// Başarılı gönderimde kuyruk temizlenir; hata olursa kuyruk korunur, sonraki girişte tekrar denenir.
+async function flushSecurityQueue(app, serverUrl, token) {
+  try {
+    const p = getSecurityQueuePath(app);
+    const entries = securityQueue.readQueue(p);
+    if (!entries.length) return;
+    const res = await fetch(`${serverUrl.replace(/\/$/, "")}/api/security-log/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ entries }),
+    });
+    if (res.ok) securityQueue.clearQueue(p);
+  } catch (err) { console.error("Güvenlik kuyruğu gönderilemedi:", err); }
+}
 
 // ── Otomatik yedek parolası (safeStorage ile o makinede şifreli saklanır) ─────
 // Belirlenmişse otomatik yedekler bununla şifrelenir; yoksa şifresiz yazılır.
@@ -244,6 +263,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (!res.ok) return { error: body.error || "Giriş başarısız", requires2fa: !!body.requires2fa };
       resetFailover(); // yeni sunucu — eski LAN yedeği/aktif adres geçersiz
       saveServerConfig(app, { mode: "client", serverUrl, token: body.token, username: body.user.username, role: body.user.role, permissions: body.user.permissions ?? null });
+      flushSecurityQueue(app, serverUrl, body.token); // biriken app-lock denemelerini sunucuya yolla (fire-and-forget)
       return { ok: true, user: body.user };
     } catch (err) {
       console.error("Sunucu giriş hatası:", err);

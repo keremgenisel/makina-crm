@@ -62,6 +62,18 @@ dbmod.writeAuditEntry({ ts: new Date().toISOString(), username: "kerem", role: "
 check("audit genel arama (q) eşleşir", dbmod.getAuditLog({ q: "Genisel" }).total === 1);
 check("audit genel arama (q) eşleşmezse boş", dbmod.getAuditLog({ q: "olmayanmetin" }).total === 0);
 
+// ── security_log (Kullanıcı Geçmişi): yaz/oku, filtre, temizle ────────────────
+dbmod.writeSecurityEntry({ ts: new Date().toISOString(), actor: "kerem", action: "giris_basarili", ip: "192.168.1.5", detail: JSON.stringify({ rol: "admin" }) });
+dbmod.writeSecurityEntry({ ts: new Date().toISOString(), actor: "deneme", action: "giris_basarisiz", ip: "192.168.1.9", detail: JSON.stringify({ sebep: "Yanlış şifre" }) });
+dbmod.writeSecurityEntry({ ts: new Date().toISOString(), actor: "Cihaz: PC1", action: "uygulama_kilidi_basarisiz", detail: JSON.stringify({ sebep: "Yanlış şifre" }) });
+check("security_log: 3 kayıt yazıldı", dbmod.getSecurityLog({}).total === 3);
+check("security_log: action filtresi", dbmod.getSecurityLog({ action: "giris_basarisiz" }).total === 1);
+check("security_log: actor filtresi", dbmod.getSecurityLog({ actor: "kerem" }).total === 1);
+check("security_log: q IP ile eşleşir", dbmod.getSecurityLog({ q: "192.168.1.9" }).total === 1);
+check("security_log: q sebep ile eşleşir", dbmod.getSecurityLog({ q: "Yanlış şifre" }).total === 2);
+check("security_log: temizle 3 satır siler", dbmod.clearSecurityLog() === 3);
+check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total === 0);
+
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
   customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850,

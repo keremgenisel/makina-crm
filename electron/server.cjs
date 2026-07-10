@@ -12,7 +12,7 @@ const path     = require("path");
 const { BrowserWindow, safeStorage, app } = require("electron");
 const { kisitliMi, degisenBolumler, yazmaYetkisiVar, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
-const { rateAllow, rateHit, rateRetryAfter, bucketAllow, bucketNext, bucketRetryAfter } = require("./rateLimit.cjs");
+const { rateAllow, rateHit, rateRetryAfter, escalatingBlockedMs, escalatingNext } = require("./rateLimit.cjs");
 const totp = require("./totp.cjs");
 const qrcode = require("qrcode");
 
@@ -92,26 +92,52 @@ function verify2fa(user, code) {
   return false;
 }
 
-// ── Giriş denemesi sınırı (brute-force koruması) ─────────────────────────────
-// 5 dakikalık pencerede en fazla 10 BAŞARISIZ deneme; HEM IP HEM kullanıcı adı başına ayrı
-// sayılır — böylece tek IP'den farklı kullanıcı denemeleri ile aynı kullanıcıya farklı
-// IP'lerden brute-force ayrı ayrı yakalanır. Başarılı giriş ilgili sayaçları sıfırlar.
-// KALICI: sayaçlar SQLite'ta (rate_limit tablosu) tutulur — sunucu yeniden başlasa da kilit
-// korunur (bellek içi olsaydı restart sayaçları unutup brute-force'a yeni hak verirdi).
-const LOGIN_WINDOW_MS = 5 * 60 * 1000;
-const LOGIN_MAX_FAILS = 10;
+// ── Kullanıcı/güvenlik geçmişi kaydı ─────────────────────────────────────────
+// Giriş, kullanıcı yönetimi ve 2FA olaylarını security_log'a yazar (sunucu-yetkili).
+// Asla şifre/kod içermez. Hata durumunda sessizce yutar — loglama akışı bloklamamalı.
+function reqIp(req) {
+  const raw = req.socket?.remoteAddress || req.ip || "";
+  return String(raw).replace(/^::ffff:/, "") || "?"; // IPv6-eşlemeli IPv4'ü sadeleştir
+}
+function logSecurity({ ts, actor, action, target, ip, detail } = {}) {
+  try {
+    db.writeSecurityEntry({
+      ts: ts || new Date().toISOString(),
+      actor: actor || null,
+      action: action || "",
+      target: target || null,
+      ip: ip || null,
+      detail: detail ? (typeof detail === "string" ? detail : JSON.stringify(detail)) : null,
+    });
+  } catch (err) { console.error("[server] security_log yazılamadı:", err); }
+}
+
+// ── Giriş denemesi sınırı (kademeli/artan kilit — app-lock ile aynı mantık) ───
+// İlk 2 yanlış serbest, sonra her yanlış denemede kilit süresi artar (5sn→30sn→2dk→5dk).
+// HEM IP HEM kullanıcı adı başına ayrı sayılır — tek IP'den farklı kullanıcı ve aynı
+// kullanıcıya farklı IP'lerden brute-force ayrı ayrı yakalanır. Başarılı giriş sayaçları
+// tamamen siler; 15 dk hareketsizlikten sonra sayaç sıfırlanır (dürüst kullanıcı kalıcı
+// kilitlenmesin). KALICI: sayaçlar SQLite'ta (rate_limit) — sunucu yeniden başlasa da korunur.
+const LOGIN_FORGIVE_MS = 15 * 60 * 1000;
+function loginLockoutMs(count) {
+  if (count < 3) return 0;              // ilk 2 yanlış: gecikme yok
+  if (count < 5) return 5 * 1000;       // 3-4: 5 sn
+  if (count < 7) return 30 * 1000;      // 5-6: 30 sn
+  if (count < 10) return 2 * 60 * 1000; // 7-9: 2 dk
+  return 5 * 60 * 1000;                 // 10+: 5 dk
+}
 const loginKeys = (ip, username) => username ? [`ip:${ip}`, `user:${username}`] : [`ip:${ip}`];
-// Engelliyse kalan süre (ms), değilse 0. IP veya kullanıcı adından hangisi sınırdaysa o döner.
+// Engelliyse kalan süre (ms), değilse 0. IP ve kullanıcıdan hangisi daha uzun kilitliyse o döner.
 function loginBlockedMs(ip, username, now = Date.now()) {
+  let ms = 0;
   for (const key of loginKeys(ip, username)) {
-    const rec = db?.getRateBucket?.(key);
-    if (!bucketAllow(rec, now, LOGIN_MAX_FAILS)) return bucketRetryAfter(rec, now);
+    ms = Math.max(ms, escalatingBlockedMs(db?.getRateBucket?.(key), now));
   }
-  return 0;
+  return ms;
 }
 function loginRateFail(ip, username, now = Date.now()) {
   for (const key of loginKeys(ip, username)) {
-    const next = bucketNext(db?.getRateBucket?.(key), now, LOGIN_WINDOW_MS);
+    const next = escalatingNext(db?.getRateBucket?.(key), now, loginLockoutMs, LOGIN_FORGIVE_MS);
     db?.setRateBucket?.(key, next.count, next.reset_at);
   }
 }
@@ -164,23 +190,26 @@ function buildApp() {
       const ip = req.socket?.remoteAddress || req.ip || "?";
       const { username, password } = req.body || {};
       if (!username || !password) return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli" });
+      const cleanIp = reqIp(req);
       const blockedMs = loginBlockedMs(ip, username);
       if (blockedMs > 0) {
+        logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Çok fazla deneme (geçici engel)" } });
         res.set("Retry-After", String(Math.ceil(blockedMs / 1000)));
         return res.status(429).json({ error: "Çok fazla başarısız deneme. Lütfen biraz sonra tekrar deneyin." });
       }
       if (!db || !db.isActive()) return res.status(503).json({ error: "Veritabanı henüz hazır değil" });
       const user = db.getUserByUsername(username);
-      if (!user || !user.is_active) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      if (!user || !user.is_active) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: user ? "Hesap pasif" : "Kullanıcı adı yok" } }); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
       const ok = await bcrypt.compare(password, user.password);
-      if (!ok) { loginRateFail(ip, username); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
+      if (!ok) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış şifre" } }); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
       // İkinci faktör (opsiyonel, kullanıcı başına): 2FA açıksa TOTP/kurtarma kodu da gerekir.
       if (user.totp_enabled) {
         const { totpCode } = req.body || {};
         if (!totpCode) return res.status(401).json({ error: "İki adımlı doğrulama kodu gerekli", requires2fa: true });
-        if (!verify2fa(user, totpCode)) { loginRateFail(ip, username); return res.status(401).json({ error: "Doğrulama kodu hatalı", requires2fa: true }); }
+        if (!verify2fa(user, totpCode)) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış 2FA kodu" } }); return res.status(401).json({ error: "Doğrulama kodu hatalı", requires2fa: true }); }
       }
       loginRateSuccess(ip, username);
+      logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: { rol: user.role, ikiAdimli: !!user.totp_enabled } });
       const token = signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
       res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
     } catch (err) {
@@ -248,6 +277,7 @@ function buildApp() {
       if (!totp.verifyToken(code, u.totp_secret)) return res.status(401).json({ error: "Doğrulama kodu hatalı" });
       const recovery = totp.generateRecoveryCodes(8);
       db.enableUserTotp(u.id, JSON.stringify(recovery.map(totp.hashRecovery)));
+      logSecurity({ actor: u.username, action: "2fa_acildi", ip: reqIp(req) });
       res.json({ ok: true, recovery }); // düz kodlar yalnızca bir kez gösterilir
     } catch (err) { console.error("[server] 2fa/enable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -259,6 +289,7 @@ function buildApp() {
       if (!u) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       if (!password || !await bcrypt.compare(password, u.password)) return res.status(401).json({ error: "Şifre hatalı" });
       db.disableUserTotp(u.id);
+      logSecurity({ actor: u.username, action: "2fa_kapatildi", ip: reqIp(req) });
       res.json({ ok: true });
     } catch (err) { console.error("[server] 2fa/disable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -356,6 +387,7 @@ function buildApp() {
       if (password.length < 6) return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
       if (db.getUserByUsername(username.trim())) return res.status(409).json({ error: "Bu kullanıcı adı zaten mevcut" });
       const id = db.createUser(username.trim(), await bcrypt.hash(password, 10), role, permissions ?? null);
+      logSecurity({ actor: req.user.username, action: "kullanici_eklendi", target: username.trim(), ip: reqIp(req), detail: { rol: role } });
       res.status(201).json({ id, username: username.trim(), role, is_active: 1, permissions: permissions ?? null });
     } catch (err) {
       console.error("[server] /api/users POST hatası:", err);
@@ -379,6 +411,13 @@ function buildApp() {
       if (password)                 fields.password = await bcrypt.hash(password, 10);
       if (permissions !== undefined) fields.permissions = permissions;
       db.updateUser(id, fields);
+      // Neyin değiştiğini özetle (şifre değeri asla yazılmaz — sadece "değişti" bilgisi)
+      const degisenler = [];
+      if (fields.role !== undefined)        degisenler.push(`rol=${fields.role}`);
+      if (fields.is_active !== undefined)   degisenler.push(fields.is_active ? "aktifleştirildi" : "pasifleştirildi");
+      if (fields.password !== undefined)    degisenler.push("şifre sıfırlandı");
+      if (fields.permissions !== undefined) degisenler.push("yetkiler güncellendi");
+      logSecurity({ actor: req.user.username, action: "kullanici_guncellendi", target: db.getUserById(id)?.username || `#${id}`, ip: reqIp(req), detail: { degisen: degisenler.join(", ") || "—" } });
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users PATCH hatası:", err);
@@ -391,7 +430,9 @@ function buildApp() {
     try {
       const id = parseInt(req.params.id);
       if (id === req.user?.id) return res.status(400).json({ error: "Kendi hesabınızı silemezsiniz" });
+      const hedef = db.getUserById(id)?.username || `#${id}`;
       db.deleteUser(id);
+      logSecurity({ actor: req.user.username, action: "kullanici_silindi", target: hedef, ip: reqIp(req) });
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users DELETE hatası:", err);
@@ -402,7 +443,10 @@ function buildApp() {
   // DELETE /api/users/:id/2fa — admin bir kullanıcının 2FA'sını sıfırlar (telefon kaybı vb.)
   app.delete("/api/users/:id/2fa", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
     try {
-      db.disableUserTotp(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      const hedef = db.getUserById(id)?.username || `#${id}`;
+      db.disableUserTotp(id);
+      logSecurity({ actor: req.user.username, action: "2fa_sifirlandi", target: hedef, ip: reqIp(req) });
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users/:id/2fa DELETE hatası:", err);
@@ -472,6 +516,46 @@ function buildApp() {
       // Kimin temizlediği izlensin diye temizlik sonrası tek kayıt bırakılır
       db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action: "temizlendi", entity: "islem_gecmisi", entity_id: null, entity_name: `${deleted} kayıt silindi`, detail: null });
       res.json({ ok: true, deleted });
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+
+  // ── Kullanıcı/güvenlik geçmişi uçları ──────────────────────────────────────
+  // GET /api/security-log — sadece admin
+  app.get("/api/security-log", requireAuth, requireAdmin, (req, res) => {
+    try {
+      const { limit, offset, actor, action, dateFrom, dateTo, q } = req.query;
+      const result = db.getSecurityLog({ limit: Number(limit) || 100, offset: Number(offset) || 0, actor: actor || undefined, action: action || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, q: q || undefined });
+      res.json({ ok: true, ...result });
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+
+  // DELETE /api/security-log — tüm kullanıcı geçmişini temizler, sadece admin
+  app.delete("/api/security-log", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
+    try {
+      const deleted = db.clearSecurityLog();
+      logSecurity({ actor: req.user.username, action: "gecmis_temizlendi", ip: reqIp(req), detail: { silinen: deleted } });
+      res.json({ ok: true, deleted });
+    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+
+  // POST /api/security-log/ingest — istemci PC'nin biriktirdiği app-lock denemelerini alır.
+  // GÜVENLİK: yalnızca app-lock eylemlerine izin verilir; istemci buradan sahte "giriş" veya
+  // yönetim olayı enjekte edemez. actor cihaz etiketidir; IP isteğin gerçek adresinden yazılır.
+  const APPLOCK_ACTIONS = new Set(["uygulama_kilidi_basarili", "uygulama_kilidi_basarisiz"]);
+  app.post("/api/security-log/ingest", requireAuth, writeLimiter(60), (req, res) => {
+    try {
+      const entries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+      const ip = reqIp(req);
+      let yazilan = 0;
+      for (const e of entries.slice(0, 500)) {
+        if (!APPLOCK_ACTIONS.has(e?.action)) continue;
+        logSecurity({
+          ts: e.ts, actor: e.actor || "İstemci cihaz", action: e.action,
+          target: null, ip, detail: e.detail || null,
+        });
+        yazilan++;
+      }
+      res.json({ ok: true, yazilan });
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 

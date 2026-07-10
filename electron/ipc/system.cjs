@@ -1,7 +1,39 @@
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
+const securityQueue = require("../securityQueue.cjs");
 
 const getErrorLogPath = (app) => path.join(app.getPath("userData"), "error-log.json");
+const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
+const getServerConfigPath = (app) => path.join(app.getPath("userData"), "server-config.json");
+
+// Uygulama istemci modunda mı? (server-config.json mode === "client")
+function isClientMode(app) {
+  try {
+    const p = getServerConfigPath(app);
+    if (!fs.existsSync(p)) return false;
+    return JSON.parse(fs.readFileSync(p, "utf-8"))?.mode === "client";
+  } catch { return false; }
+}
+
+// App-lock denemesini kaydeder. Yerel/sunucu PC'de (db aktif) doğrudan security_log'a,
+// istemci PC'de (sunucuya giriş öncesi, token yok) yerel kuyruğa yazılır; kuyruk sunucuya
+// giriş yapılınca (data.cjs) gönderilir. Kilit kapalıysa hiç çağrılmaz.
+function kaydetAppLock(app, db, basarili, sebep) {
+  const entry = {
+    ts: new Date().toISOString(),
+    actor: `Cihaz: ${os.hostname()}`,
+    action: basarili ? "uygulama_kilidi_basarili" : "uygulama_kilidi_basarisiz",
+    detail: sebep ? JSON.stringify({ sebep }) : null,
+  };
+  try {
+    if (!isClientMode(app) && db?.isActive?.()) {
+      db.writeSecurityEntry(entry);
+    } else {
+      securityQueue.enqueue(getSecurityQueuePath(app), entry);
+    }
+  } catch (err) { console.error("app-lock güvenlik kaydı yazılamadı:", err); }
+}
 
 function readErrorLog(app) {
   try {
@@ -15,7 +47,7 @@ function readErrorLog(app) {
 
 const pdfHtmlCache = new Map(); // previewWin.webContents.id → pdfHtml
 
-function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
+function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db = null) {
   // ── Yazdırma: HTML'i GÖRÜNÜR önizleme penceresinde aç ──
   ipcMain.handle("app:printHtml", async (_e, html, pdfHtml, defaultName) => {
     return new Promise((resolve) => {
@@ -142,7 +174,17 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock) {
   // ── Uygulama şifresi (açılış kilidi) ──
   ipcMain.handle("applock:status", () => applock.getStatus());
   ipcMain.handle("applock:setup", (_e, password) => applock.setup(password));
-  ipcMain.handle("applock:verify", (_e, password) => applock.verify(password));
+  ipcMain.handle("applock:verify", (_e, password) => {
+    const enabledOnce = applock.getStatus()?.enabled;
+    const result = applock.verify(password);
+    // Sadece kilit açıkken ve gerçek bir deneme yapıldıysa kaydet (boş şifre gönderimini atla)
+    if (enabledOnce && password) {
+      if (result?.ok) kaydetAppLock(app, db, true, null);
+      else if (result?.retryAfterMs && /kilit|bekleyin|deneme/i.test(result?.error || "")) kaydetAppLock(app, db, false, "Hesap kilitli (çok fazla deneme)");
+      else kaydetAppLock(app, db, false, "Yanlış şifre");
+    }
+    return result;
+  });
   ipcMain.handle("applock:disable", (_e, password) => applock.disable(password));
   ipcMain.handle("applock:changePassword", (_e, currentPassword, newPassword) => applock.changePassword(currentPassword, newPassword));
   ipcMain.handle("applock:resetWithRecoveryCode", (_e, recoveryCode, newPassword) => applock.resetWithRecoveryCode(recoveryCode, newPassword));

@@ -46,7 +46,7 @@ function quitApp() {
 
 // ── IPC handler kayıtları ──
 registerDataHandlers(ipcMain, app, dialog, sqliteDb);
-registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock);
+registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, sqliteDb);
 registerAuditHandlers(ipcMain, sqliteDb);
 
 // ── Güncelleme IPC kanalları ──

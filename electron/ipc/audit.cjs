@@ -15,6 +15,20 @@ function registerAuditHandlers(ipcMain, db) {
     try { return { ok: true, deleted: db.clearAuditLog() }; }
     catch (err) { console.error("audit:clear hatası:", err); return { ok: false, deleted: 0 }; }
   });
+
+  // ── Kullanıcı/güvenlik geçmişi (yerel mod / sunucu PC) ──
+  ipcMain.handle("security:get", (_e, filters) => {
+    try { return { ok: true, ...db.getSecurityLog(filters || {}) }; }
+    catch (err) { console.error("security:get hatası:", err); return { ok: false, rows: [], total: 0 }; }
+  });
+
+  ipcMain.handle("security:clear", () => {
+    try {
+      const deleted = db.clearSecurityLog();
+      db.writeSecurityEntry({ action: "gecmis_temizlendi", actor: "yerel", detail: JSON.stringify({ silinen: deleted }) });
+      return { ok: true, deleted };
+    } catch (err) { console.error("security:clear hatası:", err); return { ok: false, deleted: 0 }; }
+  });
 }
 
 module.exports = { registerAuditHandlers };

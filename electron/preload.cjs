@@ -159,6 +159,11 @@ contextBridge.exposeInMainWorld("auditLog", {
   clear: () => ipcRenderer.invoke("audit:clear"),
 });
 
+contextBridge.exposeInMainWorld("securityLog", {
+  get: (filters) => ipcRenderer.invoke("security:get", filters),
+  clear: () => ipcRenderer.invoke("security:clear"),
+});
+
 contextBridge.exposeInMainWorld("crmLocks", {
   acquire:    (entityType, entityId, force = false) => ipcRenderer.invoke("crm:lock:acquire", { entityType, entityId, force }),
   release:    (entityType, entityId) => ipcRenderer.invoke("crm:lock:release", { entityType, entityId }),

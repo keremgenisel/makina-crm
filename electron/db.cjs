@@ -194,6 +194,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
 
+CREATE TABLE IF NOT EXISTS security_log (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts       TEXT NOT NULL,
+  actor    TEXT,
+  action   TEXT NOT NULL,
+  target   TEXT,
+  ip       TEXT,
+  detail   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_security_ts ON security_log(ts);
+
 `;
 
 // Daha önce oluşturulmuş bir data.db'ye, şemaya sonradan eklenen sütunları ekler (ALTER TABLE) —
@@ -568,6 +579,7 @@ function migrateFromJsonIfNeeded() {
       db.exec(SCHEMA_SQL);
       applyColumnMigrations(db);
       pruneAuditLog(db);
+      pruneSecurityLog(db);
       active = true;
     } catch (err) {
       console.error("SQLite açılamadı, JSON moduna geçiliyor:", err);
@@ -1000,6 +1012,46 @@ function clearAuditLog() {
   return db.prepare(`DELETE FROM audit_log`).run().changes;
 }
 
+// ── Kullanıcı/güvenlik geçmişi (security_log) ────────────────────────────────
+// Giriş denemeleri (başarılı/başarısız), kullanıcı yönetimi, 2FA ve uygulama
+// kilidi olayları. audit_log'dan (veri CRUD'u) bilinçli olarak ayrı tutulur.
+function writeSecurityEntry({ ts, actor, action, target, ip, detail } = {}) {
+  if (!db) return;
+  db.prepare(`INSERT INTO security_log (ts, actor, action, target, ip, detail) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(ts || new Date().toISOString(), actor || null, action || "", target || null, ip || null, detail || null);
+}
+
+function pruneSecurityLog(conn) {
+  try {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - AUDIT_RETENTION_MONTHS);
+    conn.prepare(`DELETE FROM security_log WHERE ts < ?`).run(cutoff.toISOString());
+  } catch (err) { console.error("security_log temizliği başarısız:", err); }
+}
+
+function clearSecurityLog() {
+  if (!db) return 0;
+  return db.prepare(`DELETE FROM security_log`).run().changes;
+}
+
+function getSecurityLog({ limit = 100, offset = 0, actor, action, dateFrom, dateTo, q } = {}) {
+  if (!db) return { rows: [], total: 0 };
+  let where = "WHERE 1=1";
+  const params = [];
+  if (actor)  { where += " AND actor = ?";  params.push(actor); }
+  if (action) { where += " AND action = ?"; params.push(action); }
+  if (q) { // genel arama: yapan, hedef, IP, detay ve eylemde geçen metin
+    where += " AND (actor LIKE ? OR target LIKE ? OR ip LIKE ? OR detail LIKE ? OR action LIKE ?)";
+    const pat = `%${String(q).trim()}%`;
+    params.push(pat, pat, pat, pat, pat);
+  }
+  if (dateFrom) { where += " AND ts >= ?"; params.push(dateFrom); }
+  if (dateTo)   { where += " AND ts <= ?"; params.push(dateTo + "T23:59:59Z"); }
+  const rows = db.prepare(`SELECT * FROM security_log ${where} ORDER BY ts DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) as cnt FROM security_log ${where}`).get(...params)?.cnt ?? 0;
+  return { rows, total };
+}
+
 function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, dateTo, q } = {}) {
   if (!db) return { rows: [], total: 0 };
   let where = "WHERE 1=1";
@@ -1026,4 +1078,5 @@ module.exports = {
   setUserTotpSecret, enableUserTotp, setUserTotpRecovery, setUserTotpLastCode, disableUserTotp,
   acquireLock, releaseLock, listLocks, releaseAllLocksByUser,
   writeAuditEntry, getAuditLog, clearAuditLog,
+  writeSecurityEntry, getSecurityLog, clearSecurityLog,
 };
