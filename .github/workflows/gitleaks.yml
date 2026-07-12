@@ -1,0 +1,29 @@
+# Her push ve pull request'te sır (secret) taraması yapar.
+# Resmi gitleaks-action yerine binary'yi doğrudan indiririz: lisans anahtarı
+# gerektirmez ve sürüm sabittir. Bir sır bulunursa iş başarısız olur (exit 1).
+name: gitleaks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git taraması için tüm geçmiş gerekli
+
+      - name: gitleaks indir
+        run: |
+          VER=8.30.1
+          curl -sSL -o gl.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz"
+          tar xzf gl.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Sır taraması (geçmiş + mevcut)
+        run: gitleaks git . --config .gitleaks.toml --redact --verbose

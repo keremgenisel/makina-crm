@@ -1,0 +1,29 @@
+# gitleaks yapılandırması — Altunmak CRM / gen-crm
+# Amaç: jwtSecret, SMTP/mail parolası, JWT token, API anahtarı gibi sırların
+# yanlışlıkla depoya girmesini engellemek. Varsayılan kural setini kullanır,
+# üzerine yalnızca gerçek false-positive'leri (build çıktıları, kilit dosyaları,
+# ikonlar) susturan bir allowlist ekler.
+#
+# Çalıştırma:
+#   gitleaks git .            → commit geçmişi + staged içerik (hook/CI bunu kullanır)
+#   gitleaks dir .            → çalışma ağacındaki tüm dosyalar (tam tarama)
+
+title = "gen-crm gitleaks"
+
+[extend]
+# Yerleşik kapsamlı kural setini temel al (100+ sağlayıcı deseni)
+useDefault = true
+
+[allowlist]
+description = "Proje geneli allowlist — yalnızca sır olmayan gürültüyü susturur"
+
+# Sır aranmayacak yol desenleri (regex, dosya yoluna karşı eşlenir).
+# Bunlar üretilmiş/derlenmiş içerik veya ikili varlıklar; kaynak sır değil.
+paths = [
+  '''(^|/)release/''',            # electron-builder çıktısı (Chromium resources.pak vb.)
+  '''(^|/)dist/''',               # vite build çıktısı
+  '''(^|/)node_modules/''',       # bağımlılıklar
+  '''(^|/)package-lock\.json$''', # npm bütünlük hash'leri (sır değil)
+  '''(^|/)build/icon\.(ico|png)$''', # uygulama ikonları (ikili)
+  '''\.enc$''',                   # şifreli yedek dosyaları (zaten şifreli)
+]

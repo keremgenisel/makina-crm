@@ -1,0 +1,28 @@
+# Bağımlılıklarda bilinen güvenlik açığı (CVE) taraması.
+# Her push/PR'de + haftalık (yeni açıklanan CVE'leri kod değişmeden yakalamak için).
+# high/critical seviyesinde açık varsa iş başarısız olur.
+name: audit
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # her Pazartesi 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    env:
+      # audit sadece package-lock'a bakar; native derleme/electron indirmesi gereksiz
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Bağımlılıkları çöz (script'siz, hızlı)
+        run: npm ci --ignore-scripts
+      - name: Güvenlik açığı taraması (high/critical'de başarısız)
+        run: npm audit --audit-level=high

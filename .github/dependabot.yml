@@ -1,0 +1,22 @@
+# Bağımlılık güncellemelerini otomatik izler ve güvenlik/sürüm PR'ları açar.
+# npm bağımlılıkları + GitHub Actions sürümleri haftalık taranır.
+# Not: xlsx (SheetJS) npm registry'de değil, CDN tarball'ıyla pinlenmiştir;
+# Dependabot onu güncelleyemez, elle takip edilmelidir (bkz. SECURITY-TOOLING.md).
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Küçük güncellemeleri tek PR'da topla (gürültüyü azalt)
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
