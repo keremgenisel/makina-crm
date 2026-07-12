@@ -2,7 +2,7 @@ import { uid, parseMoney, numberToWordsEN } from "../../lib/utils";
 import { COUNTRIES, CURRENCIES } from "../../lib/constants";
 import { Icon, Field, Btn, Modal, LockConflict } from "../ui";
 
-const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none" };
+const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
 
 const calcFaturaTotal = (f) =>
   (f?.satirlar || []).reduce((s, r) => s + (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.adet) || 0), 0);
@@ -37,8 +37,8 @@ export const FaturaFormModal = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Sol: Alıcı bilgileri */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
           <Field label="Firma Adı"><input value={faturaForm.firma} onChange={e => setFaturaForm(p => ({ ...p, firma: e.target.value }))} style={inputStyle} /></Field>
           {!isFH("alici", "adres") && <Field label="Adres"><textarea value={faturaForm.adres} onChange={e => setFaturaForm(p => ({ ...p, adres: e.target.value }))} style={{ ...inputStyle, resize: "vertical", minHeight: 54 }} /></Field>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -80,8 +80,8 @@ export const FaturaFormModal = ({
         </div>
 
         {/* Sağ: Fatura bilgileri */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Fatura Bilgileri</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Fatura Bilgileri</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <Field label="Fatura No"><input value={faturaForm.no} onChange={e => setFaturaForm(p => ({ ...p, no: e.target.value }))} style={inputStyle} placeholder="INV-2024-001" /></Field>
             <Field label="Tarih"><input type="date" value={faturaForm.tarih} onChange={e => setFaturaForm(p => ({ ...p, tarih: e.target.value }))} style={inputStyle} /></Field>
@@ -116,13 +116,13 @@ export const FaturaFormModal = ({
       </div>
 
       {/* Satırlar */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 12 }}>Ürünler</div>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 12 }}>Ürünler</div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
+            <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Ürün Seç", "KOD", "Ürün Adı", "Tanım", "Seri No", "Adet", `Birim Fiyat (${faturaForm.currency})`, "Tutar", ""].map((h, i) => (
-                <th key={i} style={{ padding: "6px 8px", textAlign: i >= 5 && i <= 7 ? "center" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                <th key={i} style={{ padding: "6px 8px", textAlign: i >= 5 && i <= 7 ? "center" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -131,7 +131,7 @@ export const FaturaFormModal = ({
               const tutar = (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.adet) || 0);
               const upd = (patch) => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.map((s, i) => i === idx ? { ...s, ...patch } : s) }));
               return (
-                <tr key={r.id || idx} style={{ borderTop: "1px solid #f1f5f9" }}>
+                <tr key={r.id || idx} style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <td style={{ padding: "6px 8px", width: 150 }}>
                     {/* Teklif formundaki gibi iki aşamalı seçim: önce tür, sonra o türün listesi */}
                     <select value={r.urunTip || ""} onChange={e => upd({ urunTip: e.target.value, urunKey: "" })}
@@ -200,12 +200,12 @@ export const FaturaFormModal = ({
                     <input value={r.birimFiyat} onChange={e => upd({ birimFiyat: e.target.value })}
                       style={{ ...inputStyle, padding: "6px 8px", textAlign: "right" }} placeholder="0" />
                   </td>
-                  <td style={{ padding: "6px 8px", textAlign: "right", width: 100, fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+                  <td style={{ padding: "6px 8px", textAlign: "right", width: 100, fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>
                     {tutar > 0 ? tutar.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
                   </td>
                   <td style={{ padding: "6px 8px", width: 32 }}>
                     <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.filter((_, i) => i !== idx) }))}
-                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+                      style={{ background: "none", border: "none", color: "var(--red500, #ef4444)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
                   </td>
                 </tr>
               );
@@ -220,8 +220,8 @@ export const FaturaFormModal = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Sol: Paketleme + Not */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Paketleme</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Paketleme</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             {!isFH("paketleme", "paketAdedi") && <Field label="Paket Adedi"><input value={faturaForm.paketAdedi} onChange={e => setFaturaForm(p => ({ ...p, paketAdedi: e.target.value }))} style={inputStyle} /></Field>}
             {!isFH("paketleme", "brutAgirlik") && <Field label="Brüt Ağırlık"><input value={faturaForm.brutAgirlik} onChange={e => setFaturaForm(p => ({ ...p, brutAgirlik: e.target.value }))} style={inputStyle} /></Field>}
@@ -244,17 +244,17 @@ export const FaturaFormModal = ({
           ))}
         </div>
         {/* Sağ: Banka bilgileri + Toplam */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Banka / Hesap Bilgileri</div>
-          <div style={{ fontSize: 12, color: "#64748b", padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px dashed #e2e8f0" }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Banka / Hesap Bilgileri</div>
+          <div style={{ fontSize: 12, color: "var(--n500, #64748b)", padding: "10px 14px", background: "var(--n100, #f8fafc)", borderRadius: 8, border: "1px dashed var(--n200, #e2e8f0)" }}>
             Yazdırma sırasında Ayarlar &gt; Firma Bilgileri'ndeki banka hesapları otomatik eklenir.
           </div>
-          <div style={{ marginTop: 16, padding: "12px 16px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0", textAlign: "right" }}>
-            <div style={{ fontSize: 13, color: "#475569", marginBottom: 4 }}>TOTAL</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--n100, #f8fafc)", borderRadius: 10, border: "1px solid var(--n200, #e2e8f0)", textAlign: "right" }}>
+            <div style={{ fontSize: 13, color: "var(--n600, #475569)", marginBottom: 4 }}>TOTAL</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--n900, #0f172a)" }}>
               {calcFaturaTotal(faturaForm).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {faturaForm.currency}
             </div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, fontStyle: "italic" }}>
+            <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4, fontStyle: "italic" }}>
               {numberToWordsEN(calcFaturaTotal(faturaForm), faturaForm.currency)}
             </div>
           </div>
@@ -262,7 +262,7 @@ export const FaturaFormModal = ({
       </div>
 
       {/* Yapışkan kaydet çubuğu: uzun formda kaydırırken hep görünür */}
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={() => setFaturaForm(null)}>Vazgeç</Btn>
         <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

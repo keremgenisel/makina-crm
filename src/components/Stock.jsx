@@ -34,15 +34,15 @@ export const Stock = ({
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Stok</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Stok</h2>
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid #f1f5f9", paddingBottom: 0 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
         {TABS.map(([id, label]) => (
           <button key={id} onClick={() => setSubTab(id)} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
             borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: subTab === id ? "#e85d1a" : "#94a3b8",
+            color: subTab === id ? "#e85d1a" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}

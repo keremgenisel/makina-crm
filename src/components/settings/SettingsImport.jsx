@@ -335,7 +335,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   return (
     <>
       <Section title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Eski müşteri verilerinizi toplu olarak içe aktarın. <b>1)</b> Excel şablonunu indirin. <b>2)</b> Verilerinizi şablondaki sütun sırasına göre doldurun (Excel'de kaydedin, .xlsx olarak kalabilir). <b>3)</b> Aşağıdan yükleyin, önizlemeyi kontrol edip onaylayın. Hem Excel (.xlsx, .xls) hem CSV dosyaları desteklenir.
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
@@ -343,7 +343,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
           <FileUploadBtn onFile={handleImportFile} />
         </div>
 
-        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+        <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "var(--amb800, #92400e)", lineHeight: 1.6 }}>
           <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (çap x arka ölçü x boy)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Fabrika Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
         </div>
       </Section>
@@ -352,27 +352,27 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         <Modal wide title="İçe Aktarma Önizlemesi" onClose={() => setImportPreview(null)}>
           <div style={{ fontSize: 14, marginBottom: 16 }}>
             Toplam <b>{importPreview.customers.length}</b> kayıt bulundu:
-            <b style={{ color: "#16a34a" }}> {importPreview.customers.filter(c => !c._mevcut).length} yeni</b> eklenecek,
-            <b style={{ color: "#0891b2" }}> {importPreview.guncellenecek || 0} mevcut</b> güncellenecek.
-            {importPreview.errors.length > 0 && <span style={{ color: "#dc2626" }}> · {importPreview.errors.length} satır atlandı.</span>}
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+            <b style={{ color: "var(--grn600, #16a34a)" }}> {importPreview.customers.filter(c => !c._mevcut).length} yeni</b> eklenecek,
+            <b style={{ color: "var(--cyan, #0891b2)" }}> {importPreview.guncellenecek || 0} mevcut</b> güncellenecek.
+            {importPreview.errors.length > 0 && <span style={{ color: "var(--red600, #dc2626)" }}> · {importPreview.errors.length} satır atlandı.</span>}
+            <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 6 }}>
               Not: Aynı seri numarasına (veya firma+model) sahip kayıtlar yeni eklenmez, mevcut kayıt güncellenir. Böylece çift kayıt olmaz.
             </div>
           </div>
           {importPreview.errors.length > 0 && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#991b1b", maxHeight: 100, overflowY: "auto" }}>
+            <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "var(--red800, #991b1b)", maxHeight: 100, overflowY: "auto" }}>
               {importPreview.errors.map((e, i) => <div key={i}>{e}</div>)}
             </div>
           )}
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>İlk 5 kayıt önizlemesi:</div>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>İlk 5 kayıt önizlemesi:</div>
+          <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ background: "#f8fafc" }}>
-                {["Firma", "Model", "Seri No", "Garanti", "Fatura"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>{h}</th>)}
+              <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
+                {["Firma", "Model", "Seri No", "Garanti", "Fatura"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {importPreview.customers.slice(0, 5).map((c, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={i} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>{c.name}</td>
                     <td style={{ padding: "8px 12px" }}>{c.model || "—"}</td>
                     <td style={{ padding: "8px 12px", fontFamily: "monospace" }}>{c.serialNo || "—"}</td>
@@ -383,7 +383,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 16 }}>
             Not: İçe aktarılan kayıtlar mevcut listeye <b>eklenir</b> (mevcut veriler silinmez). Tarihler gg.aa.yyyy formatında olmalıdır.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -394,14 +394,14 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
       )}
 
       <Section title="Yedek Parça İçe Aktar" icon="parts">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Yedek parça kataloğunu toplu olarak içe aktarın. Aynı adlı (TR) parçalar güncellenir, yeni olanlar eklenir.
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
           <Btn variant="ghost" onClick={downloadPartsTemplate}><Icon name="download" size={14} /> Boş Şablon İndir</Btn>
           <FileUploadBtn onFile={handlePartsFile} />
         </div>
-        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+        <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "var(--amb800, #92400e)", lineHeight: 1.6 }}>
           <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip (Standart/Konveyör Saç/Bant) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
         </div>
       </Section>
@@ -410,26 +410,26 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         <Modal wide title="Yedek Parça İçe Aktarma Önizlemesi" onClose={() => setPartsImportPreview(null)}>
           <div style={{ fontSize: 14, marginBottom: 16 }}>
             Toplam <b>{partsImportPreview.parts.length}</b> kayıt bulundu:
-            <b style={{ color: "#16a34a" }}> {partsImportPreview.yeniler} yeni</b> eklenecek,
-            <b style={{ color: "#0891b2" }}> {partsImportPreview.guncellenenler} mevcut</b> güncellenecek.
-            {partsImportPreview.errors.length > 0 && <span style={{ color: "#dc2626" }}> · {partsImportPreview.errors.length} satır atlandı.</span>}
+            <b style={{ color: "var(--grn600, #16a34a)" }}> {partsImportPreview.yeniler} yeni</b> eklenecek,
+            <b style={{ color: "var(--cyan, #0891b2)" }}> {partsImportPreview.guncellenenler} mevcut</b> güncellenecek.
+            {partsImportPreview.errors.length > 0 && <span style={{ color: "var(--red600, #dc2626)" }}> · {partsImportPreview.errors.length} satır atlandı.</span>}
           </div>
           {partsImportPreview.errors.length > 0 && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#991b1b", maxHeight: 100, overflowY: "auto" }}>
+            <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "var(--red800, #991b1b)", maxHeight: 100, overflowY: "auto" }}>
               {partsImportPreview.errors.map((e, i) => <div key={i}>{e}</div>)}
             </div>
           )}
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ background: "#f8fafc" }}>
-                {["Parça Adı (TR)", "Adı (EN)", "Kod", "Fiyat (TL)"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#475569" }}>{h}</th>)}
+              <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
+                {["Parça Adı (TR)", "Adı (EN)", "Kod", "Fiyat (TL)"].map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {partsImportPreview.parts.slice(0, 5).map((p, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: !p._mevcut ? "#f0fdf4" : undefined }}>
+                  <tr key={i} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: !p._mevcut ? "var(--grnBg, #f0fdf4)" : undefined }}>
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>{p.ad}</td>
-                    <td style={{ padding: "8px 12px", color: "#64748b" }}>{p.adEN || "—"}</td>
-                    <td style={{ padding: "8px 12px", fontFamily: "monospace", color: "#64748b" }}>{p.kod || "—"}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--n500, #64748b)" }}>{p.adEN || "—"}</td>
+                    <td style={{ padding: "8px 12px", fontFamily: "monospace", color: "var(--n500, #64748b)" }}>{p.kod || "—"}</td>
                     <td style={{ padding: "8px 12px" }}>{p.fiyatTRY || "—"}</td>
                   </tr>
                 ))}

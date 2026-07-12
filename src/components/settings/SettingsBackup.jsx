@@ -7,7 +7,7 @@ import { Section } from "./Section";
 export const SettingsBackup = ({
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments,
   teklifler = [], faturalar = [], partStock = [], partStockLog = [], uretimFormlari = [],
-  gorusmeler = [], setGorusmeler = null,
+  gorusmeler = [], setGorusmeler = null, rawDosyalar = [], setDosyalar = null,
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null, setUretimFormlari = null,
   version, appSettings, setAppSettings, flash,
@@ -42,7 +42,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -124,6 +124,7 @@ export const SettingsBackup = ({
     { id: "evrak", ad: "Evraklar", aciklama: "teklifler, proformalar, faturalar" },
     { id: "stok", ad: "Stok ve üretim", aciklama: "makina stoğu, parça stoğu ve geçmişi, üretim formları" },
     { id: "bayi", ad: "Bayiler", aciklama: "" },
+    { id: "dosyalar", ad: "Dosyalar", aciklama: "müşteri, makina, servis ve bayi belgeleri (dosya arşivi)" },
     { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
     { id: "not", ad: "Notlar", aciklama: "" },
     { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
@@ -174,6 +175,7 @@ export const SettingsBackup = ({
     if (sec("stok") && Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
     if (sec("stok") && Array.isArray(restoreData?.uretimFormlari) && setUretimFormlari) setUretimFormlari(restoreData.uretimFormlari);
     if (sec("bayi") && Array.isArray(restoreData?.dealers)) setDealers(restoreData.dealers);
+    if (sec("dosyalar") && Array.isArray(restoreData?.dosyalar) && setDosyalar) setDosyalar(restoreData.dosyalar);
     if (sec("tanim") && Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
     if (sec("tanim") && Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
     if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
@@ -202,7 +204,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "notes", "parts", "kalipDefs", "customModels"]
+      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
 
@@ -217,7 +219,7 @@ export const SettingsBackup = ({
   return (
     <>
       <Section title="Yedekleme" icon="download">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Tüm müşteri ve servis kayıtlarınızı tek bir dosya olarak kaydedin. Yedek dosyasını güvenli bir yerde
           (USB bellek, bulut depolama) saklamanızı öneririz. Geri yükleme yaptığınızda mevcut veriler yedekteki verilerle değiştirilir.
         </div>
@@ -225,23 +227,23 @@ export const SettingsBackup = ({
           <Btn onClick={doBackup}><Icon name="download" size={15} /> Yedek Al</Btn>
           <Btn variant="ghost" onClick={doRestore}><Icon name="upload" size={15} /> Yedekten Geri Yükle</Btn>
         </div>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 14 }}>
+        <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 14 }}>
           Mevcut veri: {customers.length} müşteri · {dealers.length} bayi · {services.length} servis kaydı
         </div>
 
         {/* ── Otomatik Yedekleme ── */}
-        <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 20, paddingTop: 20 }}>
+        <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)", marginTop: 20, paddingTop: 20 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 14 }}>
             <input type="checkbox" checked={appSettings.autoBackup}
               onChange={e => setAppSettings(p => ({ ...p, autoBackup: e.target.checked }))}
               style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Otomatik Yedekleme</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Otomatik Yedekleme</span>
           </label>
 
           {appSettings.autoBackup && (
             <div style={{ paddingLeft: 28 }}>
               {!window.crmStorage?.chooseFolder ? (
-                <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+                <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--n200, #e2e8f0)" }}>
                   Otomatik yedekleme yalnızca kurulu uygulamada çalışır.
                 </div>
               ) : (
@@ -251,21 +253,21 @@ export const SettingsBackup = ({
                       const folder = await window.crmStorage.chooseFolder();
                       if (folder) setAppSettings(p => ({ ...p, backupFolder: folder }));
                     }}>📁 Klasör Seç</Btn>
-                    <span style={{ fontSize: 12, color: appSettings.backupFolder ? "#0f172a" : "#94a3b8", fontFamily: "monospace", wordBreak: "break-all" }}>
+                    <span style={{ fontSize: 12, color: appSettings.backupFolder ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: "monospace", wordBreak: "break-all" }}>
                       {appSettings.backupFolder || "Henüz klasör seçilmedi"}
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <span style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Sıklık:</span>
+                    <span style={{ fontSize: 13, color: "var(--n600, #475569)", fontWeight: 600 }}>Sıklık:</span>
                     <select value={appSettings.frequency}
                       onChange={e => setAppSettings(p => ({ ...p, frequency: e.target.value }))}
-                      style={{ padding: "6px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc" }}>
+                      style={{ padding: "6px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" }}>
                       <option value="daily">Her gün</option>
                       <option value="weekly">Her hafta</option>
                       <option value="monthly">Her ay</option>
                     </select>
                   </div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginBottom: 14 }}>
                     {appSettings.lastBackup
                       ? `Son otomatik yedek: ${appSettings.lastBackup}`
                       : "Henüz otomatik yedek alınmadı — klasör seçildiğinde ilk yedek hemen alınır."}
@@ -273,15 +275,15 @@ export const SettingsBackup = ({
                   </div>
 
                   {/* Otomatik yedek şifreleme */}
-                  <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 14 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
-                      🔒 Otomatik yedek şifreleme {autoPw.set && <span style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#166534", borderRadius: 6, padding: "2px 8px", marginLeft: 4 }}>Açık</span>}
+                  <div style={{ borderTop: "1px dashed var(--n200, #e2e8f0)", paddingTop: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n700, #334155)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="lock" size={13} /> Otomatik yedek şifreleme {autoPw.set && <span style={{ fontSize: 11, fontWeight: 700, background: "var(--grnBg2, #dcfce7)", color: "var(--grn900, #166534)", borderRadius: 6, padding: "2px 8px", marginLeft: 4 }}>Açık</span>}
                     </div>
                     {!autoPw.canEncrypt ? (
-                      <div style={{ fontSize: 12, color: "#94a3b8" }}>Bu bilgisayarda güvenli depolama kullanılamadığı için otomatik yedek şifrelenemiyor.</div>
+                      <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Bu bilgisayarda güvenli depolama kullanılamadığı için otomatik yedek şifrelenemiyor.</div>
                     ) : autoPw.set ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 12.5, color: "#166534" }}>Otomatik yedekler bu bilgisayarda belirlenen parolayla şifreleniyor.</span>
+                        <span style={{ fontSize: 12.5, color: "var(--grn900, #166534)" }}>Otomatik yedekler bu bilgisayarda belirlenen parolayla şifreleniyor.</span>
                         <Btn small variant="ghost" onClick={clearAutoPw}>Şifrelemeyi Kapat</Btn>
                       </div>
                     ) : autoPwEditing ? (
@@ -293,11 +295,11 @@ export const SettingsBackup = ({
                           <Btn small onClick={saveAutoPw}>Kaydet</Btn>
                           <Btn small variant="ghost" onClick={() => { setAutoPwEditing(false); setAutoPwInput(""); }}>Vazgeç</Btn>
                         </div>
-                        <div style={{ fontSize: 11.5, color: "#b45309", marginTop: 8 }}>Bu parolayı ayrıca güvenli bir yerde saklayın. Unutulursa şifreli yedekler geri yüklenemez.</div>
+                        <div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 8 }}>Bu parolayı ayrıca güvenli bir yerde saklayın. Unutulursa şifreli yedekler geri yüklenemez.</div>
                       </div>
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 12.5, color: "#64748b" }}>Otomatik yedekler şu an şifresiz. Parola belirleyerek şifreleyebilirsiniz.</span>
+                        <span style={{ fontSize: 12.5, color: "var(--n500, #64748b)" }}>Otomatik yedekler şu an şifresiz. Parola belirleyerek şifreleyebilirsiniz.</span>
                         <Btn small onClick={() => { setAutoPwInput(""); setAutoPwEditing(true); }}>Parola Belirle</Btn>
                       </div>
                     )}
@@ -312,7 +314,7 @@ export const SettingsBackup = ({
       {/* Manuel yedek: şifreli/şifresiz seçimi */}
       {backupAsk && (
         <Modal title="Yedeği Şifrele" onClose={() => setBackupAsk(false)}>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 14 }}>
             Yedek dosyası düz metindir; şifrelerseniz dosya sızsa bile parolasız açılamaz. Şifreli yedeği
             geri yüklerken bu parola sorulur, <b>unutulursa yedek açılamaz</b>.
           </div>
@@ -323,7 +325,7 @@ export const SettingsBackup = ({
             <PasswordInput value={backupPw2} onChange={e => setBackupPw2(e.target.value)} placeholder="Parola (tekrar)"
               onKeyDown={e => { if (e.key === "Enter") saveBackup(true); }} />
           </div>
-          {backupPwError && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 10 }}>✗ {backupPwError}</div>}
+          {backupPwError && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", marginBottom: 10 }}>✗ {backupPwError}</div>}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <Btn variant="ghost" onClick={() => saveBackup(false)}>Şifresiz Kaydet</Btn>
             <Btn onClick={() => saveBackup(true)}><Icon name="lock" size={14} /> Şifreli Kaydet</Btn>
@@ -334,14 +336,14 @@ export const SettingsBackup = ({
       {/* Geri yükleme: şifreli yedek parola sorma */}
       {restoreEnvelope && (
         <Modal title="Şifreli Yedek" onClose={() => setRestoreEnvelope(null)}>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 14 }}>
             Bu yedek şifreli. Açmak için yedeği alırken belirlediğiniz parolayı girin.
           </div>
           <div style={{ marginBottom: 10 }}>
             <PasswordInput value={restorePw} onChange={e => setRestorePw(e.target.value)} placeholder="Yedek parolası" autoFocus
               onKeyDown={e => { if (e.key === "Enter") decryptAndRestore(); }} />
           </div>
-          {restorePwError && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 10 }}>✗ {restorePwError}</div>}
+          {restorePwError && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", marginBottom: 10 }}>✗ {restorePwError}</div>}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setRestoreEnvelope(null)}>Vazgeç</Btn>
             <Btn onClick={decryptAndRestore}><Icon name="upload" size={14} /> Aç ve Devam Et</Btn>
@@ -352,20 +354,20 @@ export const SettingsBackup = ({
       {/* Geri yükleme onayı */}
       {restoreData && (
         <Modal title="Yedeği Geri Yükle" onClose={() => setRestoreData(null)}>
-          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.6, marginBottom: 8 }}>
             Yüklenecek yedek: <b>{Array.isArray(restoreData.customers) ? restoreData.customers.length : 0} müşteri</b>,{" "}
             <b>{Array.isArray(restoreData.dealers) ? restoreData.dealers.length : 0} bayi</b>,{" "}
             <b>{Array.isArray(restoreData.services) ? restoreData.services.length : 0} servis kaydı</b>
             {restoreData.exportDate ? ` (${restoreData.exportDate} tarihli)` : ""}.
           </div>
           {restoreData.schemaVersion > BACKUP_SCHEMA_VERSION && (
-            <div style={{ fontSize: 13, color: "#b45309", fontWeight: 600, marginBottom: 8 }}>
+            <div style={{ fontSize: 13, color: "var(--amb700, #b45309)", fontWeight: 600, marginBottom: 8 }}>
               ⚠ Bu yedek, bu programın daha yeni bir sürümüyle alınmış. Bazı veriler düzgün yüklenmeyebilir.
             </div>
           )}
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+          <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>Geri yüklenecek bölümler</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>Geri yüklenecek bölümler</span>
               <button onClick={() => setRestorePaketler(new Set(restorePaketler.size === RESTORE_PAKETLERI.length ? [] : RESTORE_PAKETLERI.map(pk => pk.id)))}
                 style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {restorePaketler.size === RESTORE_PAKETLERI.length ? "Tümünü Kaldır" : "Tümünü Seç"}
@@ -375,22 +377,22 @@ export const SettingsBackup = ({
               <label key={pk.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
                 <input type="checkbox" checked={restorePaketler.has(pk.id)} onChange={() => paketToggle(pk.id)}
                   style={{ width: 16, height: 16, accentColor: "#e85d1a", cursor: "pointer" }} />
-                <span style={{ fontWeight: 600, color: "#0f172a" }}>{pk.ad}</span>
-                {pk.aciklama && <span style={{ fontSize: 11.5, color: "#94a3b8" }}>({pk.aciklama})</span>}
+                <span style={{ fontWeight: 600, color: "var(--n900, #0f172a)" }}>{pk.ad}</span>
+                {pk.aciklama && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>({pk.aciklama})</span>}
               </label>
             ))}
           </div>
           {restorePaketler.has("musteri") && !restorePaketler.has("evrak") && (
-            <div style={{ fontSize: 12.5, color: "#b45309", marginBottom: 8 }}>
+            <div style={{ fontSize: 12.5, color: "var(--amb700, #b45309)", marginBottom: 8 }}>
               ℹ Müşteriler yüklenip evraklar yüklenmezse, müşteri kayıtlarındaki kaynak teklif bağlantıları eski yedeğe göre kopuk kalabilir.
             </div>
           )}
           {restorePaketler.has("musteri") && !restorePaketler.has("stok") && (
-            <div style={{ fontSize: 12.5, color: "#b45309", marginBottom: 8 }}>
+            <div style={{ fontSize: 12.5, color: "var(--amb700, #b45309)", marginBottom: 8 }}>
               ℹ Müşteriler yüklenip stok yüklenmezse, makinaların stok bağlantıları ve üretim formu bağlantıları eski yedeğe göre farklı kalabilir.
             </div>
           )}
-          <div style={{ fontSize: 13, color: "#dc2626", fontWeight: 600, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "var(--red600, #dc2626)", fontWeight: 600, marginBottom: 20 }}>
             ⚠ Seçilen bölümlerdeki mevcut veriler yedekteki verilerle değiştirilecek. Bu işlem geri alınamaz.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

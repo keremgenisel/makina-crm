@@ -45,19 +45,19 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
   });
 
   const rowBg = (miktar) => {
-    if (miktar === 0) return "#fef2f2";
+    if (miktar === 0) return "var(--redBg, #fef2f2)";
     if (miktar <= 5)  return "#fefce8";
     return undefined;
   };
   const rowColor = (miktar) => {
-    if (miktar === 0) return "#991b1b";
-    if (miktar <= 5)  return "#92400e";
-    return "#0f172a";
+    if (miktar === 0) return "var(--red800, #991b1b)";
+    if (miktar <= 5)  return "var(--amb800, #92400e)";
+    return "var(--n900, #0f172a)";
   };
   const cardAccent = (miktar) => {
-    if (miktar === 0) return { border: "#fecaca", bg: "#fef2f2", numColor: "#991b1b" };
-    if (miktar <= 5)  return { border: "#fde68a", bg: "#fefce8", numColor: "#92400e" };
-    return { border: "#bbf7d0", bg: "#f0fdf4", numColor: "#15803d" };
+    if (miktar === 0) return { border: "var(--redBr, #fecaca)", bg: "var(--redBg, #fef2f2)", numColor: "var(--red800, #991b1b)" };
+    if (miktar <= 5)  return { border: "var(--ambBr, #fde68a)", bg: "#fefce8", numColor: "var(--amb800, #92400e)" };
+    return { border: "var(--grnBr, #bbf7d0)", bg: "var(--grnBg, #f0fdf4)", numColor: "var(--grn700, #15803d)" };
   };
 
   const openEkle = () => { setForm({ partId: "", miktar: "1", notlar: "" }); setModal("ekle"); };
@@ -98,7 +98,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       {/* ── Dashboard ── */}
       {pinnedRows.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
             Dashboard
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -112,13 +112,13 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
               ].filter(Boolean);
               return (
                 <div key={part.id} style={{ background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: 12, padding: "14px 20px", minWidth: 150, flex: "0 0 auto" }}>
-                  <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 6, maxWidth: 180, lineHeight: 1.4 }}>{part.ad}</div>
+                  <div style={{ fontSize: 12, color: "var(--n500, #64748b)", fontWeight: 600, marginBottom: 6, maxWidth: 180, lineHeight: 1.4 }}>{part.ad}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: fiyatlar.length ? 8 : 0 }}>
                     <span style={{ fontSize: 28, fontWeight: 800, color: ac.numColor, lineHeight: 1 }}>{miktar}</span>
-                    <span style={{ fontSize: 12, color: "#94a3b8" }}>adet</span>
+                    <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>adet</span>
                   </div>
                   {fiyatlar.length > 0 && (
-                    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 11, color: "var(--n500, #64748b)", fontWeight: 600, lineHeight: 1.6 }}>
                       {fiyatlar.join("  ·  ")}
                     </div>
                   )}
@@ -132,12 +132,12 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       {(kritikSayisi > 0 || dusukSayisi > 0) && (
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {kritikSayisi > 0 && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "#991b1b", fontWeight: 600 }}>
+            <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--red800, #991b1b)", fontWeight: 600 }}>
               {kritikSayisi} parça tükendi
             </div>
           )}
           {dusukSayisi > 0 && (
-            <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "#92400e", fontWeight: 600 }}>
+            <div style={{ background: "#fefce8", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--amb800, #92400e)", fontWeight: 600 }}>
               {dusukSayisi} parçada stok azaldı (5 veya altı)
             </div>
           )}
@@ -146,24 +146,24 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <div style={{ position: "relative", flex: 1 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Parça adı veya model ara..."
-            style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+            style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         {canDoStock("stock_parca_add") && <Btn onClick={openEkle}><Icon name="plus" size={14} /> Stoğa Parça Ekle</Btn>}
       </div>
 
       {rows.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
           Henüz yedek parça tanımı yok. Ayarlar → Yedek Parça'dan ekleyin.
         </div>
       ) : (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+        <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 {["Yedek Parça", "Modeller", "Fiyat", "Stok", "Son Güncelleme", ""].map(h => (
-                  <th key={h} style={{ padding: "9px 14px", textAlign: h === "Stok" ? "center" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                  <th key={h} style={{ padding: "9px 14px", textAlign: h === "Stok" ? "center" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -177,27 +177,27 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                 ].filter(Boolean);
                 const isPinned = pinnedPartIds.includes(String(part.id));
                 return (
-                <tr key={part.id} style={{ borderBottom: "1px solid #f1f5f9", background: rowBg(miktar) }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                <tr key={part.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: rowBg(miktar) }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                   onMouseLeave={e => e.currentTarget.style.background = rowBg(miktar) ?? ""}>
                   <td style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: rowColor(miktar) }}>{part.ad}</td>
                   <td style={{ padding: "10px 14px" }}>
                     {(part.models || []).length === 0
-                      ? <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>
+                      ? <span style={{ color: "var(--n300, #cbd5e1)", fontSize: 12 }}>—</span>
                       : <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                           {(part.models || []).slice(0, 3).map(m => (
-                            <span key={m} style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 8, background: "#f1f5f9", color: "#475569" }}>{m}</span>
+                            <span key={m} style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 8, background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)" }}>{m}</span>
                           ))}
-                          {(part.models || []).length > 3 && <span style={{ fontSize: 11, color: "#94a3b8" }}>+{part.models.length - 3}</span>}
+                          {(part.models || []).length > 3 && <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>+{part.models.length - 3}</span>}
                         </div>
                     }
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     {fiyatlar.length === 0
-                      ? <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>
+                      ? <span style={{ color: "var(--n300, #cbd5e1)", fontSize: 12 }}>—</span>
                       : <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           {fiyatlar.map(f => (
-                            <span key={f.sym} style={{ fontSize: 12, fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" }}>
+                            <span key={f.sym} style={{ fontSize: 12, fontWeight: 600, color: "var(--n900, #0f172a)", whiteSpace: "nowrap" }}>
                               {f.sym} {f.val}
                             </span>
                           ))}
@@ -206,9 +206,9 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                   </td>
                   <td style={{ padding: "10px 14px", textAlign: "center" }}>
                     <span style={{ fontSize: 16, fontWeight: 800, color: rowColor(miktar) }}>{miktar}</span>
-                    <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 4 }}>adet</span>
+                    <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginLeft: 4 }}>adet</span>
                   </td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "#94a3b8" }}>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--n400, #94a3b8)" }}>
                     {stok?.sonGuncelleme ? fmtTR(stok.sonGuncelleme) : "—"}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
@@ -232,7 +232,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
         </div>
       )}
       {rows.length > 0 && filteredRows.length === 0 && (
-        <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
+        <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
       )}
       <Pagination total={filteredRows.length} page={page} setPage={setPage} perPage={PER_PAGE} />
 
@@ -273,7 +273,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
               onForce={forcePartStokLock} onCancel={() => setModal(null)} />
           ) : (
             <>
-              <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "8px 12px", borderRadius: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "8px 12px", borderRadius: 8, marginBottom: 14 }}>
                 <b>{parts.find(p => p.id === form.partId)?.ad}</b> — mevcut stok: <b>{stokMap[form.partId]?.miktar ?? 0} adet</b>
               </div>
               <Field label="Yeni Miktar (adet)">
@@ -285,12 +285,12 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
               {canDoStock("stock_parca_pin") && (() => {
                 const isPinned = pinnedPartIds.includes(String(form.partId));
                 return (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", cursor: "pointer" }}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "var(--n100, #f8fafc)", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", cursor: "pointer" }}
                     onClick={() => togglePin(form.partId)}>
-                    <span style={{ fontSize: 18, color: isPinned ? "#e85d1a" : "#94a3b8" }}>{isPinned ? "★" : "☆"}</span>
+                    <span style={{ fontSize: 18, color: isPinned ? "#e85d1a" : "var(--n400, #94a3b8)" }}>{isPinned ? "★" : "☆"}</span>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{isPinned ? "Dashboarddan Çıkar" : "Dashboarda Ekle"}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>Bu parça dashboard kartlarında {isPinned ? "görünüyor" : "görünmüyor"}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>{isPinned ? "Dashboarddan Çıkar" : "Dashboarda Ekle"}</div>
+                      <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Bu parça dashboard kartlarında {isPinned ? "görünüyor" : "görünmüyor"}</div>
                     </div>
                   </div>
                 );

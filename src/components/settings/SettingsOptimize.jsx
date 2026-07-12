@@ -100,39 +100,39 @@ export const SettingsOptimize = ({
     flash("ok", `${imgs.length} resim optimize edildi, ${savedKb} KB tasarruf (%${pct}).`);
   };
 
-  const groupColor = { "Makina modeli": "#3b82f6", "Kalıp": "#8b5cf6", "Parça/Yedek parça": "#f59e0b", "Kaşe/İmza": "#e85d1a" };
+  const groupColor = { "Makina modeli": "var(--blu500, #3b82f6)", "Kalıp": "#8b5cf6", "Parça/Yedek parça": "#f59e0b", "Kaşe/İmza": "#e85d1a" };
 
   return (
     <Section title="Resim Optimizasyonu" icon="settings">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         Makina modeli, kalıp, parça ve kaşe resimlerini WebP formatına dönüştürür, boyutlarını küçültür.
         Yeni yüklenen resimler zaten optimize edilir; bu araç mevcut eski resimlere de uygular.
       </div>
 
       {stats && (
-        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 18px", marginBottom: 16, fontSize: 13 }}>
+        <div style={{ background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "14px 18px", marginBottom: 16, fontSize: 13 }}>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: stats.afterKb != null ? 12 : 0 }}>
             {Object.entries(stats.groups || {}).map(([label, list]) => list.length > 0 && (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: groupColor[label], flexShrink: 0 }} />
-                <span style={{ color: "#475569" }}>{label}:</span>
+                <span style={{ color: "var(--n600, #475569)" }}>{label}:</span>
                 <span style={{ fontWeight: 700 }}>{list.length} resim</span>
-                <span style={{ color: "#94a3b8" }}>({list.reduce((s, i) => s + kb(i.dataUrl), 0)} KB)</span>
+                <span style={{ color: "var(--n400, #94a3b8)" }}>({list.reduce((s, i) => s + kb(i.dataUrl), 0)} KB)</span>
               </div>
             ))}
           </div>
-          {stats.imgs.length === 0 && <div style={{ color: "#94a3b8" }}>Kayıtlı resim bulunamadı.</div>}
+          {stats.imgs.length === 0 && <div style={{ color: "var(--n400, #94a3b8)" }}>Kayıtlı resim bulunamadı.</div>}
           {stats.imgs.length > 0 && stats.afterKb == null && (
-            <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid #e2e8f0", color: "#475569" }}>
+            <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid var(--n200, #e2e8f0)", color: "var(--n600, #475569)" }}>
               Toplam: <b>{stats.beforeKb} KB</b> — Optimize Et'e basarak küçültün.
             </div>
           )}
           {stats.afterKb != null && (
-            <div style={{ paddingTop: 10, borderTop: "1px solid #e2e8f0" }}>
-              <span style={{ color: "#64748b" }}>{stats.beforeKb} KB</span>
-              <span style={{ margin: "0 8px", color: "#94a3b8" }}>→</span>
-              <span style={{ fontWeight: 700, color: "#16a34a" }}>{stats.afterKb} KB</span>
-              <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 700, color: "#16a34a", background: "#dcfce7", borderRadius: 6, padding: "2px 8px" }}>
+            <div style={{ paddingTop: 10, borderTop: "1px solid var(--n200, #e2e8f0)" }}>
+              <span style={{ color: "var(--n500, #64748b)" }}>{stats.beforeKb} KB</span>
+              <span style={{ margin: "0 8px", color: "var(--n400, #94a3b8)" }}>→</span>
+              <span style={{ fontWeight: 700, color: "var(--grn600, #16a34a)" }}>{stats.afterKb} KB</span>
+              <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 700, color: "var(--grn600, #16a34a)", background: "var(--grnBg2, #dcfce7)", borderRadius: 6, padding: "2px 8px" }}>
                 {stats.savedKb} KB tasarruf (%{stats.pct})
               </span>
             </div>

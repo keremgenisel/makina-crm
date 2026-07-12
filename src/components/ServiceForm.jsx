@@ -7,10 +7,25 @@ import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } 
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {} }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
+  // Bu serviste kaydedilince bağlanacak yeni dosya taslakları (fiziksel dosya diske/sunucuya
+  // yüklenmiş; künye kaydetmede oluşturulur). Düzenlemede zaten bağlı olanlar ayrıca listelenir.
+  const [dosyaTaslaklari, setDosyaTaslaklari] = useState([]);
+  const [dosyaBusy, setDosyaBusy] = useState(false);
+  const mevcutServisDosyalari = (dosyalar || []).filter(d => !d.deletedAt && d.refType === "servis" && d.refId === form.id);
+  const fmtDosyaBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
+  const dosyaEkle = async () => {
+    if (!window.appFiles?.add) { showToast("Dosya ekleme bu ortamda kullanılamıyor.", "err"); return; }
+    setDosyaBusy(true);
+    const res = await window.appFiles.add(selectedCust?.name).catch(() => null);
+    setDosyaBusy(false);
+    if (!res || res.canceled) return;
+    if (res.eklenen?.length) setDosyaTaslaklari(p => [...p, ...res.eklenen]);
+    if (res.hatalar?.length) showToast(res.hatalar.join(" · "), "err");
+  };
 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   const warrantyAktif = !!(selectedCust?.warrantyEnd && selectedCust.warrantyEnd >= today());
@@ -45,42 +60,42 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "#fff7ed" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{selectedCust.name}</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
+              <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>
                 {selectedCust.model || "Model yok"} {selectedCust.serialNo ? `· S/N: ${selectedCust.serialNo}` : ""}
               </div>
             </div>
             <button onClick={() => { setForm(p => ({ ...p, customerId: "" })); setCustSearch(""); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}>
               <Icon name="close" size={14} />
             </button>
           </div>
         ) : (
           <div>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
               <input autoFocus value={custSearch} onChange={e => setCustSearch(e.target.value)}
                 placeholder="Firma adı, kişi veya seri no ile ara..."
-                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
+                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box", outline: "none" }} />
             </div>
             {custSearch.trim() && (
-              <div style={{ marginTop: 6, border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ marginTop: 6, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
                 {matchedCustomers.map(c => (
                   <div key={c.id}
                     onClick={() => { setForm(p => ({ ...p, customerId: c.id })); setCustSearch(""); }}
-                    style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: "#fff" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                    style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", background: "var(--surface, #ffffff)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "var(--surface, #ffffff)"}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                    <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>
                       {c.contact} {c.model ? `· ${c.model}` : ""} {c.serialNo ? `· ${c.serialNo}` : ""}
                     </div>
                   </div>
                 ))}
                 {matchedCustomers.length === 0 && (
-                  <div style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8" }}>Müşteri bulunamadı.</div>
+                  <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--n400, #94a3b8)" }}>Müşteri bulunamadı.</div>
                 )}
               </div>
             )}
@@ -124,24 +139,66 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         <Field label="Müşteri Talimatı / Açıklama">
           <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
             placeholder="Müşterinin talimatı / talebi..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
         </Field>
         <Field label="Fabrika Notu">
           <textarea value={form.fabrikaNotu || ""} onChange={e => setForm(p => ({ ...p, fabrikaNotu: e.target.value }))}
             placeholder="Fabrika dahili notu (yazdırılan formda görünür)..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
         </Field>
         <Field label="Yapılan İşler / Parça Değişimleri">
           <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
             placeholder="Yapılan işlemler, değişen parçalar..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
         </Field>
       </div>
+
+      {/* Servis resimleri/dosyaları: bu servise bağlanacak belgeler. Kaydedilince künye oluşup
+          servise (refType:servis) bağlanır; birden fazla eklenebilir. */}
+      {dosyaEkleyebilir && window.appFiles?.add && (
+        <Field label="Servis Resimleri / Dosyaları">
+          {dosyaCevrimdisi ? (
+            <div style={{ fontSize: 12, color: "var(--amb800, #92400e)", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, padding: "8px 10px" }}>
+              Sunucu bağlantısı yok: dosya ekleme bağlantı gelince çalışır.
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Btn small variant="ghost" onClick={dosyaEkle} disabled={dosyaBusy || !form.customerId}>
+                  <Icon name="paperclip" size={12} /> {dosyaBusy ? "Ekleniyor..." : "Resim / Dosya Ekle"}
+                </Btn>
+                {!form.customerId && <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Önce müşteri seçin.</span>}
+                <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>PDF, resim veya Office belgesi (dosya başına en fazla 20 MB).</span>
+              </div>
+              {(mevcutServisDosyalari.length > 0 || dosyaTaslaklari.length > 0) && (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {mevcutServisDosyalari.map(d => (
+                    <div key={`v${d.id}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, padding: "5px 8px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8 }}>
+                      <Icon name="paperclip" size={12} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.ad}</span>
+                      <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{fmtDosyaBoyut(d.boyut)}</span>
+                      <button type="button" onClick={() => window.appFiles?.open?.(d.dosyaAdi)} style={{ fontSize: 11, fontWeight: 600, color: "var(--blue2, #0369a1)", background: "none", border: "none", cursor: "pointer" }}>Aç</button>
+                    </div>
+                  ))}
+                  {dosyaTaslaklari.map((d, i) => (
+                    <div key={`t${i}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, padding: "5px 8px", background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)", borderRadius: 8 }}>
+                      <Icon name="paperclip" size={12} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.ad}</span>
+                      <span style={{ fontSize: 11, color: "var(--grn600, #16a34a)", fontWeight: 700 }}>yeni</span>
+                      <button type="button" title="Kaldır" onClick={() => setDosyaTaslaklari(p => p.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", display: "flex" }}><Icon name="close" size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </Field>
+      )}
 
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
         {parts.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#94a3b8" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar'dan ekleyebilirsiniz.</div>
+          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar'dan ekleyebilirsiniz.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
@@ -153,9 +210,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {(form.degisenParcalar || []).length > 0 && (
         <>
           {hasAltuntasParca && warrantyAktif && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-              <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#dc2626" }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+              <input type="checkbox" checked={!!form.parcaGarantiDisi} onChange={e => setForm(p => ({ ...p, parcaGarantiDisi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--red600, #dc2626)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)" }}>
                 {form.parcaGarantiDisi ? "Garanti kapsamı dışı (ücretli)" : "Garanti kapsamında, parça ücretsiz verildi"}
               </span>
             </label>
@@ -165,7 +222,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               const ad = parcaAdi(p);
               const hasPartId = p && p.partId;
               const hasComponentId = !!hasPartId;
-              const itemColor = "#1d4ed8";
+              const itemColor = "var(--blu700, #1d4ed8)";
               const isDisTedarik = !!(islemAnlasmali && p.disTedarik);
               const cols = [
                 "1fr",
@@ -187,7 +244,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                           arr[i] = { ...arr[i], miktar: parseInt(e.target.value) || 1 };
                           return { ...prev, degisenParcalar: arr };
                         })}
-                        style={{ width: "100%", padding: "6px 6px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", boxSizing: "border-box", fontFamily: "inherit" }} />
+                        style={{ width: "100%", padding: "6px 6px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", textAlign: "center", boxSizing: "border-box", fontFamily: "inherit" }} />
                     </div>
                   )}
                   {islemAnlasmali && (
@@ -198,7 +255,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                         return { ...prev, degisenParcalar: arr };
                       })}
                       title={isDisTedarik ? "Dış tedarik — Altuntaş'tan alınmadı" : "Altuntaş'tan alındı"}
-                      style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", padding: "4px 7px", borderRadius: 8, border: isDisTedarik ? "1px solid #f97316" : "1px solid #e2e8f0", background: isDisTedarik ? "#fff7ed" : "#f8fafc", color: isDisTedarik ? "#ea580c" : "#94a3b8", whiteSpace: "nowrap" }}>
+                      style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", padding: "4px 7px", borderRadius: 8, border: isDisTedarik ? "1px solid #f97316" : "1px solid var(--n200, #e2e8f0)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--n100, #f8fafc)", color: isDisTedarik ? "#ea580c" : "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>
                       {isDisTedarik ? "Dış Tedarik" : "Bizden"}
                     </button>
                   )}
@@ -212,7 +269,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                   )}
                   <button type="button" title="Bu parçayı kaldır"
                     onClick={() => setForm(prev => ({ ...prev, degisenParcalar: prev.degisenParcalar.filter((_, idx) => idx !== i) }))}
-                    style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+                    style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
                 </div>
               );
             })}
@@ -249,7 +306,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             <Field label="Servis Ücreti">
               <MoneyInput value={form.servisUcreti} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, servisUcreti: v }))} />
               {(form.currency || "TRY") !== "TRY" && (
-                <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+                <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg2, #dbeafe)", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
               )}
             </Field>
           )}
@@ -258,9 +315,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
       {/* Ödeme durumu — servis ve parça ücreti tek ortak toggle ile yönetilir */}
       {ucretliVarMi && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "#15803d" : "#92400e" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
+          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
             {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
           </span>
         </label>
@@ -268,7 +325,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
       {/* Servis ücreti + parça ücretleri toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}
       {ucretliVarMi && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+        <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
           {(() => {
             const parcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
             const cur = form.currency || "TRY";
@@ -276,11 +333,11 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             const kdv = calcKDV(form.faturaTipi, toplam, form.date, kdvRates);
             return (
               <>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   Toplam (Servis + Parça): {fmtCur(toplam, cur)}
                 </span>
                 {kdv > 0 && (
-                  <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
+                  <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.date, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
                 )}
@@ -290,9 +347,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
-        <Btn onClick={() => onSave(parcaUcretsizMi)}><Icon name="check" size={14} /> Kaydet</Btn>
+        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
     </Modal>
   );

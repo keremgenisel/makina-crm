@@ -426,6 +426,16 @@ export const mergeAndUpdate = (partStock, pid, newMiktar, extraFields = {}) => {
 
 export const withoutDeleted = arr => (arr || []).filter(x => !x.deletedAt);
 
+// Dosya arşivi: servise bağlı bir dosya, servisin göründüğü HER iki yerde de listelenmeli —
+// müşteri detayında (servis müşterinindir) ve anlaşmalı servis detayında (servisi o firma yaptı).
+// Doğrudan sahiplik (customerId/dealerId) bir yönü, servis üyeliği (servisIdKumesi) diğer yönü
+// kapsar. Böylece bayiden servise bağlanan dosya müşteride, müşteriden bağlanan bayide görünür.
+export const dosyaBuKayitYerinde = (d, sahipAnahtar, sahipId, servisIdKumesi) =>
+  !d?.deletedAt && (
+    (sahipId != null && d[sahipAnahtar] === sahipId) ||
+    (d?.refType === "servis" && d?.refId != null && !!servisIdKumesi?.has(d.refId))
+  );
+
 export const addYearsToDateStr = (dateStr, years) => {
   if (!dateStr) return "";
   return `${parseInt(dateStr.slice(0, 4)) + years}${dateStr.slice(4)}`;

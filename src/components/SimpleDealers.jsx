@@ -1,14 +1,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
+import { useMailSender, MailComposeModal } from "./MailCompose";
 import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict } from "./ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
 import { useLock } from "../hooks/useLock";
+import { DealerFilesSection } from "./DealerFilesSection";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
 
   const [modal, setModal] = useState(null);
@@ -17,6 +19,9 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const [dupWarn, setDupWarn] = useState(null); // benzer bayi uyarısı: [{ kayit, sebep }]
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
   const { lockLoading: dealerLockLoading, lockConflict: dealerLock, forceAcquire: forceDealerLock } = useLock("dealer", modal?.edit?.id ?? null);
+  // Bayi DETAY görünümü de kilitlenir (dosya ekleme burada) — müşteri detayıyla aynı davranış:
+  // biri açıkken başkası aynı bayiyi açamaz (dolayısıyla eş zamanlı dosya eklenemez).
+  const { lockConflict: dealerDetailLock, forceAcquire: forceDealerDetailLock } = useLock("dealer", detailView?._isFactory ? null : (detailView?.id ?? null));
   const [dealerFilter, setDealerFilter] = useState(initialFilter); // all | bayi | anlasmali | borclu
   // Genel aramadan gelen derin bağlantı: belirli bayinin detayını doğrudan aç
   useEffect(() => {
@@ -49,7 +54,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const dealerHasDebt = (d) => !!(borcMap[d.name] && Object.values(borcMap[d.name].byCur).some(v => v > 0));
 
   const [dealerSvcSearch, setDealerSvcSearch] = useState("");
-  useEffect(() => { setDealerSvcSearch(""); }, [detailView]);
+  const [dosyaOdak, setDosyaOdak] = useState(null); // { refType:"servis", refId } — servis kartındaki ataş rozetine tıklayınca
+  useEffect(() => { setDealerSvcSearch(""); setDosyaOdak(null); }, [detailView]);
+  // Servis kartındaki ataş rozeti adedi: servise bağlı dosyalar (sahibi bayi VEYA müşteri olabilir;
+  // servis kimliği benzersiz olduğu için sahipten bağımsız sayılır).
+  const dosyaAdet = (refType, refId) => dosyalar.filter(d => !d.deletedAt && d.refType === refType && d.refId === refId).length;
 
   const dealerServices = useMemo(() => {
     if (!detailView?.anlasmaliServisMi) return [];
@@ -160,8 +169,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   };
 
   // ── E-posta gönder (bayiye) — içerik tamamen serbest, birden fazla ek dosya isteğe bağlı manuel seçilir ──
-  const [mailDraft, setMailDraft] = useState(null); // null | { to, subject, text, attachments: [{name, base64, mime, size}] }
-  const [mailSendState, setMailSendState] = useState({ state: "idle", error: null }); // idle | sending | error
+  // Ortak e-posta hook'u (durum + gönderim). Bayi maili ek dosya taşıyabilir (attachments).
+  const { mailDraft, setMailDraft, mailSendState, setMailSendState, sendMail } = useMailSender(serverPermissions);
   const MAX_ATTACHMENT_MB = 15; // her dosya için ayrı ayrı geçerli sınır
   const MAX_TOTAL_ATTACHMENT_MB = 20; // tüm eklerin toplamı için sınır — SMTP sunucuları genelde toplam mesaj boyutuna da sınır koyar
   const openMailDealer = (d) => {
@@ -207,27 +216,18 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
   const sendMailDraft = async () => {
-    if (!window.appMail || !mailDraft) return;
-    if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
-    setMailSendState({ state: "sending", error: null });
-    const res = await window.appMail.send({
-      to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text,
+    const res = await sendMail({
+      to: mailDraft.to, subject: mailDraft.subject, text: mailDraft.text,
       attachments: (mailDraft.attachments || []).map(a => ({ filename: a.name, contentBase64: a.base64, mimeType: a.mime })),
       type: "bayi",
     });
-    if (res?.ok) {
-      setMailSendState({ state: "idle", error: null });
-      setMailDraft(null);
-      showToast("E-posta gönderildi.");
-    } else {
-      setMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
-    }
+    if (res?.ok) showToast("E-posta gönderildi.");
   };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Bayiler</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Bayiler</h2>
         {canDo("dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Bayi/Servis Ekle</Btn>}
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
@@ -240,68 +240,68 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           <button key={f.v} onClick={() => { setDealerFilter(f.v); setPage(1); }}
             style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: dealerFilter === f.v ? "#e85d1a" : "#e2e8f0",
-              background: dealerFilter === f.v ? "#e85d1a" : "#fff",
-              color: dealerFilter === f.v ? "#fff" : "#64748b",
+              border: "1px solid", borderColor: dealerFilter === f.v ? "#e85d1a" : "var(--n200, #e2e8f0)",
+              background: dealerFilter === f.v ? "#e85d1a" : "var(--surface, #ffffff)",
+              color: dealerFilter === f.v ? "#fff" : "var(--n500, #64748b)",
             }}>
             {f.l} ({f.count})
           </button>
         ))}
       </div>
       <div style={{ position: "relative", marginBottom: 16 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Bayi ara..."
-          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
+            <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Firma", "İletişim", "Telefon", "Ülke / Şehir", ""].map(h => (
-                <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {/* Fabrika — her zaman en üstte, sadece sunucu PC'de düzenlenebilir, silinemez */}
-            <tr style={{ borderBottom: "2px solid #d1fae5", background: "#f0fdf4" }}>
+            <tr style={{ borderBottom: "2px solid var(--grnBg3, #d1fae5)", background: "var(--grnBg, #f0fdf4)" }}>
               <td style={{ padding: "13px 16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontWeight: 800, fontSize: 14, color: "#065f46", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}
+                  <span style={{ fontWeight: 800, fontSize: 14, color: "var(--grn800, #065f46)", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}
                     onClick={() => setDetailView({ ...(factory || {}), name: factory?.name || "Altuntaş Makina", _isFactory: true })} title="Fabrika bilgilerini görüntüle">
                     {factory?.name || "Altuntaş Makina"}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 800, background: "#10b981", color: "#fff", borderRadius: 6, padding: "2px 8px", letterSpacing: .5 }}>FABRİKA</span>
                 </div>
-                {factory?.adres && <div style={{ fontSize: 11, color: "#047857", marginTop: 3 }}>{factory.adres}</div>}
+                {factory?.adres && <div style={{ fontSize: 11, color: "var(--emerald2, #047857)", marginTop: 3 }}>{factory.adres}</div>}
               </td>
-              <td style={{ padding: "13px 16px", fontSize: 13, color: "#065f46" }}>{factory?.contact || "—"}</td>
-              <td style={{ padding: "13px 16px", fontSize: 13, color: "#065f46" }}>{factory?.phone || "—"}</td>
-              <td style={{ padding: "13px 16px", fontSize: 13, color: "#065f46" }}>{factory?.country && factory?.city ? `${factory.country} / ${factory.city}` : factory?.country || "Türkiye"}</td>
+              <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--grn800, #065f46)" }}>{factory?.contact || "—"}</td>
+              <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--grn800, #065f46)" }}>{factory?.phone || "—"}</td>
+              <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--grn800, #065f46)" }}>{factory?.country && factory?.city ? `${factory.country} / ${factory.city}` : factory?.country || "Türkiye"}</td>
               <td style={{ padding: "13px 16px" }}>
                 {canEditFactory && <Btn small variant="ghost" onClick={openFactoryEdit}><Icon name="edit" size={12} /></Btn>}
               </td>
             </tr>
             {paged.map(d => (
-              <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+              <tr key={d.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}
                 onClick={() => setDetailView(d)} title="Tüm bilgileri görüntüle"
-                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{d.name}</span>
-                    {d.bayiMi !== false && <span style={{ fontSize: 9, fontWeight: 800, background: "#3b82f6", color: "#fff", borderRadius: 6, padding: "2px 7px", letterSpacing: .3 }}>BAYİ</span>}
+                    <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "var(--n200, #e2e8f0)" }}>{d.name}</span>
+                    {d.bayiMi !== false && <span style={{ fontSize: 9, fontWeight: 800, background: "var(--blu500, #3b82f6)", color: "#fff", borderRadius: 6, padding: "2px 7px", letterSpacing: .3 }}>BAYİ</span>}
                     {d.anlasmaliServisMi && <span style={{ fontSize: 9, fontWeight: 800, background: "#f59e0b", color: "#fff", borderRadius: 6, padding: "2px 7px", letterSpacing: .3 }}>ANLAŞMALI SERVİS</span>}
                     {dealerHasDebt(d) && (
-                      <span style={{ fontSize: 9, fontWeight: 800, background: "#dc2626", color: "#fff", borderRadius: 6, padding: "2px 7px", letterSpacing: .3 }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, background: "var(--red600, #dc2626)", color: "#fff", borderRadius: 6, padding: "2px 7px", letterSpacing: .3 }}>
                         BORÇLU: {Object.entries(borcMap[d.name].byCur).filter(([, v]) => v > 0).map(([k, v]) => fmtCur(v, k)).join(" + ")}
                       </span>
                     )}
                   </div>
-                  {d.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.adres}</div>}
+                  {d.adres && <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 3, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.adres}</div>}
                 </td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{d.contact || "—"}</td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{d.phone || "—"}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n600, #475569)" }}>{d.contact || "—"}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n600, #475569)" }}>{d.phone || "—"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13 }}>{d.country && d.city ? `${d.country} / ${d.city}` : d.city || d.country || "—"}</td>
                 <td style={{ padding: "13px 16px" }} onClick={e => e.stopPropagation()}>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -313,7 +313,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>Bayi bulunamadı.</div>}
+        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Bayi bulunamadı.</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </div>
 
@@ -321,37 +321,41 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       {detailView && (
         <Modal title={detailView.name || "Bayi"} onClose={() => setDetailView(null)}
           maxWidth={(!detailView._isFactory && detailView.anlasmaliServisMi) ? 1040 : 520}>
+          {dealerDetailLock ? (
+            <LockConflict lockedBy={dealerDetailLock.lockedBy} lockedAt={dealerDetailLock.lockedAt}
+              onForce={forceDealerDetailLock} onCancel={() => setDetailView(null)} />
+          ) : (<>
           {detailView._isFactory && (
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12, fontWeight: 700, color: "#065f46" }}>
+            <div style={{ background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)", borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12, fontWeight: 700, color: "var(--grn800, #065f46)" }}>
               🏭 FABRİKA — Ana üretici
             </div>
           )}
           {!detailView._isFactory && detailView.anlasmaliServisMi && (
-            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+            <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "8px 14px", marginBottom: 14, fontSize: 12, fontWeight: 700, color: "var(--amb800, #92400e)" }}>
               {detailView.bayiMi !== false ? "BAYİ (Aynı zamanda Anlaşmalı Servis)" : "ANLAŞMALI SERVİS"}
             </div>
           )}
           {(() => {
           const isServisli = !detailView._isFactory && detailView.anlasmaliServisMi;
           const debtBox = (!detailView._isFactory && dealerHasDebt(detailView)) ? (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 800, letterSpacing: .5, marginBottom: 4, textTransform: "uppercase" }}>Ödenmemiş Parça Borcu</div>
+            <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "var(--red800, #991b1b)", fontWeight: 800, letterSpacing: .5, marginBottom: 4, textTransform: "uppercase" }}>Ödenmemiş Parça Borcu</div>
               {Object.entries(borcMap[detailView.name].byCur).filter(([, v]) => v > 0).map(([k, v]) => (
-                <div key={k} style={{ fontSize: 20, fontWeight: 800, color: "#dc2626" }}>{fmtCur(v, k)}</div>
+                <div key={k} style={{ fontSize: 20, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(v, k)}</div>
               ))}
               {Object.entries(borcMap[detailView.name].kdvByCur).filter(([, v]) => v > 0).map(([k, v]) => (
-                <div key={k} style={{ fontSize: 11.5, color: "#0d9488", fontWeight: 700, marginTop: 3 }}>KDV: {fmtCur(v, k)}</div>
+                <div key={k} style={{ fontSize: 11.5, color: "var(--teal, #0d9488)", fontWeight: 700, marginTop: 3 }}>KDV: {fmtCur(v, k)}</div>
               ))}
               <div style={{ marginTop: 8 }}>
                 {borcMap[detailView.name].records.map(s => (
                   <div key={s.id}
                     onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
                     title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "6px 0", borderTop: "1px solid #fee2e2", cursor: onGoCustomerDetail ? "pointer" : "default" }}>
-                    <span style={{ color: "#7f1d1d", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "#fecaca" }}>
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "6px 0", borderTop: "1px solid var(--redBg2, #fee2e2)", cursor: onGoCustomerDetail ? "pointer" : "default" }}>
+                    <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "var(--redBr, #fecaca)" }}>
                       {customers.find(c => c.id === s.customerId)?.name || "—"} · {fmtTR(s.date)}
                     </span>
-                    <span style={{ fontWeight: 700, color: "#dc2626" }}>{fmtCur(altuntasParcaBedeli(s), s.parcaCurrency || s.currency)}</span>
+                    <span style={{ fontWeight: 700, color: "var(--red600, #dc2626)" }}>{fmtCur(altuntasParcaBedeli(s), s.parcaCurrency || s.currency)}</span>
                   </div>
                 ))}
               </div>
@@ -367,29 +371,29 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
                 ["Not", detailView.note],
               ].filter(([, v]) => v).map(([k, v]) => (
-                <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
-                  <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{k}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{v}</div>
+                <div key={k} style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 10, color: "var(--n400, #94a3b8)", fontWeight: 700, letterSpacing: .5, marginBottom: 3, textTransform: "uppercase" }}>{k}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>{v}</div>
                 </div>
               ))}
             </div>
           );
           const servisBlok = isServisli ? (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e2e8f0" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
                 Servis Geçmişi ({dealerServices.length})
               </div>
               <div style={{ position: "relative", marginBottom: 10 }}>
-                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
                 <input
                   value={dealerSvcSearch}
                   onChange={e => { setDealerSvcSearch(e.target.value); setSvcPage(1); }}
                   placeholder="Müşteri veya servis tipi ara..."
-                  style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
+                  style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
                 />
               </div>
               {svcPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Kayıt bulunamadı.</div>
+                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {svcPaged.map(s => {
@@ -400,19 +404,20 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   const parcaBizden = parcaUcret > 0 && !s.parcaUcretsizMi;
                   const kdvToplam = parcaBizden ? calcKDV(s.faturaTipi, parcaUcret, s.date, kdvRates) : 0;
                   return (
-                    <div key={s.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
+                    <div key={s.id} style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                        <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{fmtTR(s.date) || "—"}</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{s.type || "—"}</span>
+                        <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(s.date) || "—"}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{s.type || "—"}</span>
                         {cust && (
                           <span
                             onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
-                            style={{ fontSize: 11, fontWeight: 700, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px", cursor: onGoCustomerDetail ? "pointer" : "default", textDecoration: onGoCustomerDetail ? "underline" : "none" }}>
+                            style={{ fontSize: 11, fontWeight: 700, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px", cursor: onGoCustomerDetail ? "pointer" : "default", textDecoration: onGoCustomerDetail ? "underline" : "none" }}>
                             {cust.name}
                           </span>
                         )}
-                        {s.repairPlace && <span style={{ fontSize: 11, color: "#64748b" }}>· {s.repairPlace}</span>}
-                        {s.tech && <span style={{ fontSize: 11, color: "#64748b" }}>· {s.tech}</span>}
+                        {s.repairPlace && <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>· {s.repairPlace}</span>}
+                        {s.tech && <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>· {s.tech}</span>}
+                        {setDosyalar && <span style={{ marginLeft: "auto" }}><AtesRozeti n={dosyaAdet("servis", s.id)} onClick={() => setDosyaOdak({ refType: "servis", refId: s.id })} /></span>}
                       </div>
                       {Array.isArray(s.degisenParcalar) && s.degisenParcalar.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
@@ -420,7 +425,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                             const isDisTedarik = typeof p === "object" && !!p.disTedarik;
                             const fiyat = typeof p === "object" ? parseMoney(p.fiyat || p.ucret) : 0;
                             return (
-                              <span key={i} style={{ fontSize: 11, fontWeight: 700, background: isDisTedarik ? "#fff7ed" : "#e0f2fe", color: isDisTedarik ? "#ea580c" : "#0369a1", border: isDisTedarik ? "1px solid #fed7aa" : "none", borderRadius: 20, padding: "3px 10px" }}>
+                              <span key={i} style={{ fontSize: 11, fontWeight: 700, background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "#e0f2fe", color: isDisTedarik ? "#ea580c" : "var(--blue2, #0369a1)", border: isDisTedarik ? "1px solid var(--ambBr3, #fed7aa)" : "none", borderRadius: 20, padding: "3px 10px" }}>
                                 {p.ad || p.name || "—"}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, s.parcaCurrency || "TRY")}` : ""}
                               </span>
                             );
@@ -430,20 +435,20 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         {servisUcret > 0 && (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n500, #64748b)" }}>
                               {fmtCur(servisUcret, s.currency || "TRY")}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Bayi Geliri</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--n400, #94a3b8)", background: "var(--n150, #f1f5f9)", borderRadius: 6, padding: "1px 6px" }}>Bayi Geliri</span>
                           </div>
                         )}
                         {parcaBizden && (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#dc2626" }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--red600, #dc2626)" }}>
                               {fmtCur(parcaUcret, s.parcaCurrency || s.currency || "TRY")}
-                              {kdvToplam > 0 && <span style={{ color: "#64748b", fontWeight: 400 }}> · KDV dahil: {fmtCur(parcaUcret + kdvToplam, s.parcaCurrency || s.currency || "TRY")}</span>}
+                              {kdvToplam > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(parcaUcret + kdvToplam, s.parcaCurrency || s.currency || "TRY")}</span>}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", background: "#f1f5f9", borderRadius: 6, padding: "1px 6px" }}>Parça</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "#dcfce7" : "#fee2e2", color: s.odendi ? "#16a34a" : "#dc2626" }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--n400, #94a3b8)", background: "var(--n150, #f1f5f9)", borderRadius: 6, padding: "1px 6px" }}>Parça</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: s.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
                               {s.odendi ? "Ödendi" : "Ödenmedi"}
                             </span>
                           </div>
@@ -453,7 +458,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#ea580c" }}>
                               {fmtCur(disTedarikUcret, s.parcaCurrency || s.currency || "TRY")}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "#ea580c", background: "#fff7ed", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik Parça</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: "#ea580c", background: "var(--ambBg3, #fff7ed)", borderRadius: 6, padding: "1px 6px" }}>Dış Tedarik Parça</span>
                           </div>
                         )}
                       </div>
@@ -481,63 +486,40 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             </>
           );
           })()}
+          {!detailView._isFactory && (
+            <DealerFilesSection key={detailView.id} dealer={detailView} dosyalar={dosyalar} setDosyalar={setDosyalar}
+              services={dealerServices} customers={customers} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} cevrimdisi={dosyaCevrimdisi}
+              odak={dosyaOdak} onOdakChange={setDosyaOdak} />
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             {!detailView._isFactory && (
               <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
             )}
             <Btn variant="ghost" onClick={() => setDetailView(null)}>Kapat</Btn>
           </div>
+          </>)}
         </Modal>
       )}
 
       {/* Bayiye e-posta gönder — içerik serbest, ek dosya isteğe bağlı manuel seçilir */}
       {mailDraft && (
-        <Modal title="E-posta Gönder" onClose={() => setMailDraft(null)}>
-          {!window.appMail ? (
-            <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
-              Bu özellik yalnızca kurulu uygulamada çalışır.
-            </div>
-          ) : (
-            <>
-              <Field label="Kime">
-                <Input value={mailDraft.to} onChange={e => setMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
-                <Warn>{mailDraft.to && !EMAIL_RE.test(mailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
-              </Field>
-              <Field label="Konu">
-                <Input value={mailDraft.subject} onChange={e => setMailDraft(p => ({ ...p, subject: e.target.value }))} placeholder="Konu" />
-              </Field>
-              <Field label="Mesaj">
-                <textarea value={mailDraft.text} onChange={e => setMailDraft(p => ({ ...p, text: e.target.value }))}
-                  placeholder="Mesajınızı yazın..."
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
-              </Field>
-              <Field label={`Ekler (isteğe bağlı, dosya başına en fazla ${MAX_ATTACHMENT_MB} MB, toplam en fazla ${MAX_TOTAL_ATTACHMENT_MB} MB)`}>
-                <input type="file" multiple onChange={onPickAttachment}
-                  style={{ fontSize: 13, color: "#475569" }} />
-                {(mailDraft.attachments || []).map((att, idx) => (
-                  <div key={idx} style={{ fontSize: 12, color: "#0f172a", marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    📎 {att.name}
-                    {isPreviewableMime(att.mime) && (
-                      <button onClick={() => previewAttachment(att)}
-                        style={{ border: "none", background: "transparent", color: "#1d4ed8", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Önizle</button>
-                    )}
-                    <button onClick={() => removeAttachment(idx)}
-                      style={{ border: "none", background: "transparent", color: "#dc2626", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Kaldır</button>
-                  </div>
-                ))}
-              </Field>
-              {mailSendState.state === "error" && (
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 12 }}>✗ {mailSendState.error}</div>
-              )}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <Btn variant="ghost" onClick={() => setMailDraft(null)}>İptal</Btn>
-                <Btn onClick={sendMailDraft} disabled={mailSendState.state === "sending"}>
-                  <Icon name="mail" size={14} /> {mailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
-                </Btn>
-              </div>
-            </>
-          )}
-        </Modal>
+        <MailComposeModal draft={mailDraft} setDraft={setMailDraft} sendState={mailSendState} onSend={sendMailDraft}
+          ekAlani={
+            <Field label={`Ekler (isteğe bağlı, dosya başına en fazla ${MAX_ATTACHMENT_MB} MB, toplam en fazla ${MAX_TOTAL_ATTACHMENT_MB} MB)`}>
+              <input type="file" multiple onChange={onPickAttachment} style={{ fontSize: 13, color: "var(--n600, #475569)" }} />
+              {(mailDraft.attachments || []).map((att, idx) => (
+                <div key={idx} style={{ fontSize: 12, color: "var(--n900, #0f172a)", marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                  📎 {att.name}
+                  {isPreviewableMime(att.mime) && (
+                    <button onClick={() => previewAttachment(att)}
+                      style={{ border: "none", background: "transparent", color: "var(--blu700, #1d4ed8)", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Önizle</button>
+                  )}
+                  <button onClick={() => removeAttachment(idx)}
+                    style={{ border: "none", background: "transparent", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Kaldır</button>
+                </div>
+              ))}
+            </Field>
+          } />
       )}
 
       {dupWarn && (
@@ -571,13 +553,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           </Field>
           {modal !== "factory" && (
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", flex: 1 }}>
-                <input type="checkbox" checked={!!form.bayiMi} onChange={e => setForm(p => ({ ...p, bayiMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Bayi</span>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "10px 12px", flex: 1 }}>
+                <input type="checkbox" checked={!!form.bayiMi} onChange={e => setForm(p => ({ ...p, bayiMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)" }}>Bayi</span>
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", flex: 1 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "10px 12px", flex: 1 }}>
                 <input type="checkbox" checked={!!form.anlasmaliServisMi} onChange={e => setForm(p => ({ ...p, anlasmaliServisMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#f59e0b" }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Anlaşmalı Servis</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)" }}>Anlaşmalı Servis</span>
               </label>
             </div>
           )}
@@ -601,7 +583,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="Bayi hakkında notlar..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 70, boxSizing: "border-box", fontFamily: "inherit" }} />
+              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 70, boxSizing: "border-box", fontFamily: "inherit" }} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>

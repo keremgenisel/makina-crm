@@ -297,16 +297,16 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
 
   const inputStyle = {
     width: "100%", boxSizing: "border-box", padding: "6px 10px",
-    border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13,
-    fontFamily: "inherit", background: "#f8fafc", outline: "none",
+    border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, fontSize: 13,
+    fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none",
     resize: "vertical",
   };
-  const thStyle = { padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#475569", textAlign: "left", background: "#f8fafc" };
-  const tdStyle = { padding: "6px 8px", verticalAlign: "top", borderBottom: "1px solid #f1f5f9" };
+  const thStyle = { padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", textAlign: "left", background: "var(--n100, #f8fafc)" };
+  const tdStyle = { padding: "6px 8px", verticalAlign: "top", borderBottom: "1px solid var(--n150, #f1f5f9)" };
 
   return (
     <Section title="Çeviriler" icon="settings">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         Teklif, Proforma, Servis Formu ve Makina Raporu baskılarındaki etiketleri özelleştirin. Türkçe (TR) ve İngilizce (EN) ayrı ayrı düzenlenir.
       </div>
 
@@ -315,9 +315,9 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         if (g.divider) {
           return (
             <div key={`div-${i}`} style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 12px" }}>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>{g.divider}</div>
-              <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+              <div style={{ flex: 1, height: 1, background: "var(--n200, #e2e8f0)" }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>{g.divider}</div>
+              <div style={{ flex: 1, height: 1, background: "var(--n200, #e2e8f0)" }} />
             </div>
           );
         }
@@ -332,18 +332,18 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
             <div
               onClick={() => toggleGroup(groupId)}
               style={{
-                fontSize: 12, fontWeight: 800, color: "#475569", cursor: "pointer", textTransform: "uppercase", letterSpacing: .5,
+                fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", cursor: "pointer", textTransform: "uppercase", letterSpacing: .5,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "10px 14px", background: "#f8fafc",
+                padding: "10px 14px", background: "var(--n100, #f8fafc)",
                 borderRadius: 10, marginBottom: isOpen ? 10 : 0,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--n200, #e2e8f0)",
                 userSelect: "none",
               }}>
               <span>{g.label}</span>
-              <span style={{ color: "#94a3b8", fontSize: 12 }}>{isOpen ? "▾" : "▸"}</span>
+              <span style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}>{isOpen ? "▾" : "▸"}</span>
             </div>
             {isOpen && (
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, overflow: "hidden" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
@@ -360,7 +360,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
                   <tbody>
                     {g.keys.map(({ key, label }) => (
                       <tr key={key}>
-                        <td style={{ ...tdStyle, paddingLeft: 12, fontSize: 12, color: "#64748b", fontWeight: 600 }}>{label}</td>
+                        <td style={{ ...tdStyle, paddingLeft: 12, fontSize: 12, color: "var(--n500, #64748b)", fontWeight: 600 }}>{label}</td>
                         <td style={tdStyle}>
                           <textarea rows={1} value={getTR(key)} onChange={e => onChangeTR(key, e.target.value)} style={inputStyle} />
                         </td>
@@ -379,7 +379,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={reset}><Icon name="trash" size={13} /> Varsayılana Sıfırla</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

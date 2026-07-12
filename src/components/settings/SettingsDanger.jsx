@@ -53,17 +53,17 @@ export const SettingsDanger = ({ flash }) => {
   return (
     <>
       <Section title="Tehlikeli Bölge" icon="trash">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 20, lineHeight: 1.6 }}>
           Buradaki işlemler <b>geri alınamaz</b> veya ciddi sonuçlar doğurabilir. Dikkatli ilerleyin.
         </div>
 
-        <div style={{ border: "1.5px solid #fecaca", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ background: "#fef2f2", padding: "12px 18px", borderBottom: "1px solid #fecaca", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ border: "1.5px solid var(--redBr, #fecaca)", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: "var(--redBg, #fef2f2)", padding: "12px 18px", borderBottom: "1px solid var(--redBr, #fecaca)", display: "flex", alignItems: "center", gap: 8 }}>
             <Icon name="trash" size={15} />
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#b91c1c" }}>Uygulamayı Kaldır</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "var(--red700, #b91c1c)" }}>Uygulamayı Kaldır</span>
           </div>
           <div style={{ padding: "16px 18px" }}>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 14, lineHeight: 1.6 }}>
               <b>Müşteri ve servis verileriniz silinmez,</b> tekrar
               kurarsanız kayıtlarınız geri gelir. Kaldırmadan önce Ayarlar → Yedekleme'den yedek almanız önerilir.
             </div>
@@ -76,10 +76,10 @@ export const SettingsDanger = ({ flash }) => {
 
       {confirmUninstall && (
         <Modal title="Uygulamayı Kaldır" onClose={() => setConfirmUninstall(false)}>
-          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.7, marginBottom: 8 }}>
             Altunmak CRM bilgisayarınızdan kaldırılacak ve uygulama kapanacak.
           </div>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 20 }}>
             Verileriniz silinmez; tekrar kurulumda geri gelir. Devam etmeden önce
             <b> yedek almanız</b> önerilir.
           </div>
@@ -92,15 +92,15 @@ export const SettingsDanger = ({ flash }) => {
 
       {askPassword && (
         <Modal title="Uygulama Şifresi" onClose={() => setAskPassword(false)}>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 14 }}>
             Kaldırmayı onaylamak için uygulama giriş şifrenizi girin.
           </div>
           <div style={{ marginBottom: 12 }}>
             <PasswordInput value={pw} onChange={e => setPw(e.target.value)} placeholder="Uygulama şifresi" autoFocus
               onKeyDown={e => { if (e.key === "Enter" && !pwBusy && lockRemaining === 0) confirmPasswordAndUninstall(); }} />
           </div>
-          {pwError && <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 10 }}>✗ {pwError}</div>}
-          {lockRemaining > 0 && <div style={{ fontSize: 12, color: "#b45309", marginBottom: 10 }}>Çok fazla yanlış deneme. {lockRemaining} sn sonra tekrar deneyin.</div>}
+          {pwError && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", marginBottom: 10 }}>✗ {pwError}</div>}
+          {lockRemaining > 0 && <div style={{ fontSize: 12, color: "var(--amb700, #b45309)", marginBottom: 10 }}>Çok fazla yanlış deneme. {lockRemaining} sn sonra tekrar deneyin.</div>}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setAskPassword(false)}>Vazgeç</Btn>
             <Btn variant="danger" onClick={confirmPasswordAndUninstall} disabled={pwBusy || lockRemaining > 0}>

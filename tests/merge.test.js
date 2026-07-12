@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { buildMergePlan } from "../src/lib/merge";
 import { uid, clearMintedIds, setIdCounter } from "../src/lib/utils";
 
-const bosSunucu = { customers: [], teklifler: [], partSales: [], services: [], payments: [], gorusmeler: [], uretimFormlari: [], faturalar: [] };
+const bosSunucu = { customers: [], teklifler: [], partSales: [], services: [], payments: [], gorusmeler: [], dosyalar: [], uretimFormlari: [], faturalar: [] };
 const blob = (parcalar) => ({ ...bosSunucu, ...parcalar });
 
 beforeEach(() => {
@@ -49,6 +49,26 @@ describe("buildMergePlan", () => {
     // servise ve ödemeye yansıyan customerId düzeltildi
     expect(plan.adds.services[0].customerId).toBe(yeni.id);
     expect(plan.adds.payments[0].customerId).toBe(yeni.id);
+  });
+
+  it("eş zamanlı dosya eklemede yerel dosya künyesi korunur (kaybolmaz)", () => {
+    const my = blob({ dosyalar: [{ id: 800, customerId: 501, refType: "makina", refId: null, ad: "x.pdf", dosyaAdi: "k-x.pdf" }] });
+    const plan = buildMergePlan(my, bosSunucu);
+    expect(plan.adds.dosyalar).toHaveLength(1);
+    expect(plan.adds.dosyalar[0].ad).toBe("x.pdf");
+  });
+
+  it("ID çarpışmasında dosya bağı (refId) yeni servis ID'sine remap edilir", () => {
+    const sid = uid(); // yerel servis id (minted)
+    const my = blob({
+      services: [{ id: sid, customerId: 501, type: "Garanti Dışı" }],
+      dosyalar: [{ id: sid + 1, customerId: 501, refType: "servis", refId: sid, ad: "form.pdf", dosyaAdi: "k-form.pdf" }],
+    });
+    const server = blob({ services: [{ id: sid, customerId: 501, type: "Başka" }] }); // aynı id, farklı servis
+    const plan = buildMergePlan(my, server);
+    const yeniSid = plan.adds.services[0].id;
+    expect(yeniSid).not.toBe(sid);
+    expect(plan.adds.dosyalar[0].refId).toBe(yeniSid); // dosya bağı yeni servise işaret eder
   });
 
   it("ID çarpışması: ID bizim değilse (düzenleme çakışması) sunucu kazanır, eklenmez", () => {

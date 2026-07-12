@@ -1,7 +1,7 @@
 // Saf yardımcı fonksiyon testleri (src/lib/utils.js) — framework'süz, Node ortamında koşar.
 import { describe, it, expect } from "vitest";
 import {
-  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur,
+  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -202,5 +202,29 @@ describe("applyKurToForm — kur elle değişince TL karşılıkları yeniden he
     expect(out.kur).toBe("kur belli değil");
     expect(out.kurRate).toBe(46.85); // değişmedi
     expect(out.satirlar[0].subItems[0].tlKarsiligi).toBe("4.216.500");
+  });
+});
+
+describe("dosyaBuKayitYerinde — servis dosyası iki yerde de görünür", () => {
+  const svcSet = new Set([7]);
+  it("bayiden servise bağlanan dosya (dealerId var, customerId yok) müşteri görünümünde çıkar", () => {
+    const d = { id: 1, dealerId: 5, refType: "servis", refId: 7, ad: "x.pdf" };
+    expect(dosyaBuKayitYerinde(d, "customerId", 100, svcSet)).toBe(true);
+  });
+  it("müşteriden servise bağlanan dosya (customerId var) bayi/servis görünümünde çıkar", () => {
+    const d = { id: 2, customerId: 100, refType: "servis", refId: 7, ad: "y.pdf" };
+    expect(dosyaBuKayitYerinde(d, "dealerId", 5, svcSet)).toBe(true);
+  });
+  it("doğrudan sahiplik (customerId eşleşir) servis bağı olmasa da görünür", () => {
+    const d = { id: 3, customerId: 100, refType: "makina", refId: null };
+    expect(dosyaBuKayitYerinde(d, "customerId", 100, svcSet)).toBe(true);
+  });
+  it("başka müşterinin servisine bağlı dosya (servis kümede yok) görünmez", () => {
+    const d = { id: 4, dealerId: 5, refType: "servis", refId: 99, ad: "z.pdf" };
+    expect(dosyaBuKayitYerinde(d, "customerId", 100, svcSet)).toBe(false);
+  });
+  it("silinmiş dosya (deletedAt) hiçbir yerde görünmez", () => {
+    const d = { id: 5, customerId: 100, refType: "servis", refId: 7, deletedAt: "2026-07-11" };
+    expect(dosyaBuKayitYerinde(d, "customerId", 100, svcSet)).toBe(false);
   });
 });

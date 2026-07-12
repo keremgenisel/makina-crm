@@ -341,8 +341,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
   // Excel'e aktar (CSV)
   const AdetCard = ({ label, value, color, icon }) => (
-    <div style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderTop: `3px solid ${color}` }}>
-      <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 6 }}>{label}</div>
+    <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderTop: `3px solid ${color}` }}>
+      <div style={{ fontSize: 12, color: "var(--n500, #64748b)", fontWeight: 600, marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 30, fontWeight: 800, color }}>{value}</div>
     </div>
   );
@@ -359,24 +359,24 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const kdvCur = kdvObj ? CURRENCIES.filter(k => (kdvObj[k] || 0) > 0) : [];
     return (
       <div style={{
-        background: large ? "linear-gradient(135deg,#fff,#fff7ed)" : "#fff",
+        background: large ? "linear-gradient(135deg,var(--surface, #ffffff),var(--ambBg3, #fff7ed))" : "var(--surface, #ffffff)",
         borderRadius: 12, padding: large ? "22px 24px" : "16px 20px",
         boxShadow: large ? "0 4px 14px rgba(0,0,0,.10)" : "0 1px 4px rgba(0,0,0,.08)",
         borderTop: large ? `4px solid ${color || "#e85d1a"}` : undefined,
       }}>
-        <div style={{ fontSize: large ? 14 : 12, color: "#64748b", fontWeight: 700, marginBottom: large ? 8 : 6 }}>{label}</div>
+        <div style={{ fontSize: large ? 14 : 12, color: "var(--n500, #64748b)", fontWeight: 700, marginBottom: large ? 8 : 6 }}>{label}</div>
         {showCur.map(k => (
-          <div key={k} style={{ fontSize: large ? 34 : 20, fontWeight: 800, color: moneyVisible ? (color || "#0f172a") : "#94a3b8", lineHeight: 1.25 }}>{M(fmtCur(obj[k] || 0, k))}</div>
+          <div key={k} style={{ fontSize: large ? 34 : 20, fontWeight: 800, color: moneyVisible ? (color || "var(--n900, #0f172a)") : "var(--n400, #94a3b8)", lineHeight: 1.25 }}>{M(fmtCur(obj[k] || 0, k))}</div>
         ))}
         {hasFx && rates && moneyVisible && (
-          <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
+          <div style={{ fontSize: large ? 12 : 11, color: "var(--n400, #94a3b8)", marginTop: 4 }}>≈ {fmt(toTL(obj))} (yaklaşık)</div>
         )}
         {kdvCur.length > 0 && (
-          <div style={{ fontSize: large ? 13 : 11.5, color: moneyVisible ? "#0d9488" : "#94a3b8", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ fontSize: large ? 13 : 11.5, color: moneyVisible ? "var(--teal, #0d9488)" : "var(--n400, #94a3b8)", fontWeight: 700, marginTop: large ? 8 : 5, paddingTop: large ? 8 : 5, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
             KDV: {M(kdvCur.map(k => fmtCur(kdvObj[k], k)).join(" + "))}
           </div>
         )}
-        {sub && <div style={{ fontSize: large ? 12 : 11, color: "#94a3b8", marginTop: large ? 6 : 3 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: large ? 12 : 11, color: "var(--n400, #94a3b8)", marginTop: large ? 6 : 3 }}>{sub}</div>}
       </div>
     );
   };
@@ -384,16 +384,16 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Finans</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Finans</h2>
         {canDoFin("fin_rapor") && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
           <input type="month" value={raporAy} onChange={e => setRaporAy(e.target.value)}
-            style={{ padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc" }} />
+            style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" }} />
           <Btn small variant="ghost" onClick={aylikRapor} title="Seçili ayın faaliyet raporunu yazdır/PDF kaydet"><Icon name="print" size={13} /> Aylık Rapor</Btn>
         </div>
         )}
         <button onClick={() => setMoneyVisible(v => !v)} title={moneyVisible ? "Tutarları gizle" : "Tutarları göster"}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid #e2e8f0", background: moneyVisible ? "#f0fdf4" : "#f8fafc", color: moneyVisible ? "#16a34a" : "#94a3b8", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid var(--n200, #e2e8f0)", background: moneyVisible ? "var(--grnBg, #f0fdf4)" : "var(--n100, #f8fafc)", color: moneyVisible ? "var(--grn600, #16a34a)" : "var(--n400, #94a3b8)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
           <Icon name={moneyVisible ? "eye" : "eyeOff"} size={15} />
           {moneyVisible ? "Gizle" : "Göster"}
         </button>
@@ -404,27 +404,27 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         {Object.entries(RANGE_LABELS).filter(([k]) => izinliAraliklar.includes(k)).map(([k, l]) => (
           <button key={k} onClick={() => setRange(k)}
             style={{ padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: range === k ? "#e85d1a" : "#e2e8f0",
-              background: range === k ? "#e85d1a" : "#fff", color: range === k ? "#fff" : "#64748b" }}>
+              border: "1px solid", borderColor: range === k ? "#e85d1a" : "var(--n200, #e2e8f0)",
+              background: range === k ? "#e85d1a" : "var(--surface, #ffffff)", color: range === k ? "#fff" : "var(--n500, #64748b)" }}>
             {l}
           </button>
         ))}
       </div>
       {range === "custom" && (
         <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, color: "#64748b" }}>Başlangıç:</span>
+          <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Başlangıç:</span>
           <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
-            style={{ padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13 }} />
-          <span style={{ fontSize: 13, color: "#64748b" }}>Bitiş:</span>
+            style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13 }} />
+          <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bitiş:</span>
           <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-            style={{ padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13 }} />
+            style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13 }} />
         </div>
       )}
-      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>
+      <div style={{ fontSize: 13, color: "var(--n400, #94a3b8)", marginBottom: 8 }}>
         Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{RANGE_LABELS[range]}</b> · {totalMakina} satış kaydı
       </div>
       {/* KDV Dönemleri: seçili aralıkta birden fazla dönem varsa hangi tarihten itibaren hangi oranın geçerli olduğu gösterilir */}
-      <div style={{ fontSize: 12, color: "#0d9488", fontWeight: 600, marginBottom: 20 }}>
+      <div style={{ fontSize: 12, color: "var(--teal, #0d9488)", fontWeight: 600, marginBottom: 20 }}>
         {kdvDonemleri.length > 1 ? (
           <>KDV dönemleri: {kdvDonemleri.map((p, i) => `${fmtTR(p.from)}'ten itibaren %${p.rate}`).join(" · ")}</>
         ) : kdvDonemleri.length === 1 ? (
@@ -435,24 +435,24 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
         <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
-        <MultiCard label="Toplam Alacak" obj={alacak} color="#dc2626" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
-        <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="#0d9488" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
+        <MultiCard label="Toplam Alacak" obj={alacak} color="var(--red600, #dc2626)" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
+        <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="var(--teal, #0d9488)" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
 
       {/* ADET KARTLARI */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 28 }}>
         <AdetCard label="Toplam Satılan Makina" value={totalMakina} color="#e85d1a" />
-        <AdetCard label="Toplam Satılan Kalıp" value={totalKalip + satilanExtraKalipSayisi} color="#3b82f6" />
+        <AdetCard label="Toplam Satılan Kalıp" value={totalKalip + satilanExtraKalipSayisi} color="var(--blu500, #3b82f6)" />
         <AdetCard label="İlk Satışta Verilen Toplam Kalıp" value={totalKalip} color="#60a5fa" />
         <AdetCard label="Satılan Extra Kalıp" value={satilanExtraKalipSayisi} color="#db2777" />
         <AdetCard label="Satılan Yedek Parça" value={satilanYedekParcaSayisi} color="#0ea5e9" />
       </div>
 
       {/* PARA KARTLARI */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Gelir & Tahsilat</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Gelir & Tahsilat</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
-        <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="#16a34a" sub="Müşterilerden gelen gerçek satış bedeli" />
+        <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="var(--grn600, #16a34a)" sub="Müşterilerden gelen gerçek satış bedeli" />
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
         <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
         <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri (KDV hariç)" />
@@ -460,18 +460,18 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
           <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç) · detay için tıklayın" />
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
-        <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="#dc2626" sub="Gider (düşülür)" />
+        <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />
       </div>
 
       {/* AYLIK TREND */}
-      <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 24 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 16 }}>Son 12 Ay Satış Geliri Trendi <span style={{ fontWeight: 400, color: "#94a3b8" }}>(≈ TL karşılığı)</span></div>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 24 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 16 }}>Son 12 Ay Satış Geliri Trendi <span style={{ fontWeight: 400, color: "var(--n400, #94a3b8)" }}>(≈ TL karşılığı)</span></div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
           {monthly.map((mo, i) => (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{mo.gelir > 0 && moneyVisible ? Math.round(mo.gelir / 1000) + "k" : ""}</div>
+              <div style={{ fontSize: 9, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{mo.gelir > 0 && moneyVisible ? Math.round(mo.gelir / 1000) + "k" : ""}</div>
               <div style={{ width: "100%", height: `${(mo.gelir / maxMonthly) * 100}px`, minHeight: mo.gelir > 0 ? 4 : 0, background: "linear-gradient(180deg, #e85d1a, #f59e0b)", borderRadius: "4px 4px 0 0" }} />
-              <div style={{ fontSize: 9, color: "#64748b" }}>{mo.label}</div>
+              <div style={{ fontSize: 9, color: "var(--n500, #64748b)" }}>{mo.label}</div>
             </div>
           ))}
         </div>
@@ -479,42 +479,42 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
 
       {/* MODEL & BAYİ KIRILIMI */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
-          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Model Bazlı Satış <span style={{ fontWeight: 400, color: "#94a3b8" }}>(gelir ≈ TL)</span></div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>Model Bazlı Satış <span style={{ fontWeight: 400, color: "var(--n400, #94a3b8)" }}>(gelir ≈ TL)</span></div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr style={{ background: "#f8fafc" }}>
-              {["Model", "Adet", "Gelir"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Model" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+            <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
+              {["Model", "Adet", "Gelir"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Model" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {modelRowsPaged.map(([k, v]) => (
-                <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={k} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
-                  <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: moneyVisible ? "#16a34a" : "#94a3b8" }}>{M(fmt(v.gelir))}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: moneyVisible ? "var(--grn600, #16a34a)" : "var(--n400, #94a3b8)" }}>{M(fmt(v.gelir))}</td>
                 </tr>
               ))}
-              {modelRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
+              {modelRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Veri yok</td></tr>}
             </tbody>
           </table>
           <Pagination total={modelRows.length} page={modelPage} setPage={setModelPage} perPage={MODEL_PER_PAGE} />
         </div>
-        <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
-          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>Satış Yapan Bazlı</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>Satış Yapan Bazlı</div>
           {/* Gelir kolonu BİLEREK yok (kullanıcı kararı): satıcı bazında ciro gösterilmek
               istenmiyor, yalnızca adet. bySeller.gelir yine de hesaplanır çünkü satırlar
               gelire göre sıralanıyor — kolonu "eksik" sanıp geri ekleme. */}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr style={{ background: "#f8fafc" }}>
-              {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>)}
+            <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
+              {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {sellerRowsPaged.map(([k, v]) => (
-                <tr key={k} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={k} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{k}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
                 </tr>
               ))}
-              {sellerRows.length === 0 && <tr><td colSpan={2} style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>Veri yok</td></tr>}
+              {sellerRows.length === 0 && <tr><td colSpan={2} style={{ padding: 20, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Veri yok</td></tr>}
             </tbody>
           </table>
           <Pagination total={sellerRows.length} page={sellerPage} setPage={setSellerPage} perPage={SELLER_PER_PAGE} />
@@ -524,39 +524,39 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       {showAnlasmaliModal && (
         <Modal title="Anlaşmalı Servislere Satılan Parça Detayı" onClose={() => { setShowAnlasmaliModal(false); setAnlasmaliSearch(""); }}>
           <div style={{ position: "relative", marginBottom: 12 }}>
-            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
             <input
               value={anlasmaliSearch}
               onChange={e => { setAnlasmaliSearch(e.target.value); setAnlasmaliPage(1); }}
               placeholder="Müşteri firma veya servis firması ara..."
-              style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "#f8fafc" }}
+              style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
             />
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 {["Tarih", "Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: ["Parça Ücreti", "KDV"].includes(h) ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 12px", textAlign: ["Parça Ücreti", "KDV"].includes(h) ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {anlasmaliPaged.map(r => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{fmtTR(r.tarih) || "—"}</td>
+                <tr key={r.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(r.tarih) || "—"}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 600 }}>{r.firmaAdi}</td>
-                  <td style={{ padding: "9px 12px", fontSize: 13, color: "#64748b" }}>{r.islemFirma}</td>
-                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: moneyVisible ? "#a855f7" : "#94a3b8" }}>{M(fmtCur(r.parcaUcreti, r.currency))}</td>
-                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "#0d9488" : "#94a3b8" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "var(--n500, #64748b)" }}>{r.islemFirma}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: moneyVisible ? "#a855f7" : "var(--n400, #94a3b8)" }}>{M(fmtCur(r.parcaUcreti, r.currency))}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "var(--teal, #0d9488)" : "var(--n400, #94a3b8)" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13 }}>
-                    <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.odendi ? "#dcfce7" : "#fee2e2", color: r.odendi ? "#16a34a" : "#dc2626" }}>
+                    <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: r.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
                       {r.odendi ? "Ödendi" : "Ödenmedi"}
                     </span>
                   </td>
                 </tr>
               ))}
               {anlasmaliFiltered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Kayıt bulunamadı</td></tr>
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Kayıt bulunamadı</td></tr>
               )}
             </tbody>
           </table>

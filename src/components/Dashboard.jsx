@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
-import { StatCard, Modal, Btn } from "./ui";
+import { StatCard, Modal, Btn, Icon } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
@@ -163,25 +163,25 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     <div>
       {/* Üst şerit: solda döviz kurları (yan yana), sağda tarih & saat */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "stretch", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
-        <div style={{ background: "#fff", borderRadius: 12, padding: "10px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: .5, textTransform: "uppercase" }}>Döviz Kurları</span>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "10px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", letterSpacing: .5, textTransform: "uppercase" }}>Döviz Kurları</span>
           {rates ? (
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💵 USD / TL</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#16a34a", fontVariantNumeric: "tabular-nums" }}>{rates.usd.toFixed(2)} ₺</span>
+                <span style={{ fontSize: 11, color: "var(--n500, #64748b)", fontWeight: 600 }}>💵 USD / TL</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "var(--grn600, #16a34a)", fontVariantNumeric: "tabular-nums" }}>{rates.usd.toFixed(2)} ₺</span>
               </div>
               {rates.eur && (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                  <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>💶 EUR / TL</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: "#2563eb", fontVariantNumeric: "tabular-nums" }}>{rates.eur.toFixed(2)} ₺</span>
+                  <span style={{ fontSize: 11, color: "var(--n500, #64748b)", fontWeight: 600 }}>💶 EUR / TL</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "var(--blu600, #2563eb)", fontVariantNumeric: "tabular-nums" }}>{rates.eur.toFixed(2)} ₺</span>
                 </div>
               )}
             </>
           ) : ratesErr ? (
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>Kurlar şu an alınamadı.</span>
+            <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Kurlar şu an alınamadı.</span>
           ) : (
-            <span style={{ fontSize: 12, color: "#94a3b8" }}>Yükleniyor...</span>
+            <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Yükleniyor...</span>
           )}
         </div>
         <div style={{ background: "linear-gradient(135deg, #1f0d02, #3d1c06)", borderRadius: 12, padding: "10px 20px", boxShadow: "0 4px 16px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 14 }}>
@@ -196,61 +196,61 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       {/* 10 sayı kutusu — 5 üstte, 5 altta (tasarım: revize 2) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
         <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="#e85d1a" onClick={onGoCustomers} />
-        <StatCard label="Toplam Bayi"       value={dealers.length}    sub="Görmek için tıkla" color="#3b82f6" onClick={onGoDealers} />
+        <StatCard label="Toplam Bayi"       value={dealers.length}    sub="Görmek için tıkla" color="var(--blu500, #3b82f6)" onClick={onGoDealers} />
         <StatCard label="Stoktaki Makina"   value={stock.length}      sub="Görmek için tıkla" color="#8b5cf6" onClick={onGoStock} />
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
-        <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="#ef4444" onClick={onGoExpired} />
-        <StatCard label="Borçlu Firma"       value={borcluCount}       sub="Görmek için tıkla" color="#dc2626" onClick={() => setShowDebtors(true)} />
+        <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="var(--red500, #ef4444)" onClick={onGoExpired} />
+        <StatCard label="Borçlu Firma"       value={borcluCount}       sub="Görmek için tıkla" color="var(--red600, #dc2626)" onClick={() => setShowDebtors(true)} />
         <StatCard label="Borçlu Bayi/Servis" value={borcluBayiCount}   sub="Görmek için tıkla" color="#f59e0b" onClick={() => setShowDealerDebtors(true)} />
-        <StatCard label="Garantisi Devam Eden" value={garantiDevamCount} sub="Görmek için tıkla" color="#16a34a" onClick={onGoWarrantyActive} />
-        <StatCard label="Seri No Bekleyen"   value={seriNoBekleyenCount} sub="Görmek için tıkla" color="#0891b2" onClick={onGoSerialPending} />
-        <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="#7c3aed" onClick={onGoUretim || undefined} />
+        <StatCard label="Garantisi Devam Eden" value={garantiDevamCount} sub="Görmek için tıkla" color="var(--grn600, #16a34a)" onClick={onGoWarrantyActive} />
+        <StatCard label="Seri No Bekleyen"   value={seriNoBekleyenCount} sub="Görmek için tıkla" color="var(--cyan, #0891b2)" onClick={onGoSerialPending} />
+        <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="var(--purTx, #7c3aed)" onClick={onGoUretim || undefined} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Son Satışlar */}
-        <div style={{ background: "#fff", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>Son Satışlar</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
+          <div style={{ fontWeight: 700, marginBottom: 16, color: "var(--n900, #0f172a)" }}>Son Satışlar</div>
           {recentSales.map(c => (
               <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
-                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                  <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center" }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(c.installDate)}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.country || ""}{c.city ? ` / ${c.city}` : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{c.country || ""}{c.city ? ` / ${c.city}` : ""}</div>
                 </div>
               </div>
             ))}
-          {recentSales.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Henüz satış kaydı yok.</div>}
+          {recentSales.length === 0 && <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>Henüz satış kaydı yok.</div>}
         </div>
 
         {/* Son Servisler */}
-        <div style={{ background: "#fff", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: "#0f172a" }}>Son Servis Talepleri</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
+          <div style={{ fontWeight: 700, marginBottom: 16, color: "var(--n900, #0f172a)" }}>Son Servis Talepleri</div>
           {recentServices.map(sv => {
             const cust = customers.find(x => x.id === sv.customerId);
             return (
               <div key={sv.id} onClick={() => goToCustomer(sv.customerId)} title="Müşteri detayını aç"
-                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{cust?.name || "—"}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>{cust?.model ? `${cust.model} · ` : ""}{sv.type}</div>
+                  <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{cust?.model ? `${cust.model} · ` : ""}{sv.type}</div>
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center" }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(sv.date)}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{cust?.country || ""}{cust?.city ? ` / ${cust.city}` : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{cust?.country || ""}{cust?.city ? ` / ${cust.city}` : ""}</div>
                 </div>
               </div>
             );
           })}
-          {services.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Henüz servis kaydı yok.</div>}
+          {services.length === 0 && <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>Henüz servis kaydı yok.</div>}
         </div>
       </div>
 
@@ -258,8 +258,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       {(donusturBekleyenlar.length > 0 || takipTeklifler.length > 0) && (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, alignItems: "start" }}>
       {donusturBekleyenlar.length > 0 && (
-        <div style={{ background: "#fff", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--amb800, #92400e)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
           </div>
           {donusturBekleyenlar.map(t => {
@@ -267,41 +267,41 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             const busy     = teklifBusy.has(t.id);
             const conflict = teklifConflict[t.id];
             return (
-              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                 <div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{t.firma || "—"}</span>
-                  <span style={{ fontSize: 11, color: "#92400e", marginLeft: 8 }}>{t.no || ""}</span>
-                  {t.tarih && <span style={{ fontSize: 11, color: "#b45309", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
-                  <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "#fed7aa", color: "#92400e", fontWeight: 700 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>{t.firma || "—"}</span>
+                  <span style={{ fontSize: 11, color: "var(--amb800, #92400e)", marginLeft: 8 }}>{t.no || ""}</span>
+                  {t.tarih && <span style={{ fontSize: 11, color: "var(--amb700, #b45309)", marginLeft: 6 }}>· {fmtTR(t.tarih)}</span>}
+                  <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "var(--ambBr3, #fed7aa)", color: "var(--amb800, #92400e)", fontWeight: 700 }}>
                     {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
                   </span>
                   {t.type === "proforma" && (
-                    <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>Proforma</span>
+                    <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", fontWeight: 700 }}>Proforma</span>
                   )}
                   {conflict && (
-                    <span style={{ fontSize: 11, marginLeft: 10, color: "#b91c1c", fontWeight: 600 }}>
-                      🔒 {conflict} işliyor
+                    <span style={{ fontSize: 11, marginLeft: 10, color: "var(--red700, #b91c1c)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Icon name="lock" size={11} /> {conflict} işliyor
                     </span>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                   {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "#f97316", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
                       {busy ? "..." : "Müşteri Ekle"}
                     </Btn>
                   )}
                   {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "#e5e7eb" : "#f97316", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "#f97316", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
                       {busy ? "..." : "Makina Ekle"}
                     </Btn>
                   )}
                   {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && canCust("cust_kalip_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "#e5e7eb" : "#0891b2", color: conflict ? "#9ca3af" : "#fff", border: "none" }}>
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--cyan, #0891b2)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
                       {busy ? "..." : "Satışa Dönüştür"}
                     </Btn>
                   )}
                   {(tur === "parca" || tur === "kalip") && !t.customerId && (
-                    <span style={{ fontSize: 11, color: "#b45309", fontWeight: 600 }}>Müşteri bağlayın</span>
+                    <span style={{ fontSize: 11, color: "var(--amb700, #b45309)", fontWeight: 600 }}>Müşteri bağlayın</span>
                   )}
                 </div>
               </div>
@@ -310,16 +310,16 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         </div>
       )}
       {takipTeklifler.length > 0 && (
-        <div style={{ background: "#fff", borderTop: "3px solid #1d4ed8", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid var(--blu700, #1d4ed8)", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--blu700, #1d4ed8)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
             Takip Edilecek Teklifler ({takipTeklifler.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· {teklifTakipGun} günden eski, cevapsız</span>
           </div>
           {takipTeklifler.map(t => (
-            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+            <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
               <div>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{t.firma || "—"}</span>
-                <span style={{ fontSize: 11, color: "#1d4ed8", marginLeft: 8 }}>{t.no || ""}</span>
-                <span style={{ fontSize: 11, color: "#64748b", marginLeft: 6 }}>· {gunFarki(t.tarih)} gün önce gönderildi</span>
+                <span style={{ fontSize: 11, color: "var(--blu700, #1d4ed8)", marginLeft: 8 }}>{t.no || ""}</span>
+                <span style={{ fontSize: 11, color: "var(--n500, #64748b)", marginLeft: 6 }}>· {gunFarki(t.tarih)} gün önce gönderildi</span>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {onOpenTeklif && <Btn small variant="ghost" onClick={() => onOpenTeklif(t.id)}>Teklifi Aç</Btn>}
@@ -336,18 +336,18 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       {(aranacaklar.length > 0 || beklenenTahsilat.length > 0) && (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, alignItems: "start" }}>
       {aranacaklar.length > 0 && (
-        <div style={{ background: "#fff", borderTop: "3px solid #7c3aed", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid var(--purTx, #7c3aed)", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--purTx, #7c3aed)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
             Aranacaklar ({aranacaklar.length})
           </div>
           {aranacaklar.map(g => {
             const gecikmeGun = gunFarki(g.takipTarihi);
             return (
-              <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9" }}>
+              <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                 <div style={{ cursor: "pointer", flex: 1 }} onClick={() => goToCustomer(g.customerId)} title="Müşteri detayını aç">
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{custName(g.customerId)}</span>
-                  <span style={{ fontSize: 12, color: "#64748b", marginLeft: 8 }}>{(g.not || "").slice(0, 80)}{(g.not || "").length > 80 ? "…" : ""}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikmeGun > 0 ? "#b91c1c" : "#7c3aed" }}>
+                  <span style={{ fontSize: 12, color: "var(--n500, #64748b)", marginLeft: 8 }}>{(g.not || "").slice(0, 80)}{(g.not || "").length > 80 ? "…" : ""}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikmeGun > 0 ? "var(--red700, #b91c1c)" : "var(--purTx, #7c3aed)" }}>
                     {gecikmeGun > 0 ? `${gecikmeGun} gün gecikti` : "bugün"}
                   </span>
                 </div>
@@ -361,23 +361,23 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         </div>
       )}
       {beklenenTahsilat.length > 0 && (
-        <div style={{ background: "#fff", borderTop: "3px solid #16a34a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#15803d", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid var(--grn600, #16a34a)", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--grn700, #15803d)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
             Beklenen Tahsilat ({beklenenTahsilat.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· önümüzdeki {tahsilatTakipGun || 7} gün + gecikenler</span>
           </div>
           {beklenenTahsilat.map(item => {
             const gecikti = item.vade < todayStr;
             return (
               <div key={item.key} onClick={() => goToCustomer(item.customerId)} title="Müşteri detayını aç"
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid #f1f5f9", cursor: "pointer" }}>
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}>
                 <div>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{custName(item.customerId)}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: item.tip === "Çek" ? "#fef3c7" : "#dbeafe", color: item.tip === "Çek" ? "#92400e" : "#1d4ed8" }}>{item.tip}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikti ? "#b91c1c" : "#15803d" }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: item.tip === "Çek" ? "var(--ambBg2, #fef3c7)" : "var(--bluBg2, #dbeafe)", color: item.tip === "Çek" ? "var(--amb800, #92400e)" : "var(--blu700, #1d4ed8)" }}>{item.tip}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikti ? "var(--red700, #b91c1c)" : "var(--grn700, #15803d)" }}>
                     {gecikti ? `⚠ ${fmtTR(item.vade)} (gecikti)` : fmtTR(item.vade)}
                   </span>
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>{fmtCur(item.tutar, item.currency)}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn700, #15803d)" }}>{fmtCur(item.tutar, item.currency)}</span>
               </div>
             );
           })}
@@ -393,24 +393,24 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           <div style={{ maxHeight: 480, overflowY: "auto" }}>
             {borcluMusteriler.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
                   Müşteriler ({borcluMusteriler.length})
                 </div>
                 {borcluMusteriler.map(c => {
                   const rozet = cekRozeti(c.id);
                   return (
                     <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fef2f2"}>
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", marginBottom: 6, cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--redBg2, #fee2e2)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--redBg, #fef2f2)"}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8 }}>
                           {c.name}
-                          {rozet && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: rozet.startsWith("⚠") ? "#fee2e2" : "#fff7ed", color: rozet.startsWith("⚠") ? "#991b1b" : "#c2410c" }}>{rozet}</span>}
+                          {rozet && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: rozet.startsWith("⚠") ? "var(--redBg2, #fee2e2)" : "var(--ambBg3, #fff7ed)", color: rozet.startsWith("⚠") ? "var(--red800, #991b1b)" : "var(--orTx, #c2410c)" }}>{rozet}</span>}
                         </div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                        <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(c.kalanBorc, c.currency)}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(c.kalanBorc, c.currency)}</div>
                     </div>
                   );
                 })}
@@ -419,7 +419,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
             {borcluServisler.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
                   Servis ve Yedek Parça ({borcluServisler.length})
                 </div>
                 {borcluServisler.map(s => {
@@ -427,16 +427,16 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   const parcaBorclu = isParcaUcretliMi(s) && s.odendi === false;
                   return (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fef2f2"}>
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", marginBottom: 6, cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--redBg2, #fee2e2)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--redBg, #fef2f2)"}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{custName(s.customerId)}</div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>{s.type} · {fmtTR(s.date)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{custName(s.customerId)}</div>
+                        <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{s.type} · {fmtTR(s.date)}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        {servisBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>Servis: {fmtCur(s.servisUcreti, s.currency)}</div>}
-                        {parcaBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>Parça: {fmtCur(s.parcaUcreti, s.parcaCurrency)}</div>}
+                        {servisBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>Servis: {fmtCur(s.servisUcreti, s.currency)}</div>}
+                        {parcaBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>Parça: {fmtCur(s.parcaUcreti, s.parcaCurrency)}</div>}
                       </div>
                     </div>
                   );
@@ -446,26 +446,26 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
             {borcluKaliplar.length > 0 && (
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
                   Extra Kalıp ({borcluKaliplar.length})
                 </div>
                 {borcluKaliplar.map(p => (
                   <div key={p.id} onClick={() => goToCustomer(p.customerId)} title="Müşteri detayını aç"
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "#fef2f2", border: "1px solid #fecaca", marginBottom: 6, cursor: "pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fef2f2"}>
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", marginBottom: 6, cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--redBg2, #fee2e2)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "var(--redBg, #fef2f2)"}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{custName(p.customerId)}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {fmtTR(p.tarih)}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{custName(p.customerId)}</div>
+                      <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {fmtTR(p.tarih)}</div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(p.ucret, p.currency)}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(p.ucret, p.currency)}</div>
                   </div>
                 ))}
               </div>
             )}
 
             {borcluCount === 0 && (
-              <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>Borçlu firma yok.</div>
+              <div style={{ padding: "30px 0", textAlign: "center", color: "var(--n400, #94a3b8)" }}>Borçlu firma yok.</div>
             )}
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
@@ -480,22 +480,22 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <Modal wide title="Borçlu Bayi/Servis" onClose={() => setShowDealerDebtors(false)}>
           <div style={{ maxHeight: 480, overflowY: "auto" }}>
             {Object.entries(dealerBorcMap).length === 0 ? (
-              <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>Borçlu bayi/servis yok.</div>
+              <div style={{ padding: "30px 0", textAlign: "center", color: "var(--n400, #94a3b8)" }}>Borçlu bayi/servis yok.</div>
             ) : (
               Object.entries(dealerBorcMap).map(([name, info]) => (
-                <div key={name} style={{ padding: "12px 14px", borderRadius: 10, background: "#fffbeb", border: "1px solid #fde68a", marginBottom: 10 }}>
+                <div key={name} style={{ padding: "12px 14px", borderRadius: 10, background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{name}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{name}</div>
                     <div>
                       {Object.entries(info.byCur).filter(([, v]) => v > 0).map(([k, v]) => (
-                        <span key={k} style={{ fontSize: 13, fontWeight: 800, color: "#dc2626" }}>{fmtCur(v, k)}</span>
+                        <span key={k} style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(v, k)}</span>
                       ))}
                     </div>
                   </div>
                   {info.records.map(s => (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId)} title="Müşteri detayını aç"
-                      style={{ fontSize: 12, padding: "5px 0", borderTop: "1px solid #fde68a", cursor: "pointer" }}>
-                      <span style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline", textDecorationColor: "#fde68a" }}>
+                      style={{ fontSize: 12, padding: "5px 0", borderTop: "1px solid var(--ambBr, #fde68a)", cursor: "pointer" }}>
+                      <span style={{ color: "var(--amb800, #92400e)", fontWeight: 600, textDecoration: "underline", textDecorationColor: "var(--ambBr, #fde68a)" }}>
                         {custName(s.customerId)} · {fmtTR(s.date)}
                       </span>
                     </div>

@@ -86,7 +86,16 @@ dbmod.writeBlobToDb({
     { id: 7, customerId: 500, tarih: "2026-07-01", tur: "Telefon", not: "Fiyat bekliyor", takipTarihi: "2026-07-10", tamamlandi: false, kullanici: "kerem" },
     { id: 8, customerId: 500, tarih: "2026-07-02", tur: "Ziyaret", not: "Silinen görüşme", deletedAt: "2026-07-03T10:00:00.000Z" },
   ],
-  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], notes: [], parts: [],
+  dosyalar: [
+    { id: 20, customerId: 500, refType: "servis", refId: 2, ad: "imzali-form.pdf", dosyaAdi: "k1-imzali-form.pdf", boyut: 12345, tur: "PDF", tarih: "2026-07-05", ekleyen: "kerem" },
+    { id: 21, customerId: 500, refType: "makina", refId: null, ad: "sozlesme.pdf", dosyaAdi: "k2-sozlesme.pdf", boyut: 999, tur: "PDF", tarih: "2026-07-06", ekleyen: "kerem", deletedAt: "2026-07-07T10:00:00.000Z" },
+    { id: 22, dealerId: 3, ad: "bayi-sozlesmesi.pdf", dosyaAdi: "k3-bayi-sozlesmesi.pdf", boyut: 500, tur: "PDF", tarih: "2026-07-08", ekleyen: "kerem" },
+  ],
+  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], parts: [],
+  notes: [
+    { id: 30, content: "Kerem'in notu", updatedAt: "1", olusturan: "kerem" },
+    { id: 31, content: "Eski sahipsiz not", updatedAt: "2" },
+  ],
   factory: { name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com", faturaFirmaAdi: "ALTUNMAK MACHINERY LTD." },
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
@@ -108,6 +117,10 @@ check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales
 check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");
 check("gorusme tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 7); return g?.customerId === 500 && g?.not === "Fiyat bekliyor" && g?.takipTarihi === "2026-07-10" && g?.tamamlandi === false && g?.kullanici === "kerem"; })());
 check("gorusme deletedAt tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 8); return g?.deletedAt === "2026-07-03T10:00:00.000Z" && (blob.gorusmeler || []).find(x => x.id === 7)?.deletedAt == null; })());
+check("dosya künyesi roundtrip (servis bağı)", (() => { const d = (blob.dosyalar || []).find(x => x.id === 20); return d?.customerId === 500 && d?.refType === "servis" && d?.refId === 2 && d?.ad === "imzali-form.pdf" && d?.dosyaAdi === "k1-imzali-form.pdf" && d?.boyut === 12345 && d?.tur === "PDF" && d?.ekleyen === "kerem"; })());
+check("dosya deletedAt roundtrip", (() => { const d = (blob.dosyalar || []).find(x => x.id === 21); return d?.deletedAt === "2026-07-07T10:00:00.000Z" && (blob.dosyalar || []).find(x => x.id === 20)?.deletedAt == null; })());
+check("bayi dosyası roundtrip (dealerId, customerId yok)", (() => { const d = (blob.dosyalar || []).find(x => x.id === 22); return d?.dealerId === 3 && d?.customerId == null && d?.ad === "bayi-sozlesmesi.pdf"; })());
+check("not olusturan roundtrip (sahipli + sahipsiz)", (() => { const a = (blob.notes || []).find(x => x.id === 30); const b = (blob.notes || []).find(x => x.id === 31); return a?.olusturan === "kerem" && a?.content === "Kerem'in notu" && b?.olusturan == null && b?.content === "Eski sahipsiz not"; })());
 check("appSettings translations/mailTemplates tam turu", blob.appSettings?.translations?.fatura?.title === "COMMERCIAL INVOICE" && blob.appSettings?.mailTemplates?.teklifProforma?.konu === "Özel Konu {no}");
 check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
 

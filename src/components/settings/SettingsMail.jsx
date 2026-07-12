@@ -59,18 +59,18 @@ export const SettingsMail = ({ flash }) => {
   return (
     <>
       <Section title="E-posta Ayarları (SMTP)" icon="mail">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           "E-posta Gönder" butonlarının çalışması için e-posta hesabınızı buradan bağlayın.
         </div>
 
         {!window.appMail ? (
-          <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--n200, #e2e8f0)" }}>
             Bu özellik yalnızca kurulu uygulamada çalışır.
           </div>
         ) : (
           <>
             {mailStatus.configured && (
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "8px 14px", borderRadius: 10, marginBottom: 16, display: "inline-block" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "8px 14px", borderRadius: 10, marginBottom: 16, display: "inline-block" }}>
                 ✓ Bağlı: {mailStatus.email} ({mailStatus.host}:{mailStatus.port})
               </div>
             )}
@@ -109,10 +109,10 @@ export const SettingsMail = ({ flash }) => {
               )}
             </div>
             {mailTest.state === "ok" && (
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#065f46", marginTop: 12 }}>✓ Bağlantı başarılı.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--grn800, #065f46)", marginTop: 12 }}>✓ Bağlantı başarılı.</div>
             )}
             {mailTest.state === "error" && (
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginTop: 12 }}>✗ {mailTest.error}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", marginTop: 12 }}>✗ {mailTest.error}</div>
             )}
           </>
         )}
@@ -121,7 +121,7 @@ export const SettingsMail = ({ flash }) => {
       {/* E-posta bağlantısını kaldırma onayı */}
       {confirmClearMail && (
         <Modal title="E-posta Bağlantısını Kaldır" onClose={() => setConfirmClearMail(false)}>
-          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.7, marginBottom: 20 }}>
             Kayıtlı e-posta hesabı bilgileri silinecek. "E-posta Gönder" butonları tekrar bağlanana kadar çalışmaz.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

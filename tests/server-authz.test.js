@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP,
-  degisenBolumler, kisitliMi, yazmaYetkisiVar, sonAdminiDusururMu,
+  degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, dosyaIslemYetkisi, sonAdminiDusururMu,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 
@@ -86,6 +86,88 @@ describe("SECTION_GROUP kapsama (regresyon: yeni bölüm eklenirse haritaya da e
     for (const bolum of BLOB_SECTIONS) {
       expect(SECTION_GROUP[bolum], `${bolum} haritada yok`).toBeTruthy();
     }
+  });
+});
+
+describe("eylemDenetimi — eylem düzeyi (ekle/sil) yetki", () => {
+  // "Müşteri ekle+düzenle var, SİLME yok"
+  const kismi = JSON.stringify({ customerActions: ["cust_add", "cust_edit"] });
+  const eski = { customers: [{ id: 1, name: "A", deletedAt: null }] };
+
+  it("admin ve izin tanımsız → her zaman geçer", () => {
+    expect(eylemDenetimi(eski, { customers: [{ id: 1, deletedAt: "x" }] }, kismi, "admin").ok).toBe(true);
+    expect(eylemDenetimi(eski, { customers: [{ id: 1, deletedAt: "x" }] }, null, "user").ok).toBe(true);
+  });
+
+  it("sil izni yokken soft-delete (deletedAt set) reddedilir", () => {
+    const r = eylemDenetimi(eski, { customers: [{ id: 1, name: "A", deletedAt: "2026-07-12" }] }, kismi, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("sil");
+    expect(r.gerekli).toBe("cust_delete");
+  });
+
+  it("sil izni yokken hard-delete (kayıt yenide yok) reddedilir", () => {
+    expect(eylemDenetimi(eski, { customers: [] }, kismi, "user").ok).toBe(false);
+  });
+
+  it("ekle izni VARSA yeni kayıt geçer", () => {
+    const r = eylemDenetimi(eski, { customers: [{ id: 1, name: "A" }, { id: 2, name: "B" }] }, kismi, "user");
+    expect(r.ok).toBe(true);
+  });
+
+  it("düzenleme (add/delete yok) bölüm düzeyinde geçer", () => {
+    expect(eylemDenetimi(eski, { customers: [{ id: 1, name: "A DÜZENLENDİ" }] }, kismi, "user").ok).toBe(true);
+  });
+
+  it("çöpteki kaydın purge'ü (zaten deletedAt) muaf — silme sayılmaz", () => {
+    const cop = { customers: [{ id: 1, name: "A", deletedAt: "2026-01-01" }] };
+    expect(eylemDenetimi(cop, { customers: [] }, kismi, "user").ok).toBe(true);
+  });
+
+  it("ekle izni YOKken yeni kayıt reddedilir", () => {
+    const yalnizDuzenle = JSON.stringify({ customerActions: ["cust_edit"] });
+    const r = eylemDenetimi(eski, { customers: [{ id: 1 }, { id: 2 }] }, yalnizDuzenle, "user");
+    expect(r.ok).toBe(false);
+    expect(r.gerekli).toBe("cust_add");
+  });
+
+  it("teklif/proforma tür bağımlı: proforma silme evrak_proforma_delete ister", () => {
+    const perms = JSON.stringify({ evrakActions: ["evrak_teklif_add", "evrak_teklif_edit", "evrak_teklif_delete"] });
+    const o = { teklifler: [{ id: 5, type: "proforma" }] };
+    const r = eylemDenetimi(o, { teklifler: [{ id: 5, type: "proforma", deletedAt: "x" }] }, perms, "user");
+    expect(r.ok).toBe(false);
+    expect(r.gerekli).toBe("evrak_proforma_delete");
+  });
+
+  it("gönderilmeyen bölüm denetlenmez (dokunulmadı)", () => {
+    expect(eylemDenetimi(eski, { notes: [] }, kismi, "user").ok).toBe(true);
+  });
+
+  it("EYLEM_IDLERI'ndeki her bölüm geçerli bir gruba bağlı", () => {
+    for (const section of Object.keys(EYLEM_IDLERI)) {
+      expect(SECTION_GROUP[section], section).toBeTruthy();
+    }
+  });
+});
+
+describe("dosyaIslemYetkisi — fiziksel dosya uçları (upload/delete) yetkisi", () => {
+  const salt = JSON.stringify({ customerActions: [], dealerActions: [], evrakActions: [], stockActions: [], notActions: [], settings: ["server"] });
+  const musteriYetkili = JSON.stringify({ customerActions: ["ekle", "duzenle", "sil"], dealerActions: [] });
+  const bayiYetkili = JSON.stringify({ customerActions: [], dealerActions: ["ekle"] });
+  it("admin her zaman yetkili", () => {
+    expect(dosyaIslemYetkisi(salt, "admin")).toBe(true);
+  });
+  it("izin tanımsız = tam erişim", () => {
+    expect(dosyaIslemYetkisi(null, "user")).toBe(true);
+  });
+  it("salt-okunur (müşteri VE bayi engelli) → yetkisiz", () => {
+    expect(dosyaIslemYetkisi(salt, "user")).toBe(false);
+  });
+  it("müşteri işlemi olan → yetkili", () => {
+    expect(dosyaIslemYetkisi(musteriYetkili, "user")).toBe(true);
+  });
+  it("yalnız bayi işlemi olan → yetkili", () => {
+    expect(dosyaIslemYetkisi(bayiYetkili, "user")).toBe(true);
   });
 });
 

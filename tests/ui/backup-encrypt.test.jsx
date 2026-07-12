@@ -52,6 +52,29 @@ describe("Şifreli yedek — al", () => {
   });
 });
 
+describe("Dosya arşivi — yedek/geri yükle", () => {
+  it("yedek içeriğine müşteri ve bayi dosyalarını (dosya arşivi) dahil eder", async () => {
+    const rawDosyalar = [{ id: 1, customerId: 5, refType: "servis", refId: 7, ad: "s.pdf" }, { id: 2, dealerId: 9, refType: "bayi", ad: "b.pdf" }];
+    render(<SettingsBackup {...props} rawDosyalar={rawDosyalar} setDosyalar={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Yedek Al/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Şifresiz Kaydet/ }));
+    await waitFor(() => expect(backup).toHaveBeenCalled());
+    expect(backup.mock.calls[0][0].dosyalar).toEqual(rawDosyalar);
+  });
+
+  it("geri yükleme bölümlerinde 'Dosyalar' vardır ve seçiliyken setDosyalar çağrılır", async () => {
+    const setDosyalar = vi.fn();
+    const dosyalar = [{ id: 1, customerId: 5, refType: "servis", refId: 7, ad: "s.pdf" }];
+    window.crmStorage.restore = () => Promise.resolve({ app: "altunmak-crm", schemaVersion: 2, customers: [], dosyalar });
+    render(<SettingsBackup {...props} setDosyalar={setDosyalar} />);
+    fireEvent.click(screen.getByRole("button", { name: /Geri Yükle/ }));
+    await screen.findByText(/Geri yüklenecek bölümler/);
+    expect(screen.getByText("Dosyalar")).toBeTruthy(); // paket listede görünür
+    fireEvent.click(screen.getByRole("button", { name: /Evet, Geri Yükle/ }));
+    await waitFor(() => expect(setDosyalar).toHaveBeenCalledWith(dosyalar));
+  });
+});
+
 describe("Şifreli yedek — geri yükle", () => {
   it("şifreli yedek parola sorar; yanlış parola hata, doğru parola devam eder", async () => {
     window.crmStorage.restore = () => Promise.resolve({ format: "altunmak-crm-encrypted", data: "x", salt: "s", iv: "i", tag: "t" });

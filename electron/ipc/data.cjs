@@ -4,7 +4,11 @@ const bcrypt          = require("bcryptjs");
 const { BrowserWindow, safeStorage } = require("electron");
 const embeddedServer  = require("../server.cjs");
 const { buildCandidates } = require("../failover.cjs");
-const { encryptBackup, decryptBackup } = require("../backupCrypto.cjs");
+const { pinliDispatcher, sertifikaParmakIziAl, pinliFetch } = require("../pinnedFetch.cjs");
+const knownServers = require("../knownServers.cjs");
+const { encryptBackup, decryptBackup, isEncryptedBackup } = require("../backupCrypto.cjs");
+const files = require("../files.cjs");
+const jsonStore = require("../jsonStore.cjs");
 const securityQueue   = require("../securityQueue.cjs");
 
 const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
@@ -129,21 +133,20 @@ const getServerCachePath = (app) => path.join(app.getPath("userData"), "server-c
 let lastCacheWrite = 0;
 const CACHE_WRITE_MIN_MS = 60000; // blob büyük olabilir — her dataChanged yüklemesinde diske yazma
 
+// İstemci önbelleği tüm veri blob'unu diskte tutar; at-rest sızmaması için jsonStore
+// (safeStorage) ile şifreli yazılır. Detay: electron/jsonStore.cjs.
 function writeServerCache(app, blob) {
   const now = Date.now();
   if (now - lastCacheWrite < CACHE_WRITE_MIN_MS) return;
   try {
-    const p = getServerCachePath(app);
-    const tmp = p + ".tmp";
-    fs.writeFileSync(tmp, JSON.stringify(blob), "utf-8");
-    fs.renameSync(tmp, p);
+    jsonStore.writeJson(getServerCachePath(app), blob);
     lastCacheWrite = now;
   } catch (err) { console.error("Sunucu önbelleği yazılamadı:", err); }
 }
 function readServerCache(app) {
   try {
     const p = getServerCachePath(app);
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf-8"));
+    if (fs.existsSync(p)) return jsonStore.readJson(p);
   } catch (err) { console.error("Sunucu önbelleği okunamadı:", err); }
   return null;
 }
@@ -165,6 +168,30 @@ let lastGoodUrl = null;
 let appRef = null; // config yazımı için (persistLastGood)
 function setFailoverLan(url) { failoverLanUrl = url || null; }
 function resetFailover() { failoverLanUrl = null; lastGoodUrl = null; }
+
+// ── Sunucu sertifika sabitleme (TLS pinning) durumu ───────────────────────────
+// İstemci sunucuya https + pinlenmiş sertifikayla bağlanır. Pin login anında kurulur
+// (config'te serverCertPem). pinnedDispatcher varsa istemci fetch'leri bu dispatcher'la
+// gider (yalnız o sertifikayı kabul eder). Pin yoksa (göç etmemiş/eski http istemci)
+// düz http ile çalışmaya devam eder — hibrit.
+let pinnedDispatcher = null;
+let pinnedFp = null;
+function refreshPin(app) {
+  try {
+    const cfg = loadServerConfig(app);
+    if (cfg?.mode === "client" && cfg?.serverCertPem) {
+      pinnedDispatcher = pinliDispatcher(cfg.serverCertPem);
+      pinnedFp = cfg.serverCertFp || null;
+      return;
+    }
+  } catch { /* config yok/bozuk */ }
+  pinnedDispatcher = null; pinnedFp = null;
+}
+// Pinli client fetch: pin varsa undici.fetch + dispatcher, yoksa aynı undici.fetch (http/https
+// farketmez). Global fetch yerine undici.fetch: dispatcher aynı undici sürümünden gelmeli.
+function clientFetch(url, opts = {}) {
+  return pinliFetch(url, pinnedDispatcher ? { ...opts, dispatcher: pinnedDispatcher } : opts);
+}
 // Son çalışan adresi config'e kaydet — böylece bir sonraki açılışta önce O denenir. Örn. istemci
 // Tailscale adresiyle yapılandırılmış ama fabrikada LAN'dan gidiyorsa, açılışta ölü Tailscale
 // adresini deneyip timeout beklemek yerine doğrudan LAN'dan bağlanır (kapalı görünme süresi biter).
@@ -194,7 +221,7 @@ async function apiFetch(serverUrl, token, endpoint, options = {}) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000); // ölü adres için hızlı vazgeç, sonrakini dene
     try {
-      const res = await fetch(`${base}${endpoint}`, { ...opts, signal: ctrl.signal });
+      const res = await clientFetch(`${base}${endpoint}`, { ...opts, signal: ctrl.signal });
       if (lastGoodUrl !== base) { lastGoodUrl = base; persistLastGood(base); } // değişince kalıcı kaydet
       return res;
     } catch (e) {
@@ -206,11 +233,56 @@ async function apiFetch(serverUrl, token, endpoint, options = {}) {
   throw sonHata || new Error("Sunucuya ulaşılamadı");
 }
 
+// Dosya transferi (binary): apiFetch JSON + 5sn timeout'a bağlı; büyük dosya için ayrı, uzun
+// timeout'lu ve içerik-türü serbest bir sürüm. Failover (Tailscale→LAN) yine geçerli.
+async function fileFetch(serverUrl, token, endpoint, { method = "GET", body = null, headers = {}, timeoutMs = 60000 } = {}) {
+  const adaylar = buildCandidates(lastGoodUrl, serverUrl, failoverLanUrl);
+  let sonHata;
+  for (const base of adaylar) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await clientFetch(`${base}${endpoint}`, { method, body, headers: { Authorization: `Bearer ${token}`, ...headers }, signal: ctrl.signal });
+      if (lastGoodUrl !== base) { lastGoodUrl = base; persistLastGood(base); }
+      return res;
+    } catch (e) { sonHata = e; } finally { clearTimeout(t); }
+  }
+  throw sonHata || new Error("Sunucuya ulaşılamadı");
+}
+
+// İstemci modunda dosya işlemleri sunucuya gider. Dosya IPC bu köprüyü kullanır (yerel modda net=null).
+function makeFileNet(app) {
+  const cfgOf = () => loadServerConfig(app);
+  return {
+    isClient: () => { const c = cfgOf(); return !!(c?.mode === "client" && c?.serverUrl && c?.token); },
+    async upload(ad, buffer, entityAd = "") {
+      const c = cfgOf();
+      const res = await fileFetch(c.serverUrl, c.token, "/api/files/upload", {
+        method: "POST", body: buffer,
+        headers: { "Content-Type": "application/octet-stream", "X-Dosya-Adi": encodeURIComponent(ad), "X-Dosya-Firma": encodeURIComponent(entityAd || "") },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data; // { dosyaAdi, boyut, tur, ad }
+    },
+    async download(depoAd) {
+      const c = cfgOf();
+      const res = await fileFetch(c.serverUrl, c.token, `/api/files/${encodeURIComponent(depoAd)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    },
+    async remove(depoAd) {
+      const c = cfgOf();
+      try { await fileFetch(c.serverUrl, c.token, `/api/files/${encodeURIComponent(depoAd)}`, { method: "DELETE" }); } catch { /* çöpten kalıcı silmede sessiz */ }
+    },
+  };
+}
+
 // Bir adrese kısa timeout'la ulaşılabiliyor mu? (LAN erişilebilirlik yoklaması için)
 async function probeReachable(url, timeoutMs = 1500) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try { const r = await fetch(url, { signal: ctrl.signal }); return r.ok; }
+  try { const r = await clientFetch(url, { signal: ctrl.signal }); return r.ok; }
   catch { return false; }
   finally { clearTimeout(t); }
 }
@@ -222,9 +294,13 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   // kesikken (Tailscale düşmüşken) açılsa bile aynı ağdaki sunucuya doğrudan (ölü adresi
   // beklemeden) ulaşabilir.
   appRef = app;
+  refreshPin(app); // pinlenmiş sunucu sertifikası varsa istemci fetch'leri https+pin ile gitsin
   try {
     const boot = loadServerConfig(app);
     if (boot?.mode === "client") {
+      // Mevcut config pinini kalıcı bilinen-sunucu deposuna taşı (bir kereye mahsus göç):
+      // böylece config sıfırlansa bile bu sunucu bilinen kalır.
+      if (boot.serverCertFp && boot.serverUrl) { try { knownServers.kaydet(app, new URL(boot.serverUrl).host, boot.serverCertFp); } catch { /* geçersiz url */ } }
       if (boot.lanUrl) setFailoverLan(boot.lanUrl);
       if (boot.lastGoodUrl) lastGoodUrl = boot.lastGoodUrl;
       // Açılıştaki app-lock denemeleri önbellek token'la bağlıysa hemen gönderilsin
@@ -244,6 +320,8 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
         port:     embeddedServer.getPort() ?? cfg.port,
         ips:      embeddedServer.getLocalIps(),
         username: cfg.username || "admin",
+        fp:       embeddedServer.getCertFingerprint?.() ?? null, // bu sunucunun TLS parmak izi (elle doğrulama için gösterilir)
+        tlsOnly:  embeddedServer.getTlsOnly?.() ?? !!cfg.tlsOnly, // yalnız-HTTPS modu açık mı
       };
     }
     if (!cfg.serverUrl) return { isActive: false };
@@ -254,25 +332,64 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       role:        cfg.role        ?? null,
       permissions: cfg.permissions ?? null,
       lastGoodUrl: cfg.lastGoodUrl ?? null, // rozeti açılışta doğru göstermek için (LAN mı Tailscale mi)
+      tls:         !!cfg.serverCertFp,       // istemci pinlenmiş https ile mi bağlı
+      fp:          cfg.serverCertFp ?? null, // pinlenen sunucu parmak izi
     };
   });
 
   // ── İstemci: sunucuya giriş ───────────────────────────────────────────────
-  ipcMain.handle("server:login", async (_e, { serverUrl, username, password, totpCode }) => {
+  // trust: kullanıcı ilk bağlantıda parmak izini onayladı. force: kimlik değişti uyarısına
+  // rağmen yeni sertifikayı kabul et (sunucu yeniden kurulduysa). İkisi de yoksa ve pin
+  // gerekiyorsa needTrust/certMismatch döndürülür; UI onay/uyarı diyaloğu gösterir.
+  ipcMain.handle("server:login", async (_e, { serverUrl, username, password, totpCode, trust, force }) => {
     if (!serverUrl || !username || !password) return { error: "Tüm alanlar zorunludur" };
+    // Şemayı normalize et: yoksa http varsay (eski/http-only sunucu için geri uyumluluk).
+    let base = String(serverUrl).trim().replace(/\/+$/, "");
+    if (!/^https?:\/\//i.test(base)) base = "http://" + base;
+    const httpsBase = base.replace(/^http:\/\//i, "https://");
+
+    // Sunucunun TLS sertifikasını al (varsa). Aynı port hem http hem https dinliyor (hibrit).
+    let cert = null;
+    try { cert = await sertifikaParmakIziAl(httpsBase); } catch { cert = null; }
+
+    let dispatcher = undefined;
+    let loginUrl = base;                 // TLS yoksa http'ye düş (geri uyumluluk)
+    let pinToSave = null;
+    if (cert) {
+      const existing = loadServerConfig(app);
+      const configFp = (existing?.mode === "client" && existing?.serverCertFp) ? existing.serverCertFp : null;
+      const host = (() => { try { return new URL(httpsBase).host; } catch { return null; } })();
+      // Kalıcı bilinen-sunucu deposu (SSH known_hosts): bir kez doğrulanan sunucu, "Yerel Moda Dön"
+      // sonrası bile tekrar sorulmaz; yalnız sertifika gerçekten değişirse "kimlik değişti" çıkar.
+      const karar = knownServers.guvenKarari({
+        certFp: cert.fp, hostFp: knownServers.hostFp(app, host), configFp,
+        fpKnown: knownServers.fpBilinir(app, cert.fp), trust, force,
+      });
+      if (karar === "mismatch") return { certMismatch: true, fp: cert.fp };
+      if (karar === "needTrust") return { needTrust: true, fp: cert.fp };
+      // Güvenildi: https + pin ile bağlan ve bu host'u kalıcı depoya kaydet.
+      dispatcher = pinliDispatcher(cert.pem);
+      loginUrl = httpsBase;
+      pinToSave = { serverCertPem: cert.pem, serverCertFp: cert.fp };
+      if (host) knownServers.kaydet(app, host, cert.fp);
+    }
+
     try {
-      const res = await fetch(`${serverUrl.replace(/\/$/, "")}/auth/login`, {
+      const res = await pinliFetch(`${loginUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, totpCode }),
+        ...(dispatcher ? { dispatcher } : {}),
       });
       const body = await res.json();
-      // 2FA açıksa sunucu requires2fa döner — renderer kod alanını gösterir
-      if (!res.ok) return { error: body.error || "Giriş başarısız", requires2fa: !!body.requires2fa };
+      // 2FA açıksa sunucu requires2fa döner — renderer kod alanını gösterir.
+      // retryAfterSec: kademeli kilit (429) aktifse kalan süre — giriş ekranı geri sayım gösterir.
+      if (!res.ok) return { error: body.error || "Giriş başarısız", requires2fa: !!body.requires2fa, ...(body.retryAfterSec ? { retryAfterSec: body.retryAfterSec } : {}) };
       resetFailover(); // yeni sunucu — eski LAN yedeği/aktif adres geçersiz
-      saveServerConfig(app, { mode: "client", serverUrl, token: body.token, username: body.user.username, role: body.user.role, permissions: body.user.permissions ?? null });
-      flushSecurityQueue(app, serverUrl, body.token); // biriken app-lock denemelerini sunucuya yolla (fire-and-forget)
-      return { ok: true, user: body.user };
+      saveServerConfig(app, { mode: "client", serverUrl: loginUrl, token: body.token, username: body.user.username, role: body.user.role, permissions: body.user.permissions ?? null, ...(pinToSave || {}) });
+      refreshPin(app); // sonraki tüm istemci fetch'leri pin ile gitsin
+      flushSecurityQueue(app, loginUrl, body.token); // biriken app-lock denemelerini sunucuya yolla (fire-and-forget)
+      return { ok: true, user: body.user, ...(pinToSave ? { tls: true, fp: cert.fp } : {}) };
     } catch (err) {
       console.error("Sunucu giriş hatası:", err);
       return { error: "Sunucuya bağlanılamadı" };
@@ -292,7 +409,19 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
   ipcMain.handle("server:clearConfig", () => {
     try { fs.unlinkSync(getServerConfigPath(app)); } catch {}
+    refreshPin(app); // config gitti → pin'i temizle
     return true;
+  });
+
+  // 2FA aç/kapat token_version'ı artırıp diğer oturumları düşürür; bu oturum kapanmasın diye
+  // uç taze jeton döndürür ve burada saklanır (istemci → token, sunucu PC → adminToken).
+  ipcMain.handle("server:updateToken", (_e, token) => {
+    if (!token) return { ok: false };
+    const cfg = loadServerConfig(app);
+    if (!cfg) return { ok: false };
+    if (cfg.mode === "server") saveServerConfig(app, { ...cfg, adminToken: token });
+    else if (cfg.token) saveServerConfig(app, { ...cfg, token });
+    return { ok: true };
   });
 
   // ── Token yenile ──────────────────────────────────────────────────────────
@@ -338,49 +467,45 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   // ── Sunucu modu: ilk admin kurulumu ──────────────────────────────────────
-  ipcMain.handle("server:setupAdmin", async (_e, { username, password, port }) => {
+  ipcMain.handle("server:setupAdmin", async (_e, { username, password, port, totpCode }) => {
     if (!username?.trim() || !password || password.length < 6) return { error: "Kullanıcı adı ve en az 6 karakterli şifre gerekli" };
     if (!sqliteDb.isActive()) return { error: "Veritabanı henüz hazır değil" };
-    if (sqliteDb.hasAnyUser()) {
-      // Admin mevcut — şifreyi doğrula ve sunucuyu başlat (yeni kullanıcı oluşturma)
-      const existingUser = sqliteDb.getUserByUsername(username.trim());
-      if (!existingUser) return { error: `"${username.trim()}" kullanıcısı bulunamadı. Mevcut admin kullanıcı adını girin.` };
-      const match = await bcrypt.compare(password, existingUser.password);
-      if (!match) return { error: "Şifre hatalı. Mevcut admin şifresini girin." };
-    } else {
+    const uname = username.trim();
+    const ilkKurulum = !sqliteDb.hasAnyUser();
+    if (ilkKurulum) {
+      // Hiç kullanıcı yok: bu ilk kurulum — admini oluştur (doğrulanacak eski şifre yok).
       const hash = await bcrypt.hash(password, 10);
-      sqliteDb.createUser(username.trim(), hash, "admin");
+      sqliteDb.createUser(uname, hash, "admin");
+    } else if (!sqliteDb.getUserByUsername(uname)) {
+      return { error: `"${uname}" kullanıcısı bulunamadı. Mevcut admin kullanıcı adını girin.` };
     }
-    // Sunucuyu başlat
     const usePort = port || 3000;
+    // Şifreyi (ve varsa 2FA'yı) GERÇEK giriş yolundan doğrula: kademeli kilit + 2FA + güvenlik
+    // kaydı hepsi authenticateLogin içinde. Sunucu YALNIZCA doğrulama başarılıysa başlatılır.
+    // ÖNEMLİ: sunucuyu her denemede başlatıp durdurmak, start() → pruneRateBuckets çağırdığı ve bu
+    // fonksiyon henüz kilitlenmemiş (reset_at=now) kademeli sayacı sildiği için kilidi bozuyordu
+    // (bildirilen "pes pese sınırsız deneme" hatası buydu). Bu yüzden db'yi başlatmadan bağlayıp
+    // doğruluyoruz, start yalnız başarıda çağrılıyor.
+    embeddedServer.attachDb(sqliteDb);
+    const auth = await embeddedServer.authenticateLogin({ username: uname, password, totpCode, ip: "127.0.0.1" });
+    if (auth.status !== 200) {
+      // retryAfterSec: kademeli kilit aktifse kalan süre — form geri sayım gösterir (app-lock gibi)
+      return { error: auth.error || "Giriş doğrulanamadı", ...(auth.requires2fa ? { requires2fa: true } : {}), ...(auth.retryAfterSec ? { retryAfterSec: auth.retryAfterSec } : {}) };
+    }
     try {
       const { ips } = await embeddedServer.start(usePort, sqliteDb);
-      // Admin token al — önce 30 günlük internal endpoint; başarısız olursa normal login (8 saat)
-      let adminToken = null;
+      // Doğrulandı — 30 günlük sunucu admin tokenini al (refresh-internal, loopback), olmazsa login tokenini kullan
+      let adminToken = auth.token;
       try {
         const r = await fetch(`http://127.0.0.1:${usePort}/auth/refresh-internal`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: username.trim() }),
+          body: JSON.stringify({ username: uname }),
         });
         const body = await r.json();
-        if (body.token) { adminToken = body.token; }
+        if (body.token) adminToken = body.token;
       } catch {}
-      if (!adminToken) {
-        try {
-          const res = await fetch(`http://127.0.0.1:${usePort}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: username.trim(), password }),
-          });
-          const body = await res.json();
-          if (res.ok && body.token) adminToken = body.token;
-          else console.warn("[setupAdmin] Dahili login başarısız:", body.error);
-        } catch (loginErr) {
-          console.warn("[setupAdmin] Dahili login isteği başarısız:", loginErr.message);
-        }
-      }
-      saveServerConfig(app, { mode: "server", port: usePort, username: username.trim(), ...(adminToken ? { adminToken } : {}) });
+      saveServerConfig(app, { mode: "server", port: usePort, username: uname, ...(adminToken ? { adminToken } : {}) });
       return { ok: true, ips, port: usePort };
     } catch (err) {
       return { error: `Sunucu başlatılamadı: ${err.message}` };
@@ -392,7 +517,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     if (!sqliteDb.isActive()) return { error: "Veritabanı henüz hazır değil" };
     const usePort = port || loadServerConfig(app)?.port || 3000;
     try {
-      const { ips } = await embeddedServer.start(usePort, sqliteDb);
+      const { ips } = await embeddedServer.start(usePort, sqliteDb, { tlsOnly: !!loadServerConfig(app)?.tlsOnly });
       const cfg = loadServerConfig(app) || {};
       // Token yenile
       let adminToken = cfg.adminToken;
@@ -416,11 +541,43 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     return { ok: true };
   });
 
+  // ── Sunucu modu: Yalnız-HTTPS (hibriti kapat) ─────────────────────────────
+  // Açıkken dıştan gelen düz HTTP bağlantıları reddedilir (loopback muaf). Canlı etki eder,
+  // yeniden başlatma gerekmez; ayar config'e yazılır ki sonraki açılışta korunsun.
+  ipcMain.handle("server:setTlsOnly", (_e, value) => {
+    const v = !!value;
+    embeddedServer.setTlsOnly(v);
+    const cfg = loadServerConfig(app);
+    if (cfg?.mode === "server") saveServerConfig(app, { ...cfg, tlsOnly: v });
+    return { ok: true, tlsOnly: v };
+  });
+
+  // ── Sunucu modu: TLS sertifikasını yenile ─────────────────────────────────
+  // Parmak izi değişir → tüm istemciler bir sonraki bağlantıda yeniden güven ister.
+  // Çalışan sunucu eski sertifikayı kullandığından, açıksa durdurup yeniden başlatarak uygular.
+  ipcMain.handle("server:regenerateCert", async () => {
+    try {
+      const wasRunning = embeddedServer.isRunning();
+      const cfg = loadServerConfig(app) || {};
+      const port = embeddedServer.getPort() || cfg.port || 3000;
+      if (wasRunning) await embeddedServer.stop();
+      const fp = await embeddedServer.regenerateCert();
+      if (wasRunning) await embeddedServer.start(port, sqliteDb);
+      return { ok: true, fp };
+    } catch (err) { return { error: err.message }; }
+  });
+
   // ── Sunucu durumu ─────────────────────────────────────────────────────────
   ipcMain.handle("server:getServerStatus", () => ({
     running: embeddedServer.isRunning(),
     port:    embeddedServer.getPort(),
     ips:     embeddedServer.getLocalIps(),
+    fp:      embeddedServer.getCertFingerprint?.() ?? null, // bu sunucunun TLS parmak izi
+    tlsOnly: embeddedServer.getTlsOnly?.() ?? false,
+    // hasAdmin: kurulum sihirbazı, ilk kurulum mu (admin oluştur) yoksa mevcut admini
+    // doğrulama mı (giriş) olduğunu bilsin. Doğrulamada "Şifre Tekrar" istenmez ve her
+    // deneme sunucuya gider (kademeli kilit + güvenlik kaydı devreye girsin).
+    hasAdmin: sqliteDb.isActive() ? sqliteDb.hasAnyUser() : false,
   }));
 
   // ── İstemci: sunucuyla aynı yerel ağda mıyız? ─────────────────────────────
@@ -449,8 +606,10 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       const ips = Array.isArray(body?.serverLanIps) ? body.serverLanIps : [];
       const port = body?.serverPort;
       if (!ips.length || !port) return { onLan: false };
+      // Pin varsa LAN yedeği de https olsun (aynı sunucu = aynı sertifika, pin IP'den bağımsız çalışır).
+      const scheme = pinnedFp ? "https" : "http";
       for (const ip of ips) {
-        const lanUrl = `http://${ip}:${port}`;
+        const lanUrl = `${scheme}://${ip}:${port}`;
         if (await probeReachable(`${lanUrl}/health`)) { markLan(lanUrl); return { onLan: true, lanUrl }; }
       }
       return { onLan: false };
@@ -498,7 +657,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
     // Sunucu modu config varsa gömülü sunucuyu otomatik başlat
     if (blob && cfg?.mode === "server" && cfg?.port && !embeddedServer.isRunning()) {
-      embeddedServer.start(cfg.port, sqliteDb).then(async () => {
+      embeddedServer.start(cfg.port, sqliteDb, { tlsOnly: !!cfg.tlsOnly }).then(async () => {
         // Admin token süresi dolmuş olabilir — loopback üzerinden yenile
         try {
           const r = await fetch(`http://127.0.0.1:${cfg.port}/auth/refresh-internal`, {
@@ -608,6 +767,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     try {
       const payload = password ? encryptBackup(data, password) : data;
       fs.writeFileSync(filePath, JSON.stringify(payload, null, password ? 0 : 2), "utf-8");
+      files.yedekleDosyaKlasoru(app, filePath, password || null); // arşiv dosyaları — parola varsa şifreli
       return true;
     }
     catch (err) { console.error("Yedek yazılamadı:", err); return false; }
@@ -627,7 +787,9 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       const pass = readAutoBackupPassword(app); // ayarlarda kayıtlıysa otomatik yedek şifrelenir
       const payload = pass ? encryptBackup(data, pass) : data;
       const date = new Date().toISOString().split("T")[0];
-      fs.writeFileSync(path.join(folder, `altunmak-crm-otoyedek-${date}.json`), JSON.stringify(payload, null, pass ? 0 : 2), "utf-8");
+      const jsonPath = path.join(folder, `altunmak-crm-otoyedek-${date}.json`);
+      fs.writeFileSync(jsonPath, JSON.stringify(payload, null, pass ? 0 : 2), "utf-8");
+      files.yedekleDosyaKlasoru(app, jsonPath, pass || null); // arşiv dosyaları — parola varsa şifreli
       return true;
     } catch (err) { console.error("Otomatik yedek yazılamadı:", err); return false; }
   });
@@ -635,9 +797,16 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   // Otomatik yedek parolası yönetimi
   ipcMain.handle("backup:setAutoPassword", (_e, password) => saveAutoBackupPassword(app, password));
   ipcMain.handle("backup:autoPasswordStatus", () => ({ set: hasAutoBackupPassword(app), canEncrypt: canEncryptSafe() }));
+  // Şifreli yedeğin dosya klasörü parola gelene kadar (backup:decrypt) çözülemez — yolunu burada beklet.
+  let bekleyenSifreliRestoreYolu = null;
   // Şifreli yedeği parola ile çöz (geri yüklerken)
   ipcMain.handle("backup:decrypt", (_e, envelope, password) => {
-    try { return { ok: true, data: decryptBackup(envelope, password) }; }
+    try {
+      const data = decryptBackup(envelope, password);
+      // Parola doğru → yedekteki şifreli arşiv dosyalarını da aynı parolayla çöz ve geri yükle.
+      if (bekleyenSifreliRestoreYolu) { files.geriYukleDosyaKlasoru(app, bekleyenSifreliRestoreYolu, password); bekleyenSifreliRestoreYolu = null; }
+      return { ok: true, data };
+    }
     catch { return { ok: false, error: "Parola yanlış veya dosya bozuk." }; }
   });
 
@@ -649,7 +818,17 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     });
     if (canceled || !filePaths?.[0]) return null;
     // Şifreli yedekse zarf nesnesi döner; renderer parola sorup backup:decrypt ile çözer.
-    try { return JSON.parse(fs.readFileSync(filePaths[0], "utf-8")); }
+    try {
+      const veri = JSON.parse(fs.readFileSync(filePaths[0], "utf-8"));
+      if (isEncryptedBackup(veri)) {
+        // Dosyalar da şifreli; parola backup:decrypt'te gelince geri yüklenecek.
+        bekleyenSifreliRestoreYolu = filePaths[0];
+      } else {
+        bekleyenSifreliRestoreYolu = null;
+        files.geriYukleDosyaKlasoru(app, filePaths[0]); // düz yedek → dosyalar hemen geri gelir
+      }
+      return veri;
+    }
     catch (err) { console.error("Yedek okunamadı:", err); return null; }
   });
   // ── Kayıt kilitleme ──────────────────────────────────────────────────────────
@@ -711,4 +890,4 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 }
 
-module.exports = { registerDataHandlers, flushSecurityQueue, getSecurityQueuePath };
+module.exports = { registerDataHandlers, flushSecurityQueue, getSecurityQueuePath, makeFileNet };

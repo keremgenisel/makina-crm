@@ -34,4 +34,10 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
+
+  it("at-rest şifreleme: düz DB yerinde şifrelenir, veri korunur, anahtarsız açılmaz", () => {
+    const r = runElectron("db-encryption.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
 });

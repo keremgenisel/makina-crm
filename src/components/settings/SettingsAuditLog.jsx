@@ -6,10 +6,10 @@ const ENTITY_LABELS = {
   musteri: "Müşteri", bayi: "Bayi", servis: "Servis", kalip_satisi: "Kalıp Satışı",
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
-  islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme",
+  islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme", eposta: "E-posta",
 };
 const ACTION_LABELS = {
-  olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi",
+  olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
@@ -194,14 +194,14 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const hasActiveFilter = activeFilters.fQ || activeFilters.fUser || activeFilters.fEntity || activeFilters.fDateFrom || activeFilters.fDateTo;
-  const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none" };
-  const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" };
-  const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
+  const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", outline: "none" };
+  const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "2px solid var(--n200, #e2e8f0)", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)", verticalAlign: "middle" };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>İşlem Geçmişi</h3>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--n900, #0f172a)" }}>İşlem Geçmişi</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="ghost" onClick={yenile}><Icon name="refresh" size={14} /> Yenile</Btn>
           <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
@@ -223,7 +223,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
       {/* Filtreler: üst satır metin filtreleri, alt satır tarih aralığı + Ara */}
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
         <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
           <input
             value={fQ} onChange={e => setFQ(e.target.value)} onKeyDown={onKeyDown}
             placeholder="Ara: kayıt adı, detay..." style={{ ...inp, width: "100%", boxSizing: "border-box", paddingLeft: 32 }}
@@ -240,7 +240,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
-        <span style={{ color: "#94a3b8", fontSize: 13 }}>—</span>
+        <span style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>—</span>
         <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
         <Btn onClick={applyFilters}>Ara</Btn>
         {hasActiveFilter && (
@@ -249,7 +249,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
       </div>
 
       {hasActiveFilter && (
-        <div style={{ marginBottom: 10, fontSize: 12, color: "#7c3aed", background: "#f5f3ff", padding: "6px 12px", borderRadius: 6, display: "inline-flex", gap: 6 }}>
+        <div style={{ marginBottom: 10, fontSize: 12, color: "var(--purTx, #7c3aed)", background: "var(--purBg, #f5f3ff)", padding: "6px 12px", borderRadius: 6, display: "inline-flex", gap: 6 }}>
           Filtre aktif
           {activeFilters.fQ && <span>· Arama: <b>{activeFilters.fQ}</b></span>}
           {activeFilters.fUser && <span>· Kullanıcı: <b>{activeFilters.fUser}</b></span>}
@@ -260,19 +260,19 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
       )}
 
       {loadErr && (
-        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fee2e2", color: "#991b1b", fontSize: 13, fontWeight: 600 }}>
+        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "var(--redBg2, #fee2e2)", color: "var(--red800, #991b1b)", fontSize: 13, fontWeight: 600 }}>
           Yükleme hatası: {loadErr}
         </div>
       )}
       {loading ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Yükleniyor...</div>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 14 }}>Yükleniyor...</div>
       ) : rows.length === 0 ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Kayıt bulunamadı.</div>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 14 }}>Kayıt bulunamadı.</div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", background: "var(--surface, #ffffff)", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 <th style={thStyle}>Zaman</th>
                 <th style={thStyle}>Kullanıcı</th>
                 <th style={thStyle}>Eylem</th>
@@ -285,22 +285,22 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
             <tbody>
               {rows.map(r => (
                 <tr key={r.id} style={{ transition: "background .1s" }}>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
                   <td style={{ ...tdStyle, fontWeight: 600 }}>{r.username}</td>
                   <td style={tdStyle}>
                     <span style={{
                       display: "inline-block", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
-                      background: r.action === "silindi" ? "#fee2e2" : r.action === "olusturuldu" ? "#d1fae5" : "#f1f5f9",
-                      color: r.action === "silindi" ? "#b91c1c" : r.action === "olusturuldu" ? "#065f46" : "#475569",
+                      background: r.action === "silindi" ? "var(--redBg2, #fee2e2)" : r.action === "olusturuldu" ? "var(--grnBg3, #d1fae5)" : "var(--n150, #f1f5f9)",
+                      color: r.action === "silindi" ? "var(--red700, #b91c1c)" : r.action === "olusturuldu" ? "var(--grn800, #065f46)" : "var(--n600, #475569)",
                     }}>
                       {ACTION_LABELS[r.action] || r.action}
                     </span>
                   </td>
-                  <td style={{ ...tdStyle, color: "#475569" }}>{ENTITY_LABELS[r.entity] || r.entity}</td>
+                  <td style={{ ...tdStyle, color: "var(--n600, #475569)" }}>{ENTITY_LABELS[r.entity] || r.entity}</td>
                   <td style={{ ...tdStyle, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {r.entity_name || (r.entity_id ? `#${r.entity_id}` : "—")}
                   </td>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "#94a3b8", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n400, #94a3b8)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {r.detail ? (() => { try { const d = JSON.parse(r.detail); const oz = Object.entries(d).filter(([k]) => k !== "onceki").map(([k, v]) => `${k}: ${v}`).join(", "); return oz || "—"; } catch { return r.detail; } })() : "—"}
                   </td>
                   <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
@@ -322,27 +322,27 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
           .filter(k => k !== "id" && JSON.stringify(onizle.onceki?.[k]) !== JSON.stringify(mevcut?.[k]));
         return (
           <Modal title={`Düzenleme Öncesi — ${onizle.row.entity_name || "#" + onizle.row.entity_id}`} onClose={() => setOnizle(null)}>
-            <div style={{ fontSize: 12.5, color: "#64748b", marginBottom: 12 }}>
+            <div style={{ fontSize: 12.5, color: "var(--n500, #64748b)", marginBottom: 12 }}>
               {fmtTs(onizle.row.ts)} tarihli düzenlemenin öncesi ile kaydın ŞU ANKİ hali karşılaştırılıyor (sadece farklı alanlar).
             </div>
             {!mevcut ? (
-              <div style={{ fontSize: 13, color: "#b45309", marginBottom: 14 }}>Kayıt şu an bulunamıyor (silinmiş olabilir), geri alma yapılamaz.</div>
+              <div style={{ fontSize: 13, color: "var(--amb700, #b45309)", marginBottom: 14 }}>Kayıt şu an bulunamıyor (silinmiş olabilir), geri alma yapılamaz.</div>
             ) : anahtarlar.length === 0 ? (
-              <div style={{ fontSize: 13, color: "#16a34a", marginBottom: 14 }}>Kayıt zaten düzenleme öncesi haliyle aynı.</div>
+              <div style={{ fontSize: 13, color: "var(--grn600, #16a34a)", marginBottom: 14 }}>Kayıt zaten düzenleme öncesi haliyle aynı.</div>
             ) : (
               <div style={{ overflowX: "auto", marginBottom: 14 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
-                  <thead><tr style={{ background: "#f8fafc" }}>
-                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Alan</th>
-                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Önceki</th>
-                    <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Şimdiki</th>
+                  <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--n500, #64748b)" }}>Alan</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--n500, #64748b)" }}>Önceki</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--n500, #64748b)" }}>Şimdiki</th>
                   </tr></thead>
                   <tbody>
                     {anahtarlar.map(k => (
-                      <tr key={k} style={{ borderTop: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>{k}</td>
-                        <td style={{ padding: "6px 10px", color: "#166534", background: "#f0fdf4" }}>{goster(onizle.onceki?.[k])}</td>
-                        <td style={{ padding: "6px 10px", color: "#991b1b", background: "#fef2f2" }}>{goster(mevcut?.[k])}</td>
+                      <tr key={k} style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "var(--n900, #0f172a)", whiteSpace: "nowrap" }}>{k}</td>
+                        <td style={{ padding: "6px 10px", color: "var(--grn900, #166534)", background: "var(--grnBg, #f0fdf4)" }}>{goster(onizle.onceki?.[k])}</td>
+                        <td style={{ padding: "6px 10px", color: "var(--red800, #991b1b)", background: "var(--redBg, #fef2f2)" }}>{goster(mevcut?.[k])}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -370,9 +370,9 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
       {/* Sayfalama */}
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 14 }}>
-          <button onClick={() => go(page - 1)} disabled={page <= 1} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#475569", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>‹</button>
-          <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{page} / {totalPages} ({total} kayıt)</span>
-          <button onClick={() => go(page + 1)} disabled={page >= totalPages} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#475569", cursor: page >= totalPages ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>›</button>
+          <button onClick={() => go(page - 1)} disabled={page <= 1} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: page <= 1 ? "var(--n100, #f8fafc)" : "var(--surface, #ffffff)", color: page <= 1 ? "var(--n300, #cbd5e1)" : "var(--n600, #475569)", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>‹</button>
+          <span style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 600 }}>{page} / {totalPages} ({total} kayıt)</span>
+          <button onClick={() => go(page + 1)} disabled={page >= totalPages} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: page >= totalPages ? "var(--n100, #f8fafc)" : "var(--surface, #ffffff)", color: page >= totalPages ? "var(--n300, #cbd5e1)" : "var(--n600, #475569)", cursor: page >= totalPages ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>›</button>
         </div>
       )}
     </div>

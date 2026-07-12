@@ -2,16 +2,17 @@ import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount } from "../../lib/utils";
-import { Icon, Btn, Field, Input, Warn, EMAIL_RE, Modal } from "../ui";
+import { Icon, Btn } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
+import { useMailSender, MailComposeModal } from "../MailCompose";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [] }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], serverPermissions = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
-  const [exportMailDraft, setExportMailDraft] = useState(null); // null | { to, subject, text, attachmentBase64, attachmentFilename, mimeType }
-  const [exportMailSendState, setExportMailSendState] = useState({ state: "idle", error: null });
+  // Ortak e-posta hook'u (exportMail* adlarıyla aliaslanır — açılış/gönderim kodu değişmesin).
+  const { mailDraft: exportMailDraft, setMailDraft: setExportMailDraft, mailSendState: exportMailSendState, setMailSendState: setExportMailSendState, sendMail: sendExportMailDraft } = useMailSender(serverPermissions);
   const [acikGruplar, setAcikGruplar] = useState(() => new Set()); // rapor grupları akordeon
   const exportSablon = (label) => renderMailTemplate(appSettings?.mailTemplates, "disaAktarim", {
     belge: label, firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
@@ -33,21 +34,12 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     setExportMailSendState({ state: "idle", error: null });
   };
   const sendExportMail = async () => {
-    if (!window.appMail || !exportMailDraft) return;
-    if (!EMAIL_RE.test(exportMailDraft.to || "")) { setExportMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
-    setExportMailSendState({ state: "sending", error: null });
-    const res = await window.appMail.send({
-      to: exportMailDraft.to.trim(), subject: exportMailDraft.subject, text: exportMailDraft.text,
+    const res = await sendExportMailDraft({
+      to: exportMailDraft.to, subject: exportMailDraft.subject, text: exportMailDraft.text,
       attachments: [{ filename: exportMailDraft.attachmentFilename, contentBase64: exportMailDraft.attachmentBase64, mimeType: exportMailDraft.mimeType }],
       type: "disaaktarim",
     });
-    if (res?.ok) {
-      setExportMailSendState({ state: "idle", error: null });
-      setExportMailDraft(null);
-      flash("ok", "E-posta gönderildi.");
-    } else {
-      setExportMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
-    }
+    if (res?.ok) flash("ok", "E-posta gönderildi.");
   };
   const exportFinance = async (mode = "download") => {
     // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
@@ -387,11 +379,12 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
   return (
     <>
       <Section title="Dışa Aktar (Excel / CSV)" icon="download">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 12, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 12, lineHeight: 1.6 }}>
           Verilerinizi Excel'de açılabilen dosya olarak indirin. Türkçe karakterler korunur; dosyayı Excel'de çift tıklayarak açabilirsiniz.
         </div>
-        <div style={{ fontSize: 12, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 12px", marginBottom: 18, lineHeight: 1.5 }}>
-          🔒 Dışa aktarılan dosyalar müşteri ve finansal bilgileri <b>düz metin</b> içerir. Yalnızca güvenli yerlerde saklayın ve gerekmedikçe paylaşmayın. (Dosyanın açılınca komut çalıştırmasına karşı hücreler zararsızlaştırılır.)
+        <div style={{ fontSize: 12, color: "var(--amb800, #92400e)", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, padding: "8px 12px", marginBottom: 18, lineHeight: 1.5, display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <span style={{ flexShrink: 0, marginTop: 1, display: "flex" }}><Icon name="lock" size={13} /></span>
+          <span>Dışa aktarılan dosyalar müşteri ve finansal bilgileri <b>düz metin</b> içerir. Yalnızca güvenli yerlerde saklayın ve gerekmedikçe paylaşmayın. (Dosyanın açılınca komut çalıştırmasına karşı hücreler zararsızlaştırılır.)</span>
         </div>
 
         {/* Tümünü indir — içe aktarma şablonu formatında (geri yüklenebilir) */}
@@ -402,7 +395,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button onClick={() => exportAllTemplate("download")}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "#fff", color: "#e85d1a", border: "none" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "var(--surface, #ffffff)", color: "#e85d1a", border: "none" }}>
               <Icon name="download" size={14} /> Tümünü İndir
             </button>
             <button onClick={() => exportAllTemplate("email")}
@@ -412,7 +405,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
           </div>
         </div>
 
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 14, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 14, textTransform: "uppercase", letterSpacing: .5 }}>Ayrı Raporlar</div>
         {[
           { group: "Müşteri & Servis", items: [
             { title: "Müşteri Listesi", desc: `Tüm müşteriler, makina ve fatura bilgileriyle (${customers.length} kayıt).`, onClick: exportCustomers },
@@ -440,25 +433,25 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
           return (
           <div key={g.group} style={{ marginBottom: 14 }}>
             <div onClick={() => setAcikGruplar(prev => { const n = new Set(prev); if (n.has(g.group)) n.delete(g.group); else n.add(g.group); return n; })}
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: acik ? 10 : 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>{g.group} ({g.items.length})</span>
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>{acik ? "▾" : "▸"}</span>
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 14px", marginBottom: acik ? 10 : 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>{g.group} ({g.items.length})</span>
+              <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{acik ? "▾" : "▸"}</span>
             </div>
-            {acik && <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+            {acik && <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
                   {g.items.map((card, i) => (
-                    <tr key={card.title} style={{ borderBottom: i < g.items.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                    <tr key={card.title} style={{ borderBottom: i < g.items.length - 1 ? "1px solid var(--n150, #f1f5f9)" : "none" }}>
                       <td style={{ padding: "13px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                          <span style={{ fontWeight: 600, fontSize: 14, color: "#0f172a" }}>{card.title}</span>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--n900, #0f172a)" }}>{card.title}</span>
                           <span
                             onMouseEnter={() => setExportTooltip(card.title)}
                             onMouseLeave={() => setExportTooltip(null)}
-                            style={{ cursor: "default", color: "#94a3b8", fontSize: 11, fontWeight: 700, border: "1px solid #cbd5e1", borderRadius: "50%", width: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0, position: "relative" }}>
+                            style={{ cursor: "default", color: "var(--n400, #94a3b8)", fontSize: 11, fontWeight: 700, border: "1px solid var(--n300, #cbd5e1)", borderRadius: "50%", width: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0, position: "relative" }}>
                             i
                             {exportTooltip === card.title && (
-                              <div style={{ position: "absolute", top: "130%", left: 0, background: "#0f172a", color: "#fff", fontSize: 11.5, fontWeight: 500, padding: "7px 11px", borderRadius: 7, width: 220, whiteSpace: "normal", lineHeight: 1.4, zIndex: 20, boxShadow: "0 4px 12px rgba(0,0,0,.25)" }}>
+                              <div style={{ position: "absolute", top: "130%", left: 0, background: "var(--inkBg, #0f172a)", color: "#fff", fontSize: 11.5, fontWeight: 500, padding: "7px 11px", borderRadius: 7, width: 220, whiteSpace: "normal", lineHeight: 1.4, zIndex: 20, boxShadow: "0 4px 12px rgba(0,0,0,.25)" }}>
                                 {card.desc}
                               </div>
                             )}
@@ -483,37 +476,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
 
       {/* Dışa aktarımı e-posta ile gönder — CSV/XLSX içerik otomatik ek olarak eklenir */}
       {exportMailDraft && (
-        <Modal title="E-posta Gönder" onClose={() => setExportMailDraft(null)}>
-          {!window.appMail ? (
-            <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
-              Bu özellik yalnızca kurulu uygulamada çalışır.
-            </div>
-          ) : (
-            <>
-              <Field label="Kime">
-                <Input value={exportMailDraft.to} onChange={e => setExportMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
-                <Warn>{exportMailDraft.to && !EMAIL_RE.test(exportMailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
-              </Field>
-              <Field label="Konu">
-                <Input value={exportMailDraft.subject} onChange={e => setExportMailDraft(p => ({ ...p, subject: e.target.value }))} />
-              </Field>
-              <Field label="Mesaj">
-                <textarea value={exportMailDraft.text} onChange={e => setExportMailDraft(p => ({ ...p, text: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
-              </Field>
-              <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 16 }}>📎 {exportMailDraft.attachmentFilename} otomatik ek olarak gönderilecek.</div>
-              {exportMailSendState.state === "error" && (
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginBottom: 12 }}>✗ {exportMailSendState.error}</div>
-              )}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <Btn variant="ghost" onClick={() => setExportMailDraft(null)}>İptal</Btn>
-                <Btn onClick={sendExportMail} disabled={exportMailSendState.state === "sending"}>
-                  <Icon name="mail" size={14} /> {exportMailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
-                </Btn>
-              </div>
-            </>
-          )}
-        </Modal>
+        <MailComposeModal draft={exportMailDraft} setDraft={setExportMailDraft} sendState={exportMailSendState} onSend={sendExportMail}
+          ekAlani={<div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginBottom: 16 }}>📎 {exportMailDraft.attachmentFilename} otomatik ek olarak gönderilecek.</div>} />
       )}
     </>
   );

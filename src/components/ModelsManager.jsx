@@ -55,21 +55,21 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
   };
 
   const ModelRow = ({ m, isStd }) => (
-    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+    <tr style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
       <td style={{ padding: "10px 12px" }}>
         {m.resim
-          ? <img src={m.resim} alt={m.model} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
-          : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+          ? <img src={m.resim} alt={m.model} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid var(--n200, #e2e8f0)" }} />
+          : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--n300, #cbd5e1)" }}>—</div>
         }
       </td>
       <td style={{ padding: "10px 12px", fontSize: 14, fontWeight: 700 }}>{m.model}</td>
-      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.sogutma || "—"}</td>
-      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.kapasite || "—"}</td>
-      <td style={{ padding: "10px 12px", fontSize: 12, color: "#64748b" }}>{m.kalip ? `Ø ${m.kalip}` : "—"}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--n500, #64748b)" }}>{m.sogutma || "—"}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--n500, #64748b)" }}>{m.kapasite || "—"}</td>
+      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--n500, #64748b)" }}>{m.kalip ? `Ø ${m.kalip}` : "—"}</td>
       <td style={{ padding: "10px 12px", fontSize: 11 }}>
-        <span style={{ color: m.tanim ? "#16a34a" : "#cbd5e1" }}>TR</span>
+        <span style={{ color: m.tanim ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>TR</span>
         {" · "}
-        <span style={{ color: m.tanimEN ? "#16a34a" : "#cbd5e1" }}>EN</span>
+        <span style={{ color: m.tanimEN ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>EN</span>
       </td>
       <td style={{ padding: "10px 12px" }}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -88,21 +88,21 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Model Ekle</Btn>
       </div>
       <div style={{ position: "relative", marginBottom: 12 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model ara..."
-          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+          <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
             {allModels.length === 0 ? "Henüz model yok." : "Arama sonucu bulunamadı."}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 {["", "Model", "Soğutma", "Kapasite", "Kalıp Çapı", "Tanım", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -114,7 +114,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       </div>
       <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       {customModels.length === 0 && (
-        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 10 }}>Henüz özel model eklenmedi.</div>
+        <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 10 }}>Henüz özel model eklenmedi.</div>
       )}
 
       {confirmDelModel && (
@@ -153,12 +153,12 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
           <Field label="Tanım (TR) — Teklif formunda otomatik dolar">
             <textarea value={mForm.tanim || ""} onChange={e => setMForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, dahil kalıp notu vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           <Field label="Tanım (EN) — Proforma ve yurtdışı teklifler için">
             <textarea value={mForm.tanimEN || ""} onChange={e => setMForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="English technical description..."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           </div>
           <Field label="Resim (Teklif/Proforma'da görünür)">
@@ -167,7 +167,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
 
           {parts.length > 0 && (
             <Field label="Makina Kiti — Varsayılan Parçalar">
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 8 }}>
                 Stoka yeni makina eklerken "Kiti Uygula" ile bu liste otomatik dolar.
               </div>
               <SearchPick items={parts.filter(p => p.models?.includes(mForm.model))} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ekle..."
@@ -180,17 +180,17 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
                 <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {(mForm.defaultParcalar || []).map((row, i) => (
                     <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 32px", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#1d4ed8" }}>{row.ad}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--blu700, #1d4ed8)" }}>{row.ad}</span>
                       <input type="number" min="1" value={row.miktar}
                         onChange={e => setMForm(prev => {
                           const arr = [...prev.defaultParcalar];
                           arr[i] = { ...arr[i], miktar: parseInt(e.target.value) || 1 };
                           return { ...prev, defaultParcalar: arr };
                         })}
-                        style={{ padding: "5px 8px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "center", fontFamily: "inherit" }} />
+                        style={{ padding: "5px 8px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", textAlign: "center", fontFamily: "inherit" }} />
                       <button type="button"
                         onClick={() => setMForm(prev => ({ ...prev, defaultParcalar: prev.defaultParcalar.filter((_, idx) => idx !== i) }))}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
                     </div>
                   ))}
                 </div>
@@ -198,7 +198,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
             </Field>
           )}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
             <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

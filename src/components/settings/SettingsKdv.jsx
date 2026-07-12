@@ -16,29 +16,29 @@ export const SettingsKdv = ({ appSettings, setAppSettings }) => {
 
   return (
     <Section title="KDV Oranı" icon="settings">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         KDV oranı zaman içinde değişebildiği için tek bir oran yerine tarihe bağlı dönemler tutulur.
         Her kayıt (müşteri satışı, servis, Extra Kalıp satışı) <b>kendi tarihinde geçerli olan orana</b> göre hesaplanır.
       </div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", borderRadius: 10, padding: "10px 14px", marginBottom: 18 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", borderRadius: 10, padding: "10px 14px", marginBottom: 18 }}>
         Şu an geçerli oran: %{currentRate}{currentPeriod?.from ? ` (${fmtTR(currentPeriod.from)}'ten itibaren)` : ""}
       </div>
       {sorted.map((p, i) => (
         <div key={i} style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>Geçerli Olduğu Tarih</label>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 }}>Geçerli Olduğu Tarih</label>
             <input type="date" value={p.from || ""} onChange={e => updateRow(i, "from", e.target.value)}
-              style={{ padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc" }} />
+              style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" }} />
           </div>
           <div style={{ position: "relative", width: 100 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: "#475569", display: "block", marginBottom: 4 }}>Oran (%)</label>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 }}>Oran (%)</label>
             <input type="number" min="0" max="100" step="1" value={p.rate ?? ""}
               onChange={e => updateRow(i, "rate", e.target.value === "" ? "" : Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
-              style={{ padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, width: "100%", boxSizing: "border-box", background: "#f8fafc" }} />
+              style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, width: "100%", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
           </div>
           <button onClick={() => removeRow(i)} disabled={sorted.length <= 1}
             title={sorted.length <= 1 ? "En az bir dönem olmalı" : "Bu dönemi sil"}
-            style={{ padding: 8, background: "none", border: "none", cursor: sorted.length <= 1 ? "not-allowed" : "pointer", color: sorted.length <= 1 ? "#cbd5e1" : "#dc2626" }}>
+            style={{ padding: 8, background: "none", border: "none", cursor: sorted.length <= 1 ? "not-allowed" : "pointer", color: sorted.length <= 1 ? "var(--n300, #cbd5e1)" : "var(--red600, #dc2626)" }}>
             <Icon name="trash" size={16} />
           </button>
         </div>

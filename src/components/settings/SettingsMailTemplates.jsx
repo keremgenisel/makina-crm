@@ -55,12 +55,12 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
     flash("ok", "E-posta şablonları varsayılanlara döndürüldü.");
   };
 
-  const taStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "#f8fafc", outline: "none", lineHeight: 1.5 };
-  const rozet = { display: "inline-block", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 5, padding: "1px 6px", fontSize: 11, fontFamily: "monospace", color: "#475569", marginRight: 4 };
+  const taStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "var(--n100, #f8fafc)", outline: "none", lineHeight: 1.5 };
+  const rozet = { display: "inline-block", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 5, padding: "1px 6px", fontSize: 11, fontFamily: "monospace", color: "var(--n600, #475569)", marginRight: 4 };
 
   return (
     <Section title="E-posta Şablonları" icon="mail">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         Evrakları e-posta ile gönderirken taslağa otomatik dolan konu ve mesaj metinleri.
         Süslü parantezli yer tutucular gönderim anında gerçek değerlerle doldurulur.
         Boş bırakılan alan varsayılan metne döner; taslak metni göndermeden önce her seferinde ayrıca düzenlenebilir.
@@ -69,15 +69,15 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
       {SABLONLAR.map(s => {
         const acik = acikKartlar.has(s.key);
         return (
-          <div key={s.key} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: acik ? "14px 16px" : "12px 16px", marginBottom: 12 }}>
+          <div key={s.key} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: acik ? "14px 16px" : "12px 16px", marginBottom: 12 }}>
             <div onClick={() => setAcikKartlar(prev => { const n = new Set(prev); if (n.has(s.key)) n.delete(s.key); else n.add(s.key); return n; })}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>{s.baslik}</span>
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>{acik ? "▾" : "▸"}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>{s.baslik}</span>
+              <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{acik ? "▾" : "▸"}</span>
             </div>
             {acik && (
               <div style={{ marginTop: 8 }}>
-                {s.not && <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 8 }}>{s.not}</div>}
+                {s.not && <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginBottom: 8 }}>{s.not}</div>}
                 <div style={{ marginBottom: 8 }}>
                   {s.yertutucular.map(y => <span key={y} style={rozet}>{y}</span>)}
                 </div>
@@ -91,7 +91,7 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "space-between", padding: "12px 0", marginTop: 4, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "space-between", padding: "12px 0", marginTop: 4, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={() => setConfirmReset(true)}>Varsayılanlara Dön</Btn>
         <Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

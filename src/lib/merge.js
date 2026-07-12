@@ -18,7 +18,7 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // - Eklenen müşterilerin sourceStockId'leri toplanır: stok düşümü korunur (yoksa
 //   sunucudan gelen stok listesi satılan makinayı geri diriltir).
 
-export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "uretimFormlari", "faturalar"];
+export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -48,6 +48,16 @@ export function buildMergePlan(myData, serverData) {
   adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
   adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId) }));
   adds.gorusmeler = adds.gorusmeler.map(g => ({ ...g, customerId: remapRef(maps.customers, g.customerId) }));
+  // Dosya künyesi: müşteri dosyası customerId'yi, bağ (refId) ise türüne göre servis/partSale/ödeme
+  // haritasını izler. Bayi dosyaları (dealerId) merge edilmediği için dealerId olduğu gibi kalır.
+  adds.dosyalar = adds.dosyalar.map(d => {
+    const refMap = { servis: maps.services, kalip: maps.partSales, parca: maps.partSales, odeme: maps.payments }[d.refType];
+    return {
+      ...d,
+      customerId: remapRef(maps.customers, d.customerId),
+      ...(refMap && d.refId != null ? { refId: remapRef(refMap, d.refId) } : {}),
+    };
+  });
   adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
   adds.customers = adds.customers.map(c => ({

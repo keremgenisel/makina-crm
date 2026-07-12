@@ -14,7 +14,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const [showAllParts, setShowAllParts] = useState(false);
   const { lockLoading: stockLockLoading, lockConflict: stockLock, forceAcquire: forceStockLock } = useLock("stock", modal?.edit?.id ?? null);
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", outline: "none", fontFamily: "inherit" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", outline: "none", fontFamily: "inherit" };
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(stock, {
     searchFields: ["model", "serialNo", "note"],
@@ -140,10 +140,10 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             const active = modelFilter === m;
             return (
               <div key={m} onClick={() => { setModelFilter(active ? null : m); setPage(1); }}
-                style={{ background: active ? "#fff7ed" : "#fff", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${active ? "#c2410c" : "#e85d1a"}`, cursor: "pointer" }}
+                style={{ background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${active ? "var(--orTx, #c2410c)" : "#e85d1a"}`, cursor: "pointer" }}
                 title="Bu modeldeki makinaları göster">
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{m}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#e85d1a" }}>{n} <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>adet</span></div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{m}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#e85d1a" }}>{n} <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>adet</span></div>
               </div>
             );
           })}
@@ -152,41 +152,41 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
       {modelFilter && (
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 13, color: "#64748b" }}>Filtre:</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", borderRadius: 8, padding: "5px 12px" }}>
+          <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Filtre:</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 12px" }}>
             {modelFilter}
-            <button onClick={() => setModelFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c2410c", padding: 0, display: "flex" }}><Icon name="close" size={12} /></button>
+            <button onClick={() => setModelFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--orTx, #c2410c)", padding: 0, display: "flex" }}><Icon name="close" size={12} /></button>
           </span>
         </div>
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ position: "relative", flex: 1, marginRight: 12 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model veya seri no ara..."
-            style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+            style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         {canDoStock("stock_makina_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>}
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
+            <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Model", "Seri Numarası", "Stoğa Giriş", "Not", ""].map(h => (
-                <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#475569", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {paged.map(s => (
-              <tr key={s.id} style={{ borderBottom: "1px solid #f1f5f9" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+              <tr key={s.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "#fff7ed", color: "#c2410c", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span></td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "#0f172a" : "#94a3b8", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
-                <td style={{ padding: "13px 16px", fontSize: 13, color: "#64748b" }}>{fmtTR(s.addedDate)}</td>
-                <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "#64748b", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
+                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span></td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
+                <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(s.addedDate)}</td>
+                <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
                 <td style={{ padding: "13px 16px" }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     {canDoStock("stock_makina_edit") && <Btn small variant="ghost" onClick={() => openEdit(s)}><Icon name="edit" size={12} /></Btn>}
@@ -197,7 +197,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>{stock.length === 0 ? "Stokta makina yok." : "Aramanıza uyan makina yok."}</div>}
+        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{stock.length === 0 ? "Stokta makina yok." : "Aramanıza uyan makina yok."}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </div>
 
@@ -227,12 +227,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="İsteğe bağlı not..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
+              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
           </Field>
 
-          <div style={{ marginTop: 16, borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
+          <div style={{ marginTop: 16, borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 }}>
                 Kullanılan Parçalar <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none" }}>(stoktan düşülür)</span>
               </span>
               <div style={{ display: "flex", gap: 6 }}>
@@ -251,19 +251,19 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             </div>
 
             {form.model && parts.length > 0 && modelParts.length > 0 && (
-              <label style={{ fontSize: 12, color: "#64748b", display: "flex", alignItems: "center", gap: 6, marginBottom: 8, cursor: "pointer", userSelect: "none" }}>
+              <label style={{ fontSize: 12, color: "var(--n500, #64748b)", display: "flex", alignItems: "center", gap: 6, marginBottom: 8, cursor: "pointer", userSelect: "none" }}>
                 <input type="checkbox" checked={showAllParts} onChange={e => setShowAllParts(e.target.checked)} />
                 Tüm parçaları göster (yalnızca {form.model} modeline ait {modelParts.length} parça listeleniyor)
               </label>
             )}
 
             {(form.parcalar || []).length === 0 && (
-              <div style={{ fontSize: 12, color: "#94a3b8", fontStyle: "italic", marginBottom: 4 }}>Parça eklenmedi — opsiyonel</div>
+              <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", fontStyle: "italic", marginBottom: 4 }}>Parça eklenmedi — opsiyonel</div>
             )}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 8 }}>
               {(form.parcalar || []).map((row, i) => (
-                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "6px 8px" }}>
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--n100, #f8fafc)", border: "1px solid #eef2f7", borderRadius: 8, padding: "6px 8px" }}>
                   <select value={row.partId} onChange={e => updateParcaRow(i, "partId", e.target.value)}
                     style={{ ...inputStyle, flex: 1, minWidth: 0 }}>
                     <option value="">Parça seçin...</option>
@@ -274,7 +274,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
                   </select>
                   <input type="number" min="1" value={row.miktar} onChange={e => updateParcaRow(i, "miktar", e.target.value)}
                     style={{ ...inputStyle, width: 56, textAlign: "center", flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>adet</span>
+                  <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap", flexShrink: 0 }}>adet</span>
                   <Btn small variant="danger" onClick={() => removeParcaRow(i)}><Icon name="trash" size={11} /></Btn>
                 </div>
               ))}

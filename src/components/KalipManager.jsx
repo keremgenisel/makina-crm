@@ -45,44 +45,44 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Yeni Kalıp Ekle</Btn>
       </div>
       <div style={{ position: "relative", marginBottom: 12 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Kalıp ara..."
-          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
 
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+          <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
             {kalipDefs.length === 0 ? "Henüz kalıp tanımı yok." : "Arama sonucu bulunamadı."}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 <th style={{ padding: "8px 14px", width: 52 }}></th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kalıp Adı</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ürün Adı / Tanım</th>
-                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Kalıp Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Kod</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Ürün Adı / Tanım</th>
+                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}></th>
               </tr>
             </thead>
             <tbody>
               {paged.map(k => (
-                <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={k.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
                   <td style={{ padding: "10px 14px" }}>
                     {k.resim
-                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
-                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid var(--n200, #e2e8f0)" }} />
+                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--n300, #cbd5e1)" }}>—</div>
                     }
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
                   </td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--n500, #64748b)" }}>{k.kod || "—"}</td>
                   <td style={{ padding: "10px 14px", fontSize: 11 }}>
-                    <span style={{ color: k.urunAdi ? "#16a34a" : "#cbd5e1" }}>TR</span>
+                    <span style={{ color: k.urunAdi ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>TR</span>
                     {" · "}
-                    <span style={{ color: k.urunAdiEN ? "#16a34a" : "#cbd5e1" }}>EN</span>
+                    <span style={{ color: k.urunAdiEN ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>EN</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -125,18 +125,18 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Tanım (TR)">
             <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={form.tanimEN || ""} onChange={e => setForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           </div>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
@@ -162,18 +162,18 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Tanım (TR)">
             <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           </div>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

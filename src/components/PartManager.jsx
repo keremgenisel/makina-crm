@@ -20,7 +20,7 @@ const PriceFields = ({ value, onChange }) => (
 const ModelChips = ({ selected = [], allModels = [], onChange }) => (
   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
     {allModels.length === 0 && (
-      <span style={{ fontSize: 12, color: "#94a3b8" }}>Henüz makina modeli tanımlanmamış.</span>
+      <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Henüz makina modeli tanımlanmamış.</span>
     )}
     {allModels.map(m => {
       const name = typeof m === "string" ? m : m.model;
@@ -29,9 +29,9 @@ const ModelChips = ({ selected = [], allModels = [], onChange }) => (
         <button key={name} type="button" onClick={() => onChange(active ? selected.filter(x => x !== name) : [...selected, name])}
           style={{
             padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
-            background: active ? "#fff7ed" : "#f8fafc",
-            borderColor: active ? "#fb923c" : "#e2e8f0",
-            color: active ? "#c2410c" : "#64748b",
+            background: active ? "var(--ambBg3, #fff7ed)" : "var(--n100, #f8fafc)",
+            borderColor: active ? "#fb923c" : "var(--n200, #e2e8f0)",
+            color: active ? "var(--orTx, #c2410c)" : "var(--n500, #64748b)",
           }}>
           {name}
         </button>
@@ -41,24 +41,24 @@ const ModelChips = ({ selected = [], allModels = [], onChange }) => (
 );
 
 const ModelBadges = ({ models = [] }) => {
-  if (!models.length) return <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>;
+  if (!models.length) return <span style={{ color: "var(--n300, #cbd5e1)", fontSize: 12 }}>—</span>;
   const show = models.slice(0, 3);
   const rest = models.length - show.length;
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
       {show.map(m => (
-        <span key={m} style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>{m}</span>
+        <span key={m} style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", border: "1px solid var(--ambBr3, #fed7aa)" }}>{m}</span>
       ))}
-      {rest > 0 && <span style={{ fontSize: 11, color: "#94a3b8" }}>+{rest}</span>}
+      {rest > 0 && <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>+{rest}</span>}
     </div>
   );
 };
 
 const TIP_LABELS = { "Standart": "Standart", "Konveyör Saç": "Konveyör Saç", "Bant": "Bant" };
 const TIP_COLORS = {
-  "Standart":     { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0" },
-  "Konveyör Saç": { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  "Bant":         { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+  "Standart":     { bg: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", border: "var(--n200, #e2e8f0)" },
+  "Konveyör Saç": { bg: "var(--bluBg, #eff6ff)", color: "var(--blu700, #1d4ed8)", border: "var(--bluBr, #bfdbfe)" },
+  "Bant":         { bg: "var(--grnBg, #f0fdf4)", color: "var(--grn700, #15803d)", border: "var(--grnBr, #bbf7d0)" },
 };
 
 const TipSelector = ({ value, onChange }) => (
@@ -69,9 +69,9 @@ const TipSelector = ({ value, onChange }) => (
       return (
         <button key={t} type="button" onClick={() => onChange(t)}
           style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
-            border: `1px solid ${active ? c.border : "#e2e8f0"}`,
-            background: active ? c.bg : "#f8fafc",
-            color: active ? c.color : "#94a3b8" }}>
+            border: `1px solid ${active ? c.border : "var(--n200, #e2e8f0)"}`,
+            background: active ? c.bg : "var(--n100, #f8fafc)",
+            color: active ? c.color : "var(--n400, #94a3b8)" }}>
           {t}
         </button>
       );
@@ -117,37 +117,37 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Parça/Yedek Parça Ekle</Btn>
       </div>
       <div style={{ position: "relative", marginBottom: 12 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Yedek parça ara..."
-          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
 
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+          <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
             {parts.length === 0 ? "Henüz yedek parça tanımı yok." : "Arama sonucu bulunamadı."}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 <th style={{ padding: "8px 14px", width: 52 }}></th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Yedek Parça Adı</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Tip</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Kod</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Ad / Tanım</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Modeller</th>
-                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>Fiyat</th>
-                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "#475569" }}></th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Yedek Parça Adı</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Tip</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Kod</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Ad / Tanım</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Modeller</th>
+                <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Fiyat</th>
+                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}></th>
               </tr>
             </thead>
             <tbody>
               {paged.map(k => (
-                <tr key={k.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                <tr key={k.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
                   <td style={{ padding: "10px 14px" }}>
                     {k.resim
-                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid #e2e8f0" }} />
-                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#cbd5e1" }}>—</div>
+                      ? <img src={k.resim} alt={k.ad} style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 4, border: "1px solid var(--n200, #e2e8f0)" }} />
+                      : <div style={{ width: 40, height: 30, borderRadius: 4, border: "1px dashed var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--n300, #cbd5e1)" }}>—</div>
                     }
                   </td>
                   <td style={{ padding: "10px 14px" }}>
@@ -158,17 +158,17 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: c.bg, color: c.color, border: `1px solid ${c.border}`, whiteSpace: "nowrap" }}>{t}</span>
                     ); })()}
                   </td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "#64748b" }}>{k.kod || "—"}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--n500, #64748b)" }}>{k.kod || "—"}</td>
                   <td style={{ padding: "10px 14px", fontSize: 11 }}>
-                    <span style={{ color: k.adEN ? "#16a34a" : "#cbd5e1" }}>TR</span>
+                    <span style={{ color: k.adEN ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>TR</span>
                     {" · "}
-                    <span style={{ color: k.adEN ? "#16a34a" : "#cbd5e1" }}>EN</span>
+                    <span style={{ color: k.adEN ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>EN</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <ModelBadges models={k.models || []} />
                   </td>
                   <td style={{ padding: "10px 14px" }}>
-                    <span style={{ fontSize: 13, color: "#475569" }}>{priceSummary(k)}</span>
+                    <span style={{ fontSize: 13, color: "var(--n600, #475569)" }}>{priceSummary(k)}</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -210,12 +210,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Tanım (TR)">
             <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={form.tanimEN || ""} onChange={e => setForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
@@ -233,7 +233,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ModelChips selected={form.models || []} allModels={allModels}
               onChange={models => setForm(p => ({ ...p, models }))} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
@@ -258,12 +258,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Tanım (TR)">
             <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "#f8fafc", outline: "none" }} />
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
           </Field>
           </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
@@ -281,7 +281,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ModelChips selected={editForm.models || []} allModels={allModels}
               onChange={models => setEditForm(p => ({ ...p, models }))} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

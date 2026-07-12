@@ -84,7 +84,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
   return (
     <>
       <Section title="Firma Bilgileri" icon="settings" collapsible defaultOpen>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -97,7 +97,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </div>
         <Field label="Adres">
           <textarea {...f("adres")} placeholder="Topçular mah. Keresteciler sit. İşgören sok. No:33/2-3 Eyüp - İSTANBUL"
-            style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "#f8fafc", outline: "none" }} />
+            style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Ülke">
@@ -123,14 +123,14 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       </Section>
 
       <Section title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Teklif, proforma ve yurt dışı fatura belgelerinde ödeme bölümüne otomatik eklenir.
         </div>
 
         {form.bankalar.map((bank, idx) => (
-          <div key={bank.id} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
+          <div key={bank.id} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Banka {idx + 1}
               </span>
               {form.bankalar.length > 1 && (
@@ -165,14 +165,14 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         ))}
 
         <button onClick={addBank}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #94a3b8", background: "transparent", color: "#475569", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 16, width: "100%" }}>
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed var(--n400, #94a3b8)", background: "transparent", color: "var(--n600, #475569)", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 16, width: "100%" }}>
           <Icon name="add" size={14} /> Yeni Banka Ekle
         </button>
 
       </Section>
 
       <Section title="Kaşe / İmza" icon="stamp" collapsible>
-        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 12 }}>
           Teklif, proforma ve yurt dışı fatura çıktılarında görünür. Şeffaf arka planlı PNG önerilir.
         </div>
         <Field label="Kaşe / İmza Resmi">
@@ -186,7 +186,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </Field>
       </Section>
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", padding: "12px 0", marginTop: 4, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", padding: "12px 0", marginTop: 4, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 

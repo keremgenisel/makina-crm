@@ -50,9 +50,9 @@ export const CustomerAddEditForm = ({
   return (
     <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}>
       {draftBar}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
         <Icon name="customers" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Firma Bilgileri</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Firma Bilgileri</span>
       </div>
 
       <Field label="Satın Alan">
@@ -92,14 +92,14 @@ export const CustomerAddEditForm = ({
         onCity={v => setForm(p => ({ ...p, city: v }))}
         geoData={geoData} loadingGeo={loadingGeo} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
         <Icon name="machine" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Makina Bilgileri</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Makina Bilgileri</span>
       </div>
 
       <Field label="Kalıp Sayısı (otomatik)">
-        <div style={{ maxWidth: 220, padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
-          <b style={{ color: "#0f172a", fontSize: 16 }}>{(form.kaliplar || []).length}</b>
+        <div style={{ maxWidth: 220, padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", display: "flex", alignItems: "center", gap: 8 }}>
+          <b style={{ color: "var(--n900, #0f172a)", fontSize: 16 }}>{(form.kaliplar || []).length}</b>
           <span style={{ fontSize: 12 }}>kalıp · aşağıdaki listeden eklenir/silinir</span>
         </div>
       </Field>
@@ -107,10 +107,10 @@ export const CustomerAddEditForm = ({
       <Field label="Model">
         <div
           onClick={() => setModelPicker(p => !p)}
-          style={{ padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}
+          style={{ padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}
         >
-          <span style={{ color: form.model ? "#0f172a" : "#94a3b8" }}>{form.model || "Model seçin..."}</span>
-          <span style={{ color: "#94a3b8", fontSize: 12 }}>{modelPicker ? "▲" : "▼"}</span>
+          <span style={{ color: form.model ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)" }}>{form.model || "Model seçin..."}</span>
+          <span style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}>{modelPicker ? "▲" : "▼"}</span>
         </div>
         {modelPicker && (
           <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -118,12 +118,12 @@ export const CustomerAddEditForm = ({
               <div
                 key={m.model}
                 onClick={() => { setForm(p => ({ ...p, model: m.model })); setModelPicker(false); }}
-                style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "#e85d1a" : "#e2e8f0", background: form.model === m.model ? "#fff7ed" : "#fff" }}
+                style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "#e85d1a" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
               >
-                <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{m.model}</div>
-                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{m.sogutma}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}</div>
+                <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 2 }}>{m.sogutma}</div>
                 <div style={{ fontSize: 11, color: "#e85d1a", fontWeight: 600 }}>{m.kapasite}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>Ø {m.kalip}</div>
+                <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Ø {m.kalip}</div>
               </div>
             ))}
           </div>
@@ -157,19 +157,19 @@ export const CustomerAddEditForm = ({
                   <option value="__manual__">Manuel gir (stok dışı / eski müşteri)</option>
                 </Select>
                 {form._stokSerisiz ? (
-                  <div style={{ fontSize: 11, color: "#d97706", marginTop: 5, fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: "var(--amb600, #d97706)", marginTop: 5, fontWeight: 600 }}>
                     Seri no'suz satış yapılıyor, stoktan 1 adet düşülecek. Seri no'yu sonra "Müşteriyi Düzenle" bölümünden girebilirsiniz.
                   </div>
                 ) : serialLock ? (
-                  <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5, fontWeight: 700 }}>
+                  <div style={{ fontSize: 11, color: "var(--red600, #dc2626)", marginTop: 5, fontWeight: 700 }}>
                     ⚠ Bu seri no şu anda {serialLock.lockedBy || "başka bir kullanıcı"} tarafından işleniyor. Kaydetmek için farklı bir seri seçin
                     <button onClick={forceSerialLock}
-                      style={{ marginLeft: 6, fontSize: 11, color: "#dc2626", background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", padding: "1px 8px", fontWeight: 700 }}>
+                      style={{ marginLeft: 6, fontSize: 11, color: "var(--red600, #dc2626)", background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", padding: "1px 8px", fontWeight: 700 }}>
                       veya devral
                     </button>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 11, color: "#059669", marginTop: 5, fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: "var(--emerald, #059669)", marginTop: 5, fontWeight: 600 }}>
                     Stoktan seçilen seri no satış kaydedilince stoktan otomatik düşülür
                   </div>
                 )}
@@ -186,17 +186,17 @@ export const CustomerAddEditForm = ({
                 </button>
               )}
               {(modal === "add" || isSerialPendingEdit) && form._manualSerial && (
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 4 }}>
                   Manuel girilen seri no stoktan düşülmez (eski müşteri kaydı için uygundur).
                 </div>
               )}
               {(modal === "add" || isSerialPendingEdit) && stock && form.model && stockForModel.length === 0 && (
-                <div style={{ fontSize: 11, color: "#dc2626", marginTop: 5 }}>
+                <div style={{ fontSize: 11, color: "var(--red600, #dc2626)", marginTop: 5 }}>
                   Bu modelden stokta makina yok, seri no elle girilecek.
                 </div>
               )}
               {(modal === "add" || isSerialPendingEdit) && stock && !form.model && (
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>
+                <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 5 }}>
                   Stoktan seri no seçebilmek için önce yukarıdan <b>Model</b> seçin.
                 </div>
               )}
@@ -208,10 +208,10 @@ export const CustomerAddEditForm = ({
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <Input value={form.kalipCapi?.en || ""} placeholder="Çap"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), en: e.target.value } }))} />
-          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
+          <span style={{ color: "var(--n400, #94a3b8)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
           <Input value={form.kalipCapi?.yukseklik || ""} placeholder="Arka Ölçü"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), yukseklik: e.target.value } }))} />
-          <span style={{ color: "#94a3b8", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
+          <span style={{ color: "var(--n400, #94a3b8)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
           <Input value={form.kalipCapi?.boy || ""} placeholder="Boy"
             onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), boy: e.target.value } }))} />
         </div>
@@ -221,7 +221,7 @@ export const CustomerAddEditForm = ({
       <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>
         {(form.kaliplar || []).map((k, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap" }}>{i + 1}.</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>{i + 1}.</span>
             <SearchSelect value={k.ad || ""} placeholder="Kalıp seçin..." searchPlaceholder="Kalıp ara..."
               options={kalipDefs.map(d => ({ value: d.ad, label: d.ad }))}
               onChange={val => setForm(p => {
@@ -235,7 +235,7 @@ export const CustomerAddEditForm = ({
                 arr[i] = { ...arr[i], olcu: e.target.value };
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
               })} />
-            <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "#475569", cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
               <input type="checkbox" checked={!!k.uretimFormGonder}
                 onChange={e => setForm(p => {
                   const arr = [...(p.kaliplar || [])];
@@ -250,7 +250,7 @@ export const CustomerAddEditForm = ({
                 const arr = (p.kaliplar || []).filter((_, idx) => idx !== i);
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
               })}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
           </div>
         ))}
         <button type="button"
@@ -258,7 +258,7 @@ export const CustomerAddEditForm = ({
             const arr = [...(p.kaliplar || []), { ad: "", olcu: "", uretimFormGonder: false }];
             return { ...p, kaliplar: arr, kalipSayisi: arr.length };
           })}
-          style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "#fff7ed", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "var(--ambBg3, #fff7ed)", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
           + Kalıp Ekle
         </button>
       </Field>
@@ -278,9 +278,9 @@ export const CustomerAddEditForm = ({
                       <button key={p.id} type="button"
                         onClick={() => setForm(prev => ({ ...prev, konveyorSacId: active ? "" : String(p.id), _konveyorFromKit: false }))}
                         style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
-                          borderColor: active ? "#1d4ed8" : "#e2e8f0",
-                          background: active ? "#eff6ff" : "#f8fafc",
-                          color: active ? "#1d4ed8" : "#64748b" }}>
+                          borderColor: active ? "var(--blu700, #1d4ed8)" : "var(--n200, #e2e8f0)",
+                          background: active ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)",
+                          color: active ? "var(--blu700, #1d4ed8)" : "var(--n500, #64748b)" }}>
                         {p.ad}
                       </button>
                     );
@@ -297,9 +297,9 @@ export const CustomerAddEditForm = ({
                       <button key={p.id} type="button"
                         onClick={() => setForm(prev => ({ ...prev, bantSecimiId: active ? "" : String(p.id), _bantFromKit: false }))}
                         style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
-                          borderColor: active ? "#15803d" : "#e2e8f0",
-                          background: active ? "#f0fdf4" : "#f8fafc",
-                          color: active ? "#15803d" : "#64748b" }}>
+                          borderColor: active ? "var(--grn700, #15803d)" : "var(--n200, #e2e8f0)",
+                          background: active ? "var(--grnBg, #f0fdf4)" : "var(--n100, #f8fafc)",
+                          color: active ? "var(--grn700, #15803d)" : "var(--n500, #64748b)" }}>
                         {p.ad}
                       </button>
                     );
@@ -324,9 +324,9 @@ export const CustomerAddEditForm = ({
         </Field>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid #f1f5f9" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
         <Icon name="finance" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: .5 }}>Satış / Finans</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Satış / Finans</span>
       </div>
 
       <Field label="Satış Yapan">
@@ -371,7 +371,7 @@ export const CustomerAddEditForm = ({
       <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
         <Field label="Fabrika Satış Bedeli">
           <div style={{ maxWidth: 220 }}><MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} /></div>
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</div>
+          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</div>
         </Field>
 
         {isFaturali(form.faturali) && (
@@ -379,16 +379,16 @@ export const CustomerAddEditForm = ({
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ maxWidth: 220 }}><MoneyInput value={form.faturaBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, faturaBedeli: v }))} /></div>
               {normalizeSaleType(form.faturali) === "Faturalı Yurtdışı" && (
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#1d4ed8", background: "#dbeafe", padding: "5px 10px", borderRadius: 8, whiteSpace: "nowrap" }}>YURTDIŞI, KDV YOK</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg2, #dbeafe)", padding: "5px 10px", borderRadius: 8, whiteSpace: "nowrap" }}>YURTDIŞI, KDV YOK</span>
               )}
             </div>
             {isYurtIci(form.faturali) && (
-              <div style={{ fontSize: 12, color: "#065f46", background: "#d1fae5", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
                 KDV (%{getKdvRateForDate(form.installDate, kdvRates)}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
                 {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
               </div>
             )}
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>
               Gerçek bedelden farklı olabilir (düşük fatura). KDV bu tutar üzerinden hesaplanır.
             </div>
           </Field>
@@ -403,20 +403,20 @@ export const CustomerAddEditForm = ({
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]} />
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
+          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
         </Field>
       ) : (
         <Field label="Kapora/Ödeme">
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
+          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
         </Field>
       )}
 
       <Field label="Kalan Borç">
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", padding: "9px 0" }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "var(--red600, #dc2626)", padding: "9px 0" }}>
           {fmtCur(Math.max(0, calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0)), form.currency)}
         </div>
-        <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
+        <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
       </Field>
       </div>
 
@@ -427,23 +427,23 @@ export const CustomerAddEditForm = ({
           <div key={r.id ?? i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
             <input type="date" value={r.vadeTarihi || ""} disabled={!!r.odemeId}
               onChange={e => setForm(p => ({ ...p, odemePlani: p.odemePlani.map((x, xi) => xi === i ? { ...x, vadeTarihi: e.target.value } : x) }))}
-              style={{ padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: r.odemeId ? "#f1f5f9" : "#f8fafc" }} />
+              style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: r.odemeId ? "var(--n150, #f1f5f9)" : "var(--n100, #f8fafc)" }} />
             <div style={{ width: 160 }}>
               {r.odemeId
-                ? <div style={{ padding: "8px 10px", fontSize: 13, fontWeight: 600, color: "#64748b" }}>{fmtCur(r.tutar, form.currency)}</div>
+                ? <div style={{ padding: "8px 10px", fontSize: 13, fontWeight: 600, color: "var(--n500, #64748b)" }}>{fmtCur(r.tutar, form.currency)}</div>
                 : <MoneyInput value={r.tutar} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, odemePlani: p.odemePlani.map((x, xi) => xi === i ? { ...x, tutar: v } : x) }))} />}
             </div>
             {r.odemeId
-              ? <span style={{ fontSize: 11, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "3px 8px", borderRadius: 6 }}>✓ Ödendi</span>
+              ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "3px 8px", borderRadius: 6 }}>✓ Ödendi</span>
               : <button onClick={() => setForm(p => ({ ...p, odemePlani: p.odemePlani.filter((_, xi) => xi !== i) }))}
-                  style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 15, padding: "0 4px" }} title="Taksiti sil">✕</button>}
+                  style={{ background: "none", border: "none", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 15, padding: "0 4px" }} title="Taksiti sil">✕</button>}
           </div>
         ))}
         <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, odemePlani: [...(p.odemePlani || []), { id: Date.now() + Math.random(), vadeTarihi: "", tutar: "", odemeId: null }] }))}>
           <Icon name="plus" size={12} /> Taksit Ekle
         </Btn>
         {(form.odemePlani || []).length > 0 && (
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>
+          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 6 }}>
             Plan toplamı: <b>{fmtCur((form.odemePlani || []).reduce((s, r) => s + parseMoney(r.tutar), 0), form.currency)}</b>.
             Taksitler kalan borcu değiştirmez; tahsilat, detay görünümündeki "Tahsil Et" ile ödeme kaydına dönüşür.
           </div>
@@ -453,10 +453,10 @@ export const CustomerAddEditForm = ({
       <Field label="Açıklama">
         <textarea value={form.aciklama || ""} onChange={e => setForm(p => ({ ...p, aciklama: e.target.value }))}
           placeholder="Bu satış / makina ile ilgili açıklama, notlar..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
+          style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
       </Field>
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 20, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 20, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
         <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

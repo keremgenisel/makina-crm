@@ -4,9 +4,10 @@ const fs = require("fs");
 const sqliteDb = require("./db.cjs");
 const mailer = require("./mail.cjs");
 const applock = require("./applock.cjs");
-const { registerDataHandlers } = require("./ipc/data.cjs");
+const { registerDataHandlers, makeFileNet } = require("./ipc/data.cjs");
 const { registerSystemHandlers } = require("./ipc/system.cjs");
 const { registerAuditHandlers } = require("./ipc/audit.cjs");
+const { registerFileHandlers } = require("./ipc/files.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -48,6 +49,7 @@ function quitApp() {
 registerDataHandlers(ipcMain, app, dialog, sqliteDb);
 registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, sqliteDb);
 registerAuditHandlers(ipcMain, sqliteDb);
+registerFileHandlers(ipcMain, app, BrowserWindow, makeFileNet(app));
 
 // ── Güncelleme IPC kanalları ──
 ipcMain.handle("updater:version", () => app.getVersion());

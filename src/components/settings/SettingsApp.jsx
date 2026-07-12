@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
+import { applyTheme, getSavedTheme } from "../../lib/theme";
 
 // Güncelleme durumu (appUpd) ve işlemleri (onCheckUpdate/onStartUpdate) App.jsx'te TEK
 // noktadan yönetilir ve buraya prop olarak gelir — bu panel yalnızca onu gösterir. Böylece
@@ -32,12 +33,15 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
   };
   const startUpdate = () => { setAskInstall(false); onStartUpdate?.(); };
 
+  // Tema (aydınlık/karanlık) — bu bilgisayara özel, anında uygulanır (CSS değişkenleri).
+  const [theme, setTheme] = useState(getSavedTheme());
+
   return (
     <>
       {/* ── Uygulama Güncellemesi ── */}
       <Section title="Uygulama Güncellemesi" icon="refresh">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
-          Kurulu sürüm: <b style={{ color: "#0f172a" }}>v{version}</b>. Yeni bir sürüm yayınlandığında buradan
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          Kurulu sürüm: <b style={{ color: "var(--n900, #0f172a)" }}>v{version}</b>. Yeni bir sürüm yayınlandığında buradan
           tek tıkla indirip kurabilirsiniz. Verileriniz korunur.
         </div>
 
@@ -45,17 +49,17 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
           <Btn onClick={checkAppUpdate}><Icon name="refresh" size={15} /> Yeni Sürüm Denetle</Btn>
         )}
         {upd.state === "checking" && (
-          <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Denetleniyor...</div>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 600 }}>Denetleniyor...</div>
         )}
         {upd.state === "uptodate" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 14px", borderRadius: 10 }}>✓ Uygulama güncel</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "6px 14px", borderRadius: 10 }}>✓ Uygulama güncel</span>
             <Btn small variant="ghost" onClick={checkAppUpdate}><Icon name="refresh" size={12} /> Tekrar Denetle</Btn>
           </div>
         )}
         {upd.state === "available" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#92400e", background: "#fef3c7", padding: "6px 14px", borderRadius: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--amb800, #92400e)", background: "var(--ambBg2, #fef3c7)", padding: "6px 14px", borderRadius: 10 }}>
               Yeni sürüm hazır: v{upd.latest}
             </span>
             <Btn onClick={() => setAskInstall(true)}><Icon name="download" size={15} /> Yükle</Btn>
@@ -63,27 +67,27 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
         )}
         {upd.state === "downloading" && (
           <div style={{ maxWidth: 420 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>İndiriliyor... %{upd.progress}</div>
-            <div style={{ height: 8, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 8 }}>İndiriliyor... %{upd.progress}</div>
+            <div style={{ height: 8, background: "var(--n150, #f1f5f9)", borderRadius: 6, overflow: "hidden" }}>
               <div style={{ height: 8, width: `${upd.progress}%`, background: "#e85d1a", borderRadius: 6, transition: "width .3s" }} />
             </div>
           </div>
         )}
         {upd.state === "downloaded" && (
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 14px", borderRadius: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "6px 14px", borderRadius: 10 }}>
             ✓ İndirildi — uygulama yeniden başlatılıyor...
           </span>
         )}
         {upd.state === "error" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", background: "#fee2e2", padding: "6px 14px", borderRadius: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", background: "var(--redBg2, #fee2e2)", padding: "6px 14px", borderRadius: 10 }}>
               Denetlenemedi: {upd.error}
             </span>
             <Btn small variant="ghost" onClick={checkAppUpdate}><Icon name="refresh" size={12} /> Tekrar Dene</Btn>
           </div>
         )}
         {upd.state === "devmode" && (
-          <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--n200, #e2e8f0)" }}>
             Bu özellik yalnızca kurulu (Setup ile yüklenmiş) uygulamada çalışır — geliştirme modunda ve tarayıcıda devre dışıdır.
           </div>
         )}
@@ -92,10 +96,10 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
       {/* Güncelleme onayı */}
       {askInstall && (
         <Modal title="Güncelleme Bulundu" onClose={() => setAskInstall(false)}>
-          <div style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.7, marginBottom: 8 }}>
             Yeni sürüm <b>v{upd.latest}</b> yayınlandı (kurulu: v{version}).
           </div>
-          <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 20 }}>
             Şimdi yüklensin mi? Güncelleme indirildikten sonra uygulama <b>otomatik olarak yeniden başlatılacak</b>.
             Verileriniz korunur.
           </div>
@@ -108,13 +112,13 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
 
       {/* ── Sistem: Otomatik Başlat ── */}
       <Section title="Sistem" icon="settings">
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
           Bu bilgisayar açıldığında Altunmak CRM otomatik olarak arka planda başlar ve görev
           çubuğu simge tepsisinde (sistem saati yanında) bekler. Sunucu olarak kullanılan
           bilgisayarlarda açık bırakılması önerilir.
         </div>
         {openAtLoginDevMode ? (
-          <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--n200, #e2e8f0)" }}>
             Bu özellik yalnızca kurulu uygulamada çalışır.
           </div>
         ) : (
@@ -124,19 +128,36 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
               disabled={openAtLogin === null}
               onChange={e => toggleOpenAtLogin(e.target.checked)}
               style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)" }}>
               Bilgisayar açılışında otomatik başlat
             </span>
             {openAtLogin && (
-              <span style={{ fontSize: 11, fontWeight: 700, background: "#dcfce7", color: "#16a34a", borderRadius: 6, padding: "2px 8px" }}>Aktif</span>
+              <span style={{ fontSize: 11, fontWeight: 700, background: "var(--grnBg2, #dcfce7)", color: "var(--grn600, #16a34a)", borderRadius: 6, padding: "2px 8px" }}>Aktif</span>
             )}
           </label>
         )}
         {openAtLogin && !openAtLoginDevMode && (
-          <div style={{ marginTop: 10, fontSize: 12, color: "#64748b", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "8px 12px" }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: "var(--n500, #64748b)", background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)", borderRadius: 8, padding: "8px 12px" }}>
             Uygulama başladığında pencere gizli açılır — görev çubuğundaki simge tepsisine çift tıklayarak açabilirsiniz.
           </div>
         )}
+      </Section>
+
+      {/* ── Görünüm / Tema ── */}
+      <Section title="Görünüm" icon="settings">
+        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 14, lineHeight: 1.6 }}>
+          Uygulama temasını seçin. Karanlık tema loş ortamda göz yormaz; bu ayar yalnızca bu bilgisayara özeldir.
+        </div>
+        <div style={{ display: "inline-flex", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: 3, gap: 3 }}>
+          {[["light", "☀️ Aydınlık"], ["dark", "🌙 Karanlık"]].map(([m, l]) => (
+            <button key={m} onClick={() => { applyTheme(m); setTheme(m); }} style={{
+              padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 8, cursor: "pointer", border: "none",
+              background: theme === m ? "var(--surface, #ffffff)" : "transparent",
+              color: theme === m ? "var(--n900, #0f172a)" : "var(--n500, #64748b)",
+              boxShadow: theme === m ? "0 1px 3px rgba(0,0,0,.14)" : "none",
+            }}>{l}</button>
+          ))}
+        </div>
       </Section>
 
     </>

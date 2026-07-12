@@ -33,6 +33,8 @@ export const Icon = ({ name, size = 16 }) => {
     arrowRight: "M5 12h14M12 5l7 7-7 7",
     stamp:      "M10 4V2h4v2M7 4h10v8H7zM5 12h14v2H5zM4 17h16",
     userPlus:   "M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6",
+    paperclip:  "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48",
+    warning:    "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -56,14 +58,14 @@ export const Field = ({ label, children }) => {
   const canLabel = (isSimpleComponent || isNativeField) && !first.props.id;
   return (
     <div style={{ marginBottom: 14 }}>
-      <label htmlFor={canLabel ? autoId : undefined} style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 5 }}>{label}</label>
+      <label htmlFor={canLabel ? autoId : undefined} style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 5 }}>{label}</label>
       {canLabel ? cloneElement(first, { id: autoId }) : first}
       {rest}
     </div>
   );
 };
 export const Input = (props) => (
-  <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
+  <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
 );
 // Şifre alanı — sağda göz ikonuyla göster/gizle. `Input` ile aynı props (value/onChange/placeholder/
 // autoFocus/onKeyDown), type="password" sabit (toggle iç state'le yönetiliyor, dışarıdan verilmez).
@@ -72,9 +74,9 @@ export const PasswordInput = (props) => {
   return (
     <div style={{ position: "relative" }}>
       <input {...props} type={show ? "text" : "password"}
-        style={{ width: "100%", padding: "8px 36px 8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc" }} />
+        style={{ width: "100%", padding: "8px 36px 8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
       <button type="button" tabIndex={-1} onClick={() => setShow(s => !s)} title={show ? "Şifreyi gizle" : "Şifreyi göster"}
-        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4, display: "flex", alignItems: "center" }}>
+        style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", padding: 4, display: "flex", alignItems: "center" }}>
         <Icon name={show ? "eyeOff" : "eye"} size={16} />
       </button>
     </div>
@@ -82,7 +84,7 @@ export const PasswordInput = (props) => {
 };
 // Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
 export const Warn = ({ children }) => children ? (
-  <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>⚠ {children}</div>
+  <div style={{ fontSize: 11, color: "var(--amb700, #b45309)", marginTop: 4 }}>⚠ {children}</div>
 ) : null;
 // Elektrik kesintisi/çökme sonrası bulunan form taslağını geri yükleme şeridi (bkz. useFormDraft)
 export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
@@ -90,8 +92,8 @@ export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
   let saat = "";
   try { saat = new Date(draft.ts).toLocaleString("tr-TR"); } catch { /* yoksay */ }
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
-      <span style={{ fontSize: 12, color: "#854d0e", fontWeight: 600 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", background: "var(--warnBg, #fef9c3)", border: "1px solid var(--warnBr, #fde047)", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
+      <span style={{ fontSize: 12, color: "var(--warnTx, #854d0e)", fontWeight: 600 }}>
         ⚡ Yarım kalan taslak bulundu{saat ? ` (${saat})` : ""}. Devam etmek ister misiniz?
       </span>
       <div style={{ display: "flex", gap: 6 }}>
@@ -104,7 +106,7 @@ export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_RE = /^[0-9+()\s-]{7,}$/;
 export const Select = ({ children, ...props }) => (
-  <select {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
+  <select {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box" }}>
     {children}
   </select>
 );
@@ -143,31 +145,31 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
   return (
     <div style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
         <input value={q} onChange={e => setQ(e.target.value)}
           onFocus={() => { setOpen(true); setJustAdded(null); }}
           onClick={() => { setOpen(true); setJustAdded(null); }}
           onBlur={() => setOpen(false)}
           placeholder={placeholder}
-          style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
+          style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box", outline: "none" }} />
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", maxHeight: 220, overflowY: "auto", boxShadow: "0 10px 28px rgba(0,0,0,.14)" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden", maxHeight: 220, overflowY: "auto", boxShadow: "0 10px 28px rgba(0,0,0,.14)" }}>
           {filtered.map(it => (
             <div key={getKey(it)} onMouseDown={e => { e.preventDefault(); pick(it); }}
-              style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", fontSize: 13, fontWeight: 600, background: "#fff" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
-              onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+              style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", fontSize: 13, fontWeight: 600, background: "var(--surface, #ffffff)" }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
+              onMouseLeave={e => e.currentTarget.style.background = "var(--surface, #ffffff)"}>
               {getLabel(it)}
             </div>
           ))}
           {filtered.length === 0 && (
-            <div style={{ padding: "10px 12px", fontSize: 13, color: "#94a3b8" }}>{emptyText}</div>
+            <div style={{ padding: "10px 12px", fontSize: 13, color: "var(--n400, #94a3b8)" }}>{emptyText}</div>
           )}
         </div>
       )}
       {justAdded && (
-        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "6px 10px", borderRadius: 6 }}>
+        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "6px 10px", borderRadius: 6 }}>
           ✓ "{justAdded}" eklendi
         </div>
       )}
@@ -196,15 +198,15 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
             <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
           )}
           <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
-            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
         </div>
       ))}
       <button type="button" onClick={satirEkle}
-        style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "#fff7ed", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+        style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "var(--ambBg3, #fff7ed)", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
         + Ödeme Ekle
       </button>
       {toplam > 0 && (
-        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
           Toplam: {new Intl.NumberFormat("tr-TR").format(toplam)}{sym}
         </div>
       )}
@@ -239,36 +241,36 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", textAlign: "left", cursor: "pointer", color: secili ? "#0f172a" : "#94a3b8", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+        style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", textAlign: "left", cursor: "pointer", color: secili ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{secili ? secili.label : placeholder}</span>
-        <span style={{ fontSize: 9, color: "#94a3b8", flexShrink: 0 }}>▼</span>
+        <span style={{ fontSize: 9, color: "var(--n400, #94a3b8)", flexShrink: 0 }}>▼</span>
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 1300, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,.14)", overflow: "hidden" }}>
-          <div style={{ padding: 8, borderBottom: "1px solid #f1f5f9" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 1300, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,.14)", overflow: "hidden" }}>
+          <div style={{ padding: 8, borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={13} /></span>
+              <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={13} /></span>
               <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder={searchPlaceholder}
                 style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px 7px 28px", border: "1.5px solid #e85d1a", borderRadius: 7, fontSize: 13, outline: "none" }} />
             </div>
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto" }}>
             {value && (
-              <button type="button" style={{ ...satir, color: "#94a3b8", fontSize: 12 }}
+              <button type="button" style={{ ...satir, color: "var(--n400, #94a3b8)", fontSize: 12 }}
                 onClick={() => { onChange(""); setOpen(false); }}>— Seçimi kaldır —</button>
             )}
-            {filtered.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12.5, color: "#94a3b8" }}>Sonuç bulunamadı.</div>}
+            {filtered.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--n400, #94a3b8)" }}>Sonuç bulunamadı.</div>}
             {filtered.map(o => (
               <button key={o.value} type="button"
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
-                onMouseLeave={e => e.currentTarget.style.background = o.value === value ? "#fff7ed" : "none"}
-                style={{ ...satir, background: o.value === value ? "#fff7ed" : "none", fontWeight: o.value === value ? 700 : 400 }}>
+                onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
+                onMouseLeave={e => e.currentTarget.style.background = o.value === value ? "var(--ambBg3, #fff7ed)" : "none"}
+                style={{ ...satir, background: o.value === value ? "var(--ambBg3, #fff7ed)" : "none", fontWeight: o.value === value ? 700 : 400 }}>
                 {o.label}
               </button>
             ))}
             {gizliSayisi > 0 && (
-              <div style={{ padding: "8px 12px", fontSize: 11.5, color: "#94a3b8", borderTop: "1px solid #f1f5f9", background: "#fafafa" }}>
+              <div style={{ padding: "8px 12px", fontSize: 11.5, color: "var(--n400, #94a3b8)", borderTop: "1px solid var(--n150, #f1f5f9)", background: "#fafafa" }}>
                 +{gizliSayisi} sonuç daha — aramak için yazın
               </div>
             )}
@@ -288,16 +290,16 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id
   return (
     <div style={{ position: "relative" }}>
       <input id={id} value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
-        style={{ width: "100%", padding: "8px 28px 8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#f8fafc", textAlign: "right", fontWeight: 600 }} />
-      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
+        style={{ width: "100%", padding: "8px 28px 8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)", textAlign: "right", fontWeight: 600 }} />
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
     </div>
   );
 };
 export const Btn = ({ children, onClick, variant = "primary", small, disabled, title }) => {
   const styles = {
     primary: { background: "#e85d1a", color: "#fff", border: "none" },
-    danger:  { background: "#ef4444", color: "#fff", border: "none" },
-    ghost:   { background: "transparent", color: "#64748b", border: "1px solid #e2e8f0" },
+    danger:  { background: "var(--red500, #ef4444)", color: "#fff", border: "none" },
+    ghost:   { background: "transparent", color: "var(--n500, #64748b)", border: "1px solid var(--n200, #e2e8f0)" },
   };
   return (
     <button onClick={onClick} disabled={disabled} title={title} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1, whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -306,13 +308,22 @@ export const Btn = ({ children, onClick, variant = "primary", small, disabled, t
   );
 };
 
+// Ataş rozeti: bir kayda (servis/kalıp/parça/ödeme) bağlı dosya varsa 📎 + adet; tıklayınca o
+// kaydın dosyaları açılır. Müşteri makina geçmişi ve anlaşmalı servis servis kartları paylaşır.
+export const AtesRozeti = ({ n, onClick }) => n > 0 ? (
+  <button onClick={onClick} title="Bu kayda ait dosyalar"
+    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 7px", cursor: "pointer" }}>
+    <Icon name="paperclip" size={11} /> {n}
+  </button>
+) : null;
+
 export const StatCard = ({ label, value, sub, color, onClick }) => (
-  <div onClick={onClick} style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${color}`, cursor: onClick ? "pointer" : "default", transition: "box-shadow .15s" }}
+  <div onClick={onClick} style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${color}`, cursor: onClick ? "pointer" : "default", transition: "box-shadow .15s" }}
     onMouseEnter={e => { if (onClick) e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.12)"; }}
     onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,.08)"; }}>
-    <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500, marginBottom: 6 }}>{label}</div>
-    <div style={{ fontSize: 26, fontWeight: 700, color: "#0f172a" }}>{value}</div>
-    {sub && <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{sub}</div>}
+    <div style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 500, marginBottom: 6 }}>{label}</div>
+    <div style={{ fontSize: 26, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{value}</div>
+    {sub && <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 4 }}>{sub}</div>}
   </div>
 );
 
@@ -325,25 +336,25 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
   return (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
     {footer ? (
-      <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ padding: "28px 28px 0", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{title}</div>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n500, #64748b)" }}><Icon name="close" /></button>
           </div>
         </div>
         <div style={{ padding: "0 28px 20px", overflowY: "auto", flex: 1 }}>
           {children}
         </div>
-        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid var(--n200, #e2e8f0)", display: "flex", justifyContent: "flex-end" }}>
           {footer}
         </div>
       </div>
     ) : (
-      <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: overflowVisible ? undefined : (maxHeight ?? (wide ? "94vh" : "90vh")), overflow: overflowVisible ? "visible" : undefined, overflowY: overflowVisible ? undefined : "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, padding: 28, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: overflowVisible ? undefined : (maxHeight ?? (wide ? "94vh" : "90vh")), overflow: overflowVisible ? "visible" : undefined, overflowY: overflowVisible ? undefined : "auto", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a" }}>{title}</div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}><Icon name="close" /></button>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{title}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n500, #64748b)" }}><Icon name="close" /></button>
         </div>
         {children}
       </div>
@@ -360,12 +371,12 @@ export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash"
   }, [onCancel]);
   return (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-    <div style={{ background: "#fff", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.2)", textAlign: "center" }}>
-      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+    <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.2)", textAlign: "center" }}>
+      <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--redBg2, #fee2e2)", color: "var(--red600, #dc2626)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Icon name={icon} size={22} />
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{title}</div>
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 22 }}>{message}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 22 }}>{message}</div>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
         <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
         <Btn variant="danger" onClick={onConfirm}><Icon name={confirmIcon} size={14} /> {confirmLabel}</Btn>
@@ -382,17 +393,17 @@ export const Pagination = ({ total, page, setPage, perPage = 10 }) => {
   return (
     <div style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center", padding: "14px 0" }}>
       <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: page === 1 ? "not-allowed" : "pointer", color: "#64748b", fontSize: 13, opacity: page === 1 ? .5 : 1 }}>‹ Önceki</button>
+        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--n500, #64748b)", fontSize: 13, opacity: page === 1 ? .5 : 1 }}>‹ Önceki</button>
       {Array.from({ length: pages }, (_, i) => i + 1)
         .filter(n => n === 1 || n === pages || Math.abs(n - page) <= 1)
         .reduce((acc, n, i, arr) => { if (i > 0 && n - arr[i-1] > 1) acc.push("…"); acc.push(n); return acc; }, [])
         .map((n, i) => n === "…"
-          ? <span key={"e"+i} style={{ color: "#94a3b8", fontSize: 13 }}>…</span>
+          ? <span key={"e"+i} style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>…</span>
           : <button key={n} onClick={() => setPage(n)}
-              style={{ minWidth: 32, padding: "5px 8px", borderRadius: 8, border: "1px solid", borderColor: page === n ? "#e85d1a" : "#e2e8f0", background: page === n ? "#e85d1a" : "#fff", color: page === n ? "#fff" : "#64748b", fontWeight: page === n ? 700 : 400, cursor: "pointer", fontSize: 13 }}>{n}</button>
+              style={{ minWidth: 32, padding: "5px 8px", borderRadius: 8, border: "1px solid", borderColor: page === n ? "#e85d1a" : "var(--n200, #e2e8f0)", background: page === n ? "#e85d1a" : "var(--surface, #ffffff)", color: page === n ? "#fff" : "var(--n500, #64748b)", fontWeight: page === n ? 700 : 400, cursor: "pointer", fontSize: 13 }}>{n}</button>
         )}
       <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}
-        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", cursor: page === pages ? "not-allowed" : "pointer", color: "#64748b", fontSize: 13, opacity: page === pages ? .5 : 1 }}>Sonraki ›</button>
+        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", cursor: page === pages ? "not-allowed" : "pointer", color: "var(--n500, #64748b)", fontSize: 13, opacity: page === pages ? .5 : 1 }}>Sonraki ›</button>
     </div>
   );
 };
@@ -467,21 +478,21 @@ export const ImageUpload = ({ value, onChange, maxPx = 250, label = "Resim", pre
       <input ref={ref} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
       {value ? (
         <img src={value} alt={label}
-          style={{ width: 80, height: 60, objectFit: "contain", border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc", cursor: "pointer" }}
+          style={{ width: 80, height: 60, objectFit: "contain", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, background: "var(--n100, #f8fafc)", cursor: "pointer" }}
           onClick={pick} title="Değiştirmek için tıkla" />
       ) : (
-        <div onClick={pick} style={{ width: 80, height: 60, border: "1px dashed #e2e8f0", borderRadius: 8, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 11, color: "#94a3b8" }}>
+        <div onClick={pick} style={{ width: 80, height: 60, border: "1px dashed var(--n200, #e2e8f0)", borderRadius: 8, background: "var(--n100, #f8fafc)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 11, color: "var(--n400, #94a3b8)" }}>
           Resim yok
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <button type="button" onClick={pick}
-          style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", color: "#475569" }}>
+          style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", cursor: "pointer", color: "var(--n600, #475569)" }}>
           {value ? "Değiştir" : "Resim Seç"}
         </button>
         {value && (
           <button type="button" onClick={() => onChange("")}
-            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", cursor: "pointer", color: "#dc2626" }}>
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", cursor: "pointer", color: "var(--red600, #dc2626)" }}>
             Sil
           </button>
         )}
@@ -501,10 +512,10 @@ export const LockConflict = ({ lockedBy, lockedAt, onForce, onCancel }) => {
   }, [lockedAt]);
   return (
     <div style={{ padding: "40px 24px", textAlign: "center" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#0f172a" }}>Bu kayıt şu an düzenleniyor</div>
-      <div style={{ color: "#64748b", fontSize: 14, marginBottom: 28 }}>
-        <strong style={{ color: "#0f172a" }}>{lockedBy}</strong>
+      <div style={{ marginBottom: 12, display: "flex", justifyContent: "center", color: "var(--n500, #64748b)" }}><Icon name="lock" size={40} /></div>
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "var(--n900, #0f172a)" }}>Bu kayıt şu an düzenleniyor</div>
+      <div style={{ color: "var(--n500, #64748b)", fontSize: 14, marginBottom: 28 }}>
+        <strong style={{ color: "var(--n900, #0f172a)" }}>{lockedBy}</strong>
         {" "}bu kaydı {elapsed === 0 ? "az önce" : `${elapsed} dakika önce`} açtı.
       </div>
       <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>

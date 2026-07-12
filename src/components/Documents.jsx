@@ -3,7 +3,8 @@ import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, EMAIL_RE, LockConflict, DraftRestoreBar } from "./ui";
+import { useMailSender, MailComposeModal } from "./MailCompose";
+import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -18,10 +19,10 @@ const CUR_LABEL = { TRY: "TL", EUR: "EURO", USD: "USD" };
 const DURUM_OPTS = ["taslak", "gonderildi", "onaylandi", "iptal"];
 const DURUM_LABEL = { taslak: "Taslak", gonderildi: "Gönderildi", onaylandi: "Onaylandı", iptal: "İptal" };
 const DURUM_STYLE = {
-  taslak:     { bg: "#f1f5f9", color: "#475569" },
-  gonderildi: { bg: "#dbeafe", color: "#1d4ed8" },
-  onaylandi:  { bg: "#d1fae5", color: "#065f46" },
-  iptal:      { bg: "#fee2e2", color: "#991b1b" },
+  taslak:     { bg: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)" },
+  gonderildi: { bg: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" },
+  onaylandi:  { bg: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)" },
+  iptal:      { bg: "var(--redBg2, #fee2e2)", color: "var(--red800, #991b1b)" },
 };
 
 const DurumBadge = ({ durum }) => {
@@ -33,45 +34,6 @@ const DurumBadge = ({ durum }) => {
   );
 };
 
-const MailModal = ({ mailDraft, setMailDraft, mailSendState, sendMailDraft, previewMailAttachment }) => (
-  <Modal title="E-posta Gönder" onClose={() => setMailDraft(null)}>
-    {!window.appMail ? (
-      <div style={{ fontSize: 13, color: "#64748b", background: "#f8fafc", padding: "10px 14px", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
-        Bu özellik yalnızca kurulu uygulamada çalışır.
-      </div>
-    ) : (
-      <>
-        <Field label="Kime">
-          <Input value={mailDraft.to} onChange={e => setMailDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
-          <Warn>{mailDraft.to && !EMAIL_RE.test(mailDraft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
-        </Field>
-        <Field label="Konu">
-          <Input value={mailDraft.subject} onChange={e => setMailDraft(p => ({ ...p, subject: e.target.value }))} />
-        </Field>
-        <Field label="Mesaj">
-          <textarea value={mailDraft.text} onChange={e => setMailDraft(p => ({ ...p, text: e.target.value }))}
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
-        </Field>
-        <div style={{ fontSize: 11.5, color: "#94a3b8", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          📎 {mailDraft.pdfFileName} otomatik ek olarak gönderilecek.
-          <button onClick={previewMailAttachment} type="button"
-            style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>
-            Eki Önizle
-          </button>
-        </div>
-        {mailSendState.state === "error" && (
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#991b1b", marginTop: 12, marginBottom: 12 }}>✗ {mailSendState.error}</div>
-        )}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-          <Btn variant="ghost" onClick={() => setMailDraft(null)}>İptal</Btn>
-          <Btn onClick={sendMailDraft} disabled={mailSendState.state === "sending"}>
-            <Icon name="mail" size={14} /> {mailSendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
-          </Btn>
-        </div>
-      </>
-    )}
-  </Modal>
-);
 
 const fmtMoney = (val, currency) => {
   const num = parseMoney(val);
@@ -740,8 +702,7 @@ export const Documents = ({
   };
 
   // ── E-posta ──
-  const [mailDraft, setMailDraft] = useState(null);
-  const [mailSendState, setMailSendState] = useState({ state: "idle", error: null });
+  const { mailDraft, setMailDraft, mailSendState, setMailSendState, sendMail } = useMailSender(serverPermissions);
 
   const openMailDoc = (rawDoc) => {
     const doc = hydrateTeklifImages(rawDoc); // kayıtta resim yok, mail eki için doldur
@@ -792,17 +753,8 @@ export const Documents = ({
   };
 
   const sendMailDraft = async () => {
-    if (!window.appMail || !mailDraft) return;
-    if (!EMAIL_RE.test(mailDraft.to || "")) { setMailSendState({ state: "error", error: "Geçerli bir alıcı e-posta adresi girin." }); return; }
-    setMailSendState({ state: "sending", error: null });
-    const res = await window.appMail.send({ to: mailDraft.to.trim(), subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName, type: mailDraft.type });
-    if (res?.ok) {
-      setMailSendState({ state: "idle", error: null });
-      setMailDraft(null);
-      showToast("E-posta gönderildi.");
-    } else {
-      setMailSendState({ state: "error", error: res?.error || "Gönderilemedi." });
-    }
+    const res = await sendMail({ to: mailDraft.to, subject: mailDraft.subject, text: mailDraft.text, pdfHtml: mailDraft.pdfHtml, pdfFileName: mailDraft.pdfFileName, type: mailDraft.type });
+    if (res?.ok) showToast("E-posta gönderildi.");
   };
 
   const f = (key) => ({ value: form?.[key] ?? "", onChange: e => setForm(p => ({ ...p, [key]: e.target.value })) });
@@ -810,20 +762,20 @@ export const Documents = ({
   const showTL = form?.currency !== "TRY";
 
   // ── FORM MODAL ────────────────────────────────────────────────────────────────
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
   const taStyle = { ...inputStyle, resize: "vertical", minHeight: 60 };
 
   // ── LİSTE GÖRÜNÜMÜ ──────────────────────────────────────────────────────────
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Evrak Yönetimi</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Evrak Yönetimi</h2>
         <div style={{ display: "flex", gap: 8 }}>
           {subTab !== "fatura" ? (
             <>
               {canDoEvrak("evrak_teklif_add") && <Btn onClick={() => openNew("teklif")}><Icon name="plus" size={14} /> Yeni Teklif</Btn>}
               {canDoEvrak("evrak_proforma_add") && (
-                <button onClick={() => openNew("proforma")} style={{ padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", whiteSpace: "nowrap" }}>
+                <button onClick={() => openNew("proforma")} style={{ padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, background: "var(--n150, #f1f5f9)", color: "var(--n700, #334155)", border: "1px solid var(--n300, #cbd5e1)", whiteSpace: "nowrap" }}>
                   <Icon name="plus" size={14} /> Yeni Proforma
                 </button>
               )}
@@ -838,11 +790,11 @@ export const Documents = ({
       {donusturBanner && (() => {
         const bTur = effectiveTur(donusturBanner);
         return (
-          <div style={{ background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 10, padding: "11px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div style={{ background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 10, padding: "11px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#065f46" }}>Teklif onaylandı:</span>
-              <span style={{ fontSize: 13, color: "#065f46" }}>{donusturBanner.firma || "—"}</span>
-              <span style={{ fontSize: 12, color: "#059669" }}>·
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)" }}>Teklif onaylandı:</span>
+              <span style={{ fontSize: 13, color: "var(--grn800, #065f46)" }}>{donusturBanner.firma || "—"}</span>
+              <span style={{ fontSize: 12, color: "var(--emerald, #059669)" }}>·
                 {bTur === "makina" && !donusturBanner.customerId && " Müşteri kaydı oluşturulsun mu?"}
                 {bTur === "makina" && donusturBanner.customerId && " Bu firmaya yeni makina eklensin mi?"}
                 {(bTur === "parca" || bTur === "kalip") && " CRM'e satış kaydedilsin mi?"}
@@ -851,19 +803,19 @@ export const Documents = ({
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && !donusturBanner.customerId && onDonusturTeklif && (
                 <Btn small onClick={() => { onDonusturTeklif(donusturBanner); setDonusturBanner(null); }}
-                  style={{ background: "#059669", color: "#fff" }}>
+                  style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                   <Icon name="userPlus" size={12} /> Yeni Müşteri Ekle
                 </Btn>
               )}
               {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && donusturBanner.customerId && onDonusturMakina && (
                 <Btn small onClick={() => { onDonusturMakina(donusturBanner); setDonusturBanner(null); }}
-                  style={{ background: "#059669", color: "#fff" }}>
+                  style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                   <Icon name="userPlus" size={12} /> Bu Firmaya Makina Ekle
                 </Btn>
               )}
               {canDoEvrak("evrak_teklif_convert") && (bTur === "parca" || bTur === "kalip") && donusturBanner.customerId && onKaydetSatis && (
                 <Btn small onClick={() => { onKaydetSatis(donusturBanner); setDonusturBanner(null); }}
-                  style={{ background: "#059669", color: "#fff" }}>
+                  style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                   Satışa Dönüştür
                 </Btn>
               )}
@@ -874,12 +826,12 @@ export const Documents = ({
       })()}
 
       {/* Alt sekme */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid #f1f5f9", paddingBottom: 0 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
         {[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => (
           <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); }} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
             borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: subTab === id ? "#e85d1a" : "#94a3b8",
+            color: subTab === id ? "#e85d1a" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}
@@ -888,23 +840,23 @@ export const Documents = ({
       {subTab !== "fatura" ? (<>
       {/* Arama */}
       <div style={{ position: "relative", marginBottom: 14 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Firma adı veya belge no ara..."
-          style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+          style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
 
       {/* Tablo */}
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {searched.length === 0 ? (
-          <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
             {filtered.length === 0 ? `Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.` : "Arama sonucu bulunamadı."}
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 {["No / Tarih", "Firma", "Dil", "Toplam", "Durum", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -915,16 +867,16 @@ export const Documents = ({
                 return (
                   <tr key={t.id}
                     onClick={canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? () => openEdit(t) : undefined}
-                    style={{ borderBottom: "1px solid #f1f5f9", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                    style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                     onMouseLeave={e => e.currentTarget.style.background = ""}>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{t.no || "—"}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtTR(t.tarih)}</div>
+                      <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{fmtTR(t.tarih)}</div>
                     </td>
                     <td style={{ padding: "10px 12px", fontSize: 13 }}>{t.firma || "—"}</td>
                     <td style={{ padding: "10px 12px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: t.dil === "EN" ? "#dbeafe" : "#f0fdf4", color: t.dil === "EN" ? "#1d4ed8" : "#166534" }}>{t.dil}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: t.dil === "EN" ? "var(--bluBg2, #dbeafe)" : "var(--grnBg, #f0fdf4)", color: t.dil === "EN" ? "var(--blu700, #1d4ed8)" : "var(--grn900, #166534)" }}>{t.dil}</span>
                     </td>
                     <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 600 }}>{fmtMoney(totals.genelToplam, t.currency)}</td>
                     <td style={{ padding: "10px 12px" }}><DurumBadge durum={t.durum} /></td>
@@ -938,7 +890,7 @@ export const Documents = ({
                           return (
                             <Btn small variant="ghost" onClick={() => convertToFatura(t)}
                               title={hasFatura ? "Fatura oluşturuldu" : "Faturaya Dönüştür"}
-                              style={{ color: hasFatura ? "#94a3b8" : "#0369a1", opacity: hasFatura ? 0.5 : 1, cursor: hasFatura ? "default" : "pointer" }}>
+                              style={{ color: hasFatura ? "var(--n400, #94a3b8)" : "var(--blue2, #0369a1)", opacity: hasFatura ? 0.5 : 1, cursor: hasFatura ? "default" : "pointer" }}>
                               <Icon name="arrowRight" size={12} />
                             </Btn>
                           );
@@ -946,22 +898,22 @@ export const Documents = ({
                         {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && (
                           <Btn small variant="ghost" onClick={() => convertToProforma(t)}
                             title={hasProforma ? "Proforma mevcut" : "Proformaya Dönüştür"}
-                            style={{ color: hasProforma ? "#94a3b8" : "#0369a1", opacity: hasProforma ? 0.5 : 1 }}>
+                            style={{ color: hasProforma ? "var(--n400, #94a3b8)" : "var(--blue2, #0369a1)", opacity: hasProforma ? 0.5 : 1 }}>
                             <Icon name="arrowRight" size={12} />
                           </Btn>
                         )}
                         {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !teklifKullanildiMi(t, customers, partSales) && (() => {
                           const rTur = effectiveTur(t);
                           if (rTur === "makina" && !t.customerId && onDonusturTeklif)
-                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }} title="Yeni müşteri kaydı oluştur" style={{ color: "#16a34a" }}><Icon name="userPlus" size={12} /></Btn>;
+                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }} title="Yeni müşteri kaydı oluştur" style={{ color: "var(--grn600, #16a34a)" }}><Icon name="userPlus" size={12} /></Btn>;
                           if (rTur === "makina" && t.customerId && onDonusturMakina)
-                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturMakina(t); }} title="Bu firmaya makina ekle" style={{ color: "#16a34a" }}><Icon name="userPlus" size={12} /></Btn>;
+                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturMakina(t); }} title="Bu firmaya makina ekle" style={{ color: "var(--grn600, #16a34a)" }}><Icon name="userPlus" size={12} /></Btn>;
                           if ((rTur === "parca" || rTur === "kalip") && t.customerId && onKaydetSatis)
-                            return <Btn small variant="ghost" onClick={() => onKaydetSatis(t)} title="CRM'e satış kaydet" style={{ color: "#0891b2" }}><Icon name="check" size={12} /></Btn>;
+                            return <Btn small variant="ghost" onClick={() => onKaydetSatis(t)} title="CRM'e satış kaydet" style={{ color: "var(--cyan, #0891b2)" }}><Icon name="check" size={12} /></Btn>;
                           return null;
                         })()}
                         {subTab === "teklif" && (teklifKullanildiMi(t, customers, partSales) || t.customerId) && (
-                          <span title={teklifKullanildiMi(t, customers, partSales) ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "#d1fae5", color: "#065f46", lineHeight: 1.6 }}>✓ {teklifKullanildiMi(t, customers, partSales) ? "Kaydedildi" : "Bağlı"}</span>
+                          <span title={teklifKullanildiMi(t, customers, partSales) ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", lineHeight: 1.6 }}>✓ {teklifKullanildiMi(t, customers, partSales) ? "Kaydedildi" : "Bağlı"}</span>
                         )}
                         {canDoEvrak(subTab === "teklif" ? "evrak_teklif_delete" : "evrak_proforma_delete") && <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>}
                       </div>
@@ -977,22 +929,22 @@ export const Documents = ({
       </>) : (<>
         {/* Fatura Arama */}
         <div style={{ position: "relative", marginBottom: 14 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
           <input value={faturaSearch} onChange={e => setFaturaSearch(e.target.value)} placeholder="Firma adı veya fatura no ara..."
-            style={{ padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc", outline: "none" }} />
+            style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         {/* Fatura Listesi */}
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto" }}>
+        <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
           {filteredFaturalar.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+            <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
               {liveFaturalar.length === 0 ? "Henüz fatura yok." : "Arama sonucu bulunamadı."}
             </div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
+                <tr style={{ background: "var(--n100, #f8fafc)" }}>
                   {["Fatura No / Tarih", "Firma", "Toplam", ""].map(h => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "#475569" }}>{h}</th>
+                    <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1002,17 +954,17 @@ export const Documents = ({
                   const cur = fat.currency || "USD";
                   return (
                     <tr key={fat.id}
-                      style={{ borderBottom: "1px solid #f1f5f9" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                      style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                       onMouseLeave={e => e.currentTarget.style.background = ""}>
                       <td style={{ padding: "10px 12px" }}>
                         <div style={{ fontWeight: 700, fontSize: 13 }}>{fat.no || "—"}</div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>{fmtTR(fat.tarih)}</div>
+                        <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{fmtTR(fat.tarih)}</div>
                       </td>
                       <td style={{ padding: "10px 12px", fontSize: 13 }}>
                         <div>{fat.firma || "—"}</div>
-                        {(fat.ulke || fat.sehir) && <div style={{ fontSize: 11, color: "#94a3b8" }}>{[fat.ulke, fat.sehir].filter(Boolean).join(" / ")}</div>}
-                        {fat.parentProformaId && (() => { const src = liveTeklifler.find(t => t.id === fat.parentProformaId); return src ? <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>← {src.no}</div> : null; })()}
+                        {(fat.ulke || fat.sehir) && <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{[fat.ulke, fat.sehir].filter(Boolean).join(" / ")}</div>}
+                        {fat.parentProformaId && (() => { const src = liveTeklifler.find(t => t.id === fat.parentProformaId); return src ? <div style={{ fontSize: 10, color: "var(--n400, #94a3b8)", marginTop: 1 }}>← {src.no}</div> : null; })()}
                       </td>
                       <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700 }}>
                         {total > 0 ? total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + cur : "—"}
@@ -1042,7 +994,18 @@ export const Documents = ({
         />
       )}
 
-      {mailDraft && <MailModal mailDraft={mailDraft} setMailDraft={setMailDraft} mailSendState={mailSendState} sendMailDraft={sendMailDraft} previewMailAttachment={previewMailAttachment} />}
+      {mailDraft && (
+        <MailComposeModal draft={mailDraft} setDraft={setMailDraft} sendState={mailSendState} onSend={sendMailDraft}
+          ekAlani={
+            <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              📎 {mailDraft.pdfFileName} otomatik ek olarak gönderilecek.
+              <button onClick={previewMailAttachment} type="button"
+                style={{ fontSize: 11, fontWeight: 700, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>
+                Eki Önizle
+              </button>
+            </div>
+          } />
+      )}
 
       {faturaConfirmDel && (
         <ConfirmDialog
@@ -1084,42 +1047,42 @@ export const Documents = ({
             const saved = liveTeklifler.find(x => x.id === form.id);
             if (fTur === "makina" && !form.customerId && onDonusturTeklif)
               return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "#065f46", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturTeklif(saved); } }} style={{ background: "#059669", color: "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
+                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
+                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturTeklif(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                     <Icon name="userPlus" size={12} /> Yeni Müşteri Ekle
                   </Btn>
                 </div>
               );
             if (fTur === "makina" && form.customerId && onDonusturMakina)
               return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "#065f46", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturMakina(saved); } }} style={{ background: "#059669", color: "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
+                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
+                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturMakina(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                     <Icon name="userPlus" size={12} /> Bu Firmaya Makina Ekle
                   </Btn>
                 </div>
               );
             if ((fTur === "parca" || fTur === "kalip") && form.customerId && onKaydetSatis)
               return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#d1fae5", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "#065f46", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onKaydetSatis(saved); } }} style={{ background: "#059669", color: "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
+                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
+                  <Btn small onClick={() => { if (saved) { setForm(null); onKaydetSatis(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
                     Satışa Dönüştür
                   </Btn>
                 </div>
               );
             if ((fTur === "parca" || fTur === "kalip") && !form.customerId)
-              return <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#fef9c3", color: "#854d0e", fontWeight: 600 }}>Kaydetmek için müşteri seçin</span>;
+              return <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--warnBg, #fef9c3)", color: "var(--warnTx, #854d0e)", fontWeight: 600 }}>Kaydetmek için müşteri seçin</span>;
             return <div />;
           })()}
-          {formKullanildi && <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ CRM'e kaydedildi</span>}
+          {formKullanildi && <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", fontWeight: 700 }}>✓ CRM'e kaydedildi</span>}
           {!formKullanildi && form.type === "teklif" && form.customerId && effectiveTur(form) === "makina" && (
-            <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "#d1fae5", color: "#065f46", fontWeight: 700 }}>✓ Müşteriye Bağlı</span>
+            <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", fontWeight: 700 }}>✓ Müşteriye Bağlı</span>
           )}
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
             <select value={form.tur || ""} onChange={e => setForm(p => ({ ...p, tur: e.target.value }))}
-              style={{ padding: "9px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc", boxSizing: "border-box" }}>
+              style={{ padding: "9px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", boxSizing: "border-box" }}>
               <option value="">Otomatik ({["makina","parca","kalip","diger"].includes(effectiveTur(form)) ? {makina:"Makina",parca:"Yedek Parça",kalip:"Kalıp",diger:"Diğer"}[effectiveTur(form)] : ""})</option>
               <option value="makina">Makina Satışı</option>
               <option value="parca">Yedek Parça</option>
@@ -1127,7 +1090,7 @@ export const Documents = ({
               <option value="diger">Diğer</option>
             </select>
             <select value={form.durum} onChange={e => setForm(p => ({ ...p, durum: e.target.value }))}
-              style={{ width: 130, padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box" }}>
+              style={{ width: 130, padding: "9px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box" }}>
               {DURUM_OPTS.map(d => <option key={d} value={d}>{DURUM_LABEL[d]}</option>)}
             </select>
           </div>
@@ -1135,23 +1098,23 @@ export const Documents = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Alıcı Bilgileri */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
 
           {/* Müşteri arama */}
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input value={custSearch} onChange={e => setCustSearch(e.target.value)}
               placeholder="Mevcut müşteriden ara (firma adı)..."
               style={{ ...inputStyle, paddingLeft: 32 }} />
-            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={13} /></span>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={13} /></span>
             {custResults.length > 0 && (
-              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.10)", zIndex: 100, marginTop: 2 }}>
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.10)", zIndex: 100, marginTop: 2 }}>
                 {custResults.map(c => (
                   <div key={c.id} onClick={() => {
                     setForm(p => ({ ...p, customerId: c.id, firma: c.name || "", yetkili: c.yetkili1Ad || "", tel: c.yetkili1Tel || c.phone || "", adres: c.adres || "", country: c.country || "", city: c.city || "" }));
                     setCustSearch("");
-                  }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f1f5f9" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                  }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                     onMouseLeave={e => e.currentTarget.style.background = ""}
                   >
                     <b>{c.name}</b>{c.yetkili1Ad ? ` — ${c.yetkili1Ad}` : ""}
@@ -1211,8 +1174,8 @@ export const Documents = ({
         </div>
 
         {/* Belge Detayları */}
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Belge Detayları</div>
           {/* Belge alanları — tümü birleşik sırada */}
           {(() => {
             const teklif_keys = ["no", "tarih", "dil", "currency", "kdvOrani", "gtipNo", "modelYiliDegeri", "kur"];
@@ -1286,26 +1249,26 @@ export const Documents = ({
       </div>
 
       {/* Satırlar */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6 }}>Ürün / Hizmet Satırları</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 }}>Ürün / Hizmet Satırları</div>
           <Btn small onClick={addRow}><Icon name="plus" size={12} /> Satır Ekle</Btn>
         </div>
 
         {(form.satirlar || []).length === 0 ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Henüz satır eklenmedi. "Satır Ekle" butonunu kullanın.</div>
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Henüz satır eklenmedi. "Satır Ekle" butonunu kullanın.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 170 }}>Ürün Seç</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 90 }}>KOD</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 150 }}>Ürün Adı</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", minWidth: 180 }}>Tanım</th>
-                  <th style={{ padding: "6px 8px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#475569", width: 60 }}>Miktar</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 130 }}>Birim Fiyat</th>
-                  {showTL && <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#475569", width: 120 }}>TL Karşılığı</th>}
+                <tr style={{ background: "var(--n100, #f8fafc)" }}>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 170 }}>Ürün Seç</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 90 }}>KOD</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 150 }}>Ürün Adı</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", minWidth: 180 }}>Tanım</th>
+                  <th style={{ padding: "6px 8px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 60 }}>Miktar</th>
+                  <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 130 }}>Birim Fiyat</th>
+                  {showTL && <th style={{ padding: "6px 8px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", width: 120 }}>TL Karşılığı</th>}
                   <th style={{ width: 32 }} />
                 </tr>
               </thead>
@@ -1380,18 +1343,18 @@ export const Documents = ({
                         <td style={{ padding: "6px 8px" }}>
                           <input value={item.tlKarsiligi} onChange={e => updateSubItem(row.rowId, item.id, "tlKarsiligi", e.target.value)}
                             placeholder={form.kurRate ? "Hesaplanıyor..." : "TL karşılığı"}
-                            style={{ ...inputStyle, fontSize: 12, background: item.tlKarsiligi ? "#f0fdf4" : "#f8fafc" }} />
+                            style={{ ...inputStyle, fontSize: 12, background: item.tlKarsiligi ? "var(--grnBg, #f0fdf4)" : "var(--n100, #f8fafc)" }} />
                         </td>
                       )}
                     </>
                   ) : (
-                    <td colSpan={showTL ? 5 : 4} style={{ padding: "8px", color: "#cbd5e1", fontSize: 11 }}>— seçilmedi —</td>
+                    <td colSpan={showTL ? 5 : 4} style={{ padding: "8px", color: "var(--n300, #cbd5e1)", fontSize: 11 }}>— seçilmedi —</td>
                   );
 
                   if (visibleSlots.length === 0) return (
-                    <tr key={row.rowId} style={{ borderBottom: "1px solid #e2e8f0", verticalAlign: "middle" }}>
-                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid #f1f5f9" }}>{turSelect}</td>
-                      <td colSpan={showTL ? 6 : 5} style={{ padding: "8px", color: "#cbd5e1", fontSize: 11 }}>— önce tür seçin —</td>
+                    <tr key={row.rowId} style={{ borderBottom: "1px solid var(--n200, #e2e8f0)", verticalAlign: "middle" }}>
+                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid var(--n150, #f1f5f9)" }}>{turSelect}</td>
+                      <td colSpan={showTL ? 6 : 5} style={{ padding: "8px", color: "var(--n300, #cbd5e1)", fontSize: 11 }}>— önce tür seçin —</td>
                       <td style={{ padding: "6px 8px", verticalAlign: "top" }}>
                         <Btn small variant="danger" onClick={() => removeRow(row.rowId)}><Icon name="trash" size={11} /></Btn>
                       </td>
@@ -1399,8 +1362,8 @@ export const Documents = ({
                   );
 
                   return visibleSlots.map(({ type, item }, idx) => (
-                    <tr key={`${row.rowId}-${type}`} style={{ borderBottom: idx === totalSpan - 1 ? "1px solid #e2e8f0" : "1px dashed #f1f5f9", verticalAlign: "middle" }}>
-                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid #f1f5f9" }}>
+                    <tr key={`${row.rowId}-${type}`} style={{ borderBottom: idx === totalSpan - 1 ? "1px solid var(--n200, #e2e8f0)" : "1px dashed var(--n150, #f1f5f9)", verticalAlign: "middle" }}>
+                      <td style={{ padding: "6px 8px", verticalAlign: "middle", borderRight: "1px solid var(--n150, #f1f5f9)" }}>
                         {idx === 0 && <div style={{ marginBottom: 4 }}>{turSelect}</div>}
                         {type === "makina" && (
                           <select value={row.selectedModel || ""} onChange={e => pickModel(row.rowId, e.target.value)}
@@ -1441,13 +1404,13 @@ export const Documents = ({
         {/* Toplam özeti */}
         {(form.satirlar || []).length > 0 && (
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <div style={{ minWidth: 280, background: "#f8fafc", borderRadius: 10, padding: 14, fontSize: 13 }}>
+            <div style={{ minWidth: 280, background: "var(--n100, #f8fafc)", borderRadius: 10, padding: 14, fontSize: 13 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ color: "#64748b" }}>Toplam</span>
+                <span style={{ color: "var(--n500, #64748b)" }}>Toplam</span>
                 <span style={{ fontWeight: 600 }}>{fmtMoney(totals.toplam, form.currency)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ color: "#64748b" }}>İskonto</span>
+                <span style={{ color: "var(--n500, #64748b)" }}>İskonto</span>
                 <input
                   value={(form.iskonto === "" || form.iskonto == null || form.iskonto === 0) ? "" : new Intl.NumberFormat("tr-TR").format(form.iskonto)}
                   onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setForm(p => ({ ...p, iskonto: raw === "" ? "" : parseInt(raw, 10) })); }}
@@ -1455,15 +1418,15 @@ export const Documents = ({
                   style={{ ...inputStyle, width: 120, textAlign: "right", fontSize: 12, fontWeight: 400 }}
                 />
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, paddingTop: 6, borderTop: "1px solid #e2e8f0" }}>
-                <span style={{ color: "#64748b" }}>Ara Toplam</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, paddingTop: 6, borderTop: "1px solid var(--n200, #e2e8f0)" }}>
+                <span style={{ color: "var(--n500, #64748b)" }}>Ara Toplam</span>
                 <span style={{ fontWeight: 600 }}>{fmtMoney(totals.araToplam, form.currency)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ color: "#64748b" }}>KDV %{form.kdvOrani}</span>
+                <span style={{ color: "var(--n500, #64748b)" }}>KDV %{form.kdvOrani}</span>
                 <span style={{ fontWeight: 600 }}>{fmtMoney(totals.kdv, form.currency)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 14, paddingTop: 8, borderTop: "2px solid #e2e8f0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 14, paddingTop: 8, borderTop: "2px solid var(--n200, #e2e8f0)" }}>
                 <span>Genel Toplam</span>
                 <span style={{ color: "#e85d1a" }}>{fmtMoney(totals.genelToplam, form.currency)}</span>
               </div>
@@ -1474,8 +1437,8 @@ export const Documents = ({
 
       {/* Koşullar (Teklif için) */}
       {form.type === "teklif" && (
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 18, marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Teklif Koşulları (2. Sayfa)</div>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18, marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Teklif Koşulları (2. Sayfa)</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {getUnifiedOrder("teklif", "kosullar", ["odemeSekli","teslimSekli","teslimYeri","teslimSuresi","teslimTarihi","teklifGecerlilik","kur","not"]).map(key => {
               const cf = cfById("teklif", key);
@@ -1498,7 +1461,7 @@ export const Documents = ({
       )}
 
       {/* Alt kaydet: yapışkan — uzun formda kaydırırken hep görünür, tek Kaydet */}
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn variant="ghost" onClick={() => setForm(null)}>Vazgeç</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

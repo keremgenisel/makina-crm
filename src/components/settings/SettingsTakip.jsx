@@ -17,12 +17,12 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
     flash("ok", "Takip süreleri kaydedildi.");
   };
 
-  const inp = { width: 80, padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, background: "#f8fafc" };
+  const inp = { width: 80, padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" };
   const degisti = String(appSettings.teklifTakipGun ?? 7) !== teklifGun || String(appSettings.tahsilatTakipGun ?? 7) !== tahsilatGun;
 
   return (
     <Section title="Takip Süreleri" icon="notes">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         Anasayfadaki hatırlatma kutularının zaman eşikleri. Değişiklikler Kaydet'e basınca uygulanır
         ve tüm kullanıcılar için geçerli olur.
       </div>
@@ -31,13 +31,13 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
       <div style={{ display: "grid", gridTemplateColumns: "90px 1fr", gap: "14px 12px", alignItems: "start", marginBottom: 16 }}>
         <input type="number" min="1" max="90" value={teklifGun} onChange={e => setTeklifGun(e.target.value)} style={{ ...inp, width: "100%", boxSizing: "border-box" }} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Teklif takip eşiği (gün)</div>
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Gönderilen teklif bu kadar gün cevapsız kalırsa "Takip Edilecek Teklifler" kutusuna düşer.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>Teklif takip eşiği (gün)</div>
+          <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 2 }}>Gönderilen teklif bu kadar gün cevapsız kalırsa "Takip Edilecek Teklifler" kutusuna düşer.</div>
         </div>
         <input type="number" min="1" max="90" value={tahsilatGun} onChange={e => setTahsilatGun(e.target.value)} style={{ ...inp, width: "100%", boxSizing: "border-box" }} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Beklenen tahsilat penceresi (gün)</div>
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Vadesi bu kadar gün içinde olan çek ve taksitler "Beklenen Tahsilat" kutusunda gösterilir (gecikenler her zaman görünür).</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>Beklenen tahsilat penceresi (gün)</div>
+          <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 2 }}>Vadesi bu kadar gün içinde olan çek ve taksitler "Beklenen Tahsilat" kutusunda gösterilir (gecikenler her zaman görünür).</div>
         </div>
       </div>
 

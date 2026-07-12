@@ -506,25 +506,25 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
   };
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none", resize: "vertical" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none", resize: "vertical" };
 
   const sections = SECTIONS[docType] || [];
   const cfsBySection = (sec) => (draft[docType]?.customFields || []).filter(f => f.section === sec);
 
   return (
     <Section title="Teklif / Proforma / Yurt Dışı Fatura" icon="settings">
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
         Form bölümlerindeki alanları gizleyin, varsayılan değerleri düzenleyin veya özel alanlar ekleyin.
         Gizlenen alanlar yazılı çıktıda da görünmez.
       </div>
 
       {/* Alt sekme */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid #f1f5f9" }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
         {[["teklif", "Teklif"], ["proforma", "Proforma"], ["fatura", "Yurt Dışı Fatura"]].map(([id, label]) => (
           <button key={id} onClick={() => setDocType(id)} style={{
             padding: "7px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
             borderBottom: docType === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: docType === id ? "#e85d1a" : "#94a3b8",
+            color: docType === id ? "#e85d1a" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}
@@ -535,13 +535,13 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
       {docType === "teklif" && (
         <Accordion label="Genel Şartlar" sKey="sartlar" openSections={openSections} toggle={toggleSection}
           badge={(draft.teklif.sartlar || []).length > 0 ? `${draft.teklif.sartlar.length} şart` : null}>
-          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 12 }}>
             Teklifin 1. sayfasının altında gösterilir. İstediğiniz kadar şart ekleyebilirsiniz.
           </div>
           {(draft.teklif.sartlar || []).map((sart, idx) => (
-            <div key={idx} style={{ marginBottom: 14, padding: "10px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+            <div key={idx} style={{ marginBottom: 14, padding: "10px 12px", background: "var(--n100, #f8fafc)", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Şart {idx + 1}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>Şart {idx + 1}</span>
                 <Btn small variant="danger" onClick={() => removeSart(idx)}><Icon name="trash" size={11} /> Kaldır</Btn>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -558,7 +558,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
       {docType !== "fatura" && <Accordion
         label={docType === "teklif" ? "Sayfa Alt Notu (\"Bu belge gizlidir...\")" : "Alt Not"}
         sKey="altnot" openSections={openSections} toggle={toggleSection}>
-        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 12 }}>
           {docType === "teklif"
             ? "Teklifin 2. sayfasının en altında küçük yazıyla gösterilir."
             : "Proforma sayfasının en altında gösterilir."}
@@ -579,7 +579,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
             {/* Alanlar (mevcut + özel, birleşik sıra) */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
                 Alanlar <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(↑↓ ile sırala; yerleşik alanlara tıkla gizle/göster)</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -588,10 +588,10 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                     const hidden = isHidden(sec.key, item.key);
                     const chipLabel = getChipLabel(sec.key, item.key, item.label);
                     const isCustomLabel = chipLabel !== item.label;
-                    const borderColor = hidden ? "#fca5a5" : "#bbf7d0";
-                    const textColor = hidden ? "#b91c1c" : "#166534";
+                    const borderColor = hidden ? "#fca5a5" : "var(--grnBr, #bbf7d0)";
+                    const textColor = hidden ? "var(--red700, #b91c1c)" : "var(--grn900, #166534)";
                     return (
-                      <div key={item.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "#f0fdf4", overflow: "hidden", transition: "all .1s" }}>
+                      <div key={item.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "var(--grnBg, #f0fdf4)", overflow: "hidden", transition: "all .1s" }}>
                         <div onClick={() => toggleHide(sec.key, item.key)}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 8px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: textColor, userSelect: "none", flex: 1 }}>
                           <span style={{ fontSize: 11 }}>{hidden ? "✕" : "✓"}</span>
@@ -609,27 +609,27 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                           style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>↓</button>
                         <button onClick={() => setDeleteConfirm({ label: chipLabel, onConfirm: () => deleteBuiltin(sec.key, item.key) })}
                           title="Kaldır"
-                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "#b91c1c", opacity: 0.7, lineHeight: 1 }}>✕</button>
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "var(--red700, #b91c1c)", opacity: 0.7, lineHeight: 1 }}>✕</button>
                       </div>
                     );
                   } else {
                     const cf = item.cf;
                     return (
-                      <div key={cf.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                      <div key={cf.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: "var(--n100, #f8fafc)", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>{cf.label.TR || "—"}</span>
-                          {cf.label.EN && <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6 }}>/ {cf.label.EN}</span>}
-                          <span style={{ fontSize: 11, marginLeft: 8, padding: "1px 6px", borderRadius: 5, background: cf.type === "select" ? "#dbeafe" : "#f1f5f9", color: cf.type === "select" ? "#1d4ed8" : "#64748b" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--n800, #1e293b)" }}>{cf.label.TR || "—"}</span>
+                          {cf.label.EN && <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginLeft: 6 }}>/ {cf.label.EN}</span>}
+                          <span style={{ fontSize: 11, marginLeft: 8, padding: "1px 6px", borderRadius: 5, background: cf.type === "select" ? "var(--bluBg2, #dbeafe)" : "var(--n150, #f1f5f9)", color: cf.type === "select" ? "var(--blu700, #1d4ed8)" : "var(--n500, #64748b)" }}>
                             {cf.type === "select" ? `Seçim (${(cf.options || []).length} seç.)` : "Metin"}
                           </span>
-                          <span style={{ fontSize: 10, marginLeft: 6, color: "#94a3b8" }}>• Özel</span>
+                          <span style={{ fontSize: 10, marginLeft: 6, color: "var(--n400, #94a3b8)" }}>• Özel</span>
                         </div>
                         <button onClick={() => moveField(sec.key, String(cf.id), -1)} disabled={idx === 0}
                           title="Yukarı taşı"
-                          style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: 4, padding: "3px 7px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: "#64748b", opacity: idx === 0 ? 0.3 : 1, lineHeight: 1 }}>↑</button>
+                          style={{ background: "transparent", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 4, padding: "3px 7px", cursor: idx === 0 ? "default" : "pointer", fontSize: 12, color: "var(--n500, #64748b)", opacity: idx === 0 ? 0.3 : 1, lineHeight: 1 }}>↑</button>
                         <button onClick={() => moveField(sec.key, String(cf.id), 1)} disabled={idx === arr.length - 1}
                           title="Aşağı taşı"
-                          style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: 4, padding: "3px 7px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: "#64748b", opacity: idx === arr.length - 1 ? 0.3 : 1, lineHeight: 1 }}>↓</button>
+                          style={{ background: "transparent", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 4, padding: "3px 7px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: "var(--n500, #64748b)", opacity: idx === arr.length - 1 ? 0.3 : 1, lineHeight: 1 }}>↓</button>
                         <Btn small variant="ghost" onClick={() => openEditCf(cf)}><Icon name="edit" size={12} /></Btn>
                         <Btn small variant="danger" onClick={() => setDeleteConfirm({ label: cf.label.TR || cf.label.EN, onConfirm: () => deleteCf(cf.id) })}><Icon name="trash" size={12} /></Btn>
                       </div>
@@ -639,10 +639,10 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
               </div>
               {getDeletedBuiltins(sec.key).length > 0 && (
                 <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: "#94a3b8" }}>Kaldırılanlar:</span>
+                  <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Kaldırılanlar:</span>
                   {getDeletedBuiltins(sec.key).map(f => (
                     <button key={f.key} onClick={() => restoreBuiltin(sec.key, f.key)}
-                      style={{ fontSize: 11, color: "#64748b", background: "#f1f5f9", border: "1px dashed #cbd5e1", borderRadius: 20, padding: "3px 10px", cursor: "pointer" }}>
+                      style={{ fontSize: 11, color: "var(--n500, #64748b)", background: "var(--n150, #f1f5f9)", border: "1px dashed var(--n300, #cbd5e1)", borderRadius: 20, padding: "3px 10px", cursor: "pointer" }}>
                       + {f.label}
                     </button>
                   ))}
@@ -652,13 +652,13 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
             {/* Varsayılan değerler */}
             {fdFields.length > 0 && (
-              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+              <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
                   Varsayılan Değerler <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(yeni belgede otomatik dolu gelir)</span>
                 </div>
                 {fdFields.map(fd => (
                   <div key={fd.key} style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>{fd.label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 6 }}>{fd.label}</div>
                     {fd.biDil ? (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         <LangTextarea label="Türkçe (TR)" value={getFd(fd.key, "TR")} onChange={v => setFd(fd.key, "TR", v)} inputStyle={{ ...inputStyle, minHeight: fd.multiline ? 68 : 36 }} />
@@ -673,14 +673,14 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
             )}
 
             {/* Özel alan ekle */}
-            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+            <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 10 }}>
               <Btn small onClick={() => openAddCf(sec.key)}><Icon name="plus" size={12} /> Özel Alan Ekle</Btn>
             </div>
           </Accordion>
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "rgba(248,250,252,.94)", borderTop: "1px solid #e2e8f0", backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 
@@ -707,9 +707,9 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
       {deleteConfirm && (
         <Modal title="Alanı kaldır?" onClose={() => setDeleteConfirm(null)}>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 20 }}>
             <b>"{deleteConfirm.label}"</b> alanı formdan kaldırılsın mı?
-            <div style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>Kaldırılan alan formda ve çıktıda görünmez. İstediğinizde geri yükleyebilirsiniz.</div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--n400, #94a3b8)" }}>Kaldırılan alan formda ve çıktıda görünmez. İstediğinizde geri yükleyebilirsiniz.</div>
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setDeleteConfirm(null)}>Vazgeç</Btn>
@@ -722,7 +722,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
       {proformaConfirm && (
         <Modal title="Proformada da göster?" onClose={() => setProformaConfirm(null)}>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 20 }}>
             <b>"{proformaConfirm.label.TR}"</b> alanı proformada da gösterilsin mi?
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -740,15 +740,15 @@ const Accordion = ({ label, sKey, openSections, toggle, badge, children }) => {
   const isOpen = openSections.has(sKey);
   return (
     <div style={{ marginBottom: 12 }}>
-      <div onClick={() => toggle(sKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, marginBottom: isOpen ? 10 : 0, cursor: "pointer", userSelect: "none" }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: .5 }}>{label}</span>
+      <div onClick={() => toggle(sKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, marginBottom: isOpen ? 10 : 0, cursor: "pointer", userSelect: "none" }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>{label}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {badge && <span style={{ fontSize: 11, fontWeight: 700, background: "#e85d1a", color: "#fff", borderRadius: 8, padding: "1px 7px" }}>{badge}</span>}
-          <span style={{ fontSize: 12, color: "#94a3b8" }}>{isOpen ? "▾" : "▸"}</span>
+          <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{isOpen ? "▾" : "▸"}</span>
         </div>
       </div>
       {isOpen && (
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}>
+        <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "14px 16px" }}>
           {children}
         </div>
       )}
@@ -758,7 +758,7 @@ const Accordion = ({ label, sKey, openSections, toggle, badge, children }) => {
 
 const LangTextarea = ({ label, value, onChange, inputStyle }) => (
   <div>
-    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 3 }}>{label}</div>
+    <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginBottom: 3 }}>{label}</div>
     <textarea value={value} onChange={e => onChange(e.target.value)} style={{ ...inputStyle, minHeight: inputStyle?.minHeight ?? 52 }} />
   </div>
 );
@@ -768,7 +768,7 @@ const CfModal = ({ cf, isNew, sections, onChange, onSave, onClose }) => {
   const [optionInput, setOptionInput] = useState({ TR: "", EN: "" });
   const options = cf.options || [];
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
 
   const addOption = () => {
     if (!optionInput.TR.trim()) return;
@@ -812,13 +812,13 @@ const CfModal = ({ cf, isNew, sections, onChange, onSave, onClose }) => {
 
       {cf.type === "select" && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Seçenekler</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>Seçenekler</div>
           {options.length > 0 && (
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 7, marginBottom: 8, overflow: "hidden" }}>
+            <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, marginBottom: 8, overflow: "hidden" }}>
               {options.map((opt, idx) => (
-                <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", background: idx % 2 === 0 ? "#f8fafc" : "#fff", borderBottom: idx < options.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", background: idx % 2 === 0 ? "var(--n100, #f8fafc)" : "var(--surface, #ffffff)", borderBottom: idx < options.length - 1 ? "1px solid var(--n150, #f1f5f9)" : "none" }}>
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{opt.TR}</span>
-                  {opt.EN && <span style={{ fontSize: 12, color: "#94a3b8" }}>/ {opt.EN}</span>}
+                  {opt.EN && <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>/ {opt.EN}</span>}
                   <Btn small variant="danger" onClick={() => removeOption(idx)}><Icon name="trash" size={11} /></Btn>
                 </div>
               ))}
@@ -850,11 +850,11 @@ const CfModal = ({ cf, isNew, sections, onChange, onSave, onClose }) => {
 
 // ── Alan Etiket Düzenleme Modal ────────────────────────────────────────────────
 const FieldLabelModal = ({ modal, onChange, onSave, onReset, onClose }) => {
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "#f8fafc", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
   const hasCustom = modal.trValue.trim() || modal.enValue.trim();
   return (
     <Modal title={`"${modal.defaultLabel}" Etiketini Düzenle`} onClose={onClose}>
-      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 14, lineHeight: 1.6 }}>
         Boş bırakılırsa varsayılan etiket (<b>{modal.defaultLabel}</b>) kullanılır.
         Değişiklik kaydedildikten sonra hem form alanında hem baskı çıktısında yeni etiket görünür.
       </div>

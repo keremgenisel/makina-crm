@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const securityQueue = require("../securityQueue.cjs");
+const securityStatus = require("../securityStatus.cjs");
 
 const getErrorLogPath = (app) => path.join(app.getPath("userData"), "error-log.json");
 const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
@@ -218,6 +219,11 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
     }
   });
   ipcMain.handle("error:readLog", () => readErrorLog(app));
+
+  // ── Güvenlik Durumu: disk şifreleme (BitLocker/FileVault) tespiti (sadece okur, açmaz) ──
+  ipcMain.handle("security:diskEncryption", () => securityStatus.checkDiskEncryption());
+  // ── Güvenlik Durumu: veritabanı at-rest şifreleme durumu ──
+  ipcMain.handle("security:dbEncryption", () => (db ? db.dbEncryptionStatus() : { encrypted: false, canEncrypt: false }));
 
   ipcMain.handle("app:getOpenAtLogin", () => {
     if (!app.isPackaged) return { openAtLogin: false, devMode: true };

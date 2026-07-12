@@ -42,7 +42,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
   const bos = results && !results.musteriler.length && !results.belgeler.length && !results.bayiler.length && !results.makinalar.length;
   const pick = (fn, arg) => { setOpen(false); fn?.(arg); };
 
-  const grupBaslik = { fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, padding: "10px 14px 4px" };
+  const grupBaslik = { fontSize: 10, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, padding: "10px 14px 4px" };
   const satir = { display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, borderRadius: 8 };
 
   return (
@@ -57,31 +57,31 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
 
       {open && (
         <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 1200, display: "flex", justifyContent: "center", paddingTop: "10vh" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 620, height: "fit-content", maxHeight: "70vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
-            <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "#fff" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface, #ffffff)", borderRadius: 14, width: "100%", maxWidth: 620, height: "fit-content", maxHeight: "70vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+            <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid var(--n150, #f1f5f9)", position: "sticky", top: 0, background: "var(--surface, #ffffff)" }}>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
                 <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
                   placeholder="Müşteri, seri no, teklif no, telefon, bayi ara..."
                   style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", border: "2px solid #e85d1a", borderRadius: 10, fontSize: 14, outline: "none" }} />
               </div>
             </div>
-            {!results && <div style={{ padding: 18, fontSize: 13, color: "#94a3b8" }}>En az 2 karakter yazın.</div>}
-            {bos && <div style={{ padding: 18, fontSize: 13, color: "#94a3b8" }}>Sonuç bulunamadı.</div>}
+            {!results && <div style={{ padding: 18, fontSize: 13, color: "var(--n400, #94a3b8)" }}>En az 2 karakter yazın.</div>}
+            {bos && <div style={{ padding: 18, fontSize: 13, color: "var(--n400, #94a3b8)" }}>Sonuç bulunamadı.</div>}
             {results && results.musteriler.length > 0 && (
               <div>
                 <div style={grupBaslik}>Müşteriler / Makinalar</div>
                 {results.musteriler.map(c => (
                   <button key={`c${c.id}`} style={satir} onClick={() => pick(onOpenCustomer, c.id)}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     <b>{c.name}</b>
-                    <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{c.model || ""}{c.serialNo ? ` · S/N ${c.serialNo}` : ""}{c.installDate ? ` · ${fmtTR(c.installDate)}` : ""}</span>
+                    <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{c.model || ""}{c.serialNo ? ` · S/N ${c.serialNo}` : ""}{c.installDate ? ` · ${fmtTR(c.installDate)}` : ""}</span>
                     {(() => {
                       const query = aramaNormalize(q.trim());
                       const eski = (c.prevOwners || []).find(o => aramaNormalize(String(o.name || "")).includes(query));
                       // Kayıt aramaya yalnızca eski sahibi üzerinden yakalandıysa nedenini göster
                       return eski && !aramaNormalize(String(c.name || "")).includes(query)
-                        ? <span style={{ color: "#b45309", marginLeft: 8, fontSize: 11.5 }}>eski sahibi: {eski.name}</span>
+                        ? <span style={{ color: "var(--amb700, #b45309)", marginLeft: 8, fontSize: 11.5 }}>eski sahibi: {eski.name}</span>
                         : null;
                     })()}
                   </button>
@@ -93,9 +93,9 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                 <div style={grupBaslik}>Teklif / Proforma</div>
                 {results.belgeler.map(t => (
                   <button key={`t${t.id}`} style={satir} onClick={() => pick(onOpenDoc, t.id)}
-                    onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bluBg, #eff6ff)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     <b>{t.no || "—"}</b>
-                    <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{t.firma || ""} · {t.type === "proforma" ? "Proforma" : "Teklif"}{t.tarih ? ` · ${fmtTR(t.tarih)}` : ""}</span>
+                    <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{t.firma || ""} · {t.type === "proforma" ? "Proforma" : "Teklif"}{t.tarih ? ` · ${fmtTR(t.tarih)}` : ""}</span>
                   </button>
                 ))}
               </div>
@@ -105,9 +105,9 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                 <div style={grupBaslik}>Bayiler</div>
                 {results.bayiler.map(d => (
                   <button key={`d${d.id}`} style={satir} onClick={() => pick(onOpenDealer, d.id)}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f0fdf4"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--grnBg, #f0fdf4)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     <b>{d.name}</b>
-                    <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{[d.contact, d.city].filter(Boolean).join(" · ")}</span>
+                    <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{[d.contact, d.city].filter(Boolean).join(" · ")}</span>
                   </button>
                 ))}
               </div>
@@ -119,7 +119,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                   <button key={`s${sx.id}`} style={satir} onClick={() => pick(onGoStock)}
                     onMouseEnter={e => e.currentTarget.style.background = "#faf5ff"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     <b>{sx.model}</b>
-                    <span style={{ color: "#64748b", marginLeft: 8, fontSize: 12 }}>{sx.serialNo ? `S/N ${sx.serialNo}` : "seri no'suz"}{sx.addedDate ? ` · ${fmtTR(sx.addedDate)}` : ""}</span>
+                    <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{sx.serialNo ? `S/N ${sx.serialNo}` : "seri no'suz"}{sx.addedDate ? ` · ${fmtTR(sx.addedDate)}` : ""}</span>
                   </button>
                 ))}
               </div>

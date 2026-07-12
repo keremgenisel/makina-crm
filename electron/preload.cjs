@@ -109,11 +109,14 @@ contextBridge.exposeInMainWorld("appServer", {
   logout:          () => ipcRenderer.invoke("server:logout"),
   clearConfig:     () => ipcRenderer.invoke("server:clearConfig"),
   refreshToken:    () => ipcRenderer.invoke("server:refreshToken"),
+  updateToken:     (token) => ipcRenderer.invoke("server:updateToken", token),
   apiRequest:      (params) => ipcRenderer.invoke("server:apiRequest", params),
   setupAdmin:      (params) => ipcRenderer.invoke("server:setupAdmin", params),
   startServer:     (port) => ipcRenderer.invoke("server:startServer", port),
   stopServer:      () => ipcRenderer.invoke("server:stopServer"),
   getServerStatus: () => ipcRenderer.invoke("server:getServerStatus"),
+  regenerateCert:  () => ipcRenderer.invoke("server:regenerateCert"),
+  setTlsOnly:      (value) => ipcRenderer.invoke("server:setTlsOnly", value),
   checkLan:        () => ipcRenderer.invoke("server:checkLan"),
   onSessionExpired: (cb) => {
     const h = () => cb();
@@ -162,6 +165,19 @@ contextBridge.exposeInMainWorld("auditLog", {
 contextBridge.exposeInMainWorld("securityLog", {
   get: (filters) => ipcRenderer.invoke("security:get", filters),
   clear: () => ipcRenderer.invoke("security:clear"),
+});
+
+contextBridge.exposeInMainWorld("appSecurity", {
+  diskEncryption: () => ipcRenderer.invoke("security:diskEncryption"),
+  dbEncryption: () => ipcRenderer.invoke("security:dbEncryption"),
+});
+
+contextBridge.exposeInMainWorld("appFiles", {
+  add:      (entityAd) => ipcRenderer.invoke("files:add", entityAd),
+  open:     (depoAd) => ipcRenderer.invoke("files:open", depoAd),
+  download: (depoAd, onerilenAd) => ipcRenderer.invoke("files:download", depoAd, onerilenAd),
+  remove:   (depoAd) => ipcRenderer.invoke("files:remove", depoAd),
+  pruneOrphans: (referencedNames) => ipcRenderer.invoke("files:pruneOrphans", referencedNames),
 });
 
 contextBridge.exposeInMainWorld("crmLocks", {

@@ -9,22 +9,41 @@ const crypto   = require("crypto");
 const os       = require("os");
 const fs       = require("fs");
 const path     = require("path");
-const { BrowserWindow, safeStorage, app } = require("electron");
-const { kisitliMi, degisenBolumler, yazmaYetkisiVar, sonAdminiDusururMu } = require("./serverAuth.cjs");
+const http     = require("http");
+const https    = require("https");
+const net      = require("net");
+const serverTls = require("./serverTls.cjs");
+// electronApp: Electron uygulama nesnesi. buildApp() içinde express örneği de "app" adını
+// aldığından (const app = express()), karışmasın diye burada electronApp olarak alınır.
+const { BrowserWindow, safeStorage, app: electronApp } = require("electron");
+const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, dosyaIslemYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
 const { rateAllow, rateHit, rateRetryAfter, escalatingBlockedMs, escalatingNext } = require("./rateLimit.cjs");
 const totp = require("./totp.cjs");
+const fsx = require("fs");
+const files = require("./files.cjs");
 const qrcode = require("qrcode");
 
-let httpServer = null;
+// Tek port hem HTTP hem HTTPS dinler: muxServer ilk bayta göre soketi httpsSrv (TLS
+// handshake 0x16 ile başlar) veya httpPlain'e yönlendirir. Böylece eski http istemciler
+// çalışmaya devam ederken yeni istemciler pinlenmiş HTTPS ile şifreli bağlanır (hibrit).
+let muxServer  = null; // net.Server — port'u dinleyen çoğullayıcı
+let httpPlain  = null; // http.Server (listen edilmez; mux "connection" emit eder)
+let httpsSrv   = null; // https.Server (listen edilmez)
+let certFp     = null; // aktif sertifikanın SHA-256 parmak izi (istemci pinning bunu doğrular)
+let tlsOnlyMode = false; // true → düz HTTP dış bağlantılar reddedilir (yalnız HTTPS); loopback muaf
 let db         = null; // electron/db.cjs referansı
+
+// Loopback (sunucunun kendine http çağrıları: refresh-internal) yalnız-HTTPS modunda bile
+// çalışsın diye muaf tutulur — bu trafik makineden çıkmaz.
+const isLoopbackAddr = (a) => a === "127.0.0.1" || a === "::1" || a === "::ffff:127.0.0.1";
 
 // ── JWT imza anahtarı ─────────────────────────────────────────────────────────
 // Anahtar OS anahtarlığında (safeStorage: DPAPI/Keychain) şifreli dosyada tutulur; DB'de
 // düz metin bırakılmaz. Mevcut kurulumdaki eski DB anahtarı korunarak taşınır (token'lar
 // geçersiz olmasın). safeStorage kullanılamıyorsa eski davranışa (DB'de düz metin) düşülür.
 let cachedSecret = null;
-function jwtSecretFile() { return path.join(app.getPath("userData"), "jwt-secret.enc"); }
+function jwtSecretFile() { return path.join(electronApp.getPath("userData"), "jwt-secret.enc"); }
 function getSecret() {
   if (cachedSecret) return cachedSecret;
   let canEncrypt = false;
@@ -68,6 +87,14 @@ function requireAuth(req, res, next) {
 }
 function requireAdmin(req, res, next) {
   if (req.user?.role !== "admin") return res.status(403).json({ error: "Admin yetkisi gerekli" });
+  next();
+}
+
+// Fiziksel dosya yazma uçları (upload/delete) için yetki: /api/data'daki bölüm denetimiyle
+// aynı seviye — salt-okunur/kısıtlı kullanıcı fiziksel dosya ekleyip silemesin.
+function requireDosyaYetkisi(req, res, next) {
+  const u = db?.getUserByUsername?.(req.user?.username);
+  if (!dosyaIslemYetkisi(u?.permissions, req.user?.role)) return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   next();
 }
 
@@ -169,6 +196,54 @@ function broadcast(channel, ...args) {
   }
 }
 
+// ── Ortak giriş doğrulama ──────────────────────────────────────────────────────
+// HEM /auth/login rotası HEM de sunucu-kurulum yolu (ipc/data.cjs → setupAdmin) bunu kullanır,
+// böylece kademeli kilit + 2FA + güvenlik kaydı tek yerdedir ve kurulum ekranı bu korumaları
+// ATLAYAMAZ. REGRESYON: setupAdmin eskiden bcrypt.compare + refresh-internal ile doğrulardı;
+// bu yol 2FA'yı, kademeli kilidi ve "giris_basarili/basarisiz" kaydını tamamen baypas ediyordu
+// (2FA açık admin şifresi sınırsız denenebiliyordu). ip: oran-sınırı/kayıt anahtarı.
+// Sonuç: { status, error?, requires2fa?, retryAfterSec?, token?, user? }.
+async function authenticateLogin({ username, password, totpCode, ip } = {}) {
+  const cleanIp = String(ip || "").replace(/^::ffff:/, "") || "?"; // gösterim için sadeleştir
+  if (!username || !password) return { status: 400, error: "Kullanıcı adı ve şifre gerekli" };
+  const blockedMs = loginBlockedMs(ip, username);
+  if (blockedMs > 0) {
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Çok fazla deneme (geçici engel)" } });
+    return { status: 429, error: "Çok fazla başarısız deneme. Lütfen biraz sonra tekrar deneyin.", retryAfterSec: Math.ceil(blockedMs / 1000) };
+  }
+  if (!db || !db.isActive()) return { status: 503, error: "Veritabanı henüz hazır değil" };
+  const user = db.getUserByUsername(username);
+  if (!user || !user.is_active) {
+    loginRateFail(ip, username);
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: user ? "Hesap pasif" : "Kullanıcı adı yok" } });
+    return { status: 401, error: "Kullanıcı adı veya şifre hatalı" };
+  }
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) {
+    loginRateFail(ip, username);
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış şifre" } });
+    return { status: 401, error: "Kullanıcı adı veya şifre hatalı" };
+  }
+  // İkinci faktör (opsiyonel, kullanıcı başına): 2FA açıksa TOTP/kurtarma kodu da gerekir.
+  if (user.totp_enabled) {
+    if (!totpCode) return { status: 401, error: "İki adımlı doğrulama kodu gerekli", requires2fa: true };
+    if (!verify2fa(user, totpCode)) {
+      loginRateFail(ip, username);
+      logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış 2FA kodu" } });
+      return { status: 401, error: "Doğrulama kodu hatalı", requires2fa: true };
+    }
+  }
+  loginRateSuccess(ip, username);
+  // Tek oturum (admin HARİÇ): her girişte token_version artır → aynı kullanıcının başka cihazlardaki
+  // oturumu düşer (son giriş kazanır). Admin muaf: sunucu PC gözetimsiz çalışır ve admin jetonunu
+  // loopback refresh-internal ile yeniler; admin'e tek oturum zorlamak sunucu PC'yi kilitlerdi.
+  let tv = user.token_version ?? 1;
+  if (user.role !== "admin") tv = db.bumpUserTokenVersion(user.id) ?? (tv + 1);
+  logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: { rol: user.role, ikiAdimli: !!user.totp_enabled } });
+  const token = signToken({ id: user.id, username: user.username, role: user.role, tv });
+  return { status: 200, token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } };
+}
+
 // ── Express app ───────────────────────────────────────────────────────────────
 function buildApp() {
   const app = express();
@@ -180,38 +255,23 @@ function buildApp() {
   // 32MB: tipik veri (resimler optimize edilince) birkaç MB; bu üst sınır bol marj bırakır
   // ama tek istekte devasa payload ile bellek DoS'unu sınırlar.
   app.use("/api/data", express.json({ limit: "32mb" }));
+  // Dosya yükleme binary gövde alır (JSON değil) — json parser'dan ÖNCE ham parser'a bağla.
+  app.use("/api/files/upload", express.raw({ type: () => true, limit: "21mb" }));
   app.use(express.json({ limit: "1mb" }));
 
-  app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false }));
+  // /health kimliksiz: istemci hem erişilebilirlik yoklaması hem TLS keşfi/doğrulaması için kullanır.
+  app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false, tls: !!certFp, fp: certFp || null }));
 
   // POST /auth/login
   app.post("/auth/login", async (req, res) => {
     try {
       const ip = req.socket?.remoteAddress || req.ip || "?";
-      const { username, password } = req.body || {};
-      if (!username || !password) return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli" });
-      const cleanIp = reqIp(req);
-      const blockedMs = loginBlockedMs(ip, username);
-      if (blockedMs > 0) {
-        logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Çok fazla deneme (geçici engel)" } });
-        res.set("Retry-After", String(Math.ceil(blockedMs / 1000)));
-        return res.status(429).json({ error: "Çok fazla başarısız deneme. Lütfen biraz sonra tekrar deneyin." });
-      }
-      if (!db || !db.isActive()) return res.status(503).json({ error: "Veritabanı henüz hazır değil" });
-      const user = db.getUserByUsername(username);
-      if (!user || !user.is_active) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: user ? "Hesap pasif" : "Kullanıcı adı yok" } }); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
-      const ok = await bcrypt.compare(password, user.password);
-      if (!ok) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış şifre" } }); return res.status(401).json({ error: "Kullanıcı adı veya şifre hatalı" }); }
-      // İkinci faktör (opsiyonel, kullanıcı başına): 2FA açıksa TOTP/kurtarma kodu da gerekir.
-      if (user.totp_enabled) {
-        const { totpCode } = req.body || {};
-        if (!totpCode) return res.status(401).json({ error: "İki adımlı doğrulama kodu gerekli", requires2fa: true });
-        if (!verify2fa(user, totpCode)) { loginRateFail(ip, username); logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış 2FA kodu" } }); return res.status(401).json({ error: "Doğrulama kodu hatalı", requires2fa: true }); }
-      }
-      loginRateSuccess(ip, username);
-      logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: { rol: user.role, ikiAdimli: !!user.totp_enabled } });
-      const token = signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
-      res.json({ token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } });
+      const { username, password, totpCode } = req.body || {};
+      const r = await authenticateLogin({ username, password, totpCode, ip });
+      if (r.retryAfterSec) res.set("Retry-After", String(r.retryAfterSec));
+      if (r.status === 200) return res.json({ token: r.token, user: r.user });
+      // retryAfterSec gövdeye de konur: istemci giriş ekranı kademeli kilit geri sayımını gösterir.
+      return res.status(r.status).json({ error: r.error, ...(r.requires2fa ? { requires2fa: true } : {}), ...(r.retryAfterSec ? { retryAfterSec: r.retryAfterSec } : {}) });
     } catch (err) {
       console.error("[server] /auth/login hatası:", err);
       res.status(500).json({ error: "Giriş işlemi başarısız" });
@@ -278,7 +338,9 @@ function buildApp() {
       const recovery = totp.generateRecoveryCodes(8);
       db.enableUserTotp(u.id, JSON.stringify(recovery.map(totp.hashRecovery)));
       logSecurity({ actor: u.username, action: "2fa_acildi", ip: reqIp(req) });
-      res.json({ ok: true, recovery }); // düz kodlar yalnızca bir kez gösterilir
+      // token_version arttı (diğer oturumlar düştü) — bu oturum kapanmasın diye GÜNCEL tv'li taze jeton ver
+      const fresh = db.getUserByUsername(u.username);
+      res.json({ ok: true, recovery, token: signToken({ id: u.id, username: u.username, role: u.role, tv: fresh?.token_version ?? 1 }) });
     } catch (err) { console.error("[server] 2fa/enable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
   // POST kapat: mevcut şifre ile doğrula, 2FA'yı tamamen kaldır
@@ -290,7 +352,9 @@ function buildApp() {
       if (!password || !await bcrypt.compare(password, u.password)) return res.status(401).json({ error: "Şifre hatalı" });
       db.disableUserTotp(u.id);
       logSecurity({ actor: u.username, action: "2fa_kapatildi", ip: reqIp(req) });
-      res.json({ ok: true });
+      // token_version arttı — bu oturum kapanmasın diye taze jeton ver (diğer oturumlar düşer)
+      const fresh = db.getUserByUsername(u.username);
+      res.json({ ok: true, token: signToken({ id: u.id, username: u.username, role: u.role, tv: fresh?.token_version ?? 1 }) });
     } catch (err) { console.error("[server] 2fa/disable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
@@ -353,10 +417,17 @@ function buildApp() {
       // İzin sistemi arayüzde de var; bu, elle HTTP isteğiyle atlatmayı engeller.
       // Tam yetkili/admin kullanıcı pahalı fark denetimini atlar.
       const u = db.getUserByUsername(req.user.username);
-      if (kisitliMi(u?.permissions ?? null, u?.role ?? req.user.role)) {
-        const changed = degisenBolumler(db.readBlobFromDb(), data);
-        const yetki = yazmaYetkisiVar(u?.permissions ?? null, u?.role ?? req.user.role, changed);
+      const perms = u?.permissions ?? null;
+      const rol = u?.role ?? req.user.role;
+      if (kisitliMi(perms, rol)) {
+        const mevcut = db.readBlobFromDb();
+        const changed = degisenBolumler(mevcut, data);
+        const yetki = yazmaYetkisiVar(perms, rol, changed);
         if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
+        // Eylem düzeyi: kısmi grup bölüm düzeyinde geçse bile (ör. düzenle var, sil yok),
+        // izinsiz EKLE/SİL burada yakalanır ve reddedilir.
+        const eylem = eylemDenetimi(mevcut, data, perms, rol);
+        if (!eylem.ok) return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
       }
       const serverVersion = db.getDataVersion();
       if (clientVersion !== undefined && clientVersion !== null && clientVersion !== serverVersion) {
@@ -441,8 +512,16 @@ function buildApp() {
   });
 
   // DELETE /api/users/:id/2fa — admin bir kullanıcının 2FA'sını sıfırlar (telefon kaybı vb.)
-  app.delete("/api/users/:id/2fa", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
+  // STEP-UP: sıfırlamadan önce admin KENDİ şifresini doğrular. Kilitsiz bir admin oturumunun
+  // başına geçen (ya da token'ı çalınmış) biri tek tıkla 2FA soyamasın diye — kendi-kapatma
+  // (/auth/2fa/disable) ile tutarlı. Yalnızca admin + kayıt yeterli değildi.
+  app.delete("/api/users/:id/2fa", requireAuth, requireAdmin, writeLimiter(20), async (req, res) => {
     try {
+      const { password } = req.body || {};
+      const admin = db.getUserByUsername(req.user.username);
+      if (!admin || !password || !await bcrypt.compare(password, admin.password)) {
+        return res.status(401).json({ error: "Şifre hatalı" });
+      }
       const id = parseInt(req.params.id);
       const hedef = db.getUserById(id)?.username || `#${id}`;
       db.disableUserTotp(id);
@@ -450,6 +529,21 @@ function buildApp() {
       res.json({ ok: true });
     } catch (err) {
       console.error("[server] /api/users/:id/2fa DELETE hatası:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // POST /api/users/:id/logout-all — admin bir kullanıcıyı TÜM cihazlardan çıkarır (token_version artırır).
+  // Şüpheli erişim / çalınan hesap için. Erişim vermez, yalnızca mevcut oturumları düşürür → step-up gerekmez.
+  app.post("/api/users/:id/logout-all", requireAuth, requireAdmin, writeLimiter(20), (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const hedef = db.getUserById(id)?.username || `#${id}`;
+      db.bumpUserTokenVersion(id);
+      logSecurity({ actor: req.user.username, action: "oturumlar_kapatildi", target: hedef, ip: reqIp(req) });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[server] /api/users/:id/logout-all hatası:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
@@ -489,6 +583,47 @@ function buildApp() {
       broadcast("server:locksChanged");
       res.json({ ok: true });
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+
+  // ── Dosya arşivi (çok kullanıcılı): dosyalar sunucu PC diskinde durur; istemciler yükler/indirir ──
+  // Depo adı (params.name) sanitize edilmiş bir dosya adı (yol ayracı yok); path traversal reddedilir.
+  const gecerliDepoAd = (name) => !!name && !name.includes("/") && !name.includes("\\") && !name.includes("..");
+
+  // POST /api/files/upload — binary gövde; başlıkta orijinal ad. Depoya yazar, künye döndürür.
+  app.post("/api/files/upload", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
+    try {
+      const ad = decodeURIComponent(req.get("X-Dosya-Adi") || "dosya");
+      // Firma adı: istemci "X-Dosya-Firma" ile yollar → okunur depo adı ("<Firma> - <ad> - <anahtar>").
+      let firma = ""; try { firma = decodeURIComponent(req.get("X-Dosya-Firma") || ""); } catch { firma = ""; }
+      if (!files.izinliMi(ad)) return res.status(400).json({ error: "Bu dosya türü desteklenmiyor" });
+      const buf = req.body;
+      if (!Buffer.isBuffer(buf) || buf.length === 0) return res.status(400).json({ error: "Boş dosya" });
+      if (buf.length > files.MAX_BOYUT) return res.status(413).json({ error: "Dosya 20 MB sınırını aşıyor" });
+      const anahtar = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const depo = files.depoAdi(anahtar, ad, firma);
+      fsx.writeFileSync(files.dosyaYolu(electronApp, depo), buf);
+      res.json({ dosyaAdi: depo, boyut: buf.length, tur: files.turKategori(ad), ad });
+    } catch (err) { console.error("[server] dosya yükleme:", err); res.status(500).json({ error: "Sunucu hatası" }); }
+  });
+
+  // GET /api/files/:name — dosyayı indir (binary)
+  app.get("/api/files/:name", requireAuth, (req, res) => {
+    const name = req.params.name;
+    if (!gecerliDepoAd(name)) return res.status(400).json({ error: "Geçersiz dosya adı" });
+    const yol = files.dosyaYolu(electronApp, name);
+    if (!fsx.existsSync(yol)) return res.status(404).json({ error: "Dosya bulunamadı" });
+    // Path traversal yok: name yukarıda gecerliDepoAd ile "/","\\",".." reddedilerek
+    // doğrulandı, dosyaYolu da sabit dosyalar klasörüne join eder.
+    // nosemgrep: javascript.express.security.audit.express-res-sendfile.express-res-sendfile
+    res.sendFile(yol);
+  });
+
+  // DELETE /api/files/:name — fiziksel dosyayı sil (çöpten kalıcı silme / orphan temizliği)
+  app.delete("/api/files/:name", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
+    const name = req.params.name;
+    if (!gecerliDepoAd(name)) return res.status(400).json({ error: "Geçersiz dosya adı" });
+    files.sil(electronApp, name);
+    res.json({ ok: true });
   });
 
   // POST /api/audit — istemci tarafından çağrılır; username JWT'den alınır
@@ -592,28 +727,73 @@ function getLocalIps() {
 }
 
 // ── Başlat / durdur ───────────────────────────────────────────────────────────
-function start(port, sqliteDb) {
+async function start(port, sqliteDb, opts = {}) {
+  if (typeof opts.tlsOnly === "boolean") tlsOnlyMode = opts.tlsOnly;
+  if (muxServer) return { port: getPort(), ips: getLocalIps(), fp: certFp };
+  db = sqliteDb;
+  try { db?.pruneRateBuckets?.(Date.now()); } catch { /* bakım, önemsiz */ } // süresi dolmuş hız-sınırı kayıtlarını temizle
+
+  // TLS sertifikasını hazırla (yoksa üretilir). Başarısız olursa yalnız HTTP ile devam.
+  let tls = null;
+  try { tls = await serverTls.sertifikaUretVeyaYukle(electronApp); certFp = tls.fp; }
+  catch (e) { certFp = null; console.error("[server] TLS sertifikası hazırlanamadı, yalnız HTTP:", e.message); }
+
+  const expressApp = buildApp();
+  httpPlain = http.createServer(expressApp);
+  httpsSrv  = tls ? https.createServer({ key: tls.key, cert: tls.cert }, expressApp) : null;
+
   return new Promise((resolve, reject) => {
-    if (httpServer) { resolve({ port: getPort(), ips: getLocalIps() }); return; }
-    db = sqliteDb;
-    try { db?.pruneRateBuckets?.(Date.now()); } catch { /* bakım, önemsiz */ } // süresi dolmuş hız-sınırı kayıtlarını temizle
-    const expressApp = buildApp();
-    httpServer = expressApp.listen(port, "0.0.0.0", () => {
-      console.log(`Altunmak CRM Sunucu: http://0.0.0.0:${port}`);
-      resolve({ port: getPort(), ips: getLocalIps() });
+    // İlk bayta bakıp yönlendir: TLS ClientHello 0x16 (22) ile başlar.
+    muxServer = net.createServer((socket) => {
+      socket.once("data", (chunk) => {
+        const useTls = httpsSrv && chunk[0] === 0x16;
+        // Yalnız-HTTPS modunda dıştan gelen düz HTTP bağlantısı reddedilir (loopback muaf).
+        if (!useTls && tlsOnlyMode && !isLoopbackAddr(socket.remoteAddress)) { try { socket.destroy(); } catch { /* zaten kapalı */ } return; }
+        const target = useTls ? httpsSrv : httpPlain;
+        socket.pause();
+        socket.unshift(chunk);           // baytı akışa geri koy
+        target.emit("connection", socket); // ilgili sunucu bağlantıyı devralsın
+        process.nextTick(() => socket.resume());
+      });
+      socket.on("error", () => { try { socket.destroy(); } catch { /* zaten kapalı */ } });
     });
-    httpServer.on("error", (err) => { httpServer = null; reject(err); });
+    muxServer.on("error", (err) => { muxServer = null; reject(err); });
+    muxServer.listen(port, "0.0.0.0", () => {
+      console.log(`Altunmak CRM Sunucu: http(s)://0.0.0.0:${port} (TLS ${tls ? "açık" : "kapalı"})`);
+      resolve({ port: getPort(), ips: getLocalIps(), fp: certFp });
+    });
   });
 }
 
 function stop() {
   return new Promise((resolve) => {
-    if (!httpServer) { resolve(); return; }
-    httpServer.close(() => { httpServer = null; resolve(); });
+    const srv = muxServer;
+    muxServer = null;
+    try { httpPlain?.close?.(); } catch { /* dinlemiyordu */ }
+    try { httpsSrv?.close?.(); } catch { /* dinlemiyordu */ }
+    httpPlain = null; httpsSrv = null;
+    if (!srv) { resolve(); return; }
+    srv.close(() => resolve());
   });
 }
 
-function isRunning() { return httpServer !== null; }
-function getPort()   { return httpServer?.address()?.port ?? null; }
+function isRunning() { return muxServer !== null; }
+function getPort()   { return muxServer?.address()?.port ?? null; }
+function getCertFingerprint() { return certFp; }
+function getTlsOnly() { return tlsOnlyMode; }
+function setTlsOnly(v) { tlsOnlyMode = !!v; } // canlı etki eder (mux bağlantı anında okur)
 
-module.exports = { start, stop, isRunning, getPort, getLocalIps };
+// Sertifikayı yenile (parmak izi değişir). Çalışan sunucu eski sertifikayı kullanmaya
+// devam eder; çağıran, etkili olması için stop()+start() yapmalıdır.
+async function regenerateCert() {
+  const t = await serverTls.yenile(electronApp);
+  certFp = t.fp;
+  return certFp;
+}
+
+// db'yi sunucuyu BAŞLATMADAN bağla. setupAdmin, sunucuyu açmadan önce şifreyi authenticateLogin
+// ile doğrular (kademeli kilit + 2FA + kayıt). start() her çağrıldığında pruneRateBuckets çalışıp
+// henüz kilitlenmemiş kademeli sayacı sildiği için, doğrulamayı start ile yapmak kilidi bozuyordu.
+function attachDb(sqliteDb) { if (sqliteDb) db = sqliteDb; }
+
+module.exports = { start, stop, isRunning, getPort, getLocalIps, getCertFingerprint, getTlsOnly, setTlsOnly, regenerateCert, authenticateLogin, attachDb };

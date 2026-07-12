@@ -14,6 +14,7 @@ export const Customers = ({
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
   gorusmeler = [], setGorusmeler = null,
+  dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
@@ -411,7 +412,7 @@ export const Customers = ({
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a" }}>{title}</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{title}</h2>
         {canDo(isCustomer ? "cust_add" : "dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> {addLabel}</Btn>}
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
@@ -425,9 +426,9 @@ export const Customers = ({
           <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
             style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: listFilter === f.v ? "#e85d1a" : "#e2e8f0",
-              background: listFilter === f.v ? "#e85d1a" : "#fff",
-              color: listFilter === f.v ? "#fff" : "#64748b",
+              border: "1px solid", borderColor: listFilter === f.v ? "#e85d1a" : "var(--n200, #e2e8f0)",
+              background: listFilter === f.v ? "#e85d1a" : "var(--surface, #ffffff)",
+              color: listFilter === f.v ? "#fff" : "var(--n500, #64748b)",
             }}>
             {f.l} ({f.count})
           </button>
@@ -436,28 +437,28 @@ export const Customers = ({
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
             style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: groupByFirm ? "#3b82f6" : "#e2e8f0",
-              background: groupByFirm ? "#3b82f6" : "#fff",
-              color: groupByFirm ? "#fff" : "#64748b",
+              border: "1px solid", borderColor: groupByFirm ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)",
+              background: groupByFirm ? "var(--blu500, #3b82f6)" : "var(--surface, #ffffff)",
+              color: groupByFirm ? "#fff" : "var(--n500, #64748b)",
             }}>
             {groupByFirm ? "Firmaya Göre Gruplu" : "Firmaya Göre Grupla"}
           </button>
         )}
       </div>
       {groupByFirm && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#1e40af" }}>
+        <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "var(--blu800, #1e40af)" }}>
           Firmaya göre gruplu görünüm: <b>{filtered.length} firma</b> ({customers.length} makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.
         </div>
       )}
       <div style={{ position: "relative", marginBottom: 16 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={15} /></span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
-          style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid #e2e8f0", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "#f8fafc" }} />
+          style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)" }} />
       </div>
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
+            <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {[
                 { h: "Satın Alan", key: "name" },
                 { h: "Satış Yapan", key: null },
@@ -471,7 +472,7 @@ export const Customers = ({
                 { h: "", key: null },
               ].map(({ h, key }) => (
                 <th key={h || "actions"} onClick={key ? () => toggleSort(key) : undefined}
-                  style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: sortBy === key ? "#e85d1a" : "#475569", borderBottom: "1px solid #e2e8f0", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
+                  style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: sortBy === key ? "#e85d1a" : "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
                   {h}{key && sortBy === key && <span style={{ fontSize: 10, marginLeft: 4 }}>{sortDir === "asc" ? "▲" : "▼"}</span>}
                 </th>
               ))}
@@ -481,70 +482,70 @@ export const Customers = ({
             {paged.map(c => {
               const warrantyOk = c.warrantyEnd && c.warrantyEnd >= today();
               const warrantySoon = warrantyOk && c.warrantyEnd <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
-              const warrantyColor = !c.warrantyEnd ? "#cbd5e1" : !warrantyOk ? "#dc2626" : warrantySoon ? "#f59e0b" : "#16a34a";
+              const warrantyColor = !c.warrantyEnd ? "var(--n300, #cbd5e1)" : !warrantyOk ? "var(--red600, #dc2626)" : warrantySoon ? "#f59e0b" : "var(--grn600, #16a34a)";
               const hasKalanBorc = parseMoney(c.kalanBorc) > 0;
               const hasDebt = isCustomer && debtorIds.has(c.id);
               return (
-                <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9", background: hasDebt ? "#fef2f2" : undefined }}
+                <tr key={c.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: hasDebt ? "var(--redBg, #fef2f2)" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}
-                  onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "#fde8e8" : "#f8fafc"}
-                  onMouseLeave={e => e.currentTarget.style.background = hasDebt ? "#fef2f2" : ""}>
+                  onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "#fde8e8" : "var(--n100, #f8fafc)"}
+                  onMouseLeave={e => e.currentTarget.style.background = hasDebt ? "var(--redBg, #fef2f2)" : ""}>
                   <td style={{ padding: "13px 16px", cursor: "pointer" }}
                     onClick={() => setDetailViewId(c.id)}
                     title="Tüm bilgileri görüntüle">
                     {c.prevOwners?.length > 0 ? (
                       <>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: "#dc2626", textDecoration: "line-through", opacity: .85 }}>{c.prevOwners[0].name}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--red600, #dc2626)", textDecoration: "line-through", opacity: .85 }}>{c.prevOwners[0].name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: "#059669", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}>{c.name}</span>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--emerald, #059669)", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}>{c.name}</span>
                           {isCustomer && firmCount[trLower(c.name)] > 1 && (
-                            <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                           )}
                         </div>
                       </>
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "#e2e8f0" }}>{c.name}</span>
+                        <span style={{ fontWeight: 600, fontSize: 14, textDecoration: "underline", textDecorationColor: "var(--n200, #e2e8f0)" }}>{c.name}</span>
                         {isCustomer && firmCount[trLower(c.name)] > 1 && (
-                          <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                         )}
                         {isCustomer && taksitGecikmisMi(c) && (
-                          <span style={{ fontSize: 10, fontWeight: 800, background: "#fee2e2", color: "#b91c1c", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠ Taksit Gecikti</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠ Taksit Gecikti</span>
                         )}
                       </div>
                     )}
-                    {c.adres && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, maxWidth: 260, wordBreak: "break-word", overflowWrap: "break-word" }}>{c.adres}</div>}
+                    {c.adres && <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 2, maxWidth: 260, wordBreak: "break-word", overflowWrap: "break-word" }}>{c.adres}</div>}
                   </td>
-                  <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569" }}>{resolveSatisYapan(c.satisYapan, factory) || "—"}</td>
+                  <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n600, #475569)" }}>{resolveSatisYapan(c.satisYapan, factory) || "—"}</td>
                   <td style={{ padding: "13px 16px", fontSize: 13 }}>{c.country && c.city ? `${c.country} / ${c.city}` : c.city || c.country || "—"}</td>
-                  <td style={{ padding: "13px 16px" }}>{c.model ? <span style={{ fontSize: 12, background: "#fff7ed", color: "#c2410c", borderRadius: 6, padding: "2px 8px", fontWeight: 600 }}>{c.model}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>
-                  <td style={{ padding: "13px 16px", fontSize: 12, color: "#475569", fontFamily: "monospace" }}>
+                  <td style={{ padding: "13px 16px" }}>{c.model ? <span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "2px 8px", fontWeight: 600 }}>{c.model}</span> : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}</td>
+                  <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--n600, #475569)", fontFamily: "monospace" }}>
                     {c.serialNo
                       ? c.serialNo
                       : c.seriNoBekliyor
-                        ? <span style={{ fontFamily: "inherit", fontSize: 10, fontWeight: 800, background: "#fef3c7", color: "#b45309", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>seri no bekliyor</span>
+                        ? <span style={{ fontFamily: "inherit", fontSize: 10, fontWeight: 800, background: "var(--ambBg2, #fef3c7)", color: "var(--amb700, #b45309)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>seri no bekliyor</span>
                         : "—"}
                   </td>
-                  <td style={{ padding: "13px 16px", fontSize: 13, color: "#475569", textAlign: "center" }}>{kalipCount(c) || "—"}</td>
-                  <td style={{ padding: "13px 16px", fontSize: 12, color: "#475569" }}>{fmtKalipCapi(c.kalipCapi) || "—"}</td>
+                  <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n600, #475569)", textAlign: "center" }}>{kalipCount(c) || "—"}</td>
+                  <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--n600, #475569)" }}>{fmtKalipCapi(c.kalipCapi) || "—"}</td>
                   <td style={{ padding: "13px 16px" }}>
                     {c.warrantyEnd
-                      ? <span style={{ fontSize: 11, fontWeight: 600, color: warrantyOk ? (warrantySoon ? "#d97706" : "#059669") : "#dc2626", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      ? <span style={{ fontSize: 11, fontWeight: 600, color: warrantyOk ? (warrantySoon ? "var(--amb600, #d97706)" : "var(--emerald, #059669)") : "var(--red600, #dc2626)", display: "inline-flex", alignItems: "center", gap: 6 }}>
                           <span style={{ width: 9, height: 9, borderRadius: "50%", background: warrantyColor, flexShrink: 0 }}></span>
                           {fmtTR(c.warrantyEnd)}
                         </span>
-                      : <span style={{ color: "#cbd5e1" }}>—</span>}
+                      : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}
                   </td>
                   <td style={{ padding: "13px 16px" }}>
                     {c.faturali ? (() => {
                       const tip = normalizeSaleType(c.faturali);
-                      const stil = SALE_TYPE_STYLE[tip] || { bg: "#f1f5f9", fg: "#475569" };
+                      const stil = SALE_TYPE_STYLE[tip] || { bg: "var(--n150, #f1f5f9)", fg: "var(--n600, #475569)" };
                       return (
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: stil.bg, color: stil.fg }}>
                           {tip}
                         </span>
                       );
-                    })() : <span style={{ color: "#cbd5e1" }}>—</span>}
+                    })() : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}
                   </td>
                   <td style={{ padding: "13px 16px" }}>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -557,13 +558,14 @@ export const Customers = ({
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>{emptyLabel}</div>}
+        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{emptyLabel}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </div>
 
       {detailView && (
         <CustomerDetailModal
           gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
+          dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
           detailView={detailView}
           onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
           onSwitchMachine={setDetailViewId}

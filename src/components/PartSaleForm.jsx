@@ -28,42 +28,42 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "#fff7ed" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{selectedCust.name}</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
+              <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>
                 {selectedCust.model || "Model yok"} {selectedCust.serialNo ? `· S/N: ${selectedCust.serialNo}` : ""}
               </div>
             </div>
             <button onClick={() => { setForm(p => ({ ...p, customerId: "" })); setCustSearch(""); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}>
               <Icon name="close" size={14} />
             </button>
           </div>
         ) : (
           <div>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
               <input autoFocus value={custSearch} onChange={e => setCustSearch(e.target.value)}
                 placeholder="Firma adı, model veya seri no ile ara..."
-                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, background: "#f8fafc", boxSizing: "border-box", outline: "none" }} />
+                style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box", outline: "none" }} />
             </div>
             {custSearch.trim() && (
-              <div style={{ marginTop: 6, border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ marginTop: 6, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
                 {matchedCustomers.map(c => (
                   <div key={c.id}
                     onClick={() => { setForm(p => ({ ...p, customerId: c.id })); setCustSearch(""); }}
-                    style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: "#fff" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fff7ed"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                    style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", background: "var(--surface, #ffffff)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "var(--surface, #ffffff)"}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                    <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>
                       {c.model ? c.model : "Model yok"} {c.serialNo ? `· ${c.serialNo}` : ""}
                     </div>
                   </div>
                 ))}
                 {matchedCustomers.length === 0 && (
-                  <div style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8" }}>Müşteri bulunamadı.</div>
+                  <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--n400, #94a3b8)" }}>Müşteri bulunamadı.</div>
                 )}
               </div>
             )}
@@ -76,7 +76,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {!isEdit && (
         <Field label="Kalıp Ekle">
           {kalipDefs.length === 0 ? (
-            <div style={{ fontSize: 11, color: "#dc2626" }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>
+            <div style={{ fontSize: 11, color: "var(--red600, #dc2626)" }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>
           ) : (
             // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
             <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."
@@ -105,7 +105,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         <Field label={isEdit ? "Kalıp Ölçüsü ve Fiyatı" : `Seçilen Kalıplar (${kaliplar.length})`}>
           {kaliplar.map((k, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr auto" : "1fr 110px 110px auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
-              {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "#c2410c" }}>{k.ad}</span>}
+              {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--orTx, #c2410c)" }}>{k.ad}</span>}
               <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm"
                 onChange={e => setForm(prev => {
                   const arr = [...(prev.kaliplar || [])];
@@ -118,7 +118,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                   arr[i] = { ...arr[i], fiyat: v };
                   return { ...prev, kaliplar: arr };
                 })} />
-              <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "#475569", cursor: "pointer" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
                 <input type="checkbox" checked={!!k.uretimFormGonder}
                   onChange={e => setForm(prev => {
                     const arr = [...(prev.kaliplar || [])];
@@ -131,7 +131,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
               {!isEdit && (
                 <button type="button" title="Bu kalıbı kaldır"
                   onClick={() => setForm(prev => ({ ...prev, kaliplar: (prev.kaliplar || []).filter((_, idx) => idx !== i) }))}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
               )}
             </div>
           ))}
@@ -154,16 +154,16 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
             <option value="EUR">€ Euro (EUR)</option>
           </Select>
           {(form.currency || "TRY") !== "TRY" && (
-            <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+            <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg2, #dbeafe)", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
           )}
         </Field>
       )}
 
       {/* Ödeme durumu */}
       {selectedCust && kaliplarToplam > 0 && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "#f0fdf4" : "#fffbeb", border: `1px solid ${form.odendi ? "#bbf7d0" : "#fde68a"}`, borderRadius: 8, padding: "10px 12px", marginTop: 8 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#16a34a" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "#15803d" : "#92400e" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginTop: 8 }}>
+          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
             {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
           </span>
         </label>
@@ -171,16 +171,16 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
 
       {/* Kalıp fiyatları toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}
       {kaliplarToplam > 0 && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
+        <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
           {(() => {
             const kdv = calcKDV(form.faturaTipi, kaliplarToplam, form.tarih, kdvRates);
             return (
               <>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   Toplam: {fmtCur(kaliplarToplam, form.currency || "TRY")}
                 </span>
                 {kdv > 0 && (
-                  <div style={{ fontSize: 12, color: "#065f46", marginTop: 6, fontWeight: 600 }}>
+                  <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.tarih, kdvRates)}): {fmtCur(kdv, form.currency || "TRY")} · KDV dahil toplam: {fmtCur(kaliplarToplam + kdv, form.currency || "TRY")}
                   </div>
                 )}

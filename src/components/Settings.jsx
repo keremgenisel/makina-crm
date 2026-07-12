@@ -24,10 +24,11 @@ import { SettingsDanger } from "./settings/SettingsDanger";
 import { SettingsDocuments } from "./settings/SettingsDocuments";
 import { SettingsAuditLog } from "./settings/SettingsAuditLog";
 import { SettingsSecurityLog } from "./settings/SettingsSecurityLog";
+import { SettingsSecurityStatus } from "./settings/SettingsSecurityStatus";
 
 const SETTINGS_GROUPS = [
   { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
-  { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }] },
+  { grup: "Güvenlik", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
@@ -38,7 +39,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
-  rawGorusmeler, setGorusmeler, rawUretimFormlari = [], setUretimFormlari = null,
+  rawGorusmeler, setGorusmeler, rawDosyalar = [], setDosyalar = null, rawUretimFormlari = [], setUretimFormlari = null,
   serverPermissions = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
 }) => {
@@ -56,53 +57,77 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   })).filter(g => g.items.length > 0);
   const canSeeDanger = isAdmin || !clientVisible || clientVisible.includes("danger");
 
+  // Sol menü grupları açılır-kapanır akordeon: aynı anda tek grup açık; aktif sekmenin grubu başta açık.
+  const grupAdi = (tabId) => SETTINGS_GROUPS.find(g => g.items.some(i => i.id === tabId))?.grup ?? null;
+  const [openGroup, setOpenGroup] = useState(() => grupAdi("app"));
+  const toggleGroup = (grup) => setOpenGroup(cur => (cur === grup ? null : grup));
+
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "#0f172a" }}>Ayarlar</h2>
+      <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Ayarlar</h2>
 
       <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
         {/* SOL DİKEY MENÜ — gruplu */}
         <div style={{ width: 220, flexShrink: 0, minWidth: 200 }}>
-          {visibleGroups.map(g => (
-            <div key={g.grup} style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>{g.grup}</div>
-              {g.items.map(st => {
-                const active = settingsTab === st.id;
-                return (
-                  <button key={st.id} onClick={() => setSettingsTab(st.id)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-                      padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
-                      border: "none", marginBottom: 4,
-                      background: active ? "#e85d1a" : "transparent",
-                      color: active ? "#fff" : "#475569",
-                      boxShadow: active ? "0 2px 8px rgba(232,93,26,.3)" : "none",
-                      transition: "background .15s",
-                    }}>
-                    <Icon name={st.icon} size={16} />
-                    {st.label}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          {visibleGroups.map(g => {
+            const groupOpen = openGroup === g.grup;
+            return (
+              <div key={g.grup} style={{ marginBottom: 8 }}>
+                <button onClick={() => toggleGroup(g.grup)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+                    background: "transparent", border: "none", cursor: "pointer", padding: "6px 6px", marginBottom: 4,
+                  }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 }}>{g.grup}</span>
+                  <span style={{ fontSize: 10, color: "var(--n400, #94a3b8)" }}>{groupOpen ? "▾" : "▸"}</span>
+                </button>
+                {groupOpen && g.items.map(st => {
+                  const active = settingsTab === st.id;
+                  return (
+                    <button key={st.id} onClick={() => setSettingsTab(st.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                        padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                        border: "none", marginBottom: 4,
+                        background: active ? "#e85d1a" : "transparent",
+                        color: active ? "#fff" : "var(--n600, #475569)",
+                        boxShadow: active ? "0 2px 8px rgba(232,93,26,.3)" : "none",
+                        transition: "background .15s",
+                      }}>
+                      <Icon name={st.icon} size={16} />
+                      {st.label}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
 
-          {/* Tehlikeli Bölge — en altta, kırmızı */}
-          {canSeeDanger && <div style={{ marginTop: 8, borderTop: "1.5px solid #fecaca", paddingTop: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase", letterSpacing: .6, marginBottom: 8, paddingLeft: 6 }}>Tehlikeli Bölge</div>
-            <button onClick={() => setSettingsTab("danger")}
+          {/* Tehlikeli Bölge — akordeon içinde, en altta, kırmızı */}
+          {canSeeDanger && <div style={{ marginTop: 8, borderTop: "1.5px solid var(--redBr, #fecaca)", paddingTop: 8 }}>
+            <button onClick={() => toggleGroup("Tehlikeli Bölge")}
               style={{
-                display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-                padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
-                border: "none", marginBottom: 4,
-                background: settingsTab === "danger" ? "#fef2f2" : "transparent",
-                color: settingsTab === "danger" ? "#b91c1c" : "#ef4444",
-                boxShadow: settingsTab === "danger" ? "0 2px 8px rgba(239,68,68,.2)" : "none",
-                transition: "background .15s",
+                display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+                background: "transparent", border: "none", cursor: "pointer", padding: "6px 6px", marginBottom: 4,
               }}>
-              <Icon name="trash" size={16} />
-              Uygulamayı Kaldır
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#f87171", textTransform: "uppercase", letterSpacing: .6 }}>Tehlikeli Bölge</span>
+              <span style={{ fontSize: 10, color: "#f87171" }}>{openGroup === "Tehlikeli Bölge" ? "▾" : "▸"}</span>
             </button>
+            {openGroup === "Tehlikeli Bölge" && (
+              <button onClick={() => setSettingsTab("danger")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                  padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  border: "none", marginBottom: 4,
+                  background: settingsTab === "danger" ? "var(--redBg, #fef2f2)" : "transparent",
+                  color: settingsTab === "danger" ? "var(--red700, #b91c1c)" : "var(--red500, #ef4444)",
+                  boxShadow: settingsTab === "danger" ? "0 2px 8px rgba(239,68,68,.2)" : "none",
+                  transition: "background .15s",
+                }}>
+                <Icon name="trash" size={16} />
+                Uygulamayı Kaldır
+              </button>
+            )}
           </div>}
         </div>
 
@@ -110,7 +135,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "yedekparca") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
-          background: msg.type === "ok" ? "#d1fae5" : "#fee2e2", color: msg.type === "ok" ? "#065f46" : "#991b1b" }}>
+          background: msg.type === "ok" ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", color: msg.type === "ok" ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)" }}>
           {msg.text}
         </div>
       )}
@@ -133,6 +158,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         />
       )}
 
+      {settingsTab === "securitystatus" && <SettingsSecurityStatus />}
       {settingsTab === "security" && <SettingsSecurity flash={flash} appSettings={appSettings} setAppSettings={setAppSettings} />}
       {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} />}
       {settingsTab === "securitylog" && isAdmin && <SettingsSecurityLog serverPermissions={serverPermissions} flash={flash} />}
@@ -145,7 +171,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "models" && (
         <Section title="Makina Modelleri" icon="machine">
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
             Buradaki modeller, Yeni Müşteri ve Makina Geçmişi ekranlarındaki model seçiminde görünür.
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
@@ -156,7 +182,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "kaliplar" && (
         <Section title="Kalıp Modelleri" icon="box">
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
             Buraya eklediğiniz kalıplar, Yeni Müşteri ekranındaki <b>Kalıp</b> seçiminde listelenir. Ölçü, müşteri eklerken elle girilir.
           </div>
           <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
@@ -165,7 +191,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "yedekparca" && (
         <Section title="Parça/Yedek Parça Tanımları" icon="parts" wide>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
@@ -193,7 +219,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
-         gorusmeler={rawGorusmeler}/>
+         gorusmeler={rawGorusmeler} serverPermissions={serverPermissions}/>
       )}
 
       {settingsTab === "import" && (
@@ -223,7 +249,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           setTeklifler={setTeklifler} setFaturalar={setFaturalar} setUretimFormlari={setUretimFormlari}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
-         rawGorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}/>
+         rawGorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
+         rawDosyalar={rawDosyalar} setDosyalar={setDosyalar}/>
       )}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}

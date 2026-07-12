@@ -6,6 +6,7 @@ export const ACTION_LABELS = {
   kullanici_eklendi: "Kullanıcı Eklendi", kullanici_silindi: "Kullanıcı Silindi",
   kullanici_guncellendi: "Kullanıcı Güncellendi",
   "2fa_acildi": "2FA Açıldı", "2fa_kapatildi": "2FA Kapatıldı", "2fa_sifirlandi": "2FA Sıfırlandı",
+  oturumlar_kapatildi: "Oturumlar Kapatıldı",
   uygulama_kilidi_basarili: "Uygulama Kilidi Açıldı", uygulama_kilidi_basarisiz: "Uygulama Kilidi Başarısız",
   gecmis_temizlendi: "Geçmiş Temizlendi",
 };
@@ -148,14 +149,14 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
   const hasActiveFilter = activeFilters.fQ || activeFilters.fActor || activeFilters.fAction || activeFilters.fDateFrom || activeFilters.fDateTo;
-  const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid #e2e8f0", background: "#f8fafc", outline: "none" };
-  const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" };
-  const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
+  const inp = { padding: "8px 12px", fontSize: 13, borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", outline: "none" };
+  const thStyle = { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "2px solid var(--n200, #e2e8f0)", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "9px 12px", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)", verticalAlign: "middle" };
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Kullanıcı Geçmişi</h3>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Kullanıcı Geçmişi</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="ghost" onClick={yenile}><Icon name="refresh" size={14} /> Yenile</Btn>
           <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
@@ -164,7 +165,7 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
           </Btn>
         </div>
       </div>
-      <div style={{ fontSize: 12.5, color: "#64748b", marginBottom: 14 }}>
+      <div style={{ fontSize: 12.5, color: "var(--n500, #64748b)", marginBottom: 14 }}>
         Giriş denemeleri (başarılı/başarısız), kullanıcı yönetimi, iki adımlı doğrulama ve uygulama kilidi olayları. Şifreler asla kaydedilmez.
       </div>
 
@@ -178,7 +179,7 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
         <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
           <input value={fQ} onChange={e => setFQ(e.target.value)} onKeyDown={onKeyDown} placeholder="Ara: kullanıcı, IP, detay..." style={{ ...inp, width: "100%", boxSizing: "border-box", paddingLeft: 32 }} />
         </div>
         <input value={fActor} onChange={e => setFActor(e.target.value)} onKeyDown={onKeyDown} placeholder="Yapan (kullanıcı/cihaz)" style={{ ...inp, width: "100%", boxSizing: "border-box" }} />
@@ -189,26 +190,26 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
-        <span style={{ color: "#94a3b8", fontSize: 13 }}>…</span>
+        <span style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>…</span>
         <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
         <Btn onClick={applyFilters}>Ara</Btn>
         {hasActiveFilter && <Btn variant="ghost" onClick={resetFilters}>Sıfırla</Btn>}
       </div>
 
       {loadErr && (
-        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fee2e2", color: "#991b1b", fontSize: 13, fontWeight: 600 }}>
+        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "var(--redBg2, #fee2e2)", color: "var(--red800, #991b1b)", fontSize: 13, fontWeight: 600 }}>
           Yükleme hatası: {loadErr}
         </div>
       )}
       {loading ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Yükleniyor...</div>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 14 }}>Yükleniyor...</div>
       ) : rows.length === 0 ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>Kayıt bulunamadı.</div>
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 14 }}>Kayıt bulunamadı.</div>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", background: "var(--surface, #ffffff)", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 <th style={thStyle}>Zaman</th>
                 <th style={thStyle}>Yapan</th>
                 <th style={thStyle}>Eylem</th>
@@ -220,11 +221,11 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
             <tbody>
               {rows.map(r => (
                 <tr key={r.id}>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "#64748b", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
                   <td style={{ ...tdStyle, fontWeight: 600, maxWidth: 200 }}>
                     <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.actor || "—"}</div>
                     {appLockMi(r.action) && r.target && (
-                      <div style={{ fontSize: 11, fontWeight: 500, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: "var(--n500, #64748b)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         kullanıcı: {r.target}
                       </div>
                     )}
@@ -232,16 +233,16 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
                   <td style={tdStyle}>
                     <span style={{
                       display: "inline-block", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
-                      background: basarisizMi(r.action) ? "#fee2e2" : basariliMi(r.action) ? "#d1fae5" : "#f1f5f9",
-                      color: basarisizMi(r.action) ? "#b91c1c" : basariliMi(r.action) ? "#065f46" : "#475569",
+                      background: basarisizMi(r.action) ? "var(--redBg2, #fee2e2)" : basariliMi(r.action) ? "var(--grnBg3, #d1fae5)" : "var(--n150, #f1f5f9)",
+                      color: basarisizMi(r.action) ? "var(--red700, #b91c1c)" : basariliMi(r.action) ? "var(--grn800, #065f46)" : "var(--n600, #475569)",
                       whiteSpace: "nowrap",
                     }}>
                       {ACTION_LABELS[r.action] || r.action}
                     </span>
                   </td>
-                  <td style={{ ...tdStyle, color: "#475569", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLockMi(r.action) ? "—" : (r.target || "—")}</td>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "#64748b", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap" }}>{r.ip || "—"}</td>
-                  <td style={{ ...tdStyle, fontSize: 12, color: "#94a3b8", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detayGoster(r)}</td>
+                  <td style={{ ...tdStyle, color: "var(--n600, #475569)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLockMi(r.action) ? "—" : (r.target || "—")}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap" }}>{r.ip || "—"}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n400, #94a3b8)", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{detayGoster(r)}</td>
                 </tr>
               ))}
             </tbody>
@@ -251,9 +252,9 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
 
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 14 }}>
-          <button onClick={() => go(page - 1)} disabled={page <= 1} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #e2e8f0", background: page <= 1 ? "#f8fafc" : "#fff", color: page <= 1 ? "#cbd5e1" : "#475569", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>‹</button>
-          <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{page} / {totalPages} ({total} kayıt)</span>
-          <button onClick={() => go(page + 1)} disabled={page >= totalPages} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #e2e8f0", background: page >= totalPages ? "#f8fafc" : "#fff", color: page >= totalPages ? "#cbd5e1" : "#475569", cursor: page >= totalPages ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>›</button>
+          <button onClick={() => go(page - 1)} disabled={page <= 1} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: page <= 1 ? "var(--n100, #f8fafc)" : "var(--surface, #ffffff)", color: page <= 1 ? "var(--n300, #cbd5e1)" : "var(--n600, #475569)", cursor: page <= 1 ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>‹</button>
+          <span style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 600 }}>{page} / {totalPages} ({total} kayıt)</span>
+          <button onClick={() => go(page + 1)} disabled={page >= totalPages} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--n200, #e2e8f0)", background: page >= totalPages ? "var(--n100, #f8fafc)" : "var(--surface, #ffffff)", color: page >= totalPages ? "var(--n300, #cbd5e1)" : "var(--n600, #475569)", cursor: page >= totalPages ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600 }}>›</button>
         </div>
       )}
     </div>

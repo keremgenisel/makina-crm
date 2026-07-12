@@ -25,6 +25,24 @@ export function logAction({ serverPermissions, action, entity, entityId, entityN
   } catch { return undefined; }
 }
 
+// E-posta gönderimini İşlem Geçmişi'ne (audit) yazan ortak sarmalayıcı. Başarılı gönderimde
+// "eposta_gonderildi" kaydı düşer; istemci modunda logAction bunu /api/audit ile sunucuya yollar
+// (admin, istemcilerin gönderdiği e-postaları merkezi görür). Başarısız/iptalde kayıt yazılmaz.
+// E-posta günlüğünün kendisi hâlâ yerel (email-log.json); bu yalnız "kim/kime/ne zaman" izidir.
+export async function sendMailLogged(payload, serverPermissions) {
+  const res = await window.appMail?.send?.(payload);
+  if (res?.ok) {
+    logAction({
+      serverPermissions,
+      action: "eposta_gonderildi",
+      entity: "eposta",
+      entityName: payload?.to || payload?.subject || "",
+      detail: { tur: payload?.type || "", konu: payload?.subject || "", alici: payload?.to || "" },
+    });
+  }
+  return res;
+}
+
 // Geri alma için düzenleme ÖNCESİ kaydın anlık görüntüsü (detail.onceki'ye konur).
 // Base64 resim taşıyan dev kayıtlar audit'i şişirmesin: ~200KB üstü anlık görüntü atlanır
 // (o kayıt için "Öncesi/Geri Al" görünmez, diğer her şey normal loglanır).

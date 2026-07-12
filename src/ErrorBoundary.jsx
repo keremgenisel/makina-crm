@@ -45,13 +45,13 @@ export class ErrorBoundary extends Component {
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#f8fafc", fontFamily: "system-ui, sans-serif", padding: 24 }}>
-        <div style={{ background: "#fff", borderRadius: 14, padding: 32, maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,.15)", textAlign: "center" }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>Beklenmeyen bir hata oluştu</div>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 22, lineHeight: 1.6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--n100, #f8fafc)", fontFamily: "system-ui, sans-serif", padding: 24 }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, padding: 32, maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,.15)", textAlign: "center" }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 10 }}>Beklenmeyen bir hata oluştu</div>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 22, lineHeight: 1.6 }}>
             Uygulama bu ekranda bir sorunla karşılaştı. Verileriniz diskte güvende — aşağıdaki butonla yeniden başlatabilirsiniz.
           </div>
-          <div style={{ fontSize: 12, color: "#94a3b8", background: "#f8fafc", borderRadius: 8, padding: "10px 12px", marginBottom: 22, textAlign: "left", overflowX: "auto" }}>
+          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", background: "var(--n100, #f8fafc)", borderRadius: 8, padding: "10px 12px", marginBottom: 22, textAlign: "left", overflowX: "auto" }}>
             {String(this.state.error?.message || this.state.error)}
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
@@ -60,12 +60,12 @@ export class ErrorBoundary extends Component {
               Yeniden Başlat
             </button>
             <button onClick={this.sendReport} disabled={this.state.sending}
-              style={{ background: "#fff", color: "#475569", border: "1px solid #e2e8f0", padding: "10px 22px", borderRadius: 8, cursor: this.state.sending ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600, opacity: this.state.sending ? .6 : 1 }}>
+              style={{ background: "var(--surface, #ffffff)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)", padding: "10px 22px", borderRadius: 8, cursor: this.state.sending ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600, opacity: this.state.sending ? .6 : 1 }}>
               {this.state.sending ? "Gönderiliyor..." : "Hata Raporu Gönder"}
             </button>
           </div>
           {this.state.reportStatus && (
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 14 }}>{this.state.reportStatus}</div>
+            <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 14 }}>{this.state.reportStatus}</div>
           )}
         </div>
       </div>

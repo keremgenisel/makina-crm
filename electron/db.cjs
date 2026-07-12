@@ -3,13 +3,22 @@
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
-const { app } = require("electron");
+const { app, safeStorage } = require("electron");
 
+// Şifreli-yetenekli sürüm (better-sqlite3-multiple-ciphers, SQLCipher uyumlu) önce denenir;
+// yoksa şifrelemesiz better-sqlite3'e düşülür. API aynıdır (drop-in).
 let Database = null;
+let dbEncryptable = false; // true → şifreli-yetenekli build yüklendi
 try {
-  Database = require("better-sqlite3");
-} catch (err) {
-  console.error("better-sqlite3 yüklenemedi, eski JSON depolamaya devam ediliyor:", err);
+  Database = require("better-sqlite3-multiple-ciphers");
+  dbEncryptable = true;
+} catch (errMc) {
+  try {
+    Database = require("better-sqlite3");
+    console.warn("better-sqlite3-multiple-ciphers yok; şifrelemesiz better-sqlite3 kullanılıyor:", errMc.message);
+  } catch (err) {
+    console.error("SQLite native modülü yüklenemedi, eski JSON depolamaya devam ediliyor:", err);
+  }
 }
 
 let db = null;
@@ -20,6 +29,60 @@ const getDbPath = () => path.join(app.getPath("userData"), "data.db");
 const getTmpDbPath = () => path.join(app.getPath("userData"), "data.db.tmp-migrating");
 const getMigratedBackupPath = () => path.join(app.getPath("userData"), "data.migrated-backup.json");
 const getFailMarkerPath = () => path.join(app.getPath("userData"), "data.migration-failed.json");
+const getDbKeyPath = () => path.join(app.getPath("userData"), "db-key.enc");
+
+// ── Veritabanı şifreleme anahtarı (at-rest) ──────────────────────────────────
+// DB, AES ile şifreli tutulur (SQLCipher uyumlu). Anahtar OS anahtarlığında (safeStorage:
+// Windows DPAPI / macOS Keychain) şifreli bir dosyada durur; ne DB'de ne düz dosyada bırakılır.
+// safeStorage yoksa (nadir) şifreleme devre dışı kalır ve DB düz kalır (eski davranış) —
+// anahtarı güvenli saklayamadan şifrelemek yanıltıcı olurdu.
+let cachedDbKey; // undefined: hesaplanmadı, null: şifreleme yok, string: anahtar
+function getDbKey() {
+  if (cachedDbKey !== undefined) return cachedDbKey;
+  if (!dbEncryptable) return (cachedDbKey = null);
+  let canEncrypt = false;
+  try { canEncrypt = !!safeStorage?.isEncryptionAvailable?.(); } catch { canEncrypt = false; }
+  if (!canEncrypt) return (cachedDbKey = null);
+  const p = getDbKeyPath();
+  try {
+    if (fs.existsSync(p)) return (cachedDbKey = safeStorage.decryptString(fs.readFileSync(p)));
+  } catch (e) { console.error("[db] şifreleme anahtarı okunamadı:", e.message); }
+  const key = crypto.randomBytes(32).toString("hex");
+  try { fs.writeFileSync(p, safeStorage.encryptString(key)); cachedDbKey = key; }
+  catch (e) { console.error("[db] anahtar kaydedilemedi, şifreleme devre dışı:", e.message); cachedDbKey = null; }
+  return cachedDbKey;
+}
+
+// Şifreli-yetenekli açılış: anahtar varsa PRAGMA key uygular (yeni dosyayı şifreli oluşturur,
+// var olan şifreliyi açar). Anahtar hex olduğundan enjeksiyon riski yok.
+function openDb(dbPath) {
+  const conn = new Database(dbPath);
+  const key = getDbKey();
+  if (key) conn.pragma(`key='${key}'`);
+  return conn;
+}
+
+// Var olan DÜZ bir data.db'yi yerinde şifreler (tek seferlik geçiş). Zaten şifreliyse dokunmaz.
+function ensureEncrypted(dbPath) {
+  const key = getDbKey();
+  if (!key) return; // şifreleme kapalı → düz kalır (eski davranış)
+  const conn = new Database(dbPath);
+  let plaintext = false;
+  try { conn.prepare("SELECT count(*) FROM sqlite_master").get(); plaintext = true; } // anahtarsız okunabiliyorsa düz
+  catch { plaintext = false; } // okunamadı → zaten şifreli (ya da bozuk; açılış aşaması ele alır)
+  try {
+    if (plaintext) {
+      try { fs.copyFileSync(dbPath, dbPath + ".pre-encrypt.bak"); } catch { /* yedek başarısız → yine de dene */ }
+      // rekey WAL journal modunda desteklenmiyor ("Rekeying is not supported in WAL journal mode").
+      // Önce rollback journal'a geç (bu WAL'ı checkpoint'ler); rekey sonrası açılışta openDb + WAL geri döner.
+      try { conn.pragma("journal_mode = DELETE"); } catch { /* yoksay */ }
+      conn.pragma(`rekey='${key}'`); // yerinde şifrele
+      console.log("[db] mevcut veritabanı at-rest şifrelendi.");
+    }
+  } finally {
+    try { conn.close(); } catch { /* yoksay */ }
+  }
+}
 
 const SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
@@ -53,6 +116,16 @@ CREATE TABLE IF NOT EXISTS gorusmeler (
 );
 CREATE INDEX IF NOT EXISTS idx_gorusmeler_customer ON gorusmeler(customer_id);
 
+CREATE TABLE IF NOT EXISTS dosyalar (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER REFERENCES customers(id),
+  dealer_id INTEGER,
+  refType TEXT, refId INTEGER,
+  ad TEXT, dosyaAdi TEXT, boyut INTEGER, tur TEXT,
+  tarih TEXT, ekleyen TEXT, aciklama TEXT, deletedAt TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_dosyalar_customer ON dosyalar(customer_id);
+
 CREATE TABLE IF NOT EXISTS customer_kaliplar (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER NOT NULL REFERENCES customers(id),
@@ -81,7 +154,7 @@ CREATE TABLE IF NOT EXISTS stock (
   id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT
 );
 
-CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, deletedAt TEXT);
+CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
 CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, models TEXT, deletedAt TEXT, tip TEXT, resim TEXT);
 
 CREATE TABLE IF NOT EXISTS part_stock (
@@ -249,6 +322,8 @@ const CUSTOMERS_ODEME_PLANI_COLUMN = [["odemePlani", "TEXT"]];
 const TEKLIFLER_TAKIP_COLUMN = [["takipKapali", "INTEGER"]];
 const CUSTOMERS_BANTLAR_COLUMN = [["bantlar", "TEXT"]];
 const CUSTOMERS_BRUT_KG_COLUMN = [["brutKg", "REAL"]]; // sandık etiketi brüt ağırlık
+const DOSYALAR_DEALER_COLUMN = [["dealer_id", "INTEGER"]]; // bayi/anlaşmalı servis dosyaları için
+const NOTES_OLUSTURAN_COLUMN = [["olusturan", "TEXT"]]; // notu oluşturan kullanıcı adı (çok kullanıcıda "Benim Notlarım" filtresi)
 const CUSTOMERS_PART_SECIMLERI_COLUMNS = [["konveyorSacId", "TEXT"], ["bantSecimiId", "TEXT"]];
 const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
@@ -275,7 +350,7 @@ const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "teklifler", "faturalar"];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -323,6 +398,7 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM part_sales`).run();
     conn.prepare(`DELETE FROM payments`).run();
     conn.prepare(`DELETE FROM gorusmeler`).run();
+    conn.prepare(`DELETE FROM dosyalar`).run();
     conn.prepare(`DELETE FROM customer_kaliplar`).run();
     conn.prepare(`DELETE FROM customers`).run();
     for (const c of data.customers) {
@@ -407,6 +483,14 @@ function populateAll(conn, data, skip = new Set()) {
     }
   }
 
+  if (Array.isArray(data.dosyalar) && !skip.has("dosyalar")) {
+    conn.prepare(`DELETE FROM dosyalar`).run();
+    const stmt = conn.prepare(`INSERT INTO dosyalar (id, customer_id, dealer_id, refType, refId, ad, dosyaAdi, boyut, tur, tarih, ekleyen, aciklama, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const d of data.dosyalar) {
+      stmt.run(d.id, d.customerId ?? null, d.dealerId ?? null, d.refType ?? null, d.refId ?? null, d.ad ?? null, d.dosyaAdi ?? null, d.boyut ?? null, d.tur ?? null, d.tarih ?? null, d.ekleyen ?? null, d.aciklama ?? null, d.deletedAt ?? null);
+    }
+  }
+
   if (Array.isArray(data.dealers) && !skip.has("dealers")) {
     conn.prepare(`DELETE FROM dealers`).run();
     const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note, bayiMi, anlasmaliServisMi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -421,8 +505,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.notes) && !skip.has("notes")) {
     conn.prepare(`DELETE FROM notes`).run();
-    const stmt = conn.prepare(`INSERT INTO notes (id, content, updatedAt, deletedAt) VALUES (?, ?, ?, ?)`);
-    for (const n of data.notes) stmt.run(n.id, n.content ?? null, n.updatedAt ?? null, n.deletedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO notes (id, content, updatedAt, olusturan, deletedAt) VALUES (?, ?, ?, ?, ?)`);
+    for (const n of data.notes) stmt.run(n.id, n.content ?? null, n.updatedAt ?? null, n.olusturan ?? null, n.deletedAt ?? null);
   }
 
   if (Array.isArray(data.parts) && !skip.has("parts")) {
@@ -564,6 +648,8 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "users", USERS_TOTP_COLUMNS);
   ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_DONEM_COLUMNS);
   ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
+  ensureColumns(conn, "dosyalar", DOSYALAR_DEALER_COLUMN);
+  ensureColumns(conn, "notes", NOTES_OLUSTURAN_COLUMN);
 }
 
 function migrateFromJsonIfNeeded() {
@@ -572,7 +658,8 @@ function migrateFromJsonIfNeeded() {
   const dbPath = getDbPath();
   if (fs.existsSync(dbPath)) {
     try {
-      db = new Database(dbPath);
+      ensureEncrypted(dbPath); // düz (eski) DB ise yerinde şifrele; zaten şifreliyse dokunmaz
+      db = openDb(dbPath);     // anahtar varsa PRAGMA key ile açar
       db.pragma("journal_mode = WAL");
       db.pragma("foreign_keys = ON");
       // Sonradan eklenen yeni tabloları oluşturur (CREATE TABLE IF NOT EXISTS idempotent — var olanları bozmaz).
@@ -581,6 +668,9 @@ function migrateFromJsonIfNeeded() {
       pruneAuditLog(db);
       pruneSecurityLog(db);
       active = true;
+      // Şifreli DB sağlıkla açıldı → migration'ın bıraktığı DÜZ yedeği sil (at-rest sızmasın).
+      // Yalnız bu açılış başarısız olursa (crash) yedek kalır ve bir sonraki denemede kurtarır.
+      try { fs.rmSync(dbPath + ".pre-encrypt.bak", { force: true }); } catch { /* yoktu */ }
     } catch (err) {
       console.error("SQLite açılamadı, JSON moduna geçiliyor:", err);
       try { db?.close(); } catch { /* yoksay */ }
@@ -596,7 +686,7 @@ function migrateFromJsonIfNeeded() {
   if (!fs.existsSync(jsonPath)) {
     // Temiz kurulum: boş şema oluştur + sonradan eklenen sütunları da uygula
     // (yoksa ilk oturumda yeni sütunlar eksik kalır, kayıt yazma çöker).
-    const conn = new Database(dbPath);
+    const conn = openDb(dbPath); // yeni dosya anahtar varsa şifreli oluşturulur
     conn.pragma("foreign_keys = ON");
     conn.exec(SCHEMA_SQL);
     applyColumnMigrations(conn);
@@ -632,7 +722,7 @@ function migrateFromJsonIfNeeded() {
 
   let conn;
   try {
-    conn = new Database(tmpPath);
+    conn = openDb(tmpPath); // yeni dosya anahtar varsa şifreli oluşturulur
     conn.pragma("journal_mode = WAL");
     conn.exec(SCHEMA_SQL);
     applyColumnMigrations(conn); // populateAll yeni sütunlara yazdığı için geçişten ÖNCE şart
@@ -642,7 +732,7 @@ function migrateFromJsonIfNeeded() {
     fs.renameSync(tmpPath, dbPath);
     fs.renameSync(jsonPath, getMigratedBackupPath());
 
-    db = new Database(dbPath);
+    db = openDb(dbPath);
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
     active = true;
@@ -657,6 +747,21 @@ function migrateFromJsonIfNeeded() {
 }
 
 function isActive() { return active; }
+
+// Bağlantıyı kapat (temiz kapanış / test için). Sonraki migrateFromJsonIfNeeded yeniden açar.
+function close() { try { db?.close(); } catch { /* zaten kapalı */ } db = null; active = false; }
+
+// Güvenlik Durumu paneli için: veritabanı at-rest şifreli mi?
+// encrypted: bu oturumda DB gerçekten şifreli açıldı mı. canEncrypt: ortam şifrelemeye elverişli mi
+// (şifreli-yetenekli build + güvenli anahtar deposu). safeStorage yoksa şifreleme kullanılamaz.
+function dbEncryptionStatus() {
+  let safe = false;
+  try { safe = !!safeStorage?.isEncryptionAvailable?.(); } catch { safe = false; }
+  return {
+    encrypted: !!(active && dbEncryptable && getDbKey()),
+    canEncrypt: !!(dbEncryptable && safe),
+  };
+}
 
 function readBlobFromDb() {
   // Tüm kaliplar tek sorguda çekilip customer_id'ye göre JS'te gruplanır — müşteri sayısı
@@ -742,6 +847,13 @@ function readBlobFromDb() {
     return { ...rest, customerId: customer_id, not: notField, tamamlandi: toBool(tamamlandi) };
   });
 
+  const dosyalar = db.prepare(`SELECT * FROM dosyalar`).all().map((row) => {
+    const { customer_id, dealer_id, ...rest } = row;
+    const kunye = { ...rest, customerId: customer_id };
+    if (dealer_id != null) kunye.dealerId = dealer_id;
+    return kunye;
+  });
+
   const kalipDefs = db.prepare(`SELECT * FROM kalip_defs`).all();
 
   const teklifler = db.prepare(`SELECT * FROM teklifler`).all().map((t) => ({
@@ -815,7 +927,7 @@ function readBlobFromDb() {
 
   return {
     customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
-    services, notes, parts, partSales, payments, gorusmeler, teklifler, appSettings, nextId,
+    services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari,
   };
 }
@@ -839,7 +951,7 @@ function writeBlobToDb(data) {
   }
   // customers bloğu FK zinciri gereği services/part_sales/payments tablolarını da siler;
   // customers yeniden yazılacaksa bu üçü atlanamaz (yoksa silinip geri yazılmazlar)
-  if (!skip.has("customers")) { skip.delete("services"); skip.delete("partSales"); skip.delete("payments"); skip.delete("gorusmeler"); }
+  if (!skip.has("customers")) { skip.delete("services"); skip.delete("partSales"); skip.delete("payments"); skip.delete("gorusmeler"); skip.delete("dosyalar"); }
   db.transaction(() => populateAll(db, data, skip))();
   // Özetler yalnızca transaction başarıyla bittikten sonra kesinleşir — hata/rollback
   // durumunda bir sonraki kayıt bölümü yeniden yazar
@@ -901,7 +1013,9 @@ function setUserTotpSecret(id, secret) {
 }
 function enableUserTotp(id, recoveryJson) {
   if (!db) return;
-  db.prepare("UPDATE users SET totp_enabled=1, totp_recovery=? WHERE id=?").run(recoveryJson, id);
+  // token_version artışı: 2FA açılınca DİĞER cihazlardaki mevcut oturumlar (eski jetonlar) düşsün
+  // ve 2FA ile yeniden giriş gereksin. Aksi halde 2FA yalnız yeni girişleri korur, açık oturumları değil.
+  db.prepare("UPDATE users SET totp_enabled=1, totp_recovery=?, token_version=COALESCE(token_version,1)+1 WHERE id=?").run(recoveryJson, id);
 }
 function setUserTotpRecovery(id, recoveryJson) {
   if (!db) return;
@@ -913,7 +1027,15 @@ function setUserTotpLastCode(id, code) {
 }
 function disableUserTotp(id) {
   if (!db) return;
-  db.prepare("UPDATE users SET totp_secret=NULL, totp_enabled=0, totp_recovery=NULL, totp_last_code=NULL WHERE id=?").run(id);
+  // token_version artışı: 2FA kapatılınca/sıfırlanınca da mevcut oturumlar düşsün (yeniden giriş gereksin)
+  db.prepare("UPDATE users SET totp_secret=NULL, totp_enabled=0, totp_recovery=NULL, totp_last_code=NULL, token_version=COALESCE(token_version,1)+1 WHERE id=?").run(id);
+}
+// token_version'ı artırır → o kullanıcının tüm mevcut oturumları (eski jetonları) düşer.
+// Tek oturum zorlaması (girişte) ve admin "tüm cihazlardan çıkar" için kullanılır. Yeni tv'yi döndürür.
+function bumpUserTokenVersion(id) {
+  if (!db) return null;
+  db.prepare("UPDATE users SET token_version=COALESCE(token_version,1)+1 WHERE id=?").run(id);
+  return getUserById(id)?.token_version ?? null;
 }
 function getAllUsers() {
   if (!db) return [];
@@ -1071,11 +1193,11 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 }
 
 module.exports = {
-  migrateFromJsonIfNeeded, isActive, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  migrateFromJsonIfNeeded, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
   getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,
-  setUserTotpSecret, enableUserTotp, setUserTotpRecovery, setUserTotpLastCode, disableUserTotp,
+  setUserTotpSecret, enableUserTotp, setUserTotpRecovery, setUserTotpLastCode, disableUserTotp, bumpUserTokenVersion,
   acquireLock, releaseLock, listLocks, releaseAllLocksByUser,
   writeAuditEntry, getAuditLog, clearAuditLog,
   writeSecurityEntry, getSecurityLog, clearSecurityLog,
