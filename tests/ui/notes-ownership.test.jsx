@@ -53,4 +53,30 @@ describe("Notlar — kullanıcıya özel (düzen)", () => {
     expect(screen.getByText("Kerem notu")).toBeTruthy();
     expect(screen.getByText("Admin notu")).toBeTruthy();
   });
+
+  // Not filtreleri kullanıcı yönetiminden yetkilendirilir (not_filter_benim / not_filter_tumu).
+  const permsWith = (notActions) => ({ role: "user", permissions: JSON.stringify({ notActions }) });
+
+  it("'Tümü' filtresi izni yoksa buton gizlenir ve kullanıcı yalnız kendi notlarını görür", () => {
+    render(<Notes notes={notes} setNotes={vi.fn()} aktifKullanici="kerem" serverPermissions={permsWith(["not_filter_benim"])} />);
+    expect(screen.queryByRole("button", { name: "Tümü" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Benim Notlarım" })).toBeTruthy();
+    expect(screen.getByText("Kerem notu")).toBeTruthy();
+    expect(screen.queryByText("Admin notu")).toBeNull(); // başkasınınki "Tümü" olmadan görülemez
+  });
+
+  it("yalnız 'Tümü' izni varsa aktif filtre otomatik 'Tümü'ye düşer ve tüm notlar gelir", () => {
+    render(<Notes notes={notes} setNotes={vi.fn()} aktifKullanici="kerem" serverPermissions={permsWith(["not_filter_tumu"])} />);
+    expect(screen.queryByRole("button", { name: "Benim Notlarım" })).toBeNull();
+    expect(screen.getByText("Kerem notu")).toBeTruthy();
+    expect(screen.getByText("Admin notu")).toBeTruthy(); // varsayılan "Benim" yasak → "Tümü"ye düştü
+  });
+
+  it("hiçbir filtre izni yoksa filtre çubuğu hiç görünmez (kendi notlarında kalır)", () => {
+    render(<Notes notes={notes} setNotes={vi.fn()} aktifKullanici="kerem" serverPermissions={permsWith([])} />);
+    expect(screen.queryByRole("button", { name: "Tümü" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Benim Notlarım" })).toBeNull();
+    expect(screen.getByText("Kerem notu")).toBeTruthy();
+    expect(screen.queryByText("Admin notu")).toBeNull();
+  });
 });

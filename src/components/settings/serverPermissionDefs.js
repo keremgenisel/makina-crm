@@ -132,6 +132,10 @@ export const NOT_ACTION_GROUPS = [
     { id: "not_edit",   label: "Not düzenle / kaydet" },
     { id: "not_delete", label: "Notu sil" },
   ]},
+  { grup: "Not Filtreleri", items: [
+    { id: "not_filter_benim", label: "\"Benim Notlarım\" filtresi" },
+    { id: "not_filter_tumu",  label: "\"Tümü\" filtresi (herkesin notları)" },
+  ]},
 ];
 
 export const FINANCE_ACTION_GROUPS = [

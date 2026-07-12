@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
-import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile } from "../lib/utils";
+import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile, customerToAliciFields } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar } from "./ui";
+import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -1111,7 +1111,7 @@ export const Documents = ({
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.10)", zIndex: 100, marginTop: 2 }}>
                 {custResults.map(c => (
                   <div key={c.id} onClick={() => {
-                    setForm(p => ({ ...p, customerId: c.id, firma: c.name || "", yetkili: c.yetkili1Ad || "", tel: c.yetkili1Tel || c.phone || "", adres: c.adres || "", country: c.country || "", city: c.city || "" }));
+                    setForm(p => ({ ...p, ...customerToAliciFields(c) }));
                     setCustSearch("");
                   }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)" }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
@@ -1373,11 +1373,14 @@ export const Documents = ({
                           </select>
                         )}
                         {type === "kalip" && (
-                          <select value={row.selectedKalip || ""} onChange={e => pickKalip(row.rowId, e.target.value)}
-                            style={{ ...inputStyle, fontSize: 12 }}>
-                            <option value="">— Kalıp Seç —</option>
-                            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
-                          </select>
+                          <SearchSelect
+                            value={row.selectedKalip || ""}
+                            onChange={val => pickKalip(row.rowId, val)}
+                            options={kalipDefs.map(k => ({ value: k.ad, label: k.ad }))}
+                            placeholder="— Kalıp Seç —"
+                            searchPlaceholder="Kalıp ara..."
+                            initialLimit={10}
+                          />
                         )}
                         {type === "parca" && (
                           <select value={row.selectedPart || ""} onChange={e => pickPart(row.rowId, e.target.value)}

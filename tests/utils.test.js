@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
-  uid, wasMintedHere,
+  uid, wasMintedHere, customerToAliciFields,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -252,5 +252,33 @@ describe("dosyaBuKayitYerinde — servis dosyası iki yerde de görünür", () =
   it("silinmiş dosya (deletedAt) hiçbir yerde görünmez", () => {
     const d = { id: 5, customerId: 100, refType: "servis", refId: 7, deletedAt: "2026-07-11" };
     expect(dosyaBuKayitYerinde(d, "customerId", 100, svcSet)).toBe(false);
+  });
+});
+
+describe("customerToAliciFields", () => {
+  // Regresyon: Documents.jsx teklif formunda müşteri seçilince e-posta forma geçmiyordu
+  // (handler firma/yetkili/tel/adres/country/city dolduruyor ama email'i atlıyordu),
+  // bu yüzden e-posta gönderim modalı da boş açılıyordu.
+  it("müşterinin e-postasını alıcı alanlarına taşır", () => {
+    const c = { id: 42, name: "Firma A", yetkili1Ad: "Ali", yetkili1Tel: "555", phone: "444", adres: "Adres", email: "ali@firma.com", country: "Türkiye", city: "İstanbul" };
+    const a = customerToAliciFields(c);
+    expect(a.email).toBe("ali@firma.com");
+    expect(a.customerId).toBe(42);
+    expect(a.firma).toBe("Firma A");
+    expect(a.yetkili).toBe("Ali");
+    expect(a.tel).toBe("555"); // yetkili1Tel öncelikli
+    expect(a.adres).toBe("Adres");
+    expect(a.country).toBe("Türkiye");
+    expect(a.city).toBe("İstanbul");
+  });
+  it("eksik alanları boş string'e indirger, e-posta yoksa boş", () => {
+    const a = customerToAliciFields({ id: 7 });
+    expect(a.email).toBe("");
+    expect(a.firma).toBe("");
+    expect(a.tel).toBe("");
+    expect(a.customerId).toBe(7);
+  });
+  it("yetkili telefonu yoksa firma telefonuna düşer", () => {
+    expect(customerToAliciFields({ id: 1, phone: "444" }).tel).toBe("444");
   });
 });

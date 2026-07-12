@@ -488,7 +488,7 @@ export const Customers = ({
               return (
                 <tr key={c.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: hasDebt ? "var(--redBg, #fef2f2)" : undefined }}
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}
-                  onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "#fde8e8" : "var(--n100, #f8fafc)"}
+                  onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "var(--redBg2, #fee2e2)" : "var(--n100, #f8fafc)"}
                   onMouseLeave={e => e.currentTarget.style.background = hasDebt ? "var(--redBg, #fef2f2)" : ""}>
                   <td style={{ padding: "13px 16px", cursor: "pointer" }}
                     onClick={() => setDetailViewId(c.id)}

@@ -285,7 +285,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 6 }}>Erişebileceği Sekmeler</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {ALL_TABS.map(t => (
-                  <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: newU.tabs.includes(t.id) ? "#e0f2fe" : "var(--surface, #ffffff)", border: `1px solid ${newU.tabs.includes(t.id) ? "#0ea5e9" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
+                  <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: newU.tabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${newU.tabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                     <input type="checkbox" checked={newU.tabs.includes(t.id)} onChange={e => setNewU(p => ({ ...p, tabs: e.target.checked ? [...p.tabs, t.id] : p.tabs.filter(id => id !== t.id) }))} style={{ margin: 0 }} />
                     {t.label}
                   </label>
@@ -332,7 +332,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                         <span>{tabSummary}</span>
                         {u.role !== "admin" && (
                           <button onClick={() => editPermsId === u.id ? setEditPermsId(null) : openEditPerms(u)}
-                            style={{ padding: "2px 7px", fontSize: 11, fontWeight: 600, borderRadius: 5, cursor: "pointer", background: editPermsId === u.id ? "#e0f2fe" : "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", color: "var(--blue2, #0369a1)" }}>
+                            style={{ padding: "2px 7px", fontSize: 11, fontWeight: 600, borderRadius: 5, cursor: "pointer", background: editPermsId === u.id ? "var(--bluBg2, #dbeafe)" : "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", color: "var(--blue2, #0369a1)" }}>
                             {editPermsId === u.id ? "Kapat" : "Düzenle"}
                           </button>
                         )}
@@ -394,7 +394,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 8 }}>Erişebileceği Sekmeler</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                               {ALL_TABS.map(t => (
-                                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "#e0f2fe" : "var(--surface, #ffffff)", border: `1px solid ${editTabs.includes(t.id) ? "#0ea5e9" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
+                                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${editTabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                                   <input type="checkbox" checked={editTabs.includes(t.id)} onChange={e => setEditTabs(p => e.target.checked ? [...p, t.id] : p.filter(id => id !== t.id))} style={{ margin: 0 }} />
                                   {t.label}
                                 </label>

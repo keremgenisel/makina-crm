@@ -1,4 +1,4 @@
-import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
@@ -10,7 +10,16 @@ import { makeCanDo } from "../lib/permissions";
 export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, serverPermissions = null, aktifKullanici = "" }, ref) => {
   const canDoNot = makeCanDo(serverPermissions, "notActions");
   const coklu = !!aktifKullanici; // çok kullanıcı bağlamı (giriş yapılmış): "Benim Notlarım" filtresi anlamlı
+  // Not filtreleri kullanıcı yönetiminden yetkilendirilir (Finans tarih aralıkları gibi). Yetkisi
+  // olmayan filtre butonu gizlenir; aktif filtre yasaklıysa izinli olana düşülür.
+  const filtreBenimIzin = canDoNot("not_filter_benim");
+  const filtreTumuIzin  = canDoNot("not_filter_tumu");
   const [filtreBenim, setFiltreBenim] = useState(true); // varsayılan: kendi notların (yalnız çoklu modda)
+  useEffect(() => {
+    if (!coklu) return;
+    if (filtreBenim && !filtreBenimIzin && filtreTumuIzin) setFiltreBenim(false);
+    else if (!filtreBenim && !filtreTumuIzin && filtreBenimIzin) setFiltreBenim(true);
+  }, [coklu, filtreBenim, filtreBenimIzin, filtreTumuIzin]);
   const [selectedId, setSelectedId] = useState(null);
   const [newMode, setNewMode] = useState(false); // yeni not editörü açık ama kayıt HENÜZ oluşturulmadı
   const [search, setSearch] = useState("");
@@ -109,9 +118,9 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               <Icon name="edit" size={15} /> Yeni Not
             </button>
           )}
-          {coklu && (
+          {coklu && (filtreBenimIzin || filtreTumuIzin) && (
             <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["benim", "Benim Notlarım"], ["tumu", "Tümü"]].map(([k, label]) => {
+              {[["benim", "Benim Notlarım", filtreBenimIzin], ["tumu", "Tümü", filtreTumuIzin]].filter(([, , izin]) => izin).map(([k, label]) => {
                 const aktif = filtreBenim === (k === "benim");
                 return (
                   <button key={k} onClick={() => { setFiltreBenim(k === "benim"); setPage(1); }}

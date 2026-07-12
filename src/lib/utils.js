@@ -521,3 +521,21 @@ export const effectiveTeklifTur = (t) => {
   if (rows.some(r => r.selectedKalip)) return "kalip";
   return "diger";
 };
+
+// Teklif/proforma "Alıcı Bilgileri" formunu mevcut bir müşteri kaydından doldurur.
+// Documents.jsx müşteri arama sonucuna tıklayınca kullanılır. E-posta dahil edilmeli:
+// eksikliği yüzünden seçilen müşterinin e-postası forma (ve sonra mail modalına) geçmiyordu.
+/**
+ * @param {import("../types").Customer} c
+ * @returns {{customerId: import("../types").ID, firma: string, yetkili: string, tel: string, adres: string, email: string, country: string, city: string}}
+ */
+export const customerToAliciFields = (c) => ({
+  customerId: c.id,
+  firma: c.name || "",
+  yetkili: c.yetkili1Ad || "",
+  tel: c.yetkili1Tel || c.phone || "",
+  adres: c.adres || "",
+  email: c.email || "",
+  country: c.country || "",
+  city: c.city || "",
+});
