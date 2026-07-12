@@ -106,7 +106,9 @@ export const CustomerDetailModal = ({
         (kalipGroups[key] = kalipGroups[key] || []).push(ps);
       });
       Object.values(kalipGroups).forEach(psList => {
-        psList.sort((a, b) => a.id - b.id);
+        // Not: eskiden a.id - b.id ile sıralanıyordu (sıralı ID = oluşturma sırası varsayımı).
+        // uid() artık rastgele ID ürettiği için bu varsayım geçersiz; doğal dizi sırası
+        // (partSales'e eklenme = oluşturma sırası) hem eski hem yeni veride doğru sonucu verir.
         ev.push({ kind: "part", date: psList[0].tarih, color: "var(--orTx, #c2410c)", title: "Kalıp Verildi", psList });
       });
       (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
@@ -1027,9 +1029,9 @@ export const CustomerDetailModal = ({
           <Field label="Açıklama / Not">
             <textarea value={newOwnerForm.aciklama || ""} onChange={e => setNewOwnerForm(p => ({ ...p, aciklama: e.target.value }))}
               placeholder="Devir ile ilgili not (isteğe bağlı)..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 50, boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="input" style={{ resize: "vertical", minHeight: 50 }} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 12 }}>
             <Btn variant="ghost" onClick={() => setNewOwnerForm(null)}>İptal</Btn>
             <Btn onClick={saveNewOwner}><Icon name="check" size={14} /> Devri Tamamla</Btn>
       </div>
@@ -1085,7 +1087,7 @@ export const CustomerDetailModal = ({
           <Field label="Açıklama / Not">
             <textarea value={editPrevOwnerForm.aciklama || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, aciklama: e.target.value }))}
               placeholder="Bu sahiplik dönemiyle ilgili not (isteğe bağlı)..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 50, boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="input" style={{ resize: "vertical", minHeight: 50 }} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setEditPrevOwnerForm(null)}>İptal</Btn>

@@ -42,12 +42,39 @@ let nextId = 100;
 // düzenlenmesi mi (→ kapsam dışı, kilit sistemi koruyor) olduğunu buradan ayırt eder.
 // Başarılı her kayıttan sonra temizlenir (o andan itibaren ID'ler artık sunucuda).
 const mintedIds = new Set();
-export const uid = () => { const v = ++nextId; mintedIds.add(v); return v; };
+
+// Yeni kayıt ID'si: KRİPTO-RASTGELE büyük tamsayı ([1e15, 9e15) aralığında, 2^53 güvenli
+// tamsayı sınırının altında). Eski sıralı sayaç (++nextId) yerine geldi çünkü çok kullanıcılı
+// modda iki istemci çevrimdışıyken aynı sıralı ID'yi (örn. 101) farklı kayıtlara verip merge'de
+// çakışabiliyordu. Rastgele ID'de çakışma olasılığı ihmal edilebilir (~n²/1.6e16) ve merge'in
+// wasMintedHere yeniden-ID mekanizması hâlâ son güvenlik ağı olarak duruyor. Aralık, mevcut eski
+// sayısal ID'lerin (çoğu < 1e6) çok üstünde seçildi, böylece eski kayıtlarla asla çakışmaz.
+// ID hâlâ SAYI olduğu için tüm mevcut kod (Number/karşılaştırma/React key) aynen çalışır.
+const ID_MIN = 1e15, ID_RANGE = 8e15;
+const randInt53 = () => {
+  const c = globalThis.crypto;
+  if (c && c.getRandomValues) {
+    const b = new Uint32Array(2);
+    c.getRandomValues(b);
+    // üst 21 bit + alt 32 bit = 53-bit (güvenli tamsayı aralığı)
+    return (b[0] % 0x200000) * 0x100000000 + b[1];
+  }
+  return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+};
+export const uid = () => {
+  let v;
+  do { v = ID_MIN + (randInt53() % ID_RANGE); } while (mintedIds.has(v));
+  mintedIds.add(v);
+  return v;
+};
 export const wasMintedHere = (id) => mintedIds.has(id);
 export const clearMintedIds = () => mintedIds.clear();
+// nextId sayacı ve bumpId/getIdCounter/setIdCounter artık uid() tarafından KULLANILMIYOR
+// (uid rastgele üretiyor). Geriye dönük uyumluluk için korunuyorlar: data blob'unda saklanan
+// nextId alanı ve ~15 çağrı yeri kırılmasın diye. bumpId zararsız bir tarama yapar, sonucu
+// (nextId) artık kimse okumaz. İleride kaldırılabilir.
 export const getIdCounter = () => nextId;
 export const setIdCounter = (n) => { if (n > nextId) nextId = n; };
-// Mevcut kayıtların max ID'sini görüp sayacı ileri çeker — çakışmayı önler
 export const bumpId = (...arrays) => {
   let max = nextId;
   arrays.forEach(arr => {

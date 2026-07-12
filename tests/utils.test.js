@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
+  uid, wasMintedHere,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -16,6 +17,31 @@ describe("parseMoney", () => {
   });
   it("sayı girdisini olduğu gibi kabul eder", () => {
     expect(parseMoney(850)).toBe(850);
+  });
+});
+
+describe("uid — kripto-rastgele büyük tamsayı (çok kullanıcılı çakışma önleme)", () => {
+  it("her ID bir sayıdır ve güvenli tamsayı aralığında ([1e15, 9e15))", () => {
+    for (let i = 0; i < 50; i++) {
+      const v = uid();
+      expect(typeof v).toBe("number");
+      expect(Number.isSafeInteger(v)).toBe(true);
+      expect(v).toBeGreaterThanOrEqual(1e15);
+      expect(v).toBeLessThan(9e15);
+    }
+  });
+  it("eski küçük sayısal ID'lerin (< 1e6) çok üstünde — eski kayıtlarla çakışmaz", () => {
+    for (let i = 0; i < 20; i++) expect(uid()).toBeGreaterThan(1e6);
+  });
+  it("çok sayıda üretimde çakışma olmaz (benzersiz)", () => {
+    const s = new Set();
+    for (let i = 0; i < 5000; i++) s.add(uid());
+    expect(s.size).toBe(5000);
+  });
+  it("üretilen ID bu oturumda mint edilmiş olarak işaretlenir (merge çakışma mantığı için)", () => {
+    const v = uid();
+    expect(wasMintedHere(v)).toBe(true);
+    expect(wasMintedHere(-12345)).toBe(false);
   });
 });
 
