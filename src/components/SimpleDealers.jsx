@@ -583,7 +583,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="Bayi hakkında notlar..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 70, boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="input" style={{ resize: "vertical", minHeight: 70 }} />
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>

@@ -306,7 +306,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
 
   return (
     <Section title="Çeviriler" icon="settings">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Teklif, Proforma, Servis Formu ve Makina Raporu baskılarındaki etiketleri özelleştirin. Türkçe (TR) ve İngilizce (EN) ayrı ayrı düzenlenir.
       </div>
 
@@ -379,7 +379,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 8 }}>
         <Btn variant="ghost" onClick={reset}><Icon name="trash" size={13} /> Varsayılana Sıfırla</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

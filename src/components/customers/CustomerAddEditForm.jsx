@@ -453,10 +453,10 @@ export const CustomerAddEditForm = ({
       <Field label="Açıklama">
         <textarea value={form.aciklama || ""} onChange={e => setForm(p => ({ ...p, aciklama: e.target.value }))}
           placeholder="Bu satış / makina ile ilgili açıklama, notlar..."
-          style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
+          className="input" style={{ resize: "vertical", minHeight: 60 }} />
       </Field>
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 20, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 20 }}>
         <Btn variant="ghost" onClick={onClose}>İptal</Btn>
         <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

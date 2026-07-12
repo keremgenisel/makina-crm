@@ -125,18 +125,18 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Tanım (TR)">
             <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 72 }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={form.tanimEN || ""} onChange={e => setForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 72 }} />
           </Field>
           </div>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 12 }}>
             <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
             <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
@@ -162,18 +162,18 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Tanım (TR)">
             <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, boyutlar vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 72 }} />
           </Field>
           <Field label="Tanım (EN)">
             <textarea value={editForm.tanimEN || ""} onChange={e => setEditForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="Technical specifications, dimensions etc."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 72, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 72 }} />
           </Field>
           </div>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 12 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

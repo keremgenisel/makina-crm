@@ -219,7 +219,7 @@ export const SettingsBackup = ({
   return (
     <>
       <Section title="Yedekleme" icon="download">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Tüm müşteri ve servis kayıtlarınızı tek bir dosya olarak kaydedin. Yedek dosyasını güvenli bir yerde
           (USB bellek, bulut depolama) saklamanızı öneririz. Geri yükleme yaptığınızda mevcut veriler yedekteki verilerle değiştirilir.
         </div>

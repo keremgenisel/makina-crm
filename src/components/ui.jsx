@@ -64,8 +64,12 @@ export const Field = ({ label, children }) => {
     </div>
   );
 };
-export const Input = (props) => (
-  <input lang={props.type === "date" ? "tr" : undefined} {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
+// Not: caller `style` bilerek düşürülür (uygulanmaz) — eski Input kendi inline stilini
+// caller'ınkinin üzerine yazıp yok sayıyordu; aynı davranışı koruyoruz ki aydınlık mod
+// birebir aynı kalsın. (Birkaç yerde ölü kalan style prop'u var: SettingsCompany IBAN
+// monospace, PickOrType marginTop — eskiden de etkisizdi.)
+export const Input = ({ style: _ignoredStyle, ...props }) => (
+  <input lang={props.type === "date" ? "tr" : undefined} {...props} className="input" />
 );
 // Şifre alanı — sağda göz ikonuyla göster/gizle. `Input` ile aynı props (value/onChange/placeholder/
 // autoFocus/onKeyDown), type="password" sabit (toggle iç state'le yönetiliyor, dışarıdan verilmez).
@@ -73,8 +77,7 @@ export const PasswordInput = (props) => {
   const [show, setShow] = useState(false);
   return (
     <div style={{ position: "relative" }}>
-      <input {...props} type={show ? "text" : "password"}
-        style={{ width: "100%", padding: "8px 36px 8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
+      <input {...props} type={show ? "text" : "password"} className="input" style={{ paddingRight: 36 }} />
       <button type="button" tabIndex={-1} onClick={() => setShow(s => !s)} title={show ? "Şifreyi gizle" : "Şifreyi göster"}
         style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", padding: 4, display: "flex", alignItems: "center" }}>
         <Icon name={show ? "eyeOff" : "eye"} size={16} />
@@ -84,7 +87,7 @@ export const PasswordInput = (props) => {
 };
 // Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
 export const Warn = ({ children }) => children ? (
-  <div style={{ fontSize: 11, color: "var(--amb700, #b45309)", marginTop: 4 }}>⚠ {children}</div>
+  <div className="warn-msg">⚠ {children}</div>
 ) : null;
 // Elektrik kesintisi/çökme sonrası bulunan form taslağını geri yükleme şeridi (bkz. useFormDraft)
 export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
@@ -105,8 +108,8 @@ export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
 };
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_RE = /^[0-9+()\s-]{7,}$/;
-export const Select = ({ children, ...props }) => (
-  <select {...props} style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box" }}>
+export const Select = ({ children, style: _ignoredStyle, ...props }) => (
+  <select {...props} className="select">
     {children}
   </select>
 );
@@ -151,15 +154,12 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
           onClick={() => { setOpen(true); setJustAdded(null); }}
           onBlur={() => setOpen(false)}
           placeholder={placeholder}
-          style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", boxSizing: "border-box", outline: "none" }} />
+          className="input" style={{ paddingLeft: 32 }} />
       </div>
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden", maxHeight: 220, overflowY: "auto", boxShadow: "0 10px 28px rgba(0,0,0,.14)" }}>
           {filtered.map(it => (
-            <div key={getKey(it)} onMouseDown={e => { e.preventDefault(); pick(it); }}
-              style={{ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", fontSize: 13, fontWeight: 600, background: "var(--surface, #ffffff)" }}
-              onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
-              onMouseLeave={e => e.currentTarget.style.background = "var(--surface, #ffffff)"}>
+            <div key={getKey(it)} onMouseDown={e => { e.preventDefault(); pick(it); }} className="sp-option">
               {getLabel(it)}
             </div>
           ))}
@@ -237,7 +237,6 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   const filtered = (!q.trim() && initialLimit > 0) ? matched.slice(0, initialLimit) : matched;
   const gizliSayisi = matched.length - filtered.length;
   const secili = options.find(o => o.value === value);
-  const satir = { display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: "none", fontSize: 13, cursor: "pointer", background: "none" };
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
       <button type="button" onClick={() => setOpen(o => !o)}
@@ -256,16 +255,14 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto" }}>
             {value && (
-              <button type="button" style={{ ...satir, color: "var(--n400, #94a3b8)", fontSize: 12 }}
+              <button type="button" className="ss-option" style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}
                 onClick={() => { onChange(""); setOpen(false); }}>— Seçimi kaldır —</button>
             )}
             {filtered.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--n400, #94a3b8)" }}>Sonuç bulunamadı.</div>}
             {filtered.map(o => (
               <button key={o.value} type="button"
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"}
-                onMouseLeave={e => e.currentTarget.style.background = o.value === value ? "var(--ambBg3, #fff7ed)" : "none"}
-                style={{ ...satir, background: o.value === value ? "var(--ambBg3, #fff7ed)" : "none", fontWeight: o.value === value ? 700 : 400 }}>
+                className={`ss-option${o.value === value ? " ss-option--selected" : ""}`}>
                 {o.label}
               </button>
             ))}
@@ -290,23 +287,19 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id
   return (
     <div style={{ position: "relative" }}>
       <input id={id} value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
-        style={{ width: "100%", padding: "8px 28px 8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "var(--n100, #f8fafc)", textAlign: "right", fontWeight: 600 }} />
+        className="input" style={{ paddingRight: 28, textAlign: "right", fontWeight: 600 }} />
       <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
     </div>
   );
 };
-export const Btn = ({ children, onClick, variant = "primary", small, disabled, title }) => {
-  const styles = {
-    primary: { background: "#e85d1a", color: "#fff", border: "none" },
-    danger:  { background: "var(--red500, #ef4444)", color: "#fff", border: "none" },
-    ghost:   { background: "transparent", color: "var(--n500, #64748b)", border: "1px solid var(--n200, #e2e8f0)" },
-  };
-  return (
-    <button onClick={onClick} disabled={disabled} title={title} style={{ ...styles[variant], padding: small ? "5px 12px" : "9px 18px", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 12 : 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, opacity: disabled ? .5 : 1, whiteSpace: "nowrap", flexShrink: 0 }}>
-      {children}
-    </button>
-  );
-};
+// Not: type özniteliği bilerek eklenmez — mevcut davranış korunur (form içindeki bazı
+// Btn'ler varsayılan submit'e güveniyor olabilir). Görünüm + etkileşim durumları ui.css'te.
+export const Btn = ({ children, onClick, variant = "primary", small, disabled, title }) => (
+  <button onClick={onClick} disabled={disabled} title={title}
+    className={`btn btn--${variant}${small ? " btn--sm" : ""}`}>
+    {children}
+  </button>
+);
 
 // Ataş rozeti: bir kayda (servis/kalıp/parça/ödeme) bağlı dosya varsa 📎 + adet; tıklayınca o
 // kaydın dosyaları açılır. Müşteri makina geçmişi ve anlaşmalı servis servis kartları paylaşır.
@@ -318,9 +311,7 @@ export const AtesRozeti = ({ n, onClick }) => n > 0 ? (
 ) : null;
 
 export const StatCard = ({ label, value, sub, color, onClick }) => (
-  <div onClick={onClick} style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${color}`, cursor: onClick ? "pointer" : "default", transition: "box-shadow .15s" }}
-    onMouseEnter={e => { if (onClick) e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.12)"; }}
-    onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,.08)"; }}>
+  <div onClick={onClick} className={`stat-card${onClick ? " stat-card--clickable" : ""}`} style={{ borderLeft: `4px solid ${color}` }}>
     <div style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 500, marginBottom: 6 }}>{label}</div>
     <div style={{ fontSize: 26, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{value}</div>
     {sub && <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 4 }}>{sub}</div>}
@@ -334,7 +325,7 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+  <div className="modal-backdrop" style={{ zIndex: 1000 }}>
     {footer ? (
       <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, width: "100%", maxWidth: maxWidth ?? (wide ? 900 : 520), maxHeight: maxHeight ?? (wide ? "94vh" : "90vh"), display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ padding: "28px 28px 0", flexShrink: 0 }}>
@@ -370,7 +361,7 @@ export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash"
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
   return (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+  <div className="modal-backdrop" style={{ zIndex: 1100 }}>
     <div style={{ background: "var(--surface, #ffffff)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,.2)", textAlign: "center" }}>
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--redBg2, #fee2e2)", color: "var(--red600, #dc2626)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Icon name={icon} size={22} />
@@ -392,18 +383,15 @@ export const Pagination = ({ total, page, setPage, perPage = 10 }) => {
   if (pages <= 1) return null;
   return (
     <div style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center", padding: "14px 0" }}>
-      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--n500, #64748b)", fontSize: 13, opacity: page === 1 ? .5 : 1 }}>‹ Önceki</button>
+      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="page-btn">‹ Önceki</button>
       {Array.from({ length: pages }, (_, i) => i + 1)
         .filter(n => n === 1 || n === pages || Math.abs(n - page) <= 1)
         .reduce((acc, n, i, arr) => { if (i > 0 && n - arr[i-1] > 1) acc.push("…"); acc.push(n); return acc; }, [])
         .map((n, i) => n === "…"
           ? <span key={"e"+i} style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>…</span>
-          : <button key={n} onClick={() => setPage(n)}
-              style={{ minWidth: 32, padding: "5px 8px", borderRadius: 8, border: "1px solid", borderColor: page === n ? "#e85d1a" : "var(--n200, #e2e8f0)", background: page === n ? "#e85d1a" : "var(--surface, #ffffff)", color: page === n ? "#fff" : "var(--n500, #64748b)", fontWeight: page === n ? 700 : 400, cursor: "pointer", fontSize: 13 }}>{n}</button>
+          : <button key={n} onClick={() => setPage(n)} className={`page-num${page === n ? " page-num--active" : ""}`}>{n}</button>
         )}
-      <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}
-        style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", cursor: page === pages ? "not-allowed" : "pointer", color: "var(--n500, #64748b)", fontSize: 13, opacity: page === pages ? .5 : 1 }}>Sonraki ›</button>
+      <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="page-btn">Sonraki ›</button>
     </div>
   );
 };

@@ -70,7 +70,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
   return (
     <>
       <Section title="Uygulama Şifresi" icon="lock">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Açarsanız, uygulama her açılışta bir şifre soracaktır. Bu, bilgisayara erişebilen herkesin
           müşteri/finans verilerini doğrudan görmesini engellemek için basit bir yerel kilittir.
         </div>
@@ -182,7 +182,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
       {/* Uygulama şifresi: kurulum sonrası bir defalık kurtarma kodu gösterimi */}
       {lockRecoveryCode && (
         <Modal title="Kurtarma Kodunuz" onClose={() => {}}>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div className="section-desc">
             Şifrenizi unutursanız bu kod ile sıfırlayabilirsiniz. Bu kod yalnızca burada gösterilir, bir yere not alın.
           </div>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 20, textAlign: "center" }}>

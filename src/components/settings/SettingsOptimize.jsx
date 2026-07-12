@@ -104,7 +104,7 @@ export const SettingsOptimize = ({
 
   return (
     <Section title="Resim Optimizasyonu" icon="settings">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Makina modeli, kalıp, parça ve kaşe resimlerini WebP formatına dönüştürür, boyutlarını küçültür.
         Yeni yüklenen resimler zaten optimize edilir; bu araç mevcut eski resimlere de uygular.
       </div>

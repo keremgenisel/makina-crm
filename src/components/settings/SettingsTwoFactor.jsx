@@ -60,7 +60,7 @@ export function SettingsTwoFactor({ flash }) {
 
   return (
     <Section title="İki Adımlı Doğrulama (2FA)" icon="lock">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Girişte şifrenize ek olarak telefonunuzdaki authenticator uygulamasından (Google Authenticator, Microsoft Authenticator vb.) 6 haneli kod istenir. Şifreniz ele geçse bile hesabınız korunur.
       </div>
 

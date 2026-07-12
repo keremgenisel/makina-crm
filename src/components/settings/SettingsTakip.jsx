@@ -22,7 +22,7 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
 
   return (
     <Section title="Takip Süreleri" icon="notes">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Anasayfadaki hatırlatma kutularının zaman eşikleri. Değişiklikler Kaydet'e basınca uygulanır
         ve tüm kullanıcılar için geçerli olur.
       </div>

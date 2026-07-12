@@ -72,7 +72,7 @@ export const LockScreen = ({ onUnlock }) => {
       <Screen>
         <div style={{ ...cardStyle, textAlign: "center" }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 10 }}>Şifre sıfırlandı</div>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div className="section-desc">
             Yeni kurtarma kodunuz aşağıdadır. Bu kod yalnızca burada gösterilir, bir yere not alın — eskisi artık geçersizdir.
           </div>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 22 }}>

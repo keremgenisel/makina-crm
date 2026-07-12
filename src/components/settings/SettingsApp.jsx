@@ -40,7 +40,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
     <>
       {/* ── Uygulama Güncellemesi ── */}
       <Section title="Uygulama Güncellemesi" icon="refresh">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Kurulu sürüm: <b style={{ color: "var(--n900, #0f172a)" }}>v{version}</b>. Yeni bir sürüm yayınlandığında buradan
           tek tıkla indirip kurabilirsiniz. Verileriniz korunur.
         </div>
@@ -112,7 +112,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
 
       {/* ── Sistem: Otomatik Başlat ── */}
       <Section title="Sistem" icon="settings">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Bu bilgisayar açıldığında Altunmak CRM otomatik olarak arka planda başlar ve görev
           çubuğu simge tepsisinde (sistem saati yanında) bekler. Sunucu olarak kullanılan
           bilgisayarlarda açık bırakılması önerilir.

@@ -143,7 +143,7 @@ export const SettingsTrash = ({
   return (
     <>
       <Section title="Çöp Kutusu" icon="trash">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Silinen kayıtlar buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
         {trashItems.length > 0 && (

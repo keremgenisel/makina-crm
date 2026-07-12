@@ -262,7 +262,7 @@ export const FaturaFormModal = ({
       </div>
 
       {/* Yapışkan kaydet çubuğu: uzun formda kaydırırken hep görünür */}
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0", background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar">
         <Btn variant="ghost" onClick={() => setFaturaForm(null)}>Vazgeç</Btn>
         <Btn onClick={saveFatura}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

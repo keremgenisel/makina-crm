@@ -84,7 +84,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
   return (
     <>
       <Section title="Firma Bilgileri" icon="settings" collapsible defaultOpen>
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -97,7 +97,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </div>
         <Field label="Adres">
           <textarea {...f("adres")} placeholder="Topçular mah. Keresteciler sit. İşgören sok. No:33/2-3 Eyüp - İSTANBUL"
-            style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "var(--n100, #f8fafc)", outline: "none" }} />
+            className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 60 }} />
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Ülke">
@@ -123,7 +123,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       </Section>
 
       <Section title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Teklif, proforma ve yurt dışı fatura belgelerinde ödeme bölümüne otomatik eklenir.
         </div>
 
@@ -186,7 +186,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </Field>
       </Section>
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "flex-end", padding: "12px 0", marginTop: 4, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 4, gap: 0 }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 

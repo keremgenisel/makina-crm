@@ -513,7 +513,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
   return (
     <Section title="Teklif / Proforma / Yurt Dışı Fatura" icon="settings">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Form bölümlerindeki alanları gizleyin, varsayılan değerleri düzenleyin veya özel alanlar ekleyin.
         Gizlenen alanlar yazılı çıktıda da görünmez.
       </div>
@@ -680,7 +680,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 8, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 8 }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
 

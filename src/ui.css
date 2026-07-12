@@ -1,0 +1,140 @@
+/* Paylaşılan bileşen sınıfları (Faz 1: interaktif primitive'ler).
+   Inline stil borcunu azaltmanın yanı sıra, inline stille imkânsız olan gerçek
+   :hover / :focus-visible / :active / :disabled durumlarını kazandırır. Renkler
+   theme.js token'larından gelir; taban stiller mevcut inline hallerle birebir aynıdır
+   (aydınlık modda hiçbir görünüm değişmez), üzerine yalnız etkileşim durumları eklenir. */
+
+/* ── Butonlar ── */
+.btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: filter .12s, background .12s, border-color .12s, box-shadow .12s, transform .06s;
+}
+.btn--sm { padding: 5px 12px; font-size: 12px; }
+.btn--primary { background: #e85d1a; color: #fff; }
+.btn--primary:hover { filter: brightness(1.08); }
+.btn--danger { background: var(--red500, #ef4444); color: #fff; }
+.btn--danger:hover { filter: brightness(1.08); }
+.btn--ghost { background: transparent; color: var(--n500, #64748b); border: 1px solid var(--n200, #e2e8f0); }
+.btn--ghost:hover { background: var(--n100, #f8fafc); border-color: var(--n300, #cbd5e1); color: var(--n700, #334155); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid #e85d1a; outline-offset: 2px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; filter: none; transform: none; }
+
+/* ── Metin / seçim girişleri ── */
+.input, .select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--n200, #e2e8f0);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  background: var(--n100, #f8fafc);
+  color: var(--n900, #0f172a);   /* karanlıkta okunur metin (önceden tarayıcı varsayılanına kalıyordu) */
+  outline: none;
+  transition: border-color .12s, box-shadow .12s;
+}
+.input:hover, .select:hover { border-color: var(--n300, #cbd5e1); }
+.input:focus, .input:focus-visible,
+.select:focus, .select:focus-visible {
+  border-color: #e85d1a;
+  box-shadow: 0 0 0 3px rgba(232,93,26,.14);
+}
+.input::placeholder { color: var(--n400, #94a3b8); }
+.input:disabled, .select:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── Uyarı satırı (Warn) ── */
+.warn-msg { font-size: 11px; color: var(--amb700, #b45309); margin-top: 4px; }
+
+/* ── İstatistik kartı (StatCard) — hover artık CSS, eski JS onMouseEnter yerine ── */
+.stat-card {
+  background: var(--surface, #ffffff);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  transition: box-shadow .15s;
+}
+.stat-card--clickable { cursor: pointer; }
+.stat-card--clickable:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+
+/* ── Modal / onay penceresi arka planı (ortak) ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* ── Sayfalama (Pagination) — hover eklendi ── */
+.page-btn, .page-num {
+  border-radius: 8px;
+  border: 1px solid var(--n200, #e2e8f0);
+  background: var(--surface, #ffffff);
+  color: var(--n500, #64748b);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.page-btn { padding: 5px 12px; }
+.page-btn:hover:not(:disabled) { border-color: var(--n300, #cbd5e1); background: var(--n100, #f8fafc); }
+.page-btn:disabled { opacity: .5; cursor: not-allowed; }
+.page-num { min-width: 32px; padding: 5px 8px; }
+.page-num:hover { border-color: #e85d1a; }
+.page-num--active { border-color: #e85d1a; background: #e85d1a; color: #fff; font-weight: 700; }
+
+/* ── Arama seçici seçenekleri (SearchSelect/SearchPick) — hover artık CSS ── */
+.ss-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ss-option:hover { background: var(--ambBg3, #fff7ed); }
+.ss-option--selected { background: var(--ambBg3, #fff7ed); font-weight: 700; }
+.sp-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--n150, #f1f5f9);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface, #ffffff);
+}
+.sp-option:hover { background: var(--ambBg3, #fff7ed); }
+
+/* ── Form yapışkan alt çubuğu (İptal/Kaydet) — 14 yerde tekrarlıyordu ──
+   Aykırı çağrılar marginTop / gap / justify-content'i inline override eder. */
+.form-footer-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 0;
+  background: var(--footerBg, rgba(248,250,252,.94));
+  border-top: 1px solid var(--n200, #e2e8f0);
+  backdrop-filter: blur(4px);
+}
+
+/* ── Bölüm açıklama metni (ayar/form başlığı altındaki gri açıklama) — 24 yerde tekrar ── */
+.section-desc { font-size: 13px; color: var(--n500, #64748b); margin-bottom: 16px; line-height: 1.6; }

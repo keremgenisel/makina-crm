@@ -171,7 +171,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "models" && (
         <Section title="Makina Modelleri" icon="machine">
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div className="section-desc">
             Buradaki modeller, Yeni Müşteri ve Makina Geçmişi ekranlarındaki model seçiminde görünür.
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
@@ -182,7 +182,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "kaliplar" && (
         <Section title="Kalıp Modelleri" icon="box">
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div className="section-desc">
             Buraya eklediğiniz kalıplar, Yeni Müşteri ekranındaki <b>Kalıp</b> seçiminde listelenir. Ölçü, müşteri eklerken elle girilir.
           </div>
           <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
@@ -191,7 +191,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "yedekparca" && (
         <Section title="Parça/Yedek Parça Tanımları" icon="parts" wide>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div className="section-desc">
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}

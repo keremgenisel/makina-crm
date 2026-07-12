@@ -139,17 +139,17 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         <Field label="Müşteri Talimatı / Açıklama">
           <textarea value={form.musteriTalimati || ""} onChange={e => setForm(p => ({ ...p, musteriTalimati: e.target.value }))}
             placeholder="Müşterinin talimatı / talebi..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            className="input" style={{ resize: "vertical", minHeight: 90 }} />
         </Field>
         <Field label="Fabrika Notu">
           <textarea value={form.fabrikaNotu || ""} onChange={e => setForm(p => ({ ...p, fabrikaNotu: e.target.value }))}
             placeholder="Fabrika dahili notu (yazdırılan formda görünür)..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            className="input" style={{ resize: "vertical", minHeight: 90 }} />
         </Field>
         <Field label="Yapılan İşler / Parça Değişimleri">
           <textarea value={form.yapilanIsler || ""} onChange={e => setForm(p => ({ ...p, yapilanIsler: e.target.value }))}
             placeholder="Yapılan işlemler, değişen parçalar..."
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 90, boxSizing: "border-box", fontFamily: "inherit" }} />
+            className="input" style={{ resize: "vertical", minHeight: 90 }} />
         </Field>
       </div>
 
@@ -347,7 +347,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 12 }}>
         <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
         <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

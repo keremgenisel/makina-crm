@@ -335,7 +335,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   return (
     <>
       <Section title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Eski müşteri verilerinizi toplu olarak içe aktarın. <b>1)</b> Excel şablonunu indirin. <b>2)</b> Verilerinizi şablondaki sütun sırasına göre doldurun (Excel'de kaydedin, .xlsx olarak kalabilir). <b>3)</b> Aşağıdan yükleyin, önizlemeyi kontrol edip onaylayın. Hem Excel (.xlsx, .xls) hem CSV dosyaları desteklenir.
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
@@ -394,7 +394,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
       )}
 
       <Section title="Yedek Parça İçe Aktar" icon="parts">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           Yedek parça kataloğunu toplu olarak içe aktarın. Aynı adlı (TR) parçalar güncellenir, yeni olanlar eklenir.
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>

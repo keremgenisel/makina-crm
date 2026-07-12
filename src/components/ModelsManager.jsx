@@ -153,12 +153,12 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
           <Field label="Tanım (TR) — Teklif formunda otomatik dolar">
             <textarea value={mForm.tanim || ""} onChange={e => setMForm(p => ({ ...p, tanim: e.target.value }))}
               placeholder="Teknik özellikler, dahil kalıp notu vb."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 90 }} />
           </Field>
           <Field label="Tanım (EN) — Proforma ve yurtdışı teklifler için">
             <textarea value={mForm.tanimEN || ""} onChange={e => setMForm(p => ({ ...p, tanimEN: e.target.value }))}
               placeholder="English technical description..."
-              style={{ width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 90, background: "var(--n100, #f8fafc)", outline: "none" }} />
+              className="input" style={{ fontSize: 13, resize: "vertical", minHeight: 90 }} />
           </Field>
           </div>
           <Field label="Resim (Teklif/Proforma'da görünür)">
@@ -198,7 +198,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
             </Field>
           )}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", gap: 8, justifyContent: "flex-end", padding: "12px 0", marginTop: 12, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 12 }}>
             <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
             <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

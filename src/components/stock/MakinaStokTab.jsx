@@ -227,7 +227,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="İsteğe bağlı not..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 60, boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="input" style={{ resize: "vertical", minHeight: 60 }} />
           </Field>
 
           <div style={{ marginTop: 16, borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 14 }}>

@@ -16,7 +16,7 @@ export const SettingsKdv = ({ appSettings, setAppSettings }) => {
 
   return (
     <Section title="KDV Oranı" icon="settings">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         KDV oranı zaman içinde değişebildiği için tek bir oran yerine tarihe bağlı dönemler tutulur.
         Her kayıt (müşteri satışı, servis, Extra Kalıp satışı) <b>kendi tarihinde geçerli olan orana</b> göre hesaplanır.
       </div>

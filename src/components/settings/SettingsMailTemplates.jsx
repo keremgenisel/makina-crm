@@ -60,7 +60,7 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
 
   return (
     <Section title="E-posta Şablonları" icon="mail">
-      <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="section-desc">
         Evrakları e-posta ile gönderirken taslağa otomatik dolan konu ve mesaj metinleri.
         Süslü parantezli yer tutucular gönderim anında gerçek değerlerle doldurulur.
         Boş bırakılan alan varsayılan metne döner; taslak metni göndermeden önce her seferinde ayrıca düzenlenebilir.
@@ -91,7 +91,7 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
         );
       })}
 
-      <div style={{ position: "sticky", bottom: 0, display: "flex", justifyContent: "space-between", padding: "12px 0", marginTop: 4, background: "var(--footerBg, rgba(248,250,252,.94))", borderTop: "1px solid var(--n200, #e2e8f0)", backdropFilter: "blur(4px)" }}>
+      <div className="form-footer-bar" style={{ marginTop: 4, gap: 0, justifyContent: "space-between" }}>
         <Btn variant="ghost" onClick={() => setConfirmReset(true)}>Varsayılanlara Dön</Btn>
         <Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>

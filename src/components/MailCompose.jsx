@@ -44,7 +44,7 @@ export function MailComposeModal({ draft, setDraft, sendState, onSend, ekAlani =
           <Field label="Mesaj">
             <textarea value={draft.text} onChange={e => setDraft(p => ({ ...p, text: e.target.value }))}
               placeholder="Mesajınızı yazın..."
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", resize: "vertical", minHeight: 110, boxSizing: "border-box", fontFamily: "inherit" }} />
+              className="input" style={{ resize: "vertical", minHeight: 110 }} />
           </Field>
           {ekAlani}
           {sendState.state === "error" && (

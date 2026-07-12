@@ -59,7 +59,7 @@ export const SettingsMail = ({ flash }) => {
   return (
     <>
       <Section title="E-posta Ayarları (SMTP)" icon="mail">
-        <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 16, lineHeight: 1.6 }}>
+        <div className="section-desc">
           "E-posta Gönder" butonlarının çalışması için e-posta hesabınızı buradan bağlayın.
         </div>
 
