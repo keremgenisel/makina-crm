@@ -61,10 +61,16 @@ Amaç: kullanılan paketlerde bilinen güvenlik açıklarını yakalamak.
 - **Dependabot:** `.github/dependabot.yml` — npm ve GitHub Actions sürümleri için
   haftalık güncelleme PR'ları açar (küçük sürümler tek PR'da gruplanır).
 
-**Elle takip edilmesi gereken istisna:** `xlsx` (SheetJS) npm registry'de değil,
-`package.json`'da bir CDN tarball URL'siyle pinlenmiştir. Ne `npm audit` ne de
-Dependabot bunu görebilir. SheetJS güvenlik duyurularını
-(https://cdn.sheetjs.com) ara sıra elle kontrol edin ve sürümü elle yükseltin.
+**xlsx (SheetJS) — otomatik sürüm denetimi:** `xlsx` npm registry'de değil,
+`package.json`'da bir CDN tarball URL'siyle pinlenmiştir (npm'deki paket terk edilmiş
+ve CVE'li; CDN sürümü bakımlı olandır). Ne `npm audit` ne de Dependabot bunu görebilir.
+Güvenlik yamaları yeni SheetJS sürümleriyle geldiğinden **güncel kalmak = yamalı kalmak**.
+- **CI:** `.github/workflows/xlsx-version-check.yml` — haftalık, pinli sürümü SheetJS'in
+  "latest" sürümüyle kıyaslar; geride kalınmışsa iş başarısız olur (Actions'ta kırmızı X).
+- **Elle:** `node scripts/check-xlsx-version.cjs` (güncelse 0, geride ise çıkış kodu 2).
+- **Yükseltme:** `package.json`'daki URL'i `xlsx-<yeni>/xlsx-<yeni>.tgz` yapın, sonra
+  `npm install && npm test` ile içe/dışa aktarımı doğrulayın. Değişiklik notları:
+  https://docs.sheetjs.com/docs/miscellany/changelog
 
 ## 5. Güncelleme bütünlüğü ve kod imzalama
 

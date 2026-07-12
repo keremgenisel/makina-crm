@@ -1,0 +1,23 @@
+# xlsx (SheetJS) sürüm-güncelliği denetimi.
+# xlsx npm registry'de DEĞİL, CDN tarball'ıyla pinlidir; Dependabot/npm audit onu
+# göremez. Bu iş, pinlenen sürümü SheetJS'in "latest" sürümüyle kıyaslar — geride
+# kalınmışsa iş BAŞARISIZ olur (Actions'ta kırmızı X + bildirim), böylece elle takip
+# yerine otomatik görünürlük sağlanır. Güvenlik yamaları yeni sürümlerle geldiğinden
+# güncel kalmak = yamalı kalmak. Ayrıntı: SECURITY-TOOLING.md.
+name: xlsx-version-check
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # her Pazartesi 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: xlsx pinli sürümü SheetJS latest ile kıyasla
+        run: node scripts/check-xlsx-version.cjs

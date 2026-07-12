@@ -1,7 +1,8 @@
 # Bağımlılık güncellemelerini otomatik izler ve güvenlik/sürüm PR'ları açar.
 # npm bağımlılıkları + GitHub Actions sürümleri haftalık taranır.
 # Not: xlsx (SheetJS) npm registry'de değil, CDN tarball'ıyla pinlenmiştir;
-# Dependabot onu güncelleyemez, elle takip edilmelidir (bkz. SECURITY-TOOLING.md).
+# Dependabot onu güncelleyemez. Bunun yerine .github/workflows/xlsx-version-check.yml
+# haftalık olarak pinli sürümü SheetJS latest ile kıyaslar (bkz. SECURITY-TOOLING.md).
 version: 2
 updates:
   - package-ecosystem: "npm"
