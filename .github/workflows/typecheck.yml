@@ -1,0 +1,26 @@
+# TypeScript tip denetimi (artımlı benimseme).
+# tsconfig.json checkJs KAPALI: yalnız `// @ts-check` işaretli dosyalar ve .ts/.d.ts
+# denetlenir (şu an src/types.d.ts + permissions.js). Bu iş, denetlenen yüzeyde bir
+# tip hatası girerse PR'ı kırmızıya çevirir; kapsam dosya dosya genişledikçe koruması artar.
+name: typecheck
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1" # tip denetimi için native/electron gereksiz
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Bağımlılıkları çöz (script'siz, hızlı)
+        run: npm ci --ignore-scripts
+      - name: Tip denetimi
+        run: npm run typecheck

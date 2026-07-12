@@ -29,6 +29,10 @@ export const trLower = (s) => (s || "").toLocaleLowerCase("tr");
 export const aramaNormalize = (s) =>
   trLower(s).replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
 // Kalıp bilgisini okunur metne çevir (yeni dizi formatı + eski tek metin uyumlu)
+/**
+ * @param {import("../types").Customer | null | undefined} c
+ * @returns {string}
+ */
 export const kalipText = (c) => {
   if (Array.isArray(c?.kaliplar) && c.kaliplar.length) {
     return c.kaliplar.map(k => [k.olcu, k.ad].filter(Boolean).join(" - ")).filter(Boolean).join(" · ");
@@ -121,6 +125,10 @@ export const fmtKalipCapi = (kc) => {
 
 // Eski (3'lü: Faturalı Yurt İçi/Faturalı İhracat/Faturasız, ya da çok eski Faturalı/Faturasız)
 // değerleri yeni 4'lü sisteme çevir (geriye uyumluluk): Faturalı/Faturasız × Yurtiçi/Yurtdışı
+/**
+ * @param {string | null | undefined} v
+ * @returns {import("../types").SaleType}
+ */
 export const normalizeSaleType = (v) => {
   if (SALE_TYPES.includes(v)) return v; // zaten yeni sistemde
   const t = (v || "").toLocaleLowerCase("tr");
@@ -351,6 +359,11 @@ export const altuntasParcaBedeli = (sv) => {
 // isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı
 // bir firma yaptıysa parça borcu müşteriye değil o firmaya aittir (bkz. isParcaBorcluAnlasmaliFirmaya) —
 // bu yüzden müşteri tarafında hiç görünmez, "ödenmedi" işaretli olsa da.
+/**
+ * @param {import("../types").Service} sv
+ * @param {string} [factoryName]
+ * @returns {boolean}
+ */
 export const isServisBorcluMu = (sv, factoryName = "Altuntaş Makina") => {
   const parcaMusteriyeVar = isParcaUcretliMi(sv) && isAltuntasServisi(sv, factoryName);
   return (isServisUcretliMi(sv, factoryName) || parcaMusteriyeVar) && sv.odendi === false;
@@ -360,6 +373,7 @@ export const isServisBorcluMu = (sv, factoryName = "Altuntaş Makina") => {
 export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makina") =>
   isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && sv.odendi === false;
 // Extra Kalıp satışı borçlu mu
+/** @param {import("../types").PartSale} ps @returns {boolean} */
 export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
 // ── Mükerrer kayıt tespiti ───────────────────────────────────────────────────
 // Telefonu karşılaştırma anahtarına indir: rakamları ayıkla, son 10 hane (0/ülke kodu farkları elenir)
@@ -391,6 +405,13 @@ export const benzerKayitBul = (kayitlar = [], aday = {}) => {
 };
 
 // Bir müşterinin herhangi bir kaynaktan (kalan borç / servis / parça / Extra Kalıp) borcu var mı
+/**
+ * @param {import("../types").Customer} customer
+ * @param {import("../types").Service[]} [services]
+ * @param {import("../types").PartSale[]} [partSales]
+ * @param {string} [factoryName]
+ * @returns {boolean}
+ */
 export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina") => {
   if (parseMoney(customer.kalanBorc) > 0) return true;
   if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s, factoryName))) return true;

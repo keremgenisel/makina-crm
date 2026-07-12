@@ -19,6 +19,7 @@
     "bakim": "node scripts/bakim.cjs",
     "test": "vitest run",
     "lint": "eslint src electron scripts",
+    "typecheck": "tsc --noEmit",
     "scan:secrets": "gitleaks git . --config .gitleaks.toml --redact --verbose",
     "audit": "npm audit --audit-level=high"
   },
@@ -44,6 +45,9 @@
     "@eslint/js": "^9.39.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.1.0",
     "cross-env": "^7.0.3",
@@ -54,6 +58,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
+    "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.10",
     "wait-on": "^8.0.1"

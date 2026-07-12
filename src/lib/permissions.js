@@ -1,8 +1,20 @@
+// @ts-check
+/**
+ * Sunucu izin bilgisini grup→eylem[] haritasına çözer. admin veya izinsiz → null (kısıt yok).
+ * @param {import("../types").ServerPermissions | null | undefined} serverPermissions
+ * @returns {Record<string, string[]> | null}
+ */
 export function parsePermissions(serverPermissions) {
   if (!serverPermissions || serverPermissions.role === "admin") return null;
   try { return JSON.parse(serverPermissions.permissions || "null"); } catch { return null; }
 }
 
+/**
+ * Bir izin grubu için "bu eylem yapılabilir mi?" yükleci üretir. İzin yoksa her şeye izin verir.
+ * @param {import("../types").ServerPermissions | null | undefined} serverPermissions
+ * @param {string} groupKey
+ * @returns {(action: string) => boolean}
+ */
 export function makeCanDo(serverPermissions, groupKey) {
   const perms = parsePermissions(serverPermissions);
   if (!perms) return () => true;
