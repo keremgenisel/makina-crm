@@ -62,8 +62,9 @@ function diskCheck(disk) {
 function dbEncCheck(st) {
   if (st?.encrypted) return { key: "dbenc", title: "Veritabanı şifreleme", state: "ok", value: "Açık",
     desc: "Veritabanı diskte şifreli tutuluyor; anahtar OS anahtarlığında (Windows DPAPI). PC veya disk çalınsa da parolasız okunamaz." };
-  if (st && st.canEncrypt === false) return { key: "dbenc", title: "Veritabanı şifreleme", state: "unknown", value: "Kullanılamıyor",
-    desc: "Bu ortamda güvenli anahtar deposu (safeStorage) bulunamadı; veritabanı şifrelenemiyor." };
+  if (st && st.canEncrypt === false) return { key: "dbenc", title: "Veritabanı şifreleme", state: "warn", value: "Korunmasız",
+    desc: "Bu ortamda güvenli anahtar deposu (safeStorage) bulunamadı; veritabanı ve oturum anahtarı (jwtSecret) diskte şifresiz/düz tutuluyor. Güvenli anahtar deposu olmadan uygulama düzeyinde at-rest şifreleme yapılamaz — tek koruma OS disk şifrelemesidir.",
+    hint: "Aşağıdaki 'Disk şifreleme' maddesini (BitLocker/FileVault) açık tutun. Bu güvenli depo Windows'ta standarttır; mümkünse uygulamayı Windows'ta çalıştırın." };
   return { key: "dbenc", title: "Veritabanı şifreleme", state: "warn", value: "Kapalı",
     desc: "Veritabanı diskte şifresiz. Bu sürüme güncelleyip uygulamayı yeniden başlatın; mevcut veritabanı ilk açılışta otomatik şifrelenir.", hint: "Uygulamayı en son sürüme güncelleyin." };
 }
@@ -78,8 +79,9 @@ function appLockCheck(lock) {
 function backupCheck(bkp) {
   if (bkp?.set) return { key: "backup", title: "Otomatik yedek şifreleme", state: "ok", value: "Açık",
     desc: "Otomatik yedekler şifreli olarak alınıyor." };
-  if (bkp && bkp.canEncrypt === false) return { key: "backup", title: "Otomatik yedek şifreleme", state: "unknown", value: "Kullanılamıyor",
-    desc: "Bu ortamda yedek şifreleme kullanılamıyor." };
+  if (bkp && bkp.canEncrypt === false) return { key: "backup", title: "Otomatik yedek şifreleme", state: "warn", value: "Korunmasız",
+    desc: "Bu ortamda güvenli anahtar deposu (safeStorage) bulunamadığından otomatik yedekler şifrelenemiyor; şifresiz JSON olarak alınır ve çalınırsa okunabilir.",
+    hint: "Yedekleri şifreli/kilitli bir yerde saklayın ve OS disk şifrelemesini açık tutun." };
   return { key: "backup", title: "Otomatik yedek şifreleme", state: "warn", value: "Kapalı",
     desc: "Otomatik yedekler şifresiz JSON olarak alınıyor; çalınırsa okunabilir.", hint: "Ayarlar > Yedekleme'den otomatik yedeklere parola belirleyin." };
 }

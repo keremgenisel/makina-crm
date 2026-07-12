@@ -99,6 +99,25 @@ describe("SettingsSecurityStatus", () => {
     expect(document.body.textContent).not.toMatch(/FileVault|Mac/);
   });
 
+  it("safeStorage yoksa veritabanı şifreleme nötr değil UYARI olarak gösterilir", async () => {
+    mockBridges({ dbEnc: { encrypted: false, canEncrypt: false } });
+    render(<SettingsSecurityStatus />);
+    await waitFor(() => expect(screen.getByText("Veritabanı şifreleme")).toBeTruthy());
+    const dbenc = screen.getByText("Veritabanı şifreleme").closest("div").parentElement;
+    // Eskiden "Kullanılamıyor · Bilinmiyor" (nötr) idi; artık "Korunmasız · Önerilir" (uyarı)
+    expect(within(dbenc).getByText(/Korunmasız · Önerilir/)).toBeTruthy();
+    // Açıklama oturum anahtarının (jwtSecret) ve DB'nin şifresiz olduğunu belirtmeli
+    expect(within(dbenc).getByText(/jwtSecret/)).toBeTruthy();
+  });
+
+  it("safeStorage yoksa otomatik yedek şifreleme de UYARI olarak gösterilir", async () => {
+    mockBridges({ backup: { set: false, canEncrypt: false } });
+    render(<SettingsSecurityStatus />);
+    await waitFor(() => expect(screen.getByText("Otomatik yedek şifreleme")).toBeTruthy());
+    const bkp = screen.getByText("Otomatik yedek şifreleme").closest("div").parentElement;
+    expect(within(bkp).getByText(/Korunmasız · Önerilir/)).toBeTruthy();
+  });
+
   it("disk durumu okunamazsa 'Bilinmiyor' gösterir", async () => {
     mockBridges({ disk: { state: "unknown", platform: "win32" } });
     render(<SettingsSecurityStatus />);

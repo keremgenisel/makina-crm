@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, powerSaveBlocker } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, powerSaveBlocker, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const sqliteDb = require("./db.cjs");
@@ -268,6 +268,14 @@ if (!gotTheLock) {
     // Sistem uykusunu engelle — sunucu modunda ağ stack'i canlı kalsın
     powerSaveBlocker.start("prevent-app-suspension");
     sqliteDb.migrateFromJsonIfNeeded();
+    // safeStorage yoksa (nadir; keyring'siz Linux vb.) at-rest şifreleme devre dışıdır: DB ve
+    // oturum anahtarı (jwtSecret) diskte ŞİFRESİZ tutulur. Bir kez uyar ki operatör, Güvenlik
+    // Durumu panelindeki uyarıyla birlikte fark etsin — tek koruma OS disk şifrelemesidir.
+    try {
+      if (!safeStorage?.isEncryptionAvailable?.()) {
+        console.warn("[güvenlik] safeStorage kullanılamıyor — veritabanı ve oturum anahtarı diskte ŞİFRESİZ. Yalnızca OS disk şifrelemesi (BitLocker/FileVault) koruma sağlar. Ayrıntı: Ayarlar > Güvenlik Durumu.");
+      }
+    } catch { /* değerlendirilemedi — yoksay */ }
     createWindow();
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
