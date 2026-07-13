@@ -4,6 +4,7 @@ import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
+import { PartTypeManager } from "./PartTypeManager";
 import { Section } from "./settings/Section";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsBackup } from "./settings/SettingsBackup";
@@ -31,11 +32,12 @@ const SETTINGS_GROUPS = [
   { grup: "Güvenlik", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
-  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
 ];
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
+  partTypeDefs = [], setPartTypeDefs = null, rawPartTypeDefs = [],
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
@@ -147,11 +149,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "backup" && (
         <SettingsBackup
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
-          factory={factory} kalipDefs={kalipDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
+          factory={factory} kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
           uretimFormlari={rawUretimFormlari} gorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
-          setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setNotes={setNotes} setParts={setParts}
+          setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           setUretimFormlari={setUretimFormlari}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
@@ -195,7 +197,16 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
-            allModels={[...standardModels, ...customModels]} />
+            allModels={[...standardModels, ...customModels]} partTypeDefs={partTypeDefs} />
+        </Section>
+      )}
+
+      {settingsTab === "parcatipi" && (
+        <Section title="Parça Tipleri" icon="parts" wide>
+          <div className="section-desc">
+            Yedek parçalarınızı gruplamak için tipler tanımlayın. Bir tipe <b>Müşteri formunda seç</b> derseniz, yeni müşteri/makina eklerken o tipteki parça için bir seçici çıkar; <b>Stoktan düş</b> ile seçilen parça makinaya atanınca stoktan otomatik azalır. <b>Konveyör Saç</b> ve <b>Bant</b> sistem tipleridir, kilitlidir.
+          </div>
+          <PartTypeManager partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} parts={parts} setParts={setParts} showToast={showToast} />
         </Section>
       )}
 
@@ -224,7 +235,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "import" && (
         <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash}
-          parts={parts} setParts={setParts} />
+          parts={parts} setParts={setParts} partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} />
       )}
 
       {settingsTab === "optimize" && (

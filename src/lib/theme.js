@@ -5,8 +5,9 @@
 // karanlık mod yalnızca ek bir katmandır. Bileşenlerde renkler `var(--token, #hex)`
 // biçiminde kullanılır; #hex fallback, değişken tanımsız kalsa bile bozulmayı önler.
 //
-// Kenar çubuğu her iki temada da koyudur (uygulamanın mevcut tasarımı); onun kendi
-// sıcak renkleri bu haritaya alınmadı, olduğu gibi kalır.
+// Kenar çubuğu her iki temada da koyu/sıcaktır (marka kimliği). Aydınlık modda
+// bugünküyle birebir aynı kalır; karanlık modda yalnız ince ayar yapılır (aşağıdaki
+// "Kenar çubuğu (menü)" token bloğuna bakınız).
 
 // [ tokenAdı, aydınlıkHex, karanlıkHex ]
 const TOKENS = [
@@ -89,6 +90,18 @@ const TOKENS = [
   ["bluBg", "#eff6ff", "#16233a"],
   ["bluBg2", "#dbeafe", "#1f3352"],
   ["bluBr", "#bfdbfe", "#2f4a72"],
+
+  // ── Kenar çubuğu (menü) ──
+  // Kenar çubuğu HER İKİ temada da koyu/sıcak kalır (marka kimliği). Aşağıdaki light
+  // değerleri bugünküyle birebir aynıdır; yalnız KARANLIK modda ince ayar yapılır:
+  // gradient biraz derinleşir, sağ kenarlık/gölge belirginleşir (içerik de koyu
+  // olduğundan panel ayrımı için), pasif metin/ikon kontrastı okunabilirlik için
+  // biraz yükselir. Aktif turuncu vurgu her iki temada aynıdır.
+  ["sbGrad", "linear-gradient(180deg, #160900 0%, #1f0d02 55%, #281104 100%)", "linear-gradient(180deg, #0e0500 0%, #160a01 55%, #1d0c03 100%)"],
+  ["sbBorder", "rgba(232,93,26,.16)", "rgba(232,93,26,.26)"],
+  ["sbShadow", "6px 0 28px rgba(0,0,0,.30)", "8px 0 34px rgba(0,0,0,.55)"],
+  ["sbTxt", "#a3846f", "#c4aa96"],   // pasif menü metni
+  ["sbIco", "#8d6f5c", "#b19480"],   // pasif menü ikonu
 ];
 
 // #hex → token adı (migration script bunu kullanır). Küçük harf.

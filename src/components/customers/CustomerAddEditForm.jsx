@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
+import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -8,7 +8,7 @@ export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
   stock, models, kalipDefs = [], dealers, factory,
   kdvRates, payments, geoData, loadingGeo,
-  addLabel, entity, parts = [],
+  addLabel, entity, parts = [], partTypeDefs = [],
   draftBar = null,
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
@@ -23,19 +23,22 @@ export const CustomerAddEditForm = ({
   const { lockConflict: serialLock, forceAcquire: forceSerialLock } =
     useLock("stok-seri", isStockSerialPick ? `${form.model}::${form.serialNo}` : null);
 
+  // Seçilen stok makinanın kit parçalarından, "makinada seç" tipli her tip için bir parça
+  // eşleştirir ve tipSecimleri haritasına doldurur. Kit'ten gelen tipler _kitTipler'e yazılır
+  // (o seçimler stoka zaten girmediği için makina atanınca tekrar düşülmez).
   const getKitAutoFill = (stockEntry) => {
     if (!stockEntry?.parcalar?.length) return {};
-    let konveyorSacId = "";
-    let bantSecimiId = "";
-    for (const row of stockEntry.parcalar) {
-      const part = parts.find(p => String(p.id) === String(row.partId));
-      if (part?.tip === "Konveyör Saç" && !konveyorSacId) konveyorSacId = String(row.partId);
-      if (part?.tip === "Bant" && !bantSecimiId) bantSecimiId = String(row.partId);
+    const tipSecimleri = {};
+    const kitTipler = [];
+    for (const tip of partTypeDefs) {
+      if (!tip.makinaSecici) continue;
+      const row = stockEntry.parcalar.find(r => {
+        const part = parts.find(p => String(p.id) === String(r.partId));
+        return part && (part.tip || "Standart") === tip.ad;
+      });
+      if (row) { tipSecimleri[tip.id] = String(row.partId); kitTipler.push(tip.id); }
     }
-    return {
-      ...(konveyorSacId ? { konveyorSacId, _konveyorFromKit: true } : {}),
-      ...(bantSecimiId  ? { bantSecimiId,  _bantFromKit: true }     : {}),
-    };
+    return Object.keys(tipSecimleri).length ? { tipSecimleri, _kitTipler: kitTipler } : {};
   };
 
   if (modal?.edit && lockConflict) {
@@ -142,7 +145,7 @@ export const CustomerAddEditForm = ({
               <>
                 <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
                   if (e.target.value === "__manual__") {
-                    setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _konveyorFromKit: false, _bantFromKit: false }));
+                    setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] }));
                   } else if (e.target.value === "__serisiz__") {
                     const firstSerisiz = stockForModel.find(s => !s.serialNo);
                     setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz) }));
@@ -263,53 +266,37 @@ export const CustomerAddEditForm = ({
         </button>
       </Field>
 
-      {(() => {
-        const konveyorParts = parts.filter(p => (p.tip === "Konveyör Saç") && (!p.models?.length || !form.model || p.models.includes(form.model)));
-        const bantParts     = parts.filter(p => (p.tip === "Bant")         && (!p.models?.length || !form.model || p.models.includes(form.model)));
-        if (!konveyorParts.length && !bantParts.length) return null;
+      {/* "Müşteri formunda seç" (makinaSecici) işaretli her parça tipi için otomatik seçici. Seçim form.tipSecimleri[tipId]'de tutulur. */}
+      {partTypeDefs.filter(t => t.makinaSecici).map(tip => {
+        const uygunParts = parts.filter(p => (p.tip || "Standart") === tip.ad && (!p.models?.length || !form.model || p.models.includes(form.model)));
+        if (!uygunParts.length) return null;
+        const secili = (form.tipSecimleri || {})[tip.id];
+        const c = tipRenk(tip.ad, partTypeDefs);
         return (
-          <>
-            {konveyorParts.length > 0 && (
-              <Field label="Konveyör Saç">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {konveyorParts.map(p => {
-                    const active = form.konveyorSacId === String(p.id);
-                    return (
-                      <button key={p.id} type="button"
-                        onClick={() => setForm(prev => ({ ...prev, konveyorSacId: active ? "" : String(p.id), _konveyorFromKit: false }))}
-                        style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
-                          borderColor: active ? "var(--blu700, #1d4ed8)" : "var(--n200, #e2e8f0)",
-                          background: active ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)",
-                          color: active ? "var(--blu700, #1d4ed8)" : "var(--n500, #64748b)" }}>
-                        {p.ad}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-            )}
-            {bantParts.length > 0 && (
-              <Field label="Bant">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {bantParts.map(p => {
-                    const active = form.bantSecimiId === String(p.id);
-                    return (
-                      <button key={p.id} type="button"
-                        onClick={() => setForm(prev => ({ ...prev, bantSecimiId: active ? "" : String(p.id), _bantFromKit: false }))}
-                        style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
-                          borderColor: active ? "var(--grn700, #15803d)" : "var(--n200, #e2e8f0)",
-                          background: active ? "var(--grnBg, #f0fdf4)" : "var(--n100, #f8fafc)",
-                          color: active ? "var(--grn700, #15803d)" : "var(--n500, #64748b)" }}>
-                        {p.ad}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
-            )}
-          </>
+          <Field key={tip.id} label={tip.ad}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {uygunParts.map(p => {
+                const active = secili === String(p.id);
+                return (
+                  <button key={p.id} type="button"
+                    onClick={() => setForm(prev => {
+                      const cur = { ...(prev.tipSecimleri || {}) };
+                      const val = String(p.id);
+                      if (cur[tip.id] === val) delete cur[tip.id]; else cur[tip.id] = val;
+                      return { ...prev, tipSecimleri: cur, _kitTipler: (prev._kitTipler || []).filter(id => id !== tip.id) };
+                    })}
+                    style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid",
+                      borderColor: active ? c.border : "var(--n200, #e2e8f0)",
+                      background: active ? c.bg : "var(--n100, #f8fafc)",
+                      color: active ? c.color : "var(--n500, #64748b)" }}>
+                    {p.ad}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
         );
-      })()}
+      })}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Garanti Başlangıç">

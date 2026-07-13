@@ -12,6 +12,7 @@ const BLOB_SECTIONS = [
   "customers", "services", "partSales", "payments", "dealers", "stock", "notes",
   "parts", "partStock", "partStockLog", "gorusmeler", "dosyalar", "kalipDefs", "standardModels",
   "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari",
+  "partTypeDefs",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -34,6 +35,7 @@ const SECTION_GROUP = {
   uretimFormlari: "stockActions",
   notes: "notActions",
   kalipDefs: "settings",
+  partTypeDefs: "settings",
   standardModels: "settings",
   customModels: "settings",
   factory: "settings",

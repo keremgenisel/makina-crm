@@ -539,3 +539,46 @@ export const customerToAliciFields = (c) => ({
   country: c.country || "",
   city: c.city || "",
 });
+
+// ── Parça tipi seçimleri (makina konfigürasyonu) ──────────────────────────────
+// Eski sabit konveyorSacId/bantSecimiId alanlarını genel tipSecimleri haritasına
+// (anahtar = tip id) taşır. Kayıtta zaten tipSecimleri varsa dokunmaz. Yükleme
+// sırasında bir kez çalışır; eski alanlar kayıtta kalır ama artık okunmaz.
+export const migrateTipSecimleri = (c) => {
+  if (!c || typeof c !== "object") return c;
+  const mevcut = c.tipSecimleri;
+  // Zaten dolu bir tipSecimleri varsa dokunma. BOŞ {} (ör. SQLite'tan yeni eklenen sütun)
+  // eski alanların taşınmasını engellememeli — o yüzden anahtar sayısına bakılır.
+  if (mevcut && typeof mevcut === "object" && Object.keys(mevcut).length > 0) return c;
+  const secim = {};
+  if (c.konveyorSacId) secim.konveyor = String(c.konveyorSacId);
+  if (c.bantSecimiId)  secim.bant     = String(c.bantSecimiId);
+  return Object.keys(secim).length ? { ...c, tipSecimleri: secim } : c;
+};
+
+// Makina tip seçimlerinin stok etkisini hesaplar. Yalnız stokDus=true tipler dikkate
+// alınır; kit'ten gelen tipler (kitTipler) düşümden atlanır (stoka zaten girmemişler).
+// Üç akışı da tek imzayla karşılar:
+//   ekle:  onceki={},  yeni=secimler        → toDeduct = yeni (kit hariç)
+//   düzenle: onceki=eski, yeni=yeni          → farkları düş/geri al
+//   sil:   onceki=secimler, yeni={}          → toRestore = onceki
+// Dönen partId'ler string'dir; aynı partId hem eski hem yenide ise dokunulmaz.
+export const stokSecimDiff = ({ onceki = {}, yeni = {}, kitTipler = [], partTypeDefs = [] } = {}) => {
+  const dusenTipler = new Set((partTypeDefs || []).filter(t => t.stokDus).map(t => t.id));
+  const kit = new Set(kitTipler);
+  const idlerinden = (secimler, sadeceKit = false) => {
+    const out = [];
+    for (const [tipId, partId] of Object.entries(secimler || {})) {
+      if (!partId || !dusenTipler.has(tipId)) continue;
+      if (sadeceKit && !kit.has(tipId)) continue;
+      out.push(String(partId));
+    }
+    return out;
+  };
+  const oldIds = idlerinden(onceki);
+  const newIds = idlerinden(yeni);
+  const kitIds = idlerinden(yeni, true);
+  const toRestore = oldIds.filter(id => !newIds.includes(id));
+  const toDeduct  = newIds.filter(id => !oldIds.includes(id) && !kitIds.includes(id));
+  return { toRestore, toDeduct };
+};

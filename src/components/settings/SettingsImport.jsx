@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { trLower, bumpId, normalizeSaleType, fmt, fmtTR } from "../../lib/utils";
+import { PART_TYPE_PALETTE_KEYS } from "../../lib/constants";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
 
 const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
 
-export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts }) => {
+export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, partTypeDefs = [], setPartTypeDefs = null }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
   const parseCSV = (text) => {
     text = text.replace(/^\uFEFF/, ""); // BOM temizliği
@@ -278,6 +279,28 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
     if (!partsImportPreview || !setParts) return;
     const impParts = partsImportPreview.parts;
     bumpId(impParts);
+    // İçe aktarılan parçalarda tanımsız tip varsa otomatik yeni parça tipi ekle (kullanıcı kararı)
+    if (setPartTypeDefs) {
+      const mevcutAdlar = new Set((partTypeDefs || []).map(t => trLower(t.ad)));
+      const yeniTipAdlari = [];
+      for (const x of impParts) {
+        const tipAd = (x.tip || "").trim();
+        if (tipAd && !mevcutAdlar.has(trLower(tipAd)) && !yeniTipAdlari.some(a => trLower(a) === trLower(tipAd))) yeniTipAdlari.push(tipAd);
+      }
+      if (yeniTipAdlari.length) {
+        setPartTypeDefs(prev => {
+          let kullanilan = prev.filter(t => !t.sistem).length;
+          const eklenecek = yeniTipAdlari
+            .filter(ad => !prev.some(t => trLower(t.ad) === trLower(ad)))
+            .map((ad, i) => ({
+              id: `tip_${Date.now()}_${i}`, ad,
+              renk: PART_TYPE_PALETTE_KEYS[(kullanilan++) % PART_TYPE_PALETTE_KEYS.length],
+              makinaSecici: false, stokDus: false, raporGoster: false, sistem: false,
+            }));
+          return eklenecek.length ? [...prev, ...eklenecek] : prev;
+        });
+      }
+    }
     setParts(p => {
       const guncelMap = new Map();
       impParts.forEach(x => { const { _mevcut, ...clean } = x; guncelMap.set(x.id, clean); });
@@ -402,7 +425,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
           <FileUploadBtn onFile={handlePartsFile} />
         </div>
         <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "var(--amb800, #92400e)", lineHeight: 1.6 }}>
-          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip (Standart/Konveyör Saç/Bant) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
+          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip ({(partTypeDefs.length ? partTypeDefs.map(t => t.ad) : ["Standart"]).join("/")}) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
+          <div style={{ marginTop: 4, opacity: .85 }}>Tanımlı olmayan bir tip yazarsanız otomatik olarak yeni parça tipi oluşturulur.</div>
         </div>
       </Section>
 

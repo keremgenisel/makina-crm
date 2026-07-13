@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -18,7 +18,7 @@ export const Customers = ({
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
-  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
+  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], partTypeDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
   serverPermissions = null,
 }) => {
@@ -230,7 +230,7 @@ export const Customers = ({
   const doAdd = () => {
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
@@ -247,13 +247,10 @@ export const Customers = ({
         setPayments(p => [...yeniOdemeler, ...p]);
       }
       if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
-      // Konveyör Saç / Bant seçimi varsa partStock'tan 1 adet düş (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
-      const deductPartIds = [
-        !_konveyorFromKit ? clean.konveyorSacId : null,
-        !_bantFromKit     ? clean.bantSecimiId  : null,
-      ].filter(Boolean);
-      if (deductPartIds.length > 0 && setPartStock) {
-        setPartStock(p => p.map(s => deductPartIds.includes(String(s.partId))
+      // "Stoktan düş" tipli seçimler partStock'tan 1 adet düşülür (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
+      const { toDeduct } = stokSecimDiff({ yeni: clean.tipSecimleri, kitTipler: _kitTipler || [], partTypeDefs });
+      if (toDeduct.length > 0 && setPartStock) {
+        setPartStock(p => p.map(s => toDeduct.includes(String(s.partId))
           ? { ...s, miktar: Math.max(0, (s.miktar || 0) - 1), sonGuncelleme: today() }
           : s
         ));
@@ -274,22 +271,17 @@ export const Customers = ({
       doAdd();
       return;
     } else {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _konveyorFromKit, _bantFromKit, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
       if (wasSerialPending && setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
-      // Konveyör Saç / Bant değişmişse eski stoğu geri al, yeni seçimi düş (kit'ten gelenleri atlat)
+      // Tip seçimleri değişmişse eski stoğu geri al, yeni seçimi düş (yalnız "stoktan düş" tipler, kit'ten gelenleri atlat)
       if (setPartStock) {
-        const oldIds = [modal?.edit?.konveyorSacId, modal?.edit?.bantSecimiId].filter(Boolean);
-        const newIds = [clean.konveyorSacId, clean.bantSecimiId].filter(Boolean);
-        const kitIds = [
-          _konveyorFromKit ? clean.konveyorSacId : null,
-          _bantFromKit     ? clean.bantSecimiId  : null,
-        ].filter(Boolean);
-        const toRestore = oldIds.filter(id => !newIds.includes(id));
-        const toDeduct  = newIds.filter(id => !oldIds.includes(id) && !kitIds.includes(id));
+        const { toRestore, toDeduct } = stokSecimDiff({
+          onceki: modal?.edit?.tipSecimleri, yeni: clean.tipSecimleri, kitTipler: _kitTipler || [], partTypeDefs,
+        });
         if (toRestore.length > 0 || toDeduct.length > 0) {
           setPartStock(p => p.map(s => {
             const sid = String(s.partId);
@@ -390,12 +382,10 @@ export const Customers = ({
       }
     }
 
-    // Konveyör Saç / Bant stoğunu geri al (kit'te olmayan, manuel seçilenler)
+    // "Stoktan düş" tipli seçimlerin stoğunu geri al (kit'te olmayan, manuel seçilenler)
     if (c && setPartStock) {
-      const restoreIds = [c.konveyorSacId, c.bantSecimiId]
-        .filter(Boolean)
-        .map(String)
-        .filter(id => !kitRestoredIds.has(id));
+      const { toRestore } = stokSecimDiff({ onceki: c.tipSecimleri, partTypeDefs });
+      const restoreIds = toRestore.filter(id => !kitRestoredIds.has(id));
       if (restoreIds.length > 0) {
         setPartStock(p => p.map(s => restoreIds.includes(String(s.partId))
           ? { ...s, miktar: (s.miktar || 0) + 1, sonGuncelleme: today() }
@@ -583,7 +573,7 @@ export const Customers = ({
           geoData={geoData} loadingGeo={loadingGeo}
           kdvRates={kdvRates} appSettings={appSettings}
           showToast={showToast}
-          kalipDefs={kalipDefs}
+          kalipDefs={kalipDefs} partTypeDefs={partTypeDefs}
           serverPermissions={serverPermissions}
         />
       )}
@@ -612,7 +602,7 @@ export const Customers = ({
           modal={modal} form={form} setForm={setForm} save={save}
           onClose={() => { clearDraft(); setModal(null); if (returnDetailId != null) { setDetailViewId(returnDetailId); setReturnDetailId(null); } }}
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
-          stock={stock} models={models} kalipDefs={kalipDefs} parts={parts}
+          stock={stock} models={models} kalipDefs={kalipDefs} parts={parts} partTypeDefs={partTypeDefs}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}

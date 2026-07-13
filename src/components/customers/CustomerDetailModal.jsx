@@ -48,7 +48,7 @@ export const CustomerDetailModal = ({
   geoData, loadingGeo,
   kdvRates, appSettings,
   showToast,
-  kalipDefs = [],
+  kalipDefs = [], partTypeDefs = [],
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -509,11 +509,11 @@ export const CustomerDetailModal = ({
   const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi, factory);
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory);
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs);
   };
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs));
     const sablon = renderMailTemplate(appSettings?.mailTemplates, lang === "EN" ? "makinaRaporuEN" : "makinaRaporu", {
       firma: detailView.name || "", firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
     });
@@ -718,8 +718,10 @@ export const CustomerDetailModal = ({
                 ["Şehir / Ülke", [detailView.city, detailView.country].filter(Boolean).join(" / ")],
                 ["Model", detailView.model],
                 ["Makina Kalıp Çapı", fmtKalipCapi(detailView.kalipCapi)],
-                ["Konveyör Saç", detailView.konveyorSacId ? (parts.find(p => String(p.id) === String(detailView.konveyorSacId))?.ad || "") : ""],
-                ["Bant", detailView.bantSecimiId ? (parts.find(p => String(p.id) === String(detailView.bantSecimiId))?.ad || "") : ""],
+                ...partTypeDefs.filter(t => t.makinaSecici).map(t => {
+                  const pid = (detailView.tipSecimleri || {})[t.id];
+                  return [t.ad, pid ? (parts.find(p => String(p.id) === String(pid))?.ad || "") : ""];
+                }),
                 ...(Array.isArray(detailView.bantlar) ? detailView.bantlar.map((b, i) => {
                   const olcu = b.en && b.boy ? `${b.en}×${b.boy}` : (b.en || b.boy || "");
                   return [`__bant_${i}`, [b.ad, olcu].filter(Boolean).join(" "), b.miktar > 1 ? `×${b.miktar} adet` : ""];

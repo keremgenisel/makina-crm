@@ -105,7 +105,8 @@ CREATE TABLE IF NOT EXISTS customers (
   konveyorSacId TEXT, bantSecimiId TEXT, sourceStockId INTEGER,
   fromTeklifId INTEGER,
   odemePlani TEXT,
-  brutKg REAL
+  brutKg REAL,
+  tipSecimleri TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gorusmeler (
@@ -325,6 +326,9 @@ const CUSTOMERS_BRUT_KG_COLUMN = [["brutKg", "REAL"]]; // sandık etiketi brüt 
 const DOSYALAR_DEALER_COLUMN = [["dealer_id", "INTEGER"]]; // bayi/anlaşmalı servis dosyaları için
 const NOTES_OLUSTURAN_COLUMN = [["olusturan", "TEXT"]]; // notu oluşturan kullanıcı adı (çok kullanıcıda "Benim Notlarım" filtresi)
 const CUSTOMERS_PART_SECIMLERI_COLUMNS = [["konveyorSacId", "TEXT"], ["bantSecimiId", "TEXT"]];
+// Kullanıcı-tanımlı parça tiplerinin makina seçimleri (JSON: { [tipId]: partId }) — eski
+// konveyorSacId/bantSecimiId'nin genelleşmiş hali (bkz. utils.migrateTipSecimleri).
+const CUSTOMERS_TIP_SECIMLERI_COLUMN = [["tipSecimleri", "TEXT"]];
 const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
@@ -383,11 +387,11 @@ function populateAll(conn, data, skip = new Set()) {
     INSERT INTO customers (id, name, phone, email, adres, city, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
-      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg)
+      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri)
     VALUES (@id, @name, @phone, @email, @adres, @city, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
-      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg)
+      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order, uretimFormGonder, uretimFormId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -420,6 +424,7 @@ function populateAll(conn, data, skip = new Set()) {
         fromTeklifId: c.fromTeklifId ?? null,
         odemePlani: json(c.odemePlani ?? []),
         brutKg: c.brutKg ?? null,
+        tipSecimleri: json(c.tipSecimleri ?? {}),
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx, toInt(k.uretimFormGonder), k.uretimFormId ?? null);
@@ -545,6 +550,12 @@ function populateAll(conn, data, skip = new Set()) {
     for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.deletedAt ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null, m.resim ?? null);
   }
 
+  // Parça tipleri: küçük ve şeması esnek (davranış bayrakları) olduğu için kendi tablosu
+  // yerine meta'da tek JSON satırı olarak saklanır (soft-delete için deletedAt dahil korunur).
+  if (Array.isArray(data.partTypeDefs) && !skip.has("partTypeDefs")) {
+    conn.prepare(`INSERT INTO meta (key, value) VALUES ('partTypeDefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(JSON.stringify(data.partTypeDefs));
+  }
+
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
     conn.prepare(`DELETE FROM teklifler`).run();
     const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId, satisTamam, tur, country, city, modelYiliDegeri, customFieldValues, takipKapali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -632,6 +643,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "customers", CUSTOMERS_BANTLAR_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
+  ensureColumns(conn, "customers", CUSTOMERS_TIP_SECIMLERI_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
   ensureColumns(conn, "parts", PARTS_TIP_RESIM_COLUMNS);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
@@ -786,6 +798,7 @@ function readBlobFromDb() {
     kaliplar: kaliplarByCustomer.get(c.id) || [],
     bantlar: parseJsonCol(c.bantlar, []),
     odemePlani: parseJsonCol(c.odemePlani, []),
+    tipSecimleri: parseJsonCol(c.tipSecimleri, {}),
   }));
 
   const dealers = db.prepare(`SELECT * FROM dealers`).all().map((d) => ({
@@ -909,6 +922,9 @@ function readBlobFromDb() {
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
   const nextId = nextIdRow ? Number(nextIdRow.value) : undefined;
 
+  const partTypeDefsRow = db.prepare(`SELECT value FROM meta WHERE key = 'partTypeDefs'`).get();
+  const partTypeDefs = partTypeDefsRow ? parseJsonCol(partTypeDefsRow.value, []) : [];
+
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,
     not: notField,
@@ -926,7 +942,7 @@ function readBlobFromDb() {
   }));
 
   return {
-    customers, dealers, stock, kalipDefs, standardModels, customModels, factory,
+    customers, dealers, stock, kalipDefs, partTypeDefs, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari,
   };

@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
-  uid, wasMintedHere, customerToAliciFields,
+  uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -280,5 +280,61 @@ describe("customerToAliciFields", () => {
   });
   it("yetkili telefonu yoksa firma telefonuna düşer", () => {
     expect(customerToAliciFields({ id: 1, phone: "444" }).tel).toBe("444");
+  });
+});
+
+describe("migrateTipSecimleri", () => {
+  it("eski konveyorSacId/bantSecimiId'yi tipSecimleri haritasına taşır", () => {
+    const c = migrateTipSecimleri({ id: 1, konveyorSacId: "12", bantSecimiId: "8" });
+    expect(c.tipSecimleri).toEqual({ konveyor: "12", bant: "8" });
+  });
+  it("yalnız bir alan varsa yalnız onu taşır", () => {
+    expect(migrateTipSecimleri({ id: 1, bantSecimiId: 8 }).tipSecimleri).toEqual({ bant: "8" });
+  });
+  it("tipSecimleri zaten DOLU ise dokunmaz (idempotent)", () => {
+    const c = { id: 1, konveyorSacId: "12", tipSecimleri: { konveyor: "99" } };
+    expect(migrateTipSecimleri(c)).toBe(c);
+  });
+  it("BOŞ {} tipSecimleri eski alanların taşınmasını engellemez (SQLite yeni sütun senaryosu)", () => {
+    // Yükseltme sonrası ilk yükte SQLite tipSecimleri sütunu {} döner ama eski alanlar dolu
+    const c = migrateTipSecimleri({ id: 1, konveyorSacId: "12", bantSecimiId: "8", tipSecimleri: {} });
+    expect(c.tipSecimleri).toEqual({ konveyor: "12", bant: "8" });
+  });
+  it("eski alan yoksa kaydı olduğu gibi bırakır (tipSecimleri eklemez)", () => {
+    const c = { id: 1, name: "X" };
+    expect(migrateTipSecimleri(c)).toBe(c);
+  });
+});
+
+describe("stokSecimDiff", () => {
+  // Yalnız stokDus=true tipler stok etkiler. konveyor: stokDus true, kayit: stokDus false.
+  const defs = [
+    { id: "konveyor", stokDus: true },
+    { id: "bant", stokDus: true },
+    { id: "kayit", stokDus: false },
+  ];
+  it("ekleme: yeni seçimler düşülür, kit'ten gelenler atlanır", () => {
+    const { toDeduct, toRestore } = stokSecimDiff({ yeni: { konveyor: "1", bant: "2" }, kitTipler: ["bant"], partTypeDefs: defs });
+    expect(toDeduct).toEqual(["1"]); // bant kit'ten geldi, atlandı
+    expect(toRestore).toEqual([]);
+  });
+  it("stokDus=false tip stok etkilemez", () => {
+    const { toDeduct } = stokSecimDiff({ yeni: { kayit: "5" }, partTypeDefs: defs });
+    expect(toDeduct).toEqual([]);
+  });
+  it("düzenleme: değişen seçim eskiyi geri al, yeniyi düş", () => {
+    const { toRestore, toDeduct } = stokSecimDiff({ onceki: { konveyor: "1" }, yeni: { konveyor: "3" }, partTypeDefs: defs });
+    expect(toRestore).toEqual(["1"]);
+    expect(toDeduct).toEqual(["3"]);
+  });
+  it("düzenleme: aynı seçim dokunulmaz", () => {
+    const { toRestore, toDeduct } = stokSecimDiff({ onceki: { konveyor: "1" }, yeni: { konveyor: "1" }, partTypeDefs: defs });
+    expect(toRestore).toEqual([]);
+    expect(toDeduct).toEqual([]);
+  });
+  it("silme: tüm stokDus seçimleri geri alınır", () => {
+    const { toRestore, toDeduct } = stokSecimDiff({ onceki: { konveyor: "1", bant: "2", kayit: "9" }, partTypeDefs: defs });
+    expect(toRestore.sort()).toEqual(["1", "2"]); // kayit stokDus değil
+    expect(toDeduct).toEqual([]);
   });
 });

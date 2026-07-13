@@ -384,7 +384,7 @@ export function printServiceForm(sv, customers, kdvRates, translations = {}, kas
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null) {
+export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = []) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_MAKINA_TRANSLATIONS[lang] || DEFAULT_MAKINA_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -397,17 +397,20 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     [L.seriNoLabel, detailView.serialNo || "—"],
     ...(fmtKalipCapi(detailView.kalipCapi) ? [[L.kalipCapiLabel, fmtKalipCapi(detailView.kalipCapi)]] : []),
     [L.kaliplarLabel, lang === "EN" ? kalipTextEN(detailView) : kalipText(detailView)],
-    ...(() => {
-      const bantLines = [];
-      if (detailView.bantSecimiId) {
-        const bant = parts.find(p => String(p.id) === String(detailView.bantSecimiId));
-        if (bant) bantLines.push(bant.ad);
+    // "Raporda göster" işaretli her parça tipinin makina seçimi. Sistem tipleri seed'inde
+    // Bant açık, Konveyör kapalıdır (mevcut davranış korunur). Eski konveyorSacId/bantSecimiId
+    // ve eski "bantlar" dizisi geriye dönük uyum için okunur.
+    ...(partTypeDefs || []).filter(t => t.raporGoster).flatMap(t => {
+      const lines = [];
+      const pid = (detailView.tipSecimleri || {})[t.id]
+        || (t.rol === "konveyor" ? detailView.konveyorSacId : t.rol === "bant" ? detailView.bantSecimiId : null);
+      if (pid) { const part = parts.find(p => String(p.id) === String(pid)); if (part) lines.push(part.ad); }
+      if (t.rol === "bant" && Array.isArray(detailView.bantlar) && detailView.bantlar.length > 0) {
+        detailView.bantlar.forEach(b => lines.push(`${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`));
       }
-      if (Array.isArray(detailView.bantlar) && detailView.bantlar.length > 0) {
-        detailView.bantlar.forEach(b => bantLines.push(`${b.ad}${b.en && b.boy ? " (" + b.en + "×" + b.boy + ")" : ""}${b.miktar > 1 ? " ×" + b.miktar : ""}`));
-      }
-      return bantLines.length > 0 ? [[L.bantlarLabel, bantLines.join(" · ")]] : [];
-    })(),
+      const label = t.rol === "bant" ? L.bantlarLabel : t.ad;
+      return lines.length > 0 ? [[label, lines.join(" · ")]] : [];
+    }),
     [L.garantiBaslangicLabel, detailView.installDate ? fmtTR(detailView.installDate) : "—"],
     [L.garantiBitisLabel, `${detailView.warrantyEnd ? fmtTR(detailView.warrantyEnd) : "—"} (${detailWarrantyOk ? L.garantiDevam : L.garantiBitti})`],
     [L.notLabel, detailView.aciklama || "—"],
@@ -591,10 +594,10 @@ export function buildSandikEtiketiHtml(gonderen, alici, translations = {}) {
 }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null) {
+export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = []) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts, factory));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts, factory)) : null;
+  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts, factory, partTypeDefs));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts, factory, partTypeDefs)) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;

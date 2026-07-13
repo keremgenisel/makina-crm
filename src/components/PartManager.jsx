@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
-import { CUR_SYM } from "../lib/constants";
+import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, Warn, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
@@ -54,32 +54,26 @@ const ModelBadges = ({ models = [] }) => {
   );
 };
 
-const TIP_LABELS = { "Standart": "Standart", "Konveyör Saç": "Konveyör Saç", "Bant": "Bant" };
-const TIP_COLORS = {
-  "Standart":     { bg: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", border: "var(--n200, #e2e8f0)" },
-  "Konveyör Saç": { bg: "var(--bluBg, #eff6ff)", color: "var(--blu700, #1d4ed8)", border: "var(--bluBr, #bfdbfe)" },
-  "Bant":         { bg: "var(--grnBg, #f0fdf4)", color: "var(--grn700, #15803d)", border: "var(--grnBr, #bbf7d0)" },
-};
-
-const TipSelector = ({ value, onChange }) => (
-  <div style={{ display: "flex", gap: 6 }}>
-    {Object.keys(TIP_LABELS).map(t => {
-      const active = (value || "Standart") === t;
-      const c = TIP_COLORS[t];
+// Parça tipi seçici — tipler kullanıcı-tanımlı partTypeDefs listesinden gelir.
+const TipSelector = ({ value, onChange, partTypeDefs = [] }) => (
+  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+    {partTypeDefs.map(t => {
+      const active = (value || "Standart") === t.ad;
+      const c = tipRenk(t.ad, partTypeDefs);
       return (
-        <button key={t} type="button" onClick={() => onChange(t)}
+        <button key={t.id} type="button" onClick={() => onChange(t.ad)}
           style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
             border: `1px solid ${active ? c.border : "var(--n200, #e2e8f0)"}`,
             background: active ? c.bg : "var(--n100, #f8fafc)",
             color: active ? c.color : "var(--n400, #94a3b8)" }}>
-          {t}
+          {t.ad}
         </button>
       );
     })}
   </div>
 );
 
-export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [] }) => {
+export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [], partTypeDefs = [] }) => {
   const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "" };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
@@ -154,7 +148,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
-                    {(() => { const t = k.tip || "Standart"; const c = TIP_COLORS[t] || TIP_COLORS["Standart"]; return (
+                    {(() => { const t = k.tip || "Standart"; const c = tipRenk(t, partTypeDefs); return (
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: c.bg, color: c.color, border: `1px solid ${c.border}`, whiteSpace: "nowrap" }}>{t}</span>
                     ); })()}
                   </td>
@@ -223,7 +217,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
-            <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} />
+            <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
@@ -271,7 +265,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
-            <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} />
+            <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />

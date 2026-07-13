@@ -99,6 +99,40 @@ export const INIT_KALIPLAR = [
   { id: 7007, ad: "Kare Kaşarlı Köfte" },
 ];
 
+// Parça tipleri (kullanıcı-tanımlı). Sistem tipleri (sistem:true) kilitlidir: adı
+// değişmez, silinmez, davranış kutucukları seed değerinde sabittir. Kullanıcının
+// eklediği tipler tamamen serbesttir. Davranış bayrakları:
+//   makinaSecici → makina ekle/düzenle formunda bu tip için parça seçici çıkar
+//   stokDus      → seçilen parça makina atanınca stoktan 1 düşer (makinaSecici şart)
+//   raporGoster  → makina yazdırma raporunda bu tipin seçimi listelenir
+// rol: sistem tiplerinin stabil işlev anahtarı (migration ve tipSecimleri anahtarı id'dir).
+// "Standart" davranışsız varsayılan tiptir. renk, PART_TYPE_PALETTE anahtarıdır.
+export const INIT_PART_TYPES = [
+  { id: "standart", ad: "Standart",     renk: "slate", makinaSecici: false, stokDus: false, raporGoster: false, sistem: true },
+  { id: "konveyor", ad: "Konveyör Saç", renk: "blu",   makinaSecici: true,  stokDus: true,  raporGoster: false, sistem: true, rol: "konveyor" },
+  { id: "bant",     ad: "Bant",         renk: "grn",   makinaSecici: true,  stokDus: true,  raporGoster: true,  sistem: true, rol: "bant" },
+];
+
+// Parça tipi rozet renk paleti (tema token'ları, dark-mode uyumlu). Tip.renk bu anahtarları kullanır.
+export const PART_TYPE_PALETTE = {
+  slate: { bg: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", border: "var(--n200, #e2e8f0)" },
+  blu:   { bg: "var(--bluBg, #eff6ff)", color: "var(--blu700, #1d4ed8)", border: "var(--bluBr, #bfdbfe)" },
+  grn:   { bg: "var(--grnBg, #f0fdf4)", color: "var(--grn700, #15803d)", border: "var(--grnBr, #bbf7d0)" },
+  amb:   { bg: "var(--ambBg, #fffbeb)", color: "var(--amb700, #b45309)", border: "var(--ambBr, #fde68a)" },
+  pur:   { bg: "var(--purBg, #f5f3ff)", color: "var(--purTx, #7c3aed)", border: "var(--bluBr, #bfdbfe)" },
+  teal:  { bg: "var(--grnBg, #f0fdf4)", color: "var(--teal, #0d9488)", border: "var(--grnBr, #bbf7d0)" },
+  red:   { bg: "var(--redBg, #fef2f2)", color: "var(--red700, #b91c1c)", border: "var(--redBr, #fecaca)" },
+};
+// Yeni tip eklenirken sıradaki rengi otomatik atamak için (slate hariç, o Standart'a ait).
+export const PART_TYPE_PALETTE_KEYS = ["blu", "grn", "amb", "pur", "teal", "red"];
+
+// Bir parça tipi adına (part.tip) karşılık gelen rozet rengini döndürür. Tanımsız/
+// bilinmeyen tip Standart (slate) rengine düşer.
+export const tipRenk = (tipAd, partTypeDefs = []) => {
+  const def = (partTypeDefs || []).find(t => t.ad === tipAd);
+  return PART_TYPE_PALETTE[def?.renk] || PART_TYPE_PALETTE.slate;
+};
+
 export const INIT_STOCK = [];
 
 export const INIT_SERVICES = [];
