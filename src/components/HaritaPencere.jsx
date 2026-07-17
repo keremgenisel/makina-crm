@@ -27,9 +27,11 @@ export function HaritaPencere() {
 
   // Ayrı pencerede harita içeriğe dört yandan boşluk verir (ana uygulamadaki sekme
   // içeriğinin padding:28'i burada yok; harita pencere kenarına dayanıyordu).
+  // Firmaya tıklanınca ana pencereye haber verilir: o müşterinin kartını açar ve öne gelir.
   return (
     <div style={{ padding: 28, minHeight: "100vh", boxSizing: "border-box" }}>
-      <Harita customers={veri.customers} dealers={veri.dealers} factory={veri.factory} />
+      <Harita customers={veri.customers} dealers={veri.dealers} factory={veri.factory}
+        onFirmaSec={(id) => window.haritaBridge?.firmaSec?.(id)} />
     </div>
   );
 }

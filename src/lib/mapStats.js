@@ -1,7 +1,7 @@
 import { trLower } from "./utils";
 
 // Pin ipucunda görünen etiketler
-const BAYI_ETIKET = { bayi: "bayi", servis: "anlaşmalı servis", ikisi: "bayi + anlaşmalı servis" };
+const BAYI_ETIKET = { bayi: "Bayi", servis: "Anlaşmalı Servis", ikisi: "Bayi + Anlaşmalı Servis" };
 
 /**
  * Pin boyları. Üç görünümde de bayi fabrikadan KÜÇÜK kalır (kullanıcının kuralı), ama
@@ -76,10 +76,11 @@ export const haritaOzeti = (customers = []) => {
  * firmalar makina sayısıyla gösterilir. Aynı firma (isim, trLower ile büyük/küçük harf
  * duyarsız) aynı şehirde birden çok makina kaydı taşıyorsa TEK satırda toplanır ve sayısı
  * yazılır (haritaOzeti'nin firma sayımıyla aynı tekilleştirme kuralı).
- * @returns {Record<string, Array<{ ad: string, adet: number }>>} şehir -> makina çok olan üstte
+ * @returns {Record<string, Array<{ ad: string, adet: number, id: * }>>} şehir -> makina çok olan üstte.
+ *          id: firmanın ilk müşteri kaydının id'si — satıra tıklanınca o müşterinin detayına gitmek için.
  */
 export const sehirFirmaKirilim = (customers = [], ulke = "") => {
-  const out = {}; // sehir -> Map(trLower(ad) -> { ad, adet })
+  const out = {}; // sehir -> Map(trLower(ad) -> { ad, adet, id })
   for (const c of customers || []) {
     if (String(c?.country ?? "").trim() !== ulke) continue;
     const sehir = String(c?.city ?? "").trim();
@@ -89,7 +90,7 @@ export const sehirFirmaKirilim = (customers = [], ulke = "") => {
     const m = (out[sehir] ||= new Map());
     const mevcut = m.get(anahtar);
     if (mevcut) mevcut.adet++;
-    else m.set(anahtar, { ad, adet: 1 });
+    else m.set(anahtar, { ad, adet: 1, id: c?.id ?? null });
   }
   const res = {};
   for (const [sehir, m] of Object.entries(out)) {
@@ -167,7 +168,7 @@ export const ilceFirmaKirilim = (customers = [], il = "") => {
     const m = (out[ilce] ||= new Map());
     const mevcut = m.get(anahtar);
     if (mevcut) mevcut.adet++;
-    else m.set(anahtar, { ad, adet: 1 });
+    else m.set(anahtar, { ad, adet: 1, id: c?.id ?? null });
   }
   const res = {};
   for (const [ilce, m] of Object.entries(out)) {
@@ -249,7 +250,7 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri }) => {
 
   if (uygun(factory)) {
     const k = konum(factory.ilce.trim());
-    if (k) liste.push({ x: k[0], y: k[1], tur: "fabrika", olcek: PIN_BOY.ilce.fabrika, sayi: 1, ad: factory.name || "Fabrika", alt: factory.ilce.trim() + " · fabrika" });
+    if (k) liste.push({ x: k[0], y: k[1], tur: "fabrika", olcek: PIN_BOY.ilce.fabrika, sayi: 1, ad: factory.name || "Fabrika", alt: factory.ilce.trim() + " · Fabrika" });
   }
   for (const b of dealers || []) {
     if (!uygun(b)) continue;
@@ -286,7 +287,7 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
 
   if (!seciliUlke) {
     const fk = fUlke && fSehir ? konum(fUlke, fSehir, false) : null;
-    if (fk) liste.push({ ...fk, tur: "fabrika", olcek: PIN_BOY.dunya.fabrika, sayi: 1, ad: factory?.name || "Fabrika", alt: fSehir + " · fabrika" });
+    if (fk) liste.push({ ...fk, tur: "fabrika", olcek: PIN_BOY.dunya.fabrika, sayi: 1, ad: factory?.name || "Fabrika", alt: fSehir + " · Fabrika" });
     const gruplar = new Map();
     for (const b of bayiler) {
       const k = konum(b.country.trim(), b.city.trim(), false);
@@ -311,7 +312,7 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
   } else {
     if (fUlke === seciliUlke && fSehir) {
       const fk = konum(fUlke, fSehir, true);
-      if (fk) liste.push({ ...fk, tur: "fabrika", olcek: PIN_BOY.ulke.fabrika, sayi: 1, ad: factory?.name || "Fabrika", alt: fSehir + " · fabrika" });
+      if (fk) liste.push({ ...fk, tur: "fabrika", olcek: PIN_BOY.ulke.fabrika, sayi: 1, ad: factory?.name || "Fabrika", alt: fSehir + " · Fabrika" });
     }
     for (const b of bayiler) {
       if (b.country.trim() !== seciliUlke) continue;

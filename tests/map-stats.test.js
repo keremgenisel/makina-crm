@@ -127,20 +127,20 @@ describe("sehirAnahtar (takma ad)", () => {
 
 describe("sehirFirmaKirilim", () => {
   const musteriler = [
-    { name: "Alfa Ltd.", country: "Türkiye", city: "Konya" },
-    { name: "alfa ltd.", country: "Türkiye", city: "Konya" },   // aynı firma (büyük/küçük harf)
-    { name: "Beta A.Ş.", country: "Türkiye", city: "Konya" },
-    { name: "Gama", country: "Türkiye", city: "İzmir" },
-    { name: "Delta", country: "Almanya", city: "Köln" },        // başka ülke
-    { name: "X", country: "Türkiye", city: "" },                // şehirsiz
+    { id: 1, name: "Alfa Ltd.", country: "Türkiye", city: "Konya" },
+    { id: 2, name: "alfa ltd.", country: "Türkiye", city: "Konya" },   // aynı firma (büyük/küçük harf)
+    { id: 3, name: "Beta A.Ş.", country: "Türkiye", city: "Konya" },
+    { id: 4, name: "Gama", country: "Türkiye", city: "İzmir" },
+    { id: 5, name: "Delta", country: "Almanya", city: "Köln" },        // başka ülke
+    { id: 6, name: "X", country: "Türkiye", city: "" },                // şehirsiz
   ];
-  it("şehir bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir", () => {
+  it("şehir bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir, ilk id'yi taşır", () => {
     const k = sehirFirmaKirilim(musteriler, "Türkiye");
     expect(k["Konya"]).toEqual([
-      { ad: "Alfa Ltd.", adet: 2 },   // iki kayıt tek firmada
-      { ad: "Beta A.Ş.", adet: 1 },
+      { ad: "Alfa Ltd.", adet: 2, id: 1 },   // iki kayıt tek firmada; id ilk kaydınki
+      { ad: "Beta A.Ş.", adet: 1, id: 3 },
     ]);
-    expect(k["İzmir"]).toEqual([{ ad: "Gama", adet: 1 }]);
+    expect(k["İzmir"]).toEqual([{ ad: "Gama", adet: 1, id: 4 }]);
   });
   it("makina çoktan aza sıralar", () => {
     const k = sehirFirmaKirilim(musteriler, "Türkiye");
@@ -185,16 +185,16 @@ describe("ilOzeti", () => {
 
 describe("ilceFirmaKirilim", () => {
   const musteriler = [
-    { name: "Alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
-    { name: "alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" }, // aynı firma, 2. makina
-    { name: "Beta", country: "Türkiye", city: "İstanbul", ilce: "Şişli" },
-    { name: "Gama", country: "Türkiye", city: "İstanbul" },                  // ilçesiz → yok
-    { name: "Delta", country: "Türkiye", city: "Ankara", ilce: "Çankaya" },  // başka il
+    { id: 11, name: "Alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { id: 12, name: "alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" }, // aynı firma, 2. makina
+    { id: 13, name: "Beta", country: "Türkiye", city: "İstanbul", ilce: "Şişli" },
+    { id: 14, name: "Gama", country: "Türkiye", city: "İstanbul" },                  // ilçesiz → yok
+    { id: 15, name: "Delta", country: "Türkiye", city: "Ankara", ilce: "Çankaya" },  // başka il
   ];
-  it("ilçe bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir", () => {
+  it("ilçe bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir, ilk id'yi taşır", () => {
     const k = ilceFirmaKirilim(musteriler, "İstanbul");
-    expect(k["Kadıköy"]).toEqual([{ ad: "Alfa", adet: 2 }]);
-    expect(k["Şişli"]).toEqual([{ ad: "Beta", adet: 1 }]);
+    expect(k["Kadıköy"]).toEqual([{ ad: "Alfa", adet: 2, id: 11 }]);
+    expect(k["Şişli"]).toEqual([{ ad: "Beta", adet: 1, id: 13 }]);
   });
   it("ilçesiz kaydı ve başka ili atlar", () => {
     const k = ilceFirmaKirilim(musteriler, "İstanbul");

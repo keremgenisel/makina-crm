@@ -27,11 +27,13 @@ const Yukleniyor = ({ metin }) => (
   <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>{metin}</div>
 );
 
-export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPencere = null }) => {
+export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPencere = null, onFirmaSec = null, baslangicUlke = null, baslangicIl = null, onDurumChange = null }) => {
   const [dunya, setDunya] = useState(null);
   const [hata, setHata] = useState("");
-  const [seciliUlke, setSeciliUlke] = useState(null);
-  const [seciliIl, setSeciliIl] = useState(null);   // yalnız Türkiye görünümünde, ilçesi olan iller
+  // Başlangıç seçimi App'ten gelir: firmaya tıklayıp Müşteriler'e geçince Harita unmount olur;
+  // modal kapanıp geri dönülünce aynı ülke/il görünümü korunsun diye (yoksa dünyaya sıfırlanıyordu).
+  const [seciliUlke, setSeciliUlke] = useState(() => baslangicUlke || null);
+  const [seciliIl, setSeciliIl] = useState(() => baslangicIl || null);   // yalnız Türkiye görünümünde, ilçesi olan iller
   const [ilModul, setIlModul] = useState(null);
   const [bolgeler, setBolgeler] = useState({}); // ülke adı -> modül
   const [ipucu, setIpucu] = useState(null);
@@ -49,6 +51,9 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     if (document.fullscreenElement) document.exitFullscreen?.();
     else kartRef.current?.requestFullscreen?.().catch(() => {});
   };
+
+  // Seçim değişince App'e bildir (bir sonraki mount'ta geri yüklenmek üzere hatırlansın)
+  useEffect(() => { onDurumChange?.(seciliUlke, seciliIl); }, [seciliUlke, seciliIl, onDurumChange]);
 
   const ozet = useMemo(() => haritaOzeti(customers), [customers]);
   const toplam = useMemo(() => dunyaToplami(ozet), [ozet]);
@@ -256,11 +261,11 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
             </>
           ) : (
             seciliIl ? (
-              <IlPaneli il={seciliIl} veri={ilVerisi} firmaKirilim={ilceKirilim}
+              <IlPaneli il={seciliIl} veri={ilVerisi} firmaKirilim={ilceKirilim} onFirmaSec={onFirmaSec}
                 onGeri={() => { setIpucu(null); setSeciliIl(null); }} />
             ) : (
               <UlkePaneli ulke={seciliUlke} ozet={ozet} modul={ulkeModul} eslesmeyen={eslesmeyen}
-                firmaKirilim={firmaKirilim}
+                firmaKirilim={firmaKirilim} onFirmaSec={onFirmaSec}
                 onGeri={() => { setIpucu(null); setSeciliUlke(null); }}
                 onIlSec={(il) => { setIpucu(null); setSeciliIl(il); }} />
             )
@@ -287,7 +292,7 @@ const IlKartlari = ({ il, veri, toplamMakina }) => {
   );
 };
 
-const IlPaneli = ({ il, veri, firmaKirilim = {}, onGeri }) => {
+const IlPaneli = ({ il, veri, firmaKirilim = {}, onGeri, onFirmaSec }) => {
   const ilceler = Object.entries(veri.ilceler).sort((a, b) => b[1] - a[1]);
   const kova = kovala(ilceler.map((x) => x[1]));
   return (
@@ -302,7 +307,7 @@ const IlPaneli = ({ il, veri, firmaKirilim = {}, onGeri }) => {
               <span className="ad">{ad}</span>
               <span className="sy">{n}</span>
             </div>
-            <FirmaListesi firmalar={firmaKirilim[ad] || []} />
+            <FirmaListesi firmalar={firmaKirilim[ad] || []} onFirmaSec={onFirmaSec} />
           </div>
         ))}
         {!ilceler.length && !veri.ilcesiz && <div className="harita-bos">Bu ilde makina kaydı yok.</div>}
@@ -338,19 +343,20 @@ const UlkeKartlari = ({ ulke, ozet, toplamMakina, modul }) => {
 const FIRMA_ON = 5;
 
 // Bir şehrin/ilçenin altındaki firma listesi: makina sayısıyla, ilk 5, sonrası "Tümünü gör".
-// Hem şehir (UlkePaneli) hem ilçe (IlPaneli) satırları bunu kullanır.
-const FirmaListesi = ({ firmalar = [] }) => {
+// Hem şehir (UlkePaneli) hem ilçe (IlPaneli) satırları bunu kullanır. onFirmaSec verilirse
+// (ve firmanın id'si varsa) satır tıklanınca o müşterinin detayına gidilir.
+const FirmaListesi = ({ firmalar = [], onFirmaSec = null }) => {
   const [hepsi, setHepsi] = useState(false);
   if (!firmalar.length) return null;
   const gosterilen = hepsi ? firmalar : firmalar.slice(0, FIRMA_ON);
   return (
     <div className="harita-firma-liste">
-      {gosterilen.map((f) => (
-        <div key={f.ad} className="harita-firma">
-          <span className="fad" title={f.ad}>{f.ad}</span>
-          <span className="fsy">{f.adet}</span>
-        </div>
-      ))}
+      {gosterilen.map((f) => {
+        const ic = (<><span className="fad" title={f.ad}>{f.ad}</span><span className="fsy">{f.adet}</span></>);
+        return (onFirmaSec && f.id != null)
+          ? <button key={f.ad} type="button" className="harita-firma tikla" onClick={() => onFirmaSec(f.id)} title={`${f.ad} — müşteri kartını aç`}>{ic}</button>
+          : <div key={f.ad} className="harita-firma">{ic}</div>;
+      })}
       {firmalar.length > FIRMA_ON && (
         <button type="button" className="harita-tumu" onClick={() => setHepsi((h) => !h)}>
           {hepsi ? "Daha az" : `Tümünü gör (${firmalar.length})`}
@@ -360,7 +366,7 @@ const FirmaListesi = ({ firmalar = [] }) => {
   );
 };
 
-const SehirSatiri = ({ ulke, sehir, adet, kova, modul, firmalar, onIlSec }) => {
+const SehirSatiri = ({ ulke, sehir, adet, kova, modul, firmalar, onIlSec, onFirmaSec }) => {
   const i = modul?.SEHIR[sehirAnahtar(sehir)];
   const bolge = i === undefined ? null : modul.BOLGE_ADLARI[i];
   // Bölge adı şehrin tekrarıysa yazma ("Erbil / Erbil ili" gibi)
@@ -380,12 +386,12 @@ const SehirSatiri = ({ ulke, sehir, adet, kova, modul, firmalar, onIlSec }) => {
       {acilir
         ? <button type="button" className="harita-satir" onClick={() => onIlSec(sehir)}>{ic}</button>
         : <div className="harita-satir" style={{ cursor: "default" }}>{ic}</div>}
-      <FirmaListesi firmalar={firmalar} />
+      <FirmaListesi firmalar={firmalar} onFirmaSec={onFirmaSec} />
     </div>
   );
 };
 
-const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, firmaKirilim = {}, onGeri, onIlSec }) => {
+const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, firmaKirilim = {}, onGeri, onIlSec, onFirmaSec }) => {
   const v = ozet[ulke] || { sehirler: {} };
   const sehirler = Object.entries(v.sehirler).sort((a, b) => b[1] - a[1]);
   const kova = kovala(sehirler.map((s) => s[1]));
@@ -397,7 +403,7 @@ const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, firmaKirilim = {}, onGeri, 
       <div className="harita-liste">
         {sehirler.map(([ad, n]) => (
           <SehirSatiri key={ad} ulke={ulke} sehir={ad} adet={n} kova={kova} modul={modul}
-            firmalar={firmaKirilim[ad] || []} onIlSec={onIlSec} />
+            firmalar={firmaKirilim[ad] || []} onIlSec={onIlSec} onFirmaSec={onFirmaSec} />
         ))}
         {!!eslesmeyen.length && (
           <div className="harita-bos">

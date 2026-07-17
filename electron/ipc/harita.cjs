@@ -20,7 +20,7 @@ function haritaVeriDeposu() {
   };
 }
 
-function registerHaritaHandlers(ipcMain, { acVeyaOdakla, getHaritaWin }) {
+function registerHaritaHandlers(ipcMain, { acVeyaOdakla, getHaritaWin, firmaSecAnaPencere }) {
   const depo = haritaVeriDeposu();
 
   // Ana pencere → "ayrı pencerede aç" (varsa öne getir).
@@ -35,6 +35,9 @@ function registerHaritaHandlers(ipcMain, { acVeyaOdakla, getHaritaWin }) {
 
   // Harita penceresi → mount'ta önbellekteki son görüntüyü çek (yarışsız).
   ipcMain.handle("harita:ilkVeriAl", () => depo.oku());
+
+  // Harita penceresinde firmaya tıklandı → ana pencereye ilet (müşteri kartını açar) ve öne getir.
+  ipcMain.on("harita:firmaSec", (_e, id) => { firmaSecAnaPencere?.(id); });
 
   return depo;
 }

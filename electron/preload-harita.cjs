@@ -13,4 +13,6 @@ contextBridge.exposeInMainWorld("haritaBridge", {
     ipcRenderer.on("harita:veri", h);
     return () => ipcRenderer.removeListener("harita:veri", h);
   },
+  // Firmaya tıklandı: ana pencere o müşterinin kartını açsın ve öne gelsin.
+  firmaSec: (id) => ipcRenderer.send("harita:firmaSec", id),
 });

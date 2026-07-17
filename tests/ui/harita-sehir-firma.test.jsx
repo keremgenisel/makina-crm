@@ -2,7 +2,7 @@
 // Ülke seçilince yan panelde her şehrin ALTINDA o şehirdeki firmalar makina sayısıyla
 // görünür; ilk 5, sonrası "Tümünü gör" ile açılır. Bu üçü (firma listesi, sayı, genişletme)
 // koparsa kullanıcı şehir bazında kimin kaç makinası olduğunu göremez.
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent, within } from "@testing-library/react";
 
 afterEach(cleanup);
@@ -50,6 +50,31 @@ describe("Harita — şehir altında firma listesi", () => {
     // Tekrar tıklayınca kapanır
     fireEvent.click(screen.getByRole("button", { name: /Daha az/ }));
     expect(screen.queryByText("Firma F")).toBeNull();
+  });
+});
+
+describe("Harita — firmaya tıklayınca müşteri seçimi", () => {
+  const idli = [
+    { id: 101, name: "Firma A", country: "Türkiye", city: "Konya" },
+    { id: 102, name: "Firma A", country: "Türkiye", city: "Konya" }, // aynı firma, 2. makina
+    { id: 103, name: "Firma B", country: "Türkiye", city: "Konya" },
+  ];
+  it("firma satırı tıklanınca o firmanın ilk müşteri id'siyle onFirmaSec çağrılır", async () => {
+    const sec = vi.fn();
+    render(<Harita customers={idli} dealers={[]} factory={null} onFirmaSec={sec} />);
+    await dunyaBekle();
+    fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Tüm Dünya/ })).toBeTruthy(), { timeout: 10000 });
+    fireEvent.click(screen.getByRole("button", { name: /Firma A/ }));
+    expect(sec).toHaveBeenCalledWith(101); // 2 makinalı firmanın ilk kaydı
+  });
+  it("onFirmaSec verilmezse firma satırı buton değil (tıklanamaz)", async () => {
+    render(<Harita customers={idli} dealers={[]} factory={null} />);
+    await dunyaBekle();
+    fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Tüm Dünya/ })).toBeTruthy(), { timeout: 10000 });
+    expect(screen.queryByRole("button", { name: /Firma A/ })).toBeNull();
+    expect(screen.getByText("Firma A")).toBeTruthy(); // yine de listede (düz metin)
   });
 });
 

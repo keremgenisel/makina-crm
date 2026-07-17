@@ -196,6 +196,12 @@ contextBridge.exposeInMainWorld("appHarita", {
     ipcRenderer.on("harita:kapandi", h);
     return () => ipcRenderer.removeListener("harita:kapandi", h);
   },
+  onFirmaSec: (cb) => {
+    const h = (_e, id) => cb(id);
+    ipcRenderer.removeAllListeners("harita:firmaSec");
+    ipcRenderer.on("harita:firmaSec", h);
+    return () => ipcRenderer.removeListener("harita:firmaSec", h);
+  },
 });
 
 contextBridge.exposeInMainWorld("crmLocks", {

@@ -117,7 +117,18 @@ registerDataHandlers(ipcMain, app, dialog, sqliteDb);
 registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, sqliteDb);
 registerAuditHandlers(ipcMain, sqliteDb);
 registerFileHandlers(ipcMain, app, BrowserWindow, makeFileNet(app));
-registerHaritaHandlers(ipcMain, { acVeyaOdakla: haritaPenceresiAcVeyaOdakla, getHaritaWin: () => haritaWin });
+registerHaritaHandlers(ipcMain, {
+  acVeyaOdakla: haritaPenceresiAcVeyaOdakla,
+  getHaritaWin: () => haritaWin,
+  // Ayrı pencereden firma seçilince: ana pencereyi öne getir ve müşteri kartını açtır.
+  firmaSecAnaPencere: (id) => {
+    if (!mainWin || mainWin.isDestroyed()) return;
+    if (mainWin.isMinimized()) mainWin.restore();
+    mainWin.show();
+    mainWin.focus();
+    mainWin.webContents.send("harita:firmaSec", id);
+  },
+});
 
 // ── Güncelleme IPC kanalları ──
 ipcMain.handle("updater:version", () => app.getVersion());
