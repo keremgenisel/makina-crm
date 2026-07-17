@@ -164,7 +164,18 @@ async function main() {
 
   console.log(`→ ${TAG} yayınlanıyor (${OWNER}/${REPO})`);
   const { release, target } = await createRelease(token);
-  console.log(`  release id=${release.id} tag=${release.tag_name}${target ? ` commit=${target.slice(0, 12)}` : " (varsayılan dal)"}`);
+  console.log(`  release id=${release.id} tag=${release.tag_name}${target ? ` commit=${target.slice(0, 12)}` : ""}`);
+  if (!target) {
+    // HEAD remote'ta yok → GitHub tag'i varsayılan dalın ucunda açtı, yani tag YAYINLANAN KODA
+    // BAKMIYOR. Yayını engellemiyoruz (installer yine de doğru), ama sessiz geçmiyoruz: v3.0.0,
+    // v3.0.1 ve v3.1.0 bu yüzden v2.76.2 commit'ini gösterdi ve tag'leri sonradan elle taşımak gerekti.
+    console.warn("");
+    console.warn("  ⚠  UYARI: HEAD commit'i GitHub'da bulunamadı (push edilmemiş).");
+    console.warn(`     Bu yüzden ${TAG} etiketi varsayılan dalın ucuna açıldı, YAYINLANAN KODA DEĞİL.`);
+    console.warn("     Installer ve otomatik güncelleme etkilenmez; yalnızca etiket yanlış commit'i gösterir.");
+    console.warn("     Düzeltmek için: git push origin main && git push --force origin HEAD:refs/tags/" + TAG);
+    console.warn("");
+  }
 
   const uploads = [
     { name: exeAsset, file: exeLocal, type: "application/octet-stream" },
