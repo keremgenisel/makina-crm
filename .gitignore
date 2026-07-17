@@ -5,3 +5,9 @@ release/
 *.log
 
 .claude/
+
+# Harita üreticisinin indirdiği ham kaynaklar (~50 MB) — çıktı commit edilir, girdi edilmez
+scripts/.map-cache/
+
+# SAST tarama çıktısı (yerel rapor, commit edilmez)
+sast/

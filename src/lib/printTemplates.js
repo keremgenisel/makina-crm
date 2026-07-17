@@ -2,11 +2,21 @@ import LOGO from "../assets/logo.avif?inline";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, numberToWordsEN } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
-const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
+// de kullanılıyor (ör. alt="${esc(...)}"). Tırnak kaçmazsa öznitelikten çıkılıp olay
+// işleyicisi eklenebiliyordu. Metin düğümünde &quot; zaten " olarak görünür, kayıp yok.
+const esc = (s) => String(s ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 // Teklif/fatura şablonları kullanıcı alanlarını onlarca noktada enterpole ediyor; alan alan
 // esc() çağırmak unutulmaya açık (ve unutulmuştu). Bu yüzden bu şablonlara giren veri
 // nesneleri giriş noktasında DERİN kaçıştan geçirilir: tüm metin alanları HTML-güvenli
 // olur, boş/sayı/null alanlar dokunulmadan kalır (falsy kontrolleri bozulmaz).
+/** Kaşe resmi src="..." içine doğrudan giriyor ve ayrı parametre olduğu için şablonun
+ *  derin kaçış süpürmesinin dışında kalıyor. Yalnız resim data-URL'i kabul edilir: başka
+ *  her şey (javascript:, tırnak içeren değer) düşürülür. Kaşe kullanıcı tarafından
+ *  Ayarlar'dan yükleniyor, yani "settings" yazma izni olan biri buraya değer koyabiliyor. */
+export const guvenliKase = (v) => (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(String(v || "")) ? String(v) : "");
+
 const escStr = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const escDeep = (v) => {
   if (typeof v === "string") return escStr(v);
@@ -79,6 +89,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     degisenParcalarBaslik: "DEĞİŞEN PARÇALAR",
     musteriTalimatiBaslik: "MÜŞTERİ TALİMATI / AÇIKLAMA",
     fabrikaNotuBaslik: "FABRİKA NOTU",
+    servisResimleriBaslik: "SERVİS RESİMLERİ",
     teslimEden: "TESLİM EDEN",
     teslimAlan: "TESLİM ALAN",
     imzaEden: "Ad Soyad / İmza",
@@ -117,6 +128,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     degisenParcalarBaslik: "REPLACED PARTS",
     musteriTalimatiBaslik: "CUSTOMER INSTRUCTIONS / NOTES",
     fabrikaNotuBaslik: "FACTORY NOTE",
+    servisResimleriBaslik: "SERVICE PHOTOS",
     teslimEden: "DELIVERED BY",
     teslimAlan: "RECEIVED BY",
     imzaEden: "Name Surname / Signature",
@@ -229,7 +241,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — tek bir servis kaydının "Servis Formu"
 // forEmail: true ise "Teslim Eden"/"Teslim Alan" imza alanları çıkarılır
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {}, kaseResmi = "", factory = null } = {}) {
+export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false, translations = {}, kaseResmi = "", factory = null, resimler = [] } = {}) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_SERVIS_TRANSLATIONS[lang] || DEFAULT_SERVIS_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -288,6 +300,13 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   .info th { width: 180px; background: #eee; }
   h2 { font-size: 12px; margin: 0 0 6px; }
   .box-area { border: 1px solid #000; border-radius: 4px; min-height: 44px; padding: 8px; font-size: 10.5px; white-space: pre-wrap; line-height: 1.5; margin-bottom: 12px; }
+  /* Servis resimleri: satırda 3 tane, aralarında boşluk; bölümün altı/üstü nefes alsın.
+     Boy A4'ün beşte biri (297mm / 5). object-fit:contain, resim oranı bozulmasın diye. */
+  .servis-resimler { display: flex; flex-wrap: wrap; gap: 6mm; margin: 6mm 0 10mm; }
+  .sr-hucre { width: calc((100% - 12mm) / 3); }
+  .sr-hucre img { display: block; width: 100%; height: 59.4mm; object-fit: contain; background: #f7f7f7; border: 1px solid #ccc; border-radius: 3px; }
+  /* Bir resim satırı sayfa ortasından bölünmesin */
+  .sr-hucre { break-inside: avoid; page-break-inside: avoid; }
   .terms { font-size: 9px; color: #444; line-height: 1.5; margin-top: 6px; border-top: 1px solid #ccc; padding-top: 8px; }
   .printbtn { display: block; margin: 0 auto 16px; padding: 8px 24px; background: #e85d1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
   @media print { @page { margin: 10mm 12mm; size: A4; } .printbtn { display: none; } body { padding: 0; } }
@@ -334,6 +353,13 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   <h2>${esc(L.fabrikaNotuBaslik)}</h2>
   <div class="box-area">${esc(sv.fabrikaNotu || "")}</div>
 
+  ${resimler.length ? `
+  <h2>${esc(L.servisResimleriBaslik)}</h2>
+  <div class="servis-resimler">
+    ${resimler.map((r) => `<div class="sr-hucre"><img src="${r.dataUrl}" alt="${esc(r.ad || "")}"></div>`).join("")}
+  </div>
+  ` : ""}
+
   ${forEmail ? "" : `<table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:none">
     <tr>
       <td style="border:none;width:50%;padding:0 16px 0 0;vertical-align:top">
@@ -353,7 +379,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     3- ${esc(L.sart3)}<br>
     4- ${esc(L.sart4)}
   </div>
-  ${kaseResmi ? `<div style="text-align:right;margin-top:20px;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin-top:20px;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;
@@ -362,11 +388,11 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
 }
 
 // Yazdırma: tek bir servis kaydının "Servis Formu"nu üret
-export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "", factory = null) {
+export function printServiceForm(sv, customers, kdvRates, translations = {}, kaseResmi = "", factory = null, resimler = []) {
   const cust = customers.find(c => c.id === sv.customerId) || {};
   const defaultName = `servis-formu-${(cust.serialNo || cust.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi: "", factory }));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi, factory })) : null;
+  const htmlPrint = stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi: "", factory, resimler }));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildServiceFormHtml(sv, customers, kdvRates, { translations, kaseResmi, factory, resimler })) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;
@@ -480,7 +506,7 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thKalip)}</th></tr></thead>
     <tbody>${partRows}</tbody>
   </table>` : ""}
-  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
+  ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
 </body>
 </html>`;
@@ -1047,7 +1073,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
   </div>` : "";
 
   const proformaKase = isProforma && kaseResmi
-    ? `<div style="margin-top:24px;text-align:right;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>`
+    ? `<div style="margin-top:24px;text-align:right;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>`
     : "";
   const page1 = header + (enProforma ? infoSectionEN : infoSection) + productTable + totalsBox + proformaNotlar + teklifSartlar + proformaKase;
 
@@ -1102,7 +1128,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
               ${b.ibanUSD ? `<div style="font-size:9px;">${L.ibanUSDLabel}: <b style="font-family:monospace;">${b.ibanUSD}</b></div>` : ""}
             `).join("")}
           </div>` : ""}
-          ${kaseResmi ? `<div style="margin-top:10px;text-align:right;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
+          ${kaseResmi ? `<div style="margin-top:10px;text-align:right;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
         </td>
       </tr>
     </table>
@@ -1300,7 +1326,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
           <div style="font-size:18px;font-weight:900;">${cur} ${fmt2(total)}</div>
           <div style="font-size:9px;color:#555;font-style:italic;margin-top:4px;">${amountWords}</div>
         </div>
-        ${kaseResmi ? `<div style="margin-top:24px;text-align:right;"><img src="${kaseResmi}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
+        ${kaseResmi ? `<div style="margin-top:24px;text-align:right;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
       </td>
     </tr>
   </table>

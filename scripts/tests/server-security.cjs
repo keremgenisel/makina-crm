@@ -26,6 +26,11 @@ const server = require(path.join(root, "electron", "server.cjs"));
 const READONLY = JSON.stringify({ customerActions: [], dealerActions: [], evrakActions: [], stockActions: [], notActions: [], settings: ["server"] });
 // Kısmi yetki: müşteri ekle+düzenle var, SİLME yok (gerçek eylem id'leri). Diğer gruplar boş.
 const PARTIAL  = JSON.stringify({ customerActions: ["cust_add", "cust_edit"], dealerActions: [], evrakActions: [], stockActions: [], notActions: [], settings: ["server"] });
+// Arayüzün "Kullanıcı Ekle" formunun ürettiği gövde: YALNIZ tabs (UserManager.jsx handleAdd).
+// Varsayılan sekmeler = serverPermissionDefs.js DEFAULT_USER_TABS (Finans/Harita/Ayarlar kapalı).
+const SEKME_ONLY = JSON.stringify({ tabs: ["dashboard", "customers", "dealers", "stock", "evrak", "notes"] });
+// Bayi sorumlusu: müşteri tarafına hiç yazma yok, bayi tarafı açık (dosya IDOR senaryosu).
+const BAYICI = JSON.stringify({ customerActions: [], dealerActions: ["dealer_add", "dealer_edit", "dealer_dosya_del"], evrakActions: [], stockActions: [], notActions: [], settings: ["server"] });
 
 let fail = 0;
 const check = (name, ok) => { console.log((ok ? "PASS" : "FAIL") + "  " + name); if (!ok) fail++; };
@@ -40,6 +45,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("admin", bcrypt.hashSync("admin123", 10), "admin", null);
   dbmod.createUser("ro",    bcrypt.hashSync("ro12345", 10), "user", READONLY);
   dbmod.createUser("part",  bcrypt.hashSync("part123", 10), "user", PARTIAL);
+  dbmod.createUser("sekme", bcrypt.hashSync("sekme123", 10), "user", SEKME_ONLY);
+  dbmod.createUser("bayici", bcrypt.hashSync("bayi123", 10), "user", BAYICI);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -47,6 +54,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     dealers: [{ id: 2, name: "Bayi" }],
     teklifler: [{ id: 3, type: "teklif", no: "T-1", firma: "F", satirlar: [] }],
     notes: [{ id: 4, text: "not" }],
+    appSettings: { kdvRates: { tr: 20 }, pinnedPartIds: [], autoBackup: false, lastBackup: null },
   });
 
   const { port } = await server.start(0, dbmod);
@@ -115,6 +123,30 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const partAdd = await postData({ customers: [{ id: 1, name: "Part Yazdı", model: "AK100" }, { id: 99, name: "Yeni Müşteri", model: "AK100" }] }, await curVer(partTok), partTok);
   check("kısmi yetkili müşteri EKLEYEBİLİR (ekle izni var) → 200", partAdd.status === 200);
 
+  // ── Arayüzle oluşturulan kullanıcı (yalnız tabs) sunucuda GERÇEKTEN kısıtlı mı? ──
+  // REGRESYON: sunucu tabs'ı tanımadığı için bu kullanıcıda kisitliMi false dönüyor, üç katmanlı
+  // denetimin tamamı atlanıyordu. "Ayarlar sekmesi kapalı" diye oluşturulan kullanıcı curl ile
+  // KDV oranını değiştirebiliyor, izni olmadan müşteri silebiliyordu.
+  const sekmeTok = (await login("sekme", "sekme123")).body.token;
+  const sekmeData = await (await api("/api/data", {}, sekmeTok)).json();
+  const kdvEz = await postData({ appSettings: { ...sekmeData.appSettings, kdvRates: { tr: 1 } } }, sekmeData.dataVersion, sekmeTok);
+  check("sekme-kısıtlı kullanıcı KDV oranını değiştiremez → 403", kdvEz.status === 403);
+  const kdvSonra = await (await api("/api/data", {}, adminTok)).json();
+  check("KDV oranı değişmedi", kdvSonra.appSettings?.kdvRates?.tr === 20);
+  check("sekme-kısıtlı kullanıcı model tanımlarını yazamaz → 403",
+    (await postData({ customModels: [{ model: "HACK" }] }, await curVer(sekmeTok), sekmeTok)).status === 403);
+  check("sekme-kısıtlı kullanıcı fabrika bilgisini yazamaz → 403",
+    (await postData({ factory: { name: "HACK" } }, await curVer(sekmeTok), sekmeTok)).status === 403);
+  // Meşru kullanım kırılmamalı: açık sekmelerin verisi ve Stok'a ait pinnedPartIds yazılabilir.
+  check("sekme-kısıtlı kullanıcı müşteri yazabilir (sekmesi açık) → 200",
+    (await postData({ customers: [{ id: 1, name: "Sekme Yazdı", model: "AK100" }] }, await curVer(sekmeTok), sekmeTok)).status === 200);
+  check("sekme-kısıtlı kullanıcı not yazabilir (sekmesi açık) → 200",
+    (await postData({ notes: [{ id: 4, text: "not güncel" }] }, await curVer(sekmeTok), sekmeTok)).status === 200);
+  const pinVer = await curVer(sekmeTok);
+  const pinData = await (await api("/api/data", {}, sekmeTok)).json();
+  check("sekme-kısıtlı kullanıcı parça sabitleyebilir (Stok sekmesi açık, appSettings alan düzeyi) → 200",
+    (await postData({ appSettings: { ...pinData.appSettings, pinnedPartIds: ["7"] } }, pinVer, sekmeTok)).status === 200);
+
   // ── Admin-gating ────────────────────────────────────────────────────────────
   check("salt-okunur GET /api/users → 403", (await api("/api/users", {}, roTok)).status === 403);
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);
@@ -131,15 +163,35 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("tek admini user yapma → 400", (await api(`/api/users/${adminId}`, { method: "PATCH", body: JSON.stringify({ role: "user" }) }, adminTok)).status === 400);
   check("tek admini pasifleştirme → 400", (await api(`/api/users/${adminId}`, { method: "PATCH", body: JSON.stringify({ is_active: 0 }) }, adminTok)).status === 400);
 
+  // ── Rol düşürme ANINDA etkili olmalı (bayat rol regresyonu) ─────────────────
+  // REGRESYON: requireAdmin rolü JWT payload'ından okuyordu ve updateUser token_version'ı yalnız
+  // ŞİFRE değişiminde artırıyordu. Rolü düşürülen admin, jetonun doğal ömrü (30 gün) boyunca
+  // yönetici kalıyordu: kullanıcı ekleyip silebilir, denetim kayıtlarını temizleyebilirdi.
+  const ikinciAdmin = await api("/api/users", { method: "POST", body: JSON.stringify({ username: "admin2", password: "admin234", role: "admin" }) }, adminTok);
+  const admin2Id = (await ikinciAdmin.json()).id;
+  const admin2Tok = (await login("admin2", "admin234")).body.token;
+  check("ikinci admin kendi jetonuyla /api/users görebiliyor (ön koşul)", (await api("/api/users", {}, admin2Tok)).status === 200);
+  check("iki admin varken rol düşürme kabul edilir → 200", (await api(`/api/users/${admin2Id}`, { method: "PATCH", body: JSON.stringify({ role: "user" }) }, adminTok)).status === 200);
+  check("rolü düşürülen adminin ESKİ jetonu artık yönetici değil", (await api("/api/users", {}, admin2Tok)).status !== 200);
+  check("rolü düşürülen admin yeni kullanıcı oluşturamaz",
+    (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "arka_kapi", password: "hunter22", role: "admin" }) }, admin2Tok)).status !== 201);
+  check("rolü düşürülen admin denetim kaydını silemez", (await api("/api/audit", { method: "DELETE" }, admin2Tok)).status !== 200);
+
   // ── Şifre uzunluğu ──────────────────────────────────────────────────────────
   check("kısa şifreyle kullanıcı ekleme → 400", (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "yeni", password: "123", role: "user" }) }, adminTok)).status === 400);
   check("geçerli şifreyle kullanıcı ekleme → 201", (await api("/api/users", { method: "POST", body: JSON.stringify({ username: "yeni", password: "abcdef", role: "user" }) }, adminTok)).status === 201);
 
-  // ── refresh-internal (loopback) ─────────────────────────────────────────────
-  const refAdmin = await api("/auth/refresh-internal", { method: "POST", body: JSON.stringify({ username: "admin" }) });
-  check("refresh-internal admin → token", refAdmin.status === 200 && !!(await refAdmin.json()).token);
-  const refRo = await api("/auth/refresh-internal", { method: "POST", body: JSON.stringify({ username: "ro" }) });
-  check("refresh-internal admin olmayan → 403", refRo.status === 403);
+  // ── Sunucu admin jetonu: HTTP ucu yok, yalnız süreç-içi modül çağrısı ────────
+  // REGRESYON: POST /auth/refresh-internal şifresiz + 2FA'sız 30 günlük admin jetonu veriyordu ve
+  // tek koruması isteğin loopback'ten gelmesiydi. Sunucu PC'sinde oturum açabilen ikinci bir OS
+  // kullanıcısı (data.db'yi DPAPI yüzünden okuyamayan biri) curl ile admin olabiliyordu; Host
+  // doğrulanmadığı için DNS rebinding ile tarayıcıdan da sızdırılabiliyordu. Uç nokta kaldırıldı.
+  const refGone = await api("/auth/refresh-internal", { method: "POST", body: JSON.stringify({ username: "admin" }) });
+  check("refresh-internal ucu artık yok (loopback'ten bile admin jetonu dağıtmıyor)", refGone.status === 404);
+  const icTok = server.issueAdminToken("admin");
+  check("issueAdminToken admin için çalışan jeton üretir", !!icTok && (await api("/api/users", {}, icTok)).status === 200);
+  check("issueAdminToken admin olmayan için null", server.issueAdminToken("ro") === null);
+  check("issueAdminToken olmayan kullanıcı için null", server.issueAdminToken("yok-boyle-biri") === null);
 
   // ── İki adımlı doğrulama (2FA / TOTP) uçtan uca ─────────────────────────────
   const totp = require(path.join(root, "electron", "totp.cjs"));
@@ -246,6 +298,33 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("salt-okunur dosya silme → 403", (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { method: "DELETE", headers: { Authorization: `Bearer ${roTok}` } })).status === 403);
   check("salt-okunur indirme (okuma) izinli → 200", (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { headers: { Authorization: `Bearer ${roTok}` } })).status === 200);
   check("müşteri işlemi olan kullanıcı dosya yükleyebilir → 200", (await fetch(`${base}/api/files/upload`, { method: "POST", headers: { Authorization: `Bearer ${partTok}`, "Content-Type": "application/octet-stream", "X-Dosya-Adi": encodeURIComponent("part.pdf") }, body: upBuf })).status === 200);
+  // ── Fiziksel silmede nesne (künye) düzeyi yetki ─────────────────────────────
+  // REGRESYON (IDOR): dosyaIslemYetkisi yalnız "müşteri VEYA bayi yazma tümden kapalı mı" diye
+  // soruyor, HANGİ dosyanın silindiğine bakmıyordu. customerActions:[] olan bayi sorumlusu,
+  // künyesine hiç dokunamadığı müşteri sözleşmelerini geri dönüşsüz silebiliyordu: künye yazma
+  // 403 verirken fiziksel silme 200 veriyordu. Depo adını tahmin etmesi de gerekmiyor, blob veriyor.
+  const bayiciTok = (await login("bayici", "bayi123")).body.token;
+  const kunye = { id: 500, customerId: 1, ad: "sozlesme.pdf", dosyaAdi: upBody.dosyaAdi, boyut: upBuf.length, tur: "PDF", tarih: "2026-07-17" };
+  check("müşteri dosyası künyesi eklendi (admin)", (await postData({ dosyalar: [kunye] }, await curVer(adminTok), adminTok)).status === 200);
+  check("bayici künyeyi yazamaz (kontrol: iki yol aynı kararı vermeli) → 403",
+    (await postData({ dosyalar: [] }, await curVer(bayiciTok), bayiciTok)).status === 403);
+  check("bayici müşteri dosyasını FİZİKSEL silemez → 403",
+    (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { method: "DELETE", headers: { Authorization: `Bearer ${bayiciTok}` } })).status === 403);
+  check("reddedilen silmeden sonra dosya hâlâ duruyor → 200",
+    (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { headers: { Authorization: `Bearer ${adminTok}` } })).status === 200);
+  // Simetri: müşteri sorumlusu (dealerActions:[]) bayi dosyasına dokunamaz.
+  const bayiUp = await fetch(`${base}/api/files/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${adminTok}`, "Content-Type": "application/octet-stream", "X-Dosya-Adi": encodeURIComponent("bayi.pdf"), "X-Dosya-Firma": encodeURIComponent("Bayi") },
+    body: upBuf,
+  });
+  const bayiDosya = (await bayiUp.json()).dosyaAdi;
+  await postData({ dosyalar: [kunye, { id: 501, dealerId: 2, ad: "bayi.pdf", dosyaAdi: bayiDosya, tur: "PDF", tarih: "2026-07-17" }] }, await curVer(adminTok), adminTok);
+  check("müşteri sorumlusu (dealerActions boş) bayi dosyasını silemez → 403",
+    (await fetch(`${base}/api/files/${encodeURIComponent(bayiDosya)}`, { method: "DELETE", headers: { Authorization: `Bearer ${partTok}` } })).status === 403);
+  check("bayici kendi tarafındaki bayi dosyasını silebilir → 200",
+    (await fetch(`${base}/api/files/${encodeURIComponent(bayiDosya)}`, { method: "DELETE", headers: { Authorization: `Bearer ${bayiciTok}` } })).status === 200);
+
   check("dosya silme → 200", (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { method: "DELETE", headers: { Authorization: `Bearer ${adminTok}` } })).status === 200);
   check("silinen dosya indirme → 404", (await fetch(`${base}/api/files/${encodeURIComponent(upBody.dosyaAdi)}`, { headers: { Authorization: `Bearer ${adminTok}` } })).status === 404);
 

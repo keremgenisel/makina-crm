@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR, INIT_PART_TYPES,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
@@ -17,6 +17,7 @@ import { SimpleDealers } from "./components/SimpleDealers";
 import { Stock } from "./components/Stock";
 import { Finance } from "./components/Finance";
 import { Notes } from "./components/Notes";
+import { Harita } from "./components/Harita";
 import { Settings } from "./components/Settings";
 import { Documents } from "./components/Documents";
 import { GlobalSearch } from "./components/GlobalSearch";
@@ -29,6 +30,7 @@ const TABS = [
   { id: "finance",   label: "Finans",       icon: "finance"   },
   { id: "evrak",     label: "Evrak Yönetimi", icon: "evrak"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
+  { id: "harita",    label: "Faaliyet Haritası", icon: "globe" },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
 ];
 
@@ -707,7 +709,9 @@ export default function App() {
       if (Array.isArray(data.partStock)) setPartStock(data.partStock);
       if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
       if (Array.isArray(data.uretimFormlari)) setUretimFormlari(data.uretimFormlari);
-      setAppSettings(s => ({ ...s, ...data.appSettings, kdvRates }));
+      // Makinaya özgü alanlar (yedek klasörü/zamanlama) sunucudan gelirse YOK SAYILIR, yerel
+      // değer korunur — bkz. disAppSettingsSuz. Yedekten geri yükleme yolu da aynı ayıklamayı yapar.
+      setAppSettings(s => ({ ...s, ...disAppSettingsSuz(data.appSettings), kdvRates }));
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
       return data; // çakışma birleştirmesi (mergeLocalIntoReloaded) sunucu verisini buradan alır
@@ -875,7 +879,7 @@ export default function App() {
             onGoStock={() => { setStockDefaultSubTab("makina"); setTab("stock"); }}
           />
         </div>
-        <nav style={{ padding: "16px 12px", flex: 1, overflowY: "auto" }}>
+        <nav className="sb-scroll" style={{ padding: "16px 12px", flex: 1, overflowY: "auto" }}>
           {visibleTabs.map(t => {
             const active = tab === t.id;
             return (
@@ -989,6 +993,7 @@ export default function App() {
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
+        {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} />}
         {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
       </div>
       </div>

@@ -50,7 +50,57 @@ function dosyalarDir(app) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch { /* zaten var */ }
   return dir;
 }
-function dosyaYolu(app, depoAd) { return path.join(dosyalarDir(app), depoAd); }
+/**
+ * Depo adı yalnız DÜZ bir dosya adı olabilir. Arayüzden gelen ad doğrudan yola çevrilirse
+ * "../../gizli.png" gibi bir değerle dosya klasörünün dışına çıkılabiliyordu; en ağırı
+ * files:remove idi (klasör dışındaki bir dosyayı silebiliyordu). Ayırıcı ya da ".." içeren
+ * her ad reddedilir. path.basename platforma göre çalışır: Windows'ta "\\" de ayırıcıdır.
+ */
+function depoAdiGuvenliMi(depoAd) {
+  const ad = String(depoAd ?? "");
+  if (!ad || ad === "." || ad === "..") return false;
+  if (ad.includes("\0")) return false;                 // NUL ile yol kesme
+  // Ayırıcıları platformdan bağımsız reddet: uygulama Windows'ta çalışıyor (orada "\" de
+  // ayırıcı), üretim/test macOS'ta olabiliyor. Geçerli bir depo adı zaten ikisini de
+  // içermez — sanitizeAd "/" ve "\" karakterlerini "_" yapar.
+  if (/[/\\]/.test(ad)) return false;
+  return ad === path.basename(ad);
+}
+
+function dosyaYolu(app, depoAd) {
+  // Fail-closed: geçersiz ad yol üretmez. Çağıranların hepsi try/catch içinde ya da
+  // varMi() ile önceden sorduğu için bu hata "dosya yok" olarak görünür.
+  if (!depoAdiGuvenliMi(depoAd)) throw new Error("Geçersiz dosya adı: " + depoAd);
+  const tam = path.join(dosyalarDir(app), depoAd);
+  const kok = path.resolve(dosyalarDir(app));
+  // İkinci savunma: sembolik bağ/çözümleme sonrası da klasörün içinde kalmalı
+  if (!path.resolve(tam).startsWith(kok + path.sep)) throw new Error("Klasör dışı yol: " + depoAd);
+  return tam;
+}
+
+/**
+ * Mark-of-the-Web (MOTW) damgası: "<yol>:Zone.Identifier" alternatif veri akışına
+ * ZoneId=3 (Internet) yazar.
+ *
+ * Neden: beyaz listede .doc/.xls var ve bunlar VBA makro taşıyabilen eski Office biçimleri.
+ * Listeden çıkarmak fabrikanın gerçek evrak akışını bozardı (eski .xls/.doc dosyaları hâlâ
+ * günlük kullanımda). Dosya fs.writeFileSync ile yazıldığı için MOTW almıyordu, yani Word/Excel
+ * belgeyi Protected View OLMADAN açıyor ve kullanıcıyla makro arasında tek adım kalıyordu.
+ * Damga, işletim sisteminin kendi ilk savunma katmanını (Protected View / Adobe Korumalı Görünüm)
+ * geri getirir; kullanıcı için hiçbir ek tıklama yaratmaz.
+ *
+ * Açma anında damgalanır: tek boğaz noktası orası (yükleme, yedekten geri yükleme ve sunucudan
+ * indirme yollarının hepsi oradan geçer). Yalnız Windows/NTFS'te anlamlı; diğer platformlarda
+ * ve ADS desteklemeyen dosya sistemlerinde sessizce atlanır (damga yokluğu açmayı engellemez).
+ * platform parametresi test içindir: Windows dalı diğer platformlarda da doğrulanabilsin.
+ */
+function motwDamgala(tamYol, platform = process.platform) {
+  if (platform !== "win32") return { ok: false, atlandi: true };
+  try {
+    fs.writeFileSync(tamYol + ":Zone.Identifier", "[ZoneTransfer]\r\nZoneId=3\r\n");
+    return { ok: true };
+  } catch (err) { return { ok: false, error: err.message }; } // FAT32/ağ sürücüsü → damga yok, açma yine de sürer
+}
 
 // Kaynak dosyayı depoya kopyalar. Dönüş: { ok, boyut } | { ok:false, error }.
 function kopyala(app, srcPath, depoAd) {
@@ -107,22 +157,35 @@ function yedekleDosyaKlasoru(app, jsonPath, pass = null) {
 // Yedek JSON'unun yanındaki dosya klasörünü dosyalar/'a geri kopyalar. Klasör yoksa sessizce geçer.
 // "<ad>.enc" dosyalar şifreli; pass ile çözülüp orijinal adıyla yazılır. Düz dosyalar aynen kopyalanır
 // (eski/şifresiz yedekler). Parola yoksa şifreli dosyalar atlanır (çağıran parolayı sağlamalı).
+//
+// GÜVENLİK: yedek klasörü GÜVENİLMEZ girdidir. Yedek çifti (JSON + komşu klasör) elle
+// hazırlanabildiği için, buradan gelen dosya adları da saldırgan kontrolündedir. Denetimsizken
+// "Fatura.exe" gibi bir dosya deposa girebiliyor, künyesi de aynı yedekten geldiği için arayüzde
+// "PDF" rozetiyle görünüyor ve kullanıcı "Aç"a basınca çalışıyordu (veri hâkimiyeti → kod
+// yürütme). Artık yükleme uçlarıyla aynı iki kapıdan geçer: izinliMi() beyaz listesi ve
+// dosyaYolu() (fail-closed, klasör dışına yazamaz). Beyaz liste dışı dosya kopyalanmaz.
 function geriYukleDosyaKlasoru(app, jsonPath, pass = null) {
   try {
     const kaynak = yedekKlasorYolu(jsonPath);
     if (!fs.existsSync(kaynak)) return { ok: true, yok: true };
-    const dest = dosyalarDir(app);
-    let adet = 0;
+    dosyalarDir(app); // hedef klasör yoksa oluştur (dosyaYolu yalnız yol üretir)
+    let adet = 0, atlanan = 0;
     for (const f of fs.readdirSync(kaynak)) {
       const srcPath = path.join(kaynak, f);
-      if (f.toLowerCase().endsWith(".enc")) {
+      const sifreli = f.toLowerCase().endsWith(".enc");
+      const hedefAd = sifreli ? f.slice(0, -4) : f; // ".enc" soyulduktan sonraki gerçek ad denetlenir
+      // Beyaz liste dışı (ör. .exe/.bat/.lnk) ya da yol ayracı taşıyan ad → hiç kopyalama.
+      if (!izinliMi(hedefAd) || !depoAdiGuvenliMi(hedefAd)) { atlanan++; continue; }
+      let hedefYol;
+      try { hedefYol = dosyaYolu(app, hedefAd); } catch { atlanan++; continue; }
+      if (sifreli) {
         if (!pass) continue; // şifreli dosya, parola yok → atla
-        try { fs.writeFileSync(path.join(dest, f.slice(0, -4)), decryptFileBuffer(fs.readFileSync(srcPath), pass)); adet++; }
+        try { fs.writeFileSync(hedefYol, decryptFileBuffer(fs.readFileSync(srcPath), pass)); adet++; }
         catch { /* yanlış parola/bozuk dosya → atla */ }
-      } else { fs.copyFileSync(srcPath, path.join(dest, f)); adet++; }
+      } else { fs.copyFileSync(srcPath, hedefYol); adet++; }
     }
-    return { ok: true, adet };
+    return { ok: true, adet, atlanan };
   } catch (err) { return { ok: false, error: err.message }; }
 }
 
-module.exports = { IZINLI_UZANTILAR, MAX_BOYUT, uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, dosyalarDir, dosyaYolu, kopyala, sil, varMi, pruneOrphans, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru };
+module.exports = { IZINLI_UZANTILAR, MAX_BOYUT, uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, depoAdiGuvenliMi, dosyalarDir, dosyaYolu, motwDamgala, kopyala, sil, varMi, pruneOrphans, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru };

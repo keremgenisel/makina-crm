@@ -4,7 +4,7 @@ import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDI
 import { Btn, Icon } from "../ui";
 import { Section } from "./Section";
 
-const GROUPS = [
+export const GROUPS = [
   // ─── TEKLİF FORMU ───────────────────────────────────────────────────────────
   { divider: "Teklif Formu" },
   { label: "Başlık & Belge", keys: [
@@ -101,9 +101,11 @@ const GROUPS = [
     { key: "kdvDahilLabel",     label: "KDV Dahil" },
   ]},
   { label: "Bölüm Başlıkları", ns: "servis", keys: [
+    { key: "yapilanIslerBaslik",    label: "Yapılan İşler / Parça Değişimleri" },
     { key: "musteriTalimatiBaslik", label: "Müşteri Talimatı" },
     { key: "degisenParcalarBaslik", label: "Değişen Parçalar" },
     { key: "fabrikaNotuBaslik",     label: "Fabrika Notu" },
+    { key: "servisResimleriBaslik", label: "Servis Resimleri" },
   ]},
   { label: "İmza Alanları", ns: "servis", keys: [
     { key: "teslimEden",  label: "Teslim Eden" },

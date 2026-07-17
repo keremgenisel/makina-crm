@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Icon, Field, Input, Btn, Select, ImageUpload, ConfirmDialog } from "../ui";
 import { COUNTRIES, staticCities } from "../../lib/constants";
+import { ILCELER } from "../../lib/map/ilceler";
 import { Section } from "./Section";
 
 const emptyBank = () => ({
@@ -24,7 +25,7 @@ const migrateBankalar = (factory) => {
 
 export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettings, setCustomers, setServices, flash }) => {
   const [form, setForm] = useState({
-    evrakFirmaAdi: "", faturaFirmaAdi: "", contact: "", phone: "", email: "", web: "", adres: "", country: "", city: "",
+    evrakFirmaAdi: "", faturaFirmaAdi: "", contact: "", phone: "", email: "", web: "", adres: "", country: "", city: "", ilce: "",
     gtipNo: "",
     bankalar: [emptyBank()],
   });
@@ -42,6 +43,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       adres: factory.adres || "",
       country: factory.country || "",
       city: factory.city || "",
+      ilce: factory.ilce || "",
       gtipNo: factory.gtipNo || "",
       bankalar: migrateBankalar(factory),
     });
@@ -59,6 +61,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       adres: form.adres,
       country: form.country,
       city: form.city,
+      ilce: form.ilce,
       gtipNo: form.gtipNo,
       bankalar: form.bankalar,
     }));
@@ -101,22 +104,35 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Ülke">
-            <Select value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value, city: "" }))}>
+            <Select value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value, city: "", ilce: "" }))}>
               <option value="">— Seçin —</option>
               {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
             </Select>
           </Field>
           <Field label="Şehir">
             {staticCities(form.country).length > 0 ? (
-              <Select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))}>
+              <Select value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value, ilce: "" }))}>
                 <option value="">— Seçin —</option>
                 {staticCities(form.country).map(c => <option key={c} value={c}>{c}</option>)}
               </Select>
             ) : (
-              <Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} placeholder="Şehir" />
+              <Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value, ilce: "" }))} placeholder="Şehir" />
             )}
           </Field>
         </div>
+        {/* İlçe: yalnız ilçe kırılımı olan illerde. Fabrikanın ilçesi Faaliyet Haritası'nda
+            pinin hangi ilçeye konacağını belirler. */}
+        {form.country === "Türkiye" && ILCELER[form.city] && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="İlçe">
+              <Select value={form.ilce || ""} onChange={e => setForm(p => ({ ...p, ilce: e.target.value }))}>
+                <option value="">— Seçin —</option>
+                {ILCELER[form.city].map(i => <option key={i} value={i}>{i}</option>)}
+              </Select>
+            </Field>
+            <div />
+          </div>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="GTIP No (Gümrük Tarife)"><Input {...f("gtipNo")} placeholder="8438 50 00 00 00" /></Field>
         </div>
@@ -201,6 +217,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           />
         );
       })()}
+
     </>
   );
 };

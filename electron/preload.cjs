@@ -175,6 +175,7 @@ contextBridge.exposeInMainWorld("appSecurity", {
 contextBridge.exposeInMainWorld("appFiles", {
   add:      (entityAd) => ipcRenderer.invoke("files:add", entityAd),
   open:     (depoAd) => ipcRenderer.invoke("files:open", depoAd),
+  dataUrl:  (depoAd) => ipcRenderer.invoke("files:dataUrl", depoAd),   // servis formu çıktısına resim gömmek için
   download: (depoAd, onerilenAd) => ipcRenderer.invoke("files:download", depoAd, onerilenAd),
   remove:   (depoAd) => ipcRenderer.invoke("files:remove", depoAd),
   pruneOrphans: (referencedNames) => ipcRenderer.invoke("files:pruneOrphans", referencedNames),

@@ -138,3 +138,155 @@
 
 /* ── Bölüm açıklama metni (ayar/form başlığı altındaki gri açıklama) — 24 yerde tekrar ── */
 .section-desc { font-size: 13px; color: var(--n500, #64748b); margin-bottom: 16px; line-height: 1.6; }
+
+/* ══ Harita sekmesi ══
+   Harita bir kart içinde: solda çizim penceresi, sağda liste paneli.
+   Renkler theme.js'teki h* tokenlarından gelir (iki tema için ayrı ayarlanmış). */
+.harita-kart, .harita-kart * { box-sizing: border-box; }
+.harita-kart {
+  background: var(--surface, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  height: 440px;
+}
+.harita-alan { flex: 1; position: relative; min-width: 0; box-sizing: border-box; background: var(--hDeniz, #eef3f7); }
+.harita-svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.harita-svg:active { cursor: grabbing; }
+
+/* Ülkeler düz boyanır; ayrım gölgeyle değil, belirgin bir sınır çizgisiyle yapılır.
+   (Kabartma denendi ve kaldırıldı: şekil başına gölge filtresi sürüklerken kare süresini
+   17 ms'den 112 ms'ye çıkarıyordu, yani saniyede 60 kare yerine 9.) */
+.harita-sekil, .harita-arkaplan {
+  stroke: var(--hCizgi, #ffffff);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.harita-arkaplan { fill: var(--hBos, #dbe3ec); pointer-events: none; }
+.harita-sekil.satisli { cursor: pointer; }
+.harita-sekil.satisli:hover { stroke: var(--n900, #0f172a); stroke-width: 1.4; }
+.harita-pin { cursor: pointer; }
+.harita-pin path { filter: drop-shadow(0 3px 5px rgba(0,0,0,.4)); }
+
+/* Yakınlaştırma düğmeleri: üç ayrı yüzen kutu yerine tek grup — uygulamanın kart diliyle
+   aynı (ince kenarlık + hafif gölge), aralarında ayraç. */
+.harita-arac {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; flex-direction: column;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--n200, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  overflow: hidden;
+}
+.harita-arac button {
+  width: 30px; height: 30px; border: none; background: none;
+  color: var(--n500, #64748b); cursor: pointer; font-family: inherit;
+  font-size: 15px; font-weight: 600; line-height: 1;
+  display: grid; place-items: center; padding: 0;
+}
+.harita-arac button + button { border-top: 1px solid var(--n150, #f1f5f9); }
+.harita-arac button:hover { background: var(--ambBg3, #fff7ed); color: var(--orTx, #c2410c); }
+.harita-arac button:active { background: var(--ambBr3, #fed7aa); }
+
+.harita-lejant {
+  position: absolute; left: 12px; bottom: 12px;
+  background: var(--surface, #ffffff); border: 1px solid var(--n200, #e2e8f0);
+  border-radius: 9px; padding: 9px 11px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.harita-lejant .lb { font-size: 10px; font-weight: 700; color: var(--n500, #64748b); margin-bottom: 6px; letter-spacing: .05em; text-transform: uppercase; }
+.harita-lejant .kutular { display: flex; align-items: center; gap: 3px; }
+.harita-lejant .kutular i { width: 22px; height: 11px; border-radius: 2px; display: block; }
+.harita-lejant .uc { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--n400, #94a3b8); margin-top: 4px; font-variant-numeric: tabular-nums; gap: 12px; }
+.harita-lejant .pin-lej { display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: 190px; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--n150, #f1f5f9); }
+.harita-lejant .pin-lej span { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: var(--n500, #64748b); }
+.harita-lejant .pin-lej i { width: 8px; height: 8px; border-radius: 50%; display: block; }
+
+.harita-ipucu {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: var(--n900, #0f172a); color: var(--surface, #ffffff);
+  padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  transform: translate(-50%, -140%); box-shadow: 0 4px 14px rgba(0,0,0,.25);
+}
+.harita-ipucu .adet { color: #ff9d5c; font-weight: 700; }
+.harita-ipucu .alt { color: var(--n400, #94a3b8); font-weight: 500; }
+
+.harita-yan {
+  width: 250px; flex-shrink: 0; box-sizing: border-box;
+  border-left: 1px solid var(--n150, #f1f5f9); padding: 14px;
+  display: flex; flex-direction: column; gap: 9px; background: var(--surface, #ffffff);
+}
+.harita-yan-bas { font-size: 11px; font-weight: 700; color: var(--n500, #64748b); letter-spacing: .05em; text-transform: uppercase; }
+.harita-geri {
+  display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 9px; border-radius: 8px;
+  border: 1px solid var(--ambBr3, #fed7aa); background: var(--ambBg3, #fff7ed); color: var(--orTx, #c2410c);
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: left;
+}
+.harita-geri:hover { filter: brightness(.97); }
+.harita-liste { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; min-height: 0; margin: 0 -4px; padding: 0 4px; }
+.harita-satir {
+  display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent; background: none; width: 100%; text-align: left; font-family: inherit;
+}
+.harita-satir:hover { background: var(--n100, #f8fafc); }
+.harita-satir .nokta { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.harita-satir .ad { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--n900, #0f172a); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.harita-satir .bolge { font-size: 10.5px; font-weight: 500; color: var(--n400, #94a3b8); }
+.harita-satir .sy { font-size: 12px; font-weight: 700; color: var(--orTx, #c2410c); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.harita-satir .ok { color: var(--n400, #94a3b8); font-size: 11px; flex-shrink: 0; }
+.harita-bos { font-size: 11.5px; color: var(--n400, #94a3b8); padding: 8px 2px; line-height: 1.6; }
+
+/* ══ Kaydırma çubukları ══
+   Chromium'un varsayılan çubuğu açık gri ve kalın: koyu kenar çubuğunda ve koyu temada
+   sırıtıyordu. Her iki temada da yüzeye uyan ince bir çubukla değiştirildi.
+   scrollbar-color kalıtsaldır (tek yerden tüm uygulamaya yayılır), scrollbar-width değildir,
+   o yüzden * ile veriliyor. */
+* { scrollbar-width: thin; }
+:root { scrollbar-color: var(--n300, #cbd5e1) transparent; }
+
+/* Kenar çubuğu her iki temada da koyu/sıcak kalır (marka kimliği), bu yüzden nötr çubuk
+   orada da yanlış duruyor: kendi turuncusunu alır. */
+.sb-scroll { scrollbar-color: rgba(232,93,26,.32) transparent; }
+.sb-scroll:hover { scrollbar-color: rgba(232,93,26,.5) transparent; }
+
+/* Eski/webkit motorlar için yedek. Modern Chromium yukarıdaki standart özellikleri
+   kullanır ve bu blok yok sayılır; ikisi aynı görünsün diye renkler eşleştirildi. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--n300, #cbd5e1);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--n400, #94a3b8); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+.sb-scroll::-webkit-scrollbar-thumb { background: rgba(232,93,26,.32); background-clip: content-box; }
+.sb-scroll::-webkit-scrollbar-thumb:hover { background: rgba(232,93,26,.5); background-clip: content-box; }
+
+/* Dar pencerede yan panel haritanın altına düşer */
+@media (max-width: 1040px) {
+  .harita-kart { flex-direction: column; height: auto; }
+  .harita-alan { height: 380px; }
+  .harita-yan { width: 100%; max-height: 260px; border-left: none; border-top: 1px solid var(--n150, #f1f5f9); }
+}
+
+/* Tam ekran düğmesi: haritanın sağ altında (lejant solda). */
+.harita-tam {
+  position: absolute; right: 12px; bottom: 12px;
+  width: 30px; height: 30px; padding: 0;
+  display: grid; place-items: center;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--n200, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  color: var(--n500, #64748b); cursor: pointer; font-family: inherit;
+}
+.harita-tam:hover { background: var(--ambBg3, #fff7ed); color: var(--orTx, #c2410c); }
+
+/* Tam ekranda kart bütün ekranı kaplar: sabit 440px yükseklik burada geçersiz. */
+.harita-kart:fullscreen { height: 100vh; border-radius: 0; border: none; }
+.harita-kart:fullscreen .harita-yan { width: 300px; }

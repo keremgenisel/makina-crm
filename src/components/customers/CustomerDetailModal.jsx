@@ -506,7 +506,24 @@ export const CustomerDetailModal = ({
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
-  const printServiceForm = (sv, lang = "TR") => printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi, factory);
+  // Servis formu çıktısına o servise eklenmiş resimler de girer (fabrika notunun altında).
+  // Resimler diskte (istemci modunda sunucuda) durduğu için içerikleri okunup HTML'e gömülür;
+  // yazdırma ayrı bir pencerede açıldığı için dosya yolu vermek işe yaramaz.
+  const servisResimleri = async (sv) => {
+    if (!window.appFiles?.dataUrl) return [];
+    const RESIM = /\.(jpg|jpeg|png|gif|webp)$/i;
+    const ekler = (dosyalar || []).filter(d => !d.deletedAt && d.refType === "servis" && d.refId === sv.id && RESIM.test(d.dosyaAdi || ""));
+    const sonuc = [];
+    for (const d of ekler) {
+      try {
+        const r = await window.appFiles.dataUrl(d.dosyaAdi);
+        if (r?.ok && r.dataUrl) sonuc.push({ dataUrl: r.dataUrl, ad: d.ad || d.dosyaAdi });
+      } catch { /* okunamayan resim çıktıyı engellemesin */ }
+    }
+    return sonuc;
+  };
+  const printServiceForm = async (sv, lang = "TR") =>
+    printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi, factory, await servisResimleri(sv));
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
     printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs);

@@ -91,6 +91,19 @@ const TOKENS = [
   ["bluBg2", "#dbeafe", "#1f3352"],
   ["bluBr", "#bfdbfe", "#2f4a72"],
 
+  // ── Harita ──
+  // Koyu temada nötrler sıcak-kahve olduğu için turuncu rampanın koyu ucu onlara karışıyordu;
+  // o yüzden karanlıkta "satış yok" belirgin koyulaştı ve rampa orta tondan parlak turuncuya,
+  // açıklığı tek yönlü artacak biçimde kuruldu.
+  ["hDeniz", "#eef3f7", "#171410"],
+  ["hBos", "#dbe3ec", "#2e2a25"],          // satış olmayan ülke/bölge
+  ["hCizgi", "#ffffff", "#1f1b16"],        // sınır çizgisi
+  ["hk1", "#fdead8", "#6b3d1c"],
+  ["hk2", "#fbc79a", "#97511d"],
+  ["hk3", "#f39c5c", "#c2661d"],
+  ["hk4", "#ee7830", "#e87c2a"],
+  ["hk5", "#e85d1a", "#ff9d5c"],
+
   // ── Kenar çubuğu (menü) ──
   // Kenar çubuğu HER İKİ temada da koyu/sıcak kalır (marka kimliği). Aşağıdaki light
   // değerleri bugünküyle birebir aynıdır; yalnız KARANLIK modda ince ayar yapılır:

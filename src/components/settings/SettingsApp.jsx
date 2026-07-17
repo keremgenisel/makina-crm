@@ -160,6 +160,54 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
         </div>
       </Section>
 
+      <HaritaKaynaklari />
     </>
+  );
+};
+
+/* Harita veri kaynakları — kapalı gelir, tıklayınca açılır.
+   Yasal zorunluluk: üç kaynak da atıf istiyor, geoBoundaries ayrıca türetilmiş verinin aynı
+   lisansla (ODbL) sunulmasını şart koşuyor. Yani bu bölüm kozmetik değil, uyumun parçası. */
+const HARITA_KAYNAKLARI = [
+  ["Natural Earth", "Ülke sınırları ve ülke içi bölgeler", "Kamu malı (public domain)"],
+  ["GeoNames", "Şehir konumları", "CC BY 4.0 — atıf gerekir"],
+  ["geoBoundaries", "Türkiye il ve ilçe sınırları", "ODbL 1.0 — atıf gerekir; bu veriden türetilmiş sınır verisi talep edilirse aynı lisansla verilir"],
+];
+
+const HaritaKaynaklari = () => {
+  const [acik, setAcik] = useState(false);
+  return (
+    <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "hidden", marginTop: 16 }}>
+      <button type="button" onClick={() => setAcik(a => !a)} aria-expanded={acik} style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "16px 22px",
+        background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+      }}>
+        <span style={{ display: "flex", color: "var(--n500, #64748b)" }}><Icon name="globe" size={16} /></span>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Harita Veri Kaynakları</span>
+        <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{acik ? "▾" : "▸"}</span>
+      </button>
+      {acik && (
+        <div style={{ padding: "0 22px 18px" }}>
+          <div className="section-desc">
+            Harita sekmesindeki ülke, bölge ve ilçe sınırları aşağıdaki açık veri kaynaklarından
+            üretilip uygulamanın içine gömülmüştür. Harita çalışırken internet kullanmaz.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {HARITA_KAYNAKLARI.map(([ad, ne, lisans]) => (
+              <div key={ad} style={{
+                display: "flex", gap: 12, alignItems: "baseline", padding: "10px 12px",
+                background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", minWidth: 108 }}>{ad}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--n600, #475569)" }}>{ne}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginTop: 2 }}>{lisans}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

@@ -90,9 +90,10 @@ export const CustomerAddEditForm = ({
       </div>
 
       <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
-      <CountryCityFields country={form.country} city={form.city}
+      <CountryCityFields country={form.country} city={form.city} ilce={form.ilce}
         onCountry={v => setForm(p => ({ ...p, country: v }))}
         onCity={v => setForm(p => ({ ...p, city: v }))}
+        onIlce={v => setForm(p => ({ ...p, ilce: v }))}
         geoData={geoData} loadingGeo={loadingGeo} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>

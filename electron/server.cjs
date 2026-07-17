@@ -16,7 +16,7 @@ const serverTls = require("./serverTls.cjs");
 // electronApp: Electron uygulama nesnesi. buildApp() içinde express örneği de "app" adını
 // aldığından (const app = express()), karışmasın diye burada electronApp olarak alınır.
 const { BrowserWindow, safeStorage, app: electronApp } = require("electron");
-const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, dosyaIslemYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
+const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
 const { rateAllow, rateHit, rateRetryAfter, escalatingBlockedMs, escalatingNext } = require("./rateLimit.cjs");
 const totp = require("./totp.cjs");
@@ -34,7 +34,7 @@ let certFp     = null; // aktif sertifikanın SHA-256 parmak izi (istemci pinnin
 let tlsOnlyMode = false; // true → düz HTTP dış bağlantılar reddedilir (yalnız HTTPS); loopback muaf
 let db         = null; // electron/db.cjs referansı
 
-// Loopback (sunucunun kendine http çağrıları: refresh-internal) yalnız-HTTPS modunda bile
+// Loopback (sunucunun kendine http çağrıları: /health yoklaması) yalnız-HTTPS modunda bile
 // çalışsın diye muaf tutulur — bu trafik makineden çıkmaz.
 const isLoopbackAddr = (a) => a === "127.0.0.1" || a === "::1" || a === "::ffff:127.0.0.1";
 
@@ -64,8 +64,25 @@ function getSecret() {
 // İstemci oturum jetonu 30 gün geçerli — böylece PC gece/hafta sonu kapatılıp tekrar
 // açıldığında şifre tekrar sorulmaz (açılışta sessizce yenilenip süre kayar, bkz. App.jsx).
 // Güvenlik: jeton diskte şifreli saklanır ve şifre değişince token_version tüm eski
-// jetonları anında iptal eder. Sunucu PC'nin admin jetonu da (refresh-internal) 30 gün.
+// jetonları anında iptal eder. Sunucu PC'nin admin jetonu da (issueAdminToken) 30 gün.
 function signToken(payload) { return jwt.sign(payload, getSecret(), { expiresIn: "30d" }); }
+
+// Sunucu PC'nin kendi admin jetonunu üretir (şifre sorulmaz — çağıran zaten bu süreçtir).
+// GÜVENLİK/REGRESYON: bu iş eskiden POST /auth/refresh-internal ucuyla yapılıyordu ve tek
+// koruması isteğin loopback'ten gelmesiydi. Ama loopback bir kimlik değildir: sunucu PC'de
+// oturum açabilen HERHANGİ bir OS kullanıcısı şifresiz, 2FA'sız ve iz bırakmadan 30 günlük
+// admin jetonu alabiliyordu. Bu, DPAPI'nin çizdiği sınırı deliyordu; o kullanıcı data.db'yi
+// çözemezken, veriyi çözen sürecin kendisi ona ağ üzerinden admin veriyordu. Host başlığı da
+// doğrulanmadığı için jeton DNS rebinding ile tarayıcıdan dışarı sızdırılabiliyordu.
+// Uç nokta tümden kaldırıldı: tek çağıran (electron/ipc/data.cjs) zaten AYNI süreçte, aradaki
+// HTTP katmanı hiçbir şey kazandırmıyor, yalnız saldırı yüzeyi üretiyordu.
+// Dönüş: jeton (string) veya null (kullanıcı yok / admin değil).
+function issueAdminToken(username) {
+  if (!username) return null;
+  const user = db?.getUserByUsername?.(username);
+  if (!user || user.role !== "admin") return null;
+  return signToken({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 });
+}
 
 function requireAuth(req, res, next) {
   const h = req.headers["authorization"];
@@ -79,6 +96,12 @@ function requireAuth(req, res, next) {
       // Şifre değiştiyse eski token'lar geçersiz: token_version her şifre değişiminde
       // artar, token'daki tv eşleşmiyorsa (eski tv veya tv'siz eski token) oturum düşer
       if ((payload.tv ?? 0) !== (u.token_version ?? 1)) return res.status(401).json({ error: "Oturum gerekli" });
+      // Rol jetondan DEĞİL DB'den okunur: tek otorite DB olsun. /api/data izinleri zaten böyle
+      // okuyordu, requireAdmin ise jetona bakıyordu; bu asimetri rolü düşürülen bir admin'in
+      // eski jetonuyla yönetici kalmasına yol açıyordu. Savunma derinliği: token_version rol
+      // değişiminde artık artıyor (db.cjs), bu satır ise jeton yenilense bile rolü taze tutar.
+      req.user = { ...payload, role: u.role };
+      return next();
     }
     req.user = payload;
     next();
@@ -236,7 +259,7 @@ async function authenticateLogin({ username, password, totpCode, ip } = {}) {
   loginRateSuccess(ip, username);
   // Tek oturum (admin HARİÇ): her girişte token_version artır → aynı kullanıcının başka cihazlardaki
   // oturumu düşer (son giriş kazanır). Admin muaf: sunucu PC gözetimsiz çalışır ve admin jetonunu
-  // loopback refresh-internal ile yeniler; admin'e tek oturum zorlamak sunucu PC'yi kilitlerdi.
+  // issueAdminToken ile kendi süreci içinde yeniler; admin'e tek oturum zorlamak sunucu PC'yi kilitlerdi.
   let tv = user.token_version ?? 1;
   if (user.role !== "admin") tv = db.bumpUserTokenVersion(user.id) ?? (tv + 1);
   logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: { rol: user.role, ikiAdimli: !!user.totp_enabled } });
@@ -358,26 +381,6 @@ function buildApp() {
     } catch (err) { console.error("[server] 2fa/disable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
-  // POST /auth/refresh-internal — yalnızca loopback; sunucu PC kendi admin tokenini yeniler (şifre gerekmez)
-  // GÜVENLİK: kaynak adres yalnızca gerçek soket adresinden (req.socket.remoteAddress) okunur,
-  // asla req.ip/X-Forwarded-For'dan değil. Bu endpoint 30 günlük admin token verdiği için
-  // "trust proxy" ASLA açılmamalı; açılırsa XFF sahteleyen uzak biri buradan admin olabilir.
-  const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
-  app.post("/auth/refresh-internal", (req, res) => {
-    try {
-      const ip = req.socket?.remoteAddress || "";
-      if (!LOOPBACK.has(ip)) {
-        return res.status(403).json({ error: "Yalnızca yerel erişim" });
-      }
-      const { username } = req.body || {};
-      if (!username) return res.status(400).json({ error: "username gerekli" });
-      const user = db?.getUserByUsername(username);
-      if (!user || user.role !== "admin") return res.status(403).json({ error: "Admin kullanıcı bulunamadı" });
-      const token = jwt.sign({ id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 1 }, getSecret(), { expiresIn: "30d" });
-      res.json({ token });
-    } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
-  });
-
   // GET /api/version — hafif polling endpoint: versiyon + güncel izinler
   app.get("/api/version", requireAuth, (req, res) => {
     try {
@@ -422,7 +425,7 @@ function buildApp() {
       if (kisitliMi(perms, rol)) {
         const mevcut = db.readBlobFromDb();
         const changed = degisenBolumler(mevcut, data);
-        const yetki = yazmaYetkisiVar(perms, rol, changed);
+        const yetki = yazmaYetkisiVar(perms, rol, changed, mevcut, data);
         if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
         // Eylem düzeyi: kısmi grup bölüm düzeyinde geçse bile (ör. düzenle var, sil yok),
         // izinsiz EKLE/SİL burada yakalanır ve reddedilir.
@@ -587,7 +590,9 @@ function buildApp() {
 
   // ── Dosya arşivi (çok kullanıcılı): dosyalar sunucu PC diskinde durur; istemciler yükler/indirir ──
   // Depo adı (params.name) sanitize edilmiş bir dosya adı (yol ayracı yok); path traversal reddedilir.
-  const gecerliDepoAd = (name) => !!name && !name.includes("/") && !name.includes("\\") && !name.includes("..");
+  // Tek kaynak: aynı kural hem burada hem IPC tarafında geçerli. İki ayrı kopya zamanla
+  // ayrışıyor (sunucudaki NUL baytı denetlemiyordu), o yüzden files.cjs'e taşındı.
+  const gecerliDepoAd = (name) => files.depoAdiGuvenliMi(name);
 
   // POST /api/files/upload — binary gövde; başlıkta orijinal ad. Depoya yazar, künye döndürür.
   app.post("/api/files/upload", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
@@ -619,9 +624,19 @@ function buildApp() {
   });
 
   // DELETE /api/files/:name — fiziksel dosyayı sil (çöpten kalıcı silme / orphan temizliği)
-  app.delete("/api/files/:name", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
+  // Yetki hedef dosyaya bağlıdır: künye müşteriye mi bayiye mi ait, ona bakılır. Kullanıcı
+  // düzeyinde "müşteri VEYA bayi yazabiliyor mu" sorusu yeterli değildi; künyesine dokunamadığı
+  // dosyayı fiziksel olarak silebiliyordu.
+  app.delete("/api/files/:name", requireAuth, writeLimiter(60), (req, res) => {
     const name = req.params.name;
     if (!gecerliDepoAd(name)) return res.status(400).json({ error: "Geçersiz dosya adı" });
+    const u = db?.getUserByUsername?.(req.user?.username);
+    let kunye = null;
+    try { kunye = (db?.readBlobFromDb?.()?.dosyalar || []).find(d => d.dosyaAdi === name) || null; }
+    catch { kunye = null; }
+    if (!dosyaSilmeYetkisi(u?.permissions, req.user?.role, kunye)) {
+      return res.status(403).json({ error: "Bu dosyayı silme yetkiniz yok" });
+    }
     files.sil(electronApp, name);
     res.json({ ok: true });
   });
@@ -796,4 +811,4 @@ async function regenerateCert() {
 // henüz kilitlenmemiş kademeli sayacı sildiği için, doğrulamayı start ile yapmak kilidi bozuyordu.
 function attachDb(sqliteDb) { if (sqliteDb) db = sqliteDb; }
 
-module.exports = { start, stop, isRunning, getPort, getLocalIps, getCertFingerprint, getTlsOnly, setTlsOnly, regenerateCert, authenticateLogin, attachDb };
+module.exports = { start, stop, isRunning, getPort, getLocalIps, getCertFingerprint, getTlsOnly, setTlsOnly, regenerateCert, authenticateLogin, attachDb, issueAdminToken };

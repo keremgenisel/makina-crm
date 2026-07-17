@@ -576,9 +576,10 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
           </Field>
           <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
-          <CountryCityFields country={form.country} city={form.city}
+          <CountryCityFields country={form.country} city={form.city} ilce={form.ilce}
             onCountry={v => setForm(p => ({ ...p, country: v }))}
             onCity={v => setForm(p => ({ ...p, city: v }))}
+        onIlce={v => setForm(p => ({ ...p, ilce: v }))}
             geoData={geoData} loadingGeo={loadingGeo} />
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}

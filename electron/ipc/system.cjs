@@ -1,3 +1,16 @@
+// Yazdırma sayfaları şablon dizeleriyle ham HTML üretiyor ve kullanıcı verisi taşıyor.
+// Son savunma katmanı: bir kaçış hatası kalsa bile enjekte edilen betik hiçbir yere
+// BAĞLANAMASIN. connect-src kapalı ve img-src yalnız data:, yani belge dışarı sızdırılamaz.
+// Betik/stil için 'unsafe-inline' şart, çünkü araç çubuğu ve şablonların tamamı satır içi;
+// amaç betiği engellemek değil, etkisini ağdan koparmak.
+const CSP = "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; "
+  + "img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; "
+  + "connect-src 'none'; form-action 'none'; base-uri 'none'\">";
+function cspEkle(html) {
+  const h = String(html || "");
+  return /<head[^>]*>/i.test(h) ? h.replace(/(<head[^>]*>)/i, `$1${CSP}`) : CSP + h;
+}
+
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -88,7 +101,11 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
         previewWin = null; cleanup(); resolve(true);
       });
 
-      const safeName = JSON.stringify(defaultName || "belge.pdf");
+      // JSON.stringify JS-güvenlidir ama HTML-güvenli DEĞİLDİR: "</script>" dizisi string
+      // literalinden aynen geçip betik bağlamını kapatıyordu. Dosya adı müşteri/firma adından
+      // türüyor, yani kısıtlı bir kullanıcının yazdığı metin admin yazdırınca admin'in
+      // makinesinde çalışabiliyordu. "<" kaçırılınca dizi oluşamaz.
+      const safeName = JSON.stringify(defaultName || "belge.pdf").replace(/</g, "\\u003c");
       const toolbar = `
 <script>window.__pdfDefaultName = ${safeName};</script>
 <div id="__print_toolbar" style="position:fixed;top:0;left:0;right:0;height:52px;background:#1e293b;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 18px;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,.2);font-family:Arial,sans-serif;">
@@ -101,7 +118,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
   @media screen { body { margin-top:52px !important; } }
   @media print { #__print_toolbar { display:none !important; } body { margin-top:0 !important; } }
 </style>`;
-      let finalHtml = html;
+      let finalHtml = cspEkle(html);
       if (finalHtml.includes("<body")) {
         finalHtml = finalHtml.replace(/(<body[^>]*>)/i, `$1${toolbar}`);
       } else {
@@ -141,7 +158,7 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
       if (pdfHtml) {
         // Kaşeli HTML → şeffaf görünür pencerede render et (GPU tam çalışır, kullanıcı görmez)
         tmpFile = path.join(app.getPath("temp"), `altunmak-pdf-${Date.now()}.html`);
-        fs.writeFileSync(tmpFile, pdfHtml, "utf-8");
+        fs.writeFileSync(tmpFile, cspEkle(pdfHtml), "utf-8");
         pdfWin = new BrowserWindow({
           width: 1240, height: 1754,
           show: true, frame: false, skipTaskbar: true,

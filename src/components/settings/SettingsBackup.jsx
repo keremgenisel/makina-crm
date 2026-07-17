@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
-import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId } from "../../lib/utils";
+import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, disAppSettingsSuz } from "../../lib/utils";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { Section } from "./Section";
 
@@ -185,9 +185,9 @@ export const SettingsBackup = ({
     if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
+    // Ayıklama listesi sunucu senkronizasyonu yoluyla ortak (disAppSettingsSuz) — iki yol da aynı.
     if (sec("ayar") && restoreData?.appSettings) {
-      const { autoBackup, backupFolder, frequency, lastBackup, ...portableSettings } = restoreData.appSettings;
-      setAppSettings(p => ({ ...p, ...portableSettings }));
+      setAppSettings(p => ({ ...p, ...disAppSettingsSuz(restoreData.appSettings) }));
     }
     // SMTP config (şifresiz): e-posta sunucu ayarları geri yüklenir, şifre tekrar girilmeli.
     let smtpRestored = false;

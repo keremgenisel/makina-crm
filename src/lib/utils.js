@@ -155,6 +155,24 @@ export const getKdvRateForDate = (dateStr, kdvRates = DEFAULT_KDV_RATES) => {
 };
 // Eski tekil appSettings.kdvRate (sayı) → yeni appSettings.kdvRates (dönem listesi) göçü.
 // Zaten kdvRates doluysa onu kullanır; sadece eski kdvRate varsa tek dönem olarak senkronlar.
+// ── Makinaya özgü ayarlar ────────────────────────────────────────────────────
+// Bu alanlar O PC'nin diskine ve zamanlamasına aittir; taşınabilir değildir ve dışarıdan
+// (yedek dosyası ya da sunucu blob'u) gelen değerleri asla uygulanmaz.
+//
+// GÜVENLİK: appSettings senkronize edilen bir blob bölümü. "settings" yazma izni olan kısıtlı bir
+// kullanıcı {autoBackup:true, backupFolder:"\\\\10.0.0.5\\pub"} yazarsa, blob'u koşulsuz
+// birleştiren HER istemci tüm CRM dökümünü (PII, finans, evrak) ve dosya arşivinin tamamını
+// saldırganın seçtiği paylaşıma düz JSON olarak kopyalar. Yedek klasörü yalnız bu PC'de,
+// kullanıcının klasör seçme diyaloğuyla belirlenir.
+export const YEREL_AYAR_ALANLARI = ["autoBackup", "backupFolder", "frequency", "lastBackup"];
+// Dışarıdan gelen appSettings'ten makinaya özgü alanları ayıklar; geri kalanı taşınabilir.
+// Hem sunucu senkronizasyonu (App.jsx) hem yedekten geri yükleme (SettingsBackup.jsx) bunu kullanır.
+export const disAppSettingsSuz = (uzak) => {
+  const kopya = { ...(uzak || {}) };
+  for (const alan of YEREL_AYAR_ALANLARI) delete kopya[alan];
+  return kopya;
+};
+
 export const normalizeKdvRates = (appSettings) => {
   if (Array.isArray(appSettings?.kdvRates) && appSettings.kdvRates.length > 0) return appSettings.kdvRates;
   if (typeof appSettings?.kdvRate === "number") return [{ from: "2008-01-01", rate: appSettings.kdvRate }];

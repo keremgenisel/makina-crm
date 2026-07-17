@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS rate_limit (bucket TEXT PRIMARY KEY, count INTEGER NO
 
 CREATE TABLE IF NOT EXISTS customers (
   id INTEGER PRIMARY KEY,
-  name TEXT, phone TEXT, email TEXT, adres TEXT, city TEXT, country TEXT,
+  name TEXT, phone TEXT, email TEXT, adres TEXT, city TEXT, ilce TEXT, country TEXT,
   yetkili1Ad TEXT, yetkili1Tel TEXT, yetkili2Ad TEXT, yetkili2Tel TEXT,
   contact TEXT, aciklama TEXT,
   model TEXT, serialNo TEXT, kalipCapi TEXT, seriNoBekliyor INTEGER,
@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_kaliplar_customer ON customer_kaliplar(customer_i
 
 CREATE TABLE IF NOT EXISTS dealers (
   id INTEGER PRIMARY KEY,
-  name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT,
+  name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT,
   bayiMi INTEGER, anlasmaliServisMi INTEGER, deletedAt TEXT
 );
 
@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
   takipKapali INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT);
+CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
@@ -329,6 +329,8 @@ const CUSTOMERS_PART_SECIMLERI_COLUMNS = [["konveyorSacId", "TEXT"], ["bantSecim
 // Kullanıcı-tanımlı parça tiplerinin makina seçimleri (JSON: { [tipId]: partId }) — eski
 // konveyorSacId/bantSecimiId'nin genelleşmiş hali (bkz. utils.migrateTipSecimleri).
 const CUSTOMERS_TIP_SECIMLERI_COLUMN = [["tipSecimleri", "TEXT"]];
+// İlçe kırılımı istenen iller için (Harita). Müşteri ve bayide aynı alan adı.
+const ILCE_COLUMN = [["ilce", "TEXT"]];
 const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
@@ -384,11 +386,11 @@ function maxIdAcross(arrays) {
 // ── Şema + tüm tabloları tek transaction'da doldurma (migration ve normal save'te paylaşılır) ──
 function populateAll(conn, data, skip = new Set()) {
   const insertCustomer = conn.prepare(`
-    INSERT INTO customers (id, name, phone, email, adres, city, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
+    INSERT INTO customers (id, name, phone, email, adres, city, ilce, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
       konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri)
-    VALUES (@id, @name, @phone, @email, @adres, @city, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
+    VALUES (@id, @name, @phone, @email, @adres, @city, @ilce, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
       @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri)
@@ -408,7 +410,7 @@ function populateAll(conn, data, skip = new Set()) {
     for (const c of data.customers) {
       insertCustomer.run({
         id: c.id, name: c.name ?? null, phone: c.phone ?? null, email: c.email ?? null, adres: c.adres ?? null,
-        city: c.city ?? null, country: c.country ?? null,
+        city: c.city ?? null, ilce: c.ilce ?? null, country: c.country ?? null,
         yetkili1Ad: c.yetkili1Ad ?? null, yetkili1Tel: c.yetkili1Tel ?? null, yetkili2Ad: c.yetkili2Ad ?? null, yetkili2Tel: c.yetkili2Tel ?? null,
         contact: c.contact ?? null, aciklama: c.aciklama ?? null,
         model: c.model ?? null, serialNo: c.serialNo ?? null, kalipCapi: json(c.kalipCapi), seriNoBekliyor: toInt(c.seriNoBekliyor),
@@ -498,8 +500,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.dealers) && !skip.has("dealers")) {
     conn.prepare(`DELETE FROM dealers`).run();
-    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, note, bayiMi, anlasmaliServisMi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.note ?? null, toIntTriState(d.bayiMi), toInt(d.anlasmaliServisMi), d.deletedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO dealers (id, name, contact, phone, email, adres, country, city, ilce, note, bayiMi, anlasmaliServisMi, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const d of data.dealers) stmt.run(d.id, d.name ?? null, d.contact ?? null, d.phone ?? null, d.email ?? null, d.adres ?? null, d.country ?? null, d.city ?? null, d.ilce ?? null, d.note ?? null, toIntTriState(d.bayiMi), toInt(d.anlasmaliServisMi), d.deletedAt ?? null);
   }
 
   if (Array.isArray(data.stock) && !skip.has("stock")) {
@@ -567,8 +569,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.factory && !skip.has("factory")) {
     conn.prepare(`DELETE FROM factory`).run();
     const f = data.factory;
-    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi, web, faturaFirmaAdi) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(f.name ?? null, f.contact ?? null, f.phone ?? null, f.email ?? null, f.adres ?? null, f.country ?? null, f.city ?? null, f.note ?? null,
+    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, ilce, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi, web, faturaFirmaAdi) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(f.name ?? null, f.contact ?? null, f.phone ?? null, f.email ?? null, f.adres ?? null, f.country ?? null, f.city ?? null, f.ilce ?? null, f.note ?? null,
            f.bankaAdi ?? null, f.hesapAdi ?? null, f.swift ?? null, f.ibanTL ?? null, f.ibanEUR ?? null, f.ibanUSD ?? null, f.gtipNo ?? null,
            Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null, f.web ?? null, f.faturaFirmaAdi ?? null);
   }
@@ -644,6 +646,9 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "customers", CUSTOMERS_BANTLAR_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
   ensureColumns(conn, "customers", CUSTOMERS_TIP_SECIMLERI_COLUMN);
+  ensureColumns(conn, "customers", ILCE_COLUMN);
+  ensureColumns(conn, "dealers", ILCE_COLUMN);
+  ensureColumns(conn, "factory", ILCE_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
   ensureColumns(conn, "parts", PARTS_TIP_RESIM_COLUMNS);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
@@ -1066,7 +1071,10 @@ function updateUser(id, fields) {
   if (!db) return;
   const parts = [], vals = [];
   if (fields.is_active !== undefined)  { parts.push("is_active=?");   vals.push(fields.is_active ? 1 : 0); }
-  if (fields.role)                     { parts.push("role=?");         vals.push(fields.role); }
+  // Rol değişiminde de token_version artar: yoksa admin'likten düşürülen kullanıcının elindeki
+  // eski jeton role:"admin" taşımaya devam ederdi ve jetonun doğal ömrü (30 gün) boyunca
+  // yönetici kalırdı (kullanıcı ekleme/silme, denetim kaydı temizleme). Şifre dalıyla aynı mantık.
+  if (fields.role)                     { parts.push("role=?");         vals.push(fields.role); parts.push("token_version=COALESCE(token_version,1)+1"); }
   if (fields.password) {
     parts.push("password=?");
     vals.push(fields.password);

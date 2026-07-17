@@ -1,5 +1,6 @@
 import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, ODEME_YONTEMLERI } from "../lib/constants";
+import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize } from "../lib/utils";
 
 export const Icon = ({ name, size = 16 }) => {
@@ -18,6 +19,8 @@ export const Icon = ({ name, size = 16 }) => {
     store:      "M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M4 9h16M9 21v-6h6v6",
     box:        "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12",
     finance:    "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
+    expand:     "M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3",
+    globe:      "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M2.5 9h19 M2.5 15h19 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20",
     settings:   "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
     download:   "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
     upload:     "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
@@ -397,8 +400,11 @@ export const Pagination = ({ total, page, setPage, perPage = 10 }) => {
 };
 
 
-// Ülke + Şehir alanları — API'den gelen şehir listesini kullanır, tüm formlarda ortak
-export const CountryCityFields = ({ country, city, onCountry, onCity, geoData, loadingGeo }) => {
+// Ülke + Şehir (+ gerekiyorsa İlçe) alanları — API'den gelen şehir listesini kullanır,
+// tüm formlarda ortak. İlçe yalnız Türkiye'nin belirli illerinde çıkar (ILCE_ILLERI);
+// o liste harita verisiyle AYNI kaynaktan üretilir, böylece formda seçilen her ilçenin
+// haritada karşılığı olur. onIlce verilmeyen formlarda İlçe alanı hiç görünmez.
+export const CountryCityFields = ({ country, city, ilce, onCountry, onCity, onIlce, geoData, loadingGeo }) => {
   // API ülke adı farklı yazımlarda olabilir; sırayla dene
   const candidates = country ? [COUNTRY_EN[country], country, COUNTRY_ALT[country]].filter(Boolean) : [];
   let fromApi = [];
@@ -409,25 +415,34 @@ export const CountryCityFields = ({ country, city, onCountry, onCity, geoData, l
   }
   // API gelmediyse Türkiye için statik 81 il devreye girer
   const cityList = fromApi.length > 0 ? fromApi : staticCities(country);
+  const ilceListesi = (onIlce && country === "Türkiye" && ILCELER[city]) || null;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: ilceListesi ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
       <Field label="Ülke">
-        <Select value={country || ""} onChange={e => { onCountry(e.target.value); onCity(""); }}>
+        <Select value={country || ""} onChange={e => { onCountry(e.target.value); onCity(""); onIlce?.(""); }}>
           <option value="">{loadingGeo ? "Yükleniyor..." : "Ülke seçin..."}</option>
           {COUNTRIES.map(c => <option key={c}>{c}</option>)}
         </Select>
       </Field>
       <Field label="Şehir">
         {cityList.length > 0 ? (
-          <Select value={city || ""} onChange={e => onCity(e.target.value)}>
+          <Select value={city || ""} onChange={e => { onCity(e.target.value); onIlce?.(""); }}>
             <option value="">Şehir seçin...</option>
             {cityList.map(c => <option key={c}>{c}</option>)}
           </Select>
         ) : (
-          <Input value={city || ""} onChange={e => onCity(e.target.value)}
+          <Input value={city || ""} onChange={e => { onCity(e.target.value); onIlce?.(""); }}
             placeholder={loadingGeo ? "Şehirler yükleniyor..." : "Şehir yazın"} />
         )}
       </Field>
+      {ilceListesi && (
+        <Field label="İlçe">
+          <Select value={ilce || ""} onChange={e => onIlce(e.target.value)}>
+            <option value="">İlçe seçin...</option>
+            {ilceListesi.map(i => <option key={i}>{i}</option>)}
+          </Select>
+        </Field>
+      )}
     </div>
   );
 };

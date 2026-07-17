@@ -140,7 +140,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         kalipSayisi: parseInt(cell(0), 10) || kaliplar.length || 1,
         satisYapan: cell(1) || "Altuntaş Makina",
         name, phone: cell(3), email: cell(31) || mevcut?.email || "",
-        adres: cell(4), country: cell(5) || "Türkiye", city: cell(6),
+        adres: cell(4), country: cell(5) || "Türkiye", city: cell(6), ilce: cell(34),
         model: cell(7), currency, kaliplar,
         ...(kalipCapi ? { kalipCapi } : {}),
         installDate, warrantyEnd,
