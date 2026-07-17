@@ -1,6 +1,6 @@
 // Harita sekmesinin saf hesap katmanı: ülke özeti, bölge toplamı, renk kovaları, pinler.
 import { describe, it, expect } from "vitest";
-import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir } from "../src/lib/mapStats";
+import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar } from "../src/lib/mapStats";
 
 describe("sadeAd", () => {
   // Bu normalize, scripts/gen-map-paths.cjs içindeki `sad` ile BİREBİR aynı olmak zorunda:
@@ -83,9 +83,10 @@ describe("dunyaToplami", () => {
 });
 
 describe("bolgeToplami", () => {
-  // dizin: sadeAd -> bölge sırası
-  const dizin = { koln: 7, dusseldorf: 7, munchen: 2 };
-  it("aynı bölgedeki şehirleri toplar", () => {
+  // dizin: sadeAd -> bölge sırası. München gerçek DEU verisinde İngilizce "munich" ile
+  // indeksli (sehirAnahtar bunu böyle çözer), o yüzden dizin de "munich" kullanır.
+  const dizin = { koln: 7, dusseldorf: 7, munich: 2 };
+  it("aynı bölgedeki şehirleri toplar (München→munich takma adıyla)", () => {
     const { bolgeler } = bolgeToplami({ "Köln": 4, "Düsseldorf": 1, "München": 2 }, dizin);
     expect(bolgeler).toEqual({ 7: 5, 2: 2 });
   });
@@ -96,6 +97,62 @@ describe("bolgeToplami", () => {
   });
   it("boş dizinde her şehir eslesmeyen olur", () => {
     expect(bolgeToplami({ "Köln": 1 }, {}).eslesmeyen).toEqual(["Köln"]);
+  });
+  // Afganistan hatası: dizin GeoNames'in asıl adı "Mazar-e Sharif" ile kuruluyor; kullanıcı
+  // "Mazar-i-Sharif" / "Mezar-ı Şerif" yazınca sadeAd ayrışıp şehir haritada boyanmıyordu.
+  it("şehir takma adını (Mazar-i-Sharif / Sharif) asıl ada eşleyip bölgeye toplar", () => {
+    const dizinAfg = { mazaresharif: 3 }; // AFG.js'te Belh Vilayeti index'i
+    expect(bolgeToplami({ "Mazar-i-Sharif": 2 }, dizinAfg).bolgeler).toEqual({ 3: 2 });
+    expect(bolgeToplami({ "Mezar-ı Şerif": 1 }, dizinAfg).bolgeler).toEqual({ 3: 1 });
+    // Kullanıcının verisi: yalnız "Sharif" yazılmış
+    expect(bolgeToplami({ "Sharif": 4 }, dizinAfg).bolgeler).toEqual({ 3: 4 });
+    // Asıl yazım da çalışmaya devam eder
+    expect(bolgeToplami({ "Mazar-e Sharif": 1 }, dizinAfg).bolgeler).toEqual({ 3: 1 });
+  });
+});
+
+describe("sehirAnahtar (takma ad)", () => {
+  it("bilinen takma adları asıl ada çevirir", () => {
+    expect(sehirAnahtar("Mazar-i-Sharif")).toBe("mazaresharif");
+    expect(sehirAnahtar("Mezar-ı Şerif")).toBe("mazaresharif");
+    // München dizinde İngilizce "Munich" ile var; TR/DE yazımları ona çevrilmeli
+    expect(sehirAnahtar("München")).toBe("munich");
+    expect(sehirAnahtar("Münih")).toBe("munich");
+  });
+  it("takma adı olmayan şehirde sadeAd ile aynı", () => {
+    expect(sehirAnahtar("Konya")).toBe(sadeAd("Konya"));
+    expect(sehirAnahtar("Köln")).toBe("koln");
+  });
+});
+
+describe("sehirFirmaKirilim", () => {
+  const musteriler = [
+    { name: "Alfa Ltd.", country: "Türkiye", city: "Konya" },
+    { name: "alfa ltd.", country: "Türkiye", city: "Konya" },   // aynı firma (büyük/küçük harf)
+    { name: "Beta A.Ş.", country: "Türkiye", city: "Konya" },
+    { name: "Gama", country: "Türkiye", city: "İzmir" },
+    { name: "Delta", country: "Almanya", city: "Köln" },        // başka ülke
+    { name: "X", country: "Türkiye", city: "" },                // şehirsiz
+  ];
+  it("şehir bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir", () => {
+    const k = sehirFirmaKirilim(musteriler, "Türkiye");
+    expect(k["Konya"]).toEqual([
+      { ad: "Alfa Ltd.", adet: 2 },   // iki kayıt tek firmada
+      { ad: "Beta A.Ş.", adet: 1 },
+    ]);
+    expect(k["İzmir"]).toEqual([{ ad: "Gama", adet: 1 }]);
+  });
+  it("makina çoktan aza sıralar", () => {
+    const k = sehirFirmaKirilim(musteriler, "Türkiye");
+    expect(k["Konya"][0].adet).toBeGreaterThanOrEqual(k["Konya"][1].adet);
+  });
+  it("yalnız istenen ülkeyi kapsar, şehirsiz kaydı atlar", () => {
+    const k = sehirFirmaKirilim(musteriler, "Türkiye");
+    expect(Object.keys(k).sort()).toEqual(["Konya", "İzmir"]); // Almanya ve şehirsiz yok
+  });
+  it("boş girdide boş nesne", () => {
+    expect(sehirFirmaKirilim([], "Türkiye")).toEqual({});
+    expect(sehirFirmaKirilim(musteriler, "Yokistan")).toEqual({});
   });
 });
 
@@ -123,6 +180,28 @@ describe("ilOzeti", () => {
     expect(ilOzeti([], "İstanbul")).toEqual({ ilceler: {}, ilcesiz: 0 });
     expect(ilOzeti(undefined, "İstanbul")).toEqual({ ilceler: {}, ilcesiz: 0 });
     expect(ilOzeti([null, {}], "İstanbul")).toEqual({ ilceler: {}, ilcesiz: 0 });
+  });
+});
+
+describe("ilceFirmaKirilim", () => {
+  const musteriler = [
+    { name: "Alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "alfa", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" }, // aynı firma, 2. makina
+    { name: "Beta", country: "Türkiye", city: "İstanbul", ilce: "Şişli" },
+    { name: "Gama", country: "Türkiye", city: "İstanbul" },                  // ilçesiz → yok
+    { name: "Delta", country: "Türkiye", city: "Ankara", ilce: "Çankaya" },  // başka il
+  ];
+  it("ilçe bazında firmaları makina sayısıyla toplar, aynı firmayı tekilleştirir", () => {
+    const k = ilceFirmaKirilim(musteriler, "İstanbul");
+    expect(k["Kadıköy"]).toEqual([{ ad: "Alfa", adet: 2 }]);
+    expect(k["Şişli"]).toEqual([{ ad: "Beta", adet: 1 }]);
+  });
+  it("ilçesiz kaydı ve başka ili atlar", () => {
+    const k = ilceFirmaKirilim(musteriler, "İstanbul");
+    expect(Object.keys(k).sort()).toEqual(["Kadıköy", "Şişli"]);
+  });
+  it("boş girdide boş nesne", () => {
+    expect(ilceFirmaKirilim([], "İstanbul")).toEqual({});
   });
 });
 

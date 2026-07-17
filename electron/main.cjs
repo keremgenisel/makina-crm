@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, powerSaveBlocker, safeStorage } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, Tray, nativeImage, powerSaveBlocker, safeStorage, screen } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const sqliteDb = require("./db.cjs");
@@ -8,6 +8,8 @@ const { registerDataHandlers, makeFileNet } = require("./ipc/data.cjs");
 const { registerSystemHandlers } = require("./ipc/system.cjs");
 const { registerAuditHandlers } = require("./ipc/audit.cjs");
 const { registerFileHandlers } = require("./ipc/files.cjs");
+const { registerHaritaHandlers } = require("./ipc/harita.cjs");
+const { ikinciEkran } = require("./haritaEkran.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
 // Yalnızca derlenmiş (kurulu) uygulamada çalışır; geliştirme modunda devre dışıdır.
@@ -24,8 +26,73 @@ try {
 app.commandLine.appendSwitch("lang", "tr");
 
 let mainWin = null;
+let haritaWin = null; // Faaliyet Haritası ayrı penceresi (tekil)
 let tray = null;
 let allowCloseWithoutPrompt = false;
+
+// Ana pencereyi (ve varsa harita penceresini) tray'den geri getir.
+function pencereleriGoster() {
+  if (mainWin && !mainWin.isDestroyed()) {
+    if (mainWin.isMinimized()) mainWin.restore();
+    mainWin.show();
+    mainWin.focus();
+  }
+  if (haritaWin && !haritaWin.isDestroyed()) haritaWin.show();
+}
+
+// Faaliyet Haritası'nı ayrı pencerede aç; zaten açıksa öne getir (tekil).
+function haritaPenceresiAcVeyaOdakla() {
+  if (haritaWin && !haritaWin.isDestroyed()) {
+    if (haritaWin.isMinimized()) haritaWin.restore();
+    haritaWin.show();
+    haritaWin.focus();
+    return;
+  }
+
+  const anaBounds = mainWin && !mainWin.isDestroyed()
+    ? mainWin.getBounds()
+    : { x: 0, y: 0, width: 1280, height: 820 };
+  let hedef = null;
+  try { hedef = ikinciEkran(screen.getAllDisplays(), anaBounds); } catch { /* screen yok — varsayılan */ }
+
+  const opts = {
+    show: false, autoHideMenuBar: true, title: "Faaliyet Haritası — Altunmak CRM",
+    webPreferences: {
+      preload: path.join(__dirname, "preload-harita.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  };
+  if (hedef) { opts.x = hedef.x; opts.y = hedef.y; opts.width = hedef.width; opts.height = hedef.height; }
+  else { opts.width = 1100; opts.height = 800; }
+
+  haritaWin = new BrowserWindow(opts);
+
+  // Güvenlik: bu pencere ana pencereden hiçbir korumayı miras almaz, kendisi kurar.
+  haritaWin.webContents.on("will-navigate", (e, url) => {
+    const devUrl = process.env.VITE_DEV_SERVER_URL;
+    const isLocal = url.startsWith("file://") || (devUrl && url.startsWith(devUrl));
+    if (!isLocal) e.preventDefault();
+  });
+  haritaWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    haritaWin.loadURL(process.env.VITE_DEV_SERVER_URL.replace(/\/$/, "") + "/harita.html");
+  } else {
+    haritaWin.loadFile(path.join(__dirname, "../dist/harita.html"));
+  }
+
+  haritaWin.once("ready-to-show", () => { haritaWin.show(); haritaWin.focus(); });
+
+  // close preventDefault EDİLMEZ → gerçekten kapanır (ana pencerenin aksine).
+  haritaWin.on("closed", () => {
+    haritaWin = null;
+    if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("harita:kapandi");
+  });
+
+  // Ana pencereye "açıldı" bildir → veri push'unu başlatsın (hemen bir kez + değişimlerde).
+  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("harita:acildi");
+}
 
 function getTrayIcon() {
   const candidates = [
@@ -50,6 +117,7 @@ registerDataHandlers(ipcMain, app, dialog, sqliteDb);
 registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, sqliteDb);
 registerAuditHandlers(ipcMain, sqliteDb);
 registerFileHandlers(ipcMain, app, BrowserWindow, makeFileNet(app));
+registerHaritaHandlers(ipcMain, { acVeyaOdakla: haritaPenceresiAcVeyaOdakla, getHaritaWin: () => haritaWin });
 
 // ── Güncelleme IPC kanalları ──
 ipcMain.handle("updater:version", () => app.getVersion());
@@ -202,7 +270,7 @@ function createWindow() {
   tray.setContextMenu(Menu.buildFromTemplate([
     {
       label: "Altunmak CRM'yi Aç",
-      click: () => { mainWin.show(); mainWin.focus(); },
+      click: () => pencereleriGoster(),
     },
     { type: "separator" },
     {
@@ -220,13 +288,17 @@ function createWindow() {
       },
     },
   ]));
-  tray.on("double-click", () => { mainWin.show(); mainWin.focus(); });
+  tray.on("double-click", () => pencereleriGoster());
 
   // ── Kapatma: pencereyi kapat değil, tray'e gizle ──
+  // Harita penceresi de birlikte gizlenir ki "uygulama tümüyle gitti" hissi tutarlı olsun;
+  // tray'den "Aç" ikisini de geri getirir (pencereleriGoster). Kapatılmadığı için harita
+  // penceresi hayatta kalır, veri push'u sürer.
   mainWin.on("close", (e) => {
     if (allowCloseWithoutPrompt) return;
     e.preventDefault();
     mainWin.hide();
+    if (haritaWin && !haritaWin.isDestroyed()) haritaWin.hide();
   });
 
   mainWin.once("ready-to-show", () => {

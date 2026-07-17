@@ -48,6 +48,7 @@ export default function App() {
   const [savedServerUrl, setSavedServerUrl] = useState(""); // giriş ekranı için önceki sunucu adresi
   const [savedUsername, setSavedUsername] = useState(""); // giriş ekranı için önceki kullanıcı adı
   const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [haritaAcik, setHaritaAcik] = useState(false); // Faaliyet Haritası ayrı penceresi açık mı
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
   const [loaded, setLoaded] = useState(false);
   const [saveTrigger, setSaveTrigger] = useState(0); // load sırasında yerel değer sunucuyu ezdiyse save effect'i yeniden tetikler
@@ -227,6 +228,14 @@ export default function App() {
       if (myPending) setTimeout(() => mergeLocalIntoReloaded(myPending, loadedBlob), 750);
     });
     return () => { u1?.(); u2?.(); u3?.(); u4?.(); u5?.(); };
+  }, []);
+
+  // ── Faaliyet Haritası ayrı penceresi: açık/kapalı durumunu izle ──
+  useEffect(() => {
+    if (!window.appHarita) return;
+    const a = window.appHarita.onAcildi(() => setHaritaAcik(true));
+    const k = window.appHarita.onKapandi(() => setHaritaAcik(false));
+    return () => { a?.(); k?.(); };
   }, []);
 
   // ── Sunucu PC polling: istemci kaydetmelerini 5 saniyede yakala ──────────
@@ -600,6 +609,25 @@ export default function App() {
   const livePartTypeDefs   = useMemo(() => withoutDeleted(partTypeDefs),   [partTypeDefs]);
   const liveTeklifler      = useMemo(() => withoutDeleted(teklifler),      [teklifler]);
   const liveUretimFormlari = useMemo(() => withoutDeleted(uretimFormlari), [uretimFormlari]);
+
+  // ── Harita penceresine tek yönlü veri push'u (yalnız açıkken) ──
+  // Harita salt-okunur; ikinci pencere App yüklemediği için veriyi buradan besliyoruz.
+  // Effect liveCustomers/liveDealers/factory değişince yeniden çalışır (→ push); temayı
+  // ayrıca data-theme özniteliğini izleyerek yakalar (kaynağı Ayarlar veya başka yer olabilir).
+  // (Not: liveCustomers/liveDealers memo'larından SONRA tanımlı olmalı — TDZ.)
+  useEffect(() => {
+    if (!haritaAcik || !window.appHarita) return;
+    const push = () => window.appHarita.veriPush({
+      customers: liveCustomers,
+      dealers: liveDealers,
+      factory,
+      tema: document.documentElement.getAttribute("data-theme") || "light",
+    });
+    push(); // açılışta / her değişimde hemen
+    const gozlemci = new MutationObserver(push);
+    gozlemci.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => gozlemci.disconnect();
+  }, [haritaAcik, liveCustomers, liveDealers, factory]);
 
   // loadFromStorageRef: her render'da güncellenir, hem ilk yükleme hem remote-update soft reload'da kullanılır
   loadFromStorageRef.current = async () => {
@@ -993,7 +1021,7 @@ export default function App() {
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
-        {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} />}
+        {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} onAyriPencere={window.appHarita ? () => window.appHarita.ac() : null} />}
         {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
       </div>
       </div>

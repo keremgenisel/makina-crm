@@ -1,0 +1,87 @@
+// @vitest-environment jsdom
+// Ülke seçilince yan panelde her şehrin ALTINDA o şehirdeki firmalar makina sayısıyla
+// görünür; ilk 5, sonrası "Tümünü gör" ile açılır. Bu üçü (firma listesi, sayı, genişletme)
+// koparsa kullanıcı şehir bazında kimin kaç makinası olduğunu göremez.
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, waitFor, fireEvent, within } from "@testing-library/react";
+
+afterEach(cleanup);
+import { Harita } from "../../src/components/Harita";
+
+// Konya: 6 firma (A iki makina), İstanbul: 1 firma
+const musteriler = [
+  { name: "Firma A", country: "Türkiye", city: "Konya" },
+  { name: "Firma A", country: "Türkiye", city: "Konya" }, // aynı firma, 2. makina
+  { name: "Firma B", country: "Türkiye", city: "Konya" },
+  { name: "Firma C", country: "Türkiye", city: "Konya" },
+  { name: "Firma D", country: "Türkiye", city: "Konya" },
+  { name: "Firma E", country: "Türkiye", city: "Konya" },
+  { name: "Firma F", country: "Türkiye", city: "Konya" },
+  { name: "Solo Ltd", country: "Türkiye", city: "İstanbul" },
+];
+
+const dunyaBekle = () => waitFor(() => expect(document.querySelector('[data-ad="Türkiye"]')).toBeTruthy(), { timeout: 10000 });
+
+const turkiyeAc = async () => {
+  render(<Harita customers={musteriler} dealers={[]} factory={null} />);
+  await dunyaBekle();
+  fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
+  await waitFor(() => expect(screen.getByRole("button", { name: /Tüm Dünya/ })).toBeTruthy(), { timeout: 10000 });
+};
+
+describe("Harita — şehir altında firma listesi", () => {
+  it("şehrin altında firmaları makina sayısıyla gösterir", async () => {
+    await turkiyeAc();
+    const satir = screen.getByText("Firma A").closest(".harita-firma");
+    expect(within(satir).getByText("2")).toBeTruthy();       // A'nın 2 makinası
+    expect(screen.getByText("Solo Ltd")).toBeTruthy();       // İstanbul firması da listede
+    const solo = screen.getByText("Solo Ltd").closest(".harita-firma");
+    expect(within(solo).getByText("1")).toBeTruthy();        // tek makina "1"
+  });
+
+  it("ilk 5 firmayı gösterir, 6.'yı 'Tümünü gör' açar", async () => {
+    await turkiyeAc();
+    // Konya'da 6 firma var → biri (adet'e göre en alttaki) gizli
+    expect(screen.queryByText("Firma F")).toBeNull();
+    const tumu = screen.getByRole("button", { name: /Tümünü gör \(6\)/ });
+    expect(tumu).toBeTruthy();
+    fireEvent.click(tumu);
+    expect(screen.getByText("Firma F")).toBeTruthy();        // artık görünür
+    // Tekrar tıklayınca kapanır
+    fireEvent.click(screen.getByRole("button", { name: /Daha az/ }));
+    expect(screen.queryByText("Firma F")).toBeNull();
+  });
+});
+
+describe("Harita — ilçe altında firma listesi", () => {
+  // İstanbul'un ilçelerinde firmalar; Kadıköy'de 6 firma (biri 2 makina) → Tümünü gör
+  const ilceMusteriler = [
+    { name: "Kad A", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad A", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad B", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad C", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad D", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad E", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Kad F", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "Sis Firma", country: "Türkiye", city: "İstanbul", ilce: "Şişli" },
+  ];
+  it("ile tıklayıp ilçeye inince her ilçenin altında firmalar görünür ve 'Tümünü gör' çalışır", async () => {
+    render(<Harita customers={ilceMusteriler} dealers={[]} factory={null} />);
+    await dunyaBekle();
+    fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
+    await waitFor(() => expect(document.querySelector('[data-ad="İstanbul"]')).toBeTruthy(), { timeout: 10000 });
+    // İstanbul'a listeden tıkla (ilçe görünümüne in)
+    fireEvent.click(screen.getByRole("button", { name: /İstanbul/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /← Türkiye/ })).toBeTruthy(), { timeout: 10000 });
+    // Şişli firması görünür (tek makina)
+    const sis = screen.getByText("Sis Firma").closest(".harita-firma");
+    expect(within(sis).getByText("1")).toBeTruthy();
+    // Kadıköy: 6 firma → 6.'sı gizli, Tümünü gör açıyor
+    expect(screen.queryByText("Kad F")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Tümünü gör \(6\)/ }));
+    expect(screen.getByText("Kad F")).toBeTruthy();
+    // Kad A 2 makina
+    const kadA = screen.getByText("Kad A").closest(".harita-firma");
+    expect(within(kadA).getByText("2")).toBeTruthy();
+  });
+});

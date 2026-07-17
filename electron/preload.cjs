@@ -181,6 +181,23 @@ contextBridge.exposeInMainWorld("appFiles", {
   pruneOrphans: (referencedNames) => ipcRenderer.invoke("files:pruneOrphans", referencedNames),
 });
 
+contextBridge.exposeInMainWorld("appHarita", {
+  ac: () => ipcRenderer.invoke("harita:ac"),                 // ayrı pencerede aç / öne getir
+  veriPush: (veri) => ipcRenderer.send("harita:veriPush", veri), // ana pencere → harita verisi
+  onAcildi: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("harita:acildi");
+    ipcRenderer.on("harita:acildi", h);
+    return () => ipcRenderer.removeListener("harita:acildi", h);
+  },
+  onKapandi: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("harita:kapandi");
+    ipcRenderer.on("harita:kapandi", h);
+    return () => ipcRenderer.removeListener("harita:kapandi", h);
+  },
+});
+
 contextBridge.exposeInMainWorld("crmLocks", {
   acquire:    (entityType, entityId, force = false) => ipcRenderer.invoke("crm:lock:acquire", { entityType, entityId, force }),
   release:    (entityType, entityId) => ipcRenderer.invoke("crm:lock:release", { entityType, entityId }),

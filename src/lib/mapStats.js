@@ -26,6 +26,29 @@ export const sadeAd = (s) => String(s ?? "").toLowerCase().normalize("NFD")
   .replace(/[̀-ͯ]/g, "").replace(/ı/g, "i").replace(/[^a-z0-9]/g, "");
 
 /**
+ * Şehir adı takma-ad (alias) tablosu: sadeAd(kullanıcının yazdığı) -> sadeAd(dizindeki asıl ad).
+ * Harita verisi GeoNames'in ASIL adını indeksliyor; kullanıcı yaygın başka bir yazımı girince
+ * (ör. "Mazar-i-Sharif" / "Mezar-ı Şerif" ama dizinde "Mazar-e Sharif") eşleşme kaçıyor ve şehir
+ * haritada boyanmıyordu. Bu, veriyi 8 MB yeniden üretmeden büyük şehirlerin bilinen yazım
+ * farklarını kapatır. Yeni bir kaçak çıkarsa buraya tek satır eklenir. Anahtar ve değer sadeAd'li.
+ */
+export const SEHIR_ALIAS = {
+  mazarisharif: "mazaresharif",   // Mazar-i-Sharif
+  mezariserif: "mazaresharif",    // Mezar-ı Şerif (TR)
+  mazarsharif: "mazaresharif",
+  sharif: "mazaresharif",         // yalnız "Sharif" yazılmış kayıt (kullanıcının verisi)
+  serif: "mazaresharif",          // "Şerif" (TR) — sadeAd: serif
+  munchen: "munich",              // München — dizinde İngilizce "Munich" ile var
+  munih: "munich",                // Münih (TR)
+};
+
+/** Şehri dizinde aramak için normalize edilmiş anahtar (takma ad varsa asıl ada çevirir). */
+export const sehirAnahtar = (sehir) => {
+  const k = sadeAd(sehir);
+  return SEHIR_ALIAS[k] || k;
+};
+
+/**
  * Müşteri kayıtlarını ülke bazında özetler.
  * Bir müşteri kaydı = bir makina (Customers.jsx:440 ile aynı sayım); firma sayısı ise
  * aynı ülkedeki aynı isimler tekilleştirilerek bulunur.
@@ -46,6 +69,33 @@ export const haritaOzeti = (customers = []) => {
   }
   for (const [ulke, o] of Object.entries(out)) o.firma = firmalar[ulke].size;
   return out;
+};
+
+/**
+ * Bir ülkenin şehir -> firma listesi kırılımı. Yan panelde her şehrin altında o şehirdeki
+ * firmalar makina sayısıyla gösterilir. Aynı firma (isim, trLower ile büyük/küçük harf
+ * duyarsız) aynı şehirde birden çok makina kaydı taşıyorsa TEK satırda toplanır ve sayısı
+ * yazılır (haritaOzeti'nin firma sayımıyla aynı tekilleştirme kuralı).
+ * @returns {Record<string, Array<{ ad: string, adet: number }>>} şehir -> makina çok olan üstte
+ */
+export const sehirFirmaKirilim = (customers = [], ulke = "") => {
+  const out = {}; // sehir -> Map(trLower(ad) -> { ad, adet })
+  for (const c of customers || []) {
+    if (String(c?.country ?? "").trim() !== ulke) continue;
+    const sehir = String(c?.city ?? "").trim();
+    if (!sehir) continue;
+    const ad = String(c?.name ?? "").trim() || "(isimsiz)";
+    const anahtar = trLower(ad);
+    const m = (out[sehir] ||= new Map());
+    const mevcut = m.get(anahtar);
+    if (mevcut) mevcut.adet++;
+    else m.set(anahtar, { ad, adet: 1 });
+  }
+  const res = {};
+  for (const [sehir, m] of Object.entries(out)) {
+    res[sehir] = [...m.values()].sort((a, b) => b.adet - a.adet || a.ad.localeCompare(b.ad, "tr"));
+  }
+  return res;
 };
 
 /** Dünya görünümü üst satırı: kaç ülke, kaç şehir, kaç makina, kaç firma. */
@@ -71,7 +121,7 @@ export const bolgeToplami = (sehirler = {}, dizin = {}) => {
   const bolgeler = {};
   const eslesmeyen = [];
   for (const [sehir, adet] of Object.entries(sehirler)) {
-    const i = dizin[sadeAd(sehir)];
+    const i = dizin[sehirAnahtar(sehir)];
     if (i === undefined) { eslesmeyen.push(sehir); continue; }
     bolgeler[i] = (bolgeler[i] || 0) + adet;
   }
@@ -97,6 +147,33 @@ export const ilOzeti = (customers = [], il = "") => {
     ilceler[i] = (ilceler[i] || 0) + 1;
   }
   return { ilceler, ilcesiz };
+};
+
+/**
+ * Bir ilin ilçe -> firma listesi kırılımı (yan panelde ilçe altında gösterilir).
+ * sehirFirmaKirilim'in ilçe eşdeğeri: müşterinin `city` = il, `ilce` = ilçe. İlçesi
+ * girilmemiş kayıtlar (haritada boyanamayanlar) burada da yok, sayıları IlKartlari'nda ayrı.
+ * @returns {Record<string, Array<{ ad: string, adet: number }>>}
+ */
+export const ilceFirmaKirilim = (customers = [], il = "") => {
+  const out = {};
+  for (const c of customers || []) {
+    if (String(c?.country ?? "").trim() !== "Türkiye") continue;
+    if (String(c?.city ?? "").trim() !== il) continue;
+    const ilce = String(c?.ilce ?? "").trim();
+    if (!ilce) continue;
+    const ad = String(c?.name ?? "").trim() || "(isimsiz)";
+    const anahtar = trLower(ad);
+    const m = (out[ilce] ||= new Map());
+    const mevcut = m.get(anahtar);
+    if (mevcut) mevcut.adet++;
+    else m.set(anahtar, { ad, adet: 1 });
+  }
+  const res = {};
+  for (const [ilce, m] of Object.entries(out)) {
+    res[ilce] = [...m.values()].sort((a, b) => b.adet - a.adet || a.ad.localeCompare(b.ad, "tr"));
+  }
+  return res;
 };
 
 /**
@@ -198,7 +275,7 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
   if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {} });
   const konum = (ulke, sehir, ulkeGorunumu) => {
     const d = konumlar[ulke];
-    const k = d && d[sadeAd(sehir)];
+    const k = d && d[sehirAnahtar(sehir)];
     if (!k) return null;
     return ulkeGorunumu ? { x: k[2], y: k[3] } : { x: k[0], y: k[1] };
   };

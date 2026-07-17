@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Icon, StatCard } from "./ui";
+import { Icon, StatCard, Btn } from "./ui";
 import { HaritaSvg } from "./harita/HaritaSvg";
-import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd } from "../lib/mapStats";
+import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim } from "../lib/mapStats";
 import { ILCELER } from "../lib/map/ilceler";
 // Pin başındaki simge: masaüstü ikonu (kare "A"). logo.avif 500x110 yazılı logodur,
 // 19x19 pine sıkışınca okunmuyordu.
@@ -27,7 +27,7 @@ const Yukleniyor = ({ metin }) => (
   <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>{metin}</div>
 );
 
-export const Harita = ({ customers = [], dealers = [], factory = null }) => {
+export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPencere = null }) => {
   const [dunya, setDunya] = useState(null);
   const [hata, setHata] = useState("");
   const [seciliUlke, setSeciliUlke] = useState(null);
@@ -115,6 +115,10 @@ export const Harita = ({ customers = [], dealers = [], factory = null }) => {
 
   const ulkeModul = seciliUlke ? bolgeler[seciliUlke] : null;
   const ilVerisi = useMemo(() => (seciliIl ? ilOzeti(customers, seciliIl) : null), [customers, seciliIl]);
+  // Seçili ülkenin şehir -> firma kırılımı (yan panelde her şehrin altında gösterilir)
+  const firmaKirilim = useMemo(() => (seciliUlke ? sehirFirmaKirilim(customers, seciliUlke) : {}), [customers, seciliUlke]);
+  // Seçili ilin ilçe -> firma kırılımı (ilçe panelinde her ilçenin altında)
+  const ilceKirilim = useMemo(() => (seciliIl ? ilceFirmaKirilim(customers, seciliIl) : {}), [customers, seciliIl]);
 
   // Çizilecek şekiller: dünyada ülkeler, ülke görünümünde bölgeler
   const gorunum = useMemo(() => {
@@ -164,6 +168,12 @@ export const Harita = ({ customers = [], dealers = [], factory = null }) => {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Faaliyet Haritası</h2>
+        {/* Yalnız ana penceredeki sekmede görünür; ayrı pencerenin içinde prop geçilmez → çıkmaz. */}
+        {onAyriPencere && (
+          <Btn small variant="ghost" onClick={onAyriPencere} title="Haritayı ayrı pencerede aç (2. monitör)">
+            <Icon name="expand" size={14} /> Ayrı pencerede aç
+          </Btn>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
@@ -246,10 +256,11 @@ export const Harita = ({ customers = [], dealers = [], factory = null }) => {
             </>
           ) : (
             seciliIl ? (
-              <IlPaneli il={seciliIl} veri={ilVerisi}
+              <IlPaneli il={seciliIl} veri={ilVerisi} firmaKirilim={ilceKirilim}
                 onGeri={() => { setIpucu(null); setSeciliIl(null); }} />
             ) : (
               <UlkePaneli ulke={seciliUlke} ozet={ozet} modul={ulkeModul} eslesmeyen={eslesmeyen}
+                firmaKirilim={firmaKirilim}
                 onGeri={() => { setIpucu(null); setSeciliUlke(null); }}
                 onIlSec={(il) => { setIpucu(null); setSeciliIl(il); }} />
             )
@@ -276,7 +287,7 @@ const IlKartlari = ({ il, veri, toplamMakina }) => {
   );
 };
 
-const IlPaneli = ({ il, veri, onGeri }) => {
+const IlPaneli = ({ il, veri, firmaKirilim = {}, onGeri }) => {
   const ilceler = Object.entries(veri.ilceler).sort((a, b) => b[1] - a[1]);
   const kova = kovala(ilceler.map((x) => x[1]));
   return (
@@ -285,10 +296,13 @@ const IlPaneli = ({ il, veri, onGeri }) => {
       <div className="harita-yan-bas" style={{ marginTop: 9 }}>{il} — ilçeler ({ilceler.length})</div>
       <div className="harita-liste">
         {ilceler.map(([ad, n]) => (
-          <div key={ad} className="harita-satir" style={{ cursor: "default" }}>
-            <span className="nokta" style={{ background: `var(--hk${kova(n) + 1})` }} />
-            <span className="ad">{ad}</span>
-            <span className="sy">{n}</span>
+          <div key={ad} className="harita-sehir-grup">
+            <div className="harita-satir" style={{ cursor: "default" }}>
+              <span className="nokta" style={{ background: `var(--hk${kova(n) + 1})` }} />
+              <span className="ad">{ad}</span>
+              <span className="sy">{n}</span>
+            </div>
+            <FirmaListesi firmalar={firmaKirilim[ad] || []} />
           </div>
         ))}
         {!ilceler.length && !veri.ilcesiz && <div className="harita-bos">Bu ilde makina kaydı yok.</div>}
@@ -320,7 +334,58 @@ const UlkeKartlari = ({ ulke, ozet, toplamMakina, modul }) => {
   );
 };
 
-const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, onGeri, onIlSec }) => {
+// İlk gösterilecek firma sayısı; üstü "Tümünü gör" ile açılır.
+const FIRMA_ON = 5;
+
+// Bir şehrin/ilçenin altındaki firma listesi: makina sayısıyla, ilk 5, sonrası "Tümünü gör".
+// Hem şehir (UlkePaneli) hem ilçe (IlPaneli) satırları bunu kullanır.
+const FirmaListesi = ({ firmalar = [] }) => {
+  const [hepsi, setHepsi] = useState(false);
+  if (!firmalar.length) return null;
+  const gosterilen = hepsi ? firmalar : firmalar.slice(0, FIRMA_ON);
+  return (
+    <div className="harita-firma-liste">
+      {gosterilen.map((f) => (
+        <div key={f.ad} className="harita-firma">
+          <span className="fad" title={f.ad}>{f.ad}</span>
+          <span className="fsy">{f.adet}</span>
+        </div>
+      ))}
+      {firmalar.length > FIRMA_ON && (
+        <button type="button" className="harita-tumu" onClick={() => setHepsi((h) => !h)}>
+          {hepsi ? "Daha az" : `Tümünü gör (${firmalar.length})`}
+        </button>
+      )}
+    </div>
+  );
+};
+
+const SehirSatiri = ({ ulke, sehir, adet, kova, modul, firmalar, onIlSec }) => {
+  const i = modul?.SEHIR[sehirAnahtar(sehir)];
+  const bolge = i === undefined ? null : modul.BOLGE_ADLARI[i];
+  // Bölge adı şehrin tekrarıysa yazma ("Erbil / Erbil ili" gibi)
+  const ayni = bolge && (sadeAd(bolge) === sadeAd(sehir) || sadeAd(bolge).startsWith(sadeAd(sehir)));
+  // İlçe kırılımı olan iller listeden de açılabilmeli (haritadan zaten açılıyor)
+  const acilir = ulke === "Türkiye" && !!ILCELER[sehir] && !!onIlSec;
+  const ic = (
+    <>
+      <span className="nokta" style={{ background: `var(--hk${kova(adet) + 1})` }} />
+      <span className="ad">{sehir}{!ayni && bolge ? <span className="bolge"> · {bolge}</span> : null}</span>
+      <span className="sy">{adet}</span>
+      {acilir && <span className="ok">›</span>}
+    </>
+  );
+  return (
+    <div className="harita-sehir-grup">
+      {acilir
+        ? <button type="button" className="harita-satir" onClick={() => onIlSec(sehir)}>{ic}</button>
+        : <div className="harita-satir" style={{ cursor: "default" }}>{ic}</div>}
+      <FirmaListesi firmalar={firmalar} />
+    </div>
+  );
+};
+
+const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, firmaKirilim = {}, onGeri, onIlSec }) => {
   const v = ozet[ulke] || { sehirler: {} };
   const sehirler = Object.entries(v.sehirler).sort((a, b) => b[1] - a[1]);
   const kova = kovala(sehirler.map((s) => s[1]));
@@ -330,25 +395,10 @@ const UlkePaneli = ({ ulke, ozet, modul, eslesmeyen, onGeri, onIlSec }) => {
       <button type="button" className="harita-geri" onClick={onGeri}>← Tüm Dünya</button>
       <div className="harita-yan-bas" style={{ marginTop: 9 }}>{ulke} — şehirler ({sehirler.length})</div>
       <div className="harita-liste">
-        {sehirler.map(([ad, n]) => {
-          const i = modul?.SEHIR[sadeAd(ad)];
-          const bolge = i === undefined ? null : modul.BOLGE_ADLARI[i];
-          // Bölge adı şehrin tekrarıysa yazma ("Erbil / Erbil ili" gibi)
-          const ayni = bolge && (sadeAd(bolge) === sadeAd(ad) || sadeAd(bolge).startsWith(sadeAd(ad)));
-          // İlçe kırılımı olan iller listeden de açılabilmeli (haritadan zaten açılıyor)
-          const acilir = ulke === "Türkiye" && !!ILCELER[ad] && !!onIlSec;
-          const ic = (
-            <>
-              <span className="nokta" style={{ background: `var(--hk${kova(n) + 1})` }} />
-              <span className="ad">{ad}{!ayni && bolge ? <span className="bolge"> · {bolge}</span> : null}</span>
-              <span className="sy">{n}</span>
-              {acilir && <span className="ok">›</span>}
-            </>
-          );
-          return acilir
-            ? <button key={ad} type="button" className="harita-satir" onClick={() => onIlSec(ad)}>{ic}</button>
-            : <div key={ad} className="harita-satir" style={{ cursor: "default" }}>{ic}</div>;
-        })}
+        {sehirler.map(([ad, n]) => (
+          <SehirSatiri key={ad} ulke={ulke} sehir={ad} adet={n} kova={kova} modul={modul}
+            firmalar={firmaKirilim[ad] || []} onIlSec={onIlSec} />
+        ))}
         {!!eslesmeyen.length && (
           <div className="harita-bos">
             {eslesmeyen.length} şehir haritada yerine oturmadı, yalnız listede: {eslesmeyen.join(", ")}

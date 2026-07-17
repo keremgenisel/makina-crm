@@ -4,6 +4,15 @@
    theme.js token'larından gelir; taban stiller mevcut inline hallerle birebir aynıdır
    (aydınlık modda hiçbir görünüm değişmez), üzerine yalnız etkileşim durumları eklenir. */
 
+/* Temel yazı tipi: ana uygulamada App'in kök div'i bunu ayarlıyor ve tüm bileşenler
+   font-family:inherit ile devralıyor. Ayrı Faaliyet Haritası penceresi App'i mount
+   etmediği için orada taban tanımsız kalıp serif'e (Times) düşüyordu. Paylaşılan bu
+   stil sayfasında body'ye koymak iki pencereyi de kapsar; App'in kök div'i aynı değeri
+   yineler, yani ana uygulamada görünüm değişmez. */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 /* ── Butonlar ── */
 .btn {
   padding: 9px 18px;
@@ -238,6 +247,15 @@
 .harita-satir .sy { font-size: 12px; font-weight: 700; color: var(--orTx, #c2410c); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .harita-satir .ok { color: var(--n400, #94a3b8); font-size: 11px; flex-shrink: 0; }
 .harita-bos { font-size: 11.5px; color: var(--n400, #94a3b8); padding: 8px 2px; line-height: 1.6; }
+
+/* Şehir satırının altında o şehirdeki firmalar (makina sayısıyla). İlk 5, sonrası "Tümünü gör". */
+.harita-sehir-grup { display: flex; flex-direction: column; }
+.harita-firma-liste { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 5px 21px; padding-left: 9px; border-left: 1px solid var(--n150, #f1f5f9); }
+.harita-firma { display: flex; align-items: center; gap: 8px; padding: 2px 6px; }
+.harita-firma .fad { flex: 1; font-size: 11.5px; font-weight: 500; color: var(--n600, #475569); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.harita-firma .fsy { font-size: 11px; font-weight: 700; color: var(--n500, #64748b); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.harita-tumu { align-self: flex-start; background: none; border: none; color: var(--orTx, #c2410c); font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 6px; font-family: inherit; }
+.harita-tumu:hover { text-decoration: underline; }
 
 /* ══ Kaydırma çubukları ══
    Chromium'un varsayılan çubuğu açık gri ve kalın: koyu kenar çubuğunda ve koyu temada
