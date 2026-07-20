@@ -1,8 +1,13 @@
+import { useEffect, useState } from "react";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, isAltuntasServisi,
+  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
 } from "../../../lib/utils";
-import { Icon, Btn, AtesRozeti } from "../../ui";
+import { Icon, Btn, AtesRozeti, Pagination } from "../../ui";
+
+// Makina geçmişinde bir sayfada gösterilecek olay sayısı; üstü sayfalanır.
+const OLAY_SAYFA = 7;
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -26,7 +31,14 @@ export const MachineTimeline = ({
   onTahsilTaksit = null,
   dosyaAdet = null,
   onDosyaBadge = null,
-}) => (
+}) => {
+  const [sayfa, setSayfa] = useState(1);
+  // Başka makinaya geçilince (modal aynı bileşeni yeniden kullanır) ilk sayfaya dön
+  useEffect(() => { setSayfa(1); }, [detailView?.id]);
+  const toplamSayfa = Math.max(1, Math.ceil(detailTimelineEvents.length / OLAY_SAYFA));
+  const aktifSayfa = Math.min(sayfa, toplamSayfa); // olay silinip sayfa sayısı düşerse taşma olmasın
+  const sayfaOlaylar = detailTimelineEvents.slice((aktifSayfa - 1) * OLAY_SAYFA, aktifSayfa * OLAY_SAYFA);
+  return (
   <div style={{ background: "var(--n100, #f8fafc)", borderRadius: 12, padding: "16px 18px" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
       <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
@@ -41,8 +53,8 @@ export const MachineTimeline = ({
     {detailTimelineEvents.length === 0 ? (
       <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13, padding: "8px 0" }}>Bu makinaya ait kayıt bulunmuyor.</div>
     ) : (
-      detailTimelineEvents.map((ev, i) => {
-        const last = i === detailTimelineEvents.length - 1;
+      sayfaOlaylar.map((ev, i) => {
+        const last = i === sayfaOlaylar.length - 1;
         const sv = ev.sv;
         const ps = ev.ps;
         const psList = ev.psList;
@@ -136,7 +148,12 @@ export const MachineTimeline = ({
                   </>
                 )}
                 {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "var(--n150, #f1f5f9)", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "var(--n600, #475569)" }}>{ev.tip}</span>}
-                {sv?.islemFirma && !isAltuntasServisi(sv, factoryName) && (
+                {sv && disServisMi(sv) && (
+                  <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)" }}>
+                    Dış Servis (Anlaşmasız): {islemFirmaGoster(sv)}
+                  </span>
+                )}
+                {sv?.islemFirma && !disServisMi(sv) && !isAltuntasServisi(sv, factoryName) && (
                   <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" }}>
                     Anlaşmalı Servis: {sv.islemFirma}
                   </span>
@@ -144,9 +161,26 @@ export const MachineTimeline = ({
                 {sv?.tech && <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>· {sv.tech}</span>}
                 {sv?.repairPlace && <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>· {sv.repairPlace}</span>}
               </div>
+              {sv && disServisMi(sv) && (sv.islemFirmaYetkili || sv.islemFirmaTel || sv.islemFirmaUlke || sv.islemFirmaSehir) && (
+                <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>
+                  {[sv.islemFirmaYetkili, sv.islemFirmaTel, [sv.islemFirmaSehir, sv.islemFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
+                </div>
+              )}
               {ev.desc && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
               {psList && (
                 <div style={{ marginTop: 4 }}>
+                  {psList[0]?.satisFirma && psList[0].satisFirma !== factoryName && (
+                    <div style={{ fontSize: 11, marginBottom: 3 }}>
+                      <span style={{ fontWeight: 700, color: partSaleDisFirmaMi(psList[0]) ? "var(--red700, #b91c1c)" : "var(--n600, #475569)" }}>
+                        Satış yapan: {satisFirmaGoster(psList[0])}{partSaleDisFirmaMi(psList[0]) ? " (anlaşmasız)" : ""}
+                      </span>
+                      {partSaleDisFirmaMi(psList[0]) && (psList[0].satisFirmaYetkili || psList[0].satisFirmaTel || psList[0].satisFirmaUlke || psList[0].satisFirmaSehir) && (
+                        <span style={{ color: "var(--n500, #64748b)" }}>
+                          {" · "}{[psList[0].satisFirmaYetkili, psList[0].satisFirmaTel, [psList[0].satisFirmaSehir, psList[0].satisFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {psList.map(p => {
                     const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates);
                     return (
@@ -263,5 +297,7 @@ export const MachineTimeline = ({
         );
       })
     )}
+    <Pagination total={detailTimelineEvents.length} page={aktifSayfa} setPage={setSayfa} perPage={OLAY_SAYFA} />
   </div>
-);
+  );
+};

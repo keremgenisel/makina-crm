@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
+import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {} }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false }) => {
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
@@ -123,9 +123,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="İşlemi Yapan Firma">
-          <Select value={form.islemFirma || factoryName} onChange={e => setForm(p => ({ ...p, islemFirma: e.target.value }))}>
+          <Select value={form.islemFirma || factoryName} onChange={e => {
+            const v = e.target.value;
+            // "Diğer"den başka bir değere geçilince dış firma alanlarını temizle (eski değer kalmasın)
+            setForm(p => v === "Diğer" ? { ...p, islemFirma: v }
+              : { ...p, islemFirma: v, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaUlke: "", islemFirmaSehir: "" });
+          }}>
             <option value={factoryName}>{factoryName}</option>
             {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+            <option value="Diğer">Diğer (anlaşmasız firma)…</option>
           </Select>
         </Field>
         <Field label="Fatura Tipi">
@@ -134,6 +140,23 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Select>
         </Field>
       </div>
+
+      {/* İşlemi anlaşmalı olmadığımız, müşterinin bulduğu bir servis yaptıysa: firma bilgileri
+          YALNIZ bu servise kaydedilir (müşteri/bayi kaydı oluşturulmaz). */}
+      {form.islemFirma === "Diğer" && (
+        <div style={{ display: "grid", gap: 12, padding: 12, marginBottom: 14, borderRadius: 10, background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--amb800, #92400e)" }}>Anlaşmasız Dış Servis Firması (yalnız bu servise kaydedilir)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <Field label="Firma Adı"><Input value={form.islemFirmaAd || ""} onChange={e => setForm(p => ({ ...p, islemFirmaAd: e.target.value }))} placeholder="Servis firması adı" /></Field>
+            <Field label="Yetkili Kişi"><Input value={form.islemFirmaYetkili || ""} onChange={e => setForm(p => ({ ...p, islemFirmaYetkili: e.target.value }))} placeholder="Yetkili" /></Field>
+            <Field label="Telefon"><Input value={form.islemFirmaTel || ""} onChange={e => setForm(p => ({ ...p, islemFirmaTel: e.target.value }))} placeholder="Telefon" /></Field>
+          </div>
+          <CountryCityFields country={form.islemFirmaUlke || ""} city={form.islemFirmaSehir || ""}
+            onCountry={v => setForm(p => ({ ...p, islemFirmaUlke: v, islemFirmaSehir: "" }))}
+            onCity={v => setForm(p => ({ ...p, islemFirmaSehir: v }))}
+            geoData={geoData} loadingGeo={loadingGeo} />
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         <Field label="Müşteri Talimatı / Açıklama">

@@ -1,5 +1,5 @@
 import LOGO from "../assets/logo.avif?inline";
-import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, numberToWordsEN } from "./utils";
+import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
@@ -85,6 +85,10 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
     kdvDahilLabel: "KDV dahil",
+    disServisLabel: "İşlemi Yapan Firma (Anlaşmasız)",
+    yetkiliLabel: "Yetkili Kişi",
+    firmaTelLabel: "Firma Telefonu",
+    firmaAdresLabel: "Firma Adresi",
     yapilanIslerBaslik: "YAPILAN İŞLER / PARÇA DEĞİŞİMLERİ",
     degisenParcalarBaslik: "DEĞİŞEN PARÇALAR",
     musteriTalimatiBaslik: "MÜŞTERİ TALİMATI / AÇIKLAMA",
@@ -124,6 +128,10 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",
     kdvDahilLabel: "VAT included",
+    disServisLabel: "Service Firm (Non-contracted)",
+    yetkiliLabel: "Contact Person",
+    firmaTelLabel: "Firm Phone",
+    firmaAdresLabel: "Firm Address",
     yapilanIslerBaslik: "WORK PERFORMED / PARTS REPLACED",
     degisenParcalarBaslik: "REPLACED PARTS",
     musteriTalimatiBaslik: "CUSTOMER INSTRUCTIONS / NOTES",
@@ -182,6 +190,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     thAciklama: "Açıklama",
     servisYok: "Servis kaydı bulunmuyor.",
     degisenParcalarLabel: "Değişen parçalar:",
+    disServisLabel: "İşlemi yapan firma (anlaşmasız)",
     kalipBaslik: "EXTRA KALIPLAR",
     thKalip: "Kalıp",
     typeIlkCalistirma: "İlk Çalıştırma",
@@ -225,6 +234,7 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     thAciklama: "Description",
     servisYok: "No service records found.",
     degisenParcalarLabel: "Replaced parts:",
+    disServisLabel: "Service firm (non-contracted)",
     kalipBaslik: "EXTRA MOLDS",
     thKalip: "Mold",
     typeIlkCalistirma: "First Start-Up",
@@ -278,6 +288,13 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     [L.yapilanIslemLabel, transPlace(L, sv.repairPlace)],
     [L.girisLabel, fmtTR(sv.date)],
     [L.teknisyenLabel, sv.tech],
+    // Anlaşmasız dış servis: işlemi yapan firmanın bilgileri (yalnız bu servise kayıtlı)
+    ...(disServisMi(sv) ? [
+      [L.disServisLabel, islemFirmaGoster(sv)],
+      ...(sv.islemFirmaYetkili ? [[L.yetkiliLabel, sv.islemFirmaYetkili]] : []),
+      ...(sv.islemFirmaTel ? [[L.firmaTelLabel, sv.islemFirmaTel]] : []),
+      ...((sv.islemFirmaSehir || sv.islemFirmaUlke) ? [[L.firmaAdresLabel, [lang === "EN" ? latinize(sv.islemFirmaSehir) : sv.islemFirmaSehir, lang === "EN" ? (COUNTRY_EN[sv.islemFirmaUlke] || sv.islemFirmaUlke) : sv.islemFirmaUlke].filter(Boolean).join(", ")]] : []),
+    ] : []),
     [L.servisUcretiLabel, ucret],
     ...(sv.degisenParcalar?.length ? [[L.parcaUcretiLabel, parcaUcret]] : []),
     ...(toplam ? [[L.toplamLabel, toplam]] : []),
@@ -442,15 +459,16 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     [L.notLabel, detailView.aciklama || "—"],
   ].map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
 
+  const raporFactoryName = factory?.name || "Altuntaş Makina";
   const svcRows = detailHistory.length === 0
     ? `<tr><td colspan="5" style="text-align:center">${esc(L.servisYok)}</td></tr>`
     : detailHistory.map(sv =>
-        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(p => { const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p); return ad + ((typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : ""); }).join(", "))}` : ""}</td></tr>`
+        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(p => { const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p); return ad + ((typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : ""); }).join(", "))}` : ""}${disServisMi(sv) ? `<br><b>${esc(L.disServisLabel)}:</b> ${esc([islemFirmaGoster(sv), sv.islemFirmaYetkili, sv.islemFirmaTel].filter(Boolean).join(" · "))}` : ""}</td></tr>`
       ).join("");
 
   const givenParts = (partSales || []).filter(ps => ps.customerId === detailView.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
   const partRows = givenParts.map(ps =>
-    `<tr><td>${esc(fmtTR(ps.tarih))}</td><td>${esc(ps.ad)}${ps.olcu ? ` (${esc(ps.olcu)})` : ""}</td></tr>`
+    `<tr><td>${esc(fmtTR(ps.tarih))}</td><td>${esc(ps.ad)}${ps.olcu ? ` (${esc(ps.olcu)})` : ""}${(ps.satisFirma && ps.satisFirma !== raporFactoryName) ? `<br><span style="color:#555">${esc(L.satisYapanLabel)}: ${esc(satisFirmaGoster(ps))}</span>` : ""}</td></tr>`
   ).join("");
 
   const html = `<!DOCTYPE html>

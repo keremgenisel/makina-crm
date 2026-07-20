@@ -341,6 +341,14 @@ export const resolveSatisYapan = (val, factory) => {
   return val;
 };
 
+// Serviste işlemi yapan firmanın GÖSTERİM adı. "Diğer" (anlaşmasız dış firma) seçilmişse gerçek ad
+// ayrı alanda (islemFirmaAd) tutulur; sentinel "Diğer" yerine o adı göster. Aksi halde islemFirma.
+export const disServisMi = (sv) => sv?.islemFirma === "Diğer";
+export const islemFirmaGoster = (sv) => (disServisMi(sv) ? (sv?.islemFirmaAd || "Diğer (isimsiz firma)") : sv?.islemFirma);
+// Extra kalıp satışında satışı yapan firmanın GÖSTERİM adı (aynı "Diğer" sentinel kuralı).
+export const partSaleDisFirmaMi = (ps) => ps?.satisFirma === "Diğer";
+export const satisFirmaGoster = (ps) => (partSaleDisFirmaMi(ps) ? (ps?.satisFirmaAd || "Diğer (isimsiz firma)") : ps?.satisFirma);
+
 // ── Borç/ödeme kontrolleri — Dashboard/Customers/Finance arasında paylaşılır ──
 // Servis Altuntaş Makina'nın kendisi tarafından mı yapıldı (işlemi yapan firma boşsa veya fabrika
 // adıyla eşleşiyorsa evet). Anlaşmalı bir firma seçiliyse hayır — o zaman işçilik ücretini müşteri

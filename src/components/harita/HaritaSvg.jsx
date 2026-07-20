@@ -16,8 +16,9 @@ const pinRengi = (p) => (p.tur === "fabrika" ? PIN_RENK.fabrika
 export const HaritaSvg = ({
   W, H,
   arkaPlan = [],          // tıklanmayan gri ülkeler (yalnız dünya görünümü)
-  sekiller = [],          // { anahtar, d, adet, kova }  — ülke ya da bölge
+  sekiller = [],          // { anahtar, d, adet }  — ülke ya da bölge
   pinler = [],            // { x, y, tur, olcek, sayi, ad, alt }
+  etiketler = [],         // { x, y, ad, olcek } — satışsız yerlerin adı (pinsiz, şekil merkezinde)
   ikon = null,            // pin başındaki logo (data URI)
   onSec = null,           // (anahtar) => void — null ise şekiller tıklanmaz
   onIpucu = () => {},     // ({ x, y, baslik, alt }) | null
@@ -61,7 +62,7 @@ export const HaritaSvg = ({
   // Pinler geç gelir (fabrika/bayi ülkelerinin dosyaları harita çizildikten sonra yüklenir).
   // Konumları transform ile veriliyor; bu olmadan hepsi sol üst köşede yığılıyordu.
   // Görünümü SIFIRLAMAZ: kullanıcı kaydırmışken pin gelirse harita zıplamasın.
-  useLayoutEffect(() => { uygula(); }, [pinler, uygula]);
+  useLayoutEffect(() => { uygula(); }, [pinler, etiketler, uygula]);
 
   /** Ekran pikselini viewBox koordinatına çevirir (SVG "meet" ile ortalanıp ölçekleniyor). */
   const vbNokta = (e) => {
@@ -165,7 +166,7 @@ export const HaritaSvg = ({
         {arkaPlan.map((d, i) => <path key={"a" + i} className="harita-arkaplan" d={d} />)}
         {sekiller.map((s) => (
           <path key={s.anahtar} className={`harita-sekil${s.adet ? " satisli" : ""}`} d={s.d}
-            fill={s.adet ? `var(--hk${s.kova + 1})` : "var(--hBos)"}
+            fill={s.adet ? "var(--hSatis, #e85d1a)" : "var(--hBos)"}
             data-ad={s.anahtar} data-adet={s.adet}
             {...(s.adet && onSec ? { "data-sec": s.anahtar } : {})} />
         ))}
@@ -178,7 +179,33 @@ export const HaritaSvg = ({
         </linearGradient>
       </defs>
       <g ref={pinKatRef}>
-        {pinler.map((p, i) => (
+        {/* Satışsız yerlerin adları (pinsiz, şekil merkezinde, biraz soluk). Pin katmanında
+            oldukları için ekran-pikseline sabit kalır; tıklama/ipucu almazlar. */}
+        {etiketler.map((e, i) => (
+          <g key={"e" + i} className="harita-etiket-g" data-x={e.x} data-y={e.y} data-o={e.olcek} style={{ pointerEvents: "none" }}>
+            <text className="harita-etiket harita-etiket-bos" x="0" y="0" textAnchor="middle" dominantBaseline="central"
+              fontSize="11" fontWeight="600" fill="var(--n600, #475569)" stroke="var(--surface, #ffffff)"
+              strokeWidth="3" paintOrder="stroke">{e.ad}</text>
+          </g>
+        ))}
+        {pinler.map((p, i) => p.tur === "satis" ? (
+          // Satış konum pini: basit, nötr (temaya göre koyu/açık) damla — turuncu dolgudan ve
+          // fabrika/bayi/servis pinlerinden ayrışsın diye. App ikonu/sayı rozeti yok; yerin
+          // adı ucun altına yazılır (okunurluk için beyaz haleli). Etiket pin katmanında
+          // olduğu için ekran-pikseline sabit kalır (yakınlaştıkça büyümez).
+          <g key={i} className="harita-pin harita-satis-pin" data-x={p.x} data-y={p.y} data-o={p.olcek}
+            data-pin={p.tur} data-ad={p.ad} data-alt={p.alt}>
+            <path d="M0,0 C-2,-6 -13,-13 -13,-23 A13,13 0 1,1 13,-23 C13,-13 2,-6 0,0 Z"
+              fill="var(--n900, #0f172a)" stroke="var(--surface, #ffffff)" strokeWidth="1.8" />
+            <circle cx="0" cy="-23" r="4.5" fill="var(--surface, #ffffff)" />
+            {p.etiket && (
+              <text className="harita-etiket" x="0" y="12" textAnchor="middle" fontSize="11" fontWeight="600"
+                fill="var(--n900, #0f172a)" stroke="var(--surface, #ffffff)" strokeWidth="3"
+                paintOrder="stroke" style={{ pointerEvents: "none" }}>{p.etiket}</text>
+            )}
+            <circle cx="0" cy="-23" r="16" fill="transparent" />
+          </g>
+        ) : (
           <g key={i} className="harita-pin" data-x={p.x} data-y={p.y} data-o={p.olcek}
             data-pin={p.tur} data-ad={p.ad} data-alt={p.alt}>
             <path d="M0,0 C-2,-6 -13,-13 -13,-23 A13,13 0 1,1 13,-23 C13,-13 2,-6 0,0 Z"

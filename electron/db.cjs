@@ -147,7 +147,8 @@ CREATE TABLE IF NOT EXISTS services (
   type TEXT, repairPlace TEXT, date TEXT, tech TEXT, yapilanIsler TEXT, musteriTalimati TEXT, fabrikaNotu TEXT,
   servisUcreti REAL, currency TEXT, faturaTipi TEXT, odendi INTEGER,
   degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
-  islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT
+  islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT,
+  islemFirmaAd TEXT, islemFirmaYetkili TEXT, islemFirmaTel TEXT, islemFirmaUlke TEXT, islemFirmaSehir TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -180,7 +181,8 @@ CREATE TABLE IF NOT EXISTS part_sales (
   customer_id INTEGER REFERENCES customers(id),
   tur TEXT, ad TEXT, olcu TEXT, tarih TEXT, ucret REAL, currency TEXT,
   odendi INTEGER, faturaTipi TEXT, ucretsizMi INTEGER, batchId INTEGER, deletedAt TEXT,
-  teklifId INTEGER, uretimFormGonder INTEGER, uretimFormId INTEGER
+  teklifId INTEGER, uretimFormGonder INTEGER, uretimFormId INTEGER,
+  satisFirma TEXT, satisFirmaAd TEXT, satisFirmaYetkili TEXT, satisFirmaTel TEXT, satisFirmaUlke TEXT, satisFirmaSehir TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_partsales_customer ON part_sales(customer_id);
 
@@ -293,6 +295,10 @@ function ensureColumns(conn, table, columns) {
 const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
 const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"], ["fabrikaNotu", "TEXT"]];
+// "İşlemi Yapan Firma" = "Diğer" (anlaşmasız dış servis) seçilince yalnız servise kaydedilen firma
+// bilgileri — müşteri/bayi kaydı oluşturulmaz. Bu sütunlar olmadan renderer'ın yazdığı değerler
+// sessizce düşer (bkz. INSERT açık sütun listesi).
+const SERVICES_DIS_FIRMA_COLUMNS = [["islemFirmaAd", "TEXT"], ["islemFirmaYetkili", "TEXT"], ["islemFirmaTel", "TEXT"], ["islemFirmaUlke", "TEXT"], ["islemFirmaSehir", "TEXT"]];
 // KDV oranı artık tek bir sayı (kdvRate) değil, tarihe bağlı dönemler listesi (kdvRates, JSON) —
 // eski kdvRate sütunu geriye uyumluluk için okunmaya devam eder (bkz. normalizeKdvRates).
 const APP_SETTINGS_NEW_COLUMNS = [["kdvRates", "TEXT"]];
@@ -317,6 +323,9 @@ const TEKLIFLER_CONVERT_COLUMNS = [["satisTamam", "INTEGER"], ["tur", "TEXT"], [
 const CUSTOMERS_FROM_TEKLIF_COLUMN = [["fromTeklifId", "INTEGER"]];
 // Üretim formu takibi: kalıp/parça satırının üretim formuna gönderilme işareti ve bağlandığı form
 const PART_SALES_TEKLIF_URETIM_COLUMNS = [["teklifId", "INTEGER"], ["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
+// Extra kalıp satışında "Satış Yapan Firma" (Fabrika / bayi / "Diğer"). "Diğer" iken yalnız satışa
+// kaydedilen anlaşmasız firma bilgileri — müşteri/bayi kaydı oluşturulmaz.
+const PART_SALES_SATIS_FIRMA_COLUMNS = [["satisFirma", "TEXT"], ["satisFirmaAd", "TEXT"], ["satisFirmaYetkili", "TEXT"], ["satisFirmaTel", "TEXT"], ["satisFirmaUlke", "TEXT"], ["satisFirmaSehir", "TEXT"]];
 const KALIPLAR_URETIM_COLUMNS = [["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
 // Ödeme planı (taksit vadeleri, JSON) ve teklif takip hatırlatmasından çıkarma işareti
 const CUSTOMERS_ODEME_PLANI_COLUMN = [["odemePlani", "TEXT"]];
@@ -439,10 +448,12 @@ function populateAll(conn, data, skip = new Set()) {
     const stmt = conn.prepare(`
       INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati, fabrikaNotu,
         servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
-        islemFirma, parcaAltuntastanMi, deletedAt)
+        islemFirma, parcaAltuntastanMi, deletedAt,
+        islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
-        @islemFirma, @parcaAltuntastanMi, @deletedAt)
+        @islemFirma, @parcaAltuntastanMi, @deletedAt,
+        @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -453,6 +464,8 @@ function populateAll(conn, data, skip = new Set()) {
         parcaCurrency: s.parcaCurrency ?? null, parcaGarantiDisi: toInt(s.parcaGarantiDisi),
         islemFirma: s.islemFirma ?? null, parcaAltuntastanMi: toIntTriState(s.parcaAltuntastanMi),
         deletedAt: s.deletedAt ?? null,
+        islemFirmaAd: s.islemFirmaAd ?? null, islemFirmaYetkili: s.islemFirmaYetkili ?? null, islemFirmaTel: s.islemFirmaTel ?? null,
+        islemFirmaUlke: s.islemFirmaUlke ?? null, islemFirmaSehir: s.islemFirmaSehir ?? null,
       });
     }
   }
@@ -460,8 +473,10 @@ function populateAll(conn, data, skip = new Set()) {
   if (Array.isArray(data.partSales) && !skip.has("partSales")) {
     conn.prepare(`DELETE FROM part_sales`).run();
     const stmt = conn.prepare(`
-      INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId, deletedAt, teklifId, uretimFormGonder, uretimFormId)
-      VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt, @teklifId, @uretimFormGonder, @uretimFormId)
+      INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId, deletedAt, teklifId, uretimFormGonder, uretimFormId,
+        satisFirma, satisFirmaAd, satisFirmaYetkili, satisFirmaTel, satisFirmaUlke, satisFirmaSehir)
+      VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt, @teklifId, @uretimFormGonder, @uretimFormId,
+        @satisFirma, @satisFirmaAd, @satisFirmaYetkili, @satisFirmaTel, @satisFirmaUlke, @satisFirmaSehir)
     `);
     for (const p of data.partSales) {
       stmt.run({
@@ -470,6 +485,8 @@ function populateAll(conn, data, skip = new Set()) {
         faturaTipi: p.faturaTipi ?? null, ucretsizMi: toInt(p.ucretsizMi), batchId: p.batchId ?? null,
         deletedAt: p.deletedAt ?? null,
         teklifId: p.teklifId ?? null, uretimFormGonder: toInt(p.uretimFormGonder), uretimFormId: p.uretimFormId ?? null,
+        satisFirma: p.satisFirma ?? null, satisFirmaAd: p.satisFirmaAd ?? null, satisFirmaYetkili: p.satisFirmaYetkili ?? null,
+        satisFirmaTel: p.satisFirmaTel ?? null, satisFirmaUlke: p.satisFirmaUlke ?? null, satisFirmaSehir: p.satisFirmaSehir ?? null,
       });
     }
   }
@@ -622,6 +639,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "payments", PAYMENTS_NEW_COLUMNS);
   ensureColumns(conn, "dealers", DEALERS_NEW_COLUMNS);
   ensureColumns(conn, "services", SERVICES_NEW_COLUMNS);
+  ensureColumns(conn, "services", SERVICES_DIS_FIRMA_COLUMNS);
   ensureColumns(conn, "app_settings", APP_SETTINGS_NEW_COLUMNS);
   ensureColumns(conn, "parts", PARTS_NEW_COLUMNS);
   ensureColumns(conn, "parts", PARTS_EXTRA_COLUMNS);
@@ -642,6 +660,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "customers", CUSTOMERS_ODEME_PLANI_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_BRUT_KG_COLUMN);
   ensureColumns(conn, "part_sales", PART_SALES_TEKLIF_URETIM_COLUMNS);
+  ensureColumns(conn, "part_sales", PART_SALES_SATIS_FIRMA_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "customers", CUSTOMERS_BANTLAR_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);

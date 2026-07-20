@@ -1,6 +1,6 @@
 // Harita sekmesinin saf hesap katmanı: ülke özeti, bölge toplamı, renk kovaları, pinler.
 import { describe, it, expect } from "vitest";
-import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar } from "../src/lib/mapStats";
+import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar, yolMerkezi } from "../src/lib/mapStats";
 
 describe("sadeAd", () => {
   // Bu normalize, scripts/gen-map-paths.cjs içindeki `sad` ile BİREBİR aynı olmak zorunda:
@@ -264,6 +264,17 @@ describe("pinleriAyir", () => {
     const l = [{ x: 10, y: 10, tur: "bayi", ad: "A" }, { x: 300, y: 400, tur: "bayi", ad: "B" }];
     expect(pinleriAyir(l)).toEqual(l);
   });
+  it("çizim sırası: satış altta, sonra bayi, en üstte fabrika", () => {
+    // Nötr satış pinleri çok sayıda; renkli pinlerin ALTINDA (önce) çizilmeli, fabrika en üstte.
+    const l = [
+      { x: 10, y: 10, tur: "fabrika", ad: "F", olcek: 1 },
+      { x: 30, y: 30, tur: "satis", ad: "S", olcek: 1 },
+      { x: 50, y: 50, tur: "bayi", ad: "B", olcek: 1 },
+    ];
+    const sirali = pinleriAyir(l).map((p) => p.tur);
+    expect(sirali[0]).toBe("satis");      // önce çizilir = altta
+    expect(sirali.at(-1)).toBe("fabrika"); // sonra çizilir = üstte
+  });
   it("aynı noktada üç pin varsa üçü de ayrı yerde", () => {
     const l = [
       { x: 5, y: 5, tur: "fabrika", ad: "F", olcek: 1 },
@@ -392,5 +403,55 @@ describe("pinleriTopla", () => {
     expect(pinleriTopla({ factory: null, dealers: [], konumlar })).toEqual([]);
     expect(pinleriTopla({})).toEqual([]);
     expect(pinleriTopla({ factory: { country: "Türkiye" }, konumlar })).toEqual([]); // şehir yok
+  });
+
+  it("satisNoktalari 'satis' pinine dönüşür: etiket=ad, sayı ve seviye boyu taşır", () => {
+    const satisNoktalari = [{ x: 610, y: 130, ad: "İstanbul", sayi: 12 }];
+    // Dünya seviyesi
+    const dunya = pinleriTopla({ factory: null, dealers: [], seciliUlke: null, konumlar, satisNoktalari });
+    const sd = dunya.find((p) => p.tur === "satis");
+    expect(sd).toMatchObject({ x: 610, y: 130, etiket: "İstanbul", ad: "İstanbul", sayi: 12 });
+    expect(sd.alt).toContain("12 makina");
+    // Ülke seviyesi pin daha büyük olmalı (görünüm seviyesine göre boyutlanıyor)
+    const ulke = pinleriTopla({ factory: null, dealers: [], seciliUlke: "Türkiye", konumlar, satisNoktalari });
+    const su = ulke.find((p) => p.tur === "satis");
+    expect(su.olcek).toBeGreaterThan(sd.olcek);
+  });
+  it("ilçe görünümünde de satisNoktalari 'satis' pini olarak eklenir", () => {
+    const ilceMerkezleri = { kadikoy: [400, 300] };
+    const satisNoktalari = [{ x: 400, y: 300, ad: "Kadıköy", sayi: 3 }];
+    const p = pinleriTopla({ factory: null, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar, ilceMerkezleri, satisNoktalari });
+    const s = p.find((x) => x.tur === "satis");
+    expect(s).toMatchObject({ etiket: "Kadıköy", sayi: 3 });
+  });
+  it("satisNoktalari verilmezse davranış eskisi gibi (satis pini yok)", () => {
+    const p = pinleriTopla({ factory, dealers, seciliUlke: null, konumlar });
+    expect(p.some((x) => x.tur === "satis")).toBe(false);
+  });
+});
+
+describe("yolMerkezi", () => {
+  it("kare yolun merkezini bulur (köşe ortalaması)", () => {
+    // 0,0 - 10,0 - 10,10 - 0,10 karesi -> merkez 5,5
+    const m = yolMerkezi("M0,0L10,0L10,10L0,10Z");
+    expect(m).toMatchObject({ x: 5, y: 5 });
+  });
+  it("negatif/ondalık koordinatları ayrıştırır", () => {
+    const m = yolMerkezi("M-2.5,-2.5L2.5,-2.5L2.5,2.5L-2.5,2.5Z");
+    expect(m).toMatchObject({ x: 0, y: 0 });
+  });
+  it("geçersiz/boş girdide null döner (patlamaz)", () => {
+    expect(yolMerkezi("")).toBeNull();
+    expect(yolMerkezi(null)).toBeNull();
+    expect(yolMerkezi("M5")).toBeNull(); // tek sayı, çift yok
+  });
+  it("çok adalı yolda EN BÜYÜK parçanın (anakara) merkezini verir, uzak adaya kaymaz", () => {
+    // Büyük kare (0..100, merkez 50,50) + çok uzakta minik kare (ada). Köşe ortalaması ikisinin
+    // arasına düşerdi; alan-ağırlıklı en büyük parça anakarada kalmalı (ABD/Kanada/Fransa sorunu).
+    const anakara = "M0,0L100,0L100,100L0,100Z";
+    const ada = "M900,900L902,900L902,902L900,902Z";
+    const m = yolMerkezi(anakara + ada);
+    expect(m.x).toBeCloseTo(50, 0);
+    expect(m.y).toBeCloseTo(50, 0);
   });
 });

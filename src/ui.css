@@ -211,6 +211,8 @@ body {
 .harita-lejant .kutular i { width: 22px; height: 11px; border-radius: 2px; display: block; }
 .harita-lejant .uc { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--n400, #94a3b8); margin-top: 4px; font-variant-numeric: tabular-nums; gap: 12px; }
 .harita-lejant .pin-lej { display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: 190px; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--n150, #f1f5f9); }
+/* Gradyan bloğu kalkınca pin lejantı tek başına: üstteki ayraç/boşluk gereksiz. */
+.harita-lejant .pin-lej.solo { margin-top: 0; padding-top: 0; border-top: 0; }
 .harita-lejant .pin-lej span { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: var(--n500, #64748b); }
 .harita-lejant .pin-lej i { width: 8px; height: 8px; border-radius: 50%; display: block; }
 

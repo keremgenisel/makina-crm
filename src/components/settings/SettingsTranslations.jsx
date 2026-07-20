@@ -99,6 +99,10 @@ export const GROUPS = [
     { key: "parcaUcretiLabel",  label: "Parça Ücreti" },
     { key: "toplamLabel",       label: "Toplam" },
     { key: "kdvDahilLabel",     label: "KDV Dahil" },
+    { key: "disServisLabel",    label: "İşlemi Yapan Firma (Anlaşmasız)" },
+    { key: "yetkiliLabel",      label: "Yetkili Kişi (dış firma)" },
+    { key: "firmaTelLabel",     label: "Firma Telefonu (dış firma)" },
+    { key: "firmaAdresLabel",   label: "Firma Adresi (dış firma)" },
   ]},
   { label: "Bölüm Başlıkları", ns: "servis", keys: [
     { key: "yapilanIslerBaslik",    label: "Yapılan İşler / Parça Değişimleri" },
@@ -189,6 +193,7 @@ export const GROUPS = [
     { key: "thAciklama",          label: "Açıklama" },
     { key: "servisYok",           label: "Servis Yok Mesajı" },
     { key: "degisenParcalarLabel", label: "Değişen Parçalar Etiketi" },
+    { key: "disServisLabel",      label: "İşlemi Yapan Firma (Anlaşmasız) Etiketi" },
   ]},
   { label: "Kalıplar", ns: "makina", keys: [
     { key: "kalipBaslik",  label: "Bölüm Başlığı" },

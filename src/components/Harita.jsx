@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, StatCard, Btn } from "./ui";
 import { HaritaSvg } from "./harita/HaritaSvg";
-import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim } from "../lib/mapStats";
+import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi, etiketOlcegi } from "../lib/mapStats";
 import { ILCELER } from "../lib/map/ilceler";
+// Satış listesi dışındaki ülkelerin adı + konumu (world.js'te adsız oldukları için ayrı üretildi).
+import { ARKA_PLAN_AD } from "../lib/map/world-arkaplan";
 // Pin başındaki simge: masaüstü ikonu (kare "A"). logo.avif 500x110 yazılı logodur,
 // 19x19 pine sıkışınca okunmuyordu.
 import APP_ICON from "../assets/app-icon.png?inline";
@@ -104,11 +106,6 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     return o;
   }, [ilModul]);
 
-  const pinler = useMemo(
-    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri }),
-    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri],
-  );
-
   // Seçili ilin ilçe haritasını yükle
   useEffect(() => {
     if (!seciliIl) { setIlModul(null); return undefined; }
@@ -125,40 +122,68 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   // Seçili ilin ilçe -> firma kırılımı (ilçe panelinde her ilçenin altında)
   const ilceKirilim = useMemo(() => (seciliIl ? ilceFirmaKirilim(customers, seciliIl) : {}), [customers, seciliIl]);
 
+  // Satış konum pinleri: satış olan her yere (dünyada ülke, ülke görünümünde şehir, ilçe
+  // görünümünde ilçe) bir nötr pin + yer adı etiketi. Konumlar: dünyada ülke yolunun köşe
+  // ortalaması (ek veri gerektirmez), ülke/ilçede mevcut şehir/ilçe merkez sözlükleri.
+  const satisNoktalari = useMemo(() => {
+    if (!dunya) return [];
+    if (seciliIl) {
+      if (!ilVerisi || !ilceMerkezleri) return [];
+      const out = [];
+      for (const [ad, sayi] of Object.entries(ilVerisi.ilceler)) {
+        const k = ilceMerkezleri[sadeAd(ad)];
+        if (k) out.push({ x: k[0], y: k[1], ad, sayi });
+      }
+      return out;
+    }
+    if (seciliUlke) {
+      const d = konumlar[seciliUlke];
+      if (!d) return [];
+      const out = [];
+      for (const [sehir, sayi] of Object.entries(ozet[seciliUlke]?.sehirler || {})) {
+        const k = d[sehirAnahtar(sehir)];
+        if (k) out.push({ x: k[2], y: k[3], ad: sehir, sayi }); // ülke koordinatı (index 2,3)
+      }
+      return out;
+    }
+    const out = [];
+    for (const [ad, v] of Object.entries(ozet)) {
+      if (!v.makina) continue;
+      const m = yolMerkezi(dunya.ULKELER[ad]);
+      if (m) out.push({ x: m.x, y: m.y, ad, sayi: v.makina });
+    }
+    return out;
+  }, [dunya, seciliUlke, seciliIl, ozet, ilVerisi, konumlar, ilceMerkezleri]);
+
+  const pinler = useMemo(
+    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari }),
+    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari],
+  );
+
   // Çizilecek şekiller: dünyada ülkeler, ülke görünümünde bölgeler
   const gorunum = useMemo(() => {
     if (!dunya) return null;
     if (!seciliUlke) {
-      const kova = kovala(Object.values(ozet).map((v) => v.makina));
       return {
         W: dunya.W, H: dunya.H, arkaPlan: dunya.ARKA_PLAN,
-        sekiller: Object.entries(dunya.ULKELER).map(([ad, d]) => {
-          const adet = ozet[ad]?.makina || 0;
-          return { anahtar: ad, d, adet, kova: kova(adet) };
-        }),
+        sekiller: Object.entries(dunya.ULKELER).map(([ad, d]) => ({ anahtar: ad, d, adet: ozet[ad]?.makina || 0 })),
       };
     }
     if (seciliIl) {
       if (!ilModul) return null;
-      const kova = kovala(Object.values(ilVerisi.ilceler));
       return {
         W: ilModul.W, H: ilModul.H, arkaPlan: [],
         sekiller: ilModul.ILCELER.map((d, i) => {
           const ad = ilModul.ILCE_ADLARI[i];
-          const adet = ilVerisi.ilceler[ad] || 0;
-          return { anahtar: ad, d, adet, kova: kova(adet) };
+          return { anahtar: ad, d, adet: ilVerisi.ilceler[ad] || 0 };
         }),
       };
     }
     if (!ulkeModul) return null;
     const { bolgeler: toplamlar } = bolgeToplami(ozet[seciliUlke]?.sehirler || {}, ulkeModul.SEHIR);
-    const kova = kovala(Object.values(toplamlar));
     return {
       W: ulkeModul.W, H: ulkeModul.H, arkaPlan: [],
-      sekiller: ulkeModul.BOLGELER.map((d, i) => {
-        const adet = toplamlar[i] || 0;
-        return { anahtar: ulkeModul.BOLGE_ADLARI[i], d, adet, kova: kova(adet) };
-      }),
+      sekiller: ulkeModul.BOLGELER.map((d, i) => ({ anahtar: ulkeModul.BOLGE_ADLARI[i], d, adet: toplamlar[i] || 0 })),
     };
   }, [dunya, seciliUlke, ulkeModul, ozet, seciliIl, ilModul, ilVerisi]);
 
@@ -167,7 +192,24 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     return bolgeToplami(ozet[seciliUlke]?.sehirler || {}, ulkeModul.SEHIR).eslesmeyen;
   }, [seciliUlke, ulkeModul, ozet]);
 
-  const enBuyuk = gorunum ? Math.max(0, ...gorunum.sekiller.map((s) => s.adet)) : 0;
+  // Satışsız yerlerin adları: her seviyede çizilen şekillerden satışı OLMAYANLAR, şekil
+  // merkezine (yolMerkezi) yazılır. Satışlı olanların adı zaten satış pininde yazılı;
+  // burada yalnız adet=0 olanlar var, iki yerde çift yazı olmaz.
+  const etiketler = useMemo(() => {
+    if (!gorunum) return [];
+    const olcek = etiketOlcegi(seciliUlke, seciliIl);
+    const out = [];
+    for (const s of gorunum.sekiller) {
+      if (s.adet) continue;
+      const m = yolMerkezi(s.d);
+      if (m) out.push({ x: m.x, y: m.y, ad: s.anahtar, olcek });
+    }
+    // Dünya görünümünde satış listesi dışındaki ülkelerin adı da yazılır (world.js'te adsızlar)
+    if (!seciliUlke && !seciliIl) {
+      for (const a of ARKA_PLAN_AD) out.push({ x: a.x, y: a.y, ad: a.ad, olcek });
+    }
+    return out;
+  }, [gorunum, seciliUlke, seciliIl]);
 
   return (
     <div>
@@ -204,7 +246,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
               : (
                 <>
                   <HaritaSvg W={gorunum.W} H={gorunum.H} arkaPlan={gorunum.arkaPlan} sekiller={gorunum.sekiller}
-                    pinler={pinler} ikon={APP_ICON} onIpucu={setIpucu}
+                    pinler={pinler} etiketler={etiketler} ikon={APP_ICON} onIpucu={setIpucu}
                     onBasaDon={() => { setIpucu(null); if (seciliIl) setSeciliIl(null); else setSeciliUlke(null); }}
                     onSec={
                       seciliIl ? null
@@ -213,13 +255,10 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
                             : (ad) => { setIpucu(null); setSeciliUlke(ad); }
                     } />
                   <div className="harita-lejant">
-                    <div className="lb">{seciliIl ? "İlçe başına makina" : seciliUlke ? "Bölge başına makina" : "Ülke başına makina"}</div>
-                    <div className="kutular">
-                      <i style={{ background: "var(--hBos)" }} />
-                      {[1, 2, 3, 4, 5].map((n) => <i key={n} style={{ background: `var(--hk${n})` }} />)}
-                    </div>
-                    <div className="uc"><span>satış yok</span><span>{enBuyuk} makina</span></div>
-                    <div className="pin-lej">
+                    {/* Yoğunluk gradyanı kaldırıldı (satış olan yer tek logo rengiyle boyanıyor);
+                        yalnız pin türleri gösterilir. Satış = nötr konum pini. */}
+                    <div className="pin-lej solo">
+                      <span><i style={{ background: "var(--n900, #0f172a)" }} />Satış</span>
                       <span><i style={{ background: "#e85d1a" }} />Fabrika</span>
                       <span><i style={{ background: "#2563eb" }} />Bayi</span>
                       <span><i style={{ background: "#16a34a" }} />Servis</span>

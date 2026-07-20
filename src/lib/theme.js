@@ -97,6 +97,7 @@ const TOKENS = [
   // açıklığı tek yönlü artacak biçimde kuruldu.
   ["hDeniz", "#b9dde8", "#171410"],       // deniz: açık modda yumuşak deniz mavisi (cyan, bir tık koyu); koyu mod el değmedi
   ["hBos", "#dbe3ec", "#2e2a25"],          // satış olmayan ülke/bölge
+  ["hSatis", "#e85d1a", "#ff9d5c"],        // satış olan yer: tek logo rengi (faaliyet haritası; yoğunluk tonlaması yerine)
   ["hCizgi", "#ffffff", "#1f1b16"],        // sınır çizgisi
   ["hk1", "#fdead8", "#6b3d1c"],
   ["hk2", "#fbc79a", "#97511d"],

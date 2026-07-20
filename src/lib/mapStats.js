@@ -9,10 +9,16 @@ const BAYI_ETIKET = { bayi: "Bayi", servis: "Anlaşmalı Servis", ikisi: "Bayi +
  * (yoksa Türkiye'yi kapatıyor), ülke ve ilçe görünümünde ise yer bol.
  */
 const PIN_BOY = {
-  dunya: { fabrika: 0.9, bayi: 0.68 },
-  ulke:  { fabrika: 1.35, bayi: 1.05 },
-  ilce:  { fabrika: 1.6, bayi: 1.3 },
+  dunya: { fabrika: 0.9, bayi: 0.68, satis: 0.42 },
+  ulke:  { fabrika: 1.35, bayi: 1.05, satis: 0.62 },
+  ilce:  { fabrika: 1.6, bayi: 1.3, satis: 0.78 },
 };
+
+/** Görünüm seviyesi ("dunya"/"ulke"/"ilce"). */
+export const haritaSeviyesi = (seciliUlke, seciliIl) => (seciliIl ? "ilce" : seciliUlke ? "ulke" : "dunya");
+
+/** Yer adı etiketinin ölçeği — satış pini boyuyla aynı, satışlı/satışsız adlar aynı boyda görünsün. */
+export const etiketOlcegi = (seciliUlke, seciliIl) => PIN_BOY[haritaSeviyesi(seciliUlke, seciliIl)].satis;
 
 // Harita sekmesinin saf hesap katmanı. Çizimden bağımsız tutuldu ki testlenebilsin.
 
@@ -177,6 +183,61 @@ export const ilceFirmaKirilim = (customers = [], il = "") => {
   return res;
 };
 
+/** Bir alt-yol ("M x,y L x,y … Z") sayılarını [x,y] noktalarına çevirir. */
+const altYolNoktalari = (parca) => {
+  const s = parca.match(/-?\d*\.?\d+/g);
+  if (!s) return [];
+  const pts = [];
+  for (let i = 0; i + 1 < s.length; i += 2) pts.push([+s[i], +s[i + 1]]);
+  return pts;
+};
+
+/** Kapalı poligonun alan-ağırlıklı merkezi (shoelace). Alan ~0 ise köşe ortalamasına düşer. */
+const poligonMerkezi = (pts) => {
+  let A = 0, cx = 0, cy = 0;
+  for (let i = 0, n = pts.length; i < n; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[(i + 1) % n];
+    const capraz = x0 * y1 - x1 * y0;
+    A += capraz; cx += (x0 + x1) * capraz; cy += (y0 + y1) * capraz;
+  }
+  A *= 0.5;
+  if (!A) {
+    const n = pts.length || 1;
+    return { x: pts.reduce((a, p) => a + p[0], 0) / n, y: pts.reduce((a, p) => a + p[1], 0) / n, alan: 0 };
+  }
+  return { x: cx / (6 * A), y: cy / (6 * A), alan: Math.abs(A) };
+};
+
+/**
+ * Bir SVG yol (`d`) dizesinin etiket/pin tutturma noktası. Ülke merkezleri ayrı veri olarak
+ * üretilmediğinden (yeniden üretim 8 MB + ağ) yoldan çalışma anında hesaplanır. Yollar mutlak
+ * "M x,y L x,y … Z" (yalnız düz kenar) biçiminde.
+ *
+ * Düz köşe ortalaması ÇOK ADALI ülkelerde bozuluyordu: ABD'nin merkezi Alaska/Havai, Kanada'nınki
+ * Arktik takımadalar yüzünden anakaradan kayıyordu. Bunun yerine yol alt-poligonlara ("M…Z"
+ * parçaları) bölünür ve EN BÜYÜK alanlı parçanın (anakara) alan-ağırlıklı merkezi alınır; küçük
+ * adalar merkezi çekmez. Tek parçalı yerlerde (çoğu bölge/ilçe) sonuç zaten normal centroid'dir.
+ * @returns {{x:number,y:number}|null}
+ */
+export const yolMerkezi = (d = "") => {
+  const parcalar = String(d).match(/M[^M]*/g);
+  let best = null;
+  for (const p of parcalar || []) {
+    const pts = altYolNoktalari(p);
+    if (pts.length < 3) continue;
+    const m = poligonMerkezi(pts);
+    if (!best || m.alan > best.alan) best = m;
+  }
+  if (best) return { x: +best.x.toFixed(1), y: +best.y.toFixed(1) };
+  // 3'ten az noktalı/dejenere: eski davranış (köşe ortalaması)
+  const s = String(d).match(/-?\d*\.?\d+/g);
+  if (!s || s.length < 2) return null;
+  let sx = 0, sy = 0, n = 0;
+  for (let i = 0; i + 1 < s.length; i += 2) { sx += +s[i]; sy += +s[i + 1]; n++; }
+  return n ? { x: +(sx / n).toFixed(1), y: +(sy / n).toFixed(1) } : null;
+};
+
 /**
  * Sıralama temelli (quantile) kovalama. Mutlak ölçek işe yaramıyor: Türkiye tek başına
  * yüzlerce makina, yurt dışı 1-10 arası olduğu için düz ölçekte Türkiye dışındaki her ülke
@@ -200,7 +261,10 @@ export const kovala = (degerler = [], kovaSayisi = 5) => {
  * alttaki tamamen kayboluyor; (2) fabrika pini hiçbir zaman başka pinin arkasında kalmamalı,
  * SVG'de son çizilen üstte olduğu için listenin sonuna alınır.
  * Ayırma: çakışan pinler küçük bir çember üzerine dağıtılır, fabrika kendi yerinde kalır.
+ * Çizim sırası (SVG'de sonra çizilen üstte): satış pinleri en altta (nötr, çok sayıda),
+ * sonra bayi/servis, en üstte fabrika.
  */
+const pinRutbe = (p) => (p.tur === "fabrika" ? 2 : p.tur === "satis" ? 0 : 1);
 export const pinleriAyir = (liste = []) => {
   const gruplar = new Map();
   for (const p of liste) {
@@ -221,8 +285,8 @@ export const pinleriAyir = (liste = []) => {
       cikti.push({ ...p, x: +(p.x + Math.cos(aci) * yaricap).toFixed(1), y: +(p.y + Math.sin(aci) * yaricap).toFixed(1) });
     });
   }
-  // Fabrika en sona: SVG'de sonra çizilen üstte kalır
-  return cikti.sort((a, b) => (a.tur === "fabrika" ? 1 : 0) - (b.tur === "fabrika" ? 1 : 0));
+  // Rütbeye göre sırala: satış (altta) < bayi/servis < fabrika (üstte)
+  return cikti.sort((a, b) => pinRutbe(a) - pinRutbe(b));
 };
 
 /**
@@ -242,7 +306,7 @@ export const bayiTuru = (d) => {
 /** İlçe görünümünün pinleri: konum ilçe merkezinden gelir, ilçesi girilmemiş kayıt pin almaz.
  *  Bu görünümde tek bir ile yakınlaşılmış olduğu için pinler daha büyük çizilir; ülke
  *  ölçeğindeki boylarıyla kaybolup gidiyorlardı. Bayi yine fabrikadan küçük kalır. */
-const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri }) => {
+const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = [] }) => {
   const liste = [];
   const konum = (ilce) => ilceMerkezleri[sadeAd(ilce)] || null;
   const uygun = (x) => String(x?.country ?? "").trim() === "Türkiye"
@@ -257,7 +321,7 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri }) => {
     const k = konum(b.ilce.trim());
     if (k) liste.push({ x: k[0], y: k[1], tur: "bayi", cesit: bayiTuru(b), olcek: PIN_BOY.ilce.bayi, sayi: 1, ad: b.name || "Bayi", alt: b.ilce.trim() + " · " + BAYI_ETIKET[bayiTuru(b)] });
   }
-  return pinleriAyir(liste);
+  return pinleriAyir([...liste, ...satisPin]);
 };
 
 /**
@@ -272,8 +336,15 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri }) => {
  *        Konum ilçe merkezinden alınır; ilçesi girilmemiş kayıt pin almaz.
  * @param ilceMerkezleri {Record<string, number[]>} sadeAd(ilçe) -> [x, y] (ilin projeksiyonunda)
  */
-export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null } = {}) => {
-  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {} });
+export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null, satisNoktalari = [] } = {}) => {
+  // Satış konum pinleri (nötr, adıyla): görünüm seviyesine göre boyutlanır. Konum çağıran
+  // tarafça hesaplanmış gelir (dünyada ülke centroid'i, ülke/ilçede şehir/ilçe merkezi).
+  const seviye = seciliIl ? "ilce" : seciliUlke ? "ulke" : "dunya";
+  const satisPin = (satisNoktalari || []).map((s) => ({
+    x: s.x, y: s.y, tur: "satis", etiket: s.ad, ad: s.ad, sayi: s.sayi || 0,
+    olcek: PIN_BOY[seviye].satis, alt: s.ad + " · " + (s.sayi || 0) + " makina",
+  }));
+  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin });
   const konum = (ulke, sehir, ulkeGorunumu) => {
     const d = konumlar[ulke];
     const k = d && d[sehirAnahtar(sehir)];
@@ -320,5 +391,5 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
       if (k) liste.push({ ...k, tur: "bayi", cesit: bayiTuru(b), olcek: PIN_BOY.ulke.bayi, sayi: 1, ad: b.name || "Bayi", alt: b.city.trim() + " · " + BAYI_ETIKET[bayiTuru(b)] });
     }
   }
-  return pinleriAyir(liste);
+  return pinleriAyir([...liste, ...satisPin]);
 };

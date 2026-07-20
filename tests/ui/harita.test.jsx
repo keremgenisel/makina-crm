@@ -31,7 +31,8 @@ describe("Harita", () => {
     await dunyaBekle();
     const tr = document.querySelector('[data-ad="Türkiye"]');
     expect(tr.getAttribute("data-adet")).toBe("3");
-    expect(tr.getAttribute("fill")).toMatch(/var\(--hk[1-5]\)/);
+    // Faaliyet haritası: satış olan yer yoğunluğa göre değil, tek logo rengiyle (--hSatis) boyanır
+    expect(tr.getAttribute("fill")).toContain("hSatis");
     // Satışı olmayan ülke boyanmaz ve tıklanmaz
     const fr = document.querySelector('[data-ad="Fransa"]');
     expect(fr.getAttribute("data-adet")).toBe("0");

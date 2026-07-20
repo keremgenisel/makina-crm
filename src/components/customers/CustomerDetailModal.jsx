@@ -123,7 +123,7 @@ export const CustomerDetailModal = ({
 
   // ── Servis kayıtları ──
   const openAddService = () => {
-    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", fabrikaNotu: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
+    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", fabrikaNotu: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaUlke: "", islemFirmaSehir: "", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
     setSvModal("add");
   };
   const openEditService = sv => {
@@ -186,7 +186,7 @@ export const CustomerDetailModal = ({
 
   // ── Extra Kalıp satışları ──
   const openAddPartSale = () => {
-    setPkForm({ customerId: detailView.id, kaliplar: [], currency: "TRY", tarih: today(), odendi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
+    setPkForm({ customerId: detailView.id, kaliplar: [], currency: "TRY", tarih: today(), odendi: false, faturaTipi: normalizeSaleType(detailView.faturali), satisFirma: factoryName, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
   };
   const openEditPartSale = (ps) => {
     const cust = customers.find(c => c.id === ps.customerId);
@@ -195,6 +195,8 @@ export const CustomerDetailModal = ({
       kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: ps.ucret || "" }],
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
+      satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
+      satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
     });
   };
   const savePartSale = () => {
@@ -205,6 +207,9 @@ export const CustomerDetailModal = ({
       customerId: selectedCust.id, tur: "Kalıp", tarih: pkForm.tarih || today(),
       currency: pkForm.currency || "TRY", ucretsizMi: false,
       odendi: !!pkForm.odendi, faturaTipi: pkForm.faturaTipi,
+      // Satış yapan firma bilgisi YALNIZ partSale kaydına yazılır (aşağıdaki setCustomers'a değil)
+      satisFirma: pkForm.satisFirma ?? null, satisFirmaAd: pkForm.satisFirmaAd ?? "", satisFirmaYetkili: pkForm.satisFirmaYetkili ?? "",
+      satisFirmaTel: pkForm.satisFirmaTel ?? "", satisFirmaUlke: pkForm.satisFirmaUlke ?? "", satisFirmaSehir: pkForm.satisFirmaSehir ?? "",
     };
     if (pkForm.id) {
       const k = satirlar[0];
@@ -1099,6 +1104,7 @@ export const CustomerDetailModal = ({
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
+          geoData={geoData} loadingGeo={loadingGeo}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
           draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}
@@ -1109,6 +1115,7 @@ export const CustomerDetailModal = ({
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
+          dealers={dealers} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />

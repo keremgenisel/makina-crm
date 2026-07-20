@@ -130,11 +130,12 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportServices = async (mode = "download") => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
+    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
       const c = customers.find(x => x.id === s.customerId) || {};
       return [c.name, c.model, c.serialNo, s.type, s.repairPlace, s.date, s.tech,
+        s.islemFirma === "Diğer" ? (s.islemFirmaAd || "Diğer") : s.islemFirma, s.islemFirmaYetkili, s.islemFirmaTel, s.islemFirmaUlke, s.islemFirmaSehir,
         curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti), s.yapilanIsler, s.musteriTalimati];
     })];
     try {
@@ -168,11 +169,13 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPartSales = async (mode = "download") => {
-    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Kaynak Teklif No", "Üretim Formuna Gönder"];
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Kaynak Teklif No", "Üretim Formuna Gönder"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
-      return [c.name, p.tur, p.ad, p.olcu, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
+      return [c.name, p.tur, p.ad, p.olcu, p.tarih,
+        p.satisFirma === "Diğer" ? (p.satisFirmaAd || "Diğer") : p.satisFirma, p.satisFirmaYetkili, p.satisFirmaTel, p.satisFirmaUlke, p.satisFirmaSehir,
+        curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
         parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır",
         p.teklifId ? (teklifler.find(t => t.id === p.teklifId)?.no || p.teklifId) : "",
         p.uretimFormGonder ? "Evet" : "Hayır"];

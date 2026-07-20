@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
+  isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -336,5 +337,30 @@ describe("stokSecimDiff", () => {
     const { toRestore, toDeduct } = stokSecimDiff({ onceki: { konveyor: "1", bant: "2", kayit: "9" }, partTypeDefs: defs });
     expect(toRestore.sort()).toEqual(["1", "2"]); // kayit stokDus değil
     expect(toDeduct).toEqual([]);
+  });
+});
+
+describe("anlaşmasız dış firma (servis/kalıp 'Diğer')", () => {
+  it("disServisMi yalnız islemFirma === 'Diğer' için true", () => {
+    expect(disServisMi({ islemFirma: "Diğer" })).toBe(true);
+    expect(disServisMi({ islemFirma: "Altuntaş Makina" })).toBe(false);
+    expect(disServisMi({ islemFirma: "Anlaşmalı Bayi" })).toBe(false);
+    expect(disServisMi({})).toBe(false);
+  });
+  it("islemFirmaGoster 'Diğer' ise gerçek firma adını (islemFirmaAd) döndürür", () => {
+    expect(islemFirmaGoster({ islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd" })).toBe("Harici Servis Ltd");
+    expect(islemFirmaGoster({ islemFirma: "Diğer" })).toBe("Diğer (isimsiz firma)"); // ad boşsa
+    expect(islemFirmaGoster({ islemFirma: "Bayi X" })).toBe("Bayi X"); // Diğer değilse aynen
+  });
+  it("'Diğer' servis, Altuntaş servisi SAYILMAZ (dış firma mali davranışı)", () => {
+    // isAltuntasServisi false → servis ücreti gelire yazılmaz, parça borcu firmaya atfedilir
+    expect(isAltuntasServisi({ islemFirma: "Diğer" }, "Altuntaş Makina")).toBe(false);
+    expect(isAltuntasServisi({ islemFirma: "Altuntaş Makina" }, "Altuntaş Makina")).toBe(true);
+  });
+  it("partSaleDisFirmaMi / satisFirmaGoster kalıp satışı için aynı kuralı uygular", () => {
+    expect(partSaleDisFirmaMi({ satisFirma: "Diğer" })).toBe(true);
+    expect(partSaleDisFirmaMi({ satisFirma: "Bayi X" })).toBe(false);
+    expect(satisFirmaGoster({ satisFirma: "Diğer", satisFirmaAd: "Aracı Firma" })).toBe("Aracı Firma");
+    expect(satisFirmaGoster({ satisFirma: "Bayi X" })).toBe("Bayi X");
   });
 });

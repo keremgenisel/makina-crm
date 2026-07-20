@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
 // detayından "Extra Kalıp Satışı") tarafından paylaşılır, Services/ServiceForm ile aynı desen.
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, geoData = null, loadingGeo = false }) => {
   const [custSearch, setCustSearch] = useState("");
+  const factoryName = factory?.name || "Altuntaş Makina";
+  const bayiler = (dealers || []).filter(d => d.bayiMi !== false);
 
   const isEdit = !!form.id;
   const kaliplar = form.kaliplar || [];
@@ -24,7 +26,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
     : [];
 
   return (
-    <Modal title={title} onClose={onCancel}>
+    <Modal title={title} onClose={onCancel} wide>
       {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
@@ -136,6 +138,37 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
             </div>
           ))}
         </Field>
+      )}
+
+      {selectedCust && (
+        <Field label="Satış Yapan Firma">
+          <Select value={form.satisFirma || factoryName} onChange={e => {
+            const v = e.target.value;
+            setForm(p => v === "Diğer" ? { ...p, satisFirma: v }
+              : { ...p, satisFirma: v, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
+          }}>
+            <option value={factoryName}>{factoryName}</option>
+            {bayiler.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+            <option value="Diğer">Diğer (anlaşmasız firma)…</option>
+          </Select>
+        </Field>
+      )}
+
+      {/* Kalıbı bizden alan, anlaşmalı olmadığımız bir firma aracılığıyla satıldıysa: firma
+          bilgileri YALNIZ bu kalıp satışına kaydedilir (müşteri/bayi kaydı oluşturulmaz). */}
+      {selectedCust && form.satisFirma === "Diğer" && (
+        <div style={{ display: "grid", gap: 12, padding: 12, marginBottom: 14, borderRadius: 10, background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--amb800, #92400e)" }}>Anlaşmasız Firma (yalnız bu kalıp satışına kaydedilir)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <Field label="Firma Adı"><Input value={form.satisFirmaAd || ""} onChange={e => setForm(p => ({ ...p, satisFirmaAd: e.target.value }))} placeholder="Firma adı" /></Field>
+            <Field label="Yetkili Kişi"><Input value={form.satisFirmaYetkili || ""} onChange={e => setForm(p => ({ ...p, satisFirmaYetkili: e.target.value }))} placeholder="Yetkili" /></Field>
+            <Field label="Telefon"><Input value={form.satisFirmaTel || ""} onChange={e => setForm(p => ({ ...p, satisFirmaTel: e.target.value }))} placeholder="Telefon" /></Field>
+          </div>
+          <CountryCityFields country={form.satisFirmaUlke || ""} city={form.satisFirmaSehir || ""}
+            onCountry={v => setForm(p => ({ ...p, satisFirmaUlke: v, satisFirmaSehir: "" }))}
+            onCity={v => setForm(p => ({ ...p, satisFirmaSehir: v }))}
+            geoData={geoData} loadingGeo={loadingGeo} />
+        </div>
       )}
 
       {selectedCust && (
