@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon, StatCard, Btn } from "./ui";
 import { HaritaSvg } from "./harita/HaritaSvg";
-import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi } from "../lib/mapStats";
+import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../lib/mapStats";
 import { ILCELER } from "../lib/map/ilceler";
 // Satış listesi dışındaki ülkelerin adı + konumu (world.js'te adsız oldukları için ayrı üretildi).
 import { ARKA_PLAN_AD } from "../lib/map/world-arkaplan";
@@ -132,9 +132,10 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   // Satış konum pinleri: satış olan her yere (dünyada ülke, ülke görünümünde şehir, ilçe
   // görünümünde ilçe) bir nötr pin + yer adı etiketi. Konumlar: dünyada ülke yolunun köşe
   // ortalaması (ek veri gerektirmez), ülke/ilçede mevcut şehir/ilçe merkez sözlükleri.
-  // Satış (makina) pinleri: MAKİNA BAŞINA bir nokta — her müşteri kaydı ayrı pin, üstünde müşteri
-  // adı yazılır (sayı rozeti değil). Konum: dünyada ülke merkezi, ülke görünümünde şehir, ilçe
-  // görünümünde ilçe merkezi. Aynı yerdeki birden çok makina pinleriAyir ile birbirinden ayrılır.
+  // Satış (makina) pinleri. Seviyeye göre:
+  // - İLÇE: makina BAŞINA ayrı pin (müşteri adı ipucunda) — az sayıda olur, tek tek görünsün.
+  // - DÜNYA/ÜLKE: YER başına TEK pin (ülke/şehir), makina sayısı ipucunda. Makina başına konunca
+  //   yüzlerce pin aynı merkeze yığılıp pinleriAyir ile denize/bölge dışına "kolye" gibi taşıyordu.
   const satisNoktalari = useMemo(() => {
     if (!dunya) return [];
     const out = [];
@@ -151,29 +152,19 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     if (seciliUlke) {
       const d = konumlar[seciliUlke];
       if (!d) return [];
-      for (const c of customers) {
-        if (String(c?.country ?? "").trim() !== seciliUlke) continue;
-        const sehir = String(c?.city ?? "").trim();
-        const k = sehir && d[sehirAnahtar(sehir)];
-        if (k) out.push({ x: k[2], y: k[3], ad: c.name || "(isimsiz)", id: c.id }); // ülke koordinatı (2,3)
+      for (const [sehir, sayi] of Object.entries(ozet[seciliUlke]?.sehirler || {})) {
+        const k = d[sehirAnahtar(sehir)];
+        if (k) out.push({ x: k[2], y: k[3], ad: sehir, sayi }); // şehir başına tek pin (ülke koordinatı 2,3)
       }
       return out;
     }
-    const merkez = {}; // ülke merkezini bir kez hesapla, tüm makinaları oraya koy
-    for (const c of customers) {
-      const u = String(c?.country ?? "").trim();
-      if (!u || !dunya.ULKELER[u]) continue;
-      if (!(u in merkez)) merkez[u] = yolMerkezi(dunya.ULKELER[u]);
-      const m = merkez[u];
-      if (m) out.push({ x: m.x, y: m.y, ad: c.name || "(isimsiz)", id: c.id });
+    for (const [ad, v] of Object.entries(ozet)) {
+      if (!v.makina) continue;
+      const m = yolMerkezi(dunya.ULKELER[ad]);
+      if (m) out.push({ x: m.x, y: m.y, ad, sayi: v.makina }); // ülke başına tek pin
     }
     return out;
-  }, [dunya, seciliUlke, seciliIl, customers, konumlar, ilceMerkezleri]);
-
-  const pinler = useMemo(
-    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari }),
-    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari],
-  );
+  }, [dunya, seciliUlke, seciliIl, customers, ozet, konumlar, ilceMerkezleri]);
 
   // Çizilecek şekiller: dünyada ülkeler, ülke görünümünde bölgeler
   const gorunum = useMemo(() => {
@@ -206,6 +197,19 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     if (!seciliUlke || !ulkeModul) return [];
     return bolgeToplami(ozet[seciliUlke]?.sehirler || {}, ulkeModul.SEHIR).eslesmeyen;
   }, [seciliUlke, ulkeModul, ozet]);
+
+  // Çizilen şekillerin poligon halkaları — pin yayılımı şekli TERK ETMESİN diye (nokta-poligon).
+  const sekilHalkalar = useMemo(() => (gorunum ? gorunum.sekiller.map((s) => yolHalkalari(s.d)) : []), [gorunum]);
+  const ayniSekilde = useCallback((ox, oy, nx, ny) => {
+    const h = sekilHalkalar.find((halka) => noktaHalkalarda(ox, oy, halka));
+    if (!h) return true; // orijinal nokta bir şekilde değilse yayılımı engelleme
+    return noktaHalkalarda(nx, ny, h);
+  }, [sekilHalkalar]);
+
+  const pinler = useMemo(
+    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde }),
+    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde],
+  );
 
   // Satışsız yerlerin adları: her seviyede çizilen şekillerden satışı OLMAYANLAR, şekil
   // merkezine (yolMerkezi) yazılır. Satışlı olanların adı zaten satış pininde yazılı;

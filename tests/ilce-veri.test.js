@@ -42,6 +42,10 @@ describe("ilçe verisi", () => {
     expect(ILCELER["Kocaeli"]).toContain("Gebze");
     expect(ILCELER["Ankara"]).toContain("Çankaya");
     expect(ILCELER["İzmir"]).toContain("Bornova");
+    // Türkçe ad düzeltmesi: geoBoundaries "Imbros"/"Ayvacik" → resmî "Gökçeada"/"Ayvacık"
+    expect(ILCELER["Çanakkale"]).toContain("Gökçeada");
+    expect(ILCELER["Çanakkale"]).not.toContain("Imbros");
+    expect(ILCELER["Çanakkale"]).toContain("Ayvacık");
   });
 
   it("çizim verisi boş değil", () => {

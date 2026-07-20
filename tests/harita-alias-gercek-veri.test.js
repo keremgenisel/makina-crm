@@ -3,9 +3,10 @@
 // Almanya "München" (dizinde İngilizce "Munich"). Bunlar ya da bölge verisi ayrışırsa
 // şehir haritada sessizce boyanmaz — bu test o eşleşmeyi kilitler.
 import { describe, it, expect } from "vitest";
-import { bolgeToplami } from "../src/lib/mapStats";
+import { bolgeToplami, sehirAnahtar } from "../src/lib/mapStats";
 import { SEHIR as AFG_SEHIR, BOLGE_ADLARI as AFG_BOLGE } from "../src/lib/map/regions/AFG.js";
 import { SEHIR as DEU_SEHIR, BOLGE_ADLARI as DEU_BOLGE } from "../src/lib/map/regions/DEU.js";
+import { KONUM as CYN_KONUM } from "../src/lib/map/regions/CYN.js";
 
 const bolgeAdi = (bolgeler, adlar) => Object.keys(bolgeler).map((i) => adlar[i]);
 
@@ -28,5 +29,13 @@ describe("takma adlar gerçek bölge verisine oturuyor", () => {
     const { bolgeler, eslesmeyen } = bolgeToplami({ "Köln": 1 }, DEU_SEHIR);
     expect(eslesmeyen).toEqual([]);
     expect(bolgeAdi(bolgeler, DEU_BOLGE)).toEqual(["Kuzey Ren-Vestfalya"]);
+  });
+
+  it("KKTC: Türkçe şehir adları GeoNames konumlarına oturur (ülke görünümünde pin çıksın)", () => {
+    // KKTC şehirleri sözlükte Yunanca/İngilizce; Türkçe girilince eşleşmezse pin yerleşmiyordu.
+    for (const [tr, gn] of [["Lefkoşa", "nicosia"], ["Girne", "kyrenia"], ["Gazimağusa", "famagusta"], ["Güzelyurt", "morfou"]]) {
+      expect(sehirAnahtar(tr)).toBe(gn);
+      expect(CYN_KONUM[sehirAnahtar(tr)]).toBeTruthy(); // gerçek konum var → pin çıkar
+    }
   });
 });

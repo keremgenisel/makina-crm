@@ -38,15 +38,15 @@ describe("Harita — tek renk boyama + satış pini/etiketi", () => {
     expect(etiketler).toContain("Türkiye");
   });
 
-  it("makina başına ayrı satış pini; müşteri adı ipucu için pinde (data-ad) taşınır", async () => {
-    // musteri: Türkiye'de 2 makina (A Firma, B Firma) → 2 ayrı pin; ad kalıcı etiket DEĞİL,
-    // üzerine gelince ipucunda gösterilir (data-ad taşır). Kalıcı müşteri etiketi olmamalı.
+  it("dünya görünümünde ÜLKE başına tek satış pini (yer adı + ipucunda makina sayısı)", async () => {
+    // musteri: Türkiye'de 2 makina → dünyada tek Türkiye pini (makina başına değil; yoksa aynı
+    // merkeze yığılıp denize taşıyordu). İpucunda makina sayısı, kalıcı müşteri etiketi yok.
     render(<Harita customers={musteri} dealers={[]} factory={null} />);
     await waitFor(() => expect(document.querySelector('[data-pin="satis"]')).toBeTruthy(), { timeout: 10000 });
     const pinler = [...document.querySelectorAll('[data-pin="satis"]')];
-    expect(pinler.length).toBe(2);
-    const adlar = pinler.map((g) => g.getAttribute("data-ad")).sort();
-    expect(adlar).toEqual(["A Firma", "B Firma"]);
+    expect(pinler.length).toBe(1);
+    expect(pinler[0].getAttribute("data-ad")).toBe("Türkiye");
+    expect(pinler[0].getAttribute("data-alt")).toContain("makina");
     expect(document.querySelector("text.harita-musteri-etiket")).toBeNull(); // kalıcı etiket yok
   });
 

@@ -1,6 +1,6 @@
 // Harita sekmesinin saf hesap katmanı: ülke özeti, bölge toplamı, renk kovaları, pinler.
 import { describe, it, expect } from "vitest";
-import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar, yolMerkezi } from "../src/lib/mapStats";
+import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../src/lib/mapStats";
 
 describe("sadeAd", () => {
   // Bu normalize, scripts/gen-map-paths.cjs içindeki `sad` ile BİREBİR aynı olmak zorunda:
@@ -264,6 +264,19 @@ describe("pinleriAyir", () => {
     const l = [{ x: 10, y: 10, tur: "bayi", ad: "A" }, { x: 300, y: 400, tur: "bayi", ad: "B" }];
     expect(pinleriAyir(l)).toEqual(l);
   });
+  it("ayniSekilde verilince: sığmazsa yayılmaz (şekli terk etmez, yerinde yığılır)", () => {
+    // Şekil ±1 birimlik minik kutu: tam/yarı/çeyrek yayılım (8/4/2) hiç sığmaz → pin merkezde kalır.
+    const kutu = (ox, oy, nx, ny) => Math.abs(nx - 100) <= 1 && Math.abs(ny - 100) <= 1;
+    const l = [{ x: 100, y: 100, tur: "fabrika", olcek: 1 }, { x: 100, y: 100, tur: "satis", olcek: 1 }];
+    const s = pinleriAyir(l, kutu).find((p) => p.tur === "satis");
+    expect(s).toMatchObject({ x: 100, y: 100 }); // kaymadı
+  });
+  it("ayniSekilde verilince: sığdığı kadar yayılır", () => {
+    const genis = () => true; // her yer şekil içinde
+    const l = [{ x: 100, y: 100, tur: "fabrika", olcek: 1 }, { x: 100, y: 100, tur: "satis", olcek: 1 }];
+    const s = pinleriAyir(l, genis).find((p) => p.tur === "satis");
+    expect(s.x !== 100 || s.y !== 100).toBe(true); // tam yayıldı (kaydı)
+  });
   it("çizim sırası: satış altta, sonra bayi, en üstte fabrika", () => {
     // Nötr satış pinleri çok sayıda; renkli pinlerin ALTINDA (önce) çizilmeli, fabrika en üstte.
     const l = [
@@ -461,6 +474,18 @@ describe("yolMerkezi", () => {
     expect(yolMerkezi("")).toBeNull();
     expect(yolMerkezi(null)).toBeNull();
     expect(yolMerkezi("M5")).toBeNull(); // tek sayı, çift yok
+  });
+  it("noktaHalkalarda: kare içi/dışı doğru (yolHalkalari ile)", () => {
+    const h = yolHalkalari("M0,0L10,0L10,10L0,10Z");
+    expect(noktaHalkalarda(5, 5, h)).toBe(true);
+    expect(noktaHalkalarda(15, 5, h)).toBe(false);
+    expect(noktaHalkalarda(-1, 5, h)).toBe(false);
+  });
+  it("noktaHalkalarda: iki ayrı ada (multipolygon) — her ikisinin içi de içeride", () => {
+    const h = yolHalkalari("M0,0L4,0L4,4L0,4ZM20,20L24,20L24,24L20,24Z");
+    expect(noktaHalkalarda(2, 2, h)).toBe(true);   // 1. ada
+    expect(noktaHalkalarda(22, 22, h)).toBe(true); // 2. ada
+    expect(noktaHalkalarda(10, 10, h)).toBe(false); // arada (deniz)
   });
   it("çok adalı yolda EN BÜYÜK parçanın (anakara) merkezini verir, uzak adaya kaymaz", () => {
     // Büyük kare (0..100, merkez 50,50) + çok uzakta minik kare (ada). Köşe ortalaması ikisinin

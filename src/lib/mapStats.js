@@ -46,6 +46,12 @@ export const SEHIR_ALIAS = {
   serif: "mazaresharif",          // "Şerif" (TR) — sadeAd: serif
   munchen: "munich",              // München — dizinde İngilizce "Munich" ile var
   munih: "munich",                // Münih (TR)
+  // KKTC şehirleri GeoNames'te Yunanca/İngilizce adla; kullanıcı Türkçe girince pin çıkmıyordu.
+  lefkosa: "nicosia",             // Lefkoşa — Nicosia
+  girne: "kyrenia",               // Girne — Kyrenia
+  gazimagusa: "famagusta",        // Gazimağusa — Famagusta
+  magusa: "famagusta",            // Mağusa
+  guzelyurt: "morfou",            // Güzelyurt — Morphou/Morfou
 };
 
 /** Şehri dizinde aramak için normalize edilmiş anahtar (takma ad varsa asıl ada çevirir). */
@@ -238,6 +244,23 @@ export const yolMerkezi = (d = "") => {
   return n ? { x: +(sx / n).toFixed(1), y: +(sy / n).toFixed(1) } : null;
 };
 
+/** Bir SVG yolun (`d`) halkaları: her alt-yol ("M…Z") bir poligon halkası ([[x,y],…]). */
+export const yolHalkalari = (d = "") =>
+  (String(d).match(/M[^M]*/g) || []).map(altYolNoktalari).filter((r) => r.length >= 3);
+
+/** Nokta poligon(lar)ın içinde mi — even-odd ışın atma (delik/ada dahil doğru çalışır). */
+export const noktaHalkalarda = (x, y, halkalar) => {
+  let ic = false;
+  for (const ring of halkalar) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      if (((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)) ic = !ic;
+    }
+  }
+  return ic;
+};
+
 /**
  * Sıralama temelli (quantile) kovalama. Mutlak ölçek işe yaramıyor: Türkiye tek başına
  * yüzlerce makina, yurt dışı 1-10 arası olduğu için düz ölçekte Türkiye dışındaki her ülke
@@ -265,7 +288,13 @@ export const kovala = (degerler = [], kovaSayisi = 5) => {
  * sonra bayi/servis, en üstte fabrika.
  */
 const pinRutbe = (p) => (p.tur === "fabrika" ? 2 : p.tur === "satis" ? 0 : 1);
-export const pinleriAyir = (liste = []) => {
+/**
+ * @param liste pin listesi
+ * @param ayniSekilde (ox,oy,nx,ny)=>bool — yeni konum, orijinal noktanın şekliyle aynı şekilde
+ *        kalıyor mu? Verilirse pinler bulundukları ülke/şehir/ilçe şeklini TERK ETMEZ: yayılma
+ *        şekilden çıkarsa yarıçap küçültülür, yine sığmazsa pin yerinde (merkezde) yığılır.
+ */
+export const pinleriAyir = (liste = [], ayniSekilde = null) => {
   const gruplar = new Map();
   for (const p of liste) {
     const k = Math.round(p.x) + ":" + Math.round(p.y);
@@ -279,10 +308,18 @@ export const pinleriAyir = (liste = []) => {
     const merkez = grup.find((p) => p.tur === "fabrika") || grup[0];
     const digerleri = grup.filter((p) => p !== merkez);
     cikti.push(merkez);
-    const yaricap = 13 * (merkez.olcek || 1);
     digerleri.forEach((p, i) => {
+      // Yayılma KENDİ boyuna göre (fabrika büyük merkezdeyken küçük satış pini az kaysın).
+      const tam = 8 * (p.olcek || 1);
       const aci = (2 * Math.PI * i) / digerleri.length - Math.PI / 2;
-      cikti.push({ ...p, x: +(p.x + Math.cos(aci) * yaricap).toFixed(1), y: +(p.y + Math.sin(aci) * yaricap).toFixed(1) });
+      let nx = p.x, ny = p.y; // sığmazsa yerinde (üst üste) kal — şekli terk etmesin
+      // Şekilden çıkmayacak en büyük yarıçapı seç (tam → yarı → çeyrek); ayniSekilde yoksa tam.
+      for (const oran of ayniSekilde ? [1, 0.5, 0.25] : [1]) {
+        const tx = +(p.x + Math.cos(aci) * tam * oran).toFixed(1);
+        const ty = +(p.y + Math.sin(aci) * tam * oran).toFixed(1);
+        if (!ayniSekilde || ayniSekilde(p.x, p.y, tx, ty)) { nx = tx; ny = ty; break; }
+      }
+      cikti.push({ ...p, x: nx, y: ny });
     });
   }
   // Rütbeye göre sırala: satış (altta) < bayi/servis < fabrika (üstte)
@@ -306,7 +343,7 @@ export const bayiTuru = (d) => {
 /** İlçe görünümünün pinleri: konum ilçe merkezinden gelir, ilçesi girilmemiş kayıt pin almaz.
  *  Bu görünümde tek bir ile yakınlaşılmış olduğu için pinler daha büyük çizilir; ülke
  *  ölçeğindeki boylarıyla kaybolup gidiyorlardı. Bayi yine fabrikadan küçük kalır. */
-const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = [] }) => {
+const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = [], ayniSekilde = null }) => {
   const liste = [];
   const konum = (ilce) => ilceMerkezleri[sadeAd(ilce)] || null;
   const uygun = (x) => String(x?.country ?? "").trim() === "Türkiye"
@@ -323,7 +360,7 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = []
     const k = konum(b.ilce.trim());
     if (k) liste.push({ x: k[0], y: k[1], tur: "bayi", cesit: bayiTuru(b), olcek: PIN_BOY.ilce.bayi, sayi: 1, ad: b.name || "Bayi", alt: b.ilce.trim() + " · " + BAYI_ETIKET[bayiTuru(b)] });
   }
-  return pinleriAyir([...liste, ...satisPin]);
+  return pinleriAyir([...liste, ...satisPin], ayniSekilde);
 };
 
 /**
@@ -338,17 +375,17 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = []
  *        Konum ilçe merkezinden alınır; ilçesi girilmemiş kayıt pin almaz.
  * @param ilceMerkezleri {Record<string, number[]>} sadeAd(ilçe) -> [x, y] (ilin projeksiyonunda)
  */
-export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null, satisNoktalari = [] } = {}) => {
+export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null, satisNoktalari = [], ayniSekilde = null } = {}) => {
   // Satış konum pinleri (nötr, adıyla): görünüm seviyesine göre boyutlanır. Konum çağıran
   // tarafça hesaplanmış gelir (dünyada ülke centroid'i, ülke/ilçede şehir/ilçe merkezi).
   const seviye = seciliIl ? "ilce" : seciliUlke ? "ulke" : "dunya";
-  // Makina başına satış pini: ad = müşteri adı (üzerine gelince ipucunda yazılır). alt boş →
-  // ipucu yalnız müşteri adını gösterir (fabrika/bayi gibi ama tek satır).
+  // Satış pini: ad üzerine gelince ipucunda yazılır. İlçede ad = müşteri adı (alt boş, tek satır);
+  // dünya/ülkede ad = yer adı ve sayi verilmişse ipucu "yer · N makina" gösterir.
   const satisPin = (satisNoktalari || []).map((s) => ({
     x: s.x, y: s.y, tur: "satis", ad: s.ad, id: s.id ?? null,
-    olcek: PIN_BOY[seviye].satis, alt: "",
+    olcek: PIN_BOY[seviye].satis, alt: s.sayi ? (s.sayi + " makina") : "",
   }));
-  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin });
+  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin, ayniSekilde });
   const konum = (ulke, sehir, ulkeGorunumu) => {
     const d = konumlar[ulke];
     const k = d && d[sehirAnahtar(sehir)];
@@ -395,5 +432,5 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
       if (k) liste.push({ ...k, tur: "bayi", cesit: bayiTuru(b), olcek: PIN_BOY.ulke.bayi, sayi: 1, ad: b.name || "Bayi", alt: b.city.trim() + " · " + BAYI_ETIKET[bayiTuru(b)] });
     }
   }
-  return pinleriAyir([...liste, ...satisPin]);
+  return pinleriAyir([...liste, ...satisPin], ayniSekilde);
 };

@@ -63,6 +63,10 @@ const ADMIN_ISTISNA = {
 };
 // Şehir sözlüğü (GeoNames) ülke kodları. KKTC ayrı kod taşımaz, Kıbrıs (CY) altındadır.
 const ISO2_ISTISNA = { "Kuzey Kıbrıs Türk Cumhuriyeti": "CY" };
+// geoBoundaries ADM2 bazı ilçeleri eski/İngilizce ya da ASCII yazıyor; Türkçe resmî adıyla düzelt.
+// (Form listesi ile harita aynı kaynaktan üretildiğinden düzeltme ikisine de yansır.)
+const ILCE_ISIM_DUZELT = { "Imbros": "Gökçeada", "Ayvacik": "Ayvacık" };
+const duzeltIlce = (ad) => ILCE_ISIM_DUZELT[ad] || ad;
 
 const log = (...a) => console.log(...a);
 const sad = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -491,7 +495,7 @@ const ozet = { ulke: 0, bolge: 0, sehir: 0, konum: 0, bolgesiz: [], atilan: {} }
     for (const f of sade.features) {
       const d = pa(f);
       if (!d) continue;
-      ADLAR.push(f.properties.shapeName);
+      ADLAR.push(duzeltIlce(f.properties.shapeName));
       CIZIM.push(d.replace(/(-?\d+\.\d)\d+/g, "$1"));
       // İlçe merkezi, o ilin KENDİ projeksiyonunda: ilçe görünümündeki fabrika/bayi pinleri
       // buradan konumlanır. Ülke projeksiyonunun koordinatları burada geçersizdir.
