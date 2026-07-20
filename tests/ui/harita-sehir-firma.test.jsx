@@ -30,26 +30,30 @@ const turkiyeAc = async () => {
 };
 
 describe("Harita — şehir altında firma listesi", () => {
+  // Firma adları artık haritada da (müşteri pini etiketi) geçtiğinden, yan panel testleri
+  // sorguları YAN PANELE (.harita-yan) sabitlemeli; yoksa harita etiketleriyle çift eşleşir.
+  const yan = () => document.querySelector(".harita-yan");
+
   it("şehrin altında firmaları makina sayısıyla gösterir", async () => {
     await turkiyeAc();
-    const satir = screen.getByText("Firma A").closest(".harita-firma");
+    const satir = within(yan()).getByText("Firma A").closest(".harita-firma");
     expect(within(satir).getByText("2")).toBeTruthy();       // A'nın 2 makinası
-    expect(screen.getByText("Solo Ltd")).toBeTruthy();       // İstanbul firması da listede
-    const solo = screen.getByText("Solo Ltd").closest(".harita-firma");
+    expect(within(yan()).getByText("Solo Ltd")).toBeTruthy();       // İstanbul firması da listede
+    const solo = within(yan()).getByText("Solo Ltd").closest(".harita-firma");
     expect(within(solo).getByText("1")).toBeTruthy();        // tek makina "1"
   });
 
   it("ilk 5 firmayı gösterir, 6.'yı 'Tümünü gör' açar", async () => {
     await turkiyeAc();
-    // Konya'da 6 firma var → biri (adet'e göre en alttaki) gizli
-    expect(screen.queryByText("Firma F")).toBeNull();
+    // Konya'da 6 firma var → biri (adet'e göre en alttaki) yan panelde gizli
+    expect(within(yan()).queryByText("Firma F")).toBeNull();
     const tumu = screen.getByRole("button", { name: /Tümünü gör \(6\)/ });
     expect(tumu).toBeTruthy();
     fireEvent.click(tumu);
-    expect(screen.getByText("Firma F")).toBeTruthy();        // artık görünür
+    expect(within(yan()).getByText("Firma F")).toBeTruthy();        // artık görünür
     // Tekrar tıklayınca kapanır
     fireEvent.click(screen.getByRole("button", { name: /Daha az/ }));
-    expect(screen.queryByText("Firma F")).toBeNull();
+    expect(within(yan()).queryByText("Firma F")).toBeNull();
   });
 });
 
@@ -73,8 +77,9 @@ describe("Harita — firmaya tıklayınca müşteri seçimi", () => {
     await dunyaBekle();
     fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: /Tüm Dünya/ })).toBeTruthy(), { timeout: 10000 });
-    expect(screen.queryByRole("button", { name: /Firma A/ })).toBeNull();
-    expect(screen.getByText("Firma A")).toBeTruthy(); // yine de listede (düz metin)
+    const yan = document.querySelector(".harita-yan");
+    expect(within(yan).queryByRole("button", { name: /Firma A/ })).toBeNull();
+    expect(within(yan).getByText("Firma A")).toBeTruthy(); // yan panelde düz metin (harita etiketi hariç)
   });
 });
 
@@ -98,15 +103,16 @@ describe("Harita — ilçe altında firma listesi", () => {
     // İstanbul'a listeden tıkla (ilçe görünümüne in)
     fireEvent.click(screen.getByRole("button", { name: /İstanbul/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: /← Türkiye/ })).toBeTruthy(), { timeout: 10000 });
+    const yan = document.querySelector(".harita-yan");
     // Şişli firması görünür (tek makina)
-    const sis = screen.getByText("Sis Firma").closest(".harita-firma");
+    const sis = within(yan).getByText("Sis Firma").closest(".harita-firma");
     expect(within(sis).getByText("1")).toBeTruthy();
-    // Kadıköy: 6 firma → 6.'sı gizli, Tümünü gör açıyor
-    expect(screen.queryByText("Kad F")).toBeNull();
+    // Kadıköy: 6 firma → 6.'sı yan panelde gizli, Tümünü gör açıyor
+    expect(within(yan).queryByText("Kad F")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Tümünü gör \(6\)/ }));
-    expect(screen.getByText("Kad F")).toBeTruthy();
+    expect(within(yan).getByText("Kad F")).toBeTruthy();
     // Kad A 2 makina
-    const kadA = screen.getByText("Kad A").closest(".harita-firma");
+    const kadA = within(yan).getByText("Kad A").closest(".harita-firma");
     expect(within(kadA).getByText("2")).toBeTruthy();
   });
 });

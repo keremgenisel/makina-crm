@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, StatCard, Btn } from "./ui";
 import { HaritaSvg } from "./harita/HaritaSvg";
-import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi, etiketOlcegi } from "../lib/mapStats";
+import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi } from "../lib/mapStats";
 import { ILCELER } from "../lib/map/ilceler";
 // Satış listesi dışındaki ülkelerin adı + konumu (world.js'te adsız oldukları için ayrı üretildi).
 import { ARKA_PLAN_AD } from "../lib/map/world-arkaplan";
@@ -18,7 +18,7 @@ const bolgeYukle = (kod) => {
   const yukleyici = bolgeYukleyiciler["../lib/map/regions/" + kod + ".js"];
   return yukleyici ? yukleyici() : Promise.resolve(null);
 };
-// İlçe kırılımı olan iller (şimdilik 11) — ile tıklanınca yalnız o ilin dosyası yüklenir.
+// İlçe kırılımı olan iller (şimdilik 14) — ile tıklanınca yalnız o ilin dosyası yüklenir.
 const ilceYukleyiciler = import.meta.glob("../lib/map/ilce/*.js");
 const ilceYukle = (il) => {
   const yukleyici = ilceYukleyiciler["../lib/map/ilce/" + sadeAd(il) + ".js"];
@@ -29,9 +29,10 @@ const Yukleniyor = ({ metin }) => (
   <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>{metin}</div>
 );
 
-export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPencere = null, onFirmaSec = null, baslangicUlke = null, baslangicIl = null, onDurumChange = null }) => {
+export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPencere = null, onFirmaSec = null, baslangicUlke = null, baslangicIl = null, onDurumChange = null, onFabrikaKonum = null }) => {
   const [dunya, setDunya] = useState(null);
   const [hata, setHata] = useState("");
+  const [yerlestir, setYerlestir] = useState(false); // fabrika pinini elle taşıma modu (ilçe görünümü)
   // Başlangıç seçimi App'ten gelir: firmaya tıklayıp Müşteriler'e geçince Harita unmount olur;
   // modal kapanıp geri dönülünce aynı ülke/il görünümü korunsun diye (yoksa dünyaya sıfırlanıyordu).
   const [seciliUlke, setSeciliUlke] = useState(() => baslangicUlke || null);
@@ -56,6 +57,12 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
 
   // Seçim değişince App'e bildir (bir sonraki mount'ta geri yüklenmek üzere hatırlansın)
   useEffect(() => { onDurumChange?.(seciliUlke, seciliIl); }, [seciliUlke, seciliIl, onDurumChange]);
+  // Görünüm değişince yerleştirme modundan çık (yanlış ile pin koymayı önle)
+  useEffect(() => { setYerlestir(false); }, [seciliIl, seciliUlke]);
+
+  // Fabrika bu ilin ilçe görünümünde mi (elle konumlandırma düğmesi yalnız o zaman anlamlı)
+  const fabrikaBuIlde = !!(seciliIl && factory && String(factory.country ?? "").trim() === "Türkiye"
+    && String(factory.city ?? "").trim() === seciliIl && String(factory.ilce ?? "").trim());
 
   const ozet = useMemo(() => haritaOzeti(customers), [customers]);
   const toplam = useMemo(() => dunyaToplami(ozet), [ozet]);
@@ -125,35 +132,43 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   // Satış konum pinleri: satış olan her yere (dünyada ülke, ülke görünümünde şehir, ilçe
   // görünümünde ilçe) bir nötr pin + yer adı etiketi. Konumlar: dünyada ülke yolunun köşe
   // ortalaması (ek veri gerektirmez), ülke/ilçede mevcut şehir/ilçe merkez sözlükleri.
+  // Satış (makina) pinleri: MAKİNA BAŞINA bir nokta — her müşteri kaydı ayrı pin, üstünde müşteri
+  // adı yazılır (sayı rozeti değil). Konum: dünyada ülke merkezi, ülke görünümünde şehir, ilçe
+  // görünümünde ilçe merkezi. Aynı yerdeki birden çok makina pinleriAyir ile birbirinden ayrılır.
   const satisNoktalari = useMemo(() => {
     if (!dunya) return [];
+    const out = [];
     if (seciliIl) {
-      if (!ilVerisi || !ilceMerkezleri) return [];
-      const out = [];
-      for (const [ad, sayi] of Object.entries(ilVerisi.ilceler)) {
-        const k = ilceMerkezleri[sadeAd(ad)];
-        if (k) out.push({ x: k[0], y: k[1], ad, sayi });
+      if (!ilceMerkezleri) return [];
+      for (const c of customers) {
+        if (String(c?.country ?? "").trim() !== "Türkiye" || String(c?.city ?? "").trim() !== seciliIl) continue;
+        const ilce = String(c?.ilce ?? "").trim();
+        const k = ilce && ilceMerkezleri[sadeAd(ilce)];
+        if (k) out.push({ x: k[0], y: k[1], ad: c.name || "(isimsiz)", id: c.id });
       }
       return out;
     }
     if (seciliUlke) {
       const d = konumlar[seciliUlke];
       if (!d) return [];
-      const out = [];
-      for (const [sehir, sayi] of Object.entries(ozet[seciliUlke]?.sehirler || {})) {
-        const k = d[sehirAnahtar(sehir)];
-        if (k) out.push({ x: k[2], y: k[3], ad: sehir, sayi }); // ülke koordinatı (index 2,3)
+      for (const c of customers) {
+        if (String(c?.country ?? "").trim() !== seciliUlke) continue;
+        const sehir = String(c?.city ?? "").trim();
+        const k = sehir && d[sehirAnahtar(sehir)];
+        if (k) out.push({ x: k[2], y: k[3], ad: c.name || "(isimsiz)", id: c.id }); // ülke koordinatı (2,3)
       }
       return out;
     }
-    const out = [];
-    for (const [ad, v] of Object.entries(ozet)) {
-      if (!v.makina) continue;
-      const m = yolMerkezi(dunya.ULKELER[ad]);
-      if (m) out.push({ x: m.x, y: m.y, ad, sayi: v.makina });
+    const merkez = {}; // ülke merkezini bir kez hesapla, tüm makinaları oraya koy
+    for (const c of customers) {
+      const u = String(c?.country ?? "").trim();
+      if (!u || !dunya.ULKELER[u]) continue;
+      if (!(u in merkez)) merkez[u] = yolMerkezi(dunya.ULKELER[u]);
+      const m = merkez[u];
+      if (m) out.push({ x: m.x, y: m.y, ad: c.name || "(isimsiz)", id: c.id });
     }
     return out;
-  }, [dunya, seciliUlke, seciliIl, ozet, ilVerisi, konumlar, ilceMerkezleri]);
+  }, [dunya, seciliUlke, seciliIl, customers, konumlar, ilceMerkezleri]);
 
   const pinler = useMemo(
     () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari }),
@@ -195,18 +210,18 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   // Satışsız yerlerin adları: her seviyede çizilen şekillerden satışı OLMAYANLAR, şekil
   // merkezine (yolMerkezi) yazılır. Satışlı olanların adı zaten satış pininde yazılı;
   // burada yalnız adet=0 olanlar var, iki yerde çift yazı olmaz.
+  // Yer adı etiketleri: çizilen HER şekil (ülke/bölge-şehir/ilçe) kendi merkezinde adıyla yazılır
+  // (satışlı olanlar koyu/kalın). Makina pinlerinden AYRI: bunlar coğrafi bağlam, pinler ise müşteri.
   const etiketler = useMemo(() => {
     if (!gorunum) return [];
-    const olcek = etiketOlcegi(seciliUlke, seciliIl);
     const out = [];
     for (const s of gorunum.sekiller) {
-      if (s.adet) continue;
       const m = yolMerkezi(s.d);
-      if (m) out.push({ x: m.x, y: m.y, ad: s.anahtar, olcek });
+      if (m) out.push({ x: m.x, y: m.y, ad: s.anahtar, satis: !!s.adet });
     }
     // Dünya görünümünde satış listesi dışındaki ülkelerin adı da yazılır (world.js'te adsızlar)
     if (!seciliUlke && !seciliIl) {
-      for (const a of ARKA_PLAN_AD) out.push({ x: a.x, y: a.y, ad: a.ad, olcek });
+      for (const a of ARKA_PLAN_AD) out.push({ x: a.x, y: a.y, ad: a.ad });
     }
     return out;
   }, [gorunum, seciliUlke, seciliIl]);
@@ -215,12 +230,22 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Faaliyet Haritası</h2>
-        {/* Yalnız ana penceredeki sekmede görünür; ayrı pencerenin içinde prop geçilmez → çıkmaz. */}
-        {onAyriPencere && (
-          <Btn small variant="ghost" onClick={onAyriPencere} title="Haritayı ayrı pencerede aç (2. monitör)">
-            <Icon name="expand" size={14} /> Ayrı pencerede aç
-          </Btn>
-        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {/* Fabrika pinini elle taşı: yalnız ana pencerede (onFabrikaKonum var) ve fabrika bu ilin
+              ilçe görünümündeyken. Basınca haritaya tıklanan yer fabrika pini olur. */}
+          {onFabrikaKonum && fabrikaBuIlde && (
+            <Btn small variant={yerlestir ? "solid" : "ghost"} onClick={() => setYerlestir(v => !v)}
+              title="Fabrika pinini haritada istediğin yere koy">
+              <Icon name="globe" size={14} /> {yerlestir ? "İptal — haritaya tıklayın" : "Fabrika pinini taşı"}
+            </Btn>
+          )}
+          {/* Yalnız ana penceredeki sekmede görünür; ayrı pencerenin içinde prop geçilmez → çıkmaz. */}
+          {onAyriPencere && (
+            <Btn small variant="ghost" onClick={onAyriPencere} title="Haritayı ayrı pencerede aç (2. monitör)">
+              <Icon name="expand" size={14} /> Ayrı pencerede aç
+            </Btn>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
@@ -247,6 +272,8 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
                 <>
                   <HaritaSvg W={gorunum.W} H={gorunum.H} arkaPlan={gorunum.arkaPlan} sekiller={gorunum.sekiller}
                     pinler={pinler} etiketler={etiketler} ikon={APP_ICON} onIpucu={setIpucu}
+                    yerlestirmeModu={yerlestir}
+                    onYerlestir={(x, y) => { onFabrikaKonum?.({ il: seciliIl, x, y }); setYerlestir(false); }}
                     onBasaDon={() => { setIpucu(null); if (seciliIl) setSeciliIl(null); else setSeciliUlke(null); }}
                     onSec={
                       seciliIl ? null
@@ -272,7 +299,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
                   </button>
                   {ipucu && (
                     <div className="harita-ipucu" style={{ left: ipucu.x, top: ipucu.y }}>
-                      {ipucu.baslik} <span className={ipucu.vurgu ? "adet" : "alt"}>· {ipucu.alt}</span>
+                      {ipucu.baslik}{ipucu.alt ? <span className={ipucu.vurgu ? "adet" : "alt"}> · {ipucu.alt}</span> : null}
                     </div>
                   )}
                 </>

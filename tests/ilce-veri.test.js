@@ -9,9 +9,9 @@ import { sadeAd } from "../src/lib/mapStats";
 const ilceModulleri = import.meta.glob("../src/lib/map/ilce/*.js", { eager: true });
 
 describe("ilçe verisi", () => {
-  it("müşterinin istediği 11 il tanımlı", () => {
+  it("müşterinin istediği 14 il tanımlı", () => {
     expect(ILCE_ILLERI).toEqual(["İstanbul", "Ankara", "İzmir", "Manisa", "Antalya", "Tekirdağ",
-      "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla"]);
+      "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla", "Samsun", "Çanakkale", "Hatay"]);
   });
 
   it("her il programın 81 il listesinde gerçekten var", () => {
@@ -21,7 +21,8 @@ describe("ilçe verisi", () => {
   it("resmî ilçe sayıları tutuyor", () => {
     // Kaynak hatası ya da il/ilçe eşleştirmesinin bozulması buradan yakalanır.
     const RESMI = { "İstanbul": 39, "Ankara": 25, "İzmir": 30, "Manisa": 17, "Antalya": 19,
-      "Tekirdağ": 11, "Bursa": 17, "Balıkesir": 20, "Konya": 31, "Kocaeli": 12, "Muğla": 13 };
+      "Tekirdağ": 11, "Bursa": 17, "Balıkesir": 20, "Konya": 31, "Kocaeli": 12, "Muğla": 13,
+      "Samsun": 17, "Çanakkale": 12, "Hatay": 16 };
     for (const [il, n] of Object.entries(RESMI)) expect(ILCELER[il]).toHaveLength(n);
   });
 

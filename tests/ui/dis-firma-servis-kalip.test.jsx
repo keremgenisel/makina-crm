@@ -72,29 +72,4 @@ describe("MachineTimeline — dış firma bilgisi makina geçmişinde görünür
     expect(screen.getByText(/Ahmet · 0555 · Bursa, Türkiye/)).toBeTruthy();
   });
 
-  it("7 olaydan fazla olunca sayfalanır: ilk sayfa 7 olay, sonraki sayfada kalanlar", () => {
-    const olaylar = Array.from({ length: 9 }, (_, n) => ({
-      kind: "service", date: "2026-07-11", color: "#000", title: "Periyodik Bakım",
-      sv: { id: n + 1, customerId: 1, type: "Periyodik Bakım", date: "2026-07-11", tech: `Teknisyen${n + 1}` },
-    }));
-    render(<MachineTimeline {...base} detailTimelineEvents={olaylar} />);
-    // 1. sayfa: ilk 7 (Teknisyen1..7) var, 8-9 yok
-    expect(screen.getByText(/Teknisyen1\b/)).toBeTruthy();
-    expect(screen.getByText(/Teknisyen7\b/)).toBeTruthy();
-    expect(screen.queryByText(/Teknisyen8\b/)).toBeNull();
-    // Sayfalama var; sonrakine geçince 8-9 gelir, 1 gider
-    fireEvent.click(screen.getByRole("button", { name: /Sonraki/ }));
-    expect(screen.getByText(/Teknisyen8\b/)).toBeTruthy();
-    expect(screen.getByText(/Teknisyen9\b/)).toBeTruthy();
-    expect(screen.queryByText(/Teknisyen1\b/)).toBeNull();
-  });
-
-  it("7 veya daha az olayda sayfalama görünmez", () => {
-    const olaylar = Array.from({ length: 7 }, (_, n) => ({
-      kind: "service", date: "2026-07-11", color: "#000", title: "Periyodik Bakım",
-      sv: { id: n + 1, customerId: 1, type: "Periyodik Bakım", date: "2026-07-11", tech: `T${n + 1}` },
-    }));
-    render(<MachineTimeline {...base} detailTimelineEvents={olaylar} />);
-    expect(screen.queryByRole("button", { name: /Sonraki/ })).toBeNull();
-  });
 });

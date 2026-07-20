@@ -7,7 +7,7 @@ export const META = {
   "sehir": 191058,
   "konum": 29332,
   "bolgesiz": [],
-  "ilceIlleri": 11,
+  "ilceIlleri": 14,
   "W": 1000,
   "H": 444
 };

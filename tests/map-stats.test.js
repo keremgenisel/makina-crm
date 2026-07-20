@@ -365,6 +365,21 @@ describe("pinleriTopla", () => {
     // Aynı ilçedeler: bayi kaydırılmış olmalı, yoksa fabrikanın altında kaybolur
     expect(bay.x !== 400 || bay.y !== 300).toBe(true);
   });
+  it("fabrikanın elle yerleştirilmiş konumu (haritaKonum) ilçe merkezini geçersiz kılar", () => {
+    const ilceMerkezleri = { kadikoy: [400, 300] };
+    const f = { name: "Altuntaş Makina", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy",
+      haritaKonum: { il: "İstanbul", x: 123, y: 456 } };
+    const p = pinleriTopla({ factory: f, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar, ilceMerkezleri });
+    const fab = p.find((x) => x.tur === "fabrika");
+    expect(fab).toMatchObject({ x: 123, y: 456 }); // ilçe merkezi (400,300) değil, elle konan yer
+  });
+  it("haritaKonum başka ile aitse yok sayılır (o ilde ilçe merkezine döner)", () => {
+    const ilceMerkezleri = { kadikoy: [400, 300] };
+    const f = { name: "F", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy",
+      haritaKonum: { il: "Ankara", x: 123, y: 456 } }; // başka il → geçersiz
+    const p = pinleriTopla({ factory: f, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar, ilceMerkezleri });
+    expect(p.find((x) => x.tur === "fabrika")).toMatchObject({ x: 400, y: 300 });
+  });
   it("ilçe görünümünde: ilçesi girilmemiş ya da başka ildeki kayıt pin almaz", () => {
     const ilceMerkezleri = { kadikoy: [400, 300] };
     const p = pinleriTopla({
@@ -405,24 +420,26 @@ describe("pinleriTopla", () => {
     expect(pinleriTopla({ factory: { country: "Türkiye" }, konumlar })).toEqual([]); // şehir yok
   });
 
-  it("satisNoktalari 'satis' pinine dönüşür: etiket=ad, sayı ve seviye boyu taşır", () => {
-    const satisNoktalari = [{ x: 610, y: 130, ad: "İstanbul", sayi: 12 }];
-    // Dünya seviyesi
+  it("satisNoktalari (makina başına) 'satis' pinine dönüşür: ad=müşteri (ipucu), seviye boyu", () => {
+    // Her nokta bir makina/müşteri; ad müşteri adı → üzerine gelince ipucunda gösterilir
+    const satisNoktalari = [{ x: 610, y: 130, ad: "ABC Makina", id: 7 }];
     const dunya = pinleriTopla({ factory: null, dealers: [], seciliUlke: null, konumlar, satisNoktalari });
     const sd = dunya.find((p) => p.tur === "satis");
-    expect(sd).toMatchObject({ x: 610, y: 130, etiket: "İstanbul", ad: "İstanbul", sayi: 12 });
-    expect(sd.alt).toContain("12 makina");
+    expect(sd).toMatchObject({ x: 610, y: 130, ad: "ABC Makina", id: 7, alt: "" });
     // Ülke seviyesi pin daha büyük olmalı (görünüm seviyesine göre boyutlanıyor)
     const ulke = pinleriTopla({ factory: null, dealers: [], seciliUlke: "Türkiye", konumlar, satisNoktalari });
     const su = ulke.find((p) => p.tur === "satis");
     expect(su.olcek).toBeGreaterThan(sd.olcek);
   });
-  it("ilçe görünümünde de satisNoktalari 'satis' pini olarak eklenir", () => {
+  it("aynı yerde iki makina → iki ayrı satış pini (pinleriAyir ile ayrılır)", () => {
+    const satisNoktalari = [{ x: 400, y: 300, ad: "Firma A", id: 1 }, { x: 400, y: 300, ad: "Firma B", id: 2 }];
     const ilceMerkezleri = { kadikoy: [400, 300] };
-    const satisNoktalari = [{ x: 400, y: 300, ad: "Kadıköy", sayi: 3 }];
     const p = pinleriTopla({ factory: null, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar, ilceMerkezleri, satisNoktalari });
-    const s = p.find((x) => x.tur === "satis");
-    expect(s).toMatchObject({ etiket: "Kadıköy", sayi: 3 });
+    const satis = p.filter((x) => x.tur === "satis");
+    expect(satis).toHaveLength(2);
+    expect(satis.map((s) => s.ad).sort()).toEqual(["Firma A", "Firma B"]);
+    // İkisi ayrı noktada olmalı (üst üste binmesin)
+    expect(satis[0].x !== satis[1].x || satis[0].y !== satis[1].y).toBe(true);
   });
   it("satisNoktalari verilmezse davranış eskisi gibi (satis pini yok)", () => {
     const p = pinleriTopla({ factory, dealers, seciliUlke: null, konumlar });

@@ -106,7 +106,7 @@ dbmod.writeBlobToDb({
     { id: 30, content: "Kerem'in notu", updatedAt: "1", olusturan: "kerem" },
     { id: 31, content: "Eski sahipsiz not", updatedAt: "2" },
   ],
-  factory: { city: "İstanbul", ilce: "Beşiktaş", name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com", faturaFirmaAdi: "ALTUNMAK MACHINERY LTD." },
+  factory: { city: "İstanbul", ilce: "Beşiktaş", name: "Altuntaş Makina", email: "info@altunmak.com", web: "www.altunmak.com", faturaFirmaAdi: "ALTUNMAK MACHINERY LTD.", haritaKonum: { il: "İstanbul", x: 123.4, y: 567.8 } },
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
     { id: 102, type: "teklif", no: "T-2", firma: "F2", durum: "taslak", satirlar: [] },
@@ -131,6 +131,7 @@ check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi
 // Fabrika da ilçe taşır: "Bayiler" sekmesi fabrikayı da düzenliyor ve iki form aynı alanları
 // paylaşıyor. Sütun eklenmeden form ilçeyi soruyordu ve kayıt sessizce siliniyordu.
 check("factory.ilce roundtrip", blob.factory?.ilce === "Beşiktaş");
+check("factory.haritaKonum roundtrip (elle fabrika pin konumu)", (() => { const h = blob.factory?.haritaKonum; return h?.il === "İstanbul" && h?.x === 123.4 && h?.y === 567.8; })());
 check("customer.ilce roundtrip (Harita ilçe kırılımı)", (blob.customers || []).find(c => c.id === 500)?.ilce === "Kadıköy");
 check("dealer.ilce roundtrip", (blob.dealers || []).find(d => d.id === 3)?.ilce === "Gebze");
 check("customer.tipSecimleri roundtrip (genel parça tipi seçimleri)", (() => { const t = (blob.customers || []).find(c => c.id === 500)?.tipSecimleri; return t?.konveyor === "9" && t?.bant === "8" && t?.filtre_1 === "5"; })());

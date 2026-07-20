@@ -6,6 +6,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 const EN_YAKIN = 30;   // azami yakınlaştırma
 const EN_UZAK = 1;
 
+// Yer adı etiketleri EKRAN-PİKSELİNE SABİT boyuttadır (yakınlaştıkça büyümez — Google Maps mantığı).
+const ETIKET_FONT = 12;    // punto (yerel birim)
+const ETIKET_OLCEK = 0.95; // ekran ölçeği çarpanı → ~11px sabit (bir tık küçültüldü)
+
 // Pin renkleri. Bir kayıt hem bayi hem anlaşmalı servis olabilir; o zaman pin yarı mavi
 // yarı yeşil çizilir (aşağıdaki degrade, ortasında sert geçişle iki rengi böler).
 const PIN_RENK = { fabrika: "#e85d1a", bayi: "#2563eb", servis: "#16a34a" };
@@ -23,6 +27,8 @@ export const HaritaSvg = ({
   onSec = null,           // (anahtar) => void — null ise şekiller tıklanmaz
   onIpucu = () => {},     // ({ x, y, baslik, alt }) | null
   onBasaDon = null,       // "başa dön": ülke görünümünden dünyaya döner
+  yerlestirmeModu = false, // fabrika pinini elle yerleştirme modu
+  onYerlestir = null,     // (x, y) => void — tıklanan yer (modül koordinatı)
 }) => {
   const svgRef = useRef(null);
   const katRef = useRef(null);
@@ -43,16 +49,32 @@ export const HaritaSvg = ({
   const uygula = useCallback(() => {
     const { k, x, y } = gorunumRef.current;
     if (katRef.current) katRef.current.setAttribute("transform", `translate(${x},${y}) scale(${k})`);
-    if (pinKatRef.current) {
-      // Pin boyu EKRAN pikseline sabitlenir. SVG viewBox'ı alana sığdırırken kullandığı ölçek
-      // ülkeye göre değişiyor (Almanya dikey: %32'ye iniyor, Türkiye yatay: %96'da kalıyor) ve
-      // pinler onunla küçülüyordu. Sığdırma ölçeğine bölünce pin her ülkede aynı boyda görünür.
-      const sigdirma = sigdirmaOlcegi();
-      for (const g of pinKatRef.current.children) {
-        const px = +g.dataset.x * k + x;
-        const py = +g.dataset.y * k + y;
-        g.setAttribute("transform", `translate(${px},${py}) scale(${(+g.dataset.o / sigdirma).toFixed(3)})`);
-      }
+    const kat = pinKatRef.current;
+    if (!kat) return;
+    // Pin/etiket boyu EKRAN pikseline sabitlenir. SVG viewBox'ı alana sığdırırken kullandığı ölçek
+    // ülkeye göre değişiyor (Almanya dikey: %32'ye iniyor, Türkiye yatay: %96'da kalıyor) ve
+    // pinler onunla küçülüyordu. Sığdırma ölçeğine bölünce pin her ülkede aynı boyda görünür.
+    const sigdirma = sigdirmaOlcegi();
+    for (const g of kat.children) {
+      const px = +g.dataset.x * k + x;
+      const py = +g.dataset.y * k + y;
+      g.setAttribute("transform", `translate(${px},${py}) scale(${(+g.dataset.o / sigdirma).toFixed(3)})`);
+    }
+    // Etiket çakışma ayıklama (Google Maps mantığı): etiketler sabit boyutta; önceliği yüksek olan
+    // kalır, üstüne binen gizlenir. Yakınlaştıkça yerler açıldığından daha fazla etiket görünür.
+    const F = ETIKET_FONT * ETIKET_OLCEK / sigdirma; // etiket yüksekliği (dönüştürülmüş viewBox birimi)
+    const etiketG = [];
+    for (const g of kat.children) if (g.dataset.etiket !== undefined) etiketG.push(g);
+    etiketG.sort((a, b) => (+b.dataset.oncelik || 0) - (+a.dataset.oncelik || 0));
+    const kutular = [];
+    for (const g of etiketG) {
+      const gx = +g.dataset.x * k + x, gy = +g.dataset.y * k + y;
+      const w = (g.dataset.ad ? g.dataset.ad.length : 4) * F * 0.5;
+      const l = gx - w / 2, r = gx + w / 2, t = gy - F / 2, b = gy + F / 2;
+      let cakisti = false;
+      for (const o of kutular) if (l < o.r && r > o.l && t < o.b && b > o.t) { cakisti = true; break; }
+      if (cakisti) { g.style.display = "none"; }
+      else { g.style.display = ""; kutular.push({ l, r, t, b }); }
     }
   }, [sigdirmaOlcegi]);
 
@@ -74,6 +96,14 @@ export const HaritaSvg = ({
       y: (e.clientY - r.top - (r.height - vb.height * olcek) / 2) / olcek,
       olcek, r,
     };
+  };
+
+  /** Ekran pikselini MODÜL koordinatına çevirir (viewBox → pan/zoom geri alınır): fabrika pinini
+   *  elle yerleştirmede tıklanan yerin şekil/ILCE_MERKEZ ile aynı koordinat uzayındaki karşılığı. */
+  const modulKoord = (clientX, clientY) => {
+    const p = vbNokta({ clientX, clientY });
+    const { k, x, y } = gorunumRef.current;
+    return { x: +((p.x - x) / k).toFixed(1), y: +((p.y - y) / k).toFixed(1) };
   };
 
   useEffect(() => {
@@ -153,12 +183,15 @@ export const HaritaSvg = ({
   const birak = () => {
     const s = surukRef.current;
     surukRef.current = null;
-    if (s && !s.kaydi && s.hedef && onSec) onSec(s.hedef);
+    if (!s) return;
+    // Yerleştirme modunda: sürüklemeden yapılan tıklama fabrika pinini oraya koyar (sürükleme = kaydırma)
+    if (yerlestirmeModu && !s.kaydi && onYerlestir) { const m = modulKoord(s.x, s.y); onYerlestir(m.x, m.y); return; }
+    if (!s.kaydi && s.hedef && onSec) onSec(s.hedef);
   };
 
   return (
     <>
-    <svg ref={svgRef} className="harita-svg" viewBox={`0 0 ${W} ${H}`}
+    <svg ref={svgRef} className={`harita-svg${yerlestirmeModu ? " yerlestir" : ""}`} viewBox={`0 0 ${W} ${H}`}
       onPointerDown={bas} onPointerMove={kaydir} onPointerUp={birak}
       onPointerCancel={() => { surukRef.current = null; }}
       onPointerLeave={() => onIpucu(null)}>
@@ -179,30 +212,25 @@ export const HaritaSvg = ({
         </linearGradient>
       </defs>
       <g ref={pinKatRef}>
-        {/* Satışsız yerlerin adları (pinsiz, şekil merkezinde, biraz soluk). Pin katmanında
-            oldukları için ekran-pikseline sabit kalır; tıklama/ipucu almazlar. */}
+        {/* Yer adları (ülke/şehir/ilçe): sabit boy, çakışanlar gizlenir (uygula içinde ayıklanır).
+            data-etiket + data-oncelik ile ayıklamaya girer; satışlı yerler koyu/kalın. */}
         {etiketler.map((e, i) => (
-          <g key={"e" + i} className="harita-etiket-g" data-x={e.x} data-y={e.y} data-o={e.olcek} style={{ pointerEvents: "none" }}>
-            <text className="harita-etiket harita-etiket-bos" x="0" y="0" textAnchor="middle" dominantBaseline="central"
-              fontSize="11" fontWeight="600" fill="var(--n600, #475569)" stroke="var(--surface, #ffffff)"
-              strokeWidth="3" paintOrder="stroke">{e.ad}</text>
+          <g key={"ye" + i} data-x={e.x} data-y={e.y} data-o={ETIKET_OLCEK} data-etiket="yer"
+            data-ad={e.ad} data-oncelik={e.satis ? 100 : 10} style={{ pointerEvents: "none" }}>
+            <text className="harita-etiket" x="0" y="0" textAnchor="middle" dominantBaseline="central"
+              fontSize={ETIKET_FONT} fontWeight={e.satis ? 700 : 600}
+              fill={e.satis ? "var(--n900, #0f172a)" : "var(--n700, #334155)"}
+              stroke="var(--surface, #ffffff)" strokeWidth="3.2" paintOrder="stroke">{e.ad}</text>
           </g>
         ))}
         {pinler.map((p, i) => p.tur === "satis" ? (
-          // Satış konum pini: basit, nötr (temaya göre koyu/açık) damla — turuncu dolgudan ve
-          // fabrika/bayi/servis pinlerinden ayrışsın diye. App ikonu/sayı rozeti yok; yerin
-          // adı ucun altına yazılır (okunurluk için beyaz haleli). Etiket pin katmanında
-          // olduğu için ekran-pikseline sabit kalır (yakınlaştıkça büyümez).
+          // Makina pini: nötr damla. Müşteri adı kalıcı etiket değil — fabrika/bayi gibi ÜZERİNE
+          // GELİNCE ipucunda (data-ad) yazılır. Sayı rozeti yok.
           <g key={i} className="harita-pin harita-satis-pin" data-x={p.x} data-y={p.y} data-o={p.olcek}
             data-pin={p.tur} data-ad={p.ad} data-alt={p.alt}>
             <path d="M0,0 C-2,-6 -13,-13 -13,-23 A13,13 0 1,1 13,-23 C13,-13 2,-6 0,0 Z"
               fill="var(--n900, #0f172a)" stroke="var(--surface, #ffffff)" strokeWidth="1.8" />
             <circle cx="0" cy="-23" r="4.5" fill="var(--surface, #ffffff)" />
-            {p.etiket && (
-              <text className="harita-etiket" x="0" y="12" textAnchor="middle" fontSize="11" fontWeight="600"
-                fill="var(--n900, #0f172a)" stroke="var(--surface, #ffffff)" strokeWidth="3"
-                paintOrder="stroke" style={{ pointerEvents: "none" }}>{p.etiket}</text>
-            )}
             <circle cx="0" cy="-23" r="16" fill="transparent" />
           </g>
         ) : (

@@ -9,9 +9,9 @@ const BAYI_ETIKET = { bayi: "Bayi", servis: "Anlaşmalı Servis", ikisi: "Bayi +
  * (yoksa Türkiye'yi kapatıyor), ülke ve ilçe görünümünde ise yer bol.
  */
 const PIN_BOY = {
-  dunya: { fabrika: 0.9, bayi: 0.68, satis: 0.42 },
-  ulke:  { fabrika: 1.35, bayi: 1.05, satis: 0.62 },
-  ilce:  { fabrika: 1.6, bayi: 1.3, satis: 0.78 },
+  dunya: { fabrika: 0.9, bayi: 0.68, satis: 0.32 },
+  ulke:  { fabrika: 1.35, bayi: 1.05, satis: 0.48 },
+  ilce:  { fabrika: 1.6, bayi: 1.3, satis: 0.6 },
 };
 
 /** Görünüm seviyesi ("dunya"/"ulke"/"ilce"). */
@@ -313,7 +313,9 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = []
     && String(x?.city ?? "").trim() === seciliIl && String(x?.ilce ?? "").trim();
 
   if (uygun(factory)) {
-    const k = konum(factory.ilce.trim());
+    // Elle yerleştirilmiş fabrika konumu (bu il için) varsa onu kullan; yoksa ilçe merkezine koy.
+    const hk = factory.haritaKonum && factory.haritaKonum.il === seciliIl ? factory.haritaKonum : null;
+    const k = hk ? [hk.x, hk.y] : konum(factory.ilce.trim());
     if (k) liste.push({ x: k[0], y: k[1], tur: "fabrika", olcek: PIN_BOY.ilce.fabrika, sayi: 1, ad: factory.name || "Fabrika", alt: factory.ilce.trim() + " · Fabrika" });
   }
   for (const b of dealers || []) {
@@ -340,9 +342,11 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
   // Satış konum pinleri (nötr, adıyla): görünüm seviyesine göre boyutlanır. Konum çağıran
   // tarafça hesaplanmış gelir (dünyada ülke centroid'i, ülke/ilçede şehir/ilçe merkezi).
   const seviye = seciliIl ? "ilce" : seciliUlke ? "ulke" : "dunya";
+  // Makina başına satış pini: ad = müşteri adı (üzerine gelince ipucunda yazılır). alt boş →
+  // ipucu yalnız müşteri adını gösterir (fabrika/bayi gibi ama tek satır).
   const satisPin = (satisNoktalari || []).map((s) => ({
-    x: s.x, y: s.y, tur: "satis", etiket: s.ad, ad: s.ad, sayi: s.sayi || 0,
-    olcek: PIN_BOY[seviye].satis, alt: s.ad + " · " + (s.sayi || 0) + " makina",
+    x: s.x, y: s.y, tur: "satis", ad: s.ad, id: s.id ?? null,
+    olcek: PIN_BOY[seviye].satis, alt: "",
   }));
   if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin });
   const konum = (ulke, sehir, ulkeGorunumu) => {

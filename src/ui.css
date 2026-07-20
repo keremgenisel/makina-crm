@@ -162,8 +162,11 @@ body {
   height: 440px;
 }
 .harita-alan { flex: 1; position: relative; min-width: 0; box-sizing: border-box; background: var(--hDeniz, #eef3f7); }
-.harita-svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+/* user-select none: harita etkileşimli (sürükle-kaydır); yoksa yer adı yazıları tıkla/sürükleyince
+   metin olarak seçilip arkalarında gri seçim kutusu çıkıyordu. */
+.harita-svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .harita-svg:active { cursor: grabbing; }
+.harita-svg.yerlestir, .harita-svg.yerlestir:active { cursor: crosshair; }
 
 /* Ülkeler düz boyanır; ayrım gölgeyle değil, belirgin bir sınır çizgisiyle yapılır.
    (Kabartma denendi ve kaldırıldı: şekil başına gölge filtresi sürüklerken kare süresini

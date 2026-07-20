@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, isAltuntasServisi,
   disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
 } from "../../../lib/utils";
-import { Icon, Btn, AtesRozeti, Pagination } from "../../ui";
-
-// Makina geçmişinde bir sayfada gösterilecek olay sayısı; üstü sayfalanır.
-const OLAY_SAYFA = 7;
+import { Icon, Btn, AtesRozeti } from "../../ui";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -31,14 +27,7 @@ export const MachineTimeline = ({
   onTahsilTaksit = null,
   dosyaAdet = null,
   onDosyaBadge = null,
-}) => {
-  const [sayfa, setSayfa] = useState(1);
-  // Başka makinaya geçilince (modal aynı bileşeni yeniden kullanır) ilk sayfaya dön
-  useEffect(() => { setSayfa(1); }, [detailView?.id]);
-  const toplamSayfa = Math.max(1, Math.ceil(detailTimelineEvents.length / OLAY_SAYFA));
-  const aktifSayfa = Math.min(sayfa, toplamSayfa); // olay silinip sayfa sayısı düşerse taşma olmasın
-  const sayfaOlaylar = detailTimelineEvents.slice((aktifSayfa - 1) * OLAY_SAYFA, aktifSayfa * OLAY_SAYFA);
-  return (
+}) => (
   <div style={{ background: "var(--n100, #f8fafc)", borderRadius: 12, padding: "16px 18px" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
       <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
@@ -53,8 +42,8 @@ export const MachineTimeline = ({
     {detailTimelineEvents.length === 0 ? (
       <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13, padding: "8px 0" }}>Bu makinaya ait kayıt bulunmuyor.</div>
     ) : (
-      sayfaOlaylar.map((ev, i) => {
-        const last = i === sayfaOlaylar.length - 1;
+      detailTimelineEvents.map((ev, i) => {
+        const last = i === detailTimelineEvents.length - 1;
         const sv = ev.sv;
         const ps = ev.ps;
         const psList = ev.psList;
@@ -297,7 +286,5 @@ export const MachineTimeline = ({
         );
       })
     )}
-    <Pagination total={detailTimelineEvents.length} page={aktifSayfa} setPage={setSayfa} perPage={OLAY_SAYFA} />
   </div>
-  );
-};
+);

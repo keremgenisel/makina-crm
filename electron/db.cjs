@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
   takipKapali INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT);
+CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
 CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
@@ -360,7 +360,7 @@ const USERS_TOKEN_VERSION_COLUMN = [["token_version", "INTEGER NOT NULL DEFAULT 
 const USERS_TOTP_COLUMNS = [["totp_secret", "TEXT"], ["totp_enabled", "INTEGER NOT NULL DEFAULT 0"], ["totp_recovery", "TEXT"], ["totp_last_code", "TEXT"]];
 const URETIM_FORMLARI_DONEM_COLUMNS = [["baslangicTarihi", "TEXT"], ["bitisTarihi", "TEXT"]];
 const URETIM_FORMLARI_KAPALI_COLUMN = [["kapali", "INTEGER"]];
-const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"], ["web", "TEXT"], ["faturaFirmaAdi", "TEXT"]];
+const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift", "TEXT"], ["ibanTL", "TEXT"], ["ibanEUR", "TEXT"], ["ibanUSD", "TEXT"], ["gtipNo", "TEXT"], ["bankalar", "TEXT"], ["evrakFirmaAdi", "TEXT"], ["web", "TEXT"], ["faturaFirmaAdi", "TEXT"], ["haritaKonum", "TEXT"]];
 // Çöp Kutusu (soft-delete): sonradan eklenen deletedAt sütunu — mevcut veritabanlarında bu
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
@@ -586,10 +586,11 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.factory && !skip.has("factory")) {
     conn.prepare(`DELETE FROM factory`).run();
     const f = data.factory;
-    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, ilce, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi, web, faturaFirmaAdi) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    conn.prepare(`INSERT INTO factory (id, name, contact, phone, email, adres, country, city, ilce, note, bankaAdi, hesapAdi, swift, ibanTL, ibanEUR, ibanUSD, gtipNo, bankalar, evrakFirmaAdi, web, faturaFirmaAdi, haritaKonum) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(f.name ?? null, f.contact ?? null, f.phone ?? null, f.email ?? null, f.adres ?? null, f.country ?? null, f.city ?? null, f.ilce ?? null, f.note ?? null,
            f.bankaAdi ?? null, f.hesapAdi ?? null, f.swift ?? null, f.ibanTL ?? null, f.ibanEUR ?? null, f.ibanUSD ?? null, f.gtipNo ?? null,
-           Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null, f.web ?? null, f.faturaFirmaAdi ?? null);
+           Array.isArray(f.bankalar) ? json(f.bankalar) : null, f.evrakFirmaAdi ?? null, f.web ?? null, f.faturaFirmaAdi ?? null,
+           f.haritaKonum ? json(f.haritaKonum) : null);
   }
 
   if (data.appSettings && !skip.has("appSettings")) {
@@ -931,6 +932,7 @@ function readBlobFromDb() {
       ibanTL: rest.ibanTL ?? "", ibanEUR: rest.ibanEUR ?? "", ibanUSD: rest.ibanUSD ?? "",
       gtipNo: rest.gtipNo ?? "",
       bankalar: parseJsonCol(rest.bankalar, null),
+      haritaKonum: parseJsonCol(rest.haritaKonum, null),
       evrakFirmaAdi: rest.evrakFirmaAdi ?? "",
       faturaFirmaAdi: rest.faturaFirmaAdi ?? "",
     };

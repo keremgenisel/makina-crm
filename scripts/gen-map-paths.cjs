@@ -43,7 +43,7 @@ const GB_ILCE = "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseDa
 // Müşterinin ilçe kırılımı istediği iller. Yalnız bunlar ilçelere bölünür; kalan 70 il
 // olduğu gibi kalır. Buraya il eklemek için üreticiyi yeniden çalıştırmak yeterli.
 const ILCE_ILLERI = ["İstanbul", "Ankara", "İzmir", "Manisa", "Antalya", "Tekirdağ",
-  "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla"];
+  "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla", "Samsun", "Çanakkale", "Hatay"];
 
 // world-atlas'ın ülke adları COUNTRY_EN ile birebir tutmuyor; bu 4'ü elle bağlanır.
 const DUNYA_ISTISNA = {

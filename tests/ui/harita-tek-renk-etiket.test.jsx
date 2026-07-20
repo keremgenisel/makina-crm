@@ -38,24 +38,36 @@ describe("Harita — tek renk boyama + satış pini/etiketi", () => {
     expect(etiketler).toContain("Türkiye");
   });
 
+  it("makina başına ayrı satış pini; müşteri adı ipucu için pinde (data-ad) taşınır", async () => {
+    // musteri: Türkiye'de 2 makina (A Firma, B Firma) → 2 ayrı pin; ad kalıcı etiket DEĞİL,
+    // üzerine gelince ipucunda gösterilir (data-ad taşır). Kalıcı müşteri etiketi olmamalı.
+    render(<Harita customers={musteri} dealers={[]} factory={null} />);
+    await waitFor(() => expect(document.querySelector('[data-pin="satis"]')).toBeTruthy(), { timeout: 10000 });
+    const pinler = [...document.querySelectorAll('[data-pin="satis"]')];
+    expect(pinler.length).toBe(2);
+    const adlar = pinler.map((g) => g.getAttribute("data-ad")).sort();
+    expect(adlar).toEqual(["A Firma", "B Firma"]);
+    expect(document.querySelector("text.harita-musteri-etiket")).toBeNull(); // kalıcı etiket yok
+  });
+
   it("satış OLMAYAN ülkenin adı da yazılır (pinsiz, soluk etiket)", async () => {
     render(<Harita customers={musteri} dealers={[]} factory={null} />);
     await waitFor(() => expect(document.querySelector('[data-ad="Fransa"]')).toBeTruthy(), { timeout: 10000 });
-    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket-bos")].map((t) => t.textContent);
+    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket")].map((t) => t.textContent);
     expect(bosEtiketler).toContain("Fransa"); // satış yok ama adı görünür
   });
 
   it("satış listesi DIŞINDAKİ (arka plan) ülkenin adı da Türkçe yazılır", async () => {
     render(<Harita customers={musteri} dealers={[]} factory={null} />);
     await waitFor(() => expect(document.querySelector('[data-pin="satis"]')).toBeTruthy(), { timeout: 10000 });
-    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket-bos")].map((t) => t.textContent);
+    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket")].map((t) => t.textContent);
     expect(bosEtiketler).toContain("Suriye"); // world.js'te adsız; world-arkaplan.js'ten geliyor
   });
 
   it("alan eşiğinin altındaki küçük egemen ülkeler de yazılır (Lüksemburg, Malta)", async () => {
     render(<Harita customers={musteri} dealers={[]} factory={null} />);
     await waitFor(() => expect(document.querySelector('[data-pin="satis"]')).toBeTruthy(), { timeout: 10000 });
-    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket-bos")].map((t) => t.textContent);
+    const bosEtiketler = [...document.querySelectorAll("text.harita-etiket")].map((t) => t.textContent);
     expect(bosEtiketler).toContain("Lüksemburg");
     expect(bosEtiketler).toContain("Malta");
   });
