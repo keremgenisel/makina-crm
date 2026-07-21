@@ -11,6 +11,15 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
+      # React ailesini DAİMA tek PR'da tut (major dâhil). Yoksa Dependabot react-dom'u
+      # tek başına major'a çıkarıp react'i geride bırakabiliyor → peer uyuşmazlığı, CI kırılır
+      # (PR #7 böyle oldu). Bu grup minor-and-patch'ten ÖNCE ki react patch'leri de burada toplansın.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       # Küçük güncellemeleri tek PR'da topla (gürültüyü azalt)
       minor-and-patch:
         update-types:
