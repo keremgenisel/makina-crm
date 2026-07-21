@@ -1,0 +1,11 @@
+// ÜRETİLMİŞ DOSYA — elle düzenlemeyin.
+// Kaynak: scripts/gen-map-paths.cjs (Natural Earth + GeoNames). Yeniden üretmek için:
+//   node scripts/gen-map-paths.cjs
+export const W = 1000;
+export const H = 1334;
+export const BOLGE_ADLARI = ["Sain Joseph","Saint Andrew","Saint Peter","Saint Lucy","Saint James","Saint Michael","Christ Kilisesi","Sain Philip","Saint John","Saint George","Saint Thomas"];
+export const BOLGELER = ["M473.8,458.0L514.6,514.4L596.7,577.5L502.8,665.4L498.6,736.6L436.3,747.6L398.7,671.5L318.2,612.4L377.7,483.4Z","M371.4,249.5L473.8,458.0L377.7,483.4L318.2,612.4L229.5,582.8L207.4,465.8L220.0,280.9Z","M340.7,182.5L371.4,249.5L220.0,280.9L207.4,465.8L111.4,452.9L9.3,480.5L0,321.4L99.2,262.6Z","M0,321.4L3.1,154.3L97.3,29.9L177.2,0L258.6,44.4L340.7,182.5L99.2,262.6Z","M54.4,922.4L30.3,837.1L9.3,480.5L111.4,452.9L207.4,465.8L229.5,582.8L158.3,637.5L130.1,738.0L159.3,771.3L185.1,883.1L95.3,945.1Z","M232.9,1183.6L138.7,1138.8L87.5,1039.2L54.4,922.4L95.3,945.1L185.1,883.1L262.2,865.7L291.1,832.9L364.8,1074.2L370.0,1110.6Z","M783.7,1172.8L637.4,1305.3L516.7,1333.2L473.2,1258.2L391.4,1211.2L232.9,1183.6L370.0,1110.6L364.8,1074.2L618.6,977.7L660.0,990.6L718.1,1124.9Z","M819.6,718.3L948.1,771.3L1000,837.1L986.1,993.7L872.5,1111.2L783.7,1172.8L718.1,1124.9L660.0,990.6L618.6,977.7L638.0,903.5L697.1,825.4L764.3,788.3Z","M596.7,577.5L712.8,666.4L819.6,718.3L764.3,788.3L697.1,825.4L638.0,903.5L600.3,832.4L498.6,736.6L502.8,665.4Z","M498.6,736.6L600.3,832.4L638.0,903.5L618.6,977.7L364.8,1074.2L291.1,832.9L395.5,791.5L436.3,747.6Z","M318.2,612.4L398.7,671.5L436.3,747.6L395.5,791.5L291.1,832.9L262.2,865.7L185.1,883.1L159.3,771.3L130.1,738.0L158.3,637.5L229.5,582.8Z"];
+// sadeAd -> bölge sırası (BOLGELER dizisindeki indeks)
+export const SEHIR = {"whitehill":1,"welchmanhall":10,"crane":7,"speightstown":2,"sixcrossroads":7,"oistins":6,"mileandaquarter":2,"holetown":4,"hastings":5,"greenland":1,"fourcrossroads":8,"crabhill":3,"checkerhall":3,"bridgetown":5,"blackmans":0,"bathsheba":8,"sainjoseph":0,"saintandrew":1,"saintpeter":2,"saintlucy":3,"saintjames":4,"saintmichael":5,"christkilisesi":6,"sainphilip":7,"saintjohn":8,"saintgeorge":9,"saintthomas":10};
+// sadeAd -> [dünyaX, dünyaY, ülkeX, ülkeY] — yalnız pin konabilecek şehirler
+export const KONUM = {"bridgetown":[333.7,212.4,144.7,1078.2]};

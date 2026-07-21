@@ -14,19 +14,39 @@ export const ALTUNMAK_MODELS = [
 
 // ── Ülke Listesi (statik) ─────────────────────────────────────────────────
 export const COUNTRIES = [
-  "Türkiye",
-  "Kuzey Kıbrıs Türk Cumhuriyeti",
-  "ABD","Afganistan","Almanya","Arjantin","Arnavutluk","Avustralya","Avusturya","Azerbaycan",
-  "BAE","Bahreyn","Belçika","Beyaz Rusya","Bosna Hersek","Brezilya","Bulgaristan",
-  "Cezayir","Çek Cumhuriyeti","Çin","Danimarka","Endonezya","Estonya","Etiyopya",
-  "Fas","Filipinler","Finlandiya","Fransa","Güney Afrika","Güney Kore","Gürcistan",
-  "Hindistan","Hırvatistan","Hollanda","Irak","İngiltere","İran","İrlanda","İspanya",
-  "İsrail","İsveç","İsviçre","İtalya","Japonya","Kanada","Karadağ","Katar","Kazakistan",
-  "Kenya","Kırgızistan","Kolombiya","Kosova","Kuveyt","Kuzey Makedonya","Libya",
-  "Litvanya","Lübnan","Macaristan","Malezya","Meksika","Mısır","Moldova","Nijerya",
-  "Norveç","Özbekistan","Pakistan","Polonya","Portekiz","Romanya","Rusya",
-  "Sırbistan","Singapur","Slovakya","Slovenya","Suudi Arabistan","Şili","Tacikistan",
-  "Tayland","Tunus","Türkmenistan","Ukrayna","Umman","Ürdün","Vietnam","Yeni Zelanda","Yunanistan",
+  "Türkiye","Kuzey Kıbrıs Türk Cumhuriyeti","ABD","Afganistan","Almanya","Andorra",
+  "Angola","Antigua ve Barbuda","Arjantin","Arnavutluk","Avustralya","Avusturya",
+  "Azerbaycan","BAE","Bahamalar","Bahreyn","Bangladeş","Barbados",
+  "Belçika","Belize","Benin","Beyaz Rusya","Bolivya","Bosna Hersek",
+  "Botsvana","Brezilya","Brunei","Bulgaristan","Burkina Faso","Burundi",
+  "Butan","Cabo Verde","Cezayir","Cibuti","Çad","Çek Cumhuriyeti",
+  "Çin","Danimarka","Demokratik Kongo Cumhuriyeti","Doğu Timor","Dominik Cumhuriyeti","Dominika",
+  "Ekvador","Ekvator Ginesi","El Salvador","Endonezya","Eritre","Ermenistan",
+  "Estonya","Esvatini","Etiyopya","Fas","Fiji","Fildişi Sahili",
+  "Filipinler","Filistin","Finlandiya","Fransa","Gabon","Gambiya",
+  "Gana","Gine","Gine-Bissau","Grenada","Guatemala","Guyana",
+  "Güney Afrika","Güney Kıbrıs","Güney Kore","Güney Sudan","Gürcistan","Haiti",
+  "Hırvatistan","Hindistan","Hollanda","Honduras","Irak","İngiltere",
+  "İran","İrlanda","İspanya","İsrail","İsveç","İsviçre",
+  "İtalya","İzlanda","Jamaika","Japonya","Kamboçya","Kamerun",
+  "Kanada","Karadağ","Katar","Kazakistan","Kenya","Kırgızistan",
+  "Kiribati","Kolombiya","Komorlar","Kongo","Kosova","Kosta Rika",
+  "Kuveyt","Kuzey Kore","Kuzey Makedonya","Küba","Laos","Lesotho",
+  "Letonya","Liberya","Libya","Liechtenstein","Litvanya","Lübnan",
+  "Lüksemburg","Macaristan","Madagaskar","Malavi","Maldivler","Malezya",
+  "Mali","Malta","Marshall Adaları","Mauritius","Meksika","Mısır",
+  "Mikronezya","Moğolistan","Moldova","Monako","Moritanya","Mozambik",
+  "Myanmar","Namibya","Nauru","Nepal","Nijer","Nijerya",
+  "Nikaragua","Norveç","Orta Afrika Cumhuriyeti","Özbekistan","Pakistan","Palau",
+  "Panama","Papua Yeni Gine","Paraguay","Peru","Polonya","Portekiz",
+  "Romanya","Ruanda","Rusya","Saint Kitts ve Nevis","Saint Lucia","Saint Vincent ve Grenadinler",
+  "Samoa","San Marino","Sao Tome ve Principe","Senegal","Seyşeller","Sırbistan",
+  "Sierra Leone","Singapur","Slovakya","Slovenya","Solomon Adaları","Somali",
+  "Sri Lanka","Sudan","Surinam","Suriye","Suudi Arabistan","Şili",
+  "Tacikistan","Tanzanya","Tayland","Tayvan","Togo","Tonga",
+  "Trinidad ve Tobago","Tunus","Türkmenistan","Uganda","Ukrayna","Umman",
+  "Uruguay","Ürdün","Vanuatu","Vatikan","Venezuela","Vietnam",
+  "Yemen","Yeni Zelanda","Yunanistan","Zambiya","Zimbabve",
 ];
 
 
@@ -49,9 +69,11 @@ export const COUNTRY_EN = {
   "Singapur":"Singapore","Slovakya":"Slovakia","Slovenya":"Slovenia","Suudi Arabistan":"Saudi Arabia","Şili":"Chile",
   "Tacikistan":"Tajikistan","Tayland":"Thailand","Tunus":"Tunisia","Türkmenistan":"Turkmenistan","Ukrayna":"Ukraine",
   "Umman":"Oman","Ürdün":"Jordan","Vietnam":"Vietnam","Yeni Zelanda":"New Zealand","Yunanistan":"Greece",
+  "Angola":"Angola","Benin":"Benin","Botsvana":"Botswana","Burkina Faso":"Burkina Faso","Burundi":"Burundi","Çad":"Chad","Cibuti":"Djibouti","Demokratik Kongo Cumhuriyeti":"Democratic Republic of the Congo","Ekvator Ginesi":"Equatorial Guinea","Eritre":"Eritrea","Esvatini":"Eswatini","Fildişi Sahili":"Ivory Coast","Gabon":"Gabon","Gambiya":"Gambia","Gana":"Ghana","Gine":"Guinea","Gine-Bissau":"Guinea-Bissau","Güney Sudan":"South Sudan","Kamerun":"Cameroon","Kongo":"Republic of the Congo","Lesotho":"Lesotho","Liberya":"Liberia","Madagaskar":"Madagascar","Malavi":"Malawi","Mali":"Mali","Moritanya":"Mauritania","Mozambik":"Mozambique","Namibya":"Namibia","Nijer":"Niger","Orta Afrika Cumhuriyeti":"Central African Republic","Ruanda":"Rwanda","Senegal":"Senegal","Sierra Leone":"Sierra Leone","Somali":"Somalia","Sudan":"Sudan","Tanzanya":"Tanzania","Togo":"Togo","Uganda":"Uganda","Zambiya":"Zambia","Zimbabve":"Zimbabwe","Cabo Verde":"Cape Verde","Komorlar":"Comoros","Mauritius":"Mauritius","Sao Tome ve Principe":"Sao Tome and Principe","Seyşeller":"Seychelles","Ermenistan":"Armenia","Filistin":"Palestine","Suriye":"Syria","Yemen":"Yemen","Bangladeş":"Bangladesh","Brunei":"Brunei","Butan":"Bhutan","Doğu Timor":"Timor-Leste","Kamboçya":"Cambodia","Kuzey Kore":"North Korea","Laos":"Laos","Maldivler":"Maldives","Moğolistan":"Mongolia","Myanmar":"Myanmar","Nepal":"Nepal","Sri Lanka":"Sri Lanka","Tayvan":"Taiwan","İzlanda":"Iceland","Güney Kıbrıs":"Cyprus","Letonya":"Latvia","Lüksemburg":"Luxembourg","Malta":"Malta","Andorra":"Andorra","Monako":"Monaco","San Marino":"San Marino","Liechtenstein":"Liechtenstein","Vatikan":"Vatican City","Bolivya":"Bolivia","Dominik Cumhuriyeti":"Dominican Republic","Ekvador":"Ecuador","El Salvador":"El Salvador","Guatemala":"Guatemala","Guyana":"Guyana","Haiti":"Haiti","Honduras":"Honduras","Jamaika":"Jamaica","Kosta Rika":"Costa Rica","Küba":"Cuba","Nikaragua":"Nicaragua","Panama":"Panama","Paraguay":"Paraguay","Peru":"Peru","Surinam":"Suriname","Trinidad ve Tobago":"Trinidad and Tobago","Uruguay":"Uruguay","Venezuela":"Venezuela","Belize":"Belize","Bahamalar":"Bahamas","Barbados":"Barbados","Antigua ve Barbuda":"Antigua and Barbuda","Dominika":"Dominica","Grenada":"Grenada","Saint Kitts ve Nevis":"Saint Kitts and Nevis","Saint Lucia":"Saint Lucia","Saint Vincent ve Grenadinler":"Saint Vincent and the Grenadines","Fiji":"Fiji","Kiribati":"Kiribati","Marshall Adaları":"Marshall Islands","Mikronezya":"Micronesia","Nauru":"Nauru","Palau":"Palau","Papua Yeni Gine":"Papua New Guinea","Samoa":"Samoa","Solomon Adaları":"Solomon Islands","Tonga":"Tonga","Vanuatu":"Vanuatu",
 };
 // API'de farklı yazılabilen ülkeler için alternatif isimler
 export const COUNTRY_ALT = {
+  "Esvatini":"Swaziland","Kongo":"Congo","Vatikan":"Vatican City State (Holy See)",
   "Kuzey Makedonya":"North Macedonia",
   "ABD":"United States of America",
   "İngiltere":"United Kingdom of Great Britain and Northern Ireland",
@@ -164,7 +186,7 @@ export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.7.1";
+export const APP_VERSION = "3.7.2";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

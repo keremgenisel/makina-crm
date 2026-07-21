@@ -1,0 +1,11 @@
+// ÜRETİLMİŞ DOSYA — elle düzenlemeyin.
+// Kaynak: scripts/gen-map-paths.cjs (Natural Earth + GeoNames). Yeniden üretmek için:
+//   node scripts/gen-map-paths.cjs
+export const W = 1000;
+export const H = 1082;
+export const BOLGE_ADLARI = ["Ali Sabieh Bölgesi","Arta Bölgesi","Dikhil Bölgesi","Tadjourah Bölgesi","Obuk Bölgesi","Cibuti"];
+export const BOLGELER = ["M862.3,796.3L703.5,1046.0L612.5,1047.4L587.2,1005.6L514.5,990.9L525.1,911.1L573.4,883.2L668.0,823.4L696.7,770.6L784.2,753.0Z","M862.3,796.3L784.2,753.0L696.7,770.6L668.0,823.4L573.4,883.2L449.2,861.2L400.2,788.4L369.0,645.6L469.1,710.9L504.5,756.7L593.3,701.1L689.7,688.5L723.0,724.8L852.8,714.4L893.4,747.3Z","M135.1,506.9L266.8,542.1L369.0,645.6L400.2,788.4L449.2,861.2L573.4,883.2L525.1,911.1L514.5,990.9L437.5,1009.2L384.9,1041.6L191.8,1056.5L122.8,1081.1L7.3,1047.5L21.8,1004.1L23.2,886.7L0,716.7L35.4,595.4Z","M135.1,506.9L208.7,391.0L408.3,115.1L462.6,129.9L556.5,213.4L567.2,201.1L555.5,250.8L577.1,289.2L633.9,325.1L757.5,463.0L800.7,532.7L774.0,557.3L687.2,568.3L601.9,612.7L560.0,689.6L465.8,689.5L469.1,710.9L369.0,645.6L266.8,542.1Z","M800.7,532.7L757.5,463.0L633.9,325.1L577.1,289.2L555.5,250.8L567.2,201.1L624.7,171.0L620.5,117.0L670.6,50.1L689.5,56.1L819.7,0L918.8,129.7L946.4,134.5L973.2,254.5L995.6,285.9L1000,378.1L975.0,431.0L872.9,459.8Z","M689.7,688.5L843.7,678.0L852.8,714.4L723.0,724.8Z"];
+// sadeAd -> bölge sırası (BOLGELER dizisindeki indeks)
+export const SEHIR = {"yoboki":2,"ouea":1,"tadjoura":3,"randa":3,"obock":4,"medeho":4,"loyada":5,"khorangar":4,"holhol":0,"dorra":3,"djibouti":5,"dikhil":2,"asela":2,"arta":1,"alisabih":0,"aliadde":0,"airolaf":3,"alailidadda":4,"damerdjog":1,"goubetto":0,"galafi":2,"koutabouyya":2,"balbala":5,"waddi":4,"gorabous":2,"chabelley":1,"adailou":3,"alioune":0,"assahougoud":1,"guelile":0,"egahlou":4,"dasbiyo":0,"alisabiehbolgesi":0,"artabolgesi":1,"dikhilbolgesi":2,"tadjourahbolgesi":3,"obukbolgesi":4,"cibuti":5};
+// sadeAd -> [dünyaX, dünyaY, ülkeX, ülkeY] — yalnız pin konabilecek şehirler
+export const KONUM = {"tadjoura":[619.8,216.7,678.7,564],"obock":[620.9,216.1,921.9,454.3],"djibouti":[620.6,217.3,836.1,685.5],"dikhil":[618.5,218.9,371.7,981.5],"arta":[619.8,217.5,660.5,723.8],"alisabih":[619.4,218.7,577,950.2],"balbala":[620.5,217.4,813.1,702.1]};

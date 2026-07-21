@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType } from "../lib/utils";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { logAction, getAuditUsername } from "../lib/audit";
@@ -12,10 +12,12 @@ import { printServiceForm as printServiceFormTemplate } from "../lib/printTempla
 // Servis katı bilgisayarında "kiosk" olarak tam ekran açılır; ana uygulamada normal sekmedir.
 // Yalnız `durum`u olan servisler panoda görünür (eski/durumsuz kayıtlar müşteri kartında yönetilir).
 
+// key = saklanan `durum` değeri (değiştirilemez; sürükle-bırak, geçmiş rozetleri, DB'ye bağlı).
+// baslik = sütunda görünen ad (serbestçe değişebilir).
 const DURUMLAR = [
-  { key: "Bekliyor", renk: "var(--amb600, #d97706)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)", bos: "Yeni servisler burada belirir." },
-  { key: "Yapılıyor", renk: "var(--blu600, #2563eb)", bg: "var(--bluBg, #eff6ff)", br: "var(--bluBr, #bfdbfe)", bos: "Kart yok. Buraya sürükle." },
-  { key: "Tamamlandı", renk: "var(--grn600, #16a34a)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)", bos: "Kart yok. Buraya sürükle." },
+  { key: "Bekliyor", baslik: "Bekliyor / Fabrikaya Giriş", renk: "var(--amb600, #d97706)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)", bos: "Yeni servisler burada belirir." },
+  { key: "Yapılıyor", baslik: "Bakım Onarım Yapılıyor", renk: "var(--blu600, #2563eb)", bg: "var(--bluBg, #eff6ff)", br: "var(--bluBr, #bfdbfe)", bos: "Kart yok. Buraya sürükle." },
+  { key: "Tamamlandı", baslik: "Bakım Onarım Tamamlandı", renk: "var(--grn600, #16a34a)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)", bos: "Kart yok. Buraya sürükle." },
 ];
 
 const TUR_STIL = {
@@ -47,6 +49,12 @@ export const ServisPanosu = ({
   const [form, setForm] = useState(bosForm(factory?.name || "Altuntaş Makina"));
   const [hoverDurum, setHoverDurum] = useState(null);
   const [arsivAcik, setArsivAcik] = useState(false);
+
+  // ── Canlı saat & tarih (Anasayfa ile aynı) ──
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
+  const saat = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const tarih = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
 
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -209,7 +217,7 @@ export const ServisPanosu = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: kiosk ? "100%" : "calc(100vh - 0px)", minHeight: 0 }}>
       {/* Araç çubuğu */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: kiosk ? "12px 18px" : "0 0 14px", flexShrink: 0,
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: kiosk ? "12px 18px" : "0 0 14px", flexShrink: 0,
         ...(kiosk ? { background: "linear-gradient(95deg,#160900 0%,#241205 55%,#33180a 100%)", boxShadow: "0 2px 14px rgba(0,0,0,.28)" } : {}) }}>
         {kiosk && <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(150deg,#f07a2c,#e85d1a)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="service" size={17} /></div>}
         <div>
@@ -217,8 +225,19 @@ export const ServisPanosu = ({
           {kiosk && <div style={{ fontSize: 11, color: "#c9ab95" }}>{factoryName} · Servis Katı</div>}
         </div>
         <div style={{ flex: 1 }} />
-        {canDo("cust_service_add") && <Btn small onClick={acEkle}><Icon name="plus" size={14} /> Yeni Servis Talebi</Btn>}
-        {kiosk && onKilitle && <Btn small variant="ghost" onClick={onKilitle} title="Kilitle"><Icon name="lock" size={14} /></Btn>}
+        {/* Sağda dikey istif: üstte tarih & saat (Anasayfa ile aynı, başlıkla aynı hizada), altında butonlar */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+          <div style={{ background: "linear-gradient(135deg, #1f0d02, #3d1c06)", borderRadius: 12, padding: "8px 16px", boxShadow: "0 4px 16px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 17, fontWeight: 800, color: "#ff9d5c", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
+            <span style={{ fontSize: 17, fontWeight: 800, color: "#d4a584", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
+          </div>
+          {(canDo("cust_service_add") || (kiosk && onKilitle)) && (
+            <div style={{ display: "flex", gap: 8 }}>
+              {canDo("cust_service_add") && <Btn small onClick={acEkle}><Icon name="plus" size={14} /> Yeni Servis Talebi</Btn>}
+              {kiosk && onKilitle && <Btn small variant="ghost" onClick={onKilitle} title="Kilitle"><Icon name="lock" size={14} /></Btn>}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sütunlar */}
@@ -234,7 +253,7 @@ export const ServisPanosu = ({
               style={{ background: hover ? d.bg : "var(--n100, #f8fafc)", border: `1px solid ${hover ? d.br : "var(--n150, #f1f5f9)"}`, borderRadius: 14, display: "flex", flexDirection: "column", minHeight: 0, boxShadow: hover ? `inset 0 0 0 2px ${d.br}` : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "14px 16px 12px", flexShrink: 0 }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: d.renk }} />
-                <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 750, letterSpacing: ".08em", textTransform: "uppercase", color: d.renk }}>{d.key}</h3>
+                <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 750, letterSpacing: ".08em", textTransform: "uppercase", color: d.renk }}>{d.baslik}</h3>
                 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: d.renk, background: d.bg, border: `1px solid ${d.br}`, borderRadius: 999, padding: "1px 9px", fontVariantNumeric: "tabular-nums" }}>{kartlar.length}</span>
               </div>
               <div style={{ flex: 1, overflowY: "auto", padding: "2px 12px 14px", display: "flex", flexDirection: "column", gap: 11 }}>

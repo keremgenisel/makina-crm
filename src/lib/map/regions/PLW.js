@@ -1,0 +1,11 @@
+// ÜRETİLMİŞ DOSYA — elle düzenlemeyin.
+// Kaynak: scripts/gen-map-paths.cjs (Natural Earth + GeoNames). Yeniden üretmek için:
+//   node scripts/gen-map-paths.cjs
+export const W = 1000;
+export const H = 2081;
+export const BOLGE_ADLARI = ["Peleliu","Koror","Ngeremlengui","Ngatpang","Aimeliik","Airai","Ngchesar","Melekeok","Ngiwal","Ngaraard","Ngarchelong","Ngardmau","Angaur","Kayangel"];
+export const BOLGELER = ["M224.3,1754.5L247.3,1788.6L161.1,1909.2L163.4,1867.7Z","M551.6,1377.7L551.6,1430.3L487.1,1447.9L430.9,1497.3L356.4,1474.5L359.3,1417.2L413.3,1474.3ZM564.4,1260.6L659.7,1313.7L633.3,1353.1L598.2,1294.6L527.1,1319.2Z","M661.3,997.0L632.8,977.2L693.3,886.6L817.1,899.3L796.5,952.2L774.2,1003.5L750.4,1069.2L688.4,984.3Z","M591.9,1076.3L679.2,1025.1L661.3,997.0L688.4,984.3L750.4,1069.2L725.0,1141.3L685.2,1091.7Z","M631.0,1189.1L591.9,1076.3L685.2,1091.7L725.0,1141.3L664.6,1200.6Z","M773.5,1160.0L769.0,1253.1L724.7,1238.6L653.6,1263.1L631.0,1189.1L664.6,1200.6L725.0,1141.3Z","M831.2,1043.5L773.5,1160.0L725.0,1141.3L750.4,1069.2L774.2,1003.5Z","M827.1,972.3L831.2,1043.5L774.2,1003.5L796.5,952.2Z","M882.3,868.3L827.1,972.3L796.5,952.2L817.1,899.3L823.5,852.8Z","M885.6,705.3L882.3,868.3L823.5,852.8L822.3,808.5L853.0,774.0L843.1,708.6Z","M843.1,708.6L826.4,622.8L885.6,705.3Z","M693.3,886.6L730.7,829.4L822.3,808.5L823.5,852.8L817.1,899.3Z","M34.0,2080.3L0,1995.0L57.0,2011.1Z","M969.9,0L1000,23.6L955.5,79.6Z"];
+// sadeAd -> bölge sırası (BOLGELER dizisindeki indeks)
+export const SEHIR = {"ngermidhamlet":1,"ngerbechedhamlet":1,"koror":1,"ididhamlet":1,"ngerchemaihamlet":1,"ulimang":9,"meketiihamlet":1,"ngerekebesanghamlet":1,"ikelauhamlet":1,"meyungshamlet":1,"melekeokvillage":7,"medalaiihamlet":1,"ngereklmadel":3,"iyebukelhamlet":1,"imeonghamlet":2,"ngchesarhamlet":6,"ngerkeai":8,"ngerkeseuaolhamlet":1,"mengellang":10,"angaurstate":12,"kayangel":13,"kloulklubed":0,"ngetkib":5,"ngchemiangel":4,"ngardmau":11,"korortown":1,"ngerulmud":7,"meyungs":1,"ngermid":1,"imeong":2,"peleliu":0,"ngeremlengui":2,"ngatpang":3,"aimeliik":4,"airai":5,"ngchesar":6,"melekeok":7,"ngiwal":8,"ngaraard":9,"ngarchelong":10,"angaur":12};
+// sadeAd -> [dünyaX, dünyaY, ülkeX, ülkeY] — yalnız pin konabilecek şehirler
+export const KONUM = {};

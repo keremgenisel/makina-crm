@@ -51,6 +51,22 @@ const DUNYA_ISTISNA = {
   "Kuzey Kıbrıs Türk Cumhuriyeti": "N. Cyprus",
   "Bosna Hersek": "Bosnia and Herz.",
   "Çek Cumhuriyeti": "Czechia",
+  "Demokratik Kongo Cumhuriyeti": "Dem. Rep. Congo",
+  "Ekvator Ginesi": "Eq. Guinea",
+  "Esvatini": "eSwatini",
+  "Fildişi Sahili": "Côte d'Ivoire",
+  "Güney Sudan": "S. Sudan",
+  "Kongo": "Congo",
+  "Orta Afrika Cumhuriyeti": "Central African Rep.",
+  "Cabo Verde": "Cabo Verde",
+  "Sao Tome ve Principe": "São Tomé and Principe",
+  "Vatikan": "Vatican",
+  "Dominik Cumhuriyeti": "Dominican Rep.",
+  "Antigua ve Barbuda": "Antigua and Barb.",
+  "Saint Kitts ve Nevis": "St. Kitts and Nevis",
+  "Saint Vincent ve Grenadinler": "St. Vin. and Gren.",
+  "Marshall Adaları": "Marshall Is.",
+  "Solomon Adaları": "Solomon Is.",
 };
 // admin-1 verisinin ülke adları da farklı yazılıyor.
 const ADMIN_ISTISNA = {

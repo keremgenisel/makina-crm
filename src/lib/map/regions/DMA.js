@@ -1,0 +1,11 @@
+// ÜRETİLMİŞ DOSYA — elle düzenlemeyin.
+// Kaynak: scripts/gen-map-paths.cjs (Natural Earth + GeoNames). Yeniden üretmek için:
+//   node scripts/gen-map-paths.cjs
+export const W = 1000;
+export const H = 1858;
+export const BOLGE_ADLARI = ["Saint Patrick","Saint David","Saint Andrew","Saint John","Saint Peter","Sain Joseph","Saint Paul","Saint George","Saint Luke","Saint Mark"];
+export const BOLGELER = ["M979.9,1304.2L969.0,1509.0L853.2,1684.3L712.3,1690.4L594.6,1827.5L555.9,1688.7L551.9,1645.4L610.2,1556.6L719.0,1479.2L753.9,1373.5L803.3,1335.2Z","M919.1,536.9L964.8,698.5L971.8,857.2L942.9,978.6L1000,1008.2L973.8,1166.2L979.9,1304.2L803.3,1335.2L753.9,1373.5L755.2,1306.0L673.1,1248.6L673.7,1065.7L643.9,991.4L715.7,818.5L892.9,684.7Z","M165.5,3.2L262.6,23.2L435.0,197.1L548.9,154.1L756.1,236.6L790.1,332.1L919.1,536.9L892.9,684.7L715.7,818.5L629.1,708.7L504.0,659.6L435.7,676.0L347.2,603.8L338.7,566.8L295.8,437.8L290.7,239.9L202.7,167.8Z","M20.3,451.7L20.3,356.4L111.5,263.7L0,236.6L83.0,0L165.5,3.2L202.7,167.8L290.7,239.9L295.8,437.8L338.7,566.8L107.0,442.1Z","M140.0,725.6L70.1,660.4L57.0,502.9L20.3,451.7L107.0,442.1L338.7,566.8L347.2,603.8L271.4,614.1Z","M304.1,1055.5L282.3,949.0L186.4,853.3L140.0,725.6L271.4,614.1L347.2,603.8L435.7,676.0L504.0,659.6L629.1,708.7L715.7,818.5L643.9,991.4L504.3,1057.2Z","M397.6,1386.9L372.7,1224.3L304.1,1055.5L504.3,1057.2L643.9,991.4L673.7,1065.7L673.1,1248.6L501.0,1337.8L479.0,1387.0Z","M482.8,1617.1L397.6,1386.9L479.0,1387.0L501.0,1337.8L673.1,1248.6L755.2,1306.0L753.9,1373.5L719.0,1479.2L610.2,1556.6L551.9,1645.4Z","M484.4,1717.2L482.8,1617.1L551.9,1645.4L555.9,1688.7Z","M594.6,1827.5L479.0,1857.3L484.4,1717.2L555.9,1688.7Z"];
+// sadeAd -> bölge sırası (BOLGELER dizisindeki indeks)
+export const SEHIR = {"woodfordhill":2,"wesley":2,"vieillecase":3,"soufriere":9,"salisbury":5,"saintjoseph":5,"roseau":7,"rosalie":1,"portsmouth":3,"pontcasse":6,"pointemichel":8,"massacre":6,"marigot":2,"mahaut":6,"laplaine":0,"colihaut":4,"castlebruce":1,"calibishie":2,"berekua":9,"castlecomfort":7,"saintpatrick":0,"saintdavid":1,"saintandrew":2,"saintjohn":3,"saintpeter":4,"sainjoseph":5,"saintpaul":6,"saintgeorge":7,"saintluke":8,"saintmark":9};
+// sadeAd -> [dünyaX, dünyaY, ülkeX, ülkeY] — yalnız pin konabilecek şehirler
+export const KONUM = {"roseau":[329.3,205.2,420.7,1438.1]};

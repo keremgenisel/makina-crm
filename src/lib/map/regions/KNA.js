@@ -1,0 +1,11 @@
+// ÜRETİLMİŞ DOSYA — elle düzenlemeyin.
+// Kaynak: scripts/gen-map-paths.cjs (Natural Earth + GeoNames). Yeniden üretmek için:
+//   node scripts/gen-map-paths.cjs
+export const W = 1000;
+export const H = 1019;
+export const BOLGE_ADLARI = ["Saint Paul Charlestown","Saint John Figtree","Saint George Gingerland","Saint James Windward","Saint Thomas Lowland","Saint Paul Capisterre","Saint Anne Sandy Point","Saint Thomas Middle Island","Trinity Palmetto Point","Saint George Basseterre","Saint Peter Basseterre","Saint Mary Cayon","Christ Church Nichola Town","Saint John Capisterre"];
+export const BOLGELER = ["M738.9,928.9L724.1,889.0L871.4,873.5Z","M911.1,1018.6L767.9,1006.9L738.9,928.9L871.4,873.5Z","M1000,896.4L967.1,1005.4L911.1,1018.6L871.4,873.5Z","M766.7,732.6L807.8,687.9L927.7,708.0L970.5,749.8L1000,896.4L871.4,873.5L819.4,770.8Z","M724.1,889.0L766.7,732.6L819.4,770.8L871.4,873.5Z","M13.6,114.5L24.4,68.2L119.5,18.5L164.9,158.8Z","M90.8,277.0L0,173.1L13.6,114.5L164.9,158.8Z","M275.9,380.8L90.8,277.0L164.9,158.8L226.9,213.3L329.0,274.1Z","M423.5,401.2L275.9,380.8L329.0,274.1L357.0,274.1L379.0,276.2L391.0,313.9Z","M555.0,376.3L599.2,460.0L691.8,509.4L729.1,615.8L621.1,615.1L588.0,493.4L486.5,409.5L423.5,401.2L391.0,313.9Z","M485.9,239.9L555.0,376.3L391.0,313.9L379.0,276.2Z","M402.8,165.6L485.9,239.9L379.0,276.2L357.0,274.1Z","M282.7,93.2L402.8,165.6L357.0,274.1L329.0,274.1L226.9,213.3Z","M119.5,18.5L128.0,0L282.7,93.2L226.9,213.3L164.9,158.8Z"];
+// sadeAd -> bölge sırası (BOLGELER dizisindeki indeks)
+export const SEHIR = {"trinity":7,"sandypointtown":6,"saintpauls":5,"sadlers":13,"oldroadtown":7,"nicolatown":12,"newcastle":3,"monkeyhill":10,"middleisland":7,"marketshop":2,"mansion":12,"figtree":1,"dieppebaytown":5,"cottonground":4,"charlestown":0,"cayon":11,"boyds":8,"basseterre":9,"saintpaulcharlestown":0,"saintjohnfigtree":1,"saintgeorgegingerland":2,"saintjameswindward":3,"saintthomaslowland":4,"saintpaulcapisterre":5,"saintannesandypoint":6,"saintthomasmiddleisland":7,"trinitypalmettopoint":8,"saintgeorgebasseterre":9,"saintpeterbasseterre":10,"saintmarycayon":11,"christchurchnicholatown":12,"saintjohncapisterre":13};
+// sadeAd -> [dünyaX, dünyaY, ülkeX, ülkeY] — yalnız pin konabilecek şehirler
+export const KONUM = {};
