@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
+import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
@@ -83,7 +84,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     });
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
 
-    const recentSales = [...customers].filter(c => c.installDate).sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "")).slice(0, 10);
+    // Son Satışlar: makina satışları + Extra Kalıp satışları birlikte (yedek parça hariç).
+    const recentSales = sonSatislar(customers, partSales, 10);
     const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 10);
 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
@@ -211,18 +213,27 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         {/* Son Satışlar */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
           <div style={{ fontWeight: 700, marginBottom: 16, color: "var(--n900, #0f172a)" }}>Son Satışlar</div>
-          {recentSales.map(c => (
-              <div key={c.id} onClick={() => goToCustomer(c.id)} title="Müşteri detayını aç"
-                style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}
+          {recentSales.map(r => (
+              <div key={r.key} onClick={() => r.custId != null && goToCustomer(r.custId)} title={r.custId != null ? "Müşteri detayını aç" : undefined}
+                style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: r.custId != null ? "pointer" : "default" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    {/* Tür rozeti: Makina turuncu, Extra Kalıp mavi */}
+                    <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 7px", flexShrink: 0,
+                      color: r.tip === "makina" ? "var(--orTx, #c2410c)" : "var(--blu700, #1d4ed8)",
+                      background: r.tip === "makina" ? "var(--ambBg3, #fff7ed)" : "var(--bluBg, #eff6ff)",
+                      border: `1px solid ${r.tip === "makina" ? "var(--ambBr, #fde68a)" : "var(--bluBr, #bfdbfe)"}` }}>
+                      {r.tip === "makina" ? "Makina" : "Extra Kalıp"}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.ad}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{r.detay}</div>
                 </div>
-                <div style={{ textAlign: "right", alignSelf: "center" }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(c.installDate)}</div>
-                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{c.country || ""}{c.city ? ` / ${c.city}` : ""}</div>
+                <div style={{ textAlign: "right", alignSelf: "center", flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(r.tarih)}</div>
+                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{r.tip === "kalip" ? fmtCur(r.tutar, r.currency) : r.konum}</div>
                 </div>
               </div>
             ))}

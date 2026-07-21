@@ -8,6 +8,51 @@ export const fmtTR = (iso) => {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 };
 export const todayTR = () => fmtTR(today());
+
+// ── Servis Panosu zaman takibi ──────────────────────────────────────────────
+// Yerel tarih-saat damgası "YYYY-MM-DDTHH:mm:ss" (servis katı saatiyle aynı zaman tabanı).
+// today() UTC gün döner; süre takibinde yerel kullanılır ki operatörün gördüğü saatle uyumlu olsun.
+export const simdiYerel = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+// İki damga arası dakika (null-güvenli). Aynı zaman tabanında oldukları için fark doğru.
+export const sureDk = (bas, bit) => {
+  if (!bas || !bit) return null;
+  const a = new Date(bas).getTime(), b = new Date(bit).getTime();
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.max(0, Math.round((b - a) / 60000));
+};
+// Dakikayı tam dökümle okunur süreye çevirir: "45 dk" / "2 saat 15 dk" / "2 gün 6 saat 3 dk".
+// Sıfır olan üst birimler atlanır; dakika, başka birim yoksa 0 olsa bile gösterilir.
+export const sureBicim = (dk) => {
+  if (dk == null) return "—";
+  const gun = Math.floor(dk / 1440);
+  const saat = Math.floor((dk % 1440) / 60);
+  const kdk = dk % 60;
+  const parcalar = [];
+  if (gun) parcalar.push(`${gun} gün`);
+  if (saat) parcalar.push(`${saat} saat`);
+  if (kdk || !parcalar.length) parcalar.push(`${kdk} dk`);
+  return parcalar.join(" ");
+};
+// Tarih-saat damgasını "21/07 14:30" biçiminde gösterir (kart/analiz için).
+export const fmtZaman = (ts) => {
+  if (!ts) return "—";
+  const [t, s] = String(ts).split("T");
+  const p = (t || "").split("-");
+  const hm = (s || "").slice(0, 5);
+  return p.length === 3 ? `${p[2]}/${p[1]}${hm ? " " + hm : ""}` : ts;
+};
+// Yıllı sürüm: "21/07/2026 14:30" (kartta talep tarihiyle aynı biçim).
+export const fmtZamanTam = (ts) => {
+  if (!ts) return "—";
+  const [t, s] = String(ts).split("T");
+  const p = (t || "").split("-");
+  const hm = (s || "").slice(0, 5);
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}${hm ? " " + hm : ""}` : ts;
+};
 // "YYYY-MM-DD" tarih string'ine ay ekler, sonucu da string olarak döner — new Date(iso)+setMonth()
 // YERİNE saf sayı aritmetiği kullanılıyor (ay/yıl sınırında UTC yorumlama kaymasına karşı, bkz.
 // Finance.jsx'teki ilgili yorum: tarihler hep string üzerinde karşılaştırılır, Date nesnesine hiç çevrilmez).

@@ -187,6 +187,26 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </Field>
       </div>
 
+      {/* Servis Panosu aşama zamanları — tam genişlik alt satır, üç alan yanyana. */}
+      {form.durum && (
+        <Field label="Servis Panosu Zamanları (otomatik — gerekirse düzeltin)">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginBottom: 3 }}>Fabrikaya Giriş</div>
+              <Input type="datetime-local" value={(form.fabrikaGirisZamani || "").slice(0, 16)} onChange={e => setForm(p => ({ ...p, fabrikaGirisZamani: e.target.value }))} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginBottom: 3 }}>Bakım Başlangıcı</div>
+              <Input type="datetime-local" value={(form.bakimBaslangicZamani || "").slice(0, 16)} onChange={e => setForm(p => ({ ...p, bakimBaslangicZamani: e.target.value }))} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginBottom: 3 }}>Bitiş</div>
+              <Input type="datetime-local" value={(form.bitisZamani || "").slice(0, 16)} onChange={e => setForm(p => ({ ...p, bitisZamani: e.target.value }))} />
+            </div>
+          </div>
+        </Field>
+      )}
+
       {/* Servis resimleri/dosyaları: bu servise bağlanacak belgeler. Kaydedilince künye oluşup
           servise (refType:servis) bağlanır; birden fazla eklenebilir. */}
       {dosyaEkleyebilir && window.appFiles?.add && (

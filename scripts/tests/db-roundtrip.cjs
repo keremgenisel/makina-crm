@@ -88,6 +88,7 @@ dbmod.writeBlobToDb({
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
+    fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true }],
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
@@ -129,6 +130,7 @@ check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales
 // Anlaşmasız dış firma alanları (servis "İşlemi Yapan Firma"=Diğer, kalıp "Satış Yapan Firma"=Diğer)
 check("service islemFirma* (Diğer dış servis) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Harici Servis Ltd" && s?.islemFirmaYetkili === "Ahmet Yılmaz" && s?.islemFirmaTel === "05551234567" && s?.islemFirmaUlke === "Türkiye" && s?.islemFirmaSehir === "Bursa"; })());
 check("service durum (Servis Panosu) roundtrip", blob.services.find(x => x.id === 2)?.durum === "Yapılıyor");
+check("service zaman damgaları (giriş/başlangıç/bitiş) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.fabrikaGirisZamani === "2026-07-20T09:15:00" && s?.bakimBaslangicZamani === "2026-07-20T11:30:00" && s?.bitisZamani === "2026-07-20T14:45:00"; })());
 check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.services.find(x => x.id === 2); const b = blob.services.find(x => x.id === 3); return a?.panoGizli === false && b?.panoGizli === true && b?.durum === "Tamamlandı"; })());
 check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());
 check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı Firma" && p?.satisFirmaYetkili === "Mehmet Demir" && p?.satisFirmaTel === "05559876543" && p?.satisFirmaUlke === "Türkiye" && p?.satisFirmaSehir === "İzmir"; })());

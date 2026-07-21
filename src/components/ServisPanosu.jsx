@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, fmtZaman, fmtZamanTam } from "../lib/utils";
+import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { logAction, getAuditUsername } from "../lib/audit";
 import { makeCanDo } from "../lib/permissions";
-import { Icon, Btn } from "./ui";
+import { Icon, Btn, Modal } from "./ui";
 import { ServiceForm } from "./ServiceForm";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
 
@@ -19,6 +20,9 @@ const DURUMLAR = [
   { key: "Yapılıyor", baslik: "Bakım Onarım Yapılıyor", renk: "var(--blu600, #2563eb)", bg: "var(--bluBg, #eff6ff)", br: "var(--bluBr, #bfdbfe)", bos: "Kart yok. Buraya sürükle." },
   { key: "Tamamlandı", baslik: "Bakım Onarım Tamamlandı", renk: "var(--grn600, #16a34a)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)", bos: "Kart yok. Buraya sürükle." },
 ];
+const [DURUM_BEK, DURUM_YAP, DURUM_TAM] = DURUMLAR;
+// Aşama zaman kutusu — "Periyodik Bakım" rozetiyle aynı biçim, ilgili aşamanın renginde.
+const pilStil = (d) => ({ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: d.renk, background: d.bg, border: `1px solid ${d.br}` });
 
 const TUR_STIL = {
   "Periyodik Bakım": { fg: "var(--n600, #475569)", bg: "var(--n150, #f1f5f9)", br: "var(--n200, #e2e8f0)" },
@@ -55,6 +59,9 @@ export const ServisPanosu = ({
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
   const saat = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
   const tarih = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  // Canlı işçilik sayacı için `now`u yerel ISO'ya çevir (servisSureleri'ye verilir).
+  const nowIso = (() => { const p = (n) => String(n).padStart(2, "0"); return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`; })();
+  const [analizSv, setAnalizSv] = useState(null); // per-servis süre analizi modalı
 
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -75,8 +82,18 @@ export const ServisPanosu = ({
 
   const durumDegistir = (id, durum) => {
     if (!setServices || !canDo("cust_service_edit")) return;
+    const ts = simdiYerel();
     // Tamamlandı dışına geri sürüklenirse arşiv bayrağını da temizle (kart yeniden panoda görünsün).
-    setServices(p => p.map(s => s.id === id ? { ...s, durum, panoGizli: durum === "Tamamlandı" ? s.panoGizli : false } : s));
+    setServices(p => p.map(s => {
+      if (s.id !== id) return s;
+      const u = { ...s, durum, panoGizli: durum === "Tamamlandı" ? s.panoGizli : false };
+      // Aşama zaman damgaları: giriş/başlangıç boşsa doldurulur (ilk zaman korunur, geri-ileri
+      // sürüklemede bozulmaz); Tamamlandı bitişi her girişte güncellenir (en son bitiş anlamlı).
+      if (durum === "Bekliyor" && !u.fabrikaGirisZamani) u.fabrikaGirisZamani = ts;
+      if (durum === "Yapılıyor" && !u.bakimBaslangicZamani) u.bakimBaslangicZamani = ts;
+      if (durum === "Tamamlandı") u.bitisZamani = ts;
+      return u;
+    }));
   };
   const teknisyenDegistir = (id, tech) => {
     if (!setServices || !canDo("cust_service_edit")) return;
@@ -140,7 +157,10 @@ export const ServisPanosu = ({
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
-      setServices(p => p.some(s => s.id === newId) ? p : [{ ...rec, id: newId }, ...p]);
+      // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
+      const yeniRec = { ...rec, id: newId };
+      if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
+      setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
       servisParcaDus(rec.degisenParcalar, newId, setPartStock, setPartStockLog);
       bindServisDosyalari(newId, dosyaTaslaklari);
       logAction({ serverPermissions, action: "olusturuldu", entity: "servis", entityId: newId, entityName: cust?.name, detail: { type: rec.type } });
@@ -183,8 +203,33 @@ export const ServisPanosu = ({
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: stil.fg, background: stil.bg, border: `1px solid ${stil.br}` }}>{sv.type}</span>
           {sv.repairPlace && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{sv.repairPlace}</span>}
-          <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{sv.date ? fmtTR(sv.date) : "—"}</span>
+          <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{sv.date ? `Talep ${fmtTR(sv.date)}` : "—"}</span>
         </div>
+        {/* Aşama zaman göstergesi: giriş (Bekliyor) / canlı işçilik (Yapılıyor) / bitiş+işçilik (Tamamlandı) */}
+        {!arsiv && (() => {
+          const s = servisSureleri(sv, nowIso);
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, fontSize: 11, fontVariantNumeric: "tabular-nums", flexWrap: "wrap" }}>
+              {/* "Periyodik Bakım" rozeti gibi renkli kutular: her aşama zamanı kendi renginde.
+                  Giriş (amber) her sütunda kalır; Başlangıç (mavi) ve Bitiş (yeşil) varsa görünür. */}
+              {s.giris && <span style={pilStil(DURUM_BEK)}>Giriş {fmtZamanTam(s.giris)}</span>}
+              {s.baslangic && <span style={pilStil(DURUM_YAP)}>Başlangıç {fmtZamanTam(s.baslangic)}</span>}
+              {s.bitis && <span style={pilStil(DURUM_TAM)}>Bitiş {fmtZamanTam(s.bitis)}</span>}
+              {/* Canlı sayaç: Bekliyor = bekleme, Yapılıyor = işçilik; Tamamlandı = kesin işçilik süresi. */}
+              {sv.durum === "Bekliyor" && s.giris && <span style={pilStil(DURUM_BEK)}>⏱ {sureBicim(sureDk(s.giris, nowIso))}</span>}
+              {sv.durum === "Yapılıyor" && s.devamEdiyor && <span style={pilStil(DURUM_YAP)}>⏱ {sureBicim(s.isclikDk)}</span>}
+              {tamamlandi && s.isclikDk != null && <span style={pilStil(DURUM_TAM)}>İşçilik {sureBicim(s.isclikDk)}</span>}
+            </div>
+          );
+        })()}
+        {/* Servis Süre Analizi — "Periyodik Bakım" gibi kutu, kolayca tıklanır (ikon yerine tam kutu) */}
+        {!arsiv && (
+          <button type="button" onClick={e => { e.stopPropagation(); setAnalizSv(sv); }}
+            style={{ display: "block", width: "100%", marginTop: 8, padding: "6px 10px", fontSize: 11.5, fontWeight: 700, borderRadius: 8, cursor: "pointer",
+              color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+            Servis Süre Analizi
+          </button>
+        )}
         {arsiv ? (
           arsivGorebilir && (
             <div style={{ marginTop: 9, paddingTop: 8, borderTop: "1px dashed var(--n200, #e2e8f0)" }} onClick={e => e.stopPropagation()}>
@@ -290,6 +335,49 @@ export const ServisPanosu = ({
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
         />
       )}
+
+      {/* Per-servis süre analizi — o kartın kendi zaman çizelgesi ve süreleri */}
+      {analizSv && (() => {
+        const s = servisSureleri(analizSv, nowIso);
+        const c = custMap[Number(analizSv.customerId)] || {};
+        const adim = (ikon, ad, zaman, renk) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0" }}>
+            <span style={{ width: 26, height: 26, borderRadius: 8, background: zaman ? renk : "var(--n150, #f1f5f9)", color: zaman ? "#fff" : "var(--n400, #94a3b8)", display: "grid", placeItems: "center", fontSize: 13, flexShrink: 0 }}>{ikon}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)", flex: 1 }}>{ad}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: zaman ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{zaman ? fmtZaman(zaman) : "—"}</span>
+          </div>
+        );
+        const sureKart = (etiket, dk, renk, canli) => (
+          <div style={{ flex: 1, minWidth: 96, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
+            <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 3 }}>{etiket}{canli ? " (devam)" : ""}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: renk, fontVariantNumeric: "tabular-nums" }}>{sureBicim(dk)}</div>
+          </div>
+        );
+        return (
+          <Modal title="Servis Süre Analizi" onClose={() => setAnalizSv(null)}>
+            <div style={{ fontSize: 13, color: "var(--n600, #475569)", marginBottom: 4, fontWeight: 700 }}>{c.name || "(müşteri yok)"}</div>
+            <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 14 }}>
+              {c.model || "Model yok"}{c.serialNo ? ` · S/N ${c.serialNo}` : ""} · {analizSv.type}{analizSv.tech ? ` · ${analizSv.tech}` : ""}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+              {sureKart("Bekleme", s.beklemeDk, "var(--amb600, #d97706)", false)}
+              {sureKart("İşçilik", s.isclikDk, "var(--blu600, #2563eb)", s.devamEdiyor)}
+              {sureKart("Toplam", s.toplamDk, "var(--n800, #1e293b)", s.devamEdiyor && !s.bitis)}
+            </div>
+            <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "4px 14px" }}>
+              {adim("🏭", "Fabrikaya Giriş", s.giris, "var(--amb600, #d97706)")}
+              <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }} />
+              {adim("🔧", "Bakım Onarım Başladı", s.baslangic, "var(--blu600, #2563eb)")}
+              <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }} />
+              {adim("✔", "Tamamlandı", s.bitis, "var(--grn600, #16a34a)")}
+            </div>
+            {s.devamEdiyor && <div style={{ fontSize: 11.5, color: "var(--blu600, #2563eb)", marginTop: 10, textAlign: "center" }}>İşçilik süresi canlı olarak sayılıyor…</div>}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <Btn variant="ghost" onClick={() => setAnalizSv(null)}>Kapat</Btn>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 };

@@ -8,10 +8,12 @@ const BAYI_ETIKET = { bayi: "Bayi", servis: "Anlaşmalı Servis", ikisi: "Bayi +
  * yakınlaştıkça hepsi büyür: dünyada ülkeler küçük olduğu için pin de ölçülü olmalı
  * (yoksa Türkiye'yi kapatıyor), ülke ve ilçe görünümünde ise yer bol.
  */
+// bayi = anlaşmalı servis + "ikisi" pinleri de bu boyutu kullanır (hepsi tur:"bayi").
+// Kullanıcı isteği: bayi/servis pinleri satış pinleriyle AYNI boyutta olsun; fabrika değişmez.
 const PIN_BOY = {
-  dunya: { fabrika: 0.9, bayi: 0.68, satis: 0.32 },
-  ulke:  { fabrika: 1.35, bayi: 1.05, satis: 0.48 },
-  ilce:  { fabrika: 1.6, bayi: 1.3, satis: 0.6 },
+  dunya: { fabrika: 0.9, bayi: 0.32, satis: 0.32 },
+  ulke:  { fabrika: 1.35, bayi: 0.48, satis: 0.48 },
+  ilce:  { fabrika: 1.6, bayi: 0.6, satis: 0.6 },
 };
 
 /** Görünüm seviyesi ("dunya"/"ulke"/"ilce"). */

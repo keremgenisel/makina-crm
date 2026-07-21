@@ -345,8 +345,9 @@ describe("pinleriTopla", () => {
     const dunyaBayi = pinleriTopla({ factory, dealers, seciliUlke: null, konumlar }).find((x) => x.tur === "bayi");
     expect(b.olcek).toBeGreaterThan(ulkeBayi.olcek);
     expect(ulkeBayi.olcek).toBeGreaterThan(dunyaBayi.olcek);
-    // Ülke görünümünde de gözle görülür olmalı (0.62 iken çok ufak kalıyordu)
-    expect(ulkeBayi.olcek).toBeGreaterThanOrEqual(1);
+    // Kullanıcı isteği: bayi/servis pinleri satış pinleriyle AYNI boyutta (fabrikadan küçük kalır).
+    const ulkeSatis = pinleriTopla({ factory, dealers, seciliUlke: "Türkiye", konumlar, satisNoktalari: [{ x: 700, y: 60, ad: "S" }] }).find((x) => x.tur === "satis");
+    expect(ulkeBayi.olcek).toBe(ulkeSatis.olcek);
   });
   it("dünyada dünya konumu, ülke görünümünde ülke konumu kullanılır", () => {
     const d = pinleriTopla({ factory, dealers: [], seciliUlke: null, konumlar });

@@ -4,7 +4,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
-  calcKalanBorc, stripAutoPrint,
+  calcKalanBorc, stripAutoPrint, simdiYerel,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde,
 } from "../../lib/utils";
 import {
@@ -152,7 +152,10 @@ export const CustomerDetailModal = ({
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
-      setServices(p => p.some(s => s.id === newId) ? p : [{ ...rec, id: newId }, ...p]);
+      // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.
+      const yeniRec = { ...rec, id: newId };
+      if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
+      setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
       deductServiceParts(rec.degisenParcalar, newId);
       bindServisDosyalari(newId, dosyaTaslaklari);
       logAction({ serverPermissions, action: "olusturuldu", entity: "servis", entityId: newId, entityName: detailView?.name, detail: { type: rec.type } });

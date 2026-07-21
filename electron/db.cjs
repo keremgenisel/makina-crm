@@ -149,7 +149,8 @@ CREATE TABLE IF NOT EXISTS services (
   degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
   islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT,
   islemFirmaAd TEXT, islemFirmaYetkili TEXT, islemFirmaTel TEXT, islemFirmaUlke TEXT, islemFirmaSehir TEXT,
-  durum TEXT, panoGizli INTEGER
+  durum TEXT, panoGizli INTEGER,
+  fabrikaGirisZamani TEXT, bakimBaslangicZamani TEXT, bitisZamani TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -303,7 +304,10 @@ const SERVICES_DIS_FIRMA_COLUMNS = [["islemFirmaAd", "TEXT"], ["islemFirmaYetkil
 // Servis Panosu (Kanban) durumu: "Bekliyor" / "Yapılıyor" / "Tamamlandı". Boş = eski kayıt (panoda görünmez).
 // panoGizli: Tamamlandı kartını "Panodan Kaldır" ile arşivler; servis kaydı DURUR (silinmez), yalnız
 // panoda görünmez olur (durum "Tamamlandı" kalır, geçmiş rozeti korunur). INTEGER (0/1) boolean.
-const SERVICES_DURUM_COLUMN = [["durum", "TEXT"], ["panoGizli", "INTEGER"]];
+// Zaman takibi (düz TEXT, yerel "YYYY-MM-DDTHH:mm:ss"): fabrikaya giriş / bakım başlangıcı / bitiş.
+// SELECT `...rest` ile otomatik okunur; SCHEMA + ensureColumns + INSERT gerekir.
+const SERVICES_DURUM_COLUMN = [["durum", "TEXT"], ["panoGizli", "INTEGER"],
+  ["fabrikaGirisZamani", "TEXT"], ["bakimBaslangicZamani", "TEXT"], ["bitisZamani", "TEXT"]];
 // KDV oranı artık tek bir sayı (kdvRate) değil, tarihe bağlı dönemler listesi (kdvRates, JSON) —
 // eski kdvRate sütunu geriye uyumluluk için okunmaya devam eder (bkz. normalizeKdvRates).
 const APP_SETTINGS_NEW_COLUMNS = [["kdvRates", "TEXT"]];
@@ -454,11 +458,13 @@ function populateAll(conn, data, skip = new Set()) {
       INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati, fabrikaNotu,
         servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
         islemFirma, parcaAltuntastanMi, deletedAt,
-        islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir, durum, panoGizli)
+        islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir, durum, panoGizli,
+        fabrikaGirisZamani, bakimBaslangicZamani, bitisZamani)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
         @islemFirma, @parcaAltuntastanMi, @deletedAt,
-        @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir, @durum, @panoGizli)
+        @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir, @durum, @panoGizli,
+        @fabrikaGirisZamani, @bakimBaslangicZamani, @bitisZamani)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -471,6 +477,7 @@ function populateAll(conn, data, skip = new Set()) {
         deletedAt: s.deletedAt ?? null,
         islemFirmaAd: s.islemFirmaAd ?? null, islemFirmaYetkili: s.islemFirmaYetkili ?? null, islemFirmaTel: s.islemFirmaTel ?? null,
         islemFirmaUlke: s.islemFirmaUlke ?? null, islemFirmaSehir: s.islemFirmaSehir ?? null, durum: s.durum ?? null, panoGizli: toInt(s.panoGizli),
+        fabrikaGirisZamani: s.fabrikaGirisZamani ?? null, bakimBaslangicZamani: s.bakimBaslangicZamani ?? null, bitisZamani: s.bitisZamani ?? null,
       });
     }
   }

@@ -50,6 +50,20 @@ describe("ServisPanosu — Kanban", () => {
     const guncelle = setServices.mock.calls.at(-1)[0];
     const sonuc = guncelle([{ id: 10, durum: "Bekliyor" }]);
     expect(sonuc[0].durum).toBe("Tamamlandı");
+    // Tamamlandı'ya geçince bitiş anı damgalanır (zaman takibi)
+    expect(typeof sonuc[0].bitisZamani).toBe("string");
+    expect(sonuc[0].bitisZamani.length).toBeGreaterThanOrEqual(16);
+  });
+
+  it("Yapılıyor sütununa bırakınca bakım başlangıç damgalanır", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices })} />);
+    const yapiliyor = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Yapılıyor"));
+    fireEvent.drop(yapiliyor, { dataTransfer: dt(10) });
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 10, durum: "Bekliyor" }]);
+    expect(sonuc[0].durum).toBe("Yapılıyor");
+    expect(typeof sonuc[0].bakimBaslangicZamani).toBe("string"); // ilk başlangıç damgası
   });
 
   it("kart teknisyen seçici çalışanları listeler ve seçim setServices ile tech yazar", () => {
