@@ -24,5 +24,12 @@ jobs:
           cache: "npm"
       - name: Bağımlılıkları çöz (script'siz, hızlı)
         run: npm ci --ignore-scripts
-      - name: Güvenlik açığı taraması (high/critical'de başarısız)
-        run: npm audit --audit-level=high
+      - name: Güvenlik açığı taraması — production (high/critical'de başarısız)
+        # Yalnız kullanıcıya giden (production) bağımlılıkları tara: build/dev araçlarının
+        # (electron-builder, eslint, concurrently…) açıkları uygulamaya PAKETLENMEZ ve yalnız
+        # güvenilir yerel girdileri işler, o yüzden sürüm yayınını bloklamamalı. Kalan
+        # production açıkları package.json "overrides" ile yamalı sürüme sabitlenir.
+        run: npm audit --omit=dev --audit-level=high
+      - name: Tam ağaç taraması — dev dahil (bilgi amaçlı, bloklamaz)
+        if: always()
+        run: npm audit --audit-level=high || true

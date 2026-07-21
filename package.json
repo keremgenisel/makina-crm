@@ -70,7 +70,9 @@
     "world-atlas": "^2.0.2"
   },
   "overrides": {
-    "shell-quote": "1.8.4"
+    "shell-quote": "^1.10.0",
+    "js-yaml": "^4.3.0",
+    "body-parser": "^1.20.6"
   },
   "build": {
     "appId": "com.altunmak.crm",
