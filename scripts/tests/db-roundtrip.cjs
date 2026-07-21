@@ -87,8 +87,10 @@ dbmod.writeBlobToDb({
     { id: "bant", ad: "Bant", renk: "grn", makinaSecici: true, stokDus: true, raporGoster: true, sistem: true, rol: "bant" },
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
-  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false,
-    islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" }],
+  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
+    islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
+    { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true }],
+  calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir" }],
   payments: [], dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
@@ -126,6 +128,9 @@ check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGo
 check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales.find(p => p.id === 600); return ps?.teklifId === 101 && ps?.uretimFormGonder === true && ps?.uretimFormId === 88; })());
 // Anlaşmasız dış firma alanları (servis "İşlemi Yapan Firma"=Diğer, kalıp "Satış Yapan Firma"=Diğer)
 check("service islemFirma* (Diğer dış servis) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Harici Servis Ltd" && s?.islemFirmaYetkili === "Ahmet Yılmaz" && s?.islemFirmaTel === "05551234567" && s?.islemFirmaUlke === "Türkiye" && s?.islemFirmaSehir === "Bursa"; })());
+check("service durum (Servis Panosu) roundtrip", blob.services.find(x => x.id === 2)?.durum === "Yapılıyor");
+check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.services.find(x => x.id === 2); const b = blob.services.find(x => x.id === 3); return a?.panoGizli === false && b?.panoGizli === true && b?.durum === "Tamamlandı"; })());
+check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());
 check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı Firma" && p?.satisFirmaYetkili === "Mehmet Demir" && p?.satisFirmaTel === "05559876543" && p?.satisFirmaUlke === "Türkiye" && p?.satisFirmaSehir === "İzmir"; })());
 check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");
 // Fabrika da ilçe taşır: "Bayiler" sekmesi fabrikayı da düzenliyor ve iki form aynı alanları

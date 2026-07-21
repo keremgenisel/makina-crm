@@ -163,23 +163,36 @@ export function UserManager({ flash, settingsGroups = [] }) {
   });
   const grupBaslikStyle = { fontSize: 10, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 };
   const yesil = { activeBg: "var(--grnBg2, #dcfce7)", activeBorder: "var(--grnBr3, #86efac)", emptyText: "Varsayılan (tüm işlemler açık)" };
+  // Servis Panosu izinleri customerActions içindeki bu grupta; ayrı akordeona taşınır (görünürlük).
+  const SERVIS_GRUP = "Makina Geçmişi — Servisler";
+  // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans,
+  // Evrak, Notlar, Servis Panosu, Ayarlar. (Anasayfa/Harita'nın işlem izni yok.)
   const permSections = [
-    { key: "settings", title: "Ayarlar bölümleri", on: editSettingsOn, selected: editSettings, setSelected: setEditSettings,
-      setOn: (v) => { setEditSettingsOn(v); if (v) setEditSettings([...allSettingIds]); },
-      flatItems: [...settingsGroups.flatMap(g => g.items), DANGER_SECTION], activeBg: "var(--ambBg2, #fef3c7)", activeBorder: "var(--ambBr2, #fcd34d)",
-      emptyText: "Varsayılan (genel ayar uygulanır)" },
     { key: "customer", title: "Müşteri işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
-      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS, ...yesil },
+      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => g.grup !== SERVIS_GRUP), ...yesil },
     { key: "dealer", title: "Bayi işlemleri", on: editDealerActionsOn, selected: editDealerActions, setSelected: setEditDealerActions,
       setOn: (v) => { setEditDealerActionsOn(v); if (v) setEditDealerActions([...allDealerActionIds]); }, groups: DEALER_ACTION_GROUPS, ...yesil },
     { key: "stock", title: "Stok işlemleri", on: editStockActionsOn, selected: editStockActions, setSelected: setEditStockActions,
       setOn: (v) => { setEditStockActionsOn(v); if (v) setEditStockActions([...allStockActionIds]); }, groups: STOCK_ACTION_GROUPS, ...yesil },
+    { key: "finance", title: "Finans işlemleri", on: editFinanceActionsOn, selected: editFinanceActions, setSelected: setEditFinanceActions,
+      setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
     { key: "evrak", title: "Evrak işlemleri", on: editEvrakActionsOn, selected: editEvrakActions, setSelected: setEditEvrakActions,
       setOn: (v) => { setEditEvrakActionsOn(v); if (v) setEditEvrakActions([...allEvrakActionIds]); }, groups: EVRAK_ACTION_GROUPS, ...yesil },
     { key: "not", title: "Notlar işlemleri", on: editNotActionsOn, selected: editNotActions, setSelected: setEditNotActions,
       setOn: (v) => { setEditNotActionsOn(v); if (v) setEditNotActions([...allNotActionIds]); }, groups: NOT_ACTION_GROUPS, ...yesil },
-    { key: "finance", title: "Finans işlemleri", on: editFinanceActionsOn, selected: editFinanceActions, setSelected: setEditFinanceActions,
-      setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
+    // Servis Panosu izinleri de customerActions'ın parçası (cust_service_*); ayrı sunucu boyutu
+    // yok. Görünürlük için kendi başlığına alındı ama aynı customerActions durumunu paylaşır —
+    // "özelleştir" anahtarı Müşteri işlemleri ile ortaktır.
+    { key: "servis", title: "Servis Panosu işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
+      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => g.grup === SERVIS_GRUP),
+      ...yesil, emptyText: "Varsayılan (tüm servis işlemleri açık)" },
+    { key: "settings", title: "Ayarlar bölümleri", on: editSettingsOn, selected: editSettings, setSelected: setEditSettings,
+      setOn: (v) => { setEditSettingsOn(v); if (v) setEditSettings([...allSettingIds]); },
+      // Ayarlar sol menüsündeki gruplarla (Uygulama, Firma, Güvenlik, Sunucu, ...) aynı başlıklar
+      // altında göster; "Uygulamayı Kaldır" (DANGER_SECTION) ayrı "Tehlikeli Bölge" grubunda.
+      groups: [...settingsGroups, { grup: "Tehlikeli Bölge", items: [DANGER_SECTION] }],
+      activeBg: "var(--ambBg2, #fef3c7)", activeBorder: "var(--ambBr2, #fcd34d)",
+      emptyText: "Varsayılan (genel ayar uygulanır)" },
   ];
   const permChekbox = (sec, item) => (
     <label key={item.id} style={chipStyle(sec.selected.includes(item.id), sec.activeBg, sec.activeBorder)}>

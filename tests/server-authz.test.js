@@ -213,6 +213,31 @@ describe("BOLUM_SEKMELERI kapsama (regresyon: sekme eşlemesi eksik kalırsa aç
       expect(BLOB_SECTIONS.includes(bolum), `${bolum} artık bir veri bölümü değil`).toBe(true);
     }
   });
+
+  it("Servis Panosu (kiosk) 'servis' sekmesiyle servis yazabilir", () => {
+    // Kiosk kullanıcısının tek sekmesi "servis"; services bölümü bu sekmeye eşlenmezse sunucu
+    // durum güncellemesini sekmeEngelli ile 403'ler (kritik tuzak).
+    expect(BOLUM_SEKMELERI.services).toContain("servis");
+    expect(new Set(ALL_TABS.map(t => t.id)).has("servis")).toBe(true);
+  });
+
+  it("Servis Panosu servis formu müşteri kartındakiyle aynı → parçalı servis kaydı stok da yazar", () => {
+    // Panonun servis formu tam ServiceForm; değişen parça seçilince stoktan düşer → services ile
+    // birlikte partStock/partStockLog da değişir. Kiosk kullanıcısı (tabs:["servis"], stockActions
+    // TANIMSIZ) bu üç bölümü de yazabilmeli, yoksa parçalı servis kaydı 403 alır.
+    expect(BOLUM_SEKMELERI.partStock).toContain("servis");
+    expect(BOLUM_SEKMELERI.partStockLog).toContain("servis");
+    const kiosk = JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] });
+    expect(yazmaYetkisiVar(kiosk, "user", ["services", "partStock", "partStockLog"], {}, {}).ok).toBe(true);
+  });
+
+  it("Servis Panosu formu resim/dosya da ekler → kiosk 'servis' sekmesiyle dosyalar yazabilir", () => {
+    // Form müşteri kartındakiyle aynı; "Servis Resimleri / Dosyaları" bölümü dosyayı servise bağlar
+    // (dosyalar bölümü değişir). Kiosk kullanıcısı cust_dosya_add da verilmişse yazabilmeli.
+    expect(BOLUM_SEKMELERI.dosyalar).toContain("servis");
+    const kioskDosya = JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_dosya_add"] });
+    expect(yazmaYetkisiVar(kioskDosya, "user", ["services", "dosyalar"], {}, {}).ok).toBe(true);
+  });
 });
 
 describe("eylemDenetimi — eylem düzeyi (ekle/sil) yetki", () => {

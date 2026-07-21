@@ -5,10 +5,10 @@ import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { Section } from "./Section";
 
 export const SettingsBackup = ({
-  customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, notes, parts, partSales, payments,
+  customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar = [], notes, parts, partSales, payments,
   teklifler = [], faturalar = [], partStock = [], partStockLog = [], uretimFormlari = [],
   gorusmeler = [], setGorusmeler = null, rawDosyalar = [], setDosyalar = null,
-  setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setPartTypeDefs, setNotes, setParts, setPartSales, setPayments,
+  setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setPartTypeDefs, setCalisanlar, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null, setUretimFormlari = null,
   version, appSettings, setAppSettings, flash,
 }) => {
@@ -42,7 +42,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -178,6 +178,7 @@ export const SettingsBackup = ({
     if (sec("dosyalar") && Array.isArray(restoreData?.dosyalar) && setDosyalar) setDosyalar(restoreData.dosyalar);
     if (sec("tanim") && Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
     if (sec("tanim") && Array.isArray(restoreData?.partTypeDefs) && restoreData.partTypeDefs.length && setPartTypeDefs) setPartTypeDefs(restoreData.partTypeDefs);
+    if (sec("tanim") && Array.isArray(restoreData?.calisanlar) && setCalisanlar) setCalisanlar(restoreData.calisanlar);
     if (sec("tanim") && Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
     if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
     if (sec("tanim") && Array.isArray(restoreData?.parts)) setParts?.(restoreData.parts);
@@ -205,7 +206,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels"]
+      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
 

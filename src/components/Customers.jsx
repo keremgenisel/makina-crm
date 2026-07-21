@@ -18,7 +18,7 @@ export const Customers = ({
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   title = "Müşteriler", addLabel = "Yeni Müşteri", entity = "Müşteri",
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
-  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], partTypeDefs = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
+  isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], partTypeDefs = [], calisanlar = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
   serverPermissions = null,
 }) => {
@@ -573,7 +573,7 @@ export const Customers = ({
           geoData={geoData} loadingGeo={loadingGeo}
           kdvRates={kdvRates} appSettings={appSettings}
           showToast={showToast}
-          kalipDefs={kalipDefs} partTypeDefs={partTypeDefs}
+          kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} calisanlar={calisanlar}
           serverPermissions={serverPermissions}
         />
       )}

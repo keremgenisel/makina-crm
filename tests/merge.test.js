@@ -26,6 +26,15 @@ describe("buildMergePlan", () => {
     expect(plan.adds.customers[0].name).toBe("Yeni Müşteri");
   });
 
+  it("yeni firma çalışanı (calisanlar) birleştirmede korunur", () => {
+    // Regresyon: calisanlar MERGE_KEYS'te yoktu; sunucu-PC yeniden yükle+birleştirmede
+    // yeni eklenen çalışan düşüyor, "bir süre sonra kayboluyor"du.
+    const my = blob({ calisanlar: [{ id: 777, ad: "Ahmet Usta" }] });
+    const plan = buildMergePlan(my, blob({ calisanlar: [] }));
+    expect(plan.adds.calisanlar).toHaveLength(1);
+    expect(plan.adds.calisanlar[0].ad).toBe("Ahmet Usta");
+  });
+
   it("aynı ID + birebir aynı içerik atlanır (tekrar deneme durumu)", () => {
     const kayit = { id: 501, name: "Aynı", kaliplar: [] };
     const plan = buildMergePlan(blob({ customers: [kayit] }), blob({ customers: [{ ...kayit }] }));

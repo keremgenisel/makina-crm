@@ -760,9 +760,12 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
   const curLabel = CUR_LABEL[cur] || cur;
   const BRAND = "#1a1a1a";
 
+  // Çeviriler artık belge-belge: DEFAULT < eski düz TR/EN (geriye dönük ortak havuz) < belgeye özel
+  // namespace (teklif/proforma). Böylece teklif ve proforma etiketleri bağımsız özelleştirilebilir.
+  const ceviriNs = isProforma ? "proforma" : "teklif";
   const base = isTR
-    ? { ...DEFAULT_TRANSLATIONS.TR, ...(translations?.TR || {}) }
-    : { ...DEFAULT_TRANSLATIONS.EN, ...(translations?.EN || {}) };
+    ? { ...DEFAULT_TRANSLATIONS.TR, ...(translations?.TR || {}), ...(translations?.[ceviriNs]?.TR || {}) }
+    : { ...DEFAULT_TRANSLATIONS.EN, ...(translations?.EN || {}), ...(translations?.[ceviriNs]?.EN || {}) };
   const L = {
     ...base,
     title:     isProforma ? base.titleProforma : base.titleTeklif,
@@ -1334,7 +1337,7 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
         ${!isH("belge", "gtipNo") && fatura.gtipNo ? `<div style="margin-bottom:8px;"><div class="lbl">${L.gtipLabel}</div><div class="val">${fatura.gtipNo}</div></div>` : ""}
         ${!isH("belge", "origin") && fatura.origin ? `<div style="margin-bottom:8px;"><div class="lbl">${L.originLabel}</div><div class="val">${fatura.origin}</div></div>` : ""}
         ${!isH("belge", "kur") && fatura.kur ? `<div style="margin-bottom:8px;"><div class="lbl">${L.exchangeRateLabel}</div><div class="val">${fatura.kur}</div></div>` : ""}
-        ${!isH("paketleme", "not") && fatura.not ? `<div style="margin-bottom:8px;"><div class="lbl">${L.notesLabel}</div><div class="val">${fatura.not}</div></div>` : ""}
+        ${!isH("paketlemeNot", "not") && !isH("paketleme", "not") && fatura.not ? `<div style="margin-bottom:8px;"><div class="lbl">${L.notesLabel}</div><div class="val">${fatura.not}</div></div>` : ""}
         ${cfRows}
       </td>
       <td style="vertical-align:top;">

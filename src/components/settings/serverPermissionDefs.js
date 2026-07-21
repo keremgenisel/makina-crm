@@ -12,6 +12,7 @@ export const ALL_TABS = [
   { id: "finance",   label: "Finans" },
   { id: "evrak",     label: "Evrak Yönetimi" },
   { id: "notes",     label: "Notlar" },
+  { id: "servis",    label: "Servis Panosu" },
   { id: "harita",    label: "Faaliyet Haritası" },
   { id: "settings",  label: "Ayarlar" },
 ];
@@ -63,10 +64,12 @@ export const CUSTOMER_ACTION_GROUPS = [
     { id: "cust_detail_mail",        label: "E-posta gönder" },
   ]},
   { grup: "Makina Geçmişi — Servisler", items: [
-    { id: "cust_service_add",     label: "Yeni servis talebi ekle" },
-    { id: "cust_service_edit",    label: "Servis kaydını düzenle" },
-    { id: "cust_service_payment", label: "Servis / parça ödeme durumu" },
-    { id: "cust_service_delete",  label: "Servis kaydını sil" },
+    { id: "cust_service_add",         label: "Yeni servis talebi ekle" },
+    { id: "cust_service_edit",        label: "Servis kaydını düzenle" },
+    { id: "cust_service_payment",     label: "Servis / parça ödeme durumu" },
+    { id: "cust_service_delete",      label: "Servis kaydını sil" },
+    { id: "cust_service_pano_kaldir", label: "Panodan kaldır (arşivle)" },
+    { id: "cust_service_pano_arsiv",  label: "Arşivi görüntüle / panoya geri al" },
   ]},
   { grup: "Makina Geçmişi — Kalıp", items: [
     { id: "cust_kalip_add",     label: "Extra Kalıp Satışı ekle" },

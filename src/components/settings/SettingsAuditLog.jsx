@@ -6,10 +6,11 @@ const ENTITY_LABELS = {
   musteri: "Müşteri", bayi: "Bayi", servis: "Servis", kalip_satisi: "Kalıp Satışı",
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
-  islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme", eposta: "E-posta",
+  islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme", eposta: "E-posta", dosya: "Dosya", sunucu: "Sunucu Kaydı",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
+  veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
@@ -275,6 +276,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
                 <th style={thStyle}>Zaman</th>
                 <th style={thStyle}>Kullanıcı</th>
+                <th style={thStyle}>Rol</th>
                 <th style={thStyle}>Eylem</th>
                 <th style={thStyle}>Bölüm</th>
                 <th style={thStyle}>Kayıt</th>
@@ -287,6 +289,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
                 <tr key={r.id} style={{ transition: "background .1s" }}>
                   <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)", whiteSpace: "nowrap" }}>{fmtTs(r.ts)}</td>
                   <td style={{ ...tdStyle, fontWeight: 600 }}>{r.username}</td>
+                  <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)" }}>{r.role === "admin" ? "Yönetici" : r.role === "user" ? "Kullanıcı" : (r.role || "—")}</td>
                   <td style={tdStyle}>
                     <span style={{
                       display: "inline-block", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,

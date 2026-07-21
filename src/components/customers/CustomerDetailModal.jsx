@@ -44,7 +44,7 @@ export const CustomerDetailModal = ({
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   setStock,
   setPartStock, setPartStockLog,
-  parts = [], models = [], dealers, factory,
+  parts = [], models = [], dealers, factory, calisanlar = [],
   geoData, loadingGeo,
   kdvRates, appSettings,
   showToast,
@@ -123,7 +123,7 @@ export const CustomerDetailModal = ({
 
   // ── Servis kayıtları ──
   const openAddService = () => {
-    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", fabrikaNotu: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaUlke: "", islemFirmaSehir: "", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(detailView.faturali) });
+    setSvForm({ customerId: detailView.id, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", yapilanIsler: "", musteriTalimati: "", fabrikaNotu: "", servisUcreti: "", date: today(), tech: "", islemFirma: factoryName, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaUlke: "", islemFirmaSehir: "", odendi: false, degisenParcalar: [], parcaUcreti: "", currency: "TRY", parcaGarantiDisi: false, durum: "Bekliyor", faturaTipi: normalizeSaleType(detailView.faturali) });
     setSvModal("add");
   };
   const openEditService = sv => {
@@ -1104,7 +1104,7 @@ export const CustomerDetailModal = ({
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
-          geoData={geoData} loadingGeo={loadingGeo}
+          geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
           draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}

@@ -91,7 +91,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("salt-okunur girişi başarılı", roLogin.status === 200 && !!roLogin.body.token);
   const roTok = roLogin.body.token;
   const partLogin = await login("part", "part123");
-  const partTok = partLogin.body.token;
+  let partTok = partLogin.body.token;
 
   // ── Salt-okunur: okuma serbest, yazma 403 ───────────────────────────────────
   const roGet = await api("/api/data", {}, roTok);
@@ -146,6 +146,17 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const pinData = await (await api("/api/data", {}, sekmeTok)).json();
   check("sekme-kısıtlı kullanıcı parça sabitleyebilir (Stok sekmesi açık, appSettings alan düzeyi) → 200",
     (await postData({ appSettings: { ...pinData.appSettings, pinnedPartIds: ["7"] } }, pinVer, sekmeTok)).status === 200);
+
+  // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
+  //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek
+  //    sunucu-yetkili kaydedilir.
+  const auditRows = await (await api("/api/audit?limit=300", {}, adminTok)).json();
+  check("kısıtlı yazma sunucu işlem geçmişine düştü (veri_kaydedildi/sunucu)",
+    Array.isArray(auditRows.rows) && auditRows.rows.some(r => r.action === "veri_kaydedildi" && r.entity === "sunucu" && (r.username === "part" || r.username === "sekme")));
+  check("sunucu işlem kaydı değişen bölüm adını taşır (Müşteriler/Notlar)",
+    auditRows.rows.some(r => r.action === "veri_kaydedildi" && /Müşteriler|Notlar/.test(r.entity_name || "")));
+  check("tam yetkili admin yazması da sunucu-tarafı veri_kaydedildi ÜRETİR",
+    auditRows.rows.some(r => r.action === "veri_kaydedildi" && r.username === "admin"));
 
   // ── Admin-gating ────────────────────────────────────────────────────────────
   check("salt-okunur GET /api/users → 403", (await api("/api/users", {}, roTok)).status === 403);
@@ -269,6 +280,28 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const ingestGoruntu = await (await api("/api/security-log?action=uygulama_kilidi_basarisiz", {}, adminTok)).json();
   check("ingest edilen app-lock kaydı görünür", ingestGoruntu.total >= 1);
   check("ingest'te gönderen kullanıcı adı target'a yazıldı", ingestGoruntu.rows.some(r => r.actor === "Cihaz: TEST" && r.target === "admin"));
+  // Aşağıdakiler partTok ile yapılır; şifre değişimi partTok'u geçersizleştireceğinden ONDAN ÖNCE.
+  await api("/auth/me", {}, partTok);                                    // token yenileme → oturum_yenilendi
+  await api("/auth/2fa/setup", { method: "POST" }, partTok);             // 2FA kurulumu başlatma → 2fa_kurulum_baslatildi
+  await api("/auth/logout", { method: "POST" }, partTok);               // çıkış → cikis
+  await api("/api/lock", { method: "POST", body: JSON.stringify({ entityType: "musteri", entityId: "5" }) }, partTok);
+  await api("/api/lock", { method: "DELETE", body: JSON.stringify({ entityType: "musteri", entityId: "5" }) }, partTok); // kilit bırakma → kilit_birakildi
+  // Kendi şifresini değiştirme güvenlik günlüğüne düşer (bir kullanıcının en hassas kendi-hesap işlemi).
+  const sifreDeg = await api("/auth/me/password", { method: "PATCH", body: JSON.stringify({ currentPassword: "part123", newPassword: "part1234" }) }, partTok);
+  check("kendi şifre değişimi → 200", sifreDeg.status === 200);
+  // Şifre değişimi token_version'ı artırdı → eski partTok geçersiz; sonraki dosya testleri için tazele.
+  partTok = (await login("part", "part1234")).body.token;
+  // Başkasının kilidini devralma (force steal) güvenlik günlüğüne düşer.
+  await api("/api/lock", { method: "POST", body: JSON.stringify({ entityType: "musteri", entityId: "1" }) }, adminTok);
+  const kilitCal = await api("/api/lock", { method: "POST", body: JSON.stringify({ entityType: "musteri", entityId: "1", force: true }) }, roTok);
+  check("başkasının kilidini devralma → 200", kilitCal.status === 200);
+  const secAll2 = await (await api("/api/security-log?limit=300", {}, adminTok)).json();
+  check("kendi şifre değişimi kaydedildi (sifre_degistirildi)", secAll2.rows.some(r => r.action === "sifre_degistirildi" && r.actor === "part"));
+  check("kilit devralma kaydedildi (kilit_devralindi, hedef=önceki sahip)", secAll2.rows.some(r => r.action === "kilit_devralindi" && r.actor === "ro" && r.target === "admin"));
+  check("kilit bırakma kaydedildi (kilit_birakildi)", secAll2.rows.some(r => r.action === "kilit_birakildi" && r.actor === "part"));
+  check("token yenileme kaydedildi (oturum_yenilendi)", secAll2.rows.some(r => r.action === "oturum_yenilendi" && r.actor === "part"));
+  check("2FA kurulumu başlatma kaydedildi (2fa_kurulum_baslatildi)", secAll2.rows.some(r => r.action === "2fa_kurulum_baslatildi" && r.actor === "part"));
+  check("çıkış kaydedildi (cikis)", secAll2.rows.some(r => r.action === "cikis" && r.actor === "part"));
   // Temizle (admin) → temizlik sonrası tek "gecmis_temizlendi" kaydı kalır
   check("admin DELETE /api/security-log → 200", (await api("/api/security-log", { method: "DELETE" }, adminTok)).status === 200);
   const secAfterClear = await (await api("/api/security-log", {}, adminTok)).json();
@@ -420,7 +453,10 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
 
   await server.stop();
   fs.rmSync(tmpDir, { recursive: true, force: true });
-  if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
+  // Electron ana süreçte process.exit() ertelenebildiğinden (kod akmaya devam eder), başarısızlıkta
+  // RETURN ile başarı sentinel'ini bastırmadan çık — sarmalayıcı "TUM KONTROLLER GECTI" satırını da
+  // aradığı için, çıkış kodu 0'a düşse bile FAIL yakalanır.
+  if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); return; }
   console.log("TUM KONTROLLER GECTI");
   process.exit(0);
 })();

@@ -4,6 +4,7 @@ import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
+import { CalisanManager } from "./CalisanManager";
 import { PartTypeManager } from "./PartTypeManager";
 import { Section } from "./settings/Section";
 import { SettingsApp } from "./settings/SettingsApp";
@@ -27,17 +28,26 @@ import { SettingsAuditLog } from "./settings/SettingsAuditLog";
 import { SettingsSecurityLog } from "./settings/SettingsSecurityLog";
 import { SettingsSecurityStatus } from "./settings/SettingsSecurityStatus";
 
+// Sol menü grupları gen-crm yapısı örnek alınarak düzenlendi: Sunucu artık Güvenlik'ten ayrı kendi
+// grubunda (server + kullanıcı/işlem geçmişi); Güvenlik yalnız şifre + güvenlik durumu; firma
+// kimliği (bilgiler/çalışanlar/çeviriler) "Firma"da; tanımlar "Katalog" (modeller/parçalar) ve
+// "Evrak & Süreçler" (KDV/evrak/takip) olarak bölündü. Görünürlük öğe id'sine göre süzülür
+// (visibleGroups), grup adından bağımsız — öğeleri taşımak izinleri etkilemez.
 const SETTINGS_GROUPS = [
-  { grup: "Genel", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "company", label: "Firma Bilgileri", icon: "machine" }] },
-  { grup: "Güvenlik", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }] },
+  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }] },
+  { grup: "Firma", items: [{ id: "company", label: "Firma Bilgileri", icon: "machine" }, { id: "calisanlar", label: "Firma Çalışanları", icon: "customers" }] },
+  { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }] },
+  { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
-  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
-  { grup: "Tanımlar", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }] },
+  { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }] },
+  { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
+  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
 ];
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   partTypeDefs = [], setPartTypeDefs = null, rawPartTypeDefs = [],
+  calisanlar = [], setCalisanlar = null, rawCalisanlar = [],
   rawCustomers = [], rawServices = [], rawDealers = [], rawStock = [], rawNotes = [], rawParts = [], rawPartSales = [], rawPayments = [], rawKalipDefs = [], rawCustomModels = [],
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
@@ -66,7 +76,10 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Ayarlar</h2>
+      <div style={{ margin: "0 0 20px" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .8 }}>{factory?.name || "Altunmak CRM"} · CRM Uygulaması</div>
+        <h2 style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Uygulama Ayarları</h2>
+      </div>
 
       <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
         {/* SOL DİKEY MENÜ — gruplu */}
@@ -149,11 +162,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "backup" && (
         <SettingsBackup
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
-          factory={factory} kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} notes={notes} parts={parts} partSales={partSales} payments={payments}
+          factory={factory} kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} calisanlar={calisanlar} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
           uretimFormlari={rawUretimFormlari} gorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
-          setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setNotes={setNotes} setParts={setParts}
+          setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setCalisanlar={setCalisanlar} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           setUretimFormlari={setUretimFormlari}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
@@ -210,6 +223,14 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </Section>
       )}
 
+      {settingsTab === "calisanlar" && (
+        <Section title="Firma Çalışanları" icon="customers">
+          <div className="section-desc">
+            Servis yapan çalışanların ad soyadını girin. Bu liste <b>Servis Panosu</b> kartlarındaki ve servis formundaki <b>teknisyen</b> seçicisini besler.
+          </div>
+          <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast} />
+        </Section>
+      )}
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
       {settingsTab === "takip" && <SettingsTakip appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
@@ -230,7 +251,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
-         gorusmeler={rawGorusmeler} serverPermissions={serverPermissions}/>
+         gorusmeler={rawGorusmeler} calisanlar={calisanlar} serverPermissions={serverPermissions}/>
       )}
 
       {settingsTab === "import" && (
@@ -261,7 +282,9 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           appSettings={appSettings} showToast={showToast}
          rawGorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
-         rawDosyalar={rawDosyalar} setDosyalar={setDosyalar}/>
+         rawDosyalar={rawDosyalar} setDosyalar={setDosyalar}
+         rawPartTypeDefs={rawPartTypeDefs} setPartTypeDefs={setPartTypeDefs}
+         rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}/>
       )}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}

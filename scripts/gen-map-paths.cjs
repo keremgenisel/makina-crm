@@ -65,7 +65,7 @@ const ADMIN_ISTISNA = {
 const ISO2_ISTISNA = { "Kuzey Kıbrıs Türk Cumhuriyeti": "CY" };
 // geoBoundaries ADM2 bazı ilçeleri eski/İngilizce ya da ASCII yazıyor; Türkçe resmî adıyla düzelt.
 // (Form listesi ile harita aynı kaynaktan üretildiğinden düzeltme ikisine de yansır.)
-const ILCE_ISIM_DUZELT = { "Imbros": "Gökçeada", "Ayvacik": "Ayvacık" };
+const ILCE_ISIM_DUZELT = { "Imbros": "Gökçeada", "Ayvacik": "Ayvacık", "Prince Islands": "Adalar" };
 const duzeltIlce = (ad) => ILCE_ISIM_DUZELT[ad] || ad;
 
 const log = (...a) => console.log(...a);

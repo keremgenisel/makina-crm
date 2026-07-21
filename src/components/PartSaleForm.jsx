@@ -78,7 +78,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {!isEdit && (
         <Field label="Kalıp Ekle">
           {kalipDefs.length === 0 ? (
-            <div style={{ fontSize: 11, color: "var(--red600, #dc2626)" }}>Tanımlı kalıp yok. Ayarlar → Tanımlar → Kalıp Modelleri'nden ekleyin.</div>
+            <div style={{ fontSize: 11, color: "var(--red600, #dc2626)" }}>Tanımlı kalıp yok. Ayarlar → Katalog → Kalıp Modelleri'nden ekleyin.</div>
           ) : (
             // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
             <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."

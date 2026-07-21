@@ -3,13 +3,30 @@ import { Btn, Icon, ConfirmDialog } from "../ui";
 
 export const ACTION_LABELS = {
   giris_basarili: "Giriş Başarılı", giris_basarisiz: "Giriş Başarısız",
+  cikis: "Çıkış", oturum_yenilendi: "Oturum Yenilendi",
+  sifre_degistirildi: "Şifre Değiştirildi", kilit_devralindi: "Kilit Devralındı", kilit_birakildi: "Kilit Bırakıldı",
   kullanici_eklendi: "Kullanıcı Eklendi", kullanici_silindi: "Kullanıcı Silindi",
-  kullanici_guncellendi: "Kullanıcı Güncellendi",
+  kullanici_guncellendi: "Kullanıcı Güncellendi", ilk_admin_olusturuldu: "İlk Admin Oluşturuldu",
   "2fa_acildi": "2FA Açıldı", "2fa_kapatildi": "2FA Kapatıldı", "2fa_sifirlandi": "2FA Sıfırlandı",
+  "2fa_kurulum_baslatildi": "2FA Kurulumu Başlatıldı",
   oturumlar_kapatildi: "Oturumlar Kapatıldı",
+  sunucu_baslatildi: "Sunucu Başlatıldı", sunucu_durduruldu: "Sunucu Durduruldu",
+  tls_modu_degistirildi: "TLS Modu Değiştirildi", sertifika_yenilendi: "Sertifika Yenilendi",
+  sunucu_ayari_silindi: "Sunucu Ayarı Silindi",
+  yedek_alindi: "Yedek Alındı", yedek_parolasi_degistirildi: "Yedek Parolası Değiştirildi",
   uygulama_kilidi_basarili: "Uygulama Kilidi Açıldı", uygulama_kilidi_basarisiz: "Uygulama Kilidi Başarısız",
+  uygulama_kilidi_kuruldu: "Uygulama Kilidi Kuruldu", uygulama_kilidi_kaldirildi: "Uygulama Kilidi Kaldırıldı",
+  uygulama_kilidi_parolasi_degistirildi: "Uygulama Kilidi Parolası Değiştirildi",
   gecmis_temizlendi: "Geçmiş Temizlendi",
 };
+
+// Başarısız girişin nedeni (detail.sebep) — Eylem sütununda etikete eklenir ki 4 farklı neden
+// (hız limiti / bilinmeyen kullanıcı / yanlış şifre / yanlış 2FA) tek "Giriş Başarısız"a inmesin.
+export function girisBasarisizNedeni(row) {
+  if (row?.action !== "giris_basarisiz") return "";
+  try { const d = typeof row.detail === "string" ? JSON.parse(row.detail) : row.detail; return d?.sebep || ""; }
+  catch { return ""; }
+}
 
 // Eylem türü filtresi için gruplu seçenekler
 const ACTION_OPTIONS = Object.entries(ACTION_LABELS);
@@ -137,7 +154,7 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
   const exportCsv = () => {
     const header = ["Zaman", "Yapan", "Eylem", "Hedef", "IP", "Detay"];
     const csvRows = [header, ...rows.map(r => [
-      fmtTs(r.ts), r.actor || "", ACTION_LABELS[r.action] || r.action, r.target || "", r.ip || "", detayGoster(r),
+      fmtTs(r.ts), r.actor || "", (ACTION_LABELS[r.action] || r.action) + (girisBasarisizNedeni(r) ? ` · ${girisBasarisizNedeni(r)}` : ""), r.target || "", r.ip || "", detayGoster(r),
     ])];
     const csv = "﻿" + csvRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -239,6 +256,9 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
                     }}>
                       {ACTION_LABELS[r.action] || r.action}
                     </span>
+                    {girisBasarisizNedeni(r) && (
+                      <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: "var(--red700, #b91c1c)" }}>· {girisBasarisizNedeni(r)}</span>
+                    )}
                   </td>
                   <td style={{ ...tdStyle, color: "var(--n600, #475569)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLockMi(r.action) ? "—" : (r.target || "—")}</td>
                   <td style={{ ...tdStyle, fontSize: 12, color: "var(--n500, #64748b)", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap" }}>{r.ip || "—"}</td>

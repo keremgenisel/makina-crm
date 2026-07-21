@@ -61,6 +61,24 @@ export const sehirAnahtar = (sehir) => {
 };
 
 /**
+ * Yurt dışı ülke görünümünde satış pinleri: makina BAŞINA ayrı pin (firma adı ipucunda + id ile
+ * müşteri kartına gidilir) — ilçe görünümüyle aynı desen. Böylece 2 makina = 2 pin. Konum, şehir
+ * merkez sözlüğünden (ülke koordinatı k[2],k[3]) alınır; aynı şehirdekiler çağıran tarafta
+ * pinleriAyir ile ayrılır. Türkiye il→ilçe drill'i olduğu için burada KULLANILMAZ (şehir-toplu kalır).
+ * @param konumSozluk sehirAnahtar -> [ilX, ilY, ulkeX, ulkeY]
+ */
+export const ulkeSatisPinleri = (customers = [], ulke = "", konumSozluk = {}) => {
+  const out = [];
+  for (const c of customers || []) {
+    if (String(c?.country ?? "").trim() !== ulke) continue;
+    const sehir = String(c?.city ?? "").trim();
+    const k = sehir && konumSozluk[sehirAnahtar(sehir)];
+    if (k) out.push({ x: k[2], y: k[3], ad: String(c?.name ?? "").trim() || "(isimsiz)", id: c?.id });
+  }
+  return out;
+};
+
+/**
  * Müşteri kayıtlarını ülke bazında özetler.
  * Bir müşteri kaydı = bir makina (Customers.jsx:440 ile aynı sayım); firma sayısı ise
  * aynı ülkedeki aynı isimler tekilleştirilerek bulunur.

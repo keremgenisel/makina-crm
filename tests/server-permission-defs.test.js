@@ -32,4 +32,12 @@ describe("izin tanım verisi tutarlılığı", () => {
     const allIds = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
     expect(new Set(allIds).size).toBe(allIds.length);
   });
+  // UserManager, Servis Panosu izinlerini ayrı akordeona bu grup ADIYLA süzüyor
+  // (SERVIS_GRUP = "Makina Geçmişi — Servisler"). Ad değişirse o bölüm sessizce boşalır.
+  it("servis izinleri UserManager'ın beklediği grup adı altında ve tam", () => {
+    const servisGrup = CUSTOMER_ACTION_GROUPS.find(g => g.grup === "Makina Geçmişi — Servisler");
+    expect(servisGrup, "SERVIS_GRUP adı UserManager ile eşleşmiyor").toBeTruthy();
+    const ids = servisGrup.items.map(i => i.id);
+    expect(ids).toEqual(["cust_service_add", "cust_service_edit", "cust_service_payment", "cust_service_delete", "cust_service_pano_kaldir", "cust_service_pano_arsiv"]);
+  });
 });

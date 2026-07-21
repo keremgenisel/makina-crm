@@ -17,6 +17,7 @@ import { SimpleDealers } from "./components/SimpleDealers";
 import { Stock } from "./components/Stock";
 import { Finance } from "./components/Finance";
 import { Notes } from "./components/Notes";
+import { ServisPanosu } from "./components/ServisPanosu";
 import { Harita } from "./components/Harita";
 import { Settings } from "./components/Settings";
 import { Documents } from "./components/Documents";
@@ -30,6 +31,7 @@ const TABS = [
   { id: "finance",   label: "Finans",       icon: "finance"   },
   { id: "evrak",     label: "Evrak Yönetimi", icon: "evrak"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
+  { id: "servis",    label: "Servis Panosu", icon: "service"  },
   { id: "harita",    label: "Faaliyet Haritası", icon: "globe" },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
 ];
@@ -48,6 +50,10 @@ export default function App() {
   const [savedServerUrl, setSavedServerUrl] = useState(""); // giriş ekranı için önceki sunucu adresi
   const [savedUsername, setSavedUsername] = useState(""); // giriş ekranı için önceki kullanıcı adı
   const [appVersion, setAppVersion] = useState(APP_VERSION);
+  // Kenar menü ikon rayına daraltıldı mı? Her bilgisayara özel (localStorage) — appSettings'e koyulsa
+  // tüm istemcilere senkron olurdu; menü görünümü kişisel bir tercih.
+  const [sidebarDar, setSidebarDar] = useState(() => { try { return localStorage.getItem("sidebarDar") === "1"; } catch { return false; } });
+  const toggleSidebar = () => setSidebarDar(v => { const n = !v; try { localStorage.setItem("sidebarDar", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
   const [haritaAcik, setHaritaAcik] = useState(false); // Faaliyet Haritası ayrı penceresi açık mı
   const [haritaUlke, setHaritaUlke] = useState(null);  // Harita drill durumu — sekme değişip dönünce korunsun
   const [haritaIl, setHaritaIl] = useState(null);
@@ -126,6 +132,9 @@ export default function App() {
   useEffect(() => {
     if (tab !== activeTab) setTab(activeTab);
   }, [tab, activeTab]);
+  // Tam kiosk: client kullanıcının TEK görünür sekmesi Servis Panosu ise, uygulama kabuğu
+  // (kenar menü, arama, güncelleme çubuğu) tümden atlanır; yalnız pano tam ekran gösterilir.
+  const kioskMode = serverMode === "active" && visibleTabs.length === 1 && visibleTabs[0]?.id === "servis";
   const dataVersionRef = useRef(null);
   const loadFromStorageRef = useRef(null);
   useEffect(() => {
@@ -174,6 +183,7 @@ export default function App() {
     apply(setDosyalar, "dosyalar");
     apply(setUretimFormlari, "uretimFormlari");
     apply(setFaturalar, "faturalar");
+    apply(setCalisanlar, "calisanlar");
 
     // Birleştirilen müşterilerin kaynak stok satırları düşülür — yoksa sunucudan gelen
     // stok listesi, az önce satılan makinayı tekrar "satılabilir" olarak diriltir
@@ -608,6 +618,7 @@ export default function App() {
   const [dosyalar,     setDosyalar]     = useState([]); // dosya arşivi künyeleri [{id, customerId, ad, dosyaAdi, boyut, tur, tarih, ekleyen, aciklama, deletedAt}]
   const [kalipDefs,    setKalipDefs]    = useState(INIT_KALIPLAR);
   const [partTypeDefs, setPartTypeDefs] = useState(INIT_PART_TYPES); // kullanıcı-tanımlı parça tipleri [{id, ad, renk, makinaSecici, stokDus, raporGoster, sistem, rol?}]
+  const [calisanlar,   setCalisanlar]   = useState([]); // firma çalışanları [{id, ad, deletedAt?}] — servis panosu teknisyen seçici
   const [teklifler,    setTeklifler]    = useState([]);
   const [faturalar,    setFaturalar]    = useState([]); // yurt dışı faturalar [{id, no, tarih, firma, ...}]
   const [partStock,       setPartStock]       = useState([]); // yedek parça stok seviyeleri [{id, partId, miktar, notlar, sonGuncelleme}]
@@ -628,6 +639,7 @@ export default function App() {
   const livePayments   = useMemo(() => withoutDeleted(payments),   [payments]);
   const liveKalipDefs      = useMemo(() => withoutDeleted(kalipDefs),      [kalipDefs]);
   const livePartTypeDefs   = useMemo(() => withoutDeleted(partTypeDefs),   [partTypeDefs]);
+  const liveCalisanlar     = useMemo(() => withoutDeleted(calisanlar),     [calisanlar]);
   const liveTeklifler      = useMemo(() => withoutDeleted(teklifler),      [teklifler]);
   const liveUretimFormlari = useMemo(() => withoutDeleted(uretimFormlari), [uretimFormlari]);
 
@@ -676,6 +688,8 @@ export default function App() {
       if (Array.isArray(data.uretimFormlari)) data.uretimFormlari = purgeOldTrash(data.uretimFormlari);
       if (Array.isArray(data.gorusmeler)) data.gorusmeler = purgeOldTrash(data.gorusmeler);
       if (Array.isArray(data.dosyalar)) data.dosyalar = purgeOldTrash(data.dosyalar);
+      if (Array.isArray(data.partTypeDefs)) data.partTypeDefs = purgeOldTrash(data.partTypeDefs);
+      if (Array.isArray(data.calisanlar)) data.calisanlar = purgeOldTrash(data.calisanlar);
       // KDV oranı artık tek bir sayı değil, tarihe bağlı dönemler listesi — eski tekil
       // appSettings.kdvRate'den göç edilir. Aşağıdaki Kalan Borç hesapları (hem eski veri
       // göçü hem de normal yükleme) bu dönemlerle, kaydın KENDİ tarihine göre yapılır; bu
@@ -734,6 +748,7 @@ export default function App() {
       if (Array.isArray(data.stock)) setStock(data.stock);
       if (Array.isArray(data.kalipDefs)) setKalipDefs(data.kalipDefs);
       if (Array.isArray(data.partTypeDefs) && data.partTypeDefs.length) setPartTypeDefs(data.partTypeDefs);
+      if (Array.isArray(data.calisanlar)) setCalisanlar(data.calisanlar);
       setStandardModels(safeStandardModels(data.standardModels));
       if (Array.isArray(data.customModels)) setCustomModels(data.customModels);
       if (data.factory) setFactory(f => ({ ...f, ...data.factory }));
@@ -787,7 +802,7 @@ export default function App() {
     // Salt okunur mod: sunucuya ulaşılamıyorken hiçbir şey kaydedilmez/kuyruklanmaz
     // (önbellekten gösterilen veriyi sunucuya geri yazmaya çalışmak veri kaybettirir)
     if (serverMode === "active" && !serverOnlineRef.current) return;
-    const data = { customers, dealers, stock, kalipDefs, partTypeDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
+    const data = { customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -798,11 +813,15 @@ export default function App() {
       if (ok) {
         failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
         clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
+        // Kendi kaydımız db versiyonunu artırır; dataVersionRef'i hemen eşitle ki sunucu-PC'nin
+        // 5sn'lik yoklaması bunu "dışarıdan değişiklik" sanıp yeniden yükle+birleştir tetiklemesin
+        // (o birleştirme, henüz kaydı bitmemiş yerel düzenlemeleri geri alıp veri kaybettiriyordu).
+        try { const v = await window.crmStorage.getVersion?.(); if (typeof v === "number") dataVersionRef.current = v; } catch { /* yoksay */ }
       }
       else if (serverMode === "active") { failedSaveRef.current = saveData || data; }
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, partTypeDefs, standardModels, customModels, factory, services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded, saveTrigger]);
+  }, [customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, appSettings, loaded, saveTrigger]);
 
   // Açılışta bir kez: künyesi kalmayan (30 gün sonra çöpten otomatik silinmiş) fiziksel dosyaları temizle.
   // Referans = hâlâ künyede geçen depo adları (soft-delete edilmişler dahil, onlar çöpte duruyor).
@@ -847,7 +866,7 @@ export default function App() {
           window.appMail?.getConfigForBackup?.() ?? null,
           window.appMail?.getAllLog?.() ?? [],
         ]).catch(() => [null, []]);
-        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar, appSettings, mailConfig, mailLog }).catch(() => false);
+        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar, appSettings, mailConfig, mailLog }).catch(() => false);
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }
@@ -859,6 +878,21 @@ export default function App() {
 
   if (serverMode === null) return null; // sunucu durumu kontrol edilirken bekle
   if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} initialUrl={savedServerUrl} initialUsername={savedUsername} />;
+
+  // ── Tam kiosk (yalnız Servis Panosu görünür kullanıcı): kabuk yok, pano tam ekran ──
+  if (kioskMode) return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "var(--n150, #f1f5f9)" }}>
+      {toast && (
+        <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 99999, background: toast.type === "err" ? "var(--red600, #dc2626)" : "var(--grn600, #16a34a)", color: "#fff", padding: "13px 26px", borderRadius: 10, fontSize: 14, fontWeight: 700, boxShadow: "0 6px 24px rgba(0,0,0,.22)" }}>{toast.text}</div>
+      )}
+      <ServisPanosu kiosk factory={factory} onKilitle={() => setUnlocked(false)}
+        services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar}
+        parts={liveParts} dealers={liveDealers} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo}
+        setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+        dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline}
+        appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} />
+    </div>
+  );
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "var(--n150, #f1f5f9)" }}>
@@ -895,30 +929,32 @@ export default function App() {
         .nav-btn:hover .nav-ico { background: rgba(232,93,26,.18) !important; color: #f0b690 !important; }
       `}</style>
       <div style={{
-        width: 236,
+        width: sidebarDar ? 66 : 236,
         background: "var(--sbGrad, linear-gradient(180deg, #160900 0%, #1f0d02 55%, #281104 100%))",
         display: "flex", flexDirection: "column", flexShrink: 0,
         borderRight: "1px solid var(--sbBorder, rgba(232,93,26,.16))",
         boxShadow: "var(--sbShadow, 6px 0 28px rgba(0,0,0,.30))",
-        position: "relative",
+        position: "relative", transition: "width .22s ease", overflow: "hidden",
       }}>
         {/* Üst ışık çizgisi */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #e85d1a, transparent)", opacity: .7 }} />
 
-        {/* Logo alanı */}
-        <div style={{ padding: "26px 18px 20px", borderBottom: "1px solid rgba(232,93,26,.12)" }}>
-          <div style={{
-            background: "linear-gradient(180deg, #ffffff, #f6f1ec)",
-            borderRadius: 12, padding: "12px 16px",
-            display: "flex", justifyContent: "center",
-            boxShadow: "0 8px 28px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.95)",
-          }}>
-            <img src={LOGO} alt="Altuntaş Makina" style={{ width: "100%", maxHeight: 42, objectFit: "contain" }} />
+        {/* Logo alanı (daralt modunda gizli; aç/kapat düğmesi artık altta versiyon yanında) */}
+        {!sidebarDar && (
+          <div style={{ padding: "26px 18px 20px", borderBottom: "1px solid rgba(232,93,26,.12)", display: "flex", justifyContent: "center" }}>
+            <div style={{
+              background: "linear-gradient(180deg, #ffffff, #f6f1ec)",
+              borderRadius: 12, padding: "12px 16px", flex: 1, minWidth: 0,
+              display: "flex", justifyContent: "center",
+              boxShadow: "0 8px 28px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.95)",
+            }}>
+              <img src={LOGO} alt="Altuntaş Makina" style={{ width: "100%", maxHeight: 42, objectFit: "contain" }} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Menü */}
-        <div style={{ padding: "12px 12px 0" }}>
+        <div style={{ padding: "12px 12px 0", display: sidebarDar ? "none" : "block" }}>
           <GlobalSearch
             customers={liveCustomers} teklifler={liveTeklifler} dealers={liveDealers} stock={liveStock}
             allowedTabs={visibleTabs.map(t => t.id)}
@@ -928,19 +964,20 @@ export default function App() {
             onGoStock={() => { setStockDefaultSubTab("makina"); setTab("stock"); }}
           />
         </div>
-        <nav className="sb-scroll" style={{ padding: "16px 12px", flex: 1, overflowY: "auto" }}>
+        <nav className="sb-scroll" style={{ padding: sidebarDar ? "16px 8px" : "16px 12px", flex: 1, overflowY: "auto" }}>
           {visibleTabs.map(t => {
             const active = tab === t.id;
             return (
-              <button key={t.id} className="nav-btn" onClick={() => {
+              <button key={t.id} className="nav-btn" title={sidebarDar ? t.label : undefined} onClick={() => {
                 const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } if (t.id === "dealers") setDealerFilter("all"); if (t.id === "stock") setStockDefaultSubTab("makina"); setTab(t.id); };
                 if (tab === "notes" && t.id !== "notes" && notesRef.current) notesRef.current.guardNavigation(go);
                 else go();
               }} style={{
-                display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 12px",
+                display: "flex", alignItems: "center", gap: sidebarDar ? 0 : 12, width: "100%", padding: sidebarDar ? "10px 0" : "10px 12px",
+                justifyContent: sidebarDar ? "center" : "flex-start",
                 background: active ? "linear-gradient(90deg, rgba(232,93,26,.26), rgba(232,93,26,.04))" : "transparent",
                 border: "none",
-                borderLeft: active ? "3px solid #e85d1a" : "3px solid transparent",
+                borderLeft: active && !sidebarDar ? "3px solid #e85d1a" : "3px solid transparent",
                 borderRadius: 10, cursor: "pointer",
                 color: active ? "#ff9d5c" : "var(--sbTxt, #a3846f)",
                 fontWeight: active ? 700 : 500, fontSize: 13.5, marginBottom: 5, textAlign: "left",
@@ -948,21 +985,38 @@ export default function App() {
               }}>
                 <span className="nav-ico" style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 30, height: 30, borderRadius: 8, transition: "all .18s ease",
+                  width: 30, height: 30, borderRadius: 8, transition: "all .18s ease", flexShrink: 0,
                   background: active ? "rgba(232,93,26,.24)" : "rgba(255,255,255,.045)",
                   color: active ? "#ff9d5c" : "var(--sbIco, #8d6f5c)",
                 }}>
                   <Icon name={t.icon} size={15} />
                 </span>
-                {t.label}
+                {!sidebarDar && t.label}
               </button>
             );
           })}
         </nav>
 
-        {/* Alt bilgi */}
-        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(232,93,26,.12)", fontSize: 11, color: "#7d614e", textAlign: "center", letterSpacing: .6 }}>
-          {`v${appVersion}`}
+        {/* Alt bilgi — daralt/genişlet düğmesi versiyon numarasının yanında */}
+        {sidebarDar ? (
+          <div style={{ padding: "14px 8px", borderTop: "1px solid rgba(232,93,26,.12)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <button onClick={toggleSidebar} title="Menüyü genişlet"
+              style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(232,93,26,.25)", background: "rgba(232,93,26,.13)", color: "#e8a878", cursor: "pointer", fontSize: 15, lineHeight: 1, display: "grid", placeItems: "center" }}>
+              »
+            </button>
+            {serverMode === "active" && (
+              <span title={serverOnline ? "Sunucu bağlı" : "Sunucu kapalı"} style={{ width: 9, height: 9, borderRadius: "50%", background: serverOnline ? "#34d399" : "#f87171", boxShadow: serverOnline ? "0 0 0 3px rgba(52,211,153,.20)" : "0 0 0 3px rgba(248,113,113,.20)" }} />
+            )}
+          </div>
+        ) : (
+        <div style={{ padding: "16px 12px", borderTop: "1px solid rgba(232,93,26,.12)", fontSize: 11, color: "#7d614e", textAlign: "center", letterSpacing: .6 }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 30 }}>
+            <button onClick={toggleSidebar} title="Menüyü daralt"
+              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(232,93,26,.25)", background: "rgba(232,93,26,.13)", color: "#e8a878", cursor: "pointer", fontSize: 15, lineHeight: 1, display: "grid", placeItems: "center" }}>
+              «
+            </button>
+            <span>{`v${appVersion}`}</span>
+          </div>
           {serverMode === "active" && (
             <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 10px", borderRadius: 7, background: serverOnline ? "rgba(52,211,153,.13)" : "rgba(248,113,113,.13)", border: `1px solid ${serverOnline ? "rgba(52,211,153,.28)" : "rgba(248,113,113,.28)"}` }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: serverOnline ? "#34d399" : "#f87171", flexShrink: 0, boxShadow: serverOnline ? "0 0 0 2px rgba(52,211,153,.22)" : "0 0 0 2px rgba(248,113,113,.22)" }} />
@@ -985,6 +1039,7 @@ export default function App() {
             </button>
           )}
         </div>
+        )}
       </div>
 
       {/* İçerik kolonu: güncelleme şeridi (yalnız içeriğin üstünde, sidebar tam yükseklikte kalır) + ana içerik */}
@@ -1036,14 +1091,15 @@ export default function App() {
           </div>
         )}
         {activeTab === "dashboard" && <Dashboard customers={liveCustomers} dealers={liveDealers} services={liveServices} stock={liveStock} partSales={livePartSales} payments={livePayments} rates={rates} ratesErr={ratesErr} factory={factory} onGoStock={() => setTab("stock")} onGoCustomers={() => { setCustFilter("all"); setCustDetailId(null); setTab("customers"); }} onGoDealers={() => { setDealerFilter("all"); setTab("dealers"); }} onGoDealerDebtors={() => { setDealerFilter("borclu"); setTab("dealers"); }} onGoExpired={() => { setCustFilter("warranty"); setCustDetailId(null); setTab("customers"); }} onGoDebtors={() => { setCustFilter("debt"); setCustDetailId(null); setTab("customers"); }} onGoCustomerDetail={(id) => { setCustReturnTab("dashboard"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} onGoWarrantyActive={() => { setCustFilter("warranty-active"); setCustDetailId(null); setTab("customers"); }} onGoSerialPending={() => { setCustFilter("serial-pending"); setCustDetailId(null); setTab("customers"); }} teklifler={visibleTabs.some(t => t.id === "evrak") ? liveTeklifler : []} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} onDismissTeklif={handleDismissTeklif} serverPermissions={effectivePermissions} uretimFormlari={liveUretimFormlari} gorusmeler={gorusmeler} setGorusmeler={setGorusmeler} teklifTakipGun={appSettings.teklifTakipGun ?? 7} tahsilatTakipGun={appSettings.tahsilatTakipGun ?? 7} onOpenTeklif={visibleTabs.some(t => t.id === "evrak") ? (id) => { setDocOpenId(id); setTab("evrak"); } : null} onDismissTakip={(t) => setTeklifler(p => p.map(x => x.id === t.id ? { ...x, takipKapali: true } : x))} onGoUretim={() => { setStockDefaultSubTab("uretim"); setTab("stock"); }} />}
-        {activeTab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} gorusmeler={gorusmeler} setGorusmeler={setGorusmeler} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} partTypeDefs={livePartTypeDefs} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} serverPermissions={effectivePermissions} />}
+        {activeTab === "customers" && <Customers customers={liveCustomers} setCustomers={setCustomers} services={liveServices} setServices={setServices} dealers={liveDealers} models={allModels} factory={factory} geoData={geoData} loadingGeo={loadingGeo} stock={liveStock} setStock={setStock} partSales={livePartSales} setPartSales={setPartSales} parts={liveParts} payments={livePayments} setPayments={setPayments} gorusmeler={gorusmeler} setGorusmeler={setGorusmeler} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} initialFilter={custFilter} initialDetailId={custDetailId} kalipDefs={liveKalipDefs} partTypeDefs={livePartTypeDefs} calisanlar={liveCalisanlar} showToast={showToast} kdvRates={appSettings.kdvRates} appSettings={appSettings} onDetailClosed={() => { if (custReturnTab) { setTab(custReturnTab); setCustReturnTab(null); } }} openNewPrefill={custNewPrefill} onCustomerLinked={handleCustomerLinked} onPrefillConsumed={() => setCustNewPrefill(null)} serverPermissions={effectivePermissions} />}
         {activeTab === "dealers" && <SimpleDealers dealers={liveDealers} setDealers={setDealers} factory={factory} setFactory={setFactory} geoData={geoData} loadingGeo={loadingGeo} services={liveServices} customers={liveCustomers} setServices={setServices} setCustomers={setCustomers} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} kdvRates={appSettings.kdvRates} initialFilter={dealerFilter} onGoCustomerDetail={(id) => { setCustReturnTab("dealers"); setCustFilter("all"); setCustDetailId(id); setTab("customers"); }} showToast={showToast} serverPermissions={effectivePermissions} canEditFactory={serverMode !== "active"} openDetailId={dealerOpenId} onOpenDetailConsumed={() => setDealerOpenId(null)} />}
         {activeTab === "stock"     && <Stock factory={factory} stock={liveStock} setStock={setStock} models={allModels} showToast={showToast} parts={liveParts} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} appSettings={appSettings} setAppSettings={setAppSettings} customers={liveCustomers} setCustomers={setCustomers} kalipDefs={liveKalipDefs} uretimFormlari={liveUretimFormlari} setUretimFormlari={setUretimFormlari} partSales={livePartSales} setPartSales={setPartSales} serverPermissions={effectivePermissions} defaultSubTab={stockDefaultSubTab} />}
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
+        {activeTab === "servis"    && <ServisPanosu services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar} parts={liveParts} dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo} setPartStock={setPartStock} setPartStockLog={setPartStockLog} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} />}
         {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} onAyriPencere={window.appHarita ? () => window.appHarita.ac() : null} onFirmaSec={haritadanMusteriAc} baslangicUlke={haritaUlke} baslangicIl={haritaIl} onDurumChange={haritaDurumChange} onFabrikaKonum={serverMode !== "active" ? (konum) => { setFactory(prev => ({ ...prev, haritaKonum: konum })); showToast("Fabrika pin konumu kaydedildi."); } : null} />}
-        {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
+        {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} calisanlar={liveCalisanlar} setCalisanlar={setCalisanlar} rawCalisanlar={calisanlar} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
       </div>
       </div>
     </div>

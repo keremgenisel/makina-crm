@@ -18,7 +18,11 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // - Eklenen müşterilerin sourceStockId'leri toplanır: stok düşümü korunur (yoksa
 //   sunucudan gelen stok listesi satılan makinayı geri diriltir).
 
-export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar"];
+// id-anahtarlı, eşzamanlı eklenebilen kayıt listeleri. Yeni bir kalıcı dizi eklenince BURAYA da
+// eklenmeli — yoksa sunucu-PC yeniden yükle+birleştir (mergeLocalIntoReloaded) sırasında o dizideki
+// yerel eklemeler düşer (calisanlar bu yüzden kayboluyordu). calisanlar'ın dış id referansı yok,
+// bu yüzden 2. geçişteki remap listelerine eklenmesi gerekmez.
+export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;

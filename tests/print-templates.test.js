@@ -27,6 +27,28 @@ describe("buildPrintHtml — İngilizce proforma model yılı", () => {
   });
 });
 
+describe("buildPrintHtml — belge-belge çeviri (teklif/proforma namespace)", () => {
+  const teklif = (over = {}) => ({ type: "teklif", dil: "TR", currency: "TRY", firma: "X", satirlar: [], kdvOrani: "20", ...over });
+  it("teklif kendi namespace başlığını kullanır", () => {
+    const html = buildPrintHtml(teklif(), factory, { teklif: { TR: { titleTeklif: "OZEL_TEKLIF_BASLIGI" } } });
+    expect(html).toContain("OZEL_TEKLIF_BASLIGI");
+  });
+  it("proforma teklif namespace'inden etkilenmez, kendi başlığını kullanır", () => {
+    const html = buildPrintHtml(enProforma(), factory, { teklif: { EN: { titleTeklif: "SIZAN_TEKLIF" } }, proforma: { EN: { titleProforma: "OZEL_PROFORMA" } } });
+    expect(html).toContain("OZEL_PROFORMA");
+    expect(html).not.toContain("SIZAN_TEKLIF");
+  });
+  it("geriye dönük: eski düz TR havuzu hâlâ uygulanır (namespace yoksa)", () => {
+    const html = buildPrintHtml(teklif(), factory, { TR: { titleTeklif: "ESKI_DUZ_BASLIK" } });
+    expect(html).toContain("ESKI_DUZ_BASLIK");
+  });
+  it("namespace düz havuzun üstüne biner (öncelik namespace)", () => {
+    const html = buildPrintHtml(teklif(), factory, { TR: { titleTeklif: "DUZ" }, teklif: { TR: { titleTeklif: "NAMESPACE_KAZANIR" } } });
+    expect(html).toContain("NAMESPACE_KAZANIR");
+    expect(html).not.toContain(">DUZ<");
+  });
+});
+
 describe("FROM kutusu içeriği (EN proforma + yurt dışı fatura)", () => {
   it("EN proforma FROM kutusunda başlıklar + model yılı + kur var; web ve tarih satırı yok", () => {
     const html = buildPrintHtml(enProforma({ modelYiliDegeri: "2023", kur: "1 EUR = 38,50 TL", tarih: "2026-07-08" }), factory);
@@ -49,6 +71,16 @@ describe("FROM kutusu içeriği (EN proforma + yurt dışı fatura)", () => {
     expect(html).toContain("FCA İstanbul");
     // Eski davranış: kutuların altında ayrı bir "Delivery Point: X" şeridi vardı.
     expect(html).not.toContain("Delivery Point: <strong>");
+  });
+
+  it("paketleme notu: varsayılan görünür, paketlemeNot bölümünde gizlenince gizli, eski paketleme gizlemesi de geçerli", () => {
+    const fatura = { no: "INV-1", tarih: "2026-07-08", currency: "USD", firma: "ACME GmbH", satirlar: [], not: "GIZLI_NOT_XYZ" };
+    // Varsayılan: not görünür
+    expect(buildFaturaHtml(fatura, factory, 1000, "")).toContain("GIZLI_NOT_XYZ");
+    // Yeni bölüm (paketlemeNot) altında gizlenince görünmez
+    expect(buildFaturaHtml(fatura, factory, 1000, "", "", {}, { hiddenFields: { paketlemeNot: ["not"] } })).not.toContain("GIZLI_NOT_XYZ");
+    // Göç öncesi eski kayıt: not "paketleme" altında gizliyse hâlâ gizli kalır (geriye dönük)
+    expect(buildFaturaHtml(fatura, factory, 1000, "", "", {}, { hiddenFields: { paketleme: ["not"] } })).not.toContain("GIZLI_NOT_XYZ");
   });
 
   it("yurt dışı fatura FROM kutusunda başlıklar var; web satırı yok", () => {

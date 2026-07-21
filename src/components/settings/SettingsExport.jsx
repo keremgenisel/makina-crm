@@ -7,7 +7,7 @@ import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], serverPermissions = null }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], serverPermissions = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -130,11 +130,11 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportServices = async (mode = "download") => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
+    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
       const c = customers.find(x => x.id === s.customerId) || {};
-      return [c.name, c.model, c.serialNo, s.type, s.repairPlace, s.date, s.tech,
+      return [c.name, c.model, c.serialNo, s.type, s.durum || "", s.repairPlace, s.date, s.tech,
         s.islemFirma === "Diğer" ? (s.islemFirmaAd || "Diğer") : s.islemFirma, s.islemFirmaYetkili, s.islemFirmaTel, s.islemFirmaUlke, s.islemFirmaSehir,
         curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti), s.yapilanIsler, s.musteriTalimati];
     })];
@@ -316,6 +316,17 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       downloadCSV(rows, "stok-hareketleri.csv"); flash("ok", "Stok hareketleri CSV olarak indirildi.");
     }
   };
+  const exportCalisanlar = async (mode = "download") => {
+    const head = ["Çalışan Adı"];
+    const rows = [head, ...calisanlar.filter(c => !c.deletedAt).map(c => [c.ad || ""])];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Çalışanlar"); openExportMailXLSXBase64(b64, "firma-calisanlari.xlsx", "Firma Çalışanları"); return; }
+      await downloadXlsx(rows, "firma-calisanlari.xlsx", "Çalışanlar"); flash("ok", "Firma çalışanları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "firma-calisanlari.csv", "Firma Çalışanları"); return; }
+      downloadCSV(rows, "firma-calisanlari.csv"); flash("ok", "Firma çalışanları CSV olarak indirildi.");
+    }
+  };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -430,6 +441,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Üretim Formları", desc: `Kalıp üretim formları (${uretimFormlari.length} kayıt).`, onClick: exportUretimFormlari },
             { title: "Yurt Dışı Faturalar", desc: `Düzenlenen yurt dışı faturalar (${faturalar.length} kayıt).`, onClick: exportFaturalar },
             { title: "Görüşmeler", desc: `Müşteri görüşme kayıtları (${gorusmeler.length} kayıt).`, onClick: exportGorusmeler },
+            { title: "Firma Çalışanları", desc: `Servis panosunda teknisyen olarak seçilen çalışanlar (${calisanlar.filter(c => !c.deletedAt).length} kayıt).`, onClick: exportCalisanlar },
           ] },
         ].map(g => {
           const acik = acikGruplar.has(g.group);

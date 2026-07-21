@@ -4,79 +4,89 @@ import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDI
 import { Btn, Icon } from "../ui";
 import { Section } from "./Section";
 
+// Teklif ve Proforma aynı yerleşimi paylaşır ama artık AYRI düzenlenir (gen-crm örneği: "belge
+// belge olsun"). Ortak alanlar tek yerde tanımlanır, her belgenin kendi namespace'i (ns) altında
+// tekrar sunulur — böylece tek bir "Ortak" bölümü yok, her belge kendi tam setini taşır.
+const ORTAK_ALICI = [
+  { key: "alicrLabel",   label: "Bölüm Başlığı" },
+  { key: "firmLabel",    label: "Firma" },
+  { key: "yetkiliLabel", label: "Yetkili / Tel" },
+  { key: "adresLabel",   label: "Adres" },
+  { key: "vergiLabel",   label: "Vergi No / Dairesi" },
+];
+const ORTAK_BELGE = [
+  { key: "tarihLabel",      label: "Tarih" },
+  { key: "noLabel",         label: "Teklif No" },
+  { key: "modelYiliLabel",  label: "Model Yılı Etiketi" },
+  { key: "modelYiliSuffix", label: "Model Yılı Değeri" },
+  { key: "kurLabel",        label: "Döviz Kuru" },
+  { key: "teslimYeriLabel", label: "Teslim Yeri" },
+  { key: "authorityLabel",  label: "Yetkili (imza alanı)" },
+  { key: "forwarderLabel",  label: "Gönderen (imza alanı)" },
+];
+const ORTAK_TABLO = [
+  { key: "thSira",       label: "Sıra" },
+  { key: "thKod",        label: "Kod" },
+  { key: "thAd",         label: "Ürün Adı" },
+  { key: "thTanim",      label: "Tanım / Açıklama" },
+  { key: "thMiktar",     label: "Miktar" },
+  { key: "thBirimFiyat", label: "Birim Fiyat" },
+  { key: "thTutar",      label: "Tutar" },
+];
+const ORTAK_TOPLAM = [
+  { key: "subtotalLabel", label: "Ara Toplam" },
+  { key: "iskontoLabel",  label: "İskonto" },
+  { key: "netLabel",      label: "Net Toplam" },
+  { key: "kdvPrefix",     label: "KDV Ön Eki (oran otomatik eklenir)" },
+  { key: "grandLabel",    label: "Genel Toplam" },
+];
+const ORTAK_KOSUL = [
+  { key: "iskontoRow",   label: "İskonto Satırı" },
+  { key: "odemeSekli",   label: "Ödeme Şekli" },
+  { key: "teslimSekli",  label: "Teslim Şekli" },
+  { key: "teslimSuresi", label: "Teslim Süresi" },
+  { key: "teslimTarihi", label: "Teslim Tarihi" },
+  { key: "gecerlilik",   label: "Geçerlilik Süresi" },
+  { key: "notLabel",     label: "Not" },
+  { key: "ekLabel",      label: "Ek Bilgi" },
+];
+const ortakGruplar = (ns) => [
+  { label: "Alıcı Bölümü",      ns, keys: ORTAK_ALICI },
+  { label: "Belge Bilgileri",   ns, keys: ORTAK_BELGE },
+  { label: "Tablo Başlıkları",  ns, keys: ORTAK_TABLO },
+  { label: "Toplamlar",         ns, keys: ORTAK_TOPLAM },
+  { label: "Koşullar Alanları", ns, keys: ORTAK_KOSUL },
+];
+
 export const GROUPS = [
   // ─── TEKLİF FORMU ───────────────────────────────────────────────────────────
   { divider: "Teklif Formu" },
-  { label: "Başlık & Belge", keys: [
+  { label: "Başlık & Belge", ns: "teklif", keys: [
     { key: "titleTeklif",       label: "Başlık" },
     { key: "docLabelTeklif",    label: "Belge Bölümü Başlığı" },
   ]},
-  { label: "Koşullar (2. Sayfa)", keys: [
+  { label: "Koşullar (2. Sayfa)", ns: "teklif", keys: [
     { key: "koşullarBaslik",    label: "Bölüm Başlığı" },
     { key: "onayBaslik",        label: "Onay Kutusu Başlığı" },
     { key: "onayAlt",           label: "Onay Alt Yazısı" },
     { key: "sartlarBaslik",     label: "Şartlar Başlığı" },
   ]},
+  ...ortakGruplar("teklif"),
 
   // ─── PROFORMA ───────────────────────────────────────────────────────────────
   { divider: "Proforma" },
-  { label: "Başlık & Belge", keys: [
+  { label: "Başlık & Belge", ns: "proforma", keys: [
     { key: "titleProforma",     label: "Başlık" },
     { key: "docLabelProforma",  label: "Belge Bölümü Başlığı" },
   ]},
-  { label: "Banka Bilgileri", keys: [
+  { label: "Banka Bilgileri", ns: "proforma", keys: [
     { key: "bankaBaslik",       label: "Bölüm Başlığı" },
     { key: "hesapAdiLabel",     label: "Hesap Adı" },
     { key: "ibanTLLabel",       label: "IBAN (TL)" },
     { key: "ibanEURLabel",      label: "IBAN (EUR)" },
     { key: "ibanUSDLabel",      label: "IBAN (USD)" },
   ]},
-
-  // ─── ORTAK ──────────────────────────────────────────────────────────────────
-  { divider: "Ortak" },
-  { label: "Alıcı Bölümü", keys: [
-    { key: "alicrLabel",        label: "Bölüm Başlığı" },
-    { key: "firmLabel",         label: "Firma" },
-    { key: "yetkiliLabel",      label: "Yetkili / Tel" },
-    { key: "adresLabel",        label: "Adres" },
-    { key: "vergiLabel",        label: "Vergi No / Dairesi" },
-  ]},
-  { label: "Belge Bilgileri", keys: [
-    { key: "tarihLabel",        label: "Tarih" },
-    { key: "noLabel",           label: "Teklif No" },
-    { key: "modelYiliLabel",    label: "Model Yılı Etiketi" },
-    { key: "modelYiliSuffix",   label: "Model Yılı Değeri" },
-    { key: "kurLabel",          label: "Döviz Kuru" },
-    { key: "teslimYeriLabel",   label: "Teslim Yeri" },
-    { key: "authorityLabel",    label: "Yetkili (imza alanı)" },
-    { key: "forwarderLabel",    label: "Gönderen (imza alanı)" },
-  ]},
-  { label: "Tablo Başlıkları", keys: [
-    { key: "thSira",            label: "Sıra" },
-    { key: "thKod",             label: "Kod" },
-    { key: "thAd",              label: "Ürün Adı" },
-    { key: "thTanim",           label: "Tanım / Açıklama" },
-    { key: "thMiktar",          label: "Miktar" },
-    { key: "thBirimFiyat",      label: "Birim Fiyat" },
-    { key: "thTutar",           label: "Tutar" },
-  ]},
-  { label: "Toplamlar", keys: [
-    { key: "subtotalLabel",     label: "Ara Toplam" },
-    { key: "iskontoLabel",      label: "İskonto" },
-    { key: "netLabel",          label: "Net Toplam" },
-    { key: "kdvPrefix",         label: "KDV Ön Eki (oran otomatik eklenir)" },
-    { key: "grandLabel",        label: "Genel Toplam" },
-  ]},
-  { label: "Koşullar Alanları", keys: [
-    { key: "iskontoRow",        label: "İskonto Satırı" },
-    { key: "odemeSekli",        label: "Ödeme Şekli" },
-    { key: "teslimSekli",       label: "Teslim Şekli" },
-    { key: "teslimSuresi",      label: "Teslim Süresi" },
-    { key: "teslimTarihi",      label: "Teslim Tarihi" },
-    { key: "gecerlilik",        label: "Geçerlilik Süresi" },
-    { key: "notLabel",          label: "Not" },
-    { key: "ekLabel",           label: "Ek Bilgi" },
-  ]},
+  ...ortakGruplar("proforma"),
 
   // ─── SERVİS FORMU ───────────────────────────────────────────────────────────
   { divider: "Servis Formu" },
@@ -243,11 +253,27 @@ export const GROUPS = [
   ]},
 ];
 
+// Her grubun bağlı olduğu belge başlığı (en yakın önceki ayraç) — grup, başlığı kapalıysa gizlenir.
+const PARENT_DIVIDER = (() => {
+  const arr = []; let cur = null;
+  GROUPS.forEach((g, i) => { if (g.divider) cur = g.divider; arr[i] = cur; });
+  return arr;
+})();
+
 export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => {
   const saved = appSettings?.translations || {};
+  // Geriye dönük: eski düz saved.TR/EN (teklif+proforma ortak havuzu) her iki belgeye de taban
+  // olur; üstüne varsa belgeye özel saved.teklif/saved.proforma biner. Böylece eski özelleştirmeler
+  // kaybolmadan belge-belge düzenlemeye geçilir.
   const [draft, setDraft] = useState({
-    TR: { ...DEFAULT_TRANSLATIONS.TR, ...(saved.TR || {}) },
-    EN: { ...DEFAULT_TRANSLATIONS.EN, ...(saved.EN || {}) },
+    teklif: {
+      TR: { ...DEFAULT_TRANSLATIONS.TR, ...(saved.TR || {}), ...(saved.teklif?.TR || {}) },
+      EN: { ...DEFAULT_TRANSLATIONS.EN, ...(saved.EN || {}), ...(saved.teklif?.EN || {}) },
+    },
+    proforma: {
+      TR: { ...DEFAULT_TRANSLATIONS.TR, ...(saved.TR || {}), ...(saved.proforma?.TR || {}) },
+      EN: { ...DEFAULT_TRANSLATIONS.EN, ...(saved.EN || {}), ...(saved.proforma?.EN || {}) },
+    },
     servis: {
       TR: { ...DEFAULT_SERVIS_TRANSLATIONS.TR, ...(saved.servis?.TR || {}) },
       EN: { ...DEFAULT_SERVIS_TRANSLATIONS.EN, ...(saved.servis?.EN || {}) },
@@ -268,6 +294,14 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
     next.has(label) ? next.delete(label) : next.add(label);
     return next;
   });
+  // Belge başlıkları (Teklif Formu, Proforma, ...) katlanabilir akordeon: kapatınca altındaki
+  // gruplar gizlenir. Varsayılan hepsi KAPALI — ekran sade gelir, istenen belge açılır.
+  const [openDividers, setOpenDividers] = useState(new Set());
+  const toggleDivider = (d) => setOpenDividers(p => {
+    const next = new Set(p);
+    next.has(d) ? next.delete(d) : next.add(d);
+    return next;
+  });
 
   const set = (lang, key, val) => setDraft(p => ({ ...p, [lang]: { ...p[lang], [key]: val } }));
   const setNested = (ns, lang, key, val) =>
@@ -281,8 +315,14 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
 
   const reset = () => {
     const defaults = {
-      TR: { ...DEFAULT_TRANSLATIONS.TR },
-      EN: { ...DEFAULT_TRANSLATIONS.EN },
+      teklif: {
+        TR: { ...DEFAULT_TRANSLATIONS.TR },
+        EN: { ...DEFAULT_TRANSLATIONS.EN },
+      },
+      proforma: {
+        TR: { ...DEFAULT_TRANSLATIONS.TR },
+        EN: { ...DEFAULT_TRANSLATIONS.EN },
+      },
       servis: {
         TR: { ...DEFAULT_SERVIS_TRANSLATIONS.TR },
         EN: { ...DEFAULT_SERVIS_TRANSLATIONS.EN },
@@ -320,18 +360,29 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
 
       {GROUPS.map((g, i) => {
         if (g.divider) {
+          const dividerAcik = openDividers.has(g.divider);
           return (
-            <div key={`div-${i}`} style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 12px" }}>
-              <div style={{ flex: 1, height: 1, background: "var(--n200, #e2e8f0)" }} />
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>{g.divider}</div>
-              <div style={{ flex: 1, height: 1, background: "var(--n200, #e2e8f0)" }} />
+            <div key={`div-${i}`} onClick={() => toggleDivider(g.divider)}
+              style={{
+                fontSize: 12, fontWeight: 800, color: "var(--n700, #334155)", cursor: "pointer", textTransform: "uppercase", letterSpacing: .5,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "11px 14px", background: "var(--n100, #f8fafc)",
+                borderRadius: 10, marginTop: 20, marginBottom: dividerAcik ? 10 : 0,
+                border: "1px solid var(--n200, #e2e8f0)",
+                userSelect: "none",
+              }}>
+              <span>{g.divider}</span>
+              <span style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}>{dividerAcik ? "▾" : "▸"}</span>
             </div>
           );
         }
+        // Bağlı olduğu belge başlığı kapalıysa bu grubu gösterme
+        const parent = PARENT_DIVIDER[i];
+        if (parent && !openDividers.has(parent)) return null;
         const groupId = g.ns ? `${g.ns}:${g.label}` : `${i}:${g.label}`;
         const isOpen = openGroups.has(groupId);
-        const getTR = (key) => g.singleLang ? (draft[g.ns]?.[key] ?? "") : g.ns ? (draft[g.ns]?.TR?.[key] ?? "") : (draft.TR[key] ?? "");
-        const getEN = (key) => g.singleLang ? "" : g.ns ? (draft[g.ns]?.EN?.[key] ?? "") : (draft.EN[key] ?? "");
+        const getTR = (key) => g.singleLang ? (draft[g.ns]?.[key] ?? "") : g.ns ? (draft[g.ns]?.TR?.[key] ?? "") : (draft.TR?.[key] ?? "");
+        const getEN = (key) => g.singleLang ? "" : g.ns ? (draft[g.ns]?.EN?.[key] ?? "") : (draft.EN?.[key] ?? "");
         const onChangeTR = (key, val) => g.singleLang ? setFlat(g.ns, key, val) : g.ns ? setNested(g.ns, "TR", key, val) : set("TR", key, val);
         const onChangeEN = (key, val) => g.singleLang ? undefined : g.ns ? setNested(g.ns, "EN", key, val) : set("EN", key, val);
         return (

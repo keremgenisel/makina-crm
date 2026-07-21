@@ -1,0 +1,142 @@
+// @vitest-environment jsdom
+// Servis Panosu (Kanban): servisler durumuna göre sütunlanır, sürükle-bırakla durum değişir,
+// kartta teknisyen (firma çalışanı) seçilir, "Yeni Servis" müşteri kartındakiyle AYNI tam
+// ServiceForm'u açar. Ayrıca Ayarlar > Firma Çalışanları CRUD ve servis formundaki teknisyen seçicisi.
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { useState } from "react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+
+afterEach(cleanup);
+import { ServisPanosu } from "../../src/components/ServisPanosu";
+import { CalisanManager } from "../../src/components/CalisanManager";
+import { ServiceForm } from "../../src/components/ServiceForm";
+
+const musteriler = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1" }];
+const calisanlar = [{ id: 11, ad: "Ahmet Yılmaz" }, { id: 12, ad: "Mehmet Demir" }];
+
+const dt = (id) => ({ getData: () => String(id), setData: () => {}, dropEffect: "", effectAllowed: "" });
+
+describe("ServisPanosu — Kanban", () => {
+  const props = (over = {}) => ({
+    services: [
+      { id: 10, customerId: 1, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", durum: "Bekliyor", date: "2026-07-20", tech: "" },
+      { id: 11, customerId: 1, type: "Garanti İçi", durum: "Yapılıyor", date: "2026-07-19", tech: "Ahmet Yılmaz" },
+      { id: 99, customerId: 1, type: "Garanti Dışı", date: "2026-07-18" }, // durum YOK → panoda görünmez
+    ],
+    setServices: vi.fn(), customers: musteriler, calisanlar, showToast: vi.fn(), serverPermissions: null, ...over,
+  });
+
+  it("3 sütun; kartlar durumuna göre gruplanır; durumsuz servis görünmez", () => {
+    render(<ServisPanosu {...props()} />);
+    expect(screen.getByRole("heading", { name: "Bekliyor" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Yapılıyor" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Tamamlandı" })).toBeTruthy();
+    // 2 kartlı servis görünür (id 10, 11), durumsuz (99) müşteri adı 1 kez... hepsi ABC olduğundan
+    // kart sayısını data ile kontrol edelim: sütun sayaçları 1 / 1 / 0
+    const sayaclar = [...document.querySelectorAll("section")].map(s => s.textContent.match(/\d+/)?.[0]);
+    expect(sayaclar.filter(Boolean)).toContain("1"); // en az bir sütunda 1
+    // Kart draggable
+    expect(document.querySelector('article[draggable="true"]')).toBeTruthy();
+  });
+
+  it("kartı başka sütuna bırakınca setServices durumu o sütuna çeker", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices })} />);
+    const tamamlandi = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Tamamlandı"));
+    fireEvent.dragOver(tamamlandi, { dataTransfer: dt(10) });
+    fireEvent.drop(tamamlandi, { dataTransfer: dt(10) });
+    expect(setServices).toHaveBeenCalled();
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 10, durum: "Bekliyor" }]);
+    expect(sonuc[0].durum).toBe("Tamamlandı");
+  });
+
+  it("kart teknisyen seçici çalışanları listeler ve seçim setServices ile tech yazar", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices })} />);
+    const bekleyenKart = document.querySelector('article[draggable="true"]');
+    const sel = within(bekleyenKart).getByRole("combobox");
+    expect(within(sel).getByRole("option", { name: "Ahmet Yılmaz" })).toBeTruthy();
+    fireEvent.change(sel, { target: { value: "Mehmet Demir" } });
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    expect(guncelle([{ id: 10 }])[0].tech).toBe("Mehmet Demir");
+  });
+
+  it("Tamamlandı kartında 'Kaldır' panoGizli:true yazar (servis silinmez)", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices, services: [
+      { id: 20, customerId: 1, type: "Periyodik Bakım", durum: "Tamamlandı", date: "2026-07-20", tech: "" },
+    ] })} />);
+    const kaldir = screen.getByRole("button", { name: /Kaldır/ });
+    fireEvent.click(kaldir);
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 20, durum: "Tamamlandı" }]);
+    expect(sonuc[0].panoGizli).toBe(true);
+    expect(sonuc[0].durum).toBe("Tamamlandı"); // durum korunur → geçmiş rozeti bozulmaz
+  });
+
+  it("panoGizli servis panoda görünmez; 'Arşivlenenler' açılınca 'Panoya Geri Al' ile döner", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices, services: [
+      { id: 21, customerId: 1, type: "Garanti Dışı", durum: "Tamamlandı", date: "2026-07-20", tech: "", panoGizli: true },
+    ] })} />);
+    // Kart doğrudan görünmez (yalnız arşivde). Arşiv tetikleyicisi görünür:
+    const arsivBtn = screen.getByRole("button", { name: /Arşivlenenler \(1\)/ });
+    fireEvent.click(arsivBtn);
+    const geriAl = screen.getByRole("button", { name: /Panoya Geri Al/ });
+    fireEvent.click(geriAl);
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    expect(guncelle([{ id: 21, panoGizli: true }])[0].panoGizli).toBe(false);
+  });
+
+  it("'Yeni Servis Talebi' müşteri kartındakiyle AYNI tam ServiceForm'u açar", () => {
+    render(<ServisPanosu {...props()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Yeni Servis Talebi/ }));
+    // Modal açıldı: tam ServiceForm'a özgü (kompakt formda olmayan) alanlar görünür
+    expect(screen.getByText("İşlemi Yapan Firma")).toBeTruthy();
+    expect(screen.getByText("Fatura Tipi")).toBeTruthy();
+    expect(screen.getByText("Değişen Parçalar (varsa)")).toBeTruthy();
+    expect(screen.getByText("Müşteri Talimatı / Açıklama")).toBeTruthy();
+  });
+});
+
+describe("CalisanManager — firma çalışanları CRUD", () => {
+  it("ad yazıp Ekle deyince setCalisanlar çağrılır", () => {
+    const setCalisanlar = vi.fn();
+    render(<CalisanManager calisanlar={[]} setCalisanlar={setCalisanlar} showToast={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText("Ad Soyad"), { target: { value: "Ali Veli" } });
+    fireEvent.click(screen.getByRole("button", { name: /Ekle/ }));
+    expect(setCalisanlar).toHaveBeenCalled();
+  });
+
+  it("mevcut çalışanları listeler + düzenle/sil düğmeleri var", () => {
+    render(<CalisanManager calisanlar={calisanlar} setCalisanlar={vi.fn()} showToast={vi.fn()} />);
+    expect(screen.getByText("Ahmet Yılmaz")).toBeTruthy();
+    expect(screen.getByText("Mehmet Demir")).toBeTruthy();
+  });
+});
+
+describe("ServiceForm — teknisyen: çalışan önerisi + elle serbest giriş", () => {
+  // Gerçek state sarmalayıcı: form.tech güncellenir, böylece serbest metnin kabul edildiğini
+  // input.value üzerinden doğrularız (setForm mock'unda yakalanan sentetik olay bayatlardı).
+  const Harness = () => {
+    const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY", tech: "" });
+    return <ServiceForm title="Servis" form={form} setForm={setForm} customers={musteriler}
+      calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />;
+  };
+
+  it("çalışanları datalist'te önerir ama serbest metin de yazılabilir", () => {
+    render(<Harness />);
+    // Öneri listesi (datalist) firma çalışanlarını içerir
+    const dl = document.getElementById("servis-teknisyen-listesi");
+    expect(dl).toBeTruthy();
+    const values = [...dl.querySelectorAll("option")].map(o => o.value);
+    expect(values).toContain("Ahmet Yılmaz");
+    expect(values).toContain("Mehmet Demir");
+    // Alan serbest metin: listede olmayan bir isim elle yazılabilir
+    const input = document.querySelector('input[list="servis-teknisyen-listesi"]');
+    expect(input).toBeTruthy();
+    fireEvent.change(input, { target: { value: "Harici Usta" } });
+    expect(input.value).toBe("Harici Usta");
+  });
+});

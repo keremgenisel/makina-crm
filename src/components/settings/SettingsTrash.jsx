@@ -10,6 +10,7 @@ export const SettingsTrash = ({
   rawTeklifler = [], rawFaturalar = [], rawUretimFormlari = [], rawGorusmeler = [], rawDosyalar = [],
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
   setTeklifler, setFaturalar, setUretimFormlari = null, setGorusmeler = null, setDosyalar = null,
+  rawPartTypeDefs = [], setPartTypeDefs = null, rawCalisanlar = [], setCalisanlar = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -90,6 +91,10 @@ export const SettingsTrash = ({
   const purgeGorusme = (g) => { setGorusmeler?.(p => p.filter(x => x.id !== g.id)); showToast("Görüşme kaydı kalıcı olarak silindi."); };
   const restoreDosya = (d) => { setDosyalar?.(p => p.map(x => x.id === d.id ? { ...x, deletedAt: undefined } : x)); showToast("Dosya geri alındı."); };
   const purgeDosya = (d) => { setDosyalar?.(p => p.filter(x => x.id !== d.id)); window.appFiles?.remove?.(d.dosyaAdi); showToast("Dosya kalıcı olarak silindi."); };
+  const restorePartTypeDef = (t) => { setPartTypeDefs?.(p => p.map(x => x.id === t.id ? { ...x, deletedAt: undefined } : x)); showToast("Parça tipi geri alındı."); };
+  const purgePartTypeDef = (t) => { setPartTypeDefs?.(p => p.filter(x => x.id !== t.id)); showToast("Parça tipi kalıcı olarak silindi."); };
+  const restoreCalisan = (c) => { setCalisanlar?.(p => p.map(x => x.id === c.id ? { ...x, deletedAt: undefined } : x)); showToast("Çalışan geri alındı."); };
+  const purgeCalisan = (c) => { setCalisanlar?.(p => p.filter(x => x.id !== c.id)); showToast("Çalışan kalıcı olarak silindi."); };
   const emptyTrash = () => {
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
@@ -107,6 +112,8 @@ export const SettingsTrash = ({
     setGorusmeler?.(p => p.filter(x => !x.deletedAt));
     rawDosyalar.filter(d => d.deletedAt).forEach(d => window.appFiles?.remove?.(d.dosyaAdi)); // fiziksel dosyaları da sil
     setDosyalar?.(p => p.filter(x => !x.deletedAt));
+    setPartTypeDefs?.(p => p.filter(x => !x.deletedAt));
+    setCalisanlar?.(p => p.filter(x => !x.deletedAt));
     showToast("Çöp kutusu boşaltıldı.");
   };
 
@@ -134,8 +141,10 @@ export const SettingsTrash = ({
       items.push({ key: `dosya-${d.id}`, type: "Dosya", label: `${sahip} · ${d.ad || ""}`, deletedAt: d.deletedAt, restore: () => restoreDosya(d), purge: () => purgeDosya(d) });
     });
     rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${u.tarih || "—"}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
+    rawPartTypeDefs.filter(t => t.deletedAt).forEach(t => items.push({ key: `parttype-${t.id}`, type: "Parça Tipi", label: t.ad || "—", deletedAt: t.deletedAt, restore: () => restorePartTypeDef(t), purge: () => purgePartTypeDef(t) }));
+    rawCalisanlar.filter(c => c.deletedAt).forEach(c => items.push({ key: `calisan-${c.id}`, type: "Çalışan", label: c.ad || "—", deletedAt: c.deletedAt, restore: () => restoreCalisan(c), purge: () => purgeCalisan(c) }));
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar]);
+  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

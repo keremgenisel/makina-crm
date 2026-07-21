@@ -290,6 +290,22 @@ async function probeReachable(url, timeoutMs = 1500) {
 // ─────────────────────────────────────────────────────────────────────────────
 function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
 
+  // Sunucu-PC'de yapılan yerel yönetici işlemlerini (sunucu başlat/durdur, TLS, config, yedek)
+  // güvenlik günlüğüne yazar. Yalnız DB aktifken (sunucu/yerel PC) anlamlı; istemcide no-op.
+  // actor = config'teki admin kullanıcı adı; IP "yerel" (req yok, aynı süreç).
+  const logYerelGuvenlik = (action, detail) => {
+    try {
+      if (!sqliteDb?.isActive?.()) return;
+      const cfg = loadServerConfig(app);
+      sqliteDb.writeSecurityEntry({
+        ts: new Date().toISOString(),
+        actor: cfg?.username || "yerel yönetici",
+        action, target: null, ip: "yerel",
+        detail: detail ? JSON.stringify(detail) : null,
+      });
+    } catch (err) { console.error("[ipc] yerel güvenlik kaydı yazılamadı:", err); }
+  };
+
   // Açılışta önbellekteki LAN yedeği + son çalışan adresi yükle — böylece uygulama internet
   // kesikken (Tailscale düşmüşken) açılsa bile aynı ağdaki sunucuya doğrudan (ölü adresi
   // beklemeden) ulaşabilir.
@@ -397,9 +413,15 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   // ── İstemci: oturum kapat ─────────────────────────────────────────────────
-  ipcMain.handle("server:logout", () => {
-    resetFailover();
+  ipcMain.handle("server:logout", async () => {
     const cfg = loadServerConfig(app);
+    // İstemci: jetonu atmadan önce sunucuya çıkış bildir (güvenlik günlüğü için, best-effort).
+    if (cfg?.mode === "client" && cfg?.serverUrl && cfg?.token) {
+      try { await apiFetch(cfg.serverUrl, cfg.token, "/auth/logout", { method: "POST" }); } catch { /* çevrimdışı olabilir, yoksay */ }
+    } else if (cfg?.mode === "server") {
+      logYerelGuvenlik("cikis", null); // sunucu PC yöneticisi kendi oturumunu kapattı
+    }
+    resetFailover();
     if (cfg?.mode === "client") {
       const { token, username, role, permissions, lanUrl, lastGoodUrl: _lg, ...rest } = cfg;
       saveServerConfig(app, rest);
@@ -408,6 +430,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   ipcMain.handle("server:clearConfig", () => {
+    logYerelGuvenlik("sunucu_ayari_silindi", null);
     try { fs.unlinkSync(getServerConfigPath(app)); } catch {}
     refreshPin(app); // config gitti → pin'i temizle
     return true;
@@ -476,6 +499,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       // Hiç kullanıcı yok: bu ilk kurulum — admini oluştur (doğrulanacak eski şifre yok).
       const hash = await bcrypt.hash(password, 10);
       sqliteDb.createUser(uname, hash, "admin");
+      logYerelGuvenlik("ilk_admin_olusturuldu", { kullanici: uname });
     } else if (!sqliteDb.getUserByUsername(uname)) {
       return { error: `"${uname}" kullanıcısı bulunamadı. Mevcut admin kullanıcı adını girin.` };
     }
@@ -516,12 +540,14 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       let adminToken = cfg.adminToken;
       try { adminToken = embeddedServer.issueAdminToken(cfg.username) || adminToken; } catch {}
       saveServerConfig(app, { ...cfg, mode: "server", port: usePort, adminToken });
+      logYerelGuvenlik("sunucu_baslatildi", { port: usePort });
       return { ok: true, port: usePort, ips };
     } catch (err) { return { error: err.message }; }
   });
 
   // ── Sunucu modu: durdur ───────────────────────────────────────────────────
   ipcMain.handle("server:stopServer", async () => {
+    logYerelGuvenlik("sunucu_durduruldu", null);
     await embeddedServer.stop();
     return { ok: true };
   });
@@ -534,6 +560,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     embeddedServer.setTlsOnly(v);
     const cfg = loadServerConfig(app);
     if (cfg?.mode === "server") saveServerConfig(app, { ...cfg, tlsOnly: v });
+    logYerelGuvenlik("tls_modu_degistirildi", { yalnizHttps: v });
     return { ok: true, tlsOnly: v };
   });
 
@@ -548,6 +575,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (wasRunning) await embeddedServer.stop();
       const fp = await embeddedServer.regenerateCert();
       if (wasRunning) await embeddedServer.start(port, sqliteDb);
+      logYerelGuvenlik("sertifika_yenilendi", null);
       return { ok: true, fp };
     } catch (err) { return { error: err.message }; }
   });
@@ -748,6 +776,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       const payload = password ? encryptBackup(data, password) : data;
       fs.writeFileSync(filePath, JSON.stringify(payload, null, password ? 0 : 2), "utf-8");
       files.yedekleDosyaKlasoru(app, filePath, password || null); // arşiv dosyaları — parola varsa şifreli
+      logYerelGuvenlik("yedek_alindi", { sifreli: !!password });
       return true;
     }
     catch (err) { console.error("Yedek yazılamadı:", err); return false; }
@@ -775,7 +804,10 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   });
 
   // Otomatik yedek parolası yönetimi
-  ipcMain.handle("backup:setAutoPassword", (_e, password) => saveAutoBackupPassword(app, password));
+  ipcMain.handle("backup:setAutoPassword", (_e, password) => {
+    logYerelGuvenlik("yedek_parolasi_degistirildi", { acildi: !!(password && password.length) });
+    return saveAutoBackupPassword(app, password);
+  });
   ipcMain.handle("backup:autoPasswordStatus", () => ({ set: hasAutoBackupPassword(app), canEncrypt: canEncryptSafe() }));
   // Şifreli yedeğin dosya klasörü parola gelene kadar (backup:decrypt) çözülemez — yolunu burada beklet.
   let bekleyenSifreliRestoreYolu = null;

@@ -149,6 +149,16 @@ function reqIp(req) {
   const raw = req.socket?.remoteAddress || req.ip || "";
   return String(raw).replace(/^::ffff:/, "") || "?"; // IPv6-eşlemeli IPv4'ü sadeleştir
 }
+// Blob bölüm anahtarı → okunabilir Türkçe ad (sunucu-tarafı işlem geçmişi kaydında gösterilir).
+const BOLUM_ADLARI = {
+  customers: "Müşteriler", services: "Servisler", partSales: "Kalıp/Parça Satışları", payments: "Ödemeler",
+  dealers: "Bayiler", stock: "Makina Stoğu", notes: "Notlar", parts: "Yedek Parça Tanımları",
+  partStock: "Parça Stoğu", partStockLog: "Stok Hareketleri", gorusmeler: "Görüşmeler", dosyalar: "Dosyalar",
+  kalipDefs: "Kalıp Tanımları", standardModels: "Standart Modeller", customModels: "Özel Modeller",
+  factory: "Firma Bilgileri", appSettings: "Uygulama Ayarları", teklifler: "Teklifler", faturalar: "Faturalar",
+  uretimFormlari: "Üretim Formları", partTypeDefs: "Parça Tipleri", calisanlar: "Firma Çalışanları",
+};
+
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {
   try {
     db.writeSecurityEntry({
@@ -306,11 +316,19 @@ function buildApp() {
     try {
       const { id, username, role } = req.user;
       const u = db?.getUserByUsername(username);
+      logSecurity({ actor: username, action: "oturum_yenilendi", target: username, ip: reqIp(req) });
       res.json({ token: signToken({ id, username, role, tv: u?.token_version ?? 1 }), user: { id, username, role, permissions: u?.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/me hatası:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
+  });
+
+  // POST /auth/logout — istemci oturumu kapatırken çağırır; yalnız güvenlik günlüğü için
+  // (jetonu istemci zaten atar; sunucuda oturum durumu tutulmaz).
+  app.post("/auth/logout", requireAuth, writeLimiter(60), (req, res) => {
+    logSecurity({ actor: req.user.username, action: "cikis", target: req.user.username, ip: reqIp(req) });
+    res.json({ ok: true });
   });
 
   // PATCH /auth/me/password — kendi şifresini değiştir
@@ -322,6 +340,7 @@ function buildApp() {
       if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       if (!await bcrypt.compare(currentPassword, user.password)) return res.status(401).json({ error: "Mevcut şifre hatalı" });
       db.updateUser(user.id, { password: await bcrypt.hash(newPassword, 10) });
+      logSecurity({ actor: user.username, action: "sifre_degistirildi", target: user.username, ip: reqIp(req) });
       // Şifre değişimi token_version'ı artırdı — yeni token GÜNCEL tv ile imzalanır,
       // böylece kullanıcı kendi şifresini değiştirince kendi oturumu düşmez
       const fresh = db.getUserByUsername(user.username);
@@ -347,6 +366,7 @@ function buildApp() {
       if (!u) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       const secret = totp.generateSecret();
       db.setUserTotpSecret(u.id, secret);
+      logSecurity({ actor: u.username, action: "2fa_kurulum_baslatildi", target: u.username, ip: reqIp(req) });
       const qr = await qrcode.toDataURL(totp.keyuri(u.username, secret));
       res.json({ secret, qr });
     } catch (err) { console.error("[server] 2fa/setup:", err); res.status(500).json({ error: "Sunucu hatası" }); }
@@ -422,10 +442,13 @@ function buildApp() {
       const u = db.getUserByUsername(req.user.username);
       const perms = u?.permissions ?? null;
       const rol = u?.role ?? req.user.role;
-      if (kisitliMi(perms, rol)) {
-        const mevcut = db.readBlobFromDb();
-        const changed = degisenBolumler(mevcut, data);
-        const yetki = yazmaYetkisiVar(perms, rol, changed, mevcut, data);
+      const kisitli = kisitliMi(perms, rol);
+      // Değişen bölümleri HER yazımda bir kez hesapla: hem yetki denetimi (kısıtlıysa) hem de
+      // aşağıdaki sunucu-tarafı işlem geçmişi (herkes için) buradan beslenir.
+      const mevcut = db.readBlobFromDb();
+      const degisen = degisenBolumler(mevcut, data);
+      if (kisitli) {
+        const yetki = yazmaYetkisiVar(perms, rol, degisen, mevcut, data);
         if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
         // Eylem düzeyi: kısmi grup bölüm düzeyinde geçse bile (ör. düzenle var, sil yok),
         // izinsiz EKLE/SİL burada yakalanır ve reddedilir.
@@ -438,6 +461,20 @@ function buildApp() {
       }
       db.writeBlobToDb(data);
       const newVersion = db.bumpDataVersion();
+      // Sunucu-tarafı işlem geçmişi: HER veri yazımı (admin dâhil), istemci ayrıca /api/audit
+      // çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek sunucu-yetkili bir
+      // iz bırakır — kurcalamaya dayanıklı kayıt. (İstemcinin ayrıntılı /api/audit kaydı ile
+      // birlikte durur; bu kaba satır elle HTTP ile atlatmayı da yakalar.)
+      if (degisen.length) {
+        try {
+          db.writeAuditEntry({
+            ts: new Date().toISOString(), username: req.user.username, role: rol,
+            action: "veri_kaydedildi", entity: "sunucu", entity_id: null,
+            entity_name: degisen.map(b => BOLUM_ADLARI[b] || b).join(", "),
+            detail: JSON.stringify({ bolumler: degisen, surum: newVersion }),
+          });
+        } catch (e) { console.error("[server] sunucu işlem kaydı yazılamadı:", e); }
+      }
       broadcast("server:versionUpdate", newVersion);
       broadcast("server:dataChanged", newVersion);
       res.json({ ok: true, newVersion });
@@ -562,8 +599,19 @@ function buildApp() {
     try {
       const { entityType, entityId, force = false } = req.body || {};
       if (!entityType || entityId == null) return res.status(400).json({ error: "entityType ve entityId gerekli" });
+      // force ile başkasının kilidini devralma (steal) güvenlik günlüğüne yazılır.
+      let oncekiSahip = null;
+      if (force) {
+        try { oncekiSahip = db.listLocks().find(l => l.entity_type === entityType && String(l.entity_id) === String(entityId))?.locked_by || null; }
+        catch { oncekiSahip = null; }
+      }
       const result = db.acquireLock(entityType, String(entityId), req.user.username, force);
-      if (result.ok) { broadcast("server:locksChanged"); res.json({ ok: true }); }
+      if (result.ok) {
+        if (oncekiSahip && oncekiSahip !== req.user.username) {
+          logSecurity({ actor: req.user.username, action: "kilit_devralindi", target: oncekiSahip, ip: reqIp(req), detail: { tur: entityType, kayit: String(entityId) } });
+        }
+        broadcast("server:locksChanged"); res.json({ ok: true });
+      }
       else res.status(423).json(result);
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -574,6 +622,7 @@ function buildApp() {
       const { entityType, entityId } = req.body || {};
       if (!entityType || entityId == null) return res.status(400).json({ error: "entityType ve entityId gerekli" });
       db.releaseLock(entityType, String(entityId), req.user.username);
+      logSecurity({ actor: req.user.username, action: "kilit_birakildi", ip: reqIp(req), detail: { tur: entityType, kayit: String(entityId) } });
       broadcast("server:locksChanged");
       res.json({ ok: true });
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
@@ -583,6 +632,7 @@ function buildApp() {
   app.delete("/api/locks/all", requireAuth, writeLimiter(200), (req, res) => {
     try {
       db.releaseAllLocksByUser(req.user.username);
+      logSecurity({ actor: req.user.username, action: "kilit_birakildi", ip: reqIp(req), detail: { tur: "tümü" } });
       broadcast("server:locksChanged");
       res.json({ ok: true });
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
@@ -607,6 +657,16 @@ function buildApp() {
       const anahtar = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       const depo = files.depoAdi(anahtar, ad, firma);
       fsx.writeFileSync(files.dosyaYolu(electronApp, depo), buf);
+      // Sunucu diskine dosya yazımı işlem geçmişine düşer (istemci künyeyi ayrıca /api/data ile
+      // müşteri/bayiye bağlar; bu, ham dosya yazımının kendi sunucu-yetkili izidir).
+      try {
+        db.writeAuditEntry({
+          ts: new Date().toISOString(), username: req.user.username, role: req.user.role,
+          action: "yuklendi", entity: "dosya", entity_id: null,
+          entity_name: `${firma ? firma + " · " : ""}${ad}`,
+          detail: JSON.stringify({ boyut: buf.length }),
+        });
+      } catch { /* loglama akışı bloklamamalı */ }
       res.json({ dosyaAdi: depo, boyut: buf.length, tur: files.turKategori(ad), ad });
     } catch (err) { console.error("[server] dosya yükleme:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
@@ -638,6 +698,15 @@ function buildApp() {
       return res.status(403).json({ error: "Bu dosyayı silme yetkiniz yok" });
     }
     files.sil(electronApp, name);
+    // Diskten kalıcı dosya silme sunucu-yetkili işlem geçmişine düşer (künyeden okunur ad türetilir).
+    try {
+      db.writeAuditEntry({
+        ts: new Date().toISOString(), username: req.user.username, role: req.user.role,
+        action: "silindi", entity: "dosya", entity_id: null,
+        entity_name: kunye?.ad || name,
+        detail: JSON.stringify({ dosyaAdi: name }),
+      });
+    } catch { /* loglama akışı bloklamamalı */ }
     res.json({ ok: true });
   });
 

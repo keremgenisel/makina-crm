@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon, StatCard, Btn } from "./ui";
 import { HaritaSvg } from "./harita/HaritaSvg";
-import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../lib/mapStats";
+import { haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, sadeAd, sehirAnahtar, ulkeSatisPinleri, sehirFirmaKirilim, ilceFirmaKirilim, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../lib/mapStats";
 import { ILCELER } from "../lib/map/ilceler";
 // Satış listesi dışındaki ülkelerin adı + konumu (world.js'te adsız oldukları için ayrı üretildi).
 import { ARKA_PLAN_AD } from "../lib/map/world-arkaplan";
@@ -152,9 +152,17 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
     if (seciliUlke) {
       const d = konumlar[seciliUlke];
       if (!d) return [];
-      for (const [sehir, sayi] of Object.entries(ozet[seciliUlke]?.sehirler || {})) {
-        const k = d[sehirAnahtar(sehir)];
-        if (k) out.push({ x: k[2], y: k[3], ad: sehir, sayi }); // şehir başına tek pin (ülke koordinatı 2,3)
+      if (seciliUlke === "Türkiye") {
+        // Türkiye'nin il→ilçe drill'i var ve satış hacmi yüksek; ülke görünümünde şehir başına
+        // TEK pin (makina sayısı ipucunda) — detay için ile tıklanıp ilçeye inilir.
+        for (const [sehir, sayi] of Object.entries(ozet[seciliUlke]?.sehirler || {})) {
+          const k = d[sehirAnahtar(sehir)];
+          if (k) out.push({ x: k[2], y: k[3], ad: sehir, sayi }); // şehir başına tek pin (ülke koordinatı 2,3)
+        }
+      } else {
+        // Yurt dışı ülkelerde daha derin drill yok — ilçe görünümü gibi makina BAŞINA ayrı pin
+        // (firma adı ipucunda). Böylece 2 makina = 2 pin; aynı şehirdekiler pinleriAyir ile ayrılır.
+        out.push(...ulkeSatisPinleri(customers, seciliUlke, d));
       }
       return out;
     }

@@ -12,7 +12,7 @@ const BLOB_SECTIONS = [
   "customers", "services", "partSales", "payments", "dealers", "stock", "notes",
   "parts", "partStock", "partStockLog", "gorusmeler", "dosyalar", "kalipDefs", "standardModels",
   "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari",
-  "partTypeDefs",
+  "partTypeDefs", "calisanlar",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -36,6 +36,7 @@ const SECTION_GROUP = {
   notes: "notActions",
   kalipDefs: "settings",
   partTypeDefs: "settings",
+  calisanlar: "settings",
   standardModels: "settings",
   customModels: "settings",
   factory: "settings",
@@ -62,22 +63,26 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 // Finans ve Harita sekmeleri hiçbir bölüm yazmaz, o yüzden hiçbir listede yoklar.
 const BOLUM_SEKMELERI = {
   customers:      ["customers", "dealers", "stock", "settings"],
-  services:       ["customers", "dealers", "settings"],
+  services:       ["customers", "dealers", "settings", "servis"],
   partSales:      ["customers", "stock", "settings"],
   payments:       ["customers", "settings"],
   gorusmeler:     ["customers", "dashboard", "settings"],
-  dosyalar:       ["customers", "dealers", "settings"],
+  dosyalar:       ["customers", "dealers", "settings", "servis"],
   dealers:        ["dealers", "settings"],
   teklifler:      ["evrak", "settings"],
   faturalar:      ["evrak", "settings"],
   stock:          ["stock", "customers", "settings"],
   parts:          ["settings"],
-  partStock:      ["stock", "customers", "settings"],
-  partStockLog:   ["stock", "customers", "settings"],
+  // "servis": Servis Panosu'ndaki servis formu, müşteri detayındakiyle aynı — değişen parça
+  // seçilince stoktan düşer/geri alır. Servis katı kiosk kullanıcısı (tabs:["servis"]) bu yüzden
+  // servis kaynaklı stok hareketini yazabilmeli, yoksa parçalı servis kaydı 403 alır.
+  partStock:      ["stock", "customers", "settings", "servis"],
+  partStockLog:   ["stock", "customers", "settings", "servis"],
   uretimFormlari: ["stock", "settings"],
   notes:          ["notes", "settings"],
   kalipDefs:      ["settings"],
   partTypeDefs:   ["settings"],
+  calisanlar:     ["settings"],
   standardModels: ["settings"],
   customModels:   ["settings"],
   factory:        ["settings"],

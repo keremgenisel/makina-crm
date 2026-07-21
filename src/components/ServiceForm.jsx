@@ -7,7 +7,10 @@ import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, C
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [] }) => {
+  // Teknisyen: firma çalışanları (Ayarlar) datalist önerisi olarak sunulur; alan yine serbest metin
+  // olduğu için listede olmayan bir isim de elle yazılabilir.
+  const teknisyenAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean);
   const factoryName = factory?.name || "Altuntaş Makina";
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
@@ -106,7 +109,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
         <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
-        <Field label="Teknisyen"><Input value={form.tech || ""} onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} placeholder="Teknisyen adı" /></Field>
+        <Field label="Teknisyen">
+          {/* Çalışan listesinden seçilebilir VEYA elle serbest yazılabilir (datalist) —
+              anlaşmasız dış servis/harici usta gibi listede olmayan isimler için. */}
+          <Input list="servis-teknisyen-listesi" value={form.tech || ""} placeholder="Seçin veya yazın..."
+            onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} />
+          <datalist id="servis-teknisyen-listesi">
+            {teknisyenAdlari.map(t => <option key={t} value={t} />)}
+          </datalist>
+        </Field>
         <Field label="Tür">
           <Select value={form.type || "Periyodik Bakım"} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
             {SERVICE_TYPES.map(t => (
@@ -221,7 +232,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
         {parts.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Tanımlı yedek parça yok. Ayarlar → Tanımlar'dan ekleyebilirsiniz.</div>
+          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."

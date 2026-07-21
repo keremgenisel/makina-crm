@@ -62,6 +62,21 @@ function kaydetAppLock(app, db, basarili, sebep) {
   } catch (err) { console.error("app-lock güvenlik kaydı yazılamadı:", err); }
 }
 
+// Uygulama-kilidi parolası kurma/değiştirme/kaldırma gibi yerel yönetici işlemlerini güvenlik
+// günlüğüne yazar (sunucu/yerel PC'de db aktifken; istemcide no-op). App-lock DENEMELERİ ayrı
+// (kaydetAppLock) — bu, parolanın kendisinin yönetimi içindir.
+function kaydetYerelGuvenlik(app, db, action, detail) {
+  try {
+    if (isClientMode(app) || !db?.isActive?.()) return;
+    db.writeSecurityEntry({
+      ts: new Date().toISOString(),
+      actor: serverUsername(app) || "yerel yönetici",
+      action, target: null, ip: "yerel",
+      detail: detail ? JSON.stringify(detail) : null,
+    });
+  } catch (err) { console.error("yerel güvenlik kaydı yazılamadı:", err); }
+}
+
 function readErrorLog(app) {
   try {
     const p = getErrorLogPath(app);
@@ -204,7 +219,11 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
 
   // ── Uygulama şifresi (açılış kilidi) ──
   ipcMain.handle("applock:status", () => applock.getStatus());
-  ipcMain.handle("applock:setup", (_e, password) => applock.setup(password));
+  ipcMain.handle("applock:setup", (_e, password) => {
+    const r = applock.setup(password);
+    if (r?.ok !== false) kaydetYerelGuvenlik(app, db, "uygulama_kilidi_kuruldu", null);
+    return r;
+  });
   ipcMain.handle("applock:verify", (_e, password) => {
     const enabledOnce = applock.getStatus()?.enabled;
     const result = applock.verify(password);
@@ -216,8 +235,16 @@ function registerSystemHandlers(ipcMain, app, BrowserWindow, mailer, applock, db
     }
     return result;
   });
-  ipcMain.handle("applock:disable", (_e, password) => applock.disable(password));
-  ipcMain.handle("applock:changePassword", (_e, currentPassword, newPassword) => applock.changePassword(currentPassword, newPassword));
+  ipcMain.handle("applock:disable", (_e, password) => {
+    const r = applock.disable(password);
+    if (r?.ok) kaydetYerelGuvenlik(app, db, "uygulama_kilidi_kaldirildi", null);
+    return r;
+  });
+  ipcMain.handle("applock:changePassword", (_e, currentPassword, newPassword) => {
+    const r = applock.changePassword(currentPassword, newPassword);
+    if (r?.ok) kaydetYerelGuvenlik(app, db, "uygulama_kilidi_parolasi_degistirildi", null);
+    return r;
+  });
   ipcMain.handle("applock:resetWithRecoveryCode", (_e, recoveryCode, newPassword) => applock.resetWithRecoveryCode(recoveryCode, newPassword));
   ipcMain.handle("applock:getDataForBackup", () => applock.getDataForBackup());
   ipcMain.handle("applock:restoreFromBackup", (_e, data) => applock.restoreFromBackup(data));

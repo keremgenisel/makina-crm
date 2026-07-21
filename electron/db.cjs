@@ -148,7 +148,8 @@ CREATE TABLE IF NOT EXISTS services (
   servisUcreti REAL, currency TEXT, faturaTipi TEXT, odendi INTEGER,
   degisenParcalar TEXT, parcaUcretsizMi INTEGER, parcaUcreti REAL, parcaCurrency TEXT, parcaGarantiDisi INTEGER,
   islemFirma TEXT, parcaAltuntastanMi INTEGER, deletedAt TEXT,
-  islemFirmaAd TEXT, islemFirmaYetkili TEXT, islemFirmaTel TEXT, islemFirmaUlke TEXT, islemFirmaSehir TEXT
+  islemFirmaAd TEXT, islemFirmaYetkili TEXT, islemFirmaTel TEXT, islemFirmaUlke TEXT, islemFirmaSehir TEXT,
+  durum TEXT, panoGizli INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -299,6 +300,10 @@ const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "IN
 // bilgileri — müşteri/bayi kaydı oluşturulmaz. Bu sütunlar olmadan renderer'ın yazdığı değerler
 // sessizce düşer (bkz. INSERT açık sütun listesi).
 const SERVICES_DIS_FIRMA_COLUMNS = [["islemFirmaAd", "TEXT"], ["islemFirmaYetkili", "TEXT"], ["islemFirmaTel", "TEXT"], ["islemFirmaUlke", "TEXT"], ["islemFirmaSehir", "TEXT"]];
+// Servis Panosu (Kanban) durumu: "Bekliyor" / "Yapılıyor" / "Tamamlandı". Boş = eski kayıt (panoda görünmez).
+// panoGizli: Tamamlandı kartını "Panodan Kaldır" ile arşivler; servis kaydı DURUR (silinmez), yalnız
+// panoda görünmez olur (durum "Tamamlandı" kalır, geçmiş rozeti korunur). INTEGER (0/1) boolean.
+const SERVICES_DURUM_COLUMN = [["durum", "TEXT"], ["panoGizli", "INTEGER"]];
 // KDV oranı artık tek bir sayı (kdvRate) değil, tarihe bağlı dönemler listesi (kdvRates, JSON) —
 // eski kdvRate sütunu geriye uyumluluk için okunmaya devam eder (bkz. normalizeKdvRates).
 const APP_SETTINGS_NEW_COLUMNS = [["kdvRates", "TEXT"]];
@@ -449,11 +454,11 @@ function populateAll(conn, data, skip = new Set()) {
       INSERT INTO services (id, customer_id, type, repairPlace, date, tech, yapilanIsler, musteriTalimati, fabrikaNotu,
         servisUcreti, currency, faturaTipi, odendi, degisenParcalar, parcaUcretsizMi, parcaUcreti, parcaCurrency, parcaGarantiDisi,
         islemFirma, parcaAltuntastanMi, deletedAt,
-        islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir)
+        islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir, durum, panoGizli)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
         @islemFirma, @parcaAltuntastanMi, @deletedAt,
-        @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir)
+        @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir, @durum, @panoGizli)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -465,7 +470,7 @@ function populateAll(conn, data, skip = new Set()) {
         islemFirma: s.islemFirma ?? null, parcaAltuntastanMi: toIntTriState(s.parcaAltuntastanMi),
         deletedAt: s.deletedAt ?? null,
         islemFirmaAd: s.islemFirmaAd ?? null, islemFirmaYetkili: s.islemFirmaYetkili ?? null, islemFirmaTel: s.islemFirmaTel ?? null,
-        islemFirmaUlke: s.islemFirmaUlke ?? null, islemFirmaSehir: s.islemFirmaSehir ?? null,
+        islemFirmaUlke: s.islemFirmaUlke ?? null, islemFirmaSehir: s.islemFirmaSehir ?? null, durum: s.durum ?? null, panoGizli: toInt(s.panoGizli),
       });
     }
   }
@@ -575,6 +580,12 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`INSERT INTO meta (key, value) VALUES ('partTypeDefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(JSON.stringify(data.partTypeDefs));
   }
 
+  // Firma çalışanları (servis panosu teknisyen seçici + servis formu). Küçük {id, ad} listesi;
+  // partTypeDefs gibi meta'da tek JSON satırı (ayrı tablo/kolon migration gerekmez).
+  if (Array.isArray(data.calisanlar) && !skip.has("calisanlar")) {
+    conn.prepare(`INSERT INTO meta (key, value) VALUES ('calisanlar', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(JSON.stringify(data.calisanlar));
+  }
+
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
     conn.prepare(`DELETE FROM teklifler`).run();
     const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId, satisTamam, tur, country, city, modelYiliDegeri, customFieldValues, takipKapali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -641,6 +652,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "dealers", DEALERS_NEW_COLUMNS);
   ensureColumns(conn, "services", SERVICES_NEW_COLUMNS);
   ensureColumns(conn, "services", SERVICES_DIS_FIRMA_COLUMNS);
+  ensureColumns(conn, "services", SERVICES_DURUM_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_NEW_COLUMNS);
   ensureColumns(conn, "parts", PARTS_NEW_COLUMNS);
   ensureColumns(conn, "parts", PARTS_EXTRA_COLUMNS);
@@ -833,7 +845,7 @@ function readBlobFromDb() {
   }));
 
   const services = db.prepare(`SELECT * FROM services`).all().map((row) => {
-    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, ...rest } = row;
+    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, panoGizli, ...rest } = row;
     return {
       ...rest,
       customerId: customer_id,
@@ -842,6 +854,7 @@ function readBlobFromDb() {
       parcaUcretsizMi: toBool(parcaUcretsizMi),
       parcaGarantiDisi: toBool(parcaGarantiDisi),
       parcaAltuntastanMi: toBoolTriState(parcaAltuntastanMi),
+      panoGizli: toBool(panoGizli),
     };
   });
 
@@ -951,6 +964,9 @@ function readBlobFromDb() {
   const partTypeDefsRow = db.prepare(`SELECT value FROM meta WHERE key = 'partTypeDefs'`).get();
   const partTypeDefs = partTypeDefsRow ? parseJsonCol(partTypeDefsRow.value, []) : [];
 
+  const calisanlarRow = db.prepare(`SELECT value FROM meta WHERE key = 'calisanlar'`).get();
+  const calisanlar = calisanlarRow ? parseJsonCol(calisanlarRow.value, []) : [];
+
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,
     not: notField,
@@ -968,7 +984,7 @@ function readBlobFromDb() {
   }));
 
   return {
-    customers, dealers, stock, kalipDefs, partTypeDefs, standardModels, customModels, factory,
+    customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari,
   };

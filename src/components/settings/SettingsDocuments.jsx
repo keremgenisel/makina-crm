@@ -22,10 +22,41 @@ export const DEFAULT_EVRAK_FORM_CONFIG = {
     notAlt: { TR: DEFAULT_TRANSLATIONS.TR.notAlt, EN: DEFAULT_TRANSLATIONS.EN.notAlt },
   },
   fatura: {
-    hiddenFields: { alici: [], belge: [], paketleme: [] },
+    hiddenFields: { alici: [], belge: [], paketleme: [], paketlemeNot: [] },
     customFields: [],
     fieldDefaults: {},
   },
+};
+
+// "not" alanı eskiden "paketleme" bölümündeydi; artık "paketlemeNot" bölümünde. Eski kayıtlarda
+// notun gizle/sil/sıra/etiket durumu paketleme altında saklı olabilir — onu yeni bölüme taşı ki
+// daha önce gizlenmiş not tekrar görünmesin (gen-crm gocFaturaNot deseni).
+const gocFaturaNot = (fatura) => {
+  if (!fatura) return fatura;
+  const zatenGocmus = (fatura.hiddenFields?.paketlemeNot || fatura.fieldOrder?.paketlemeNot ||
+    fatura.deletedFields?.paketlemeNot || fatura.fieldLabels?.paketlemeNot);
+  if (zatenGocmus) return fatura;
+  const cek = (obj, isArray) => {
+    const kaynak = obj?.paketleme;
+    if (isArray) {
+      const arr = Array.isArray(kaynak) ? kaynak : [];
+      return { paketleme: arr.filter(k => k !== "not"), paketlemeNot: arr.includes("not") ? ["not"] : [] };
+    }
+    const notEtiket = kaynak?.not;
+    const kalan = { ...(kaynak || {}) }; delete kalan.not;
+    return { paketleme: kalan, paketlemeNot: notEtiket ? { not: notEtiket } : {} };
+  };
+  const h = cek(fatura.hiddenFields, true);
+  const o = cek(fatura.fieldOrder, true);
+  const d = cek(fatura.deletedFields, true);
+  const l = cek(fatura.fieldLabels, false);
+  return {
+    ...fatura,
+    hiddenFields: { ...fatura.hiddenFields, paketleme: h.paketleme, paketlemeNot: h.paketlemeNot },
+    fieldOrder: { ...fatura.fieldOrder, paketleme: o.paketleme, paketlemeNot: o.paketlemeNot },
+    deletedFields: { ...fatura.deletedFields, paketleme: d.paketleme, paketlemeNot: d.paketlemeNot },
+    fieldLabels: { ...fatura.fieldLabels, paketleme: l.paketleme, paketlemeNot: l.paketlemeNot },
+  };
 };
 
 const BUILTIN_ALICI = [
@@ -99,7 +130,11 @@ const BUILTIN_FATURA_PAKETLEME = [
   { key: "paketAdedi",  label: "Paket Adedi",  enDefault: "No. of Packages" },
   { key: "brutAgirlik", label: "Brüt Ağırlık", enDefault: "Gross Weight" },
   { key: "olculer",     label: "Ölçüler",      enDefault: "Dimensions" },
-  { key: "not",         label: "Not",          enDefault: "Notes" },
+];
+// "Not" paketleme bölümünden ayrılıp kendi bölümüne alındı (gen-crm örneği) — paketleme
+// ölçüleriyle notu ayrı gizle/sırala/düzenle. Eski gizleme durumu gocFaturaNot ile taşınır.
+const BUILTIN_FATURA_PAKETLEME_NOT = [
+  { key: "not", label: "Not", enDefault: "Notes" },
 ];
 
 const SECTIONS = {
@@ -113,9 +148,10 @@ const SECTIONS = {
     { key: "belge", label: "Belge Detayları", builtins: BUILTIN_BELGE.proforma },
   ],
   fatura: [
-    { key: "alici",     label: "Alıcı Bilgileri",  builtins: BUILTIN_FATURA_ALICI },
-    { key: "belge",     label: "Fatura Bilgileri",  builtins: BUILTIN_FATURA_BELGE },
-    { key: "paketleme", label: "Paketleme & Not",   builtins: BUILTIN_FATURA_PAKETLEME },
+    { key: "alici",        label: "Alıcı Bilgileri", builtins: BUILTIN_FATURA_ALICI },
+    { key: "belge",        label: "Fatura Bilgileri", builtins: BUILTIN_FATURA_BELGE },
+    { key: "paketleme",    label: "Paketleme",       builtins: BUILTIN_FATURA_PAKETLEME },
+    { key: "paketlemeNot", label: "Paketleme Notu",  builtins: BUILTIN_FATURA_PAKETLEME_NOT },
   ],
 };
 
@@ -194,18 +230,19 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
 
   const [draft, setDraft] = useState(() => {
     const saved = appSettings?.evrakFormConfig;
+    const savedFatura = gocFaturaNot(saved?.fatura); // "not" paketleme→paketlemeNot göçü (idempotent)
     const t = appSettings?.translations;
 
-    // Migrate sartlar from old translations format if not yet in evrakFormConfig
+    // Migrate sartlar from old translations format if not yet in evrakFormConfig.
+    // Çeviriler belge-belge olduğundan önce teklif namespace'ine, sonra eski düz TR/EN'e bak.
+    const tt = (k) => t?.teklif?.TR?.[k] ?? t?.TR?.[k] ?? DEFAULT_TRANSLATIONS.TR[k];
+    const te = (k) => t?.teklif?.EN?.[k] ?? t?.EN?.[k] ?? DEFAULT_TRANSLATIONS.EN[k];
     const migratedSartlar = saved?.teklif?.sartlar ?? [
-      { TR: t?.TR?.sart1 ?? DEFAULT_TRANSLATIONS.TR.sart1, EN: t?.EN?.sart1 ?? DEFAULT_TRANSLATIONS.EN.sart1 },
-      { TR: t?.TR?.sart2 ?? DEFAULT_TRANSLATIONS.TR.sart2, EN: t?.EN?.sart2 ?? DEFAULT_TRANSLATIONS.EN.sart2 },
-      { TR: t?.TR?.sart3 ?? DEFAULT_TRANSLATIONS.TR.sart3, EN: t?.EN?.sart3 ?? DEFAULT_TRANSLATIONS.EN.sart3 },
+      { TR: tt("sart1"), EN: te("sart1") },
+      { TR: tt("sart2"), EN: te("sart2") },
+      { TR: tt("sart3"), EN: te("sart3") },
     ];
-    const migratedNotAlt = {
-      TR: t?.TR?.notAlt ?? DEFAULT_TRANSLATIONS.TR.notAlt,
-      EN: t?.EN?.notAlt ?? DEFAULT_TRANSLATIONS.EN.notAlt,
-    };
+    const migratedNotAlt = { TR: tt("notAlt"), EN: te("notAlt") };
 
     // Kaydedilen fieldDefaults yoksa FIELD_INITIAL_DEFAULTS'tan doldur (saved değerler öncelikli)
     const initFd = (type) => {
@@ -235,12 +272,12 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         notAlt: saved?.proforma?.notAlt || migratedNotAlt,
       },
       fatura: {
-        hiddenFields: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.hiddenFields || {}) },
-        customFields: saved?.fatura?.customFields || [],
+        hiddenFields: { alici: [], belge: [], paketleme: [], paketlemeNot: [], ...(savedFatura?.hiddenFields || {}) },
+        customFields: savedFatura?.customFields || [],
         fieldDefaults: initFd("fatura"),
-        fieldLabels: saved?.fatura?.fieldLabels || {},
-        fieldOrder: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.fieldOrder || {}) },
-        deletedFields: { alici: [], belge: [], paketleme: [], ...(saved?.fatura?.deletedFields || {}) },
+        fieldLabels: savedFatura?.fieldLabels || {},
+        fieldOrder: { alici: [], belge: [], paketleme: [], paketlemeNot: [], ...(savedFatura?.fieldOrder || {}) },
+        deletedFields: { alici: [], belge: [], paketleme: [], paketlemeNot: [], ...(savedFatura?.deletedFields || {}) },
       },
     };
   });

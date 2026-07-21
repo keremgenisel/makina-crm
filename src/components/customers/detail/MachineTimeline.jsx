@@ -137,6 +137,7 @@ export const MachineTimeline = ({
                   </>
                 )}
                 {ev.tip && <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: (SALE_TYPE_STYLE[ev.tip] || {}).bg || "var(--n150, #f1f5f9)", color: (SALE_TYPE_STYLE[ev.tip] || {}).fg || "var(--n600, #475569)" }}>{ev.tip}</span>}
+                {sv?.durum && (() => { const st = { "Bekliyor": ["var(--ambBg2, #fef3c7)", "var(--amb800, #92400e)"], "Yapılıyor": ["var(--bluBg2, #dbeafe)", "var(--blu700, #1d4ed8)"], "Tamamlandı": ["var(--grnBg2, #dcfce7)", "var(--grn700, #15803d)"] }[sv.durum] || ["var(--n150, #f1f5f9)", "var(--n600, #475569)"]; return <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: st[0], color: st[1] }}>{sv.durum}</span>; })()}
                 {sv && disServisMi(sv) && (
                   <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)" }}>
                     Dış Servis (Anlaşmasız): {islemFirmaGoster(sv)}

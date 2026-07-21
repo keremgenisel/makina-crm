@@ -1,6 +1,6 @@
 // Harita sekmesinin saf hesap katmanı: ülke özeti, bölge toplamı, renk kovaları, pinler.
 import { describe, it, expect } from "vitest";
-import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../src/lib/mapStats";
+import { sadeAd, haritaOzeti, dunyaToplami, bolgeToplami, ilOzeti, kovala, pinleriTopla, bayiTuru, pinleriAyir, sehirFirmaKirilim, ilceFirmaKirilim, sehirAnahtar, ulkeSatisPinleri, yolMerkezi, yolHalkalari, noktaHalkalarda } from "../src/lib/mapStats";
 
 describe("sadeAd", () => {
   // Bu normalize, scripts/gen-map-paths.cjs içindeki `sad` ile BİREBİR aynı olmak zorunda:
@@ -495,5 +495,30 @@ describe("yolMerkezi", () => {
     const m = yolMerkezi(anakara + ada);
     expect(m.x).toBeCloseTo(50, 0);
     expect(m.y).toBeCloseTo(50, 0);
+  });
+});
+
+describe("ulkeSatisPinleri — yurt dışı ülke görünümünde makina başına pin", () => {
+  // Konum sözlüğü: sehirAnahtar -> [ilX, ilY, ulkeX, ulkeY]. Pin ülke koordinatını (index 2,3) kullanır.
+  const konum = { riyad: [1, 2, 30, 40], cidde: [5, 6, 70, 80] };
+  const musteriler = [
+    { id: 1, name: "Firma A", country: "Suudi Arabistan", city: "Riyad" },
+    { id: 2, name: "Firma B", country: "Suudi Arabistan", city: "Riyad" }, // aynı şehir, ikinci makina
+    { id: 3, name: "Firma C", country: "Suudi Arabistan", city: "Cidde" },
+    { id: 4, name: "Firma D", country: "Mısır", city: "Kahire" },          // başka ülke → hariç
+  ];
+
+  it("2 makina = 2 ayrı pin (aynı şehirde bile), her biri firma adı + id taşır", () => {
+    const pins = ulkeSatisPinleri(musteriler, "Suudi Arabistan", konum);
+    expect(pins).toHaveLength(3); // Firma A, B (Riyad) + C (Cidde); D başka ülke
+    const riyad = pins.filter(p => p.x === 30 && p.y === 40);
+    expect(riyad).toHaveLength(2);
+    expect(riyad.map(p => p.ad).sort()).toEqual(["Firma A", "Firma B"]);
+    expect(riyad.map(p => p.id).sort()).toEqual([1, 2]); // müşteri kartına gitmek için id
+  });
+
+  it("şehir koordinatı sözlükte yoksa o müşteri atlanır", () => {
+    const pins = ulkeSatisPinleri([{ id: 9, name: "X", country: "Suudi Arabistan", city: "Bilinmeyen" }], "Suudi Arabistan", konum);
+    expect(pins).toHaveLength(0);
   });
 });
