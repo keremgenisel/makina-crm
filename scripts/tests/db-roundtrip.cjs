@@ -116,7 +116,9 @@ dbmod.writeBlobToDb({
   ],
   appSettings: { autoBackup: false, teklifTakipGun: 1, tahsilatTakipGun: 14, autoLockMinutes: 5,
     translations: { fatura: { title: "COMMERCIAL INVOICE" } },
-    mailTemplates: { teklifProforma: { konu: "Özel Konu {no}", metin: "Özel metin" } } },
+    mailTemplates: { teklifProforma: { konu: "Özel Konu {no}", metin: "Özel metin" } },
+    calismaSaatleri: { baslangic: "09:00", bitis: "18:30", gunler: [1, 2, 3, 4, 5, 6],
+      molalar: [{ baslangic: "12:30", bitis: "13:30" }, { baslangic: "16:00", bitis: "16:15" }] } },
 });
 blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
@@ -151,6 +153,7 @@ check("bayi dosyası roundtrip (dealerId, customerId yok)", (() => { const d = (
 check("not olusturan roundtrip (sahipli + sahipsiz)", (() => { const a = (blob.notes || []).find(x => x.id === 30); const b = (blob.notes || []).find(x => x.id === 31); return a?.olusturan === "kerem" && a?.content === "Kerem'in notu" && b?.olusturan == null && b?.content === "Eski sahipsiz not"; })());
 check("appSettings translations/mailTemplates tam turu", blob.appSettings?.translations?.fatura?.title === "COMMERCIAL INVOICE" && blob.appSettings?.mailTemplates?.teklifProforma?.konu === "Özel Konu {no}");
 check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
+check("appSettings calismaSaatleri tam turu", blob.appSettings?.calismaSaatleri?.baslangic === "09:00" && blob.appSettings?.calismaSaatleri?.gunler?.length === 6 && blob.appSettings?.calismaSaatleri?.molalar?.length === 2 && blob.appSettings?.calismaSaatleri?.molalar?.[1]?.bitis === "16:15");
 
 // ── Tablo atlama bütünlüğü ───────────────────────────────────────────────────
 const v2 = { ...JSON.parse(JSON.stringify(blob)), teklifler: blob.teklifler.map(t => t.id === 102 ? { ...t, durum: "gonderildi" } : t) };

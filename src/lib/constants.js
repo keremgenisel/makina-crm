@@ -183,10 +183,24 @@ export const BACKUP_ENC_MARKER = "altunmak-crm-encrypted";
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];
 export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "Fabrika Teslim"];
 
+// ── Firma çalışma saatleri (Ayarlar > Firma) ──
+// Servis işçilik süresi (bakım başlangıcı → bitiş) yalnız bu mesai pencerelerine denk gelen
+// dakikalardan sayılır (gece/hafta sonu/mola hariç); bkz. mesaiDk. gunler: getDay() değerleri
+// (0=Paz,1=Pzt..6=Cmt). molalar: [{baslangic,bitis}] — boş dizi = mola yok. Config yoksa bu
+// varsayılan uygulanır. appSettings.calismaSaatleri içinde saklanır.
+export const CALISMA_SAATLERI_VARSAYILAN = {
+  baslangic: "08:30", bitis: "19:00", gunler: [1, 2, 3, 4, 5],
+  molalar: [{ baslangic: "12:30", bitis: "13:30" }],
+};
+export const HAFTA_GUNLERI = [
+  { deger: 1, kisa: "Pzt" }, { deger: 2, kisa: "Sal" }, { deger: 3, kisa: "Çar" },
+  { deger: 4, kisa: "Per" }, { deger: 5, kisa: "Cum" }, { deger: 6, kisa: "Cmt" }, { deger: 0, kisa: "Paz" },
+];
+
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.7.2";
+export const APP_VERSION = "3.8.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

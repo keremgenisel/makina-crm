@@ -20,6 +20,9 @@ describe("SettingsCompany kaydet", () => {
     const setFactory = vi.fn((updater) => { sonuc = updater(factory); });
     render(<SettingsCompany factory={factory} setFactory={setFactory} appSettings={{}} setAppSettings={() => {}} flash={() => {}} />);
 
+    // "Firma Bilgileri" akordeonu varsayılan kapalı → alanlara erişmeden önce başlığa tıklayıp aç.
+    fireEvent.click(screen.getByText("Firma Bilgileri"));
+
     const alanlar = {
       "Evrak'ta Görünen Firma Adı": "Yeni Ad",
       "Telefon": "0532 111 11 11",

@@ -38,7 +38,8 @@ try {
     partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", satisFirma: "Diğer", satisFirmaAd: "Aracı" }],
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
-      mailTemplates: { teklifProforma: { konu: "K", metin: "M" } } },
+      mailTemplates: { teklifProforma: { konu: "K", metin: "M" } },
+      calismaSaatleri: { baslangic: "08:30", bitis: "19:00", gunler: [1, 2, 3, 4, 5], molalar: [{ baslangic: "12:30", bitis: "13:30" }] } },
   });
 } catch (e) { hata = e; }
 check("ilk oturumda üretim formu / yeni sütunlara yazma çökmüyor", hata === null);
@@ -53,6 +54,7 @@ check("customer brutKg + odemePlani tam turu", (() => {
   return c?.brutKg === 500 && c?.odemePlani?.[0]?.vadeTarihi === "2026-09-01";
 })());
 check("appSettings JSON sütunları tam turu", blob.appSettings?.mailTemplates?.teklifProforma?.konu === "K" && blob.appSettings?.teklifTakipGun === 3);
+check("temiz kurulumda calismaSaatleri kolonu oluştu + tam turu", blob.appSettings?.calismaSaatleri?.baslangic === "08:30" && blob.appSettings?.calismaSaatleri?.molalar?.[0]?.baslangic === "12:30");
 check("temiz kurulumda dış firma sütunları oluştu (service)", (() => { const s = (blob.services || []).find(x => x.id === 5); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Dış Servis" && s?.islemFirmaTel === "0500"; })());
 check("temiz kurulumda dış firma sütunları oluştu (partSale)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı"; })());
 check("temiz kurulumda servis durum + panoGizli sütunu + çalışanlar (meta)", (() => { const s = (blob.services || []).find(x => x.id === 5); const c = (blob.calisanlar || []).find(x => x.id === 9); return s?.durum === "Bekliyor" && s?.panoGizli === true && c?.ad === "Ali Veli"; })());

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisYedekParcaDurumu } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
@@ -85,8 +85,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
 
     // Son Satışlar: makina satışları + Extra Kalıp satışları birlikte (yedek parça hariç).
-    const recentSales = sonSatislar(customers, partSales, 10);
-    const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 10);
+    const recentSales = sonSatislar(customers, partSales, 20);
+    const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 20);
 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
   }, [customers, services, partSales, todayStr, factoryName]);
@@ -212,7 +212,14 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Son Satışlar */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: "var(--n900, #0f172a)" }}>Son Satışlar</div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)" }}>Son Satışlar</div>
+            <div style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", marginTop: 3 }}>Makina ve Extra Kalıp satışlarını gösterir.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+              <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--orTx, #c2410c)", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr, #fde68a)" }}>Makina</span>
+              <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--blu700, #1d4ed8)", background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)" }}>Extra Kalıp</span>
+            </div>
+          </div>
           {recentSales.map(r => (
               <div key={r.key} onClick={() => r.custId != null && goToCustomer(r.custId)} title={r.custId != null ? "Müşteri detayını aç" : undefined}
                 style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: r.custId != null ? "pointer" : "default" }}
@@ -242,16 +249,38 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
         {/* Son Servisler */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: "var(--n900, #0f172a)" }}>Son Servis Talepleri</div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)" }}>Son Servis Talepleri</div>
+            <div style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", marginTop: 3 }}>Rozetli servislerde bizden yedek parça satılmıştır; rozet servisi kimin yaptığını gösterir.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--grn700, #15803d)", background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)" }}><Icon name="parts" size={9} /> Fabrika</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "#0d9488", background: "#f0fdfa", border: "1px solid #99f6e4" }}><Icon name="parts" size={9} /> Anlaşmalı Servis</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--amb700, #b45309)", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)" }}><Icon name="parts" size={9} /> Dış Servis</span>
+            </div>
+          </div>
           {recentServices.map(sv => {
             const cust = customers.find(x => x.id === sv.customerId);
+            // Bizden yedek parça satılan servis: kanala göre renkli rozet (bizim/anlaşmalı servis/dış servis).
+            const yp = servisYedekParcaDurumu(sv, factoryName);
+            const ypStil = {
+              bizim:          { et: "Fabrika",          fg: "var(--grn700, #15803d)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)" },
+              anlasmaliServis:{ et: "Anlaşmalı Servis", fg: "#0d9488",                 bg: "#f0fdfa",              br: "#99f6e4" },
+              disServis:      { et: "Dış Servis",       fg: "var(--amb700, #b45309)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)" },
+            }[yp];
             return (
               <div key={sv.id} onClick={() => goToCustomer(sv.customerId)} title="Müşteri detayını aç"
                 style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{cust?.name || "—"}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    {ypStil && (
+                      <span title="Bu serviste bizden yedek parça satıldı" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 7px", flexShrink: 0, color: ypStil.fg, background: ypStil.bg, border: `1px solid ${ypStil.br}` }}>
+                        <Icon name="parts" size={10} /> {ypStil.et}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cust?.name || "—"}</span>
+                  </div>
                   <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{cust?.model ? `${cust.model} · ` : ""}{sv.type}</div>
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center" }}>

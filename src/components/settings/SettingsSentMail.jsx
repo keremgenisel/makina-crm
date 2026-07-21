@@ -68,7 +68,7 @@ export const SettingsSentMail = () => {
 
   return (
     <>
-      <Section title="Gönderilen E-postalar" icon="mail" collapsible defaultOpen>
+      <Section title="Gönderilen E-postalar" icon="mail" collapsible>
         <div className="section-desc">
           Servis formu, makina raporu, dışa aktarım veya bayi e-postası olarak gönderilen tüm e-postaların kaydı (en yeni üstte).
         </div>

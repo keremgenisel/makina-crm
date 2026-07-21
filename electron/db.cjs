@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -360,6 +360,9 @@ const APP_SETTINGS_TAKIP_COLUMNS = [["teklifTakipGun", "INTEGER"], ["tahsilatTak
 // translations bugüne kadar hiç kolon olmadığı için kaydedilmiyordu (sessiz alan kaybı) —
 // mailTemplates ile birlikte kalıcı hale getirildi.
 const APP_SETTINGS_JSON_COLUMNS = [["translations", "TEXT"], ["mailTemplates", "TEXT"]];
+// Firma çalışma saatleri (JSON): mesai başlangıç/bitiş, çalışılan günler, molalar — servis işçilik
+// süresi bu pencerelere göre hesaplanır (bkz. utils.mesaiDk). Ayarlar > Firma.
+const APP_SETTINGS_CALISMA_COLUMN = [["calismaSaatleri", "TEXT"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -614,8 +617,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null));
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -696,6 +699,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "app_settings", APP_SETTINGS_AUTOLOCK_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_TAKIP_COLUMNS);
   ensureColumns(conn, "app_settings", APP_SETTINGS_JSON_COLUMNS);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_CALISMA_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
@@ -961,8 +965,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();

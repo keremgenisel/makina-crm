@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Field, Input, Btn, Select, ImageUpload, ConfirmDialog } from "../ui";
-import { COUNTRIES, staticCities } from "../../lib/constants";
+import { COUNTRIES, staticCities, CALISMA_SAATLERI_VARSAYILAN, HAFTA_GUNLERI } from "../../lib/constants";
 import { ILCELER } from "../../lib/map/ilceler";
 import { Section } from "./Section";
 
@@ -30,6 +30,18 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
     bankalar: [emptyBank()],
   });
   const [confirmRemoveBankId, setConfirmRemoveBankId] = useState(null);
+  // Firma çalışma saatleri (servis işçilik süresi hesabı — bkz. mesaiDk). appSettings.calismaSaatleri.
+  const [cs, setCs] = useState(CALISMA_SAATLERI_VARSAYILAN);
+
+  useEffect(() => {
+    const v = appSettings?.calismaSaatleri;
+    setCs({
+      baslangic: v?.baslangic || CALISMA_SAATLERI_VARSAYILAN.baslangic,
+      bitis: v?.bitis || CALISMA_SAATLERI_VARSAYILAN.bitis,
+      gunler: Array.isArray(v?.gunler) ? v.gunler : CALISMA_SAATLERI_VARSAYILAN.gunler,
+      molalar: Array.isArray(v?.molalar) ? v.molalar : CALISMA_SAATLERI_VARSAYILAN.molalar,
+    });
+  }, [appSettings?.calismaSaatleri]);
 
   useEffect(() => {
     if (!factory) return;
@@ -65,8 +77,16 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
       gtipNo: form.gtipNo,
       bankalar: form.bankalar,
     }));
+    setAppSettings?.(p => ({ ...p, calismaSaatleri: cs }));
     flash("ok", "Firma bilgileri kaydedildi.");
   };
+
+  const toggleGun = (g) =>
+    setCs(p => ({ ...p, gunler: p.gunler.includes(g) ? p.gunler.filter(x => x !== g) : [...p.gunler, g].sort((a, b) => a - b) }));
+  const setMola = (i, key, val) =>
+    setCs(p => ({ ...p, molalar: p.molalar.map((m, idx) => idx === i ? { ...m, [key]: val } : m) }));
+  const addMola = () => setCs(p => ({ ...p, molalar: [...p.molalar, { baslangic: "12:30", bitis: "13:30" }] }));
+  const removeMola = (i) => setCs(p => ({ ...p, molalar: p.molalar.filter((_, idx) => idx !== i) }));
 
   const f = (key) => ({
     value: form[key] || "",
@@ -86,7 +106,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
   return (
     <>
-      <Section title="Firma Bilgileri" icon="settings" collapsible defaultOpen>
+      <Section title="Firma Bilgileri" icon="settings" collapsible>
         <div className="section-desc">
           Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
@@ -136,6 +156,56 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="GTIP No (Gümrük Tarife)"><Input {...f("gtipNo")} placeholder="8438 50 00 00 00" /></Field>
         </div>
+      </Section>
+
+      <Section title="Çalışma Saatleri" icon="service" collapsible>
+        <div className="section-desc">
+          Servis işçilik süresi (bakım başlangıcı → bitiş) yalnız bu mesai saatleri içinde sayılır;
+          gece, çalışılmayan günler ve molalar süreden düşülür. Bekleme ve toplam süre bundan etkilenmez.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Mesai Başlangıcı">
+            <Input type="time" value={cs.baslangic} onChange={e => setCs(p => ({ ...p, baslangic: e.target.value }))} />
+          </Field>
+          <Field label="Mesai Bitişi">
+            <Input type="time" value={cs.bitis} onChange={e => setCs(p => ({ ...p, bitis: e.target.value }))} />
+          </Field>
+        </div>
+        <Field label="Çalışılan Günler">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {HAFTA_GUNLERI.map(g => {
+              const secili = cs.gunler.includes(g.deger);
+              return (
+                <button key={g.deger} type="button" onClick={() => toggleGun(g.deger)}
+                  style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    border: `1.5px solid ${secili ? "var(--blu600, #2563eb)" : "var(--n300, #cbd5e1)"}`,
+                    background: secili ? "var(--bluBg, #eff6ff)" : "transparent",
+                    color: secili ? "var(--blu700, #1d4ed8)" : "var(--n500, #64748b)" }}>
+                  {g.kisa}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+        <Field label="Molalar (opsiyonel)">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {cs.molalar.length === 0 && (
+              <div style={{ fontSize: 12.5, color: "var(--n400, #94a3b8)" }}>Mola yok — tüm mesai süreye sayılır.</div>
+            )}
+            {cs.molalar.map((m, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 130 }}><Input type="time" value={m.baslangic || ""} onChange={e => setMola(i, "baslangic", e.target.value)} /></div>
+                <span style={{ color: "var(--n400, #94a3b8)" }}>–</span>
+                <div style={{ width: 130 }}><Input type="time" value={m.bitis || ""} onChange={e => setMola(i, "bitis", e.target.value)} /></div>
+                <Btn small variant="danger" onClick={() => removeMola(i)}><Icon name="trash" size={11} /> Sil</Btn>
+              </div>
+            ))}
+          </div>
+        </Field>
+        <button onClick={addMola}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed var(--n400, #94a3b8)", background: "transparent", color: "var(--n600, #475569)", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
+          <Icon name="add" size={14} /> Mola Ekle
+        </button>
       </Section>
 
       <Section title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>

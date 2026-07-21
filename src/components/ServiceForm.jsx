@@ -12,6 +12,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // olduğu için listede olmayan bir isim de elle yazılabilir.
   const teknisyenAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean);
   const factoryName = factory?.name || "Altuntaş Makina";
+  // "Servis Panosunda göster": durum'u yönetir (açık → "Bekliyor"/mevcut, kapalı → boş = panoda çıkmaz).
+  // Akıllı varsayılan: yeni serviste tarih bugünse panoda, geçmiş tarihliyse panosuz. Kullanıcı
+  // checkbox'a elle dokununca (panoElle) tarih değişse de dokunulmaz.
+  const [panoElle, setPanoElle] = useState(false);
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
   // Bu serviste kaydedilince bağlanacak yeni dosya taslakları (fiziksel dosya diske/sunucuya
@@ -108,7 +112,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
-        <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></Field>
+        <Field label="Tarih"><Input type="date" value={form.date || ""} onChange={e => {
+          const t = e.target.value;
+          setForm(p => {
+            const g = { ...p, date: t };
+            // Yeni serviste (id yok) ve checkbox'a elle dokunulmadıysa: bugün → panoda, geçmiş → panosuz.
+            if (!p.id && !panoElle) g.durum = (t && t === today()) ? "Bekliyor" : "";
+            return g;
+          });
+        }} /></Field>
         <Field label="Teknisyen">
           {/* Çalışan listesinden seçilebilir VEYA elle serbest yazılabilir (datalist) —
               anlaşmasız dış servis/harici usta gibi listede olmayan isimler için. */}
@@ -131,6 +143,15 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Select>
         </Field>
       </div>
+
+      {/* Servis Panosunda göster: kapalıysa yalnız müşteri geçmişine kaydedilir, panoya düşmez. */}
+      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", margin: "0 0 12px" }}>
+        <input type="checkbox" checked={!!form.durum}
+          onChange={e => { setPanoElle(true); setForm(p => ({ ...p, durum: e.target.checked ? (p.durum || "Bekliyor") : "" })); }}
+          style={{ width: 16, height: 16, accentColor: "#e85d1a", cursor: "pointer" }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)" }}>Servis Panosunda göster</span>
+        <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>(kapalıysa yalnız müşteri geçmişine kaydedilir, panoya düşmez)</span>
+      </label>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="İşlemi Yapan Firma">

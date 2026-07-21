@@ -831,6 +831,7 @@ export const CustomerDetailModal = ({
               detailTimelineEvents={detailTimelineEvents}
               factoryName={factoryName}
               kdvRates={kdvRates}
+              calismaSaatleri={appSettings?.calismaSaatleri}
               canDo={canDo}
               onEditService={openEditService}
               onPrintOrPick={openPrintOrPick}

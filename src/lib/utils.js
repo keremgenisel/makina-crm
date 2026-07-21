@@ -1,4 +1,4 @@
-import { CUR_SYM, DEFAULT_KDV_RATE, DEFAULT_KDV_RATES, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS } from "./constants";
+import { CUR_SYM, DEFAULT_KDV_RATE, DEFAULT_KDV_RATES, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS, CALISMA_SAATLERI_VARSAYILAN } from "./constants";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -23,6 +23,54 @@ export const sureDk = (bas, bit) => {
   const a = new Date(bas).getTime(), b = new Date(bit).getTime();
   if (isNaN(a) || isNaN(b)) return null;
   return Math.max(0, Math.round((b - a) / 60000));
+};
+// "HH:mm" (ya da "HH:mm:ss") → gün içi dakika. Bozuksa null.
+const saatDk = (hhmm) => {
+  const [h, m] = String(hhmm || "").split(":");
+  const H = Number(h), M = Number(m);
+  if (!Number.isFinite(H) || !Number.isFinite(M)) return null;
+  return H * 60 + M;
+};
+// Mesai (çalışma saati) dakikası: iki damga arasında YALNIZ çalışma pencerelerine (mola hariç)
+// denk gelen dakika. Servis işçilik süresi için — gece/hafta sonu/mola sayılmaz. Null-güvenli,
+// negatifi 0'a kırpar (sureDk sözleşmesi). Damgalar yerel duvar-saati string'i olduğundan
+// new Date(str) yerel parse eder; gün sınırları tarih parçalarından (new Date(y,mon,d,h,m))
+// kurulur → DST/gün kayması yok. cs: { baslangic, bitis, gunler:[getDay], molalar:[{baslangic,bitis}] }.
+export const mesaiDk = (bas, bit, cs = CALISMA_SAATLERI_VARSAYILAN) => {
+  if (!bas || !bit) return null;
+  const a = new Date(bas), b = new Date(bit);
+  const ta = a.getTime(), tb = b.getTime();
+  if (isNaN(ta) || isNaN(tb)) return null;
+  if (tb <= ta) return 0;
+  const gunler = Array.isArray(cs?.gunler) ? cs.gunler : CALISMA_SAATLERI_VARSAYILAN.gunler;
+  const molalar = Array.isArray(cs?.molalar) ? cs.molalar : [];
+  const basDk = saatDk(cs?.baslangic) ?? saatDk(CALISMA_SAATLERI_VARSAYILAN.baslangic);
+  const bitDk = saatDk(cs?.bitis) ?? saatDk(CALISMA_SAATLERI_VARSAYILAN.bitis);
+  // Gün gün: bas'ın gününden bit'in gününe. Bir servis en fazla haftalar sürer; 1500 gün emniyet sınırı.
+  const gun0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const sonGun = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+  let toplamMs = 0;
+  for (let i = 0; i < 1500; i++) {
+    const g = new Date(gun0.getFullYear(), gun0.getMonth(), gun0.getDate() + i);
+    if (g.getTime() > sonGun) break;
+    if (!gunler.includes(g.getDay())) continue;
+    const y = g.getFullYear(), mo = g.getMonth(), d = g.getDate();
+    const pencereBas = new Date(y, mo, d, Math.floor(basDk / 60), basDk % 60).getTime();
+    const pencereBit = new Date(y, mo, d, Math.floor(bitDk / 60), bitDk % 60).getTime();
+    const os = Math.max(ta, pencereBas), oe = Math.min(tb, pencereBit);
+    if (oe <= os) continue;
+    let net = oe - os;
+    for (const mola of molalar) {
+      const mb = saatDk(mola?.baslangic), me = saatDk(mola?.bitis);
+      if (mb == null || me == null || me <= mb) continue;
+      const molaBas = new Date(y, mo, d, Math.floor(mb / 60), mb % 60).getTime();
+      const molaBit = new Date(y, mo, d, Math.floor(me / 60), me % 60).getTime();
+      const ms = Math.max(os, molaBas), mfin = Math.min(oe, molaBit);
+      if (mfin > ms) net -= (mfin - ms);
+    }
+    if (net > 0) toplamMs += net;
+  }
+  return Math.max(0, Math.round(toplamMs / 60000));
 };
 // Dakikayı tam dökümle okunur süreye çevirir: "45 dk" / "2 saat 15 dk" / "2 gün 6 saat 3 dk".
 // Sıfır olan üst birimler atlanır; dakika, başka birim yoksa 0 olsa bile gösterilir.
@@ -115,6 +163,14 @@ export const uid = () => {
   do { v = ID_MIN + (randInt53() % ID_RANGE); } while (mintedIds.has(v));
   mintedIds.add(v);
   return v;
+};
+// Müşteri (makina) kayıtlarının giriş sıra numarası. Yeni müşteri diziye BAŞA eklendiği için
+// (Customers.jsx doAdd) dizi en-yeni-baştadır: ilk girilen makina dizinin sonunda → sıra 1,
+// son girilen başta → sıra n. id → sıra haritası döner. Canlı: silinen kayıt renumber olur.
+export const girisSiraMap = (customers = []) => {
+  const n = customers.length, m = {};
+  customers.forEach((c, i) => { if (c && c.id != null) m[c.id] = n - i; });
+  return m;
 };
 export const wasMintedHere = (id) => mintedIds.has(id);
 export const clearMintedIds = () => mintedIds.clear();
@@ -425,6 +481,15 @@ export const altuntasParcaBedeli = (sv) => {
   if (Array.isArray(p) && p.some(i => typeof i === "object" && i.disTedarik))
     return p.filter(i => typeof i !== "string" && !i.disTedarik).reduce((s, i) => s + parseMoney(i.fiyat ?? i.ucret), 0);
   return parseMoney(sv.parcaUcreti);
+};
+// Serviste BİZDEN satılan yedek parçanın kanalı (Anasayfa "Son Servis Talepleri" rozeti için).
+// Yalnız ücretli VE Altuntaş'tan parça varsa (isParcaUcretliMi) döner; yoksa null → rozet çıkmaz.
+// Kanal servisi kimin yaptığına göre: bizim / anlaşmalı servis (bayi) / dış servis ("Diğer").
+export const servisYedekParcaDurumu = (sv, factoryName = "Altuntaş Makina") => {
+  if (!sv || !isParcaUcretliMi(sv)) return null;
+  if (isAltuntasServisi(sv, factoryName)) return "bizim";
+  if (disServisMi(sv)) return "disServis";
+  return "anlasmaliServis";
 };
 // Servis kaydından MÜŞTERİNİN borçlu olduğu kısım: işçilik (yalnızca Altuntaş'ın kendi servisiyse —
 // isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı

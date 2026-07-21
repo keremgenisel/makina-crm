@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisSiraMap } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -54,6 +54,10 @@ export const Customers = ({
     customers.forEach(c => { const k = trLower(c.name); fc[k] = (fc[k] || 0) + 1; });
     return fc;
   }, [customers]);
+
+  // Makina giriş sıra numarası (global 1..n; ilk girilen = 1, son girilen = n). Tüm makinalar
+  // üzerinden hesaplanır → sıralama/filtre/sayfadan bağımsız, her makinaya sabit numara.
+  const girisSira = useMemo(() => girisSiraMap(customers), [customers]);
 
   const debtorIds = useMemo(() => {
     const ids = new Set();
@@ -450,6 +454,7 @@ export const Customers = ({
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {[
+                ...(isCustomer ? [{ h: "Sıra", key: null }] : []),
                 { h: "Satın Alan", key: "name" },
                 { h: "Satış Yapan", key: null },
                 { h: "Ülke / Şehir", key: null },
@@ -480,6 +485,11 @@ export const Customers = ({
                   title={hasDebt ? (hasKalanBorc ? `Kalan borç: ${fmt(parseMoney(c.kalanBorc))}` : "Servis, parça veya Extra Kalıp borcu var") : undefined}
                   onMouseEnter={e => e.currentTarget.style.background = hasDebt ? "var(--redBg2, #fee2e2)" : "var(--n100, #f8fafc)"}
                   onMouseLeave={e => e.currentTarget.style.background = hasDebt ? "var(--redBg, #fef2f2)" : ""}>
+                  {isCustomer && (
+                    <td style={{ padding: "13px 16px", fontSize: 13, fontWeight: 700, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                      {(!groupByFirm && girisSira[c.id] != null) ? `${girisSira[c.id]}.` : "—"}
+                    </td>
+                  )}
                   <td style={{ padding: "13px 16px", cursor: "pointer" }}
                     onClick={() => setDetailViewId(c.id)}
                     title="Tüm bilgileri görüntüle">

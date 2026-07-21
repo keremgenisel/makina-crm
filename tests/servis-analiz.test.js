@@ -67,4 +67,17 @@ describe("servisSureleri", () => {
     expect(s.toplamDk).toBeNull();
     expect(s.devamEdiyor).toBe(false);
   });
+  it("işçilik mesai içi sayılır; bekleme/toplam ham kalır (gece+hafta sonu aşan)", () => {
+    // Bakım Cuma 17:00 başladı, Pzt 10:00 bitti. İşçilik mesai içi = 210 dk (Cuma 120 + Pzt 90).
+    // Bekleme ve Toplam ham (duvar-saati): giriş Cuma 16:00.
+    const s = servisSureleri({
+      fabrikaGirisZamani: "2026-07-17T16:00:00",
+      bakimBaslangicZamani: "2026-07-17T17:00:00",
+      bitisZamani: "2026-07-20T10:00:00",
+    });
+    expect(s.beklemeDk).toBe(60);        // 16:00 → 17:00 ham
+    expect(s.isclikDk).toBe(210);        // mesai içi (gece/hafta sonu sayılmaz)
+    expect(s.isclikHamDk).toBe(3900);    // 17:00 Cuma → 10:00 Pzt ham = 65 saat
+    expect(s.toplamDk).toBe(3960);       // 16:00 Cuma → 10:00 Pzt ham
+  });
 });

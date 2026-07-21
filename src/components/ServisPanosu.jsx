@@ -1,10 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, fmtZaman, fmtZamanTam } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi } from "../lib/utils";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { logAction, getAuditUsername } from "../lib/audit";
 import { makeCanDo } from "../lib/permissions";
-import { Icon, Btn, Modal } from "./ui";
+import { Icon, Btn, Modal, ConfirmDialog } from "./ui";
 import { ServiceForm } from "./ServiceForm";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
 
@@ -65,6 +65,7 @@ export const ServisPanosu = ({
 
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
   const factoryName = factory?.name || "Altuntaş Makina";
+  const cs = appSettings?.calismaSaatleri; // firma çalışma saatleri → işçilik mesai hesabı
 
   // Yalnız durumu olan VE panodan kaldırılmamış (arşivlenmemiş) servisler; sütunlara göre grupla.
   const sutunlar = useMemo(() => {
@@ -106,6 +107,16 @@ export const ServisPanosu = ({
     showToast(gizli ? "Kart panodan kaldırıldı (servis kaydı duruyor)." : "Kart panoya geri alındı.");
   };
   const arsivGorebilir = canDo("cust_service_pano_arsiv");
+  const [arsivTemizleOnay, setArsivTemizleOnay] = useState(false);
+  // Arşivi temizle: arşivlenen (Tamamlandı + panoGizli) servislerin durum'unu boşaltıp panodan
+  // TAMAMEN çıkarır. Servis kaydı ve zaman damgaları müşteri kartında/geçmişte DURUR (silinmez).
+  const arsivTemizle = () => {
+    if (!setServices || !canDo("cust_service_pano_kaldir")) return;
+    const ids = new Set(arsivlenenler.map(s => s.id));
+    setServices(p => p.map(s => ids.has(s.id) ? { ...s, durum: "", panoGizli: false } : s));
+    setArsivTemizleOnay(false);
+    showToast(`${ids.size} arşivlenen servis panodan kaldırıldı (kayıtlar müşteri kartında duruyor).`);
+  };
 
   // Servis Formu yazdır — müşteri detayındaki printServiceForm ile birebir aynı (aynı şablon,
   // aynı çeviri/kaşe/resim bağlamı), böylece iki çıktı asla ayrışmaz.
@@ -200,6 +211,19 @@ export const ServisPanosu = ({
           {!arsiv && <span style={{ color: "var(--n300, #cbd5e1)", fontSize: 14, letterSpacing: -2, userSelect: "none" }}>⠿</span>}
         </div>
         <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>{c.model || "Model yok"}{c.serialNo ? ` · S/N ${c.serialNo}` : ""}</div>
+        {/* İşlemi yapan firma fabrika değilse (anlaşmalı bayi / anlaşmasız "Diğer") firma rozeti —
+            işi kimin yaptığı bir bakışta belli olsun. Teal = bayi, amber = anlaşmasız dış servis. */}
+        {!isAltuntasServisi(sv, factoryName) && (() => {
+          const disServis = disServisMi(sv);
+          const rk = disServis
+            ? { fg: "var(--amb700, #b45309)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)" }
+            : { fg: "#0d9488", bg: "#f0fdfa", br: "#99f6e4" };
+          return (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: rk.fg, background: rk.bg, border: `1px solid ${rk.br}` }}>
+              <Icon name="store" size={11} /> {disServis ? "Dış Servis" : "Anlaşmalı Servis"}: {islemFirmaGoster(sv)}
+            </div>
+          );
+        })()}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: stil.fg, background: stil.bg, border: `1px solid ${stil.br}` }}>{sv.type}</span>
           {sv.repairPlace && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{sv.repairPlace}</span>}
@@ -207,7 +231,7 @@ export const ServisPanosu = ({
         </div>
         {/* Aşama zaman göstergesi: giriş (Bekliyor) / canlı işçilik (Yapılıyor) / bitiş+işçilik (Tamamlandı) */}
         {!arsiv && (() => {
-          const s = servisSureleri(sv, nowIso);
+          const s = servisSureleri(sv, nowIso, cs);
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, fontSize: 11, fontVariantNumeric: "tabular-nums", flexWrap: "wrap" }}>
               {/* "Periyodik Bakım" rozeti gibi renkli kutular: her aşama zamanı kendi renginde.
@@ -315,6 +339,12 @@ export const ServisPanosu = ({
                     {arsivAcik && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
                         {arsivlenenler.map(sv => <Kart key={sv.id} sv={sv} arsiv />)}
+                        {canDo("cust_service_pano_kaldir") && (
+                          <button type="button" onClick={() => setArsivTemizleOnay(true)}
+                            style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: "var(--red600, #dc2626)", background: "none", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, cursor: "pointer", padding: "6px 10px" }}>
+                            🗑 Arşivi Temizle
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -338,19 +368,20 @@ export const ServisPanosu = ({
 
       {/* Per-servis süre analizi — o kartın kendi zaman çizelgesi ve süreleri */}
       {analizSv && (() => {
-        const s = servisSureleri(analizSv, nowIso);
+        const s = servisSureleri(analizSv, nowIso, cs);
         const c = custMap[Number(analizSv.customerId)] || {};
         const adim = (ikon, ad, zaman, renk) => (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0" }}>
-            <span style={{ width: 26, height: 26, borderRadius: 8, background: zaman ? renk : "var(--n150, #f1f5f9)", color: zaman ? "#fff" : "var(--n400, #94a3b8)", display: "grid", placeItems: "center", fontSize: 13, flexShrink: 0 }}>{ikon}</span>
+            <span style={{ width: 26, height: 26, borderRadius: 8, background: zaman ? renk : "var(--n150, #f1f5f9)", color: zaman ? "#fff" : "var(--n400, #94a3b8)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name={ikon} size={14} /></span>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)", flex: 1 }}>{ad}</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: zaman ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{zaman ? fmtZaman(zaman) : "—"}</span>
           </div>
         );
-        const sureKart = (etiket, dk, renk, canli) => (
+        const sureKart = (etiket, dk, renk, canli, altNot = null) => (
           <div style={{ flex: 1, minWidth: 96, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
             <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 3 }}>{etiket}{canli ? " (devam)" : ""}</div>
             <div style={{ fontSize: 16, fontWeight: 800, color: renk, fontVariantNumeric: "tabular-nums" }}>{sureBicim(dk)}</div>
+            {altNot && <div style={{ fontSize: 10, color: "var(--n400, #94a3b8)", marginTop: 2 }}>{altNot}</div>}
           </div>
         );
         return (
@@ -361,15 +392,16 @@ export const ServisPanosu = ({
             </div>
             <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
               {sureKart("Bekleme", s.beklemeDk, "var(--amb600, #d97706)", false)}
-              {sureKart("İşçilik", s.isclikDk, "var(--blu600, #2563eb)", s.devamEdiyor)}
+              {sureKart("İşçilik", s.isclikDk, "var(--blu600, #2563eb)", s.devamEdiyor,
+                s.isclikHamDk != null && s.isclikHamDk !== s.isclikDk ? `mesai içi · ham ${sureBicim(s.isclikHamDk)}` : "mesai içi")}
               {sureKart("Toplam", s.toplamDk, "var(--n800, #1e293b)", s.devamEdiyor && !s.bitis)}
             </div>
             <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "4px 14px" }}>
-              {adim("🏭", "Fabrikaya Giriş", s.giris, "var(--amb600, #d97706)")}
+              {adim("download", "Fabrikaya Giriş", s.giris, "var(--amb600, #d97706)")}
               <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }} />
-              {adim("🔧", "Bakım Onarım Başladı", s.baslangic, "var(--blu600, #2563eb)")}
+              {adim("service", "Bakım Onarım Başladı", s.baslangic, "var(--blu600, #2563eb)")}
               <div style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }} />
-              {adim("✔", "Tamamlandı", s.bitis, "var(--grn600, #16a34a)")}
+              {adim("check", "Tamamlandı", s.bitis, "var(--grn600, #16a34a)")}
             </div>
             {s.devamEdiyor && <div style={{ fontSize: 11.5, color: "var(--blu600, #2563eb)", marginTop: 10, textAlign: "center" }}>İşçilik süresi canlı olarak sayılıyor…</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
@@ -378,6 +410,16 @@ export const ServisPanosu = ({
           </Modal>
         );
       })()}
+
+      {arsivTemizleOnay && (
+        <ConfirmDialog
+          title="Arşivi Temizle"
+          confirmLabel="Evet, Temizle"
+          message={`${arsivlenenler.length} arşivlenen servis panodan tamamen kaldırılacak. Servis kayıtları ve zaman bilgileri müşteri kartında/geçmişinde kalır; yalnız Servis Panosu arşivinden çıkar.`}
+          onConfirm={arsivTemizle}
+          onCancel={() => setArsivTemizleOnay(false)}
+        />
+      )}
     </div>
   );
 };

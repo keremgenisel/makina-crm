@@ -10,6 +10,7 @@ afterEach(cleanup);
 import { ServisPanosu } from "../../src/components/ServisPanosu";
 import { CalisanManager } from "../../src/components/CalisanManager";
 import { ServiceForm } from "../../src/components/ServiceForm";
+import { today } from "../../src/lib/utils";
 
 const musteriler = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1" }];
 const calisanlar = [{ id: 11, ad: "Ahmet Yılmaz" }, { id: 12, ad: "Mehmet Demir" }];
@@ -102,6 +103,49 @@ describe("ServisPanosu — Kanban", () => {
     fireEvent.click(geriAl);
     const guncelle = setServices.mock.calls.at(-1)[0];
     expect(guncelle([{ id: 21, panoGizli: true }])[0].panoGizli).toBe(false);
+  });
+
+  it("'Arşivi Temizle' arşivlenen servislerin durum'unu boşaltır (kayıt silinmez)", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices, services: [
+      { id: 22, customerId: 1, type: "Garanti Dışı", durum: "Tamamlandı", date: "2026-07-20", tech: "", panoGizli: true },
+    ] })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Arşivlenenler \(1\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Arşivi Temizle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Evet, Temizle/ }));
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 22, durum: "Tamamlandı", panoGizli: true }]);
+    expect(sonuc[0].durum).toBe("");         // panodan tamamen çıktı
+    expect(sonuc[0].panoGizli).toBe(false);
+  });
+
+  it("ServiceForm 'Servis Panosunda göster' checkbox durum'u yönetir; geçmiş tarih otomatik kapatır", () => {
+    function Harness() {
+      const [form, setForm] = useState({ customerId: 1, type: "Periyodik Bakım", date: today(), durum: "Bekliyor" });
+      return <ServiceForm title="T" form={form} setForm={setForm} customers={musteriler} calisanlar={calisanlar} onSave={() => {}} onCancel={() => {}} />;
+    }
+    const { container } = render(<Harness />);
+    const cb = screen.getByLabelText(/Servis Panosunda göster/);
+    expect(cb.checked).toBe(true); // bugün + durum → işaretli
+    // Tarihi geçmişe çek → checkbox otomatik kapanır (durum boşalır → panoya düşmez)
+    fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: "2020-01-01" } });
+    expect(cb.checked).toBe(false);
+    // Elle tekrar aç → durum "Bekliyor"
+    fireEvent.click(cb);
+    expect(cb.checked).toBe(true);
+  });
+
+  it("işlemi yapan firma bayi/dış servis ise kartta firma rozeti gösterir; fabrika servisinde göstermez", () => {
+    render(<ServisPanosu {...props({ services: [
+      { id: 30, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", tech: "", islemFirma: "Örnek Bayi" },
+      { id: 31, customerId: 1, type: "Garanti Dışı", durum: "Yapılıyor", date: "2026-07-20", tech: "", islemFirma: "Diğer", islemFirmaAd: "Harici Servis" },
+      { id: 32, customerId: 1, type: "Periyodik Bakım", durum: "Tamamlandı", date: "2026-07-20", tech: "" }, // fabrika servisi (islemFirma yok)
+    ] })} />);
+    expect(screen.getByText(/Anlaşmalı Servis: Örnek Bayi/)).toBeTruthy();
+    expect(screen.getByText(/Dış Servis: Harici Servis/)).toBeTruthy();
+    // Yalnız 2 kartta firma rozeti var; fabrika servisinde (id 32) rozet yok.
+    const rozetler = [...document.querySelectorAll("div")].filter(d => /^(Anlaşmalı Servis|Dış Servis):/.test((d.textContent || "").trim()));
+    expect(rozetler.length).toBe(2);
   });
 
   it("'Yeni Servis Talebi' müşteri kartındakiyle AYNI tam ServiceForm'u açar", () => {

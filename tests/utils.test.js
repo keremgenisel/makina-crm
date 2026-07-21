@@ -4,6 +4,7 @@ import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
+  girisSiraMap, servisYedekParcaDurumu,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -362,5 +363,41 @@ describe("anlaşmasız dış firma (servis/kalıp 'Diğer')", () => {
     expect(partSaleDisFirmaMi({ satisFirma: "Bayi X" })).toBe(false);
     expect(satisFirmaGoster({ satisFirma: "Diğer", satisFirmaAd: "Aracı Firma" })).toBe("Aracı Firma");
     expect(satisFirmaGoster({ satisFirma: "Bayi X" })).toBe("Bayi X");
+  });
+});
+
+describe("servisYedekParcaDurumu", () => {
+  const uc = { parcaUcretsizMi: false, parcaUcreti: 500, parcaUcretiAltuntastan: 500 }; // bizden ücretli parça
+  it("parçasız/ücretsiz serviste null (rozet çıkmaz)", () => {
+    expect(servisYedekParcaDurumu({})).toBeNull();
+    expect(servisYedekParcaDurumu({ parcaUcretsizMi: true, parcaUcreti: 500, parcaUcretiAltuntastan: 500 })).toBeNull();
+    expect(servisYedekParcaDurumu({ parcaUcretsizMi: false, parcaUcreti: 0 })).toBeNull();
+  });
+  it("sadece dış tedarik (bizden değil) → null", () => {
+    expect(servisYedekParcaDurumu({ parcaUcretsizMi: false, parcaUcreti: 500, parcaUcretiAltuntastan: 0 })).toBeNull();
+  });
+  it("bizden ücretli parça + fabrika servisi → 'bizim'", () => {
+    expect(servisYedekParcaDurumu({ ...uc })).toBe("bizim"); // islemFirma yok = fabrika
+    expect(servisYedekParcaDurumu({ ...uc, islemFirma: "Altuntaş Makina" })).toBe("bizim");
+  });
+  it("bizden ücretli parça + anlaşmalı bayi → 'anlasmaliServis'", () => {
+    expect(servisYedekParcaDurumu({ ...uc, islemFirma: "Örnek Bayi" })).toBe("anlasmaliServis");
+  });
+  it("bizden ücretli parça + 'Diğer' → 'disServis'", () => {
+    expect(servisYedekParcaDurumu({ ...uc, islemFirma: "Diğer", islemFirmaAd: "Harici Servis" })).toBe("disServis");
+  });
+});
+
+describe("girisSiraMap", () => {
+  it("en-yeni-başta dizide ilk girilen = 1, son girilen = n", () => {
+    // Dizi en-yeni-baştadır (yeni müşteri başa eklenir): A ilk girilen (sonda), C son girilen (başta).
+    const m = girisSiraMap([{ id: "C" }, { id: "B" }, { id: "A" }]);
+    expect(m).toEqual({ A: 1, B: 2, C: 3 });
+  });
+  it("boş dizi → boş harita; id'siz eleman atlanır", () => {
+    expect(girisSiraMap([])).toEqual({});
+    expect(girisSiraMap()).toEqual({});
+    const m = girisSiraMap([{ id: 10 }, {}, { id: 20 }]);
+    expect(m).toEqual({ 10: 3, 20: 1 }); // id'siz eleman index'i tutar ama haritaya yazılmaz
   });
 });
