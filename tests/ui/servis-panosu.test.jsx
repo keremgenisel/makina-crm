@@ -159,6 +159,48 @@ describe("ServisPanosu — Kanban", () => {
   });
 });
 
+describe("ServisPanosu — eşzamanlı düzenleme kilidi", () => {
+  // Servis DÜZENLERKEN müşterinin kilidi ("customer") alınır — müşteri detayıyla aynı alan.
+  afterEach(() => { delete window.crmLocks; });
+
+  const svc = { id: 40, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", tech: "" };
+  const props = (over = {}) => ({
+    services: [svc], setServices: vi.fn(), customers: musteriler, calisanlar, showToast: vi.fn(), serverPermissions: null, ...over,
+  });
+
+  it("kart düzenlenirken müşteri başkasında kilitliyse form yerine kilit uyarısı gösterir", async () => {
+    const acquire = vi.fn().mockResolvedValue({ ok: false, lockedBy: "Ofis", lockedAt: new Date().toISOString() });
+    window.crmLocks = { acquire, release: vi.fn().mockResolvedValue({}) };
+    render(<ServisPanosu {...props()} />);
+    fireEvent.click(document.querySelector('article[draggable="true"]')); // düzenlemek için karta tıkla
+    // Kilit "customer" alanında, servisin müşteri id'siyle (müşteri detayındaki düzenlemeyle aynı alan)
+    expect(acquire).toHaveBeenCalledWith("customer", "1", false);
+    // Çakışma çözülünce ServiceForm yerine kilit uyarısı görünür
+    expect(await screen.findByText("Bu kayıt şu an düzenleniyor")).toBeTruthy();
+    expect(screen.getByText(/Ofis/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Zorla Düzenle/ })).toBeTruthy();
+    expect(screen.queryByText("İşlemi Yapan Firma")).toBeNull(); // form açılmadı
+  });
+
+  it("kilit alınırsa form normal açılır", async () => {
+    const acquire = vi.fn().mockResolvedValue({ ok: true });
+    window.crmLocks = { acquire, release: vi.fn().mockResolvedValue({}) };
+    render(<ServisPanosu {...props()} />);
+    fireEvent.click(document.querySelector('article[draggable="true"]'));
+    expect(await screen.findByText("İşlemi Yapan Firma")).toBeTruthy(); // tam ServiceForm
+    expect(screen.queryByText("Bu kayıt şu an düzenleniyor")).toBeNull();
+  });
+
+  it("YENİ servis (ekleme) modunda kilit alınmaz (taslak kaybı olmasın)", () => {
+    const acquire = vi.fn().mockResolvedValue({ ok: true });
+    window.crmLocks = { acquire, release: vi.fn().mockResolvedValue({}) };
+    render(<ServisPanosu {...props()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Yeni Servis Talebi/ }));
+    expect(screen.getByText("İşlemi Yapan Firma")).toBeTruthy(); // form açık
+    expect(acquire).not.toHaveBeenCalled();                       // ekleme kilit almaz
+  });
+});
+
 describe("CalisanManager — firma çalışanları CRUD", () => {
   it("ad yazıp Ekle deyince setCalisanlar çağrılır", () => {
     const setCalisanlar = vi.fn();

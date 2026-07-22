@@ -164,12 +164,21 @@ export const uid = () => {
   mintedIds.add(v);
   return v;
 };
-// Müşteri (makina) kayıtlarının giriş sıra numarası. Yeni müşteri diziye BAŞA eklendiği için
-// (Customers.jsx doAdd) dizi en-yeni-baştadır: ilk girilen makina dizinin sonunda → sıra 1,
-// son girilen başta → sıra n. id → sıra haritası döner. Canlı: silinen kayıt renumber olur.
-export const girisSiraMap = (customers = []) => {
-  const n = customers.length, m = {};
-  customers.forEach((c, i) => { if (c && c.id != null) m[c.id] = n - i; });
+// Makina giriş sıra numarası (CANLI türetilir, kayıtta saklanmaz). Yalnız SATILMIŞ makinalar
+// (Garanti Başlangıç = installDate girili) sayılır → Finance'ın "toplam satılan makina" sayısıyla
+// aynı küme. Garanti Başlangıç'a göre ARTAN sıralanır (en eski = 1, en yeni = N), eşitlikte id ile
+// stabil. id → sıra numarası haritası döner. Tarihsiz (bekleyen) kayıt haritaya girmez → "—".
+// Silme/tarih değişince otomatik yeniden numaralanır (numara = güncel toplam; kalıcı değildir).
+// NOT: çağıran genelde silinmemiş (liveCustomers) diziyi verir; silinen makina zaten dışarıdadır.
+export const girisNoHaritasi = (customers = []) => {
+  if (!Array.isArray(customers)) return {};
+  const satilmis = customers.filter(c => c && c.id != null && c.installDate);
+  satilmis.sort((a, b) => {
+    if (a.installDate !== b.installDate) return a.installDate < b.installDate ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; // eşitlikte id ile stabil
+  });
+  const m = {};
+  satilmis.forEach((c, i) => { m[c.id] = i + 1; });
   return m;
 };
 export const wasMintedHere = (id) => mintedIds.has(id);

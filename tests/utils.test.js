@@ -4,7 +4,7 @@ import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
-  girisSiraMap, servisYedekParcaDurumu,
+  girisNoHaritasi, servisYedekParcaDurumu,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -388,16 +388,54 @@ describe("servisYedekParcaDurumu", () => {
   });
 });
 
-describe("girisSiraMap", () => {
-  it("en-yeni-başta dizide ilk girilen = 1, son girilen = n", () => {
-    // Dizi en-yeni-baştadır (yeni müşteri başa eklenir): A ilk girilen (sonda), C son girilen (başta).
-    const m = girisSiraMap([{ id: "C" }, { id: "B" }, { id: "A" }]);
+describe("girisNoHaritasi", () => {
+  it("satılmış makinaları Garanti Başlangıç'a göre artan numaralar (en eski = 1, en yeni = N)", () => {
+    // Dizi sırası karışık; numaralama installDate'e göre, dizi konumundan bağımsız.
+    const m = girisNoHaritasi([
+      { id: "C", installDate: "2020-01-05" },
+      { id: "A", installDate: "2019-03-01" },
+      { id: "B", installDate: "2019-07-12" },
+    ]);
     expect(m).toEqual({ A: 1, B: 2, C: 3 });
   });
-  it("boş dizi → boş harita; id'siz eleman atlanır", () => {
-    expect(girisSiraMap([])).toEqual({});
-    expect(girisSiraMap()).toEqual({});
-    const m = girisSiraMap([{ id: 10 }, {}, { id: 20 }]);
-    expect(m).toEqual({ 10: 3, 20: 1 }); // id'siz eleman index'i tutar ama haritaya yazılmaz
+
+  it("Garanti Başlangıç'ı olmayan (bekleyen) kayıt numaralanmaz", () => {
+    const m = girisNoHaritasi([
+      { id: 10, installDate: "2021-01-01" },
+      { id: 20 },                              // tarihsiz → haritaya girmez ("—")
+      { id: 30, installDate: "2021-06-01" },
+    ]);
+    expect(m).toEqual({ 10: 1, 30: 2 });
+  });
+
+  it("eşit tarihte id ile stabil sıralanır", () => {
+    const m = girisNoHaritasi([
+      { id: 20, installDate: "2021-01-01" },
+      { id: 10, installDate: "2021-01-01" },   // aynı tarih → 10 < 20
+    ]);
+    expect(m).toEqual({ 10: 1, 20: 2 });
+  });
+
+  it("silme = liste küçülünce yeniden numaralanır (en yeni = güncel toplam)", () => {
+    // Option B: numara canlı; silinen (listeden çıkan) makina numarayı kaydırır.
+    const tam = girisNoHaritasi([
+      { id: "A", installDate: "2019-01-01" },
+      { id: "B", installDate: "2020-01-01" },
+      { id: "C", installDate: "2021-01-01" },
+    ]);
+    expect(tam).toEqual({ A: 1, B: 2, C: 3 });
+    // B silinince (listede yok): A=1, C=2 → toplam 2, en yeni 2
+    const eksik = girisNoHaritasi([
+      { id: "A", installDate: "2019-01-01" },
+      { id: "C", installDate: "2021-01-01" },
+    ]);
+    expect(eksik).toEqual({ A: 1, C: 2 });
+  });
+
+  it("boş / geçersiz girdi güvenli", () => {
+    expect(girisNoHaritasi([])).toEqual({});
+    expect(girisNoHaritasi()).toEqual({});
+    // id'siz eleman atlanır
+    expect(girisNoHaritasi([{ installDate: "2020-01-01" }, { id: "A", installDate: "2019-01-01" }])).toEqual({ A: 1 });
   });
 });

@@ -57,7 +57,8 @@ export function useLock(entityType, entityId) {
       clearInterval(heartbeat);
       if (acquiredRef.current) {
         acquiredRef.current = false;
-        window.crmLocks.release(entityType, String(entityId)).catch(() => {});
+        // Optional chaining: teardown sırasında crmLocks kaybolmuş olabilir (yarışa karşı güvenli).
+        window.crmLocks?.release(entityType, String(entityId))?.catch(() => {});
       }
     };
   }, [entityType, entityId]);

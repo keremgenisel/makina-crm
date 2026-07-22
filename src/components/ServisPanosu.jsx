@@ -4,8 +4,9 @@ import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { logAction, getAuditUsername } from "../lib/audit";
 import { makeCanDo } from "../lib/permissions";
-import { Icon, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
 import { ServiceForm } from "./ServiceForm";
+import { useLock } from "../hooks/useLock";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
 
 // Servis Panosu (Kanban) — servisin iş durumu: Bekliyor / Yapılıyor / Tamamlandı. Kartlar
@@ -53,6 +54,12 @@ export const ServisPanosu = ({
   const [form, setForm] = useState(bosForm(factory?.name || "Altuntaş Makina"));
   const [hoverDurum, setHoverDurum] = useState(null);
   const [arsivAcik, setArsivAcik] = useState(false);
+
+  // Servis DÜZENLERKEN, o servisin müşterisi için kilit al — müşteri detayındaki düzenlemeyle
+  // AYNI kilit alanını ("customer") paylaşır, böylece kiosk + ofis aynı kaydı aynı anda düzenleyemez.
+  // Ekleme (yeni servis) modunda kilit alınmaz (taslak kaybı olmasın; 409 optimistik koruma yeterli).
+  const svLockId = (svModal && svModal.edit) ? (form.customerId ?? null) : null;
+  const { lockConflict: svLock, forceAcquire: forceSvLock } = useLock("customer", svLockId);
 
   // ── Canlı saat & tarih (Anasayfa ile aynı) ──
   const [now, setNow] = useState(new Date());
@@ -356,7 +363,13 @@ export const ServisPanosu = ({
       </div>
 
       {/* Yeni / Düzenle servis — müşteri kartındaki servis formunun BİREBİR AYNISI (tam ServiceForm) */}
-      {svModal && (
+      {svModal && (svLock ? (
+        // Düzenlenen servisin müşterisini başkası düzenliyor: formu açma, kilit uyarısı göster.
+        <Modal wide title="Servis Talebini Düzenle" onClose={() => setSvModal(null)}>
+          <LockConflict lockedBy={svLock.lockedBy} lockedAt={svLock.lockedAt}
+            onForce={forceSvLock} onCancel={() => setSvModal(null)} />
+        </Modal>
+      ) : (
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={form} setForm={setForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
@@ -364,7 +377,7 @@ export const ServisPanosu = ({
           onSave={kaydet} onCancel={() => setSvModal(null)}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
         />
-      )}
+      ))}
 
       {/* Per-servis süre analizi — o kartın kendi zaman çizelgesi ve süreleri */}
       {analizSv && (() => {
