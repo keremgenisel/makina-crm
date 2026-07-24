@@ -41,6 +41,10 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   const [bolgeler, setBolgeler] = useState({}); // ülke adı -> modül
   const [ipucu, setIpucu] = useState(null);
   const [tamEkran, setTamEkran] = useState(false);
+  // Yan panel (satış yapılan ülkeler listesi) kapalı mı? Her bilgisayara özel (localStorage),
+  // ana menü daralt/genişlet mantığıyla aynı. Kapalıyken harita tüm genişliği kullanır.
+  const [yanKapali, setYanKapali] = useState(() => { try { return localStorage.getItem("haritaYanKapali") === "1"; } catch { return false; } });
+  const toggleYan = () => setYanKapali(v => { const n = !v; try { localStorage.setItem("haritaYanKapali", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
   const kartRef = useRef(null);
 
   // Tam ekran: harita kartı uygulamanın dışına, ekranın tamamına açılır. ESC ya da
@@ -317,7 +321,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
                 </>
               )}
         </div>
-        <aside className="harita-yan">
+        <aside className={"harita-yan" + (yanKapali ? " kapali" : "")}>
           {!seciliUlke ? (
             <>
               <div className="harita-yan-bas">Satış yapılan ülkeler ({toplam.ulke})</div>
@@ -349,6 +353,11 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
             )
           )}
         </aside>
+        <button type="button" className="harita-yan-tus" onClick={toggleYan}
+          title={yanKapali ? "Ülke listesini göster" : "Ülke listesini gizle"}
+          aria-label={yanKapali ? "Ülke listesini göster" : "Ülke listesini gizle"}>
+          {yanKapali ? "«" : "»"}
+        </button>
       </div>
     </div>
   );

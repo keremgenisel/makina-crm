@@ -241,3 +241,41 @@ describe("ServiceForm — teknisyen: çalışan önerisi + elle serbest giriş",
     expect(input.value).toBe("Harici Usta");
   });
 });
+
+describe("ServisPanosu — yeni-servis alarmı", () => {
+  const baseServices = [
+    { id: 10, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", tech: "" },
+    { id: 11, customerId: 1, type: "Garanti İçi", durum: "Yapılıyor", date: "2026-07-19", tech: "Ahmet Yılmaz" },
+  ];
+  const p = (over = {}) => ({
+    services: baseServices, setServices: vi.fn(), customers: musteriler, calisanlar,
+    showToast: vi.fn(), serverPermissions: null, appSettings: { servisAlarm: { acik: true, sesSn: 20, yanipSn: 40 } }, ...over,
+  });
+  const yeniServis = { id: 500, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-21", tech: "" };
+
+  it("taban çizgisinde (ilk render) mevcut bekleyenler alarm vermez", () => {
+    render(<ServisPanosu {...p()} />);
+    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+
+  it("uzaktan yeni Bekliyor servis gelince şerit + yanıp sönme çıkar, Sustur temizler", () => {
+    const base = p();
+    const { rerender } = render(<ServisPanosu {...base} />);
+    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    rerender(<ServisPanosu {...base} services={[yeniServis, ...baseServices]} />);
+    expect(screen.getByText(/Yeni servis talebi/)).toBeTruthy();
+    expect(document.querySelector(".servis-alarm-yanip")).toBeTruthy();
+    fireEvent.click(screen.getByText("Sustur"));
+    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+
+  it("alarm kapalıyken yeni serviste şerit/yanıp sönme çıkmaz", () => {
+    const base = p({ appSettings: { servisAlarm: { acik: false, sesSn: 20, yanipSn: 40 } } });
+    const { rerender } = render(<ServisPanosu {...base} />);
+    rerender(<ServisPanosu {...base} services={[yeniServis, ...baseServices]} />);
+    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+});

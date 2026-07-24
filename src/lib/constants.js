@@ -197,10 +197,17 @@ export const HAFTA_GUNLERI = [
   { deger: 4, kisa: "Per" }, { deger: 5, kisa: "Cum" }, { deger: 6, kisa: "Cmt" }, { deger: 0, kisa: "Paz" },
 ];
 
+// ── Servis Panosu yeni-servis alarmı (Ayarlar > Uygulama > Servis Panosu) ──
+// Uzaktan (sunucudan) eklenen yeni "Bekliyor" servis geldiğinde pano kartı yanıp söner + sesli
+// uyarı çalar + üstte bildirim şeridi çıkar. Kullanıcı bu ayar sayfasından açıp kapatır ve süreleri
+// belirler (appSettings.servisAlarm — sunucu izin sistemine bağlı değil). acik: alarm açık mı;
+// sesSn: ses kaç sn öter; yanipSn: kart kaç sn yanıp söner. Varsayılan kapalı (açan devreye alır).
+export const SERVIS_ALARM_VARSAYILAN = { acik: false, sesSn: 25, yanipSn: 40 };
+
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.9.0";
+export const APP_VERSION = "3.10.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

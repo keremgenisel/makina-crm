@@ -153,6 +153,7 @@ body {
    Renkler theme.js'teki h* tokenlarından gelir (iki tema için ayrı ayarlanmış). */
 .harita-kart, .harita-kart * { box-sizing: border-box; }
 .harita-kart {
+  position: relative;
   background: var(--surface, #ffffff);
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,.08);
@@ -161,6 +162,16 @@ body {
   align-items: stretch;
   height: 440px;
 }
+/* Yan panel aç/kapa — ana menü daralt/genişlet gibi. Kapalıyken panel gizlenir, harita genişler. */
+.harita-yan-tus {
+  position: absolute; right: 12px; bottom: 52px; z-index: 6;
+  width: 30px; height: 30px; padding: 0; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid rgba(232,93,26,.35);
+  background: var(--surface, #ffffff); color: #e85d1a;
+  cursor: pointer; font-size: 17px; line-height: 1; font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08); font-family: inherit;
+}
+.harita-yan-tus:hover { background: rgba(232,93,26,.12); }
 .harita-alan { flex: 1; position: relative; min-width: 0; box-sizing: border-box; background: var(--hDeniz, #eef3f7); }
 /* user-select none: harita etkileşimli (sürükle-kaydır); yoksa yer adı yazıları tıkla/sürükleyince
    metin olarak seçilip arkalarında gri seçim kutusu çıkıyordu. */
@@ -232,6 +243,12 @@ body {
   width: 250px; flex-shrink: 0; box-sizing: border-box;
   border-left: 1px solid var(--n150, #f1f5f9); padding: 14px;
   display: flex; flex-direction: column; gap: 9px; background: var(--surface, #ffffff);
+  transition: width .18s ease;
+}
+/* Kapalı: panel gizlenir (harita tüm genişliği alır). Hem satır hem (mobil) sütun düzeninde çalışır. */
+.harita-yan.kapali {
+  width: 0; max-height: 0; padding: 0; overflow: hidden;
+  border-left: none; border-top: none;
 }
 .harita-yan-bas { font-size: 11px; font-weight: 700; color: var(--n500, #64748b); letter-spacing: .05em; text-transform: uppercase; }
 .harita-geri {
@@ -317,3 +334,16 @@ button.harita-firma:hover .fad { color: var(--orTx, #c2410c); }
 /* Tam ekranda kart bütün ekranı kaplar: sabit 440px yükseklik burada geçersiz. */
 .harita-kart:fullscreen { height: 100vh; border-radius: 0; border: none; }
 .harita-kart:fullscreen .harita-yan { width: 300px; }
+/* Tam ekranda da panel kapalıysa gizlensin (yukarıdaki 300px kuralını özgüllükle geç). */
+.harita-kart:fullscreen .harita-yan.kapali { width: 0; padding: 0; border-left: none; }
+
+/* Servis Panosu: uzaktan gelen yeni "Bekliyor" servis kartının yanıp sönme uyarısı. Yalnız
+   box-shadow (glow) animasyonu — kartın sol renk şeridini bozmasın. Hareket kısıtlıysa sabit glow. */
+@keyframes servisAlarmYanip {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,0), 0 1px 3px rgba(20,20,30,.07); }
+  50%      { box-shadow: 0 0 0 4px rgba(217,119,6,.5), 0 1px 3px rgba(20,20,30,.07); }
+}
+.servis-alarm-yanip { animation: servisAlarmYanip 1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .servis-alarm-yanip { animation: none; box-shadow: 0 0 0 3px rgba(217,119,6,.45), 0 1px 3px rgba(20,20,30,.07); }
+}

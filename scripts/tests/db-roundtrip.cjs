@@ -118,7 +118,8 @@ dbmod.writeBlobToDb({
     translations: { fatura: { title: "COMMERCIAL INVOICE" } },
     mailTemplates: { teklifProforma: { konu: "Özel Konu {no}", metin: "Özel metin" } },
     calismaSaatleri: { baslangic: "09:00", bitis: "18:30", gunler: [1, 2, 3, 4, 5, 6],
-      molalar: [{ baslangic: "12:30", bitis: "13:30" }, { baslangic: "16:00", bitis: "16:15" }] } },
+      molalar: [{ baslangic: "12:30", bitis: "13:30" }, { baslangic: "16:00", bitis: "16:15" }] },
+    servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 } },
 });
 blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
@@ -154,6 +155,7 @@ check("not olusturan roundtrip (sahipli + sahipsiz)", (() => { const a = (blob.n
 check("appSettings translations/mailTemplates tam turu", blob.appSettings?.translations?.fatura?.title === "COMMERCIAL INVOICE" && blob.appSettings?.mailTemplates?.teklifProforma?.konu === "Özel Konu {no}");
 check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
 check("appSettings calismaSaatleri tam turu", blob.appSettings?.calismaSaatleri?.baslangic === "09:00" && blob.appSettings?.calismaSaatleri?.gunler?.length === 6 && blob.appSettings?.calismaSaatleri?.molalar?.length === 2 && blob.appSettings?.calismaSaatleri?.molalar?.[1]?.bitis === "16:15");
+check("appSettings servisAlarm tam turu", blob.appSettings?.servisAlarm?.acik === true && blob.appSettings?.servisAlarm?.sesSn === 30 && blob.appSettings?.servisAlarm?.yanipSn === 45);
 
 // ── Tablo atlama bütünlüğü ───────────────────────────────────────────────────
 const v2 = { ...JSON.parse(JSON.stringify(blob)), teklifler: blob.teklifler.map(t => t.id === 102 ? { ...t, durum: "gonderildi" } : t) };

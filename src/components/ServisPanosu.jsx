@@ -1,7 +1,10 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi } from "../lib/utils";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
+import { yeniBekleyenler } from "../lib/servisAlarm";
+import { createAlarm, kilidiAc } from "../lib/alarmSes";
+import { SERVIS_ALARM_VARSAYILAN } from "../lib/constants";
 import { logAction, getAuditUsername } from "../lib/audit";
 import { makeCanDo } from "../lib/permissions";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
@@ -73,6 +76,56 @@ export const ServisPanosu = ({
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
   const factoryName = factory?.name || "Altuntaş Makina";
   const cs = appSettings?.calismaSaatleri; // firma çalışma saatleri → işçilik mesai hesabı
+
+  // ── Yeni-servis alarmı ─────────────────────────────────────────────────────────
+  // Uzaktan (sunucudan) eklenen yeni "Bekliyor" servis geldiğinde: kart yanıp söner + ses + şerit.
+  // Aç/kapa + süreler kullanıcı-kontrollü (Ayarlar > Uygulama > Servis Panosu → appSettings.servisAlarm);
+  // sunucu izin sistemine bağlı değil. İlk yükleme taban çizgisidir (backlog ötmez); kiosk'un kendi
+  // eklediği atlanır.
+  const alarmAcik = appSettings?.servisAlarm?.acik === true;
+  const alarmCfg = useMemo(() => ({ ...SERVIS_ALARM_VARSAYILAN, ...(appSettings?.servisAlarm || {}) }), [appSettings?.servisAlarm]);
+  const alarmAcikRef = useRef(alarmAcik); alarmAcikRef.current = alarmAcik;
+  const alarmCfgRef = useRef(alarmCfg); alarmCfgRef.current = alarmCfg;
+  const custMapRef = useRef(custMap); custMapRef.current = custMap;
+  const bilinenRef = useRef(null);              // Set<id> — bilinen tüm servis id'leri (taban dahil)
+  const yerelEklenenRef = useRef(new Set());    // kiosk'un kendi eklediği id'ler → alarm atlanır
+  const alarmRef = useRef(null);                // createAlarm örneği (lazy)
+  const [yananIds, setYananIds] = useState({}); // { id: bitisZamaniMs } — yanıp sönen kartlar
+  const [alarmSeridi, setAlarmSeridi] = useState([]); // bildirim şeridi: [{ id, ad }]
+
+  useEffect(() => {
+    if (!alarmRef.current) alarmRef.current = createAlarm();
+    return () => { alarmRef.current?.durdur?.(); };
+  }, []);
+
+  useEffect(() => {
+    const ids = [];
+    for (const s of services) if (s?.id != null) ids.push(s.id);
+    if (bilinenRef.current === null) { bilinenRef.current = new Set(ids); return; } // taban çizgisi
+    const bilinen = bilinenRef.current;
+    const yeni = yeniBekleyenler(bilinen, services).filter(id => !yerelEklenenRef.current.has(id));
+    for (const id of ids) bilinen.add(id); // sonraki döngüde tekrar tetiklenmesin
+    if (!yeni.length || !alarmAcikRef.current) return;
+    const bitis = Date.now() + Math.max(1, Number(alarmCfgRef.current.yanipSn) || 1) * 1000;
+    setYananIds(prev => { const n = { ...prev }; for (const id of yeni) n[id] = bitis; return n; });
+    const kayit = yeni.map(id => {
+      const s = services.find(x => x.id === id);
+      return { id, ad: custMapRef.current[Number(s?.customerId)]?.name || "(müşteri yok)" };
+    });
+    setAlarmSeridi(prev => [...kayit, ...prev].slice(0, 8));
+    alarmRef.current?.baslat?.(alarmCfgRef.current.sesSn);
+  }, [services]);
+
+  // Yanıp sönme süresi dolan kartları 1 sn'lik saatle düş.
+  useEffect(() => {
+    setYananIds(prev => {
+      const t = Date.now(); const n = {}; let degisti = false;
+      for (const k in prev) { if (prev[k] > t) n[k] = prev[k]; else degisti = true; }
+      return degisti ? n : prev;
+    });
+  }, [now]);
+
+  const susturAlarm = () => { alarmRef.current?.durdur?.(); setYananIds({}); setAlarmSeridi([]); };
 
   // Yalnız durumu olan VE panodan kaldırılmamış (arşivlenmemiş) servisler; sütunlara göre grupla.
   const sutunlar = useMemo(() => {
@@ -175,6 +228,7 @@ export const ServisPanosu = ({
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
+      yerelEklenenRef.current.add(newId); // kendi eklediğimiz servis kendi panomuzda alarm çalmasın
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
       const yeniRec = { ...rec, id: newId };
       if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
@@ -208,8 +262,10 @@ export const ServisPanosu = ({
     const teknListe = sv.tech && !tekAdlari.includes(sv.tech) ? [sv.tech, ...tekAdlari] : tekAdlari;
     const surukle = canDo("cust_service_edit") && !arsiv;
     const tamamlandi = sv.durum === "Tamamlandı";
+    const yaniyor = !arsiv && yananIds[sv.id] != null; // yeni gelen servis: alarm süresince yanıp söner
     return (
       <article draggable={surukle}
+        className={yaniyor ? "servis-alarm-yanip" : undefined}
         onDragStart={surukle ? (e => { e.dataTransfer.setData("text/plain", String(sv.id)); e.dataTransfer.effectAllowed = "move"; }) : undefined}
         onClick={() => acDuzenle(sv)}
         style={{ background: arsiv ? "var(--n100, #f8fafc)" : "var(--surface, #fff)", border: "1px solid var(--n200, #e2e8f0)", borderLeft: `3px solid ${durumRenk}`, borderRadius: 12, padding: arsiv ? "10px 12px" : "12px 13px 11px", boxShadow: arsiv ? "none" : "0 1px 3px rgba(20,20,30,.07)", opacity: arsiv ? 0.9 : 1, cursor: surukle ? "grab" : "pointer" }}>
@@ -291,7 +347,7 @@ export const ServisPanosu = ({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: kiosk ? "100%" : "calc(100vh - 0px)", minHeight: 0 }}>
+    <div onPointerDown={() => kilidiAc()} style={{ display: "flex", flexDirection: "column", height: kiosk ? "100%" : "calc(100vh - 0px)", minHeight: 0 }}>
       {/* Araç çubuğu */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: kiosk ? "12px 18px" : "0 0 14px", flexShrink: 0,
         ...(kiosk ? { background: "linear-gradient(95deg,#160900 0%,#241205 55%,#33180a 100%)", boxShadow: "0 2px 14px rgba(0,0,0,.28)" } : {}) }}>
@@ -315,6 +371,19 @@ export const ServisPanosu = ({
           )}
         </div>
       </div>
+
+      {/* Yeni servis bildirim şeridi — uzaktan gelen yeni "Bekliyor" servis(ler) için */}
+      {alarmSeridi.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, margin: kiosk ? "0 18px 8px" : "0 0 12px",
+          padding: "10px 14px", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10 }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>🔔</span>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--amb700, #b45309)" }}>
+            <b style={{ fontWeight: 750 }}>Yeni servis talebi</b>
+            {alarmSeridi.length > 1 ? ` (${alarmSeridi.length})` : ""}: {alarmSeridi.map(x => x.ad).join(", ")}
+          </div>
+          <Btn small variant="ghost" onClick={susturAlarm}>Sustur</Btn>
+        </div>
+      )}
 
       {/* Sütunlar */}
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, padding: kiosk ? 14 : 0, minHeight: 0 }}>
