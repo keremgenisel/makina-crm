@@ -6,6 +6,10 @@ import {
 } from "./lib/constants";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
+import { yeniBekleyenler, panoDisiBildirimVerilsinMi } from "./lib/servisAlarm";
+import { yerelServisMi } from "./lib/yerelServis";
+import { bildirimCal } from "./lib/bildirimSes";
+import { kilidiAc } from "./lib/alarmSes";
 import { setAuditUsername } from "./lib/audit";
 import { READONLY_SERVER_PERMISSIONS } from "./lib/permissions";
 import { Icon, ConfirmDialog } from "./components/ui";
@@ -31,7 +35,7 @@ const TABS = [
   { id: "finance",   label: "Finans",       icon: "finance"   },
   { id: "evrak",     label: "Evrak Yönetimi", icon: "evrak"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
-  { id: "servis",    label: "Servis Panosu", icon: "service"  },
+  { id: "servis",    label: "Servis ve Kargo Panosu", icon: "service"  },
   { id: "harita",    label: "Faaliyet Haritası", icon: "globe" },
   { id: "settings",  label: "Ayarlar",      icon: "settings"  },
 ];
@@ -643,6 +647,48 @@ export default function App() {
   const liveTeklifler      = useMemo(() => withoutDeleted(teklifler),      [teklifler]);
   const liveUretimFormlari = useMemo(() => withoutDeleted(uretimFormlari), [uretimFormlari]);
 
+  // ── Uygulama geneli yeni-servis bildirimi ──────────────────────────────────
+  // Servis ve Kargo Panosu DIŞINDAki bir sekmedeyken, uzaktan (başka bilgisayardan) yeni bir
+  // "Bekliyor" servis düştüğünde: köşe bildirimi (toast) + panonunkinden FARKLI ses + sol menüde
+  // "Servis ve Kargo Panosu" sekmesinde sayı rozeti. Panodayken (tab === "servis") bu genel bildirim
+  // ÇIKMAZ — orada kartın kendi alarmı (yanıp sönme + ses + şerit) zaten devrede. Aç/kapa aynı ayar:
+  // appSettings.servisAlarm.acik. İlk yükleme taban çizgisidir (mevcut servisler ötmez); kendi
+  // eklediğimiz servisler (yerelServisMi) atlanır.
+  const [yeniServisSayisi, setYeniServisSayisi] = useState(0);
+  const bildirimBilinenRef = useRef(null);
+  const tabRef = useRef(tab); tabRef.current = tab;
+  const alarmAcikRef = useRef(false); alarmAcikRef.current = appSettings?.servisAlarm?.acik === true;
+  const liveCustomersRef = useRef(liveCustomers); liveCustomersRef.current = liveCustomers;
+
+  useEffect(() => {
+    if (!loaded) return;
+    const ids = [];
+    for (const s of liveServices) if (s?.id != null) ids.push(s.id);
+    if (bildirimBilinenRef.current === null) { bildirimBilinenRef.current = new Set(ids); return; } // taban çizgisi
+    const bilinen = bildirimBilinenRef.current;
+    const yeni = yeniBekleyenler(bilinen, liveServices).filter(id => !yerelServisMi(id));
+    for (const id of ids) bilinen.add(id); // sonraki döngüde tekrar tetiklenmesin
+    // Panodayken (tab === "servis") çıkmaz — orada kartın kendi alarmı devrede; alarm kapalıysa da çıkmaz.
+    if (!panoDisiBildirimVerilsinMi(tabRef.current, alarmAcikRef.current, yeni.length)) return;
+    const cmap = {}; for (const c of liveCustomersRef.current) cmap[c.id] = c;
+    const adlar = yeni.map(id => cmap[Number(liveServices.find(x => x.id === id)?.customerId)]?.name || "(müşteri yok)");
+    setYeniServisSayisi(n => n + yeni.length);
+    bildirimCal();
+    showToast(`🔔 Yeni servis talebi: ${adlar.slice(0, 3).join(", ")}${adlar.length > 3 ? ` +${adlar.length - 3}` : ""}`);
+  }, [liveServices, loaded]);
+
+  // Panoyu açınca rozet sıfırlanır (yeni servisler görüldü).
+  useEffect(() => { if (tab === "servis") setYeniServisSayisi(0); }, [tab]);
+
+  // İlk kullanıcı etkileşiminde ses kilidini aç (tarayıcı autoplay politikası). Pano dışındaki
+  // bildirim sesi de aynı paylaşılan AudioContext'i kullandığından tek dokunuş ikisini de açar.
+  useEffect(() => {
+    const ac = () => kilidiAc();
+    window.addEventListener("pointerdown", ac, { passive: true });
+    window.addEventListener("keydown", ac, { passive: true });
+    return () => { window.removeEventListener("pointerdown", ac); window.removeEventListener("keydown", ac); };
+  }, []);
+
   // ── Harita penceresine tek yönlü veri push'u (yalnız açıkken) ──
   // Harita salt-okunur; ikinci pencere App yüklemediği için veriyi buradan besliyoruz.
   // Effect liveCustomers/liveDealers/factory değişince yeniden çalışır (→ push); temayı
@@ -984,14 +1030,22 @@ export default function App() {
                 boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,.06)" : "none",
               }}>
                 <span className="nav-ico" style={{
+                  position: "relative",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   width: 30, height: 30, borderRadius: 8, transition: "all .18s ease", flexShrink: 0,
                   background: active ? "rgba(232,93,26,.24)" : "rgba(255,255,255,.045)",
                   color: active ? "#ff9d5c" : "var(--sbIco, #8d6f5c)",
                 }}>
                   <Icon name={t.icon} size={15} />
+                  {/* Daraltılmış menüde etiket görünmez → rozet yerine küçük nokta */}
+                  {t.id === "servis" && yeniServisSayisi > 0 && sidebarDar && (
+                    <span style={{ position: "absolute", top: -2, right: -2, width: 9, height: 9, borderRadius: "50%", background: "#e85d1a", boxShadow: "0 0 0 2px #1a0f08" }} />
+                  )}
                 </span>
                 {!sidebarDar && t.label}
+                {t.id === "servis" && yeniServisSayisi > 0 && !sidebarDar && (
+                  <span style={{ marginLeft: "auto", minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "#e85d1a", color: "#fff", fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" }}>{yeniServisSayisi > 99 ? "99+" : yeniServisSayisi}</span>
+                )}
               </button>
             );
           })}

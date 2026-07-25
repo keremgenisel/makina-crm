@@ -12,6 +12,10 @@ function getCtx() {
   return ctx;
 }
 
+// Paylaşılan AudioContext'i döndürür — böylece bildirimSes.js aynı bağlamı kullanır ve tek
+// kilidiAc() dokunuşu her iki sesi de (pano alarmı + uygulama geneli bildirim) açar.
+export function sesContext() { return getCtx(); }
+
 // İlk kullanıcı dokunuşunda çağrılır: askıdaki AudioContext'i uyandırır.
 export function kilidiAc() {
   const c = getCtx();

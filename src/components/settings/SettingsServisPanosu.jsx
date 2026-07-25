@@ -37,9 +37,9 @@ export const SettingsServisPanosu = ({ appSettings, setAppSettings, flash }) => 
   );
 
   return (
-    <Section title="Servis Panosu Alarmı" icon="service">
+    <Section title="Servis ve Kargo Panosu Alarmı" icon="service">
       <div className="section-desc">
-        Uzaktan (başka bilgisayardan) yeni bir servis eklendiğinde Servis Panosu'nda kart yanıp söner,
+        Uzaktan (başka bilgisayardan) yeni bir servis eklendiğinde Servis ve Kargo Panosu'nda kart yanıp söner,
         sesli uyarı çalar ve üstte bir bildirim şeridi çıkar. Alarmı buradan açıp kapatabilir, sürelerini
         ayarlayabilirsiniz.
       </div>

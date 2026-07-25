@@ -12,7 +12,7 @@ export const ALL_TABS = [
   { id: "finance",   label: "Finans" },
   { id: "evrak",     label: "Evrak Yönetimi" },
   { id: "notes",     label: "Notlar" },
-  { id: "servis",    label: "Servis Panosu" },
+  { id: "servis",    label: "Servis ve Kargo Panosu" },
   { id: "harita",    label: "Faaliyet Haritası" },
   { id: "settings",  label: "Ayarlar" },
 ];

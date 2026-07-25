@@ -23,6 +23,7 @@ import { PartSaleForm } from "../PartSaleForm";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
 import { renderMailTemplate } from "../../lib/mailTemplates";
+import { yerelServisEkle } from "../../lib/yerelServis";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
@@ -155,6 +156,7 @@ export const CustomerDetailModal = ({
       // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.
       const yeniRec = { ...rec, id: newId };
       if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
+      yerelServisEkle(newId); // kendi eklediğimiz servis, uygulama geneli bildirimde "uzaktan geldi" sayılmasın
       setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
       deductServiceParts(rec.degisenParcalar, newId);
       bindServisDosyalari(newId, dosyaTaslaklari);

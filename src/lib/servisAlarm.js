@@ -13,3 +13,11 @@ export function yeniBekleyenler(bilinenIdSet, services = []) {
   }
   return yeni;
 }
+
+// Uygulama GENELİ (pano dışı) yeni-servis bildirimi verilsin mi?
+// - Panodayken (aktifTab === "servis") verilmez: orada kartın kendi alarmı (yanıp sönme + ses +
+//   şerit) zaten devrede, ikinci bir bildirim gereksiz olur.
+// - Alarm ayarı kapalıysa (alarmAcik !== true) veya yeni bekleyen yoksa verilmez.
+export function panoDisiBildirimVerilsinMi(aktifTab, alarmAcik, yeniSayisi) {
+  return alarmAcik === true && aktifTab !== "servis" && (Number(yeniSayisi) || 0) > 0;
+}

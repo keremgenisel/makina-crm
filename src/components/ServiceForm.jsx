@@ -18,6 +18,8 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   const [panoElle, setPanoElle] = useState(false);
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
   const [custSearch, setCustSearch] = useState("");
+  // Seçili müşterinin yetkili/adres bilgisini gösteren aç/kapa paneli (salt-okunur).
+  const [yetkiliAcik, setYetkiliAcik] = useState(false);
   // Bu serviste kaydedilince bağlanacak yeni dosya taslakları (fiziksel dosya diske/sunucuya
   // yüklenmiş; künye kaydetmede oluşturulur). Düzenlemede zaten bağlı olanlar ayrıca listelenir.
   const [dosyaTaslaklari, setDosyaTaslaklari] = useState([]);
@@ -67,17 +69,48 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
-              <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>
-                {selectedCust.model || "Model yok"} {selectedCust.serialNo ? `· S/N: ${selectedCust.serialNo}` : ""}
+          <div style={{ border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px" }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
+                <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>
+                  {selectedCust.model || "Model yok"} {selectedCust.serialNo ? `· S/N: ${selectedCust.serialNo}` : ""}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button type="button" onClick={() => setYetkiliAcik(v => !v)}
+                  title={yetkiliAcik ? "Yetkili & adresi gizle" : "Yetkili & adresi göster"}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: "#c2410c", background: "var(--surface, #fff)", border: "1px solid #fdba74", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  <Icon name="customers" size={12} /> Yetkili & Adres {yetkiliAcik ? "▴" : "▾"}
+                </button>
+                <button type="button" onClick={() => { setForm(p => ({ ...p, customerId: "" })); setCustSearch(""); setYetkiliAcik(false); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", display: "flex" }}>
+                  <Icon name="close" size={14} />
+                </button>
               </div>
             </div>
-            <button onClick={() => { setForm(p => ({ ...p, customerId: "" })); setCustSearch(""); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}>
-              <Icon name="close" size={14} />
-            </button>
+            {yetkiliAcik && (() => {
+              const bilgi = (etiket, deger) => (
+                <div style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5 }}>
+                  <span style={{ minWidth: 96, color: "var(--n500, #64748b)", fontWeight: 600 }}>{etiket}</span>
+                  <span style={{ flex: 1, color: "var(--n800, #1e293b)" }}>{deger || "—"}</span>
+                </div>
+              );
+              // Yetkili: müşteri formundaki "Yetkili 1/2" alanları (eski kayıtlarda contact yedeği).
+              const yetkili = (ad, tel) => [ad, tel].filter(Boolean).join(" · ");
+              const yetkili1 = yetkili(selectedCust.yetkili1Ad || selectedCust.contact, selectedCust.yetkili1Tel);
+              const yetkili2 = yetkili(selectedCust.yetkili2Ad, selectedCust.yetkili2Tel);
+              const sehir = [selectedCust.city, selectedCust.ilce, selectedCust.country].filter(Boolean).join(" / ");
+              return (
+                <div style={{ display: "grid", gap: 6, padding: "10px 14px", borderTop: "1px dashed #fdba74", background: "var(--surface, #fff)" }}>
+                  {bilgi("Yetkili 1", yetkili1)}
+                  {yetkili2 && bilgi("Yetkili 2", yetkili2)}
+                  {bilgi("Şirket Tel.", selectedCust.phone)}
+                  {bilgi("Adres", selectedCust.adres)}
+                  {bilgi("Şehir / Ülke", sehir)}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div>

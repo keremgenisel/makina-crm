@@ -3,6 +3,7 @@ import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, s
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { yeniBekleyenler } from "../lib/servisAlarm";
+import { yerelServisEkle } from "../lib/yerelServis";
 import { createAlarm, kilidiAc } from "../lib/alarmSes";
 import { SERVIS_ALARM_VARSAYILAN } from "../lib/constants";
 import { logAction, getAuditUsername } from "../lib/audit";
@@ -229,6 +230,7 @@ export const ServisPanosu = ({
       bumpId(customers, services);
       const newId = uid();
       yerelEklenenRef.current.add(newId); // kendi eklediğimiz servis kendi panomuzda alarm çalmasın
+      yerelServisEkle(newId);             // uygulama geneli bildirimde de "uzaktan geldi" sayılmasın
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
       const yeniRec = { ...rec, id: newId };
       if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
@@ -353,7 +355,7 @@ export const ServisPanosu = ({
         ...(kiosk ? { background: "linear-gradient(95deg,#160900 0%,#241205 55%,#33180a 100%)", boxShadow: "0 2px 14px rgba(0,0,0,.28)" } : {}) }}>
         {kiosk && <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(150deg,#f07a2c,#e85d1a)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="service" size={17} /></div>}
         <div>
-          <h2 style={{ margin: 0, fontSize: kiosk ? 15 : 20, fontWeight: 750, letterSpacing: kiosk ? ".08em" : "-.01em", color: kiosk ? "#fff" : "var(--n900, #0f172a)" }}>SERVİS PANOSU</h2>
+          <h2 style={{ margin: 0, fontSize: kiosk ? 15 : 20, fontWeight: 750, letterSpacing: kiosk ? ".08em" : "-.01em", color: kiosk ? "#fff" : "var(--n900, #0f172a)" }}>SERVİS VE KARGO PANOSU</h2>
           {kiosk && <div style={{ fontSize: 11, color: "#c9ab95" }}>{factoryName} · Servis Katı</div>}
         </div>
         <div style={{ flex: 1 }} />

@@ -41,6 +41,11 @@ describe("ServisPanosu — Kanban", () => {
     expect(document.querySelector('article[draggable="true"]')).toBeTruthy();
   });
 
+  it("pano başlığı 'SERVİS VE KARGO PANOSU'", () => {
+    render(<ServisPanosu {...props()} />);
+    expect(screen.getByRole("heading", { name: "SERVİS VE KARGO PANOSU" })).toBeTruthy();
+  });
+
   it("kartı başka sütuna bırakınca setServices durumu o sütuna çeker", () => {
     const setServices = vi.fn();
     render(<ServisPanosu {...props({ setServices })} />);
@@ -239,6 +244,42 @@ describe("ServiceForm — teknisyen: çalışan önerisi + elle serbest giriş",
     expect(input).toBeTruthy();
     fireEvent.change(input, { target: { value: "Harici Usta" } });
     expect(input.value).toBe("Harici Usta");
+  });
+});
+
+describe("ServiceForm — seçili müşterinin yetkili & adresi (aç/kapa)", () => {
+  const zenginMusteri = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1",
+    yetkili1Ad: "Ayşe Kaya", yetkili1Tel: "0212 555 11 22", phone: "0212 000 00 00",
+    adres: "Organize Sanayi 5. Cadde No 12", city: "İstanbul", ilce: "Tuzla", country: "Türkiye" }];
+  const Harness = () => {
+    const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY" });
+    return <ServiceForm title="Servis" form={form} setForm={setForm} customers={zenginMusteri}
+      calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />;
+  };
+
+  it("varsayılan kapalı; düğmeye tıklayınca yetkili ve adres görünür, tekrar tıklayınca gizlenir", () => {
+    render(<Harness />);
+    // Kapalıyken yetkili/adres değerleri görünmez
+    expect(screen.queryByText(/Ayşe Kaya/)).toBeNull();
+    const btn = screen.getByRole("button", { name: /Yetkili & Adres/ });
+    fireEvent.click(btn);
+    expect(screen.getByText(/Ayşe Kaya/)).toBeTruthy();               // yetkili1Ad · yetkili1Tel
+    expect(screen.getByText("Organize Sanayi 5. Cadde No 12")).toBeTruthy();
+    expect(screen.getByText("İstanbul / Tuzla / Türkiye")).toBeTruthy();
+    // Tekrar tıkla → gizlenir
+    fireEvent.click(btn);
+    expect(screen.queryByText(/Ayşe Kaya/)).toBeNull();
+  });
+
+  it("eski kayıtta yetkili1Ad yoksa contact yedeğinden ad gösterilir", () => {
+    const eski = [{ id: 1, name: "Eski Firma", contact: "Veli Han", phone: "0500" }];
+    const H = () => {
+      const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY" });
+      return <ServiceForm title="S" form={form} setForm={setForm} customers={eski} calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />;
+    };
+    render(<H />);
+    fireEvent.click(screen.getByRole("button", { name: /Yetkili & Adres/ }));
+    expect(screen.getByText(/Veli Han/)).toBeTruthy();
   });
 });
 

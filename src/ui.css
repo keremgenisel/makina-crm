@@ -337,13 +337,28 @@ button.harita-firma:hover .fad { color: var(--orTx, #c2410c); }
 /* Tam ekranda da panel kapalıysa gizlensin (yukarıdaki 300px kuralını özgüllükle geç). */
 .harita-kart:fullscreen .harita-yan.kapali { width: 0; padding: 0; border-left: none; }
 
-/* Servis Panosu: uzaktan gelen yeni "Bekliyor" servis kartının yanıp sönme uyarısı. Yalnız
-   box-shadow (glow) animasyonu — kartın sol renk şeridini bozmasın. Hareket kısıtlıysa sabit glow. */
+/* Servis Panosu: uzaktan gelen yeni "Bekliyor" servis kartının yanıp sönme uyarısı. Kartın
+   TAMAMI (arka plan + kenarlık + glow) nabız gibi atar ki içindeki yazılarla birlikte uzaktan
+   belirgin görünsün. CSS animasyonu kartın inline background/border stilini geçer (!important
+   gerekmez). Hareket kısıtlıysa animasyon yerine sabit amber vurgu. */
 @keyframes servisAlarmYanip {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,0), 0 1px 3px rgba(20,20,30,.07); }
-  50%      { box-shadow: 0 0 0 4px rgba(217,119,6,.5), 0 1px 3px rgba(20,20,30,.07); }
+  0%, 100% {
+    background-color: var(--surface, #fff);
+    border-color: var(--n200, #e2e8f0);
+    box-shadow: 0 0 0 0 rgba(217,119,6,0), 0 1px 3px rgba(20,20,30,.07);
+  }
+  50% {
+    background-color: rgba(253, 230, 138, .55);
+    border-color: rgba(217,119,6,.7);
+    box-shadow: 0 0 0 5px rgba(217,119,6,.45), 0 2px 10px rgba(217,119,6,.25);
+  }
 }
 .servis-alarm-yanip { animation: servisAlarmYanip 1s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .servis-alarm-yanip { animation: none; box-shadow: 0 0 0 3px rgba(217,119,6,.45), 0 1px 3px rgba(20,20,30,.07); }
+  .servis-alarm-yanip {
+    animation: none;
+    background-color: rgba(253, 230, 138, .5);
+    border-color: rgba(217,119,6,.6);
+    box-shadow: 0 0 0 3px rgba(217,119,6,.45), 0 1px 3px rgba(20,20,30,.07);
+  }
 }

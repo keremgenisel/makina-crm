@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { yeniBekleyenler } from "../src/lib/servisAlarm.js";
+import { yeniBekleyenler, panoDisiBildirimVerilsinMi } from "../src/lib/servisAlarm.js";
 
 // Servis Panosu alarmı: uzaktan gelen yeni "Bekliyor" servisin tespiti. Bu saf fonksiyon,
 // bilinen id kümesinde OLMAYAN + durum "Bekliyor" + panoda gizli olmayan servisleri döner.
@@ -46,5 +46,22 @@ describe("yeniBekleyenler", () => {
 
   it("bilinen küme dizi olarak da verilebilir", () => {
     expect(yeniBekleyenler([1], [{ id: 1, durum: "Bekliyor" }, { id: 2, durum: "Bekliyor" }])).toEqual([2]);
+  });
+});
+
+// Uygulama geneli (pano dışı) bildirim kararı: panodayken çıkmaz, alarm kapalıysa çıkmaz.
+describe("panoDisiBildirimVerilsinMi", () => {
+  it("pano dışı sekmede + alarm açık + yeni varsa bildirim verilir", () => {
+    expect(panoDisiBildirimVerilsinMi("customers", true, 1)).toBe(true);
+    expect(panoDisiBildirimVerilsinMi("dashboard", true, 3)).toBe(true);
+  });
+
+  it("Servis ve Kargo Panosu'ndayken (tab servis) genel bildirim VERİLMEZ", () => {
+    expect(panoDisiBildirimVerilsinMi("servis", true, 5)).toBe(false);
+  });
+
+  it("alarm kapalıysa veya yeni yoksa verilmez", () => {
+    expect(panoDisiBildirimVerilsinMi("customers", false, 2)).toBe(false);
+    expect(panoDisiBildirimVerilsinMi("customers", true, 0)).toBe(false);
   });
 });
