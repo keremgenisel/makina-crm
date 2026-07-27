@@ -184,9 +184,27 @@ CREATE TABLE IF NOT EXISTS part_sales (
   tur TEXT, ad TEXT, olcu TEXT, tarih TEXT, ucret REAL, currency TEXT,
   odendi INTEGER, faturaTipi TEXT, ucretsizMi INTEGER, batchId INTEGER, deletedAt TEXT,
   teklifId INTEGER, uretimFormGonder INTEGER, uretimFormId INTEGER,
-  satisFirma TEXT, satisFirmaAd TEXT, satisFirmaYetkili TEXT, satisFirmaTel TEXT, satisFirmaUlke TEXT, satisFirmaSehir TEXT
+  satisFirma TEXT, satisFirmaAd TEXT, satisFirmaYetkili TEXT, satisFirmaTel TEXT, satisFirmaUlke TEXT, satisFirmaSehir TEXT,
+  kargoDurum TEXT, kargoFirma TEXT, kargoTakipNo TEXT, kargoTarih TEXT, kargoSorumlusu TEXT, panoDusmeZamani TEXT, panoGizli INTEGER, olusturmaZamani TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_partsales_customer ON part_sales(customer_id);
+
+CREATE TABLE IF NOT EXISTS yedek_parca_satis (
+  id INTEGER PRIMARY KEY,
+  dealer_id INTEGER,
+  musteri_id INTEGER, aliciTipi TEXT,
+  partId INTEGER, miktar INTEGER, birimFiyat REAL, currency TEXT,
+  tarih TEXT, odendi INTEGER, faturaTipi TEXT,
+  kargoFirma TEXT, kargoTakipNo TEXT, kargoTarih TEXT, kargoDurum TEXT,
+  kargoSorumlusu TEXT, panoDusmeZamani TEXT, olusturmaZamani TEXT,
+  notlar TEXT, panoGizli INTEGER, deletedAt TEXT
+);
+CREATE TABLE IF NOT EXISTS yedek_parca_tahsis (
+  id INTEGER PRIMARY KEY,
+  satis_id INTEGER NOT NULL REFERENCES yedek_parca_satis(id),
+  miktar INTEGER, customer_id INTEGER, serialNo TEXT, makinaSerbest TEXT, tarih TEXT, sort_order INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_ypt_satis ON yedek_parca_tahsis(satis_id);
 
 CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY,
@@ -335,7 +353,13 @@ const PART_SALES_TEKLIF_URETIM_COLUMNS = [["teklifId", "INTEGER"], ["uretimFormG
 // Extra kalıp satışında "Satış Yapan Firma" (Fabrika / bayi / "Diğer"). "Diğer" iken yalnız satışa
 // kaydedilen anlaşmasız firma bilgileri — müşteri/bayi kaydı oluşturulmaz.
 const PART_SALES_SATIS_FIRMA_COLUMNS = [["satisFirma", "TEXT"], ["satisFirmaAd", "TEXT"], ["satisFirmaYetkili", "TEXT"], ["satisFirmaTel", "TEXT"], ["satisFirmaUlke", "TEXT"], ["satisFirmaSehir", "TEXT"]];
+// Extra Kalıp'ın Servis ve Kargo Panosu'na "kargo" olarak düşmesi için sevkiyat alanları (panoGizli INTEGER).
+const PART_SALES_KARGO_COLUMNS = [["kargoDurum", "TEXT"], ["kargoFirma", "TEXT"], ["kargoTakipNo", "TEXT"], ["kargoTarih", "TEXT"], ["kargoSorumlusu", "TEXT"], ["panoDusmeZamani", "TEXT"], ["panoGizli", "INTEGER"], ["olusturmaZamani", "TEXT"]];
 const KALIPLAR_URETIM_COLUMNS = [["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
+// Bayiye yedek parça (kargo) satışı — kargo takibi ve not alanları (tablo SCHEMA'da tüm alanlarıyla
+// oluşur; bu liste eski/kısmi bir DB'de eksik kalırsa tamamlar — dört-nokta kuralı gereği).
+const YEDEK_PARCA_COLUMNS = [["kargoFirma", "TEXT"], ["kargoTakipNo", "TEXT"], ["kargoTarih", "TEXT"], ["kargoDurum", "TEXT"], ["notlar", "TEXT"], ["musteri_id", "INTEGER"], ["aliciTipi", "TEXT"], ["kargoSorumlusu", "TEXT"], ["panoDusmeZamani", "TEXT"], ["olusturmaZamani", "TEXT"], ["panoGizli", "INTEGER"]];
+const YEDEK_PARCA_TAHSIS_COLUMNS = [["makinaSerbest", "TEXT"], ["sort_order", "INTEGER"]];
 // Ödeme planı (taksit vadeleri, JSON) ve teklif takip hatırlatmasından çıkarma işareti
 const CUSTOMERS_ODEME_PLANI_COLUMN = [["odemePlani", "TEXT"]];
 const TEKLIFLER_TAKIP_COLUMN = [["takipKapali", "INTEGER"]];
@@ -378,7 +402,7 @@ const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar"];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -490,9 +514,11 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM part_sales`).run();
     const stmt = conn.prepare(`
       INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId, deletedAt, teklifId, uretimFormGonder, uretimFormId,
-        satisFirma, satisFirmaAd, satisFirmaYetkili, satisFirmaTel, satisFirmaUlke, satisFirmaSehir)
+        satisFirma, satisFirmaAd, satisFirmaYetkili, satisFirmaTel, satisFirmaUlke, satisFirmaSehir,
+        kargoDurum, kargoFirma, kargoTakipNo, kargoTarih, kargoSorumlusu, panoDusmeZamani, panoGizli, olusturmaZamani)
       VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt, @teklifId, @uretimFormGonder, @uretimFormId,
-        @satisFirma, @satisFirmaAd, @satisFirmaYetkili, @satisFirmaTel, @satisFirmaUlke, @satisFirmaSehir)
+        @satisFirma, @satisFirmaAd, @satisFirmaYetkili, @satisFirmaTel, @satisFirmaUlke, @satisFirmaSehir,
+        @kargoDurum, @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoSorumlusu, @panoDusmeZamani, @panoGizli, @olusturmaZamani)
     `);
     for (const p of data.partSales) {
       stmt.run({
@@ -503,6 +529,42 @@ function populateAll(conn, data, skip = new Set()) {
         teklifId: p.teklifId ?? null, uretimFormGonder: toInt(p.uretimFormGonder), uretimFormId: p.uretimFormId ?? null,
         satisFirma: p.satisFirma ?? null, satisFirmaAd: p.satisFirmaAd ?? null, satisFirmaYetkili: p.satisFirmaYetkili ?? null,
         satisFirmaTel: p.satisFirmaTel ?? null, satisFirmaUlke: p.satisFirmaUlke ?? null, satisFirmaSehir: p.satisFirmaSehir ?? null,
+        kargoDurum: p.kargoDurum ?? null, kargoFirma: p.kargoFirma ?? null, kargoTakipNo: p.kargoTakipNo ?? null,
+        kargoTarih: p.kargoTarih ?? null, kargoSorumlusu: p.kargoSorumlusu ?? null, panoDusmeZamani: p.panoDusmeZamani ?? null,
+        panoGizli: toInt(p.panoGizli), olusturmaZamani: p.olusturmaZamani ?? null,
+      });
+    }
+  }
+
+  if (Array.isArray(data.yedekParcaSatislar) && !skip.has("yedekParcaSatislar")) {
+    conn.prepare(`DELETE FROM yedek_parca_tahsis`).run();
+    conn.prepare(`DELETE FROM yedek_parca_satis`).run();
+    const stmt = conn.prepare(`
+      INSERT INTO yedek_parca_satis (id, dealer_id, musteri_id, aliciTipi, partId, miktar, birimFiyat, currency, tarih, odendi, faturaTipi,
+        kargoFirma, kargoTakipNo, kargoTarih, kargoDurum, kargoSorumlusu, panoDusmeZamani, olusturmaZamani, notlar, panoGizli, deletedAt)
+      VALUES (@id, @dealer_id, @musteri_id, @aliciTipi, @partId, @miktar, @birimFiyat, @currency, @tarih, @odendi, @faturaTipi,
+        @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoDurum, @kargoSorumlusu, @panoDusmeZamani, @olusturmaZamani, @notlar, @panoGizli, @deletedAt)
+    `);
+    // id'yi SQLite atasın (customer_kaliplar deseni). tahsis saf çocuk kayıt; id uygulamada referans
+    // edilmiyor. Eskiden t.id (okumada atanan rowid) ile yeni null'lar karışınca SQLite'ın null için
+    // seçtiği rowid, sonraki açık id ile ÇAKIŞIYOR ve TÜM save transaction'ı geri alınıyordu
+    // (UNIQUE constraint failed: yedek_parca_tahsis.id → servis+kargo hiç kaydedilmiyordu).
+    const tStmt = conn.prepare(`
+      INSERT INTO yedek_parca_tahsis (satis_id, miktar, customer_id, serialNo, makinaSerbest, tarih, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const s of data.yedekParcaSatislar) {
+      stmt.run({
+        id: s.id, dealer_id: s.dealerId ?? null, musteri_id: s.musteriId ?? null, aliciTipi: s.aliciTipi ?? null,
+        partId: s.partId ?? null, miktar: s.miktar ?? null,
+        birimFiyat: s.birimFiyat ?? null, currency: s.currency ?? null, tarih: s.tarih ?? null,
+        odendi: toInt(s.odendi), faturaTipi: s.faturaTipi ?? null,
+        kargoFirma: s.kargoFirma ?? null, kargoTakipNo: s.kargoTakipNo ?? null, kargoTarih: s.kargoTarih ?? null,
+        kargoDurum: s.kargoDurum ?? null, kargoSorumlusu: s.kargoSorumlusu ?? null, panoDusmeZamani: s.panoDusmeZamani ?? null,
+        olusturmaZamani: s.olusturmaZamani ?? null, notlar: s.notlar ?? null, panoGizli: toInt(s.panoGizli), deletedAt: s.deletedAt ?? null,
+      });
+      (s.tahsisler || []).forEach((t, idx) => {
+        tStmt.run(s.id, t.miktar ?? null, t.customerId ?? null, t.serialNo ?? null, t.makinaSerbest ?? null, t.tarih ?? null, idx);
       });
     }
   }
@@ -642,7 +704,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -685,7 +747,10 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "customers", CUSTOMERS_BRUT_KG_COLUMN);
   ensureColumns(conn, "part_sales", PART_SALES_TEKLIF_URETIM_COLUMNS);
   ensureColumns(conn, "part_sales", PART_SALES_SATIS_FIRMA_COLUMNS);
+  ensureColumns(conn, "part_sales", PART_SALES_KARGO_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
+  ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
+  ensureColumns(conn, "yedek_parca_tahsis", YEDEK_PARCA_TAHSIS_COLUMNS);
   ensureColumns(conn, "customers", CUSTOMERS_BANTLAR_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_PART_SECIMLERI_COLUMNS);
   ensureColumns(conn, "customers", CUSTOMERS_TIP_SECIMLERI_COLUMN);
@@ -895,8 +960,19 @@ function readBlobFromDb() {
   }));
 
   const partSales = db.prepare(`SELECT * FROM part_sales`).all().map((row) => {
-    const { customer_id, odendi, ucretsizMi, uretimFormGonder, ...rest } = row;
-    return { ...rest, customerId: customer_id, odendi: toBool(odendi), ucretsizMi: toBool(ucretsizMi), uretimFormGonder: toBool(uretimFormGonder) };
+    const { customer_id, odendi, ucretsizMi, uretimFormGonder, panoGizli, ...rest } = row;
+    return { ...rest, customerId: customer_id, odendi: toBool(odendi), ucretsizMi: toBool(ucretsizMi), uretimFormGonder: toBool(uretimFormGonder), panoGizli: toBool(panoGizli) };
+  });
+
+  // Bayiye yedek parça (kargo) satışı + makina tahsisleri (child tablo, satis_id'ye göre gruplanır).
+  const tahsisBySatis = new Map();
+  for (const t of db.prepare(`SELECT * FROM yedek_parca_tahsis ORDER BY satis_id, sort_order`).all()) {
+    if (!tahsisBySatis.has(t.satis_id)) tahsisBySatis.set(t.satis_id, []);
+    tahsisBySatis.get(t.satis_id).push({ miktar: t.miktar, customerId: t.customer_id, serialNo: t.serialNo, makinaSerbest: t.makinaSerbest, tarih: t.tarih });
+  }
+  const yedekParcaSatislar = db.prepare(`SELECT * FROM yedek_parca_satis`).all().map((row) => {
+    const { dealer_id, musteri_id, partId, odendi, panoGizli, ...rest } = row;
+    return { ...rest, dealerId: dealer_id, musteriId: musteri_id, partId: partId != null ? String(partId) : null, odendi: toBool(odendi), panoGizli: toBool(panoGizli), tahsisler: tahsisBySatis.get(row.id) || [] };
   });
 
   const payments = db.prepare(`SELECT * FROM payments`).all().map((row) => {
@@ -999,7 +1075,7 @@ function readBlobFromDb() {
   return {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
-    partStock, partStockLog, faturalar, uretimFormlari,
+    partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
   };
 }
 

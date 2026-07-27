@@ -1,7 +1,7 @@
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
-  fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, isAltuntasServisi,
-  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim,
+  fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
+  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli,
 } from "../../../lib/utils";
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { Icon, Btn, AtesRozeti } from "../../ui";
@@ -21,6 +21,9 @@ export const MachineTimeline = ({
   onDeleteService,
   onEditPartSale,
   onDeletePartSale,
+  onEditYedekParca = null,
+  onDeleteYedekParca = null,
+  onToggleYedekParcaOdendi = null,
   onEditPayment,
   onToggleCekTahsil,
   onDeletePayment,
@@ -101,6 +104,17 @@ export const MachineTimeline = ({
                       {ev.title} <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>({psList.length} kalıp)</span>
                     </span>
                   )
+                ) : ev.kind === "part" && ev.yp ? (
+                  <>
+                    <span onClick={canDo("cust_yedek_parca_edit") && onEditYedekParca ? () => onEditYedekParca(ev.yp) : undefined} title={canDo("cust_yedek_parca_edit") && onEditYedekParca ? "Düzenlemek için tıklayın" : undefined}
+                      style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_yedek_parca_edit") && onEditYedekParca ? "pointer" : "default", textDecoration: canDo("cust_yedek_parca_edit") && onEditYedekParca ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                    {canDo("cust_yedek_parca_delete") && onDeleteYedekParca && (
+                      <button onClick={() => onDeleteYedekParca(ev.yp)} title="Yedek parça (kargo) satışını sil"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        <Icon name="trash" size={11} /> Sil
+                      </button>
+                    )}
+                  </>
                 ) : ev.kind === "payment" && payment ? (
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
@@ -160,6 +174,24 @@ export const MachineTimeline = ({
                 </div>
               )}
               {ev.desc && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
+              {ev.yp && (() => {
+                const bedel = yedekParcaBedeli(ev.yp);
+                const kdv = calcKDV(ev.yp.faturaTipi, bedel, ev.yp.tarih, kdvRates);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
+                      Yedek Parça Ücreti: {fmtCur(bedel, ev.yp.currency)}
+                      {kdv > 0 && <> · KDV dahil: {fmtCur(bedel + kdv, ev.yp.currency)}</>}
+                    </span>
+                    {canDo("cust_yedek_parca_payment") && onToggleYedekParcaOdendi && (
+                      <button onClick={() => onToggleYedekParcaOdendi(ev.yp)}
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: ev.yp.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: ev.yp.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
+                        {ev.yp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
               {psList && (
                 <div style={{ marginTop: 4 }}>
                   {psList[0]?.satisFirma && psList[0].satisFirma !== factoryName && (
@@ -228,13 +260,13 @@ export const MachineTimeline = ({
                 <div style={{ marginTop: 5 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .3 }}>Değişen Parçalar</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
-                    {sv.degisenParcalar.map((p, i) => {
+                    {parcaGruplari(sv.degisenParcalar).map(({ p, adet }, i) => {
                       const ad = parcaAdi(p);
                       const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
                       const isDisTedarik = typeof p === "object" && !!p.disTedarik;
                       return (
                         <span key={i} style={{ fontSize: 11, fontWeight: 600, color: isDisTedarik ? "#ea580c" : "var(--blu700, #1d4ed8)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--bluBg, #eff6ff)", border: `1px solid ${isDisTedarik ? "var(--ambBr3, #fed7aa)" : "var(--bluBr, #bfdbfe)"}`, borderRadius: 12, padding: "2px 9px" }}>
-                          {ad}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
+                          {ad}{adet > 1 ? ` x${adet}` : ""}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, sv.parcaCurrency)}` : ""}
                         </span>
                       );
                     })}

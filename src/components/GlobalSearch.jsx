@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { aramaNormalize, fmtTR } from "../lib/utils";
+import { aramaNormalize, fmtTR, parcaAdi, fmtCur } from "../lib/utils";
+import { aliciAd } from "./stock/TahsisModal";
 import { Icon } from "./ui";
 
 // ── Genel arama ──────────────────────────────────────────────────────────────
@@ -8,7 +9,7 @@ import { Icon } from "./ui";
 // makina stoğu üzerinde arar; sonuca tıklayınca ilgili ekran doğrudan açılır.
 // allowedTabs: kullanıcının erişebildiği sekme id'leri — izinli olmayan sekmenin
 // verisi aramada hiç gösterilmez (kısıtlı kullanıcı aramadan o alana sızamaz).
-export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock, allowedTabs = null }) => {
+export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], yedekParcaSatislar = [], parts = [], partSales = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock, onGoYedekParca, allowedTabs = null }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const inputRef = useRef(null);
@@ -31,15 +32,20 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
     if (query.length < 2) return null;
     const has = (v) => aramaNormalize(String(v || "")).includes(query);
     const izinli = (tabId) => !Array.isArray(allowedTabs) || allowedTabs.includes(tabId);
+    const partMap = {}; for (const p of parts) partMap[String(p.id)] = p;
     return {
       musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))).slice(0, 8) : [],
       belgeler:   izinli("evrak") ? teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))).slice(0, 8) : [],
       bayiler:    izinli("dealers") ? dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))).slice(0, 6) : [],
       makinalar:  izinli("stock") ? stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))).slice(0, 6) : [],
+      // Yeni: yedek parça (kargo) satışları — alıcı, parça, kargo firma/takip no ile aranır; Stok'a gider.
+      yedekParcalar: (izinli("stock") && onGoYedekParca) ? yedekParcaSatislar.filter(s => !s.deletedAt && (has(aliciAd(s, dealers, customers)) || has(parcaAdi(partMap[String(s.partId)])) || has(s.kargoTakipNo) || has(s.kargoFirma) || has(s.kargoDurum))).slice(0, 6) : [],
+      // Yeni: Extra Kalıp satışları — müşteri, kalıp adı/ölçü ile aranır; müşteri detayına gider.
+      kaliplar: izinli("customers") ? (partSales || []).filter(p => !p.deletedAt && p.tur === "Kalıp" && (has(p.ad) || has(p.olcu) || has((customers.find(c => c.id === p.customerId) || {}).name))).slice(0, 6) : [],
     };
-  }, [q, customers, teklifler, dealers, stock, allowedTabs]);
+  }, [q, customers, teklifler, dealers, stock, yedekParcaSatislar, parts, partSales, onGoYedekParca, allowedTabs]);
 
-  const bos = results && !results.musteriler.length && !results.belgeler.length && !results.bayiler.length && !results.makinalar.length;
+  const bos = results && !results.musteriler.length && !results.belgeler.length && !results.bayiler.length && !results.makinalar.length && !results.yedekParcalar.length && !results.kaliplar.length;
   const pick = (fn, arg) => { setOpen(false); fn?.(arg); };
 
   const grupBaslik = { fontSize: 10, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, padding: "10px 14px 4px" };
@@ -122,6 +128,36 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
                     <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{sx.serialNo ? `S/N ${sx.serialNo}` : "seri no'suz"}{sx.addedDate ? ` · ${fmtTR(sx.addedDate)}` : ""}</span>
                   </button>
                 ))}
+              </div>
+            )}
+            {results && results.yedekParcalar.length > 0 && (
+              <div>
+                <div style={grupBaslik}>Yedek Parça (Kargo) Satışları</div>
+                {results.yedekParcalar.map(s => {
+                  const part = parts.find(p => String(p.id) === String(s.partId));
+                  return (
+                    <button key={`yp${s.id}`} style={satir} onClick={() => pick(onGoYedekParca, s.id)}
+                      onMouseEnter={e => e.currentTarget.style.background = "#ecfeff"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <b>📦 {parcaAdi(part) || "Yedek parça"} ×{s.miktar}</b>
+                      <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{aliciAd(s, dealers, customers)}{s.tarih ? ` · ${fmtTR(s.tarih)}` : ""}{s.kargoTakipNo ? ` · ${s.kargoFirma || "Kargo"} ${s.kargoTakipNo}` : ""}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {results && results.kaliplar.length > 0 && (
+              <div>
+                <div style={grupBaslik}>Extra Kalıp Satışları</div>
+                {results.kaliplar.map(p => {
+                  const c = customers.find(x => x.id === p.customerId);
+                  return (
+                    <button key={`k${p.id}`} style={satir} onClick={() => pick(onOpenCustomer, p.customerId)}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--ambBg3, #fff7ed)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <b>{p.ad || "Kalıp"}{p.olcu ? ` (${p.olcu})` : ""}</b>
+                      <span style={{ color: "var(--n500, #64748b)", marginLeft: 8, fontSize: 12 }}>{c?.name || "—"}{p.tarih ? ` · ${fmtTR(p.tarih)}` : ""}{p.ucret ? ` · ${fmtCur(p.ucret, p.currency)}` : ""}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
             <div style={{ height: 8 }} />

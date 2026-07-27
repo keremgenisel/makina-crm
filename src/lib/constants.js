@@ -181,7 +181,9 @@ export const BACKUP_APP_TAG = "altunmak-crm";
 export const BACKUP_ENC_MARKER = "altunmak-crm-encrypted";
 
 export const SERVICE_TYPES = ["İlk Çalıştırma", "Garanti İçi", "Garanti Dışı", "Periyodik Bakım"];
-export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Kargo", "Fabrika Teslim"];
+// Not: "Kargo" seçeneği kaldırıldı (artık yeni serviste sunulmuyor). Eski "Kargo" repairPlace'li
+// kayıtlar korunur: ServiceForm mevcut değeri listede yoksa ekler, print çevirileri (placeKargo) durur.
+export const REPAIR_PLACES = ["Yerinde Onarım", "Fabrikada Onarım", "Fabrika Teslim"];
 
 // ── Firma çalışma saatleri (Ayarlar > Firma) ──
 // Servis işçilik süresi (bakım başlangıcı → bitiş) yalnız bu mesai pencerelerine denk gelen
@@ -207,7 +209,7 @@ export const SERVIS_ALARM_VARSAYILAN = { acik: false, sesSn: 25, yanipSn: 40 };
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.11.0";
+export const APP_VERSION = "3.12.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

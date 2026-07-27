@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseTabPerms, parseSettingsPerms, parseCustomerActionsPerms, parseFinanceActionsPerms,
-  ALL_TABS, DEFAULT_USER_TABS, CUSTOMER_ACTION_GROUPS,
+  ALL_TABS, DEFAULT_USER_TABS, CUSTOMER_ACTION_GROUPS, DEALER_ACTION_GROUPS,
 } from "../src/components/settings/serverPermissionDefs.js";
 
 describe("parse* — permissions JSON'undan bölüm çıkarma", () => {
@@ -38,6 +38,21 @@ describe("izin tanım verisi tutarlılığı", () => {
     const servisGrup = CUSTOMER_ACTION_GROUPS.find(g => g.grup === "Makina Geçmişi — Servisler");
     expect(servisGrup, "SERVIS_GRUP adı UserManager ile eşleşmiyor").toBeTruthy();
     const ids = servisGrup.items.map(i => i.id);
-    expect(ids).toEqual(["cust_service_add", "cust_service_edit", "cust_service_payment", "cust_service_delete", "cust_service_pano_kaldir", "cust_service_pano_arsiv"]);
+    expect(ids).toEqual(["cust_service_add", "cust_service_edit", "cust_service_payment", "cust_service_delete", "cust_service_pano_kaldir", "cust_service_pano_arsiv", "servis_yedek_parca_add", "kargo_pano_kaldir", "kargo_pano_arsiv", "kalip_pano_kaldir", "kalip_pano_arsiv"]);
+  });
+
+  it("yedek parça satışı EKLE izinleri üç arayüz için üç ayrı boyutta tanımlı", () => {
+    const custIds = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+    expect(custIds).toContain("cust_yedek_parca_add");    // müşteri detayı butonu
+    expect(custIds).toContain("servis_yedek_parca_add");  // pano butonu
+    const dealerIds = DEALER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+    expect(dealerIds).toContain("dealer_yedek_parca_add"); // bayi butonu
+  });
+
+  it("yedek parça (müşteri) düzenle/ödeme/sil izinleri tanımlı", () => {
+    const custIds = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+    expect(custIds).toContain("cust_yedek_parca_edit");
+    expect(custIds).toContain("cust_yedek_parca_payment");
+    expect(custIds).toContain("cust_yedek_parca_delete");
   });
 });

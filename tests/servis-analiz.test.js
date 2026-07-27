@@ -1,6 +1,6 @@
 // Servis Panosu zaman analizi — saf hesap fonksiyonları (utils + servisAnaliz).
 import { describe, it, expect } from "vitest";
-import { sureDk, sureBicim, fmtZaman } from "../src/lib/utils";
+import { sureDk, sureBicim, sureBicimSaat, fmtZaman } from "../src/lib/utils";
 import { servisSureleri } from "../src/lib/servisAnaliz";
 
 describe("sureDk", () => {
@@ -28,6 +28,19 @@ describe("sureBicim", () => {
     expect(sureBicim(3063)).toBe("2 gün 3 saat 3 dk"); // tam döküm
     expect(sureBicim(0)).toBe("0 dk");
     expect(sureBicim(null)).toBe("—");
+  });
+});
+
+describe("sureBicimSaat", () => {
+  it("gün'e bölmeden yalnız saat+dk gösterir (İşçilik için)", () => {
+    expect(sureBicimSaat(45)).toBe("45 dk");
+    expect(sureBicimSaat(60)).toBe("1 saat");
+    expect(sureBicimSaat(135)).toBe("2 saat 15 dk");
+    expect(sureBicimSaat(1440)).toBe("24 saat");        // gün'e dönmez
+    expect(sureBicimSaat(1878)).toBe("31 saat 18 dk");  // 24+7 saat 18 dk (1 gün 7 saat 18 dk yerine)
+    expect(sureBicimSaat(1500)).toBe("25 saat");        // 25sa 0dk → dk atlanır
+    expect(sureBicimSaat(0)).toBe("0 dk");
+    expect(sureBicimSaat(null)).toBe("—");
   });
 });
 

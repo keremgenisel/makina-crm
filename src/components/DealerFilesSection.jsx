@@ -8,10 +8,10 @@ import { logAction, getAuditUsername } from "../lib/audit";
 // değiştirilebilir (yanlış seçilirse silip yeniden yüklemeye gerek yok). window.appFiles yerel/istemci
 // farkını yönetir; çevrimdışıyken (cevrimdisi) ekleme/açma/indirme kilitlenir.
 const TUR_RENK = { PDF: "var(--red600, #dc2626)", JPG: "var(--purTx, #7c3aed)", XLS: "var(--cyan, #0891b2)", DOC: "var(--blu600, #2563eb)", TXT: "var(--n500, #64748b)", DOSYA: "var(--n400, #94a3b8)" };
-const REF_ROZET = { bayi: { bg: "var(--ambBg, #fffbeb)", fg: "var(--amb800, #92400e)" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" } };
+const REF_ROZET = { bayi: { bg: "var(--ambBg, #fffbeb)", fg: "var(--amb800, #92400e)" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, yedekkargo: { bg: "#ecfeff", fg: "var(--cyan, #0891b2)" } };
 const fmtBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
 
-export function DealerFilesSection({ dealer, dosyalar = [], setDosyalar = null, services = [], customers = [], canDo = () => true, showToast = () => {}, serverPermissions = null, cevrimdisi = false, odak = null, onOdakChange = null }) {
+export function DealerFilesSection({ dealer, dosyalar = [], setDosyalar = null, services = [], customers = [], yedekKargolar = [], canDo = () => true, showToast = () => {}, serverPermissions = null, cevrimdisi = false, odak = null, onOdakChange = null }) {
   const [acik, setAcik] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmDelId, setConfirmDelId] = useState(null);
@@ -36,7 +36,7 @@ export function DealerFilesSection({ dealer, dosyalar = [], setDosyalar = null, 
   }, [odak]);
   if (!setDosyalar || !dealer) return null;
 
-  const bagliMi = services.length > 0; // bağ seçimi yalnızca anlaşmalı serviste (servisi olan) anlamlı
+  const bagliMi = services.length > 0 || yedekKargolar.length > 0; // bağ seçimi: anlaşmalı servis VEYA yedek parça (kargo) satışı varsa anlamlı
   // Odak aktifse yalnız o kaydın dosyaları gösterilir (müşteri detayındaki dosyaFiltre gibi).
   const gosterilecek = odak ? liste.filter(d => (d.refType || "bayi") === odak.refType && d.refId === odak.refId) : liste;
   const svcEtiket = (s) => {
@@ -49,9 +49,11 @@ export function DealerFilesSection({ dealer, dosyalar = [], setDosyalar = null, 
   const secenekler = () => [
     <option key="b" value="bayi|">Bu bayi (genel)</option>,
     ...services.map(s => <option key={s.id} value={`servis|${s.id}`}>{svcEtiket(s)}</option>),
+    ...yedekKargolar.map(p => <option key={`ypk${p.id}`} value={`yedekkargo|${p.id}`}>Yedek Parça (Kargo) · {p.ad || ""}</option>),
   ];
   const refEtiketi = (rt, rid) => {
     if (rt === "servis") { const s = services.find(x => x.id === rid); return s ? svcEtiket(s) : "Servis"; }
+    if (rt === "yedekkargo") { const p = yedekKargolar.find(x => x.id === rid); return p ? `Yedek Parça (Kargo) · ${p.ad || ""}` : "Yedek Parça (Kargo)"; }
     return "Bayi";
   };
 

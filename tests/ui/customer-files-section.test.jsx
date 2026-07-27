@@ -43,4 +43,17 @@ describe("CustomerFilesSection", () => {
     expect(screen.getByText("servis.pdf")).toBeTruthy();
     expect(screen.queryByTitle("Sil")).toBeNull();
   });
+
+  it("bağ seçicide yedek parça (kargo) satışları da hedef olarak listelenir", () => {
+    render(<CustomerFilesSection {...base} dosyaFiltre={null} detailYedekKargolar={[{ id: 700, ad: "Dişli ×5" }]} />);
+    const sel = screen.getByTitle("Yeni dosyanın bağlanacağı kayıt");
+    expect(within(sel).getByRole("option", { name: /Yedek Parça \(Kargo\) · Dişli ×5/ })).toBeTruthy();
+  });
+
+  it("yedek parça (kargo) kaydına bağlı dosyanın rozet etiketi doğru gösterilir", () => {
+    const dosyalar = [{ id: 3, refType: "yedekkargo", refId: 700, ad: "kargo-fis.pdf", tur: "PDF", boyut: 500, tarih: "2026-07-03" }];
+    render(<CustomerFilesSection {...base} detailDosyalar={dosyalar} dosyalar={dosyalar} dosyaFiltre={{ refType: "yedekkargo", refId: 700 }} detailYedekKargolar={[{ id: 700, ad: "Dişli ×5" }]} />);
+    expect(screen.getByText("kargo-fis.pdf")).toBeTruthy();
+    expect(screen.getAllByText(/Yedek Parça \(Kargo\) · Dişli ×5/).length).toBeGreaterThan(0);
+  });
 });

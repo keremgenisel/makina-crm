@@ -48,4 +48,64 @@ describe("deriveCustomerDetail", () => {
     const r = deriveCustomerDetail(base({ detailView, services }));
     expect(r.detailHistory.length).toBe(0);
   });
+
+  it("yedek parça tahsisi bu makinaya bağlıysa timeline'a düşer, değilse düşmez", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const yedekParcaSatislar = [{
+      id: 650, dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01",
+      tahsisler: [
+        { miktar: 2, customerId: 1, serialNo: "SN1", tarih: "2026-04-10" }, // bu makinaya
+        { miktar: 3, customerId: 999, serialNo: "SN2", tarih: "2026-04-11" }, // başka makinaya
+      ],
+    }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers, parts }));
+    const kargo = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
+    expect(kargo).toHaveLength(1); // yalnız bu makinaya tahsis edilen
+    expect(kargo[0].desc).toMatch(/2 adet Dişli/);
+    expect(kargo[0].desc).toMatch(/bayi Bayi X/);
+  });
+
+  it("henüz tahsis edilmemiş yedek parça satışı hiçbir makinaya düşmez", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [{ id: 650, dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [] }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar }));
+    expect(r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)")).toHaveLength(0);
+  });
+
+  it("müşterinin kendi yedek parça (kargo) alımı düzenlenebilir timeline olayı üretir (yp + fiyat)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [{ id: 700, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 5, birimFiyat: 100, currency: "TRY", tarih: "2026-04-01", odendi: false, tahsisler: [{ customerId: 1, miktar: 5 }] }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, parts }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
+    expect(olaylar).toHaveLength(1); // tahsis + müşteri alımı çift olay YOK
+    expect(olaylar[0].yp).toBeTruthy();
+    expect(olaylar[0].yp.id).toBe(700);
+    expect(olaylar[0].yp.odendi).toBe(false); // toggle bu değeri kullanır
+    expect(olaylar[0].desc).toMatch(/5 adet Dişli/);
+  });
+
+  it("bayi alımından tahsis edilen yedek parça olayı salt-okunur (yp yok)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [{ id: 650, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [{ customerId: 1, miktar: 5 }] }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers: [{ id: 5, name: "Bayi X" }] }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
+    expect(olaylar).toHaveLength(1);
+    expect(olaylar[0].yp).toBeUndefined();
+  });
+
+  it("müşteriye yapılan ödenmemiş yedek parça (kargo) satışı borca eklenir (KDV dahil)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    // 3 × 100 = 300 net; Faturalı Yurtiçi KDV %20 → 60; toplam 360
+    const yedekParcaSatislar = [
+      { id: 700, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 3, birimFiyat: 100, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-01", odendi: false, tahsisler: [] },
+      { id: 701, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 2, birimFiyat: 50, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-02", odendi: true, tahsisler: [] }, // ödendi → borç değil
+      { id: 702, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, birimFiyat: 999, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-03", odendi: false, tahsisler: [] }, // bayi alıcı → müşteri borcu değil
+    ];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar }));
+    expect(r.detailEkBorcAyniPB).toBe(360);
+    expect(r.detailKalanBorcToplam).toBe(360);
+  });
 });

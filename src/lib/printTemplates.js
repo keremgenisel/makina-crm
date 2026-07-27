@@ -1,5 +1,5 @@
 import LOGO from "../assets/logo.avif?inline";
-import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster } from "./utils";
+import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
@@ -193,6 +193,12 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     disServisLabel: "İşlemi yapan firma (anlaşmasız)",
     kalipBaslik: "EXTRA KALIPLAR",
     thKalip: "Kalıp",
+    yedekParcaBaslik: "SATILAN YEDEK PARÇALAR",
+    thParca: "Parça",
+    thMiktar: "Miktar",
+    thKaynak: "Kaynak",
+    kaynakBayi: "Bayi üzerinden",
+    kaynakDogrudan: "Doğrudan",
     typeIlkCalistirma: "İlk Çalıştırma",
     typeGarantiIci: "Garanti İçi",
     typeGarantiDisi: "Garanti Dışı",
@@ -237,6 +243,12 @@ export const DEFAULT_MAKINA_TRANSLATIONS = {
     disServisLabel: "Service firm (non-contracted)",
     kalipBaslik: "EXTRA MOLDS",
     thKalip: "Mold",
+    yedekParcaBaslik: "SPARE PARTS SOLD",
+    thParca: "Part",
+    thMiktar: "Quantity",
+    thKaynak: "Source",
+    kaynakBayi: "Via dealer",
+    kaynakDogrudan: "Direct",
     typeIlkCalistirma: "First Start-Up",
     typeGarantiIci: "Under Warranty",
     typeGarantiDisi: "Out of Warranty",
@@ -349,11 +361,12 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   ${sv.degisenParcalar?.length ? `
   <h2>${esc(L.degisenParcalarBaslik)}</h2>
   ${(() => {
-    const lines = sv.degisenParcalar.map(p => {
+    const lines = parcaGruplari(sv.degisenParcalar).map(({ p, adet }) => {
       const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p);
       const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
       const suffix = (typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : "";
-      return esc(fiyat > 0 ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})` : `${ad}${suffix}`);
+      const adetTxt = adet > 1 ? ` x${adet}` : "";
+      return esc(fiyat > 0 ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})${adetTxt}` : `${ad}${suffix}${adetTxt}`);
     });
     const cellStyle = "border:none;padding:8px;vertical-align:top;font-size:10.5px;line-height:1.6;width:50%";
     if (lines.length <= 5) {
@@ -427,7 +440,7 @@ export function printServiceForm(sv, customers, kdvRates, translations = {}, kas
 
 // HTML üretimi (Yazdır ve E-posta eki/PDF için paylaşılan mantık) — Makina Servis ve Yedek Parça Geçmişi Raporu
 // translations: { _lang: "TR"|"EN", TR: {...overrides}, EN: {...overrides} }
-export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = []) {
+export function buildMachineReportHtml(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = [], yedekParcaSatislar = [], dealers = []) {
   const lang = translations?._lang || "TR";
   const L = { ...DEFAULT_MAKINA_TRANSLATIONS[lang] || DEFAULT_MAKINA_TRANSLATIONS.TR, ...(translations?.[lang] || {}) };
 
@@ -463,12 +476,28 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   const svcRows = detailHistory.length === 0
     ? `<tr><td colspan="5" style="text-align:center">${esc(L.servisYok)}</td></tr>`
     : detailHistory.map(sv =>
-        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(sv.degisenParcalar.map(p => { const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p); return ad + ((typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : ""); }).join(", "))}` : ""}${disServisMi(sv) ? `<br><b>${esc(L.disServisLabel)}:</b> ${esc([islemFirmaGoster(sv), sv.islemFirmaYetkili, sv.islemFirmaTel].filter(Boolean).join(" · "))}` : ""}</td></tr>`
+        `<tr><td>${esc(fmtTR(sv.date))}</td><td>${esc(transType(L, sv.type))}</td><td>${esc(transPlace(L, sv.repairPlace || "—"))}</td><td>${esc(sv.tech || "—")}</td><td>${esc(sv.yapilanIsler || sv.description || "")}${sv.degisenParcalar?.length ? `<br><b>${esc(L.degisenParcalarLabel)}</b> ${esc(parcaGruplari(sv.degisenParcalar).map(({ p, adet }) => { const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p); const suffix = (typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : ""; return ad + suffix + (adet > 1 ? ` x${adet}` : ""); }).join(", "))}` : ""}${disServisMi(sv) ? `<br><b>${esc(L.disServisLabel)}:</b> ${esc([islemFirmaGoster(sv), sv.islemFirmaYetkili, sv.islemFirmaTel].filter(Boolean).join(" · "))}` : ""}</td></tr>`
       ).join("");
 
   const givenParts = (partSales || []).filter(ps => ps.customerId === detailView.id).sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
   const partRows = givenParts.map(ps =>
     `<tr><td>${esc(fmtTR(ps.tarih))}</td><td>${esc(ps.ad)}${ps.olcu ? ` (${esc(ps.olcu)})` : ""}${(ps.satisFirma && ps.satisFirma !== raporFactoryName) ? `<br><span style="color:#555">${esc(L.satisYapanLabel)}: ${esc(satisFirmaGoster(ps))}</span>` : ""}</td></tr>`
+  ).join("");
+
+  // Bu makinaya tahsis edilmiş yedek parça satışları (bayi üzerinden tahsis edildiyse belirtilir).
+  const yedekParcaTahsisleri = [];
+  for (const s of (yedekParcaSatislar || [])) {
+    if (s.deletedAt) continue;
+    for (const t of (s.tahsisler || [])) {
+      if (t.customerId !== detailView.id) continue;
+      const part = (parts || []).find(p => String(p.id) === String(s.partId));
+      const bayi = s.aliciTipi === "bayi" ? ((dealers || []).find(d => d.id === s.dealerId)?.name || "") : "";
+      yedekParcaTahsisleri.push({ tarih: t.tarih || s.tarih, ad: part?.ad || "—", miktar: t.miktar, bayi });
+    }
+  }
+  yedekParcaTahsisleri.sort((a, b) => String(a.tarih || "").localeCompare(String(b.tarih || "")));
+  const yedekParcaRows = yedekParcaTahsisleri.map(r =>
+    `<tr><td>${esc(fmtTR(r.tarih))}</td><td>${esc(r.ad)}</td><td>${esc(r.miktar)}</td><td>${r.bayi ? `${esc(L.kaynakBayi)}: ${esc(r.bayi)}` : esc(L.kaynakDogrudan)}</td></tr>`
   ).join("");
 
   const html = `<!DOCTYPE html>
@@ -523,6 +552,12 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
   <table class="svc">
     <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thKalip)}</th></tr></thead>
     <tbody>${partRows}</tbody>
+  </table>` : ""}
+  ${yedekParcaTahsisleri.length > 0 ? `
+  <h2>${esc(L.yedekParcaBaslik)} (${yedekParcaTahsisleri.length} ${esc(L.kayitSuffix)})</h2>
+  <table class="svc">
+    <thead><tr><th>${esc(L.thTarih)}</th><th>${esc(L.thParca)}</th><th>${esc(L.thMiktar)}</th><th>${esc(L.thKaynak)}</th></tr></thead>
+    <tbody>${yedekParcaRows}</tbody>
   </table>` : ""}
   ${kaseResmi ? `<div style="text-align:right;margin:16px 0 8px;"><img src="${guvenliKase(kaseResmi)}" style="max-height:80px;max-width:150px;object-fit:contain;" alt="kaşe"></div>` : ""}
   <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</` + `script>
@@ -638,10 +673,10 @@ export function buildSandikEtiketiHtml(gonderen, alici, translations = {}) {
 }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
-export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = []) {
+export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = [], yedekParcaSatislar = [], dealers = []) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
-  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts, factory, partTypeDefs));
-  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts, factory, partTypeDefs)) : null;
+  const htmlPrint = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, "", parts, factory, partTypeDefs, yedekParcaSatislar, dealers));
+  const htmlPdf   = kaseResmi ? stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, translations, kaseResmi, parts, factory, partTypeDefs, yedekParcaSatislar, dealers)) : null;
   if (window.appPrint) {
     window.appPrint.printHtml(htmlPrint, htmlPdf, defaultName);
     return;

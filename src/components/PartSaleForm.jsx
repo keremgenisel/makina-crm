@@ -3,13 +3,18 @@ import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
+const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
+
 // Extra Kalıp satışı/çıkışı ekleme-düzenleme formu — Parts.jsx ve Customers.jsx (müşteri
 // detayından "Extra Kalıp Satışı") tarafından paylaşılır, Services/ServiceForm ile aynı desen.
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, geoData = null, loadingGeo = false }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, geoData = null, loadingGeo = false }) => {
   const [custSearch, setCustSearch] = useState("");
+  const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
+  const panoyaGonder = !!form.kargoDurum; // Servis Panosuna gönderiliyor mu (kargoDurum set ise evet)
+  const panoDusIleri = !!form.panoDusmeZamani && new Date(form.panoDusmeZamani).getTime() > Date.now();
   const factoryName = factory?.name || "Altuntaş Makina";
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false);
 
@@ -220,6 +225,47 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* Servis ve Kargo Panosuna gönder — servis formundaki "Servis Panosunda göster" ile aynı desen.
+          Açıkken kalıp panoya (Bekliyor) düşer + kargo bilgisi alanları görünür. Satış firmasından bağımsız. */}
+      {selectedCust && (
+        <div style={{ marginTop: 12, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: panoyaGonder ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", padding: "10px 12px" }}>
+            <input type="checkbox" checked={panoyaGonder}
+              onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--blu600, #2563eb)" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: panoyaGonder ? "var(--blu700, #1d4ed8)" : "var(--n600, #475569)" }}>
+              📦 Servis ve Kargo Panosuna gönder (kargo takibi)
+            </span>
+          </label>
+          {panoyaGonder && (
+            <div style={{ padding: 12, display: "grid", gap: 10, borderTop: "1px solid var(--n200, #e2e8f0)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+                <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />
+                <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />
+                <Input type="date" value={form.kargoTarih || ""} onChange={e => setForm(p => ({ ...p, kargoTarih: e.target.value }))} />
+                <Select value={form.kargoDurum || "Hazırlanıyor"} onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.value }))}>
+                  {KARGO_DURUMLARI.map(d => <option key={d}>{d}</option>)}
+                </Select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <Field label="Kargoyu Verecek Kişi">
+                  <Input list="kalip-kargoci-listesi" value={form.kargoSorumlusu || ""} placeholder="Seçin veya yazın..."
+                    onChange={e => setForm(p => ({ ...p, kargoSorumlusu: e.target.value }))} />
+                  <datalist id="kalip-kargoci-listesi">{kargociAdlari.map(a => <option key={a} value={a} />)}</datalist>
+                </Field>
+                <Field label="Panoya Düşme Zamanı">
+                  <Input type="datetime-local" value={(form.panoDusmeZamani || "").slice(0, 16)}
+                    onChange={e => setForm(p => ({ ...p, panoDusmeZamani: e.target.value }))} />
+                  <span style={{ fontSize: 11, color: panoDusIleri ? "var(--amb700, #b45309)" : "var(--n400, #94a3b8)" }}>
+                    {panoDusIleri ? "O zamana kadar panoda görünmez." : "Boş bırakılırsa hemen panoda görünür."}
+                  </span>
+                </Field>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

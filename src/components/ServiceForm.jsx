@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -8,15 +8,19 @@ import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, C
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
 export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [] }) => {
-  // Teknisyen: firma çalışanları (Ayarlar) datalist önerisi olarak sunulur; alan yine serbest metin
-  // olduğu için listede olmayan bir isim de elle yazılabilir.
+  // Teknisyen: firma çalışanları (Ayarlar) açılır listeden seçilir; listede olmayan harici usta için
+  // "Diğer (elle yaz)" seçeneği serbest metin kutusu açar. Açılır liste, seçili olsa bile TÜM çalışanları
+  // gösterir (datalist gibi önce silmek gerekmez).
   const teknisyenAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean);
+  const [techElle, setTechElle] = useState(false);
   const factoryName = factory?.name || "Altuntaş Makina";
   // "Servis Panosunda göster": durum'u yönetir (açık → "Bekliyor"/mevcut, kapalı → boş = panoda çıkmaz).
   // Akıllı varsayılan: yeni serviste tarih bugünse panoda, geçmiş tarihliyse panosuz. Kullanıcı
   // checkbox'a elle dokununca (panoElle) tarih değişse de dokunulmaz.
   const [panoElle, setPanoElle] = useState(false);
   const anlasmaliFirmalar = (dealers || []).filter(d => d.anlasmaliServisMi);
+  // Panoya düşme zamanı ileride mi? (yeni serviste "planlanmış" servis = o zamana kadar panoda görünmez)
+  const girisIleri = !!form.fabrikaGirisZamani && new Date(form.fabrikaGirisZamani).getTime() > Date.now();
   const [custSearch, setCustSearch] = useState("");
   // Seçili müşterinin yetkili/adres bilgisini gösteren aç/kapa paneli (salt-okunur).
   const [yetkiliAcik, setYetkiliAcik] = useState(false);
@@ -149,19 +153,44 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           const t = e.target.value;
           setForm(p => {
             const g = { ...p, date: t };
-            // Yeni serviste (id yok) ve checkbox'a elle dokunulmadıysa: bugün → panoda, geçmiş → panosuz.
-            if (!p.id && !panoElle) g.durum = (t && t === today()) ? "Bekliyor" : "";
+            // Yeni serviste (id yok) ve checkbox'a elle dokunulmadıysa: bugün/ileri → panoda, geçmiş → panosuz.
+            if (!p.id && !panoElle) g.durum = (t && t >= today()) ? "Bekliyor" : "";
+            // İleri tarih + panoda gösterilecekse: düşme zamanını o tarihe çek (08:00 ön-doldur;
+            // kullanıcı saati "Panoya Düşme Zamanı" alanından değiştirebilir).
+            if (!p.id && t && t > today() && g.durum === "Bekliyor") {
+              const mevcut = (p.fabrikaGirisZamani || "").slice(0, 10);
+              if (!p.fabrikaGirisZamani || mevcut !== t) g.fabrikaGirisZamani = `${t}T08:00`;
+            }
+            // Bugüne/geçmişe çekilirse ileri-planlı damgayı temizle (kayıtta simdiYerel damgalanır).
+            if (!p.id && t && t <= today() && (p.fabrikaGirisZamani || "").slice(0, 10) > today()) {
+              g.fabrikaGirisZamani = "";
+            }
             return g;
           });
         }} /></Field>
         <Field label="Teknisyen">
-          {/* Çalışan listesinden seçilebilir VEYA elle serbest yazılabilir (datalist) —
-              anlaşmasız dış servis/harici usta gibi listede olmayan isimler için. */}
-          <Input list="servis-teknisyen-listesi" value={form.tech || ""} placeholder="Seçin veya yazın..."
-            onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} />
-          <datalist id="servis-teknisyen-listesi">
-            {teknisyenAdlari.map(t => <option key={t} value={t} />)}
-          </datalist>
+          {/* Açılır liste tüm çalışanları gösterir; seçili olsa bile başkasını seçmek için önce silmek
+              gerekmez. Harici usta için "Diğer (elle yaz)" serbest metin kutusu açar. */}
+          {(() => {
+            const teknListede = teknisyenAdlari.includes(form.tech);
+            const techDiger = techElle || (!!form.tech && !teknListede);
+            return (<>
+              <Select value={techDiger ? "__diger__" : (form.tech || "")}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === "__diger__") setTechElle(true);
+                  else { setTechElle(false); setForm(p => ({ ...p, tech: v })); }
+                }}>
+                <option value="">Kim yapıyor?</option>
+                {teknisyenAdlari.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="__diger__">Diğer (elle yaz)…</option>
+              </Select>
+              {techDiger && (
+                <Input value={form.tech || ""} placeholder="Harici teknisyen adı..." style={{ marginTop: 6 }}
+                  onChange={e => setForm(p => ({ ...p, tech: e.target.value }))} />
+              )}
+            </>);
+          })()}
         </Field>
         <Field label="Tür">
           <Select value={form.type || "Periyodik Bakım"} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
@@ -171,8 +200,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Select>
         </Field>
         <Field label="Yapılan İşlem">
+          {/* Eski kayıt listede olmayan bir değer (ör. kaldırılan "Kargo") taşıyorsa onu da göster,
+              böylece düzenlemede değer kaybolmaz / sessizce değişmez. */}
           <Select value={form.repairPlace || "Yerinde Onarım"} onChange={e => setForm(p => ({ ...p, repairPlace: e.target.value }))}>
-            {REPAIR_PLACES.map(t => <option key={t}>{t}</option>)}
+            {[...REPAIR_PLACES, ...(form.repairPlace && !REPAIR_PLACES.includes(form.repairPlace) ? [form.repairPlace] : [])].map(t => <option key={t}>{t}</option>)}
           </Select>
         </Field>
       </div>
@@ -185,6 +216,30 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)" }}>Servis Panosunda göster</span>
         <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>(kapalıysa yalnız müşteri geçmişine kaydedilir, panoya düşmez)</span>
       </label>
+
+      {/* Yeni servis + Bekliyor: panoya düşme zamanı. İleri alınırsa o gün/saat gelene kadar panoda görünmez. */}
+      {!form.id && form.durum === "Bekliyor" && (
+        <div style={{ margin: "0 0 12px", padding: "10px 12px", background: girisIleri ? "var(--ambBg, #fffbeb)" : "var(--n100, #f8fafc)", border: `1px solid ${girisIleri ? "var(--ambBr, #fde68a)" : "var(--n200, #e2e8f0)"}`, borderRadius: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)" }}>🕒 Panoya Düşme Zamanı</span>
+            <div style={{ flex: "0 1 220px" }}>
+              <Input type="datetime-local" value={(form.fabrikaGirisZamani || "").slice(0, 16)}
+                onChange={e => setForm(p => ({ ...p, fabrikaGirisZamani: e.target.value }))} />
+            </div>
+            {form.fabrikaGirisZamani && (
+              <button type="button" onClick={() => setForm(p => ({ ...p, fabrikaGirisZamani: "" }))}
+                style={{ fontSize: 12, fontWeight: 600, color: "var(--n500, #64748b)", background: "none", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, cursor: "pointer", padding: "5px 10px" }}>
+                Hemen (temizle)
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 11.5, color: girisIleri ? "var(--amb600, #d97706)" : "var(--n400, #94a3b8)", marginTop: 6 }}>
+            {girisIleri
+              ? `Bu servis ${fmtZamanTam(form.fabrikaGirisZamani)} tarihinde panoya düşecek (o zamana kadar panoda görünmez).`
+              : "Boş bırakılırsa servis kaydedilince hemen panoya düşer. İleri bir tarih/saat seçerseniz o zaman geldiğinde düşer."}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="İşlemi Yapan Firma">
@@ -241,8 +296,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </Field>
       </div>
 
-      {/* Servis Panosu aşama zamanları — tam genişlik alt satır, üç alan yanyana. */}
-      {form.durum && (
+      {/* Servis Panosu aşama zamanları — düzenlemede (mevcut servis) tam döküm. Yeni serviste bunun
+          yerine yukarıdaki "Panoya Düşme Zamanı" alanı kullanılır (bakım/bitiş henüz oluşmadı). */}
+      {form.id && form.durum && (
         <Field label="Servis Panosu Zamanları (otomatik — gerekirse düzeltin)">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>

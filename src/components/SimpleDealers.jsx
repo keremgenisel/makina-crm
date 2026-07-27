@@ -2,16 +2,31 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { uid, bumpId, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul } from "../lib/utils";
+import { uid, bumpId, today, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
+import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
+import { yeniYedekParcaSatis } from "../lib/yedekParcaSatis";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null }) => {
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [] }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
+  const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu bayi alıcı seçili)
+  const openAddYedekParca = (dealer) => {
+    if (!canDo("dealer_yedek_parca_add")) return;
+    setYpForm({ aliciTipi: "bayi", dealerId: dealer.id, musteriId: "", partId: "", miktar: "", birimFiyat: "", currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false, kargoDurum: "Hazırlanıyor" });
+  };
+  const saveYedekParca = () => {
+    const r = yeniYedekParcaSatis(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    if (!r.ok) { showToast(r.hata, "err"); return; }
+    logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: r.id, entityName: dealers.find(d => d.id === Number(ypForm.dealerId))?.name });
+    showToast("Yedek parça satışı kaydedildi, stoktan düşüldü.");
+    setYpForm(null);
+  };
 
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -38,24 +53,38 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   // (Karar: Seçenek A — parça ücreti gerçek bir Altuntaş satışı ama borçlusu müşteri değil bu firma)
   const borcMap = useMemo(() => {
     const map = {};
+    const ensure = (name) => (map[name] = map[name] || { byCur: {}, kdvByCur: {}, records: [], ypRecords: [] });
     services.forEach(s => {
       if (!isParcaBorcluAnlasmaliFirmaya(s, factoryName)) return;
       const name = s.islemFirma;
-      if (!map[name]) map[name] = { byCur: {}, kdvByCur: {}, records: [] };
+      const m = ensure(name);
       const curK = s.parcaCurrency || s.currency || "TRY";
       const tutar = altuntasParcaBedeli(s);
       const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
-      map[name].byCur[curK] = (map[name].byCur[curK] || 0) + tutar;
-      map[name].kdvByCur[curK] = (map[name].kdvByCur[curK] || 0) + kdv;
-      map[name].records.push(s);
+      m.byCur[curK] = (m.byCur[curK] || 0) + tutar;
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + kdv;
+      m.records.push(s);
+    });
+    // Bayiye yapılan ödenmemiş yedek parça (kargo) satışları da bayinin borcu (bayi adına göre gruplanır)
+    (yedekParcaSatislar || []).forEach(s => {
+      if (s.aliciTipi === "musteri" || !isYedekParcaBorcluMu(s)) return;
+      const bayi = (dealers || []).find(d => d.id === Number(s.dealerId));
+      if (!bayi?.name) return;
+      const m = ensure(bayi.name);
+      const curK = s.currency || "TRY";
+      const bedel = yedekParcaBedeli(s);
+      const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+      m.byCur[curK] = (m.byCur[curK] || 0) + bedel;
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + kdv;
+      m.ypRecords.push(s);
     });
     return map;
-  }, [services, factoryName, kdvRates]);
+  }, [services, factoryName, kdvRates, yedekParcaSatislar, dealers]);
   const dealerHasDebt = (d) => !!(borcMap[d.name] && Object.values(borcMap[d.name].byCur).some(v => v > 0));
 
   const [dealerSvcSearch, setDealerSvcSearch] = useState("");
   const [dosyaOdak, setDosyaOdak] = useState(null); // { refType:"servis", refId } — servis kartındaki ataş rozetine tıklayınca
-  useEffect(() => { setDealerSvcSearch(""); setDosyaOdak(null); }, [detailView]);
+  useEffect(() => { setDealerSvcSearch(""); setDealerYpSearch(""); setDealerKalipSearch(""); setDosyaOdak(null); }, [detailView]);
   // Servis kartındaki ataş rozeti adedi: servise bağlı dosyalar (sahibi bayi VEYA müşteri olabilir;
   // servis kimliği benzersiz olduğu için sahipten bağımsız sayılır).
   const dosyaAdet = (refType, refId) => dosyalar.filter(d => !d.deletedAt && d.refType === refType && d.refId === refId).length;
@@ -78,6 +107,42 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   }, [dealerServices, dealerSvcSearch, customers]);
 
   const { page: svcPage, setPage: setSvcPage, paged: svcPaged } = usePagination(dealerSvcFiltered, 5);
+
+  // Bu bayiye yapılan yedek parça (kargo) satışları — "Yedek Parça Geçmişi" bölümü (servis geçmişi gibi)
+  const [dealerYpSearch, setDealerYpSearch] = useState("");
+  const dealerYedekParca = useMemo(() => {
+    if (!detailView || detailView._isFactory) return [];
+    return (yedekParcaSatislar || [])
+      .filter(s => !s.deletedAt && s.aliciTipi !== "musteri" && Number(s.dealerId) === detailView.id)
+      .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
+  }, [yedekParcaSatislar, detailView]);
+  const dealerYpFiltered = useMemo(() => {
+    if (!dealerYpSearch.trim()) return dealerYedekParca;
+    const q = aramaNormalize(dealerYpSearch.trim());
+    return dealerYedekParca.filter(s => {
+      const part = (parts || []).find(p => String(p.id) === String(s.partId));
+      return aramaNormalize([parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.kargoDurum, s.tarih].filter(Boolean).join(" ")).includes(q);
+    });
+  }, [dealerYedekParca, dealerYpSearch, parts]);
+  const { page: ypPage, setPage: setYpPage, paged: ypPaged } = usePagination(dealerYpFiltered, 5);
+
+  // Bu bayinin/anlaşmalı servisin SATTIĞI Extra Kalıplar (satisFirma = bu firma adı) — "Sattığı Kalıplar" bölümü
+  const [dealerKalipSearch, setDealerKalipSearch] = useState("");
+  const dealerKaliplar = useMemo(() => {
+    if (!detailView || detailView._isFactory) return [];
+    return (partSales || [])
+      .filter(p => !p.deletedAt && p.tur === "Kalıp" && p.satisFirma === detailView.name)
+      .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
+  }, [partSales, detailView]);
+  const dealerKalipFiltered = useMemo(() => {
+    if (!dealerKalipSearch.trim()) return dealerKaliplar;
+    const q = aramaNormalize(dealerKalipSearch.trim());
+    return dealerKaliplar.filter(p => {
+      const cust = customers.find(c => c.id === p.customerId);
+      return aramaNormalize([cust?.name, p.ad, p.olcu, p.tarih].filter(Boolean).join(" ")).includes(q);
+    });
+  }, [dealerKaliplar, dealerKalipSearch, customers]);
+  const { page: kalipPage, setPage: setKalipPage, paged: kalipPaged } = usePagination(dealerKalipFiltered, 5);
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
     searchFields: ["name", "city", "contact", "country"],
@@ -346,18 +411,46 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               {Object.entries(borcMap[detailView.name].kdvByCur).filter(([, v]) => v > 0).map(([k, v]) => (
                 <div key={k} style={{ fontSize: 11.5, color: "var(--teal, #0d9488)", fontWeight: 700, marginTop: 3 }}>KDV: {fmtCur(v, k)}</div>
               ))}
+              {Object.entries(borcMap[detailView.name].byCur).filter(([k, v]) => v > 0 && (borcMap[detailView.name].kdvByCur[k] || 0) > 0).map(([k, v]) => (
+                <div key={"kdvd" + k} style={{ fontSize: 12.5, color: "var(--red700, #b91c1c)", fontWeight: 800, marginTop: 4 }}>
+                  KDV dahil toplam: {fmtCur(v + (borcMap[detailView.name].kdvByCur[k] || 0), k)}
+                </div>
+              ))}
               <div style={{ marginTop: 8 }}>
-                {borcMap[detailView.name].records.map(s => (
-                  <div key={s.id}
-                    onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
-                    title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, padding: "6px 0", borderTop: "1px solid var(--redBg2, #fee2e2)", cursor: onGoCustomerDetail ? "pointer" : "default" }}>
-                    <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "var(--redBr, #fecaca)" }}>
-                      {customers.find(c => c.id === s.customerId)?.name || "—"} · {fmtTR(s.date)}
-                    </span>
-                    <span style={{ fontWeight: 700, color: "var(--red600, #dc2626)" }}>{fmtCur(altuntasParcaBedeli(s), s.parcaCurrency || s.currency)}</span>
-                  </div>
-                ))}
+                {borcMap[detailView.name].records.map(s => {
+                  const cur = s.parcaCurrency || s.currency;
+                  const tutar = altuntasParcaBedeli(s);
+                  const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
+                  return (
+                    <div key={s.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
+                      <div
+                        onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
+                        title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, cursor: onGoCustomerDetail ? "pointer" : "default" }}>
+                        <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "var(--redBr, #fecaca)" }}>
+                          {customers.find(c => c.id === s.customerId)?.name || "—"} · {fmtTR(s.date)}
+                        </span>
+                        <span style={{ fontWeight: 700, color: "var(--red600, #dc2626)" }}>{fmtCur(tutar, cur)}</span>
+                      </div>
+                      {kdv > 0 && <div style={{ textAlign: "right", fontSize: 11, color: "var(--n500, #64748b)", marginTop: 1 }}>KDV dahil: {fmtCur(tutar + kdv, cur)}</div>}
+                    </div>
+                  );
+                })}
+                {(borcMap[detailView.name].ypRecords || []).map(s => {
+                  const bedel = yedekParcaBedeli(s);
+                  const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+                  return (
+                    <div key={"yp" + s.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                        <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600 }}>
+                          📦 {parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "Yedek parça"} ×{s.miktar} · {fmtTR(s.tarih)}
+                        </span>
+                        <span style={{ fontWeight: 700, color: "var(--red600, #dc2626)" }}>{fmtCur(bedel, s.currency)}</span>
+                      </div>
+                      {kdv > 0 && <div style={{ textAlign: "right", fontSize: 11, color: "var(--n500, #64748b)", marginTop: 1 }}>KDV dahil: {fmtCur(bedel + kdv, s.currency)}</div>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : null;
@@ -469,6 +562,100 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={5} />
             </div>
           ) : null;
+          const yedekBlok = (!detailView._isFactory && dealerYedekParca.length > 0) ? (
+            <div style={{ marginTop: isServisli ? 16 : 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
+                Yedek Parça Geçmişi ({dealerYedekParca.length})
+              </div>
+              {dealerYedekParca.length > 5 && (
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
+                  <input value={dealerYpSearch} onChange={e => { setDealerYpSearch(e.target.value); setYpPage(1); }}
+                    placeholder="Parça, kargo no ile ara..."
+                    style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
+                </div>
+              )}
+              {ypPaged.length === 0 && (
+                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: isServisli ? "repeat(auto-fill, minmax(300px, 1fr))" : "1fr", gap: 10 }}>
+                {ypPaged.map(s => {
+                  const part = (parts || []).find(p => String(p.id) === String(s.partId));
+                  const bedel = yedekParcaBedeli(s);
+                  const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+                  return (
+                    <div key={s.id}
+                      onClick={() => { if (onGoYedekParca) { setDetailView(null); onGoYedekParca(s.id); } }}
+                      title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
+                      style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid var(--cyan, #0891b2)", cursor: onGoYedekParca ? "pointer" : "default" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(s.tarih) || "—"}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)" }}>📦 {parcaAdi(part) || "Yedek parça"} <span style={{ color: "var(--n500, #64748b)", fontWeight: 600 }}>×{s.miktar}</span></span>
+                        {s.kargoDurum && <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: "2px 7px", background: "var(--bluBg, #eff6ff)", color: "var(--blu700, #1d4ed8)" }}>{s.kargoDurum}</span>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>
+                          {fmtCur(bedel, s.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(bedel + kdv, s.currency)}</span>}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: s.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
+                          {s.odendi ? "Ödendi" : "Ödenmedi"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination total={dealerYpFiltered.length} page={ypPage} setPage={setYpPage} perPage={5} />
+            </div>
+          ) : null;
+          const kalipBlok = (!detailView._isFactory && dealerKaliplar.length > 0) ? (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
+                Sattığı Extra Kalıplar ({dealerKaliplar.length})
+              </div>
+              {dealerKaliplar.length > 5 && (
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
+                  <input value={dealerKalipSearch} onChange={e => { setDealerKalipSearch(e.target.value); setKalipPage(1); }}
+                    placeholder="Müşteri, kalıp ile ara..."
+                    style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
+                </div>
+              )}
+              {kalipPaged.length === 0 && (
+                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: isServisli ? "repeat(auto-fill, minmax(300px, 1fr))" : "1fr", gap: 10 }}>
+                {kalipPaged.map(p => {
+                  const cust = customers.find(c => c.id === p.customerId);
+                  const tutar = parseMoney(p.ucret);
+                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
+                  return (
+                    <div key={p.id}
+                      onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId); } }}
+                      title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
+                      style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid var(--orTx, #c2410c)", cursor: onGoCustomerDetail ? "pointer" : "default" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(p.tarih) || "—"}</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)" }}><Icon name="box" size={13} /> {p.ad || "Kalıp"}{p.olcu ? ` (${p.olcu})` : ""}</span>
+                        {cust && <span style={{ fontSize: 11, fontWeight: 700, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px", textDecoration: onGoCustomerDetail ? "underline" : "none" }}>{cust.name}</span>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>
+                          {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : <>{fmtCur(tutar, p.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(tutar + kdv, p.currency)}</span>}</>}
+                        </span>
+                        {!p.ucretsizMi && (
+                          <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: p.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: p.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
+                            {p.odendi ? "Ödendi" : "Ödenmedi"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination total={dealerKalipFiltered.length} page={kalipPage} setPage={setKalipPage} perPage={5} />
+            </div>
+          ) : null;
           return isServisli ? (
             <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
               <div style={{ width: 340, flexShrink: 0 }}>
@@ -477,21 +664,29 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {servisBlok}
+                {yedekBlok}
+                {kalipBlok}
               </div>
             </div>
           ) : (
             <>
               {debtBox}
               {infoGrid}
+              {yedekBlok}
+              {kalipBlok}
             </>
           );
           })()}
           {!detailView._isFactory && (
             <DealerFilesSection key={detailView.id} dealer={detailView} dosyalar={dosyalar} setDosyalar={setDosyalar}
               services={dealerServices} customers={customers} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} cevrimdisi={dosyaCevrimdisi}
+              yedekKargolar={dealerYedekParca.map(s => ({ id: s.id, ad: `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}` }))}
               odak={dosyaOdak} onOdakChange={setDosyaOdak} />
           )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            {!detailView._isFactory && canDo("dealer_yedek_parca_add") && setYedekParcaSatislar && (
+              <Btn variant="ghost" onClick={() => openAddYedekParca(detailView)}><Icon name="parts" size={14} /> Yedek Parça Satışı</Btn>
+            )}
             {!detailView._isFactory && (
               <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
             )}
@@ -499,6 +694,12 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           </div>
           </>)}
         </Modal>
+      )}
+
+      {ypForm && (
+        <YedekParcaSatisForm title="Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
+          dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       )}
 
       {/* Bayiye e-posta gönder — içerik serbest, ek dosya isteğe bağlı manuel seçilir */}

@@ -4,7 +4,7 @@ import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
@@ -84,12 +84,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     });
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
 
-    // Son Satışlar: makina satışları + Extra Kalıp satışları birlikte (yedek parça hariç).
-    const recentSales = sonSatislar(customers, partSales, 20);
+    // Son Satışlar: makina + Extra Kalıp + yedek parça (kargo) satışları birlikte.
+    const recentSales = sonSatislar(customers, partSales, yedekParcaSatislar, dealers, parts, 20);
     const recentServices = [...services].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 20);
 
     return { expiredCount, seriNoBekleyenCount, garantiDevamCount, borcluMusteriler, borcluServisler, borcluKaliplar, borcluCount, dealerBorcMap, borcluBayiCount, recentSales, recentServices };
-  }, [customers, services, partSales, todayStr, factoryName]);
+  }, [customers, services, partSales, yedekParcaSatislar, dealers, parts, todayStr, factoryName]);
 
   const donusturBekleyenlar = useMemo(() => {
     const bekleyenler = teklifler.filter(t => {
@@ -214,10 +214,11 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)" }}>Son Satışlar</div>
-            <div style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", marginTop: 3 }}>Makina ve Extra Kalıp satışlarını gösterir.</div>
+            <div style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", marginTop: 3 }}>Makina, Extra Kalıp ve Yedek Parça satışlarını gösterir.</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
               <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--orTx, #c2410c)", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr, #fde68a)" }}>Makina</span>
               <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--blu700, #1d4ed8)", background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)" }}>Extra Kalıp</span>
+              <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--grn700, #15803d)", background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)" }}>Yedek Parça</span>
             </div>
           </div>
           {recentSales.map(r => (
@@ -227,12 +228,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    {/* Tür rozeti: Makina turuncu, Extra Kalıp mavi */}
+                    {/* Tür rozeti: Makina turuncu, Extra Kalıp mavi, Yedek Parça yeşil */}
                     <span style={{ fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 7px", flexShrink: 0,
-                      color: r.tip === "makina" ? "var(--orTx, #c2410c)" : "var(--blu700, #1d4ed8)",
-                      background: r.tip === "makina" ? "var(--ambBg3, #fff7ed)" : "var(--bluBg, #eff6ff)",
-                      border: `1px solid ${r.tip === "makina" ? "var(--ambBr, #fde68a)" : "var(--bluBr, #bfdbfe)"}` }}>
-                      {r.tip === "makina" ? "Makina" : "Extra Kalıp"}
+                      color: r.tip === "makina" ? "var(--orTx, #c2410c)" : r.tip === "yedek" ? "var(--grn700, #15803d)" : "var(--blu700, #1d4ed8)",
+                      background: r.tip === "makina" ? "var(--ambBg3, #fff7ed)" : r.tip === "yedek" ? "var(--grnBg, #f0fdf4)" : "var(--bluBg, #eff6ff)",
+                      border: `1px solid ${r.tip === "makina" ? "var(--ambBr, #fde68a)" : r.tip === "yedek" ? "var(--grnBr, #bbf7d0)" : "var(--bluBr, #bfdbfe)"}` }}>
+                      {r.tip === "makina" ? "Makina" : r.tip === "yedek" ? "Yedek Parça" : "Extra Kalıp"}
                     </span>
                     <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.ad}</span>
                   </div>
@@ -240,7 +241,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center", flexShrink: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(r.tarih)}</div>
-                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{r.tip === "kalip" ? fmtCur(r.tutar, r.currency) : r.konum}</div>
+                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{(r.tip === "kalip" || r.tip === "yedek") ? fmtCur(r.tutar, r.currency) : r.konum}</div>
                 </div>
               </div>
             ))}

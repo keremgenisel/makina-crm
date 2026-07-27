@@ -8,6 +8,7 @@ export const SettingsBackup = ({
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar = [], notes, parts, partSales, payments,
   teklifler = [], faturalar = [], partStock = [], partStockLog = [], uretimFormlari = [],
   gorusmeler = [], setGorusmeler = null, rawDosyalar = [], setDosyalar = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = null,
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setPartTypeDefs, setCalisanlar, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null, setUretimFormlari = null,
   version, appSettings, setAppSettings, flash,
@@ -42,7 +43,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -174,6 +175,7 @@ export const SettingsBackup = ({
     if (sec("stok") && Array.isArray(restoreData?.partStock) && setPartStock) setPartStock(restoreData.partStock);
     if (sec("stok") && Array.isArray(restoreData?.partStockLog) && setPartStockLog) setPartStockLog(restoreData.partStockLog);
     if (sec("stok") && Array.isArray(restoreData?.uretimFormlari) && setUretimFormlari) setUretimFormlari(restoreData.uretimFormlari);
+    if (sec("stok") && Array.isArray(restoreData?.yedekParcaSatislar) && setYedekParcaSatislar) setYedekParcaSatislar(restoreData.yedekParcaSatislar);
     if (sec("bayi") && Array.isArray(restoreData?.dealers)) setDealers(restoreData.dealers);
     if (sec("dosyalar") && Array.isArray(restoreData?.dosyalar) && setDosyalar) setDosyalar(restoreData.dosyalar);
     if (sec("tanim") && Array.isArray(restoreData?.kalipDefs) && setKalipDefs) setKalipDefs(restoreData.kalipDefs);
@@ -206,7 +208,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
 

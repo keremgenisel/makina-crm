@@ -46,6 +46,70 @@ describe("ServisPanosu — Kanban", () => {
     expect(screen.getByRole("heading", { name: "SERVİS VE KARGO PANOSU" })).toBeTruthy();
   });
 
+  const kargoProps = (over = {}) => props({
+    kargoYetki: true, dealers: [{ id: 5, name: "Bayi X" }], parts: [{ id: 7, ad: "Dişli" }],
+    setYedekParcaSatislar: vi.fn(), ...over,
+  });
+
+  it("Extra Kalıp (partSales, kargoDurum) panoda 🧩 kart olarak görünür; sürükleyince setPartSales durum çeker", () => {
+    const setPartSales = vi.fn();
+    const partSales = [{ id: 900, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", olcu: "55x125", kargoDurum: "Hazırlanıyor", tarih: "2026-07-20" }];
+    render(<ServisPanosu {...props({ kalipYetki: true, partSales, setPartSales })} />);
+    expect(screen.getByText(/KALIP/)).toBeTruthy();
+    // Yapılıyor sütununa bırak → kargoDurum "Kargoya Verildi"
+    const yapiliyor = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Yapılıyor"));
+    fireEvent.drop(yapiliyor, { dataTransfer: { getData: () => "kalip:900" } });
+    const guncelle = setPartSales.mock.calls.at(-1)[0];
+    expect(guncelle([{ id: 900 }])[0].kargoDurum).toBe("Kargoya Verildi");
+  });
+
+  it("kalipYetki yoksa Extra Kalıp kargosu panoda görünmez", () => {
+    const partSales = [{ id: 900, customerId: 1, tur: "Kalıp", ad: "K", kargoDurum: "Hazırlanıyor", tarih: "2026-07-20" }];
+    render(<ServisPanosu {...props({ kalipYetki: false, partSales, setPartSales: vi.fn() })} />);
+    expect(screen.queryByText(/KALIP/)).toBeNull();
+  });
+
+  it("en son eklenen kalıp, aynı sütundaki eski servis/kargonun ÜSTÜNDE (olusturmaZamani ile sıralanır)", () => {
+    // Aynı gün: servis fabrikaGirisZamani 09:00; kalıp olusturmaZamani 15:00 → kalıp üstte olmalı.
+    // Regresyon: kalıp gün-bazlı (T00:00) sıralandığında aynı günkü servis hep üstüne çıkıyordu.
+    // Geçmiş bir gün kullanılıyor ki servis "Planlanan"a düşmesin (ileri fabrikaGirisZamani planlanan sayılır).
+    const services = [{ id: 10, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-01", fabrikaGirisZamani: "2026-07-01T09:00:00", tech: "" }];
+    const partSales = [{ id: 900, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", kargoDurum: "Hazırlanıyor", tarih: "2026-07-01", olusturmaZamani: "2026-07-01T15:00:00" }];
+    render(<ServisPanosu {...props({ services, kalipYetki: true, partSales, setPartSales: vi.fn() })} />);
+    const bekliyor = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Fabrikaya Giriş"));
+    const kalipIdx = bekliyor.textContent.indexOf("KALIP");
+    const servisIdx = bekliyor.textContent.indexOf("Periyodik Bakım");
+    expect(kalipIdx).toBeGreaterThanOrEqual(0);
+    expect(servisIdx).toBeGreaterThanOrEqual(0);
+    expect(kalipIdx).toBeLessThan(servisIdx); // kalıp önce (üstte)
+  });
+
+  it("Teslim Edildi kargo Tamamlandı sütununda '🗄 Kaldır' gösterir; tıklanınca panoGizli:true yazar", () => {
+    const setYedekParcaSatislar = vi.fn();
+    const yp = [{ id: 700, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, kargoDurum: "Teslim Edildi", tahsisler: [] }];
+    render(<ServisPanosu {...kargoProps({ yedekParcaSatislar: yp, setYedekParcaSatislar })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Kaldır/ }));
+    const guncelle = setYedekParcaSatislar.mock.calls.at(-1)[0];
+    expect(guncelle([{ id: 700 }])[0].panoGizli).toBe(true);
+  });
+
+  it("ileri tarihli kargo (panoDusmeZamani) 'Planlanan'da görünür (servisler gibi)", () => {
+    const yp = [{ id: 701, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, kargoDurum: "Hazırlanıyor", panoDusmeZamani: "2099-01-01T08:00", tahsisler: [] }];
+    render(<ServisPanosu {...kargoProps({ yedekParcaSatislar: yp })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Planlanan \(1\)/ })); // reveal aç
+    expect(screen.getByText(/📦 Bayi X/)).toBeTruthy();
+  });
+
+  it("panoGizli kargo sütunda değil 'Arşivlenenler'de görünür; Geri Al panoGizli:false yazar", () => {
+    const setYedekParcaSatislar = vi.fn();
+    const yp = [{ id: 700, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, kargoDurum: "Teslim Edildi", panoGizli: true, tahsisler: [] }];
+    render(<ServisPanosu {...kargoProps({ yedekParcaSatislar: yp, setYedekParcaSatislar })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Arşivlenenler \(1\)/ })); // reveal aç
+    fireEvent.click(screen.getByRole("button", { name: /Panoya Geri Al/ }));
+    const guncelle = setYedekParcaSatislar.mock.calls.at(-1)[0];
+    expect(guncelle([{ id: 700 }])[0].panoGizli).toBe(false);
+  });
+
   it("kartı başka sütuna bırakınca setServices durumu o sütuna çeker", () => {
     const setServices = vi.fn();
     render(<ServisPanosu {...props({ setServices })} />);
@@ -59,6 +123,16 @@ describe("ServisPanosu — Kanban", () => {
     // Tamamlandı'ya geçince bitiş anı damgalanır (zaman takibi)
     expect(typeof sonuc[0].bitisZamani).toBe("string");
     expect(sonuc[0].bitisZamani.length).toBeGreaterThanOrEqual(16);
+  });
+
+  it("servis durumu sürükleyince İşlem Geçmişine 'durum_degisti' yazılır (audit)", () => {
+    const log = vi.fn();
+    window.auditLog = { log };
+    render(<ServisPanosu {...props()} />);
+    const tamamlandi = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Tamamlandı"));
+    fireEvent.drop(tamamlandi, { dataTransfer: dt(10) });
+    expect(log).toHaveBeenCalledWith(expect.objectContaining({ action: "durum_degisti", entity: "servis" }));
+    delete window.auditLog;
   });
 
   it("Yapılıyor sütununa bırakınca bakım başlangıç damgalanır", () => {
@@ -81,6 +155,18 @@ describe("ServisPanosu — Kanban", () => {
     fireEvent.change(sel, { target: { value: "Mehmet Demir" } });
     const guncelle = setServices.mock.calls.at(-1)[0];
     expect(guncelle([{ id: 10 }])[0].tech).toBe("Mehmet Demir");
+  });
+
+  it("teknisyen seçici satırına gelince kartın draggable'ı kapanır (macOS select seçim hatası fix)", () => {
+    // draggable=true bir ata içinde native <select> seçim işlemiyordu; kontrol satırına gelince
+    // article draggable=false olmalı, çıkınca geri true.
+    render(<ServisPanosu {...props()} />);
+    const kart = document.querySelector('article[draggable="true"]');
+    const kontrolSatiri = within(kart).getByRole("combobox").closest("div");
+    fireEvent.mouseEnter(kontrolSatiri);
+    expect(kart.getAttribute("draggable")).toBe("false");
+    fireEvent.mouseLeave(kontrolSatiri);
+    expect(kart.getAttribute("draggable")).toBe("true");
   });
 
   it("Tamamlandı kartında 'Kaldır' panoGizli:true yazar (servis silinmez)", () => {
@@ -164,6 +250,111 @@ describe("ServisPanosu — Kanban", () => {
   });
 });
 
+describe("ServisPanosu — planlanan (ileri zamanlı) servis", () => {
+  const props = (over = {}) => ({
+    services: [
+      // ileri fabrikaGirisZamani → panoya HENÜZ düşmez, "Planlanan" bölümünde bekler
+      { id: 70, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2099-01-01", tech: "", fabrikaGirisZamani: "2099-01-01T08:00" },
+      // normal Bekliyor (geçmiş giriş) → sütunda görünür
+      { id: 71, customerId: 1, type: "Garanti İçi", durum: "Bekliyor", date: "2020-01-01", tech: "", fabrikaGirisZamani: "2020-01-01T08:00" },
+    ],
+    setServices: vi.fn(), customers: musteriler, calisanlar, showToast: vi.fn(), serverPermissions: null, ...over,
+  });
+
+  it("planlanmış servis Bekliyor sütununda kart olarak görünmez", () => {
+    render(<ServisPanosu {...props()} />);
+    // Yalnız 1 kart draggable (id 71); planlanmış (id 70) kart değil
+    expect(document.querySelectorAll('article[draggable="true"]').length).toBe(1);
+  });
+
+  it("planlanan servis 'Planlanan (N)' bölümünde listelenir", () => {
+    render(<ServisPanosu {...props()} />);
+    const ac = screen.getByRole("button", { name: /Planlanan \(1\)/ });
+    fireEvent.click(ac);
+    expect(screen.getByRole("button", { name: /Hemen Düşür/ })).toBeTruthy();
+  });
+
+  it("'Hemen Düşür' servisi şimdiye çeker (setServices ile giriş güncellenir)", () => {
+    const setServices = vi.fn();
+    render(<ServisPanosu {...props({ setServices })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Planlanan \(1\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Hemen Düşür/ }));
+    const guncelle = setServices.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 70, durum: "Bekliyor", fabrikaGirisZamani: "2099-01-01T08:00" }]);
+    // giriş artık ileri değil (şimdiye çekildi) → panoya düşer
+    expect(sonuc[0].fabrikaGirisZamani.startsWith("2099")).toBe(false);
+    expect(sonuc[0].durum).toBe("Bekliyor");
+  });
+});
+
+describe("ServisPanosu — servis + kargo tek görünüm", () => {
+  const dealers = [{ id: 5, name: "Bayi X" }];
+  const parts = [{ id: 7, ad: "Dişli" }];
+  const kargoSatis = { id: 650, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 3, currency: "TRY", tarih: "2026-07-25", kargoDurum: "Hazırlanıyor", kargoSorumlusu: "Ahmet Yılmaz", tahsisler: [] };
+  const props = (over = {}) => ({
+    services: [{ id: 10, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", tech: "" }],
+    setServices: vi.fn(), customers: musteriler, calisanlar, dealers, parts,
+    yedekParcaSatislar: [kargoSatis], setYedekParcaSatislar: vi.fn(),
+    kargoYetki: true, showToast: vi.fn(), serverPermissions: null, ...over,
+  });
+
+  it("kargo satışı (kargoDurum 'Hazırlanıyor') Bekliyor sütununda servisle birlikte 📦 kartı olarak görünür", () => {
+    render(<ServisPanosu {...props()} />);
+    expect(screen.getByText(/📦 KARGO/)).toBeTruthy();
+    expect(screen.getByText("Bayi X")).toBeTruthy();
+    // Kargoyu gönderen, servis kartındaki gibi bir "Kim gönderiyor?" select'inde seçili gelir
+    const kargoSelect = [...document.querySelectorAll("select")].find(s => s.value === "Ahmet Yılmaz");
+    expect(kargoSelect).toBeTruthy();
+    // servis kartı da var → en az 2 draggable kart (servis + kargo)
+    expect(document.querySelectorAll('article[draggable="true"]').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("panoya düşme zamanı ileri olan kargo panoda görünmez (zamanı gelene kadar)", () => {
+    const planli = { ...kargoSatis, id: 655, panoDusmeZamani: "2099-01-01T08:00" };
+    render(<ServisPanosu {...props({ yedekParcaSatislar: [planli] })} />);
+    expect(screen.queryByText(/📦 KARGO/)).toBeNull();
+  });
+
+  it("en son eklenen (oluşturma zamanı yeni) kart, eski tarihli olsa bile en üstte çıkar", () => {
+    const eskiServis = { id: 10, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", fabrikaGirisZamani: "2026-07-20T09:00:00", tech: "" };
+    const yeniKargo = { id: 800, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 1, currency: "TRY", tarih: "2026-07-10", kargoDurum: "Hazırlanıyor", olusturmaZamani: "2026-07-26T15:00:00", tahsisler: [] };
+    render(<ServisPanosu {...props({ services: [eskiServis], yedekParcaSatislar: [yeniKargo] })} />);
+    const bekliyor = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Bekliyor"));
+    const kartlar = bekliyor.querySelectorAll("article");
+    expect(kartlar[0].textContent).toMatch(/📦/); // sonradan eklenen kargo üstte (tarihi daha eski olsa da)
+  });
+
+  it("kargoYetki yoksa kargo kartı görünmez (servis-katı kiosk)", () => {
+    render(<ServisPanosu {...props({ kargoYetki: false })} />);
+    expect(screen.queryByText(/📦 KARGO/)).toBeNull();
+  });
+
+  it("kargo kartını Tamamlandı sütununa bırakınca kargoDurum 'Teslim Edildi' olur", () => {
+    const setYedekParcaSatislar = vi.fn();
+    render(<ServisPanosu {...props({ setYedekParcaSatislar })} />);
+    const tamamlandi = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Tamamlandı"));
+    const kargoDt = { getData: () => "kargo:650", setData: () => {}, dropEffect: "", effectAllowed: "" };
+    fireEvent.drop(tamamlandi, { dataTransfer: kargoDt });
+    expect(setYedekParcaSatislar).toHaveBeenCalled();
+    const guncelle = setYedekParcaSatislar.mock.calls.at(-1)[0];
+    const sonuc = guncelle([{ id: 650, kargoDurum: "Hazırlanıyor" }]);
+    expect(sonuc[0].kargoDurum).toBe("Teslim Edildi");
+  });
+
+  it("'Yeni Yedek Parça Satışı' düğmesi görünür ve formu açar", () => {
+    render(<ServisPanosu {...props()} />);
+    const btn = screen.getByRole("button", { name: /Yeni Yedek Parça Satışı/ });
+    fireEvent.click(btn);
+    expect(screen.getByText("Alıcı")).toBeTruthy(); // YedekParcaSatisForm açıldı
+  });
+
+  it("kargo kartına tıklayınca kargo detay modalı açılır", () => {
+    render(<ServisPanosu {...props()} />);
+    fireEvent.click(screen.getByText(/📦 KARGO/).closest("article"));
+    expect(screen.getByText("Kargo / Yedek Parça Satışı")).toBeTruthy();
+  });
+});
+
 describe("ServisPanosu — eşzamanlı düzenleme kilidi", () => {
   // Servis DÜZENLERKEN müşterinin kilidi ("customer") alınır — müşteri detayıyla aynı alan.
   afterEach(() => { delete window.crmLocks; });
@@ -222,28 +413,92 @@ describe("CalisanManager — firma çalışanları CRUD", () => {
   });
 });
 
-describe("ServiceForm — teknisyen: çalışan önerisi + elle serbest giriş", () => {
-  // Gerçek state sarmalayıcı: form.tech güncellenir, böylece serbest metnin kabul edildiğini
-  // input.value üzerinden doğrularız (setForm mock'unda yakalanan sentetik olay bayatlardı).
+describe("ServiceForm — teknisyen: açılır liste + 'Diğer' serbest giriş", () => {
+  // Gerçek state sarmalayıcı: form.tech güncellenir, böylece seçimin/serbest metnin kabul edildiğini
+  // doğrularız.
+  const Harness = (props = {}) => {
+    const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY", tech: "", ...props.form });
+    return <ServiceForm title="Servis" form={form} setForm={setForm} customers={musteriler}
+      calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />;
+  };
+  const techSelect = () => screen.getByRole("option", { name: "Kim yapıyor?" }).closest("select");
+
+  it("açılır listede tüm çalışanları sunar; seçili olsa bile hepsi listede kalır (önce silmek gerekmez)", () => {
+    render(<Harness />);
+    const sel = techSelect();
+    let opts = [...sel.querySelectorAll("option")].map(o => o.textContent);
+    expect(opts).toContain("Ahmet Yılmaz");
+    expect(opts).toContain("Mehmet Demir");
+    expect(opts.some(o => /Diğer/.test(o))).toBe(true);
+    // Bir çalışan seç
+    fireEvent.change(sel, { target: { value: "Ahmet Yılmaz" } });
+    expect(sel.value).toBe("Ahmet Yılmaz");
+    // Regresyon: seçiliyken diğer çalışan hâlâ listede (datalist'te önce silmek gerekiyordu)
+    opts = [...sel.querySelectorAll("option")].map(o => o.textContent);
+    expect(opts).toContain("Mehmet Demir");
+    fireEvent.change(sel, { target: { value: "Mehmet Demir" } });
+    expect(sel.value).toBe("Mehmet Demir");
+  });
+
+  it("'Diğer (elle yaz)' seçilince serbest metin kutusu açılır, harici usta yazılabilir", () => {
+    render(<Harness />);
+    const sel = techSelect();
+    fireEvent.change(sel, { target: { value: "__diger__" } });
+    const input = screen.getByPlaceholderText("Harici teknisyen adı...");
+    fireEvent.change(input, { target: { value: "Harici Usta" } });
+    expect(input.value).toBe("Harici Usta");
+  });
+
+  it("listede olmayan mevcut tech (eski veri) 'Diğer' modunda serbest kutuda gösterilir", () => {
+    render(<Harness form={{ tech: "Eski Harici İsim" }} />);
+    expect(screen.getByDisplayValue("Eski Harici İsim")).toBeTruthy();
+    expect(techSelect().value).toBe("__diger__");
+  });
+});
+
+describe("ServiceForm — Yapılan İşlem: 'Kargo' seçeneği kaldırıldı (eski değer korunur)", () => {
+  const İşlemOpsiyonlari = () => [...document.querySelectorAll("select")]
+    .flatMap(sel => [...sel.querySelectorAll("option")].map(o => o.textContent));
+
+  it("yeni serviste 'Kargo' seçeneği sunulmaz; Yerinde/Fabrikada/Fabrika Teslim var", () => {
+    const H = () => { const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY" }); return <ServiceForm title="S" form={form} setForm={setForm} customers={musteriler} calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />; };
+    render(<H />);
+    const opts = İşlemOpsiyonlari();
+    expect(opts).toContain("Yerinde Onarım");
+    expect(opts).toContain("Fabrika Teslim");
+    expect(opts).not.toContain("Kargo");
+  });
+
+  it("eski 'Kargo' repairPlace'li kayıt düzenlenirken değer korunur (listeye eklenir)", () => {
+    const H = () => { const [form, setForm] = useState({ id: 5, customerId: 1, repairPlace: "Kargo", degisenParcalar: [], currency: "TRY" }); return <ServiceForm title="S" form={form} setForm={setForm} customers={musteriler} calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />; };
+    render(<H />);
+    expect(İşlemOpsiyonlari()).toContain("Kargo"); // eski değer düzenlemede kaybolmaz
+  });
+});
+
+describe("ServiceForm — ileri tarihli servis (panoya düşme zamanı)", () => {
   const Harness = () => {
-    const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY", tech: "" });
+    const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY", tech: "", date: today(), durum: "Bekliyor" });
     return <ServiceForm title="Servis" form={form} setForm={setForm} customers={musteriler}
       calisanlar={calisanlar} onSave={vi.fn()} onCancel={vi.fn()} />;
   };
 
-  it("çalışanları datalist'te önerir ama serbest metin de yazılabilir", () => {
+  it("yeni Bekliyor serviste 'Panoya Düşme Zamanı' alanı görünür", () => {
     render(<Harness />);
-    // Öneri listesi (datalist) firma çalışanlarını içerir
-    const dl = document.getElementById("servis-teknisyen-listesi");
-    expect(dl).toBeTruthy();
-    const values = [...dl.querySelectorAll("option")].map(o => o.value);
-    expect(values).toContain("Ahmet Yılmaz");
-    expect(values).toContain("Mehmet Demir");
-    // Alan serbest metin: listede olmayan bir isim elle yazılabilir
-    const input = document.querySelector('input[list="servis-teknisyen-listesi"]');
-    expect(input).toBeTruthy();
-    fireEvent.change(input, { target: { value: "Harici Usta" } });
-    expect(input.value).toBe("Harici Usta");
+    expect(screen.getByText("🕒 Panoya Düşme Zamanı")).toBeTruthy();
+    // Giriş boşken hemen-düşer ipucu
+    expect(screen.getByText(/hemen panoya düşer/)).toBeTruthy();
+  });
+
+  it("ileri tarih seçilince durum Bekliyor kalır + giriş ön-dolar + 'düşecek' ipucu çıkar", () => {
+    render(<Harness />);
+    const tarih = document.querySelector('input[type="date"]');
+    fireEvent.change(tarih, { target: { value: "2099-06-15" } });
+    // Panoya düşme zamanı ileri → uyarı ipucu
+    expect(screen.getByText(/panoya düşecek/)).toBeTruthy();
+    // datetime-local alanı 2099-06-15 tarihine ön-dolmuş
+    const dtl = document.querySelector('input[type="datetime-local"]');
+    expect(dtl.value.startsWith("2099-06-15")).toBe(true);
   });
 });
 
@@ -294,29 +549,68 @@ describe("ServisPanosu — yeni-servis alarmı", () => {
   });
   const yeniServis = { id: 500, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-21", tech: "" };
 
+  // Alarm şeridi, "Yeni Servis Talebi" butonuyla aynı metni taşıdığı için şeridi metinle değil,
+  // yalnız şeritte bulunan "Sustur" ve 🔔 ile hedefliyoruz. seritMetni() şerit içeriğini döner.
+  const seritVar = () => screen.queryByText("Sustur") != null;
+  const seritMetni = () => screen.getByText("🔔").parentElement.textContent;
+
   it("taban çizgisinde (ilk render) mevcut bekleyenler alarm vermez", () => {
     render(<ServisPanosu {...p()} />);
-    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(seritVar()).toBe(false);
     expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
   });
 
-  it("uzaktan yeni Bekliyor servis gelince şerit + yanıp sönme çıkar, Sustur temizler", () => {
+  it("uzaktan yeni Bekliyor servis gelince 'Yeni Servis Talebi' şeridi + yanıp sönme çıkar, Sustur temizler", () => {
     const base = p();
     const { rerender } = render(<ServisPanosu {...base} />);
-    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(seritVar()).toBe(false);
     rerender(<ServisPanosu {...base} services={[yeniServis, ...baseServices]} />);
-    expect(screen.getByText(/Yeni servis talebi/)).toBeTruthy();
+    expect(seritVar()).toBe(true);
+    expect(seritMetni()).toMatch(/Yeni Servis Talebi/);
     expect(document.querySelector(".servis-alarm-yanip")).toBeTruthy();
     fireEvent.click(screen.getByText("Sustur"));
-    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(seritVar()).toBe(false);
     expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+
+  it("uzaktan yeni kargo (Hazırlanıyor) gelince 'Yeni Kargo Talebi' şeridi (📦 değil) çıkar, alıcı adıyla", () => {
+    const dealers = [{ id: 9000, name: "Bayi Z" }];
+    const yeniKargo = { id: 700, aliciTipi: "bayi", dealerId: 9000, partId: "7", miktar: 3, kargoDurum: "Hazırlanıyor", tahsisler: [] };
+    const base = p({ dealers, parts: [{ id: 7, ad: "Dişli" }], kargoYetki: true, yedekParcaSatislar: [] });
+    const { rerender } = render(<ServisPanosu {...base} />);
+    expect(seritVar()).toBe(false);
+    rerender(<ServisPanosu {...base} yedekParcaSatislar={[yeniKargo]} />);
+    expect(seritMetni()).toMatch(/Yeni Kargo Talebi/);  // "Yeni Servis Talebi" değil
+    expect(seritMetni()).toMatch(/Bayi Z/);
   });
 
   it("alarm kapalıyken yeni serviste şerit/yanıp sönme çıkmaz", () => {
     const base = p({ appSettings: { servisAlarm: { acik: false, sesSn: 20, yanipSn: 40 } } });
     const { rerender } = render(<ServisPanosu {...base} />);
     rerender(<ServisPanosu {...base} services={[yeniServis, ...baseServices]} />);
-    expect(screen.queryByText(/Yeni servis talebi/)).toBeNull();
+    expect(seritVar()).toBe(false);
+    expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+
+  it("yeni kargo ('Hazırlanıyor') gelince servisle AYNI alarmı verir (şerit + yanıp sönme)", () => {
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const base = { ...p(), dealers, parts, kargoYetki: true, yedekParcaSatislar: [], setYedekParcaSatislar: vi.fn() };
+    const { rerender } = render(<ServisPanosu {...base} />);
+    expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+    const yeniKargo = { id: 700, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 2, currency: "TRY", tarih: "2026-07-25", kargoDurum: "Hazırlanıyor", tahsisler: [] };
+    rerender(<ServisPanosu {...base} yedekParcaSatislar={[yeniKargo]} />);
+    expect(seritMetni()).toMatch(/Bayi X/);                     // şeritte kargo alıcısı
+    expect(document.querySelector(".servis-alarm-yanip")).toBeTruthy(); // kart yanıp söner
+  });
+
+  it("kargoYetki yoksa yeni kargo alarm vermez", () => {
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const base = { ...p(), dealers, parts, kargoYetki: false, yedekParcaSatislar: [], setYedekParcaSatislar: vi.fn() };
+    const { rerender } = render(<ServisPanosu {...base} />);
+    const yeniKargo = { id: 701, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 2, currency: "TRY", tarih: "2026-07-25", kargoDurum: "Hazırlanıyor", tahsisler: [] };
+    rerender(<ServisPanosu {...base} yedekParcaSatislar={[yeniKargo]} />);
     expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
   });
 });

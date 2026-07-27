@@ -7,7 +7,7 @@ import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], serverPermissions = null }) => {
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], yedekParcaSatislar = [], serverPermissions = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -169,7 +169,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPartSales = async (mode = "download") => {
-    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Kaynak Teklif No", "Üretim Formuna Gönder"];
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
@@ -178,7 +178,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
         parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır",
         p.teklifId ? (teklifler.find(t => t.id === p.teklifId)?.no || p.teklifId) : "",
-        p.uretimFormGonder ? "Evet" : "Hayır"];
+        p.uretimFormGonder ? "Evet" : "Hayır",
+        p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || ""];
     })];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Kalıp Satışları"); openExportMailXLSXBase64(b64, "extra-kalip-satislari.xlsx", "Extra Kalıp Satışları"); return; }
@@ -327,6 +328,26 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       downloadCSV(rows, "firma-calisanlari.csv"); flash("ok", "Firma çalışanları CSV olarak indirildi.");
     }
   };
+  const exportYedekParcaSatislar = async (mode = "download") => {
+    const head = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Makina Tahsisleri"];
+    const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
+    const rows = [head, ...yedekParcaSatislar.filter(s => !s.deletedAt).map(s => {
+      const alici = s.aliciTipi === "musteri" ? (customers.find(c => c.id === s.musteriId)?.name || "—") : (dealers.find(d => d.id === s.dealerId)?.name || "—");
+      const part = parts.find(p => String(p.id) === String(s.partId)) || {};
+      const tahsis = (s.tahsisler || []).map(t => `${t.miktar} → ${customers.find(c => c.id === t.customerId)?.name || t.makinaSerbest || "(makina)"}`).join("; ");
+      return [s.aliciTipi === "musteri" ? "Müşteri" : "Bayi", alici, part.ad || s.partId, parseInt(s.miktar) || 0,
+        parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
+        (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih || "", s.odendi ? "Evet" : "Hayır",
+        s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", tahsis];
+    })];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça Satışları"); openExportMailXLSXBase64(b64, "yedek-parca-satislari.xlsx", "Yedek Parça (Kargo) Satışları"); return; }
+      await downloadXlsx(rows, "yedek-parca-satislari.xlsx", "Yedek Parça Satışları"); flash("ok", "Yedek parça satışları Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "yedek-parca-satislari.csv", "Yedek Parça (Kargo) Satışları"); return; }
+      downloadCSV(rows, "yedek-parca-satislari.csv"); flash("ok", "Yedek parça satışları CSV olarak indirildi.");
+    }
+  };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -435,6 +456,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Stok", desc: `Satışı beklenen stoktaki makinalar (${stock.length} kayıt).`, onClick: exportStock },
             { title: "Notlar", desc: `Serbest notlar (${notes.length} kayıt).`, onClick: exportNotes },
             { title: "Yedek Parça Tanımları", desc: `Tanımlı yedek parça kataloğu (${parts.length} kayıt).`, onClick: exportParts },
+            { title: "Yedek Parça (Kargo) Satışları", desc: `Bayi/müşteriye kargo yedek parça satışları ve makina tahsisleri (${yedekParcaSatislar.filter(s => !s.deletedAt).length} kayıt).`, onClick: exportYedekParcaSatislar },
             { title: "Parça Stoğu", desc: `Güncel parça stok miktarları (${partStock.length} parça).`, onClick: exportPartStock },
             { title: "Stok Hareketleri", desc: `Parça stok giriş ve düzeltme geçmişi (${partStockLog.length} kayıt).`, onClick: exportPartStockLog },
             { title: "Teklifler", desc: `Oluşturulan teklif kayıtları (${teklifler.length} kayıt).`, onClick: exportTeklifler },

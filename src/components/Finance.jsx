@@ -10,7 +10,7 @@ import { makeCanDo } from "../lib/permissions";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services, dealers = [], partSales = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments = [], teklifler = [], serverPermissions = null }) => {
+export const Finance = ({ customers, services, dealers = [], partSales = [], yedekParcaSatislar = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments = [], teklifler = [], serverPermissions = null }) => {
   const canDoFin = makeCanDo(serverPermissions, "financeActions");
   // Tarih aralığı pilleri kullanıcı iznine bağlı — izinli aralık listesi
   const izinliAraliklar = Object.keys(RANGE_LABELS).filter(k => canDoFin("fin_range_" + k));
@@ -92,6 +92,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const svcInRange = services.filter(s => inRange(s.date));
     const kalipSatisInRange = partSales.filter(p => p.tur === "Kalıp" && inRange(p.tarih)); // Extra Kalıp sekmesindeki satışlar
     const yedekParcaSatisInRange = partSales.filter(p => p.tur === "YedekParca" && inRange(p.tarih)); // Bağımsız yedek parça satışları
+    // Yeni yedek parça (kargo) satışları — alıcı bayi VEYA müşteri (ayrı dizi, partSales'ten bağımsız).
+    const yedekParcaKargoInRange = (yedekParcaSatislar || []).filter(s => !s.deletedAt && inRange(s.tarih));
+    const kargoBedel = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
 
     // ── ADETLER ──
     const totalMakina = sales.length;
@@ -101,7 +104,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     const satilanExtraKalipSayisi = kalipSatisInRange.length;
     // Servis kayıtlarındaki değişen parçalar + bağımsız yedek parça satışları (miktar toplamı)
     const satilanYedekParcaSayisi = svcInRange.reduce((sum, s) => sum + (s.degisenParcalar?.length || 0), 0)
-      + yedekParcaSatisInRange.reduce((sum, p) => sum + (parseInt(p.miktar) || 1), 0);
+      + yedekParcaSatisInRange.reduce((sum, p) => sum + (parseInt(p.miktar) || 1), 0)
+      + yedekParcaKargoInRange.reduce((sum, s) => sum + (parseInt(s.miktar) || 1), 0);
 
     // ── PARA (TUTAR) — para birimi başına ayrı topla ──
     const empty3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
@@ -160,6 +164,14 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         }
       }
     });
+    // Yedek parça (kargo) satışları: müşteriye satış → Toplam Parça Ücreti; bayiye satış → Anlaşmalı/Bayi Parça.
+    yedekParcaKargoInRange.forEach(s => {
+      const bedel = kargoBedel(s);
+      if (bedel <= 0) return;
+      const k = cur(s.currency), kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+      if (s.aliciTipi === "musteri") { parcaUcreti[k] += bedel + kdv; kdvParca[k] += kdv; }
+      else { anlasmaliParcaSatisi[k] += bedel + kdv; kdvAnlasmaliParca[k] += kdv; }
+    });
     const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
     kalipSatisInRange.forEach(p => {
       const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
@@ -211,6 +223,12 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
     partSales.filter(isPartSaleBorcluMu).forEach(p => {
       alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     });
+    // Ödenmemiş yedek parça (kargo) satışları — bayi + müşteri (alacak anlık bakiye: tarih filtresiz).
+    (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.odendi === false).forEach(s => {
+      const bedel = kargoBedel(s);
+      if (bedel <= 0) return;
+      alacak[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+    });
 
     // ── MODEL BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
     const byModel = {};
@@ -260,7 +278,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
       kdvMakina, kdvServis, kdvParca, kdvKalip,
     };
      
-  }, [customers, services, partSales, range, customStart, customEnd, kdvRates, rates, factoryName]);
+  }, [customers, services, partSales, yedekParcaSatislar, range, customStart, customEnd, kdvRates, rates, factoryName]);
 
   const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
   const { page: sellerPage, setPage: setSellerPage, paged: sellerRowsPaged, perPage: SELLER_PER_PAGE } = usePagination(sellerRows, 10);
@@ -455,9 +473,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], fac
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="var(--grn600, #16a34a)" sub="Müşterilerden gelen gerçek satış bedeli" />
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
         <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
-        <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri (KDV hariç)" />
+        <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri + müşterilere satılan yedek parça (kargo) satışları (KDV hariç)" />
         <div onClick={canDoFin("fin_anlasmali_detay") ? () => setShowAnlasmaliModal(true) : undefined} style={{ cursor: "pointer" }} title="Detay için tıklayın">
-          <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar (KDV hariç) · detay için tıklayın" />
+          <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar + bayilere satılan yedek parça (kargo) satışları (KDV hariç) · detay için tıklayın" />
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />

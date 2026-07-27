@@ -209,6 +209,14 @@ export const GROUPS = [
     { key: "kalipBaslik",  label: "Bölüm Başlığı" },
     { key: "thKalip",      label: "Kalıp Sütun Başlığı" },
   ]},
+  { label: "Satılan Yedek Parçalar", ns: "makina", keys: [
+    { key: "yedekParcaBaslik", label: "Bölüm Başlığı" },
+    { key: "thParca",          label: "Parça Sütun Başlığı" },
+    { key: "thMiktar",         label: "Miktar Sütun Başlığı" },
+    { key: "thKaynak",         label: "Kaynak Sütun Başlığı" },
+    { key: "kaynakBayi",       label: "Kaynak: Bayi üzerinden" },
+    { key: "kaynakDogrudan",   label: "Kaynak: Doğrudan" },
+  ]},
   { label: "Servis Tipleri", ns: "makina", keys: [
     { key: "typeIlkCalistirma",  label: "İlk Çalıştırma" },
     { key: "typeGarantiIci",     label: "Garanti İçi" },

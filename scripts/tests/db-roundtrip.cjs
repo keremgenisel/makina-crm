@@ -92,9 +92,18 @@ dbmod.writeBlobToDb({
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true }],
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
-    satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir" }],
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
+    satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
+    kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10" }],
   payments: [], dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
+  yedekParcaSatislar: [
+    { id: 650, dealerId: 3, aliciTipi: "bayi", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
+      kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30",
+      tahsisler: [ { miktar: 2, customerId: 500, serialNo: "S-1", makinaSerbest: "", tarih: "2026-07-20" },
+                   { miktar: 1, customerId: null, serialNo: "", makinaSerbest: "Bayi X kendi müşterisi", tarih: "2026-07-21" } ] },
+    // Alıcı müşteri (bayiye değil son müşteriye satış) — musteriId dolu, dealerId boş; panoGizli (arşiv) true
+    { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, kargoDurum: "Teslim Edildi", panoGizli: true, tahsisler: [] },
+  ],
   gorusmeler: [
     { id: 7, customerId: 500, tarih: "2026-07-01", tur: "Telefon", not: "Fiyat bekliyor", takipTarihi: "2026-07-10", tamamlandi: false, kullanici: "kerem" },
     { id: 8, customerId: 500, tarih: "2026-07-02", tur: "Ziyaret", not: "Silinen görüşme", deletedAt: "2026-07-03T10:00:00.000Z" },
@@ -137,6 +146,15 @@ check("service zaman damgaları (giriş/başlangıç/bitiş) roundtrip", (() => 
 check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.services.find(x => x.id === 2); const b = blob.services.find(x => x.id === 3); return a?.panoGizli === false && b?.panoGizli === true && b?.durum === "Tamamlandı"; })());
 check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());
 check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı Firma" && p?.satisFirmaYetkili === "Mehmet Demir" && p?.satisFirmaTel === "05559876543" && p?.satisFirmaUlke === "Türkiye" && p?.satisFirmaSehir === "İzmir"; })());
+check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.kargoDurum === "Kargoya Verildi" && p?.kargoFirma === "Yurtiçi" && p?.kargoTakipNo === "KL-1" && p?.kargoTarih === "2026-07-20" && p?.kargoSorumlusu === "Ahmet" && p?.panoDusmeZamani === "2026-07-25T08:00" && p?.panoGizli === true; })());
+check("partSale olusturmaZamani roundtrip (pano sıralaması: en son eklenen üstte)", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.olusturmaZamani === "2026-07-20T14:35:10"; })());
+check("yedek parça satışı roundtrip (parent alanları + kargo)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.dealerId === 3 && String(s?.partId) === "7" && s?.miktar === 5 && s?.birimFiyat === 120 && s?.odendi === false && s?.kargoTakipNo === "TK123" && s?.kargoDurum === "Kargoya Verildi" && (blob.yedekParcaSatislar || []).length === 2; })());
+check("yedek parça tahsisleri (child tablo) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); const t = s?.tahsisler || []; return t.length === 2 && t[0].miktar === 2 && t[0].customerId === 500 && t[0].serialNo === "S-1" && t[1].customerId == null && t[1].makinaSerbest === "Bayi X kendi müşterisi"; })());
+check("yedek parça satışı tahsissiz kayıt (boş tahsisler) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return s?.miktar === 3 && s?.odendi === true && (s?.tahsisler || []).length === 0; })());
+check("yedek parça satışı panoGizli (arşiv, boolean) roundtrip", (() => { const arsivli = (blob.yedekParcaSatislar || []).find(x => x.id === 651); const acik = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return arsivli?.panoGizli === true && acik?.panoGizli === false; })());
+check("yedek parça satışı alıcı tipi (bayi/müşteri) roundtrip", (() => { const bayi = (blob.yedekParcaSatislar || []).find(x => x.id === 650); const mus = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return bayi?.aliciTipi === "bayi" && bayi?.dealerId === 3 && mus?.aliciTipi === "musteri" && mus?.musteriId === 500 && mus?.dealerId == null; })());
+check("yedek parça satışı kargo sorumlusu + panoya düşme zamanı roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.panoDusmeZamani === "2026-07-28T08:00"; })());
+check("yedek parça satışı oluşturma zamanı roundtrip (pano sıralaması)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.olusturmaZamani === "2026-07-15T10:20:30"; })());
 check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");
 // Fabrika da ilçe taşır: "Bayiler" sekmesi fabrikayı da düzenliyor ve iki form aynı alanları
 // paylaşıyor. Sütun eklenmeden form ilçeyi soruyordu ve kayıt sessizce siliniyordu.
@@ -166,6 +184,35 @@ check("değişen bölüm yazıldı", out.teklifler.find(t => t.id === 102)?.duru
 check("atlanan bölüm korundu (customer)", out.customers[0]?.name === "Müşteri");
 check("atlanan bölüm korundu (dealer)", out.dealers[0]?.name === "Bayi X");
 check("FK zinciri: service korundu", out.services[0]?.type === "Garanti İçi");
+
+// ── KAPAT → YENİDEN AÇ (uygulama restart) → veri kalıcı mı? (yedek parça satışı regresyonu) ──
+dbmod.close();
+dbmod.migrateFromJsonIfNeeded();
+check("reopen: sqlite yeniden aktif", dbmod.isActive());
+const reopen = dbmod.readBlobFromDb();
+check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar || []).length === 2);
+check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
+check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
+check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
+
+// ── REGRESYON: tahsis id çakışması TÜM save'i patlatıyordu ──
+// Uygulama her değişiklikte okuduğu blob'u geri yazar. Eski kod tahsis id'sini (okumada atanan rowid)
+// tekrar yazınca, yeni id'siz tahsislerin aldığı auto-rowid sonraki açık id ile çakışıyor ve
+// "UNIQUE constraint failed: yedek_parca_tahsis.id" ile save geri alınıyordu (servis+kargo hiç yazılmıyordu).
+const kotu = JSON.parse(JSON.stringify(reopen));
+// En kötü durum: iki farklı satışın tahsislerine AYNI açık id (eski okumadan kalma) + id'siz yeni tahsis
+kotu.yedekParcaSatislar.find(x => x.id === 650).tahsisler = [{ id: 1, miktar: 2, customerId: 500 }, { miktar: 3, customerId: null, makinaSerbest: "Yedek" }];
+kotu.yedekParcaSatislar.find(x => x.id === 651).tahsisler = [{ id: 1, miktar: 1, customerId: 500 }];
+let patladi = false;
+try { dbmod.writeBlobToDb(kotu); } catch { patladi = true; }
+check("tahsis id çakışması save'i patlatmıyor (regresyon)", !patladi);
+dbmod.close();
+dbmod.migrateFromJsonIfNeeded();
+const reopen2 = dbmod.readBlobFromDb();
+check("çift-yazma sonrası yedek parça satışları hâlâ 2", (reopen2.yedekParcaSatislar || []).length === 2);
+check("çift-yazma sonrası 650 tahsisleri korundu (2 adet)", (reopen2.yedekParcaSatislar.find(x => x.id === 650)?.tahsisler || []).length === 2);
+check("çift-yazma sonrası 651 tahsisi korundu (1 adet)", (reopen2.yedekParcaSatislar.find(x => x.id === 651)?.tahsisler || []).length === 1);
+check("tahsis artık id taşımıyor (SQLite yönetir)", (reopen2.yedekParcaSatislar.find(x => x.id === 650)?.tahsisler || []).every(t => t.id === undefined));
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }

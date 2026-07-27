@@ -22,7 +22,7 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // eklenmeli — yoksa sunucu-PC yeniden yükle+birleştir (mergeLocalIntoReloaded) sırasında o dizideki
 // yerel eklemeler düşer (calisanlar bu yüzden kayboluyordu). calisanlar'ın dış id referansı yok,
 // bu yüzden 2. geçişteki remap listelerine eklenmesi gerekmez.
-export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar"];
+export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar", "yedekParcaSatislar"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -63,6 +63,13 @@ export function buildMergePlan(myData, serverData) {
     };
   });
   adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
+  // Yedek parça satışı: alıcı bayi (dealerId) merge edilmiyor; alıcı müşteri (musteriId) ve tahsislerin
+  // makina referansı (customerId) yeniden atanan müşteri id'lerini izlemeli.
+  adds.yedekParcaSatislar = adds.yedekParcaSatislar.map(s => ({
+    ...s,
+    musteriId: remapRef(maps.customers, s.musteriId),
+    tahsisler: (s.tahsisler || []).map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) })),
+  }));
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
   adds.customers = adds.customers.map(c => ({
     ...c,

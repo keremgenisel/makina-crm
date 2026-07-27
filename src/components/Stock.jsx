@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ALTUNMAK_MODELS } from "../lib/constants";
 import { makeCanDo } from "../lib/permissions";
 import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
 import { UretimFormu }   from "./stock/UretimFormu";
+import { YedekParcaSatisTab } from "./stock/YedekParcaSatisTab";
 
 export const Stock = ({
   factory = null,
@@ -18,14 +19,21 @@ export const Stock = ({
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
   partSales = [], setPartSales = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = () => {},
+  dealers = [], kdvRates, calisanlar = [],
   serverPermissions = null,
   defaultSubTab = "makina",
+  yedekOdakId = null, onYedekOdakConsumed = null,
 }) => {
   const [subTab, setSubTab] = useState(defaultSubTab || "makina");
+  // Bayi detayından "Yedek Parça Satışına git" — ilgili sekmeyi aç (zaten stok'a mount olurken açılır,
+  // ama stok zaten açıksa bu effect sekmeyi değiştirir).
+  useEffect(() => { if (yedekOdakId != null) setSubTab("yedeksatis"); }, [yedekOdakId]);
 
   const TABS = [
     ["makina", "Makina Stoğu"],
     ["parca",  "Parça/Yedek Parça Stoğu"],
+    ["yedeksatis", "Yedek Parça Satışı"],
     ["uretim", "Kalıp Üretim"],
   ];
 
@@ -59,6 +67,14 @@ export const Stock = ({
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings}
           canDoStock={canDoStock} serverPermissions={serverPermissions} />
+      )}
+      {subTab === "yedeksatis" && (
+        <YedekParcaSatisTab
+          yedekParcaSatislar={yedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
+          dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar}
+          partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
+          kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock}
+          odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed} />
       )}
       {subTab === "uretim" && (
         <UretimFormu

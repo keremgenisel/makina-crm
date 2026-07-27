@@ -94,6 +94,59 @@ describe("sekme (tabs) düzeyi yazma kısıtı", () => {
   it("tabs tanımsızsa tüm sekmeler açık sayılır (mevcut istemci semantiği)", () => {
     expect(yazmaYetkisiVar(JSON.stringify({ customerActions: ["cust_add"] }), "user", ["factory"], {}, {}).ok).toBe(true);
   });
+
+  it("yedek parça satışı müşteri/bayi detayından da yazılabilir (o sekmelerden 403 almaz)", () => {
+    // Yedek parça satışı Stok'un yanı sıra müşteri ve bayi detay modallarından da eklenebilir; satış
+    // stoktan düşer (partStock/partStockLog). Bu sekmeler BOLUM_SEKMELERI'nde yoksa kayıt 403 alırdı.
+    expect(BOLUM_SEKMELERI.yedekParcaSatislar).toEqual(expect.arrayContaining(["customers", "dealers", "stock"]));
+    expect(BOLUM_SEKMELERI.partStock).toEqual(expect.arrayContaining(["dealers"]));
+    expect(BOLUM_SEKMELERI.partStockLog).toEqual(expect.arrayContaining(["dealers"]));
+    expect(BOLUM_SEKMELERI.yedekParcaSatislar).toEqual(expect.arrayContaining(["servis"])); // pano butonu
+    const musteriUser = JSON.stringify({ tabs: ["dashboard", "customers"] });
+    expect(yazmaYetkisiVar(musteriUser, "user", ["yedekParcaSatislar", "partStock", "partStockLog"], {}, {}).ok).toBe(true);
+    const bayiUser = JSON.stringify({ tabs: ["dashboard", "dealers"] });
+    expect(yazmaYetkisiVar(bayiUser, "user", ["yedekParcaSatislar", "partStock", "partStockLog"], {}, {}).ok).toBe(true);
+  });
+
+  it("yedek parça EKLE: müşteri/bayi/pano izinlerinden HERHANGİ biri yeterli, stok grubu boş olsa da", () => {
+    const yeni = { yedekParcaSatislar: [{ id: 900, dealerId: 5, partId: "7", miktar: 3 }] };
+    // stockActions boş ama müşteri detay izni var → EKLE geçer, bölüm yazılabilir
+    const custPerm = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_yedek_parca_add"] });
+    expect(eylemDenetimi({}, yeni, custPerm, "user").ok).toBe(true);
+    expect(yazmaYetkisiVar(custPerm, "user", ["yedekParcaSatislar"], {}, {}).ok).toBe(true);
+    // bayi izni
+    const dealerPerm = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], dealerActions: ["dealer_yedek_parca_add"] });
+    expect(eylemDenetimi({}, yeni, dealerPerm, "user").ok).toBe(true);
+    // pano izni
+    const panoPerm = JSON.stringify({ tabs: ["dashboard", "servis"], stockActions: [], customerActions: ["servis_yedek_parca_add"] });
+    expect(eylemDenetimi({}, yeni, panoPerm, "user").ok).toBe(true);
+    expect(yazmaYetkisiVar(panoPerm, "user", ["yedekParcaSatislar"], {}, {}).ok).toBe(true);
+  });
+
+  it("yedek parça EKLE: hiçbir ekleme izni yoksa 403 (stok grubu da boş)", () => {
+    const yeni = { yedekParcaSatislar: [{ id: 901, dealerId: 5, partId: "7", miktar: 1 }] };
+    const izinsiz = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_add"], dealerActions: [] });
+    const r = eylemDenetimi({}, yeni, izinsiz, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("ekle");
+    expect(yazmaYetkisiVar(izinsiz, "user", ["yedekParcaSatislar"], {}, {}).ok).toBe(false);
+  });
+
+  it("yedek parça SİL: stok VEYA müşteri silme izninden herhangi biri yeterli; hiçbiri yoksa 403", () => {
+    const eski = { yedekParcaSatislar: [{ id: 902, dealerId: 5, partId: "7", miktar: 2 }] };
+    const yeni = { yedekParcaSatislar: [{ id: 902, dealerId: 5, partId: "7", miktar: 2, deletedAt: "2026-07-27" }] };
+    // müşteri detayı silme izni (stockActions boş)
+    const custDel = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_yedek_parca_delete"] });
+    expect(eylemDenetimi(eski, yeni, custDel, "user").ok).toBe(true);
+    // stok sekmesi silme izni
+    const stokDel = JSON.stringify({ tabs: ["dashboard", "stock"], stockActions: ["yedek_parca_delete"], customerActions: [] });
+    expect(eylemDenetimi(eski, yeni, stokDel, "user").ok).toBe(true);
+    // hiçbir silme izni yok → 403
+    const izinsiz = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_yedek_parca_add"] });
+    const r = eylemDenetimi(eski, yeni, izinsiz, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("sil");
+  });
 });
 
 describe("appSettings alan düzeyi denetimi (bölüm iki sahipli)", () => {

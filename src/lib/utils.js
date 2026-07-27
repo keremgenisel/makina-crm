@@ -85,6 +85,17 @@ export const sureBicim = (dk) => {
   if (kdk || !parcalar.length) parcalar.push(`${kdk} dk`);
   return parcalar.join(" ");
 };
+// Süreyi gün'e bölmeden yalnız saat+dakika olarak gösterir: "31 saat 18 dk" (1 gün 7 saat yerine).
+// İşçilik gibi toplam saatin daha anlamlı olduğu alanlar için (24+7=31 saat gibi).
+export const sureBicimSaat = (dk) => {
+  if (dk == null) return "—";
+  const saat = Math.floor(dk / 60);
+  const kdk = dk % 60;
+  const parcalar = [];
+  if (saat) parcalar.push(`${saat} saat`);
+  if (kdk || !parcalar.length) parcalar.push(`${kdk} dk`);
+  return parcalar.join(" ");
+};
 // Tarih-saat damgasını "21/07 14:30" biçiminde gösterir (kart/analiz için).
 export const fmtZaman = (ts) => {
   if (!ts) return "—";
@@ -413,6 +424,26 @@ export const kalipCountAtSale = (c) => {
 // Değişen parça adını güvenle al — eski kayıtlarda düz string, yenilerde {ad, fiyat}
 export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 
+// Değişen parçaları kimliğe göre grupla (aynı parça/fiyat/dış-tedarik birleşir) ve adetlerini topla.
+// Her parçanın kendi miktarı (varsa) sayılır; aynı parça birden çok kez seçildiyse adetler toplanır.
+// İlk görülme sırasını korur. Döner: [{ p, adet }] — p ilk örnektir.
+export const parcaGruplari = (parcalar) => {
+  const out = [];
+  const idx = {};
+  for (const p of (parcalar || [])) {
+    const nesne = typeof p === "object" && p !== null;
+    const ad = nesne ? (p.ad ?? "") : String(p);
+    const fiyat = nesne ? parseMoney(p.fiyat) : 0;
+    const dis = nesne && p.disTedarik ? 1 : 0;
+    const kimlik = nesne ? (p.partId ?? ad) : ad;
+    const key = `${kimlik}|${fiyat}|${dis}`;
+    const adet = nesne ? (parseInt(p.miktar) || 1) : 1;
+    if (idx[key] != null) out[idx[key]].adet += adet;
+    else { idx[key] = out.length; out.push({ p, adet }); }
+  }
+  return out;
+};
+
 // Yedek parça tanımının (fiyatTRY/fiyatUSD/fiyatEUR) verilen para birimine ait fiyatını döner —
 // servis formunda parça seçilince fiyatın otomatik doldurulması için kullanılır. Tanımsızsa "" döner,
 // böylece kullanıcı elle girer; geçmiş kayıtlara dokunulmaz, sadece bundan sonraki seçimleri etkiler.
@@ -520,6 +551,9 @@ export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makin
 // Extra Kalıp satışı borçlu mu
 /** @param {import("../types").PartSale} ps @returns {boolean} */
 export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
+// Yedek parça (kargo) satışı — parça bedeli (miktar × birim fiyat; KDV hariç) ve borçlu mu
+export const yedekParcaBedeli = (s) => (parseInt(s?.miktar) || 0) * parseMoney(s?.birimFiyat);
+export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && s?.odendi === false;
 // ── Mükerrer kayıt tespiti ───────────────────────────────────────────────────
 // Telefonu karşılaştırma anahtarına indir: rakamları ayıkla, son 10 hane (0/ülke kodu farkları elenir)
 const telAnahtar = (t) => { const d = String(t || "").replace(/\D/g, ""); return d.length >= 7 ? d.slice(-10) : ""; };
@@ -557,10 +591,12 @@ export const benzerKayitBul = (kayitlar = [], aday = {}) => {
  * @param {string} [factoryName]
  * @returns {boolean}
  */
-export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina") => {
+export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina", yedekParcaSatislar = []) => {
   if (parseMoney(customer.kalanBorc) > 0) return true;
   if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s, factoryName))) return true;
   if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
+  // Müşteriye yapılan yedek parça (kargo) satışı ödenmemişse borç sayılır
+  if (yedekParcaSatislar.some(s => s.aliciTipi === "musteri" && Number(s.musteriId) === customer.id && isYedekParcaBorcluMu(s))) return true;
   return false;
 };
 // Ciro (gizli ara değer — hiçbir formda ayrı bir alan olarak gösterilmez, sadece Kalan Borç'u türetmek için kullanılır)

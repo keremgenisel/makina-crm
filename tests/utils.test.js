@@ -4,7 +4,7 @@ import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
-  girisNoHaritasi, servisYedekParcaDurumu,
+  girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -84,6 +84,16 @@ describe("customerHasAnyDebt", () => {
   it("hiçbir kaynak yoksa borçlu değil", () => {
     expect(customerHasAnyDebt(c, [], [])).toBe(false);
   });
+  it("müşteriye ödenmemiş yedek parça (kargo) satışı borç sayılır", () => {
+    const yp = [{ aliciTipi: "musteri", musteriId: 1, miktar: 2, birimFiyat: 100, odendi: false }];
+    expect(customerHasAnyDebt(c, [], [], "Altuntaş Makina", yp)).toBe(true);
+  });
+  it("ödenmiş / bayi-alıcı yedek parça satışı müşteri borcu değil", () => {
+    const odenmis = [{ aliciTipi: "musteri", musteriId: 1, miktar: 2, birimFiyat: 100, odendi: true }];
+    const bayiAlici = [{ aliciTipi: "bayi", dealerId: 5, miktar: 2, birimFiyat: 100, odendi: false }];
+    expect(customerHasAnyDebt(c, [], [], "Altuntaş Makina", odenmis)).toBe(false);
+    expect(customerHasAnyDebt(c, [], [], "Altuntaş Makina", bayiAlici)).toBe(false);
+  });
 });
 
 describe("purgeOldTrash", () => {
@@ -96,6 +106,51 @@ describe("purgeOldTrash", () => {
       { id: 3, deletedAt: yeni },
     ]);
     expect(out.map(x => x.id)).toEqual([1, 3]);
+  });
+});
+
+describe("parcaGruplari — değişen parçaları adete göre grupla (x2, x3…)", () => {
+  it("aynı parça birden çok kez seçilince tek satırda toplanır (adet artar)", () => {
+    const g = parcaGruplari([
+      { partId: "7", ad: "Dişli", fiyat: 100 },
+      { partId: "7", ad: "Dişli", fiyat: 100 },
+      { partId: "9", ad: "Yatak", fiyat: 50 },
+    ]);
+    expect(g).toHaveLength(2);
+    expect(g[0]).toMatchObject({ adet: 2 });
+    expect(g[0].p.ad).toBe("Dişli");
+    expect(g[1]).toMatchObject({ adet: 1 });
+  });
+
+  it("parçanın kendi miktarı sayılır ve aynı parçalarla toplanır", () => {
+    const g = parcaGruplari([
+      { partId: "7", ad: "Dişli", fiyat: 100, miktar: 3 },
+      { partId: "7", ad: "Dişli", fiyat: 100, miktar: 2 },
+    ]);
+    expect(g).toHaveLength(1);
+    expect(g[0].adet).toBe(5);
+  });
+
+  it("farklı fiyat / dış tedarik ayrı grup; ilk görülme sırası korunur", () => {
+    const g = parcaGruplari([
+      { partId: "7", ad: "Dişli", fiyat: 100 },
+      { partId: "7", ad: "Dişli", fiyat: 120 },            // farklı fiyat → ayrı
+      { partId: "7", ad: "Dişli", fiyat: 100, disTedarik: true }, // dış tedarik → ayrı
+    ]);
+    expect(g).toHaveLength(3);
+    expect(g.map(x => x.adet)).toEqual([1, 1, 1]);
+  });
+
+  it("eski düz string parçaları da ada göre gruplar", () => {
+    const g = parcaGruplari(["Dişli", "Dişli", "Yatak"]);
+    expect(g).toHaveLength(2);
+    expect(g[0]).toMatchObject({ adet: 2, p: "Dişli" });
+  });
+
+  it("boş / null güvenli", () => {
+    expect(parcaGruplari([])).toEqual([]);
+    expect(parcaGruplari(null)).toEqual([]);
+    expect(parcaGruplari(undefined)).toEqual([]);
   });
 });
 

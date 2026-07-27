@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi } from "../lib/utils";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
-import { yeniBekleyenler } from "../lib/servisAlarm";
+import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
 import { yerelServisEkle } from "../lib/yerelServis";
 import { createAlarm, kilidiAc } from "../lib/alarmSes";
 import { SERVIS_ALARM_VARSAYILAN } from "../lib/constants";
@@ -10,6 +10,10 @@ import { logAction, getAuditUsername } from "../lib/audit";
 import { makeCanDo } from "../lib/permissions";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
 import { ServiceForm } from "./ServiceForm";
+import { KargoKart, KargoDetayModal } from "./KargoPanosu";
+import { aliciAd } from "./stock/TahsisModal";
+import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
+import { yeniYedekParcaSatis, kargoPlanlandiMi } from "../lib/yedekParcaSatis";
 import { useLock } from "../hooks/useLock";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
 
@@ -26,6 +30,10 @@ const DURUMLAR = [
   { key: "Tamamlandı", baslik: "Bakım Onarım Tamamlandı", renk: "var(--grn600, #16a34a)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)", bos: "Kart yok. Buraya sürükle." },
 ];
 const [DURUM_BEK, DURUM_YAP, DURUM_TAM] = DURUMLAR;
+// Kargo (yedek parça satışı) durumu ↔ servis sütunu eşlemesi. Kargolar servis kartlarıyla AYNI
+// sütunlarda görünür; bir kargo kartı sütun değiştirince kargoDurum'u karşılık gelen değere döner.
+const KARGO_SUTUN = { "Hazırlanıyor": "Bekliyor", "Kargoya Verildi": "Yapılıyor", "Teslim Edildi": "Tamamlandı" };
+const SUTUN_KARGO = { "Bekliyor": "Hazırlanıyor", "Yapılıyor": "Kargoya Verildi", "Tamamlandı": "Teslim Edildi" };
 // Aşama zaman kutusu — "Periyodik Bakım" rozetiyle aynı biçim, ilgili aşamanın renginde.
 const pilStil = (d) => ({ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: d.renk, background: d.bg, border: `1px solid ${d.br}` });
 
@@ -49,21 +57,59 @@ const bosForm = (factoryName) => ({
 export const ServisPanosu = ({
   services = [], setServices, customers = [], calisanlar = [], factory = null,
   parts = [], dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
-  setPartStock = null, setPartStockLog = null,
+  setPartStock = null, setPartStockLog = null, partStock = [],
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, appSettings = null,
   showToast = () => {}, serverPermissions = null, kiosk = false, onKilitle = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, kargoYetki = false,
+  partSales = [], setPartSales = null, kalipYetki = false,
 }) => {
   const canDo = makeCanDo(serverPermissions, "customerActions");
+  const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
+  // Extra Kalıp kargo pano işlemleri (kargo desenine paralel; ayrı izinler).
+  const canKalipDuzenle = canDo("cust_kalip_edit");
+  const canKalipKaldir = canDo("kalip_pano_kaldir");
+  const canKalipArsiv = canDo("kalip_pano_arsiv");
+  // Kargo pano işlemleri: servislerin pano izinlerinin kargo karşılıkları ("Servis Panosu işlemleri"
+  // akordeonu, customerActions). Kaldır/hemen-düşür ve arşiv-gör/geri-al ayrı izinler.
+  const canKargoKaldir = canDo("kargo_pano_kaldir");
+  const canKargoArsiv = canDo("kargo_pano_arsiv");
+  // "Yeni Yedek Parça Satışı" düğmesi: Servis Panosu'na özel izin (customerActions.servis_yedek_parca_add).
+  const kargoEkleGoster = canDo("servis_yedek_parca_add") && !!setYedekParcaSatislar;
+  const [kargoDetayId, setKargoDetayId] = useState(null); // açık kargo detay modalının satış id'si
+  const [kalipDetayId, setKalipDetayId] = useState(null); // açık kalıp kargo detay modalının id'si
+  const [ypForm, setYpForm] = useState(null); // yeni yedek parça satışı formu (panodan)
+  const openAddYedekParca = () => {
+    if (!kargoEkleGoster) return;
+    setYpForm({ aliciTipi: "bayi", dealerId: "", musteriId: "", partId: "", miktar: "", birimFiyat: "", currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false, kargoDurum: "Hazırlanıyor" });
+  };
+  const saveYedekParca = () => {
+    const r = yeniYedekParcaSatis(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    if (!r.ok) { showToast(r.hata, "err"); return; }
+    // Hemen düşen kargoyu kendi panomuzda susturur; PLANLANMIŞ kargo düştüğünde yanıp sönsün diye işaretlenmez.
+    if (!kargoPlanlandiMi(ypForm, simdiYerel())) yerelEklenenRef.current.add(r.id);
+    logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: r.id });
+    showToast("Yedek parça satışı kaydedildi, stoktan düşüldü.");
+    setYpForm(null);
+  };
   const [svModal, setSvModal] = useState(null);   // null | "add" | { edit: sv }
   const [form, setForm] = useState(bosForm(factory?.name || "Altuntaş Makina"));
   const [hoverDurum, setHoverDurum] = useState(null);
+  // Kontrol satırına (teknisyen/kim gönderiyor seçici) gelince o kartın sürüklemesini kapatırız:
+  // macOS'ta native <select>, draggable=true bir ata içindeyken seçim işlemiyor. React-kontrollü
+  // olduğu için 1sn'lik saat yeniden-render'ı geri açamaz (setAttribute yaklaşımı bunu kaybediyordu).
+  const [dragKapaliId, setDragKapaliId] = useState(null);
   const [arsivAcik, setArsivAcik] = useState(false);
+  const [planAcik, setPlanAcik] = useState(false);
 
   // Servis DÜZENLERKEN, o servisin müşterisi için kilit al — müşteri detayındaki düzenlemeyle
   // AYNI kilit alanını ("customer") paylaşır, böylece kiosk + ofis aynı kaydı aynı anda düzenleyemez.
   // Ekleme (yeni servis) modunda kilit alınmaz (taslak kaybı olmasın; 409 optimistik koruma yeterli).
   const svLockId = (svModal && svModal.edit) ? (form.customerId ?? null) : null;
   const { lockConflict: svLock, forceAcquire: forceSvLock } = useLock("customer", svLockId);
+  // Kargo/kalıp detay modalları eşzamanlı düzenleme kilidi (Stok'taki yedek parça düzenlemesiyle
+  // aynı "yedek_parca" alanını paylaşır → iki kullanıcı aynı satışı aynı anda düzenleyemez).
+  const { lockConflict: kargoLock, forceAcquire: forceKargoLock } = useLock("yedek_parca", kargoDetayId);
+  const { lockConflict: kalipLock, forceAcquire: forceKalipLock } = useLock("part_sale", kalipDetayId);
 
   // ── Canlı saat & tarih (Anasayfa ile aynı) ──
   const [now, setNow] = useState(new Date());
@@ -75,6 +121,10 @@ export const ServisPanosu = ({
   const [analizSv, setAnalizSv] = useState(null); // per-servis süre analizi modalı
 
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
+  // İşlem Geçmişi (audit) — panodaki servis ve kargo mutasyonları için kısa yardımcılar.
+  const auditServis = (action, id, detail) => { const sv = services.find(s => s.id === id); logAction({ serverPermissions, action, entity: "servis", entityId: id, entityName: custMap[Number(sv?.customerId)]?.name, detail }); };
+  const auditKargo = (action, id, detail) => { const s = yedekParcaSatislar.find(x => x.id === id); logAction({ serverPermissions, action, entity: "yedek_parca_satis", entityId: id, entityName: aliciAd(s, dealers, customers), detail }); };
+  const auditKalip = (action, id, detail) => { const s = partSales.find(x => x.id === id); logAction({ serverPermissions, action, entity: "kalip_satisi", entityId: id, entityName: custMap[Number(s?.customerId)]?.name, detail }); };
   const factoryName = factory?.name || "Altuntaş Makina";
   const cs = appSettings?.calismaSaatleri; // firma çalışma saatleri → işçilik mesai hesabı
 
@@ -88,11 +138,17 @@ export const ServisPanosu = ({
   const alarmAcikRef = useRef(alarmAcik); alarmAcikRef.current = alarmAcik;
   const alarmCfgRef = useRef(alarmCfg); alarmCfgRef.current = alarmCfg;
   const custMapRef = useRef(custMap); custMapRef.current = custMap;
-  const bilinenRef = useRef(null);              // Set<id> — bilinen tüm servis id'leri (taban dahil)
+  const dealerMap = useMemo(() => { const m = {}; for (const d of dealers) m[d.id] = d; return m; }, [dealers]);
+  const dealerMapRef = useRef(dealerMap); dealerMapRef.current = dealerMap;
+  const kargoYetkiRef = useRef(kargoYetki); kargoYetkiRef.current = kargoYetki;
+  const yedekRef = useRef(yedekParcaSatislar); yedekRef.current = yedekParcaSatislar;
+  const kalipYetkiRef = useRef(kalipYetki); kalipYetkiRef.current = kalipYetki;
+  const partSalesRef = useRef(partSales); partSalesRef.current = partSales;
+  const bilinenRef = useRef(null);              // Set<id> — bilinen tüm servis+kargo id'leri (taban dahil)
   const yerelEklenenRef = useRef(new Set());    // kiosk'un kendi eklediği id'ler → alarm atlanır
   const alarmRef = useRef(null);                // createAlarm örneği (lazy)
   const [yananIds, setYananIds] = useState({}); // { id: bitisZamaniMs } — yanıp sönen kartlar
-  const [alarmSeridi, setAlarmSeridi] = useState([]); // bildirim şeridi: [{ id, ad }]
+  const [alarmSeridi, setAlarmSeridi] = useState([]); // bildirim şeridi: [{ id, ad, tur: "servis"|"kargo" }]
 
   useEffect(() => {
     if (!alarmRef.current) alarmRef.current = createAlarm();
@@ -100,22 +156,44 @@ export const ServisPanosu = ({
   }, []);
 
   useEffect(() => {
+    // Servis + kargo AYNI alarmı paylaşır. Planlanmış (ileri zamanlı, henüz düşmemiş) servis/kargo
+    // bilinen kümeye eklenmez → zamanı gelince "yeni" yakalanıp düşüşte tetiklenir. Kargo yalnız
+    // kargoYetki varsa panoda göründüğü için yalnız o zaman alarma katılır.
+    const kargolar = kargoYetkiRef.current ? yedekRef.current : [];
+    const kaliplar = kalipYetkiRef.current ? partSalesRef.current.filter(s => s.tur === "Kalıp") : [];
     const ids = [];
-    for (const s of services) if (s?.id != null) ids.push(s.id);
+    for (const s of services) if (s?.id != null && !servisPlanlandiMi(s, nowIso)) ids.push(s.id);
+    for (const s of kargolar) if (s?.id != null && s.kargoDurum && s.deletedAt == null && !kargoPlanlandiMi(s, nowIso)) ids.push(s.id);
+    for (const s of kaliplar) if (s?.id != null && s.kargoDurum && s.deletedAt == null && !kargoPlanlandiMi(s, nowIso)) ids.push(s.id);
     if (bilinenRef.current === null) { bilinenRef.current = new Set(ids); return; } // taban çizgisi
     const bilinen = bilinenRef.current;
-    const yeni = yeniBekleyenler(bilinen, services).filter(id => !yerelEklenenRef.current.has(id));
+    const yeniS = yeniBekleyenler(bilinen, services, nowIso).filter(id => !yerelEklenenRef.current.has(id));
+    const yeniK = yeniKargolar(bilinen, kargolar, nowIso).filter(id => !yerelEklenenRef.current.has(id));
+    const yeniKl = yeniKargolar(bilinen, kaliplar, nowIso).filter(id => !yerelEklenenRef.current.has(id));
+    const yeni = [...yeniS, ...yeniK, ...yeniKl];
     for (const id of ids) bilinen.add(id); // sonraki döngüde tekrar tetiklenmesin
     if (!yeni.length || !alarmAcikRef.current) return;
     const bitis = Date.now() + Math.max(1, Number(alarmCfgRef.current.yanipSn) || 1) * 1000;
     setYananIds(prev => { const n = { ...prev }; for (const id of yeni) n[id] = bitis; return n; });
+    const kargoId = new Set(yeniK), kalipId = new Set(yeniKl);
     const kayit = yeni.map(id => {
+      if (kargoId.has(id)) {
+        const s = yedekRef.current.find(x => x.id === id);
+        const ad = s?.aliciTipi === "musteri"
+          ? (custMapRef.current[Number(s.musteriId)]?.name || "(müşteri yok)")
+          : (dealerMapRef.current[Number(s?.dealerId)]?.name || "(bayi yok)");
+        return { id, ad, tur: "kargo" };
+      }
+      if (kalipId.has(id)) {
+        const s = partSalesRef.current.find(x => x.id === id);
+        return { id, ad: custMapRef.current[Number(s?.customerId)]?.name || "(müşteri yok)", tur: "kargo" };
+      }
       const s = services.find(x => x.id === id);
-      return { id, ad: custMapRef.current[Number(s?.customerId)]?.name || "(müşteri yok)" };
+      return { id, ad: custMapRef.current[Number(s?.customerId)]?.name || "(müşteri yok)", tur: "servis" };
     });
     setAlarmSeridi(prev => [...kayit, ...prev].slice(0, 8));
     alarmRef.current?.baslat?.(alarmCfgRef.current.sesSn);
-  }, [services]);
+  }, [services, yedekParcaSatislar, partSales, nowIso]);
 
   // Yanıp sönme süresi dolan kartları 1 sn'lik saatle düş.
   useEffect(() => {
@@ -131,10 +209,118 @@ export const ServisPanosu = ({
   // Yalnız durumu olan VE panodan kaldırılmamış (arşivlenmemiş) servisler; sütunlara göre grupla.
   const sutunlar = useMemo(() => {
     const g = { "Bekliyor": [], "Yapılıyor": [], "Tamamlandı": [] };
-    for (const s of services) if (s.durum && g[s.durum] && !s.panoGizli) g[s.durum].push(s);
+    // Planlanmış (ileri zamanlı) Bekliyor kartları henüz düşmedi → sütunlarda gösterilmez.
+    for (const s of services) if (s.durum && g[s.durum] && !s.panoGizli && !servisPlanlandiMi(s, nowIso)) g[s.durum].push(s);
     for (const k of Object.keys(g)) g[k].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     return g;
-  }, [services]);
+  }, [services, nowIso]);
+
+  // Kargo (yedek parça satışı) kartları — yalnız kargoYetki varsa (Stok erişimi) panoda görünür;
+  // kargoDurum'u olanlar eşlenen servis sütununa girer (servis-katı kiosk kargo görmez).
+  const kargoSutunlar = useMemo(() => {
+    const g = { "Bekliyor": [], "Yapılıyor": [], "Tamamlandı": [] };
+    if (!kargoYetki) return g;
+    // Planlanmış (panoya düşme zamanı ileri) kargolar zamanı gelene kadar sütunlarda görünmez.
+    for (const s of yedekParcaSatislar) { const col = KARGO_SUTUN[s.kargoDurum]; if (col && !s.deletedAt && !s.panoGizli && !kargoPlanlandiMi(s, nowIso)) g[col].push(s); }
+    return g;
+  }, [yedekParcaSatislar, kargoYetki, nowIso]);
+  // Arşivlenen kargolar: "Panodan Kaldır" ile gizlenen Teslim Edildi kargo kartları (servisler gibi).
+  const kargoArsivlenenler = useMemo(
+    () => (!kargoYetki ? [] : yedekParcaSatislar.filter(s => s.panoGizli && s.kargoDurum && !s.deletedAt)
+      .sort((a, b) => String(b.tarih || "").localeCompare(String(a.tarih || "")))),
+    [yedekParcaSatislar, kargoYetki]
+  );
+  const kargoDetay = kargoDetayId != null ? yedekParcaSatislar.find(s => s.id === kargoDetayId) : null;
+  // Kargo kartı sütun değiştirince kargoDurum'u o sütunun karşılığına çek.
+  const kargoDurumDegistir = (id, sutunKey) => {
+    if (!setYedekParcaSatislar || !canKargoDuzenle) return;
+    const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
+    // Tamamlandı (Teslim Edildi) dışına sürüklenirse arşiv bayrağını temizle (kart panoda kalsın).
+    setYedekParcaSatislar(p => p.map(s => s.id === id ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
+    auditKargo("durum_degisti", id, { durum: kargoDurum });
+  };
+  // Kargo kartını panodan kaldır / geri al (servislerdeki panoGizle deseni; ayrı pano izinleri).
+  const kargoPanoGizle = (id, gizli) => {
+    if (!setYedekParcaSatislar || !(gizli ? canKargoKaldir : canKargoArsiv)) return;
+    setYedekParcaSatislar(p => p.map(s => s.id === id ? { ...s, panoGizli: gizli } : s));
+    auditKargo(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
+    showToast(gizli ? "Kargo kartı panodan kaldırıldı (satış kaydı duruyor)." : "Kargo kartı panoya geri alındı.");
+  };
+  const kargoSorumluDegistir = (id, kargoSorumlusu) => {
+    if (!setYedekParcaSatislar || !canKargoDuzenle) return;
+    setYedekParcaSatislar(p => p.map(s => s.id === id ? { ...s, kargoSorumlusu } : s));
+    auditKargo("sorumlu_degisti", id, { kargoSorumlusu });
+  };
+
+  // ── Extra Kalıp kargo kartları (partSales tur="Kalıp" + kargoDurum) — kargo deseninin aynısı ──
+  const kalipSutunlar = useMemo(() => {
+    const g = { "Bekliyor": [], "Yapılıyor": [], "Tamamlandı": [] };
+    if (!kalipYetki) return g;
+    for (const s of partSales) { if (s.tur !== "Kalıp") continue; const col = KARGO_SUTUN[s.kargoDurum]; if (col && !s.deletedAt && !s.panoGizli && !kargoPlanlandiMi(s, nowIso)) g[col].push(s); }
+    return g;
+  }, [partSales, kalipYetki, nowIso]);
+  const kalipArsivlenenler = useMemo(
+    () => (!kalipYetki ? [] : partSales.filter(s => s.tur === "Kalıp" && s.panoGizli && s.kargoDurum && !s.deletedAt)
+      .sort((a, b) => String(b.tarih || "").localeCompare(String(a.tarih || "")))),
+    [partSales, kalipYetki]
+  );
+  const kalipDetay = kalipDetayId != null ? partSales.find(s => s.id === kalipDetayId) : null;
+  const kalipDurumDegistir = (id, sutunKey) => {
+    if (!setPartSales || !canKalipDuzenle) return;
+    const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
+    setPartSales(p => p.map(s => s.id === id ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
+    auditKalip("durum_degisti", id, { durum: kargoDurum });
+  };
+  const kalipPanoGizle = (id, gizli) => {
+    if (!setPartSales || !(gizli ? canKalipKaldir : canKalipArsiv)) return;
+    setPartSales(p => p.map(s => s.id === id ? { ...s, panoGizli: gizli } : s));
+    auditKalip(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
+    showToast(gizli ? "Kalıp kargosu panodan kaldırıldı (satış kaydı duruyor)." : "Kalıp kargosu panoya geri alındı.");
+  };
+  const kalipSorumluDegistir = (id, kargoSorumlusu) => {
+    if (!setPartSales || !canKalipDuzenle) return;
+    setPartSales(p => p.map(s => s.id === id ? { ...s, kargoSorumlusu } : s));
+    auditKalip("sorumlu_degisti", id, { kargoSorumlusu });
+  };
+  const kalipHemenDusur = (id) => {
+    if (!setPartSales || !canKalipKaldir) return;
+    setPartSales(p => p.map(s => s.id === id ? { ...s, panoDusmeZamani: "" } : s));
+    auditKalip("hemen_dusuruldu", id);
+  };
+  const kalipPlanlananlar = useMemo(
+    () => (!kalipYetki ? [] : partSales.filter(s => s.tur === "Kalıp" && !s.panoGizli && !s.deletedAt && s.kargoDurum && kargoPlanlandiMi(s, nowIso))
+      .sort((a, b) => String(a.panoDusmeZamani || "").localeCompare(String(b.panoDusmeZamani || "")))),
+    [partSales, kalipYetki, nowIso]
+  );
+  // Bir sütunun servis + kargo kartları tek listede, EN SON EKLENEN en üstte (tür karışık). Sıralama
+  // oluşturma anına göre: servis fabrikaGirisZamani (giriş/oluşturma), kargo olusturmaZamani; ikisi de
+  // yoksa gün-bazlı tarihe (T00:00) düşer. id rastgele olduğundan sıralama için kullanılamaz.
+  const kartZamani = (x) => x._kargo
+    ? (x.olusturmaZamani || (x.tarih ? x.tarih + "T00:00" : ""))
+    : x._kalip
+      ? (x.olusturmaZamani || (x.kargoTarih || x.tarih || "") + (x.kargoTarih || x.tarih ? "T00:00" : ""))
+      : (x.fabrikaGirisZamani || (x.date ? x.date + "T00:00" : ""));
+  const birlesikKartlar = (colKey) => {
+    const liste = [
+      ...sutunlar[colKey],
+      ...kargoSutunlar[colKey].map(s => ({ ...s, _kargo: true })),
+      ...kalipSutunlar[colKey].map(s => ({ ...s, _kalip: true })),
+    ];
+    return liste.sort((a, b) => kartZamani(b).localeCompare(kartZamani(a)));
+  };
+
+  // Planlananlar: ileri zamana alınmış, panoya düşmesi beklenen Bekliyor servisleri (en yakın önce).
+  const planlananlar = useMemo(
+    () => services.filter(s => !s.panoGizli && servisPlanlandiMi(s, nowIso))
+      .sort((a, b) => String(a.fabrikaGirisZamani || "").localeCompare(String(b.fabrikaGirisZamani || ""))),
+    [services, nowIso]
+  );
+  // Planlanan kargolar: panoya düşme zamanı ileride olan kargolar (servisler gibi Planlananlar'da görünür).
+  const kargoPlanlananlar = useMemo(
+    () => (!kargoYetki ? [] : yedekParcaSatislar.filter(s => !s.panoGizli && !s.deletedAt && s.kargoDurum && kargoPlanlandiMi(s, nowIso))
+      .sort((a, b) => String(a.panoDusmeZamani || "").localeCompare(String(b.panoDusmeZamani || "")))),
+    [yedekParcaSatislar, kargoYetki, nowIso]
+  );
 
   // Arşivlenenler: "Panodan Kaldır" ile gizlenen (servis kaydı duran) Tamamlandı kartları.
   const arsivlenenler = useMemo(
@@ -156,15 +342,31 @@ export const ServisPanosu = ({
       if (durum === "Tamamlandı") u.bitisZamani = ts;
       return u;
     }));
+    auditServis("durum_degisti", id, { durum });
   };
   const teknisyenDegistir = (id, tech) => {
     if (!setServices || !canDo("cust_service_edit")) return;
     setServices(p => p.map(s => s.id === id ? { ...s, tech } : s));
+    auditServis("teknisyen_degisti", id, { tech });
+  };
+  // Planlanan servisi beklenen zamandan önce hemen panoya düşür (giriş anını şimdiye çeker).
+  const hemenDusur = (id) => {
+    if (!setServices || !canDo("cust_service_edit")) return;
+    const ts = simdiYerel();
+    setServices(p => p.map(s => s.id === id ? { ...s, durum: "Bekliyor", fabrikaGirisZamani: ts } : s));
+    auditServis("hemen_dusuruldu", id);
+  };
+  // Planlanan kargoyu hemen panoya düşür (panoya düşme zamanını temizler → Bekliyor sütununa girer).
+  const kargoHemenDusur = (id) => {
+    if (!setYedekParcaSatislar || !canKargoKaldir) return;
+    setYedekParcaSatislar(p => p.map(s => s.id === id ? { ...s, panoDusmeZamani: "" } : s));
+    auditKargo("hemen_dusuruldu", id);
   };
   const panoGizle = (id, gizli) => {
     // Kaldır (arşivle) ve geri-al ayrı izinler: Servis Panosu işlemleri altında (Kullanıcı Yönetimi).
     if (!setServices || !canDo(gizli ? "cust_service_pano_kaldir" : "cust_service_pano_arsiv")) return;
     setServices(p => p.map(s => s.id === id ? { ...s, panoGizli: gizli } : s));
+    auditServis(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
     showToast(gizli ? "Kart panodan kaldırıldı (servis kaydı duruyor)." : "Kart panoya geri alındı.");
   };
   const arsivGorebilir = canDo("cust_service_pano_arsiv");
@@ -229,11 +431,15 @@ export const ServisPanosu = ({
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
-      yerelEklenenRef.current.add(newId); // kendi eklediğimiz servis kendi panomuzda alarm çalmasın
-      yerelServisEkle(newId);             // uygulama geneli bildirimde de "uzaktan geldi" sayılmasın
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
       const yeniRec = { ...rec, id: newId };
       if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
+      // Hemen düşen servisi "kendi ekledik" işaretle (kendi panomuzda + uygulama genelinde alarm/ses
+      // çıkmasın). Planlanmış (ileri zamanlı) servis İŞARETLENMEZ → düştüğünde alarm/bildirim tetiklensin.
+      if (!servisPlanlandiMi(yeniRec, simdiYerel())) {
+        yerelEklenenRef.current.add(newId);
+        yerelServisEkle(newId);
+      }
       setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
       servisParcaDus(rec.degisenParcalar, newId, setPartStock, setPartStockLog);
       bindServisDosyalari(newId, dosyaTaslaklari);
@@ -256,7 +462,10 @@ export const ServisPanosu = ({
   // Teknisyen seçenekleri (form.tech listede yoksa onu da göster ki eski/serbest değer kaybolmasın)
   const tekAdlari = calisanlar.map(c => c.ad).filter(Boolean);
 
-  const Kart = ({ sv, arsiv = false }) => {
+  // Kart bir BİLEŞEN olarak <Kart/> değil, doğrudan Kart({...}) çağrısıyla render edilir. Böylece her
+  // render'da yeni fonksiyon kimliği yüzünden REMOUNT olmaz (1sn'lik saat kartları söküp takıyordu →
+  // açık <select> kapanıyor, teknisyen seçilemiyordu). Doğrudan çağrı kartı yerinde günceller. Hook YOK.
+  const Kart = ({ sv, arsiv = false, key }) => {
     const c = custMap[Number(sv.customerId)] || {};
     const stil = TUR_STIL[sv.type] || TUR_STIL["Periyodik Bakım"];
     const durumRenk = (DURUMLAR.find(d => d.key === sv.durum) || DURUMLAR[0]).renk;
@@ -266,9 +475,9 @@ export const ServisPanosu = ({
     const tamamlandi = sv.durum === "Tamamlandı";
     const yaniyor = !arsiv && yananIds[sv.id] != null; // yeni gelen servis: alarm süresince yanıp söner
     return (
-      <article draggable={surukle}
+      <article key={key} draggable={surukle && dragKapaliId !== sv.id}
         className={yaniyor ? "servis-alarm-yanip" : undefined}
-        onDragStart={surukle ? (e => { e.dataTransfer.setData("text/plain", String(sv.id)); e.dataTransfer.effectAllowed = "move"; }) : undefined}
+        onDragStart={surukle ? (e => { e.dataTransfer.setData("text/plain", "servis:" + sv.id); e.dataTransfer.effectAllowed = "move"; }) : undefined}
         onClick={() => acDuzenle(sv)}
         style={{ background: arsiv ? "var(--n100, #f8fafc)" : "var(--surface, #fff)", border: "1px solid var(--n200, #e2e8f0)", borderLeft: `3px solid ${durumRenk}`, borderRadius: 12, padding: arsiv ? "10px 12px" : "12px 13px 11px", boxShadow: arsiv ? "none" : "0 1px 3px rgba(20,20,30,.07)", opacity: arsiv ? 0.9 : 1, cursor: surukle ? "grab" : "pointer" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -306,8 +515,8 @@ export const ServisPanosu = ({
               {s.bitis && <span style={pilStil(DURUM_TAM)}>Bitiş {fmtZamanTam(s.bitis)}</span>}
               {/* Canlı sayaç: Bekliyor = bekleme, Yapılıyor = işçilik; Tamamlandı = kesin işçilik süresi. */}
               {sv.durum === "Bekliyor" && s.giris && <span style={pilStil(DURUM_BEK)}>⏱ {sureBicim(sureDk(s.giris, nowIso))}</span>}
-              {sv.durum === "Yapılıyor" && s.devamEdiyor && <span style={pilStil(DURUM_YAP)}>⏱ {sureBicim(s.isclikDk)}</span>}
-              {tamamlandi && s.isclikDk != null && <span style={pilStil(DURUM_TAM)}>İşçilik {sureBicim(s.isclikDk)}</span>}
+              {sv.durum === "Yapılıyor" && s.devamEdiyor && <span style={pilStil(DURUM_YAP)}>⏱ {sureBicimSaat(s.isclikDk)}</span>}
+              {tamamlandi && s.isclikDk != null && <span style={pilStil(DURUM_TAM)}>İşçilik {sureBicimSaat(s.isclikDk)}</span>}
             </div>
           );
         })()}
@@ -327,7 +536,12 @@ export const ServisPanosu = ({
             </div>
           )
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px dashed var(--n200, #e2e8f0)" }} onClick={e => e.stopPropagation()}>
+          // macOS'ta <select>, draggable=true bir ATA içindeyken açılıyor ama seçim işlenmiyor.
+          // Kontrol satırına gelince kartın draggable'ını React-kontrollü kapatıyoruz (dragKapaliId).
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px dashed var(--n200, #e2e8f0)" }}
+            onClick={e => e.stopPropagation()}
+            onMouseEnter={() => setDragKapaliId(sv.id)}
+            onMouseLeave={() => setDragKapaliId(id => id === sv.id ? null : id)}>
             <select value={sv.tech || ""} disabled={!canDo("cust_service_edit")}
               onChange={e => teknisyenDegistir(sv.id, e.target.value)}
               style={{ flex: 1, minWidth: 0, font: "inherit", fontSize: 12.5, fontWeight: teksBos ? 500 : 600, color: teksBos ? "var(--n400, #94a3b8)" : "var(--n800, #1e293b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}>
@@ -365,9 +579,10 @@ export const ServisPanosu = ({
             <span style={{ fontSize: 17, fontWeight: 800, color: "#ff9d5c", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
             <span style={{ fontSize: 17, fontWeight: 800, color: "#d4a584", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
           </div>
-          {(canDo("cust_service_add") || (kiosk && onKilitle)) && (
+          {(canDo("cust_service_add") || kargoEkleGoster || (kiosk && onKilitle)) && (
             <div style={{ display: "flex", gap: 8 }}>
               {canDo("cust_service_add") && <Btn small onClick={acEkle}><Icon name="plus" size={14} /> Yeni Servis Talebi</Btn>}
+              {kargoEkleGoster && <Btn small onClick={openAddYedekParca}><Icon name="parts" size={14} /> Yeni Yedek Parça Satışı</Btn>}
               {kiosk && onKilitle && <Btn small variant="ghost" onClick={onKilitle} title="Kilitle"><Icon name="lock" size={14} /></Btn>}
             </div>
           )}
@@ -375,28 +590,36 @@ export const ServisPanosu = ({
       </div>
 
       {/* Yeni servis bildirim şeridi — uzaktan gelen yeni "Bekliyor" servis(ler) için */}
-      {alarmSeridi.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, margin: kiosk ? "0 18px 8px" : "0 0 12px",
-          padding: "10px 14px", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10 }}>
-          <span style={{ fontSize: 18, lineHeight: 1 }}>🔔</span>
-          <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--amb700, #b45309)" }}>
-            <b style={{ fontWeight: 750 }}>Yeni servis talebi</b>
-            {alarmSeridi.length > 1 ? ` (${alarmSeridi.length})` : ""}: {alarmSeridi.map(x => x.ad).join(", ")}
+      {alarmSeridi.length > 0 && (() => {
+        const servisler = alarmSeridi.filter(x => x.tur !== "kargo");
+        const kargolar = alarmSeridi.filter(x => x.tur === "kargo");
+        const bolum = (etiket, liste) => liste.length ? (
+          <span><b style={{ fontWeight: 750 }}>{etiket}</b>{liste.length > 1 ? ` (${liste.length})` : ""}: {liste.map(x => x.ad).join(", ")}</span>
+        ) : null;
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, margin: kiosk ? "0 18px 8px" : "0 0 12px",
+            padding: "10px 14px", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10 }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>🔔</span>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--amb700, #b45309)" }}>
+              {bolum("Yeni Servis Talebi", servisler)}
+              {servisler.length > 0 && kargolar.length > 0 ? <span style={{ margin: "0 8px", opacity: .5 }}>·</span> : null}
+              {bolum("Yeni Kargo Talebi", kargolar)}
+            </div>
+            <Btn small variant="ghost" onClick={susturAlarm}>Sustur</Btn>
           </div>
-          <Btn small variant="ghost" onClick={susturAlarm}>Sustur</Btn>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* Sütunlar */}
+      {/* Servis + Kargo sütunları (tek görünüm) */}
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, padding: kiosk ? 14 : 0, minHeight: 0 }}>
         {DURUMLAR.map(d => {
-          const kartlar = sutunlar[d.key];
+          const kartlar = birlesikKartlar(d.key); // servis + kargo, tarihe göre en yeni üstte
           const hover = hoverDurum === d.key;
           return (
             <section key={d.key}
               onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (hoverDurum !== d.key) setHoverDurum(d.key); }}
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHoverDurum(h => h === d.key ? null : h); }}
-              onDrop={e => { e.preventDefault(); setHoverDurum(null); const id = Number(e.dataTransfer.getData("text/plain")); if (id) durumDegistir(id, d.key); }}
+              onDrop={e => { e.preventDefault(); setHoverDurum(null); const raw = e.dataTransfer.getData("text/plain"); const [tur, idStr] = raw.includes(":") ? raw.split(":") : ["servis", raw]; const id = Number(idStr); if (!id) return; if (tur === "kargo") kargoDurumDegistir(id, d.key); else if (tur === "kalip") kalipDurumDegistir(id, d.key); else durumDegistir(id, d.key); }}
               style={{ background: hover ? d.bg : "var(--n100, #f8fafc)", border: `1px solid ${hover ? d.br : "var(--n150, #f1f5f9)"}`, borderRadius: 14, display: "flex", flexDirection: "column", minHeight: 0, boxShadow: hover ? `inset 0 0 0 2px ${d.br}` : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "14px 16px 12px", flexShrink: 0 }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: d.renk }} />
@@ -404,23 +627,99 @@ export const ServisPanosu = ({
                 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: d.renk, background: d.bg, border: `1px solid ${d.br}`, borderRadius: 999, padding: "1px 9px", fontVariantNumeric: "tabular-nums" }}>{kartlar.length}</span>
               </div>
               <div style={{ flex: 1, overflowY: "auto", padding: "2px 12px 14px", display: "flex", flexDirection: "column", gap: 11 }}>
-                {kartlar.map(sv => <Kart key={sv.id} sv={sv} />)}
-                {!kartlar.length && !(d.key === "Tamamlandı" && arsivGorebilir && arsivlenenler.length) && <div style={{ margin: "auto", color: "var(--n400, #94a3b8)", fontSize: 12.5, textAlign: "center", padding: "24px 10px", lineHeight: 1.6 }}>{d.bos}</div>}
-                {d.key === "Tamamlandı" && arsivGorebilir && arsivlenenler.length > 0 && (
+                {kartlar.map(item => item._kargo
+                  ? <KargoKart key={"k" + item.id} s={item} dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} canKargo={canKargoDuzenle} dragKapali={dragKapaliId === item.id} onKontrolHover={v => setDragKapaliId(v ? item.id : null)} onClick={setKargoDetayId} onSorumluChange={kargoSorumluDegistir} onArsivle={canKargoKaldir ? () => kargoPanoGizle(item.id, true) : undefined} yaniyor={yananIds[item.id] != null} />
+                  : item._kalip
+                  ? <KargoKart key={"kl" + item.id} s={item} tur="kalip" customers={customers} calisanlar={calisanlar} canKargo={canKalipDuzenle} dragKapali={dragKapaliId === item.id} onKontrolHover={v => setDragKapaliId(v ? item.id : null)} onClick={setKalipDetayId} onSorumluChange={kalipSorumluDegistir} onArsivle={canKalipKaldir ? () => kalipPanoGizle(item.id, true) : undefined} yaniyor={yananIds[item.id] != null} />
+                  : Kart({ sv: item, key: item.id }))}
+                {!kartlar.length && !(d.key === "Tamamlandı" && ((arsivGorebilir && arsivlenenler.length) || (canKargoArsiv && kargoArsivlenenler.length) || (canKalipArsiv && kalipArsivlenenler.length))) && !(d.key === "Bekliyor" && (planlananlar.length || kargoPlanlananlar.length || kalipPlanlananlar.length)) && <div style={{ margin: "auto", color: "var(--n400, #94a3b8)", fontSize: 12.5, textAlign: "center", padding: "24px 10px", lineHeight: 1.6 }}>{d.bos}</div>}
+                {d.key === "Bekliyor" && (planlananlar.length > 0 || kargoPlanlananlar.length > 0 || kalipPlanlananlar.length > 0) && (
+                  <div style={{ marginTop: kartlar.length ? 4 : 0 }}>
+                    <button type="button" onClick={() => setPlanAcik(a => !a)}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 600, color: "var(--n500, #64748b)", background: "none", border: "none", cursor: "pointer", padding: "6px 2px" }}>
+                      <span>🕒</span>
+                      <span>Planlanan ({planlananlar.length + kargoPlanlananlar.length + kalipPlanlananlar.length})</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11 }}>{planAcik ? "gizle ▲" : "göster ▼"}</span>
+                    </button>
+                    {planAcik && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                        {planlananlar.map(sv => {
+                          const c = custMap[Number(sv.customerId)];
+                          return (
+                            <div key={sv.id} style={{ background: "var(--n100, #f8fafc)", border: "1px dashed var(--ambBr, #fde68a)", borderRadius: 10, padding: "9px 11px" }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n800, #1e293b)" }}>{c?.name || "(müşteri yok)"}</div>
+                              {(c?.model || sv.type) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 1 }}>{[c?.model, sv.type].filter(Boolean).join(" · ")}</div>}
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(sv.fabrikaGirisZamani)}</span>
+                                {canDo("cust_service_edit") && (
+                                  <button type="button" onClick={() => hemenDusur(sv.id)}
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    Hemen Düşür
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {/* Planlanan kargolar — servislerle aynı listede, 📦 işaretli */}
+                        {kargoPlanlananlar.map(s => {
+                          const part = (parts || []).find(pp => String(pp.id) === String(s.partId));
+                          return (
+                            <div key={"k" + s.id} style={{ background: "var(--n100, #f8fafc)", border: "1px dashed var(--ambBr, #fde68a)", borderRadius: 10, padding: "9px 11px", cursor: "pointer" }} onClick={() => setKargoDetayId(s.id)}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n800, #1e293b)" }}>📦 {aliciAd(s, dealers, customers)}</div>
+                              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 1 }}>{[parcaAdi(part) || "(parça)", `${s.miktar} adet`].join(" · ")}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(s.panoDusmeZamani)}</span>
+                                {canKargoKaldir && (
+                                  <button type="button" onClick={e => { e.stopPropagation(); kargoHemenDusur(s.id); }}
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    Hemen Düşür
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {/* Planlanan kalıp kargoları — 🧩 işaretli */}
+                        {kalipPlanlananlar.map(s => {
+                          const c = custMap[Number(s.customerId)];
+                          return (
+                            <div key={"kl" + s.id} style={{ background: "var(--n100, #f8fafc)", border: "1px dashed var(--ambBr, #fde68a)", borderRadius: 10, padding: "9px 11px", cursor: "pointer" }} onClick={() => setKalipDetayId(s.id)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: "var(--n800, #1e293b)" }}><Icon name="box" size={13} /> {c?.name || "(müşteri yok)"}</div>
+                              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 1 }}>{[s.ad || "(kalıp)", s.olcu].filter(Boolean).join(" · ")}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(s.panoDusmeZamani)}</span>
+                                {canKalipKaldir && (
+                                  <button type="button" onClick={e => { e.stopPropagation(); kalipHemenDusur(s.id); }}
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    Hemen Düşür
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {d.key === "Tamamlandı" && ((arsivGorebilir && arsivlenenler.length > 0) || (canKargoArsiv && kargoArsivlenenler.length > 0) || (canKalipArsiv && kalipArsivlenenler.length > 0)) && (
                   <div style={{ marginTop: kartlar.length ? 4 : 0 }}>
                     <button type="button" onClick={() => setArsivAcik(a => !a)}
                       style={{ width: "100%", display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 600, color: "var(--n500, #64748b)", background: "none", border: "none", cursor: "pointer", padding: "6px 2px" }}>
                       <span>🗄</span>
-                      <span>Arşivlenenler ({arsivlenenler.length})</span>
+                      <span>Arşivlenenler ({(arsivGorebilir ? arsivlenenler.length : 0) + (canKargoArsiv ? kargoArsivlenenler.length : 0) + (canKalipArsiv ? kalipArsivlenenler.length : 0)})</span>
                       <span style={{ marginLeft: "auto", fontSize: 11 }}>{arsivAcik ? "gizle ▲" : "göster ▼"}</span>
                     </button>
                     {arsivAcik && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 4 }}>
-                        {arsivlenenler.map(sv => <Kart key={sv.id} sv={sv} arsiv />)}
-                        {canDo("cust_service_pano_kaldir") && (
+                        {arsivGorebilir && arsivlenenler.map(sv => Kart({ sv, arsiv: true, key: sv.id }))}
+                        {canKargoArsiv && kargoArsivlenenler.map(s => <KargoKart key={"k" + s.id} s={s} dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} canKargo={canKargoDuzenle} arsiv onClick={setKargoDetayId} onGeriAl={() => kargoPanoGizle(s.id, false)} />)}
+                        {canKalipArsiv && kalipArsivlenenler.map(s => <KargoKart key={"kl" + s.id} s={s} tur="kalip" customers={customers} calisanlar={calisanlar} canKargo={canKalipDuzenle} arsiv onClick={setKalipDetayId} onGeriAl={() => kalipPanoGizle(s.id, false)} />)}
+                        {arsivGorebilir && arsivlenenler.length > 0 && canDo("cust_service_pano_kaldir") && (
                           <button type="button" onClick={() => setArsivTemizleOnay(true)}
                             style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: "var(--red600, #dc2626)", background: "none", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, cursor: "pointer", padding: "6px 10px" }}>
-                            🗑 Arşivi Temizle
+                            🗑 Arşivi Temizle (servisler)
                           </button>
                         )}
                       </div>
@@ -432,6 +731,35 @@ export const ServisPanosu = ({
           );
         })}
       </div>
+
+      {/* Kargo kartı detayı — kargo bilgisi düzenleme + makinaya tahsis (Stok yetkisi gerektirir) */}
+      {kargoDetay && (kargoLock ? (
+        <Modal title="Kargo Detayı" onClose={() => setKargoDetayId(null)}>
+          <LockConflict lockedBy={kargoLock.lockedBy} lockedAt={kargoLock.lockedAt} onForce={forceKargoLock} onCancel={() => setKargoDetayId(null)} />
+        </Modal>
+      ) : (
+        <KargoDetayModal satis={kargoDetay} setYedekParcaSatislar={setYedekParcaSatislar}
+          dealers={dealers} parts={parts} customers={customers} canKargo={canKargoDuzenle}
+          onClose={() => setKargoDetayId(null)} showToast={showToast} serverPermissions={serverPermissions} />
+      ))}
+
+      {/* Extra Kalıp kargo detayı — kargo bilgisi düzenleme (tahsis yok) */}
+      {kalipDetay && (kalipLock ? (
+        <Modal title="Kalıp Kargo Detayı" onClose={() => setKalipDetayId(null)}>
+          <LockConflict lockedBy={kalipLock.lockedBy} lockedAt={kalipLock.lockedAt} onForce={forceKalipLock} onCancel={() => setKalipDetayId(null)} />
+        </Modal>
+      ) : (
+        <KargoDetayModal satis={kalipDetay} tur="kalip" setPartSales={setPartSales}
+          customers={customers} canKargo={canKalipDuzenle}
+          onClose={() => setKalipDetayId(null)} showToast={showToast} serverPermissions={serverPermissions} />
+      ))}
+
+      {/* Panodan yeni yedek parça satışı (Yeni Servis Talebi düğmesinin yanından) */}
+      {ypForm && (
+        <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
+          dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
+      )}
 
       {/* Yeni / Düzenle servis — müşteri kartındaki servis formunun BİREBİR AYNISI (tam ServiceForm) */}
       {svModal && (svLock ? (
@@ -461,10 +789,10 @@ export const ServisPanosu = ({
             <span style={{ fontSize: 13, fontWeight: 700, color: zaman ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{zaman ? fmtZaman(zaman) : "—"}</span>
           </div>
         );
-        const sureKart = (etiket, dk, renk, canli, altNot = null) => (
+        const sureKart = (etiket, dk, renk, canli, altNot = null, bicim = sureBicim) => (
           <div style={{ flex: 1, minWidth: 96, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
             <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 3 }}>{etiket}{canli ? " (devam)" : ""}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: renk, fontVariantNumeric: "tabular-nums" }}>{sureBicim(dk)}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: renk, fontVariantNumeric: "tabular-nums" }}>{bicim(dk)}</div>
             {altNot && <div style={{ fontSize: 10, color: "var(--n400, #94a3b8)", marginTop: 2 }}>{altNot}</div>}
           </div>
         );
@@ -477,7 +805,7 @@ export const ServisPanosu = ({
             <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
               {sureKart("Bekleme", s.beklemeDk, "var(--amb600, #d97706)", false)}
               {sureKart("İşçilik", s.isclikDk, "var(--blu600, #2563eb)", s.devamEdiyor,
-                s.isclikHamDk != null && s.isclikHamDk !== s.isclikDk ? `mesai içi · ham ${sureBicim(s.isclikHamDk)}` : "mesai içi")}
+                s.isclikHamDk != null && s.isclikHamDk !== s.isclikDk ? `mesai içi · ham ${sureBicimSaat(s.isclikHamDk)}` : "mesai içi", sureBicimSaat)}
               {sureKart("Toplam", s.toplamDk, "var(--n800, #1e293b)", s.devamEdiyor && !s.bitis)}
             </div>
             <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "4px 14px" }}>

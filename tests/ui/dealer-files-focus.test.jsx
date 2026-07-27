@@ -3,7 +3,7 @@
 // verir) dosya listesi o servise filtrelenir, yükleme dropdown'ı o servise ön-seçilir, servis
 // etiketi müşteri adını gösterir ve "Tümünü göster" filtreyi kaldırır.
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
@@ -52,5 +52,13 @@ describe("DealerFilesSection odak (servis kartına bağlama)", () => {
     expect(screen.getByText("servis-belge.pdf")).toBeTruthy();
     expect(screen.getByText("sozlesme.pdf")).toBeTruthy();
     expect(screen.queryByText("Filtre:")).toBeNull();
+  });
+
+  it("yedek parça (kargo) satışı olan bayide bağ seçici çıkar ve o satışı hedef olarak listeler", () => {
+    // Servissiz bayi (services boş) — normalde bağ seçici gizli; yedek parça (kargo) varsa görünür.
+    render(<DealerFilesSection {...baseProps} services={[]} yedekKargolar={[{ id: 700, ad: "Dişli ×5" }]} odak={null} onOdakChange={() => {}} />);
+    const sel = screen.getByTitle("Yeni dosyanın bağlanacağı kayıt");
+    expect(within(sel).getByRole("option", { name: /Yedek Parça \(Kargo\) · Dişli ×5/ })).toBeTruthy();
+    expect(within(sel).getByRole("option", { name: /Bu bayi/ })).toBeTruthy();
   });
 });

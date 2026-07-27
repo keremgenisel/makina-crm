@@ -4,6 +4,7 @@
 // açılır ve YALNIZ o kayda yazılır (müşteri/bayi kaydı oluşturmadan). Bilgiler makina geçmişinde
 // de görünür.
 import { describe, it, expect, afterEach, vi } from "vitest";
+import { useState } from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 afterEach(cleanup);
@@ -54,6 +55,28 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
     expect(screen.getByText(/Anlaşmasız Firma/)).toBeTruthy();
     expect(screen.getByText("Firma Adı")).toBeTruthy();
   });
+
+  it("'Servis ve Kargo Panosuna gönder' anahtarı kargo alanlarını açar (kargoDurum set olur)", () => {
+    const H = () => {
+      const [form, setForm] = useState({ customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "" }], currency: "TRY" });
+      return <PartSaleForm title="Extra Kalıp Satışı" form={form} setForm={setForm} customers={customers} kalipDefs={[]} dealers={dealers} calisanlar={[{ id: 1, ad: "Ahmet" }]} factory={{ name: "Altuntaş Makina" }} onSave={vi.fn()} onCancel={vi.fn()} />;
+    };
+    render(<H />);
+    expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull(); // kapalıyken yok
+    fireEvent.click(screen.getByText(/Servis ve Kargo Panosuna gönder/));
+    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy(); // açılınca kargo alanları
+    expect(screen.getByPlaceholderText("Takip no")).toBeTruthy();
+    // "Kargoyu Verecek Kişi" önerileri fabrika çalışanlarından gelmeli (datalist)
+    expect(document.querySelector('#kalip-kargoci-listesi option[value="Ahmet"]')).toBeTruthy();
+  });
+
+  it("düzenlemede kargoDurum dolu form ile açılınca 'panoya gönder' seçili + kargo alanları görünür", () => {
+    // openEditPartSale artık kargoDurum'u da pkForm'a taşıyor; toggle bu değere bağlı (panoyaGonder=!!kargoDurum).
+    render(<PartSaleForm {...pkProps({ id: 5, customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "100" }], currency: "TRY", kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi" })} />);
+    const toggle = screen.getByText(/Servis ve Kargo Panosuna gönder/).closest("label").querySelector('input[type="checkbox"]');
+    expect(toggle.checked).toBe(true);
+    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy();
+  });
 });
 
 describe("MachineTimeline — dış firma bilgisi makina geçmişinde görünür", () => {
@@ -70,6 +93,43 @@ describe("MachineTimeline — dış firma bilgisi makina geçmişinde görünür
     render(<MachineTimeline {...base} detailTimelineEvents={[{ kind: "service", date: sv.date, color: "#000", title: sv.type, sv }]} />);
     expect(screen.getByText(/Dış Servis \(Anlaşmasız\): Harici Servis Ltd/)).toBeTruthy();
     expect(screen.getByText(/Ahmet · 0555 · Bursa, Türkiye/)).toBeTruthy();
+  });
+
+  it("Yedek Parça (Kargo) olayı: fiyat + KDV dahil + ödendi toggle (fiyatın yanında) + düzenle + Sil", () => {
+    // 5 × 100 = 500 net; Faturalı Yurtiçi KDV %20 → KDV dahil 600
+    const yp = { id: 700, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 5, birimFiyat: 100, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-07-11", odendi: false };
+    const onEditYedekParca = vi.fn(), onDeleteYedekParca = vi.fn(), onToggleYedekParcaOdendi = vi.fn();
+    const ev = [{ kind: "part", date: "2026-07-11", color: "#0891b2", title: "Yedek Parça (Kargo)", desc: "5 adet Dişli", yp }];
+    // Düzenle/ödeme/sil artık ayrı izinler — hepsini açık ver
+    const yetkiler = new Set(["cust_yedek_parca_edit", "cust_yedek_parca_payment", "cust_yedek_parca_delete"]);
+    render(<MachineTimeline {...base} kdvRates={[{ from: "2023-07-10", rate: 20 }]} canDo={(p) => yetkiler.has(p)} detailTimelineEvents={ev} onEditYedekParca={onEditYedekParca} onDeleteYedekParca={onDeleteYedekParca} onToggleYedekParcaOdendi={onToggleYedekParcaOdendi} />);
+    expect(screen.getByText(/Yedek Parça Ücreti/)).toBeTruthy();
+    expect(screen.getByText(/KDV dahil/)).toBeTruthy();
+    fireEvent.click(screen.getByText("Yedek Parça (Kargo)"));
+    expect(onEditYedekParca).toHaveBeenCalledWith(yp);
+    fireEvent.click(screen.getByRole("button", { name: /işaretle: Ödendi/ }));
+    expect(onToggleYedekParcaOdendi).toHaveBeenCalledWith(yp);
+    fireEvent.click(screen.getByRole("button", { name: /Sil/ }));
+    expect(onDeleteYedekParca).toHaveBeenCalledWith(yp);
+  });
+
+  it("Yedek Parça (Kargo) olayı: yetki yoksa Sil butonu ve düzenleme yok", () => {
+    const yp = { id: 700, aliciTipi: "musteri", musteriId: 1, miktar: 5 };
+    const ev = [{ kind: "part", date: "2026-07-11", color: "#0891b2", title: "Yedek Parça (Kargo)", desc: "5 adet Dişli", yp }];
+    render(<MachineTimeline {...base} canDo={() => false} detailTimelineEvents={ev} onEditYedekParca={vi.fn()} onDeleteYedekParca={vi.fn()} />);
+    expect(screen.getByText("Yedek Parça (Kargo)")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Sil/ })).toBeNull();
+  });
+
+  it("Yedek Parça (Kargo) olayı: yalnız 'delete' izniyle Sil çıkar, düzenle/ödeme çıkmaz", () => {
+    const yp = { id: 700, aliciTipi: "musteri", musteriId: 1, miktar: 5, currency: "TRY", odendi: false };
+    const onEditYedekParca = vi.fn();
+    const ev = [{ kind: "part", date: "2026-07-11", color: "#0891b2", title: "Yedek Parça (Kargo)", desc: "5 adet Dişli", yp }];
+    render(<MachineTimeline {...base} canDo={(p) => p === "cust_yedek_parca_delete"} detailTimelineEvents={ev} onEditYedekParca={onEditYedekParca} onDeleteYedekParca={vi.fn()} onToggleYedekParcaOdendi={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /Sil/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /işaretle: Ödendi/ })).toBeNull(); // ödeme izni yok
+    fireEvent.click(screen.getByText("Yedek Parça (Kargo)"));
+    expect(onEditYedekParca).not.toHaveBeenCalled(); // düzenle izni yok → tıklama etkisiz
   });
 
 });

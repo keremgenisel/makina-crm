@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today } from "../../lib/utils";
+import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today, parcaAdi } from "../../lib/utils";
+import { yedekParcaDus } from "../../lib/yedekParcaStok";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
@@ -11,6 +12,7 @@ export const SettingsTrash = ({
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
   setTeklifler, setFaturalar, setUretimFormlari = null, setGorusmeler = null, setDosyalar = null,
   rawPartTypeDefs = [], setPartTypeDefs = null, rawCalisanlar = [], setCalisanlar = null,
+  rawYedekParcaSatislar = [], setYedekParcaSatislar = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -95,6 +97,17 @@ export const SettingsTrash = ({
   const purgePartTypeDef = (t) => { setPartTypeDefs?.(p => p.filter(x => x.id !== t.id)); showToast("Parça tipi kalıcı olarak silindi."); };
   const restoreCalisan = (c) => { setCalisanlar?.(p => p.map(x => x.id === c.id ? { ...x, deletedAt: undefined } : x)); showToast("Çalışan geri alındı."); };
   const purgeCalisan = (c) => { setCalisanlar?.(p => p.filter(x => x.id !== c.id)); showToast("Çalışan kalıcı olarak silindi."); };
+  const restoreYedekParca = (s) => {
+    setYedekParcaSatislar?.(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x));
+    // Satış silinince stok geri verilmişti (yedekParcaGeriAl) → geri alınca tekrar düş (eksiye düşmeden).
+    if (s.partId && parseInt(s.miktar) > 0 && setPartStock && setPartStockLog) {
+      const pid = String(s.partId);
+      const dus = Math.min(parseInt(s.miktar), Math.max(0, totalMiktar(partStock, pid)));
+      if (dus > 0) yedekParcaDus(pid, dus, s.id, setPartStock, setPartStockLog);
+    }
+    showToast("Yedek parça satışı geri alındı.");
+  };
+  const purgeYedekParca = (s) => { setYedekParcaSatislar?.(p => p.filter(x => x.id !== s.id)); showToast("Yedek parça satışı kalıcı olarak silindi."); };
   const emptyTrash = () => {
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
@@ -114,6 +127,7 @@ export const SettingsTrash = ({
     setDosyalar?.(p => p.filter(x => !x.deletedAt));
     setPartTypeDefs?.(p => p.filter(x => !x.deletedAt));
     setCalisanlar?.(p => p.filter(x => !x.deletedAt));
+    setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
     showToast("Çöp kutusu boşaltıldı.");
   };
 
@@ -143,8 +157,13 @@ export const SettingsTrash = ({
     rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${u.tarih || "—"}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
     rawPartTypeDefs.filter(t => t.deletedAt).forEach(t => items.push({ key: `parttype-${t.id}`, type: "Parça Tipi", label: t.ad || "—", deletedAt: t.deletedAt, restore: () => restorePartTypeDef(t), purge: () => purgePartTypeDef(t) }));
     rawCalisanlar.filter(c => c.deletedAt).forEach(c => items.push({ key: `calisan-${c.id}`, type: "Çalışan", label: c.ad || "—", deletedAt: c.deletedAt, restore: () => restoreCalisan(c), purge: () => purgeCalisan(c) }));
+    rawYedekParcaSatislar.filter(s => s.deletedAt).forEach(s => {
+      const alici = s.aliciTipi === "musteri" ? trashCustomerName(s.musteriId) : (rawDealers.find(d => d.id === s.dealerId)?.name || "—");
+      const parcaAd = parcaAdi(rawParts.find(p => String(p.id) === String(s.partId))) || "(parça)";
+      items.push({ key: `ypsatis-${s.id}`, type: "Yedek Parça Satışı", label: `${alici} · ${parcaAd} · ${s.miktar || 0} adet`, deletedAt: s.deletedAt, restore: () => restoreYedekParca(s), purge: () => purgeYedekParca(s) });
+    });
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar]);
+  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

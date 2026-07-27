@@ -157,6 +157,7 @@ const BOLUM_ADLARI = {
   kalipDefs: "Kalıp Tanımları", standardModels: "Standart Modeller", customModels: "Özel Modeller",
   factory: "Firma Bilgileri", appSettings: "Uygulama Ayarları", teklifler: "Teklifler", faturalar: "Faturalar",
   uretimFormlari: "Üretim Formları", partTypeDefs: "Parça Tipleri", calisanlar: "Firma Çalışanları",
+  yedekParcaSatislar: "Yedek Parça Satışları",
 };
 
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {

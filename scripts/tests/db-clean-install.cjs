@@ -36,6 +36,8 @@ try {
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00" }],
     partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", satisFirma: "Diğer", satisFirmaAd: "Aracı" }],
+    // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
+    yedekParcaSatislar: [{ id: 8, dealerId: 2, partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: false, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] }],
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
       mailTemplates: { teklifProforma: { konu: "K", metin: "M" } },
@@ -59,6 +61,7 @@ check("temiz kurulumda dış firma sütunları oluştu (service)", (() => { cons
 check("temiz kurulumda dış firma sütunları oluştu (partSale)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı"; })());
 check("temiz kurulumda servis durum + panoGizli sütunu + çalışanlar (meta)", (() => { const s = (blob.services || []).find(x => x.id === 5); const c = (blob.calisanlar || []).find(x => x.id === 9); return s?.durum === "Bekliyor" && s?.panoGizli === true && c?.ad === "Ali Veli"; })());
 check("temiz kurulumda servis zaman damgası sütunu oluştu", (() => { const s = (blob.services || []).find(x => x.id === 5); return s?.fabrikaGirisZamani === "2026-07-20T08:00:00"; })());
+check("temiz kurulumda yedek parça satışı + tahsis tabloları oluştu", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.miktar === 5 && s?.dealerId === 2 && (s?.tahsisler || [])[0]?.customerId === 1 && s?.tahsisler[0]?.serialNo === "SN"; })());
 
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli
 let userHata = null;

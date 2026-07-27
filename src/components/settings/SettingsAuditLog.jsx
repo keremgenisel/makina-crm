@@ -7,6 +7,7 @@ const ENTITY_LABELS = {
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
   islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme", eposta: "E-posta", dosya: "Dosya", sunucu: "Sunucu Kaydı",
+  yedek_parca_satis: "Yedek Parça Satışı",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
@@ -15,6 +16,11 @@ const ACTION_LABELS = {
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
   temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
+  // Servis ve Kargo Panosu + yedek parça satışı işlemleri
+  durum_degisti: "Durum Değişti", teknisyen_degisti: "Teknisyen Değişti", sorumlu_degisti: "Kargo Sorumlusu Değişti",
+  tahsis_edildi: "Makinaya Tahsis Edildi", tahsis_kaldirildi: "Tahsis Kaldırıldı",
+  panodan_kaldirildi: "Panodan Kaldırıldı", panoya_alindi: "Panoya Geri Alındı", hemen_dusuruldu: "Hemen Düşürüldü",
+  odendi: "Ödendi", odeme_iptal: "Ödeme İptal",
 };
 
 const PER_PAGE = 10;

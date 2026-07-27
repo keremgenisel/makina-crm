@@ -130,4 +130,33 @@ describe("buildMergePlan", () => {
     expect(yeniPid).not.toBe(pid);
     expect(plan.adds.customers[0].kaliplar[0].partSaleId).toBe(yeniPid);
   });
+
+  it("yeni yedek parça satışı birleştirmede korunur (adds)", () => {
+    const my = blob({ yedekParcaSatislar: [{ id: 601, dealerId: 5, partId: "7", miktar: 5, tahsisler: [] }] });
+    const plan = buildMergePlan(my, blob({ yedekParcaSatislar: [] }));
+    expect(plan.adds.yedekParcaSatislar).toHaveLength(1);
+    expect(plan.adds.yedekParcaSatislar[0].miktar).toBe(5);
+  });
+
+  it("müşteri ID'si yeniden atanınca yedek parça tahsisinin customerId'si de remap edilir", () => {
+    const cid = uid();
+    const my = blob({
+      customers: [{ id: cid, name: "Benim", kaliplar: [] }],
+      yedekParcaSatislar: [{ id: cid + 9, dealerId: 5, partId: "7", miktar: 5, tahsisler: [{ miktar: 2, customerId: cid, serialNo: "SN1" }] }],
+    });
+    const server = blob({ customers: [{ id: cid, name: "Rakip", kaliplar: [] }] });
+    const plan = buildMergePlan(my, server);
+    expect(plan.adds.yedekParcaSatislar[0].tahsisler[0].customerId).toBe(plan.adds.customers[0].id);
+  });
+
+  it("müşteri ID'si yeniden atanınca alıcı-müşteri (musteriId) de remap edilir", () => {
+    const cid = uid();
+    const my = blob({
+      customers: [{ id: cid, name: "Benim", kaliplar: [] }],
+      yedekParcaSatislar: [{ id: cid + 9, aliciTipi: "musteri", musteriId: cid, partId: "7", miktar: 3, tahsisler: [] }],
+    });
+    const server = blob({ customers: [{ id: cid, name: "Rakip", kaliplar: [] }] });
+    const plan = buildMergePlan(my, server);
+    expect(plan.adds.yedekParcaSatislar[0].musteriId).toBe(plan.adds.customers[0].id);
+  });
 });

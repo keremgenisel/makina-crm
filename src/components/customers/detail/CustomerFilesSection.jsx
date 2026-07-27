@@ -8,12 +8,12 @@ import { logAction, getAuditUsername } from "../../../lib/audit";
 // birden fazla dosya bağlanabilir. Zaman çizelgesindeki ataş rozeti dosyaFiltre'yi ayarlar → bu
 // bölüm o kayda filtreler ve görünüme kayar. dosyaFiltre üst bileşende tutulur (çizelgeyle paylaşımlı).
 const TUR_RENK = { PDF: "var(--red600, #dc2626)", JPG: "var(--purTx, #7c3aed)", XLS: "var(--cyan, #0891b2)", DOC: "var(--blu600, #2563eb)", TXT: "var(--n500, #64748b)", DOSYA: "var(--n400, #94a3b8)" };
-const REF_ROZET = { makina: { bg: "var(--ambBg3, #fff7ed)", fg: "#9a3412" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, kalip: { bg: "var(--bluBg, #eff6ff)", fg: "var(--blu700, #1d4ed8)" }, parca: { bg: "#ecfeff", fg: "#0e7490" }, odeme: { bg: "#f0fdfa", fg: "var(--teal2, #0f766e)" } };
+const REF_ROZET = { makina: { bg: "var(--ambBg3, #fff7ed)", fg: "#9a3412" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, kalip: { bg: "var(--bluBg, #eff6ff)", fg: "var(--blu700, #1d4ed8)" }, parca: { bg: "#ecfeff", fg: "#0e7490" }, yedekkargo: { bg: "#ecfeff", fg: "var(--cyan, #0891b2)" }, odeme: { bg: "#f0fdfa", fg: "var(--teal2, #0f766e)" } };
 const fmtBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
 
 export function CustomerFilesSection({
   detailView, dosyalar = [], setDosyalar = null, detailDosyalar = [],
-  detailServices = [], detailKalipSatislari = [], detailYedekParcalar = [], detailOdemeler = [],
+  detailServices = [], detailKalipSatislari = [], detailYedekParcalar = [], detailYedekKargolar = [], detailOdemeler = [],
   services = [], partSales = [], payments = [], customers = [],
   dosyaFiltre = null, setDosyaFiltre = () => {},
   canDo = () => true, dosyaCevrimdisi = false, showToast = () => {}, serverPermissions = null,
@@ -38,6 +38,7 @@ export function CustomerFilesSection({
     if (refType === "servis") { const s = services.find(x => x.id === refId); return s ? `Servis · ${s.date ? fmtTR(s.date) : (s.type || "")}` : "Servis"; }
     if (refType === "kalip") { const p = (partSales || []).find(x => x.id === refId); return p ? `Kalıp · ${p.ad || ""}` : "Kalıp"; }
     if (refType === "parca") { const p = (partSales || []).find(x => x.id === refId); return p ? `Yedek Parça · ${p.ad || ""}` : "Yedek Parça"; }
+    if (refType === "yedekkargo") { const p = detailYedekKargolar.find(x => x.id === refId); return p ? `Yedek Parça (Kargo) · ${p.ad || ""}` : "Yedek Parça (Kargo)"; }
     if (refType === "odeme") { const p = (payments || []).find(x => x.id === refId); return p ? `Ödeme · ${p.tarih ? fmtTR(p.tarih) : ""}` : "Ödeme"; }
     return "Makina";
   };
@@ -50,6 +51,7 @@ export function CustomerFilesSection({
     ...detailServices.map(s => <option key={`s${s.id}`} value={`servis|${s.id}`}>Servis · {s.date ? fmtTR(s.date) : (s.type || "")}</option>),
     ...detailKalipSatislari.map(p => <option key={`k${p.id}`} value={`kalip|${p.id}`}>Kalıp · {p.ad || ""}</option>),
     ...detailYedekParcalar.map(p => <option key={`yp${p.id}`} value={`parca|${p.id}`}>Yedek Parça · {p.ad || ""}</option>),
+    ...detailYedekKargolar.map(p => <option key={`ypk${p.id}`} value={`yedekkargo|${p.id}`}>Yedek Parça (Kargo) · {p.ad || ""}</option>),
     ...detailOdemeler.map(p => <option key={`od${p.id}`} value={`odeme|${p.id}`}>Ödeme · {p.tarih ? fmtTR(p.tarih) : ""}{p.tutar ? " · " + fmtCur(p.tutar, p.currency || detailView.currency) : ""}</option>),
   ];
 

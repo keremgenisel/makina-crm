@@ -4,10 +4,10 @@
 import {
   normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, isServisBorcluMu,
   isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, isPartSaleBorcluMu,
-  sumBekleyenCek, isCekVadesiGecmis,
+  sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
 
-export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName }) {
+export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [] }) {
     const detailHistory = detailView
       ? services.filter(s => s.customerId === detailView.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
       : [];
@@ -46,6 +46,32 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
           desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · garanti kapsamında (ücretsiz)" : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
           ps,
         });
+      });
+      // Yedek parça (kargo) satışları makina geçmişine düşer:
+      // - Müşterinin KENDİ alımı (aliciTipi "musteri", bu makina) → düzenlenip silinebilir tek olay
+      //   (fiyat + ödeme durumu ile; `yp` = satış kaydı, timeline aksiyonlarını bağlar).
+      // - Bayi alımından bu makinaya TAHSİS edilen parçalar → salt-okunur (borçlusu bayi).
+      (yedekParcaSatislar || []).forEach(s => {
+        if (s.deletedAt) return;
+        const part = (parts || []).find(p => String(p.id) === String(s.partId));
+        if (s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id) {
+          // Fiyat + ödendi toggle'ı MachineTimeline'da (kalıp/servis gibi) ayrı ücret satırında gösterilir.
+          ev.push({
+            kind: "part", date: s.tarih, color: "var(--cyan, #0891b2)",
+            title: "Yedek Parça (Kargo)",
+            desc: `${s.miktar} adet ${parcaAdi(part) || "yedek parça"}`,
+            yp: s,
+          });
+        } else {
+          (s.tahsisler || []).filter(t => t.customerId === detailView.id).forEach(t => {
+            const bayi = (dealers || []).find(d => d.id === s.dealerId);
+            ev.push({
+              kind: "part", date: t.tarih || s.tarih, color: "var(--cyan, #0891b2)",
+              title: "Yedek Parça (Kargo)",
+              desc: `${t.miktar} adet ${parcaAdi(part) || "yedek parça"}${bayi ? " · bayi " + bayi.name : ""}`,
+            });
+          });
+        }
       });
       (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
         const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
@@ -99,6 +125,11 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
       (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
         const tutar = parseMoney(p.ucret);
         ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates));
+      });
+      // Bu müşteriye yapılan ödenmemiş yedek parça (kargo) satışları da borç
+      (yedekParcaSatislar || []).filter(s => s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id && isYedekParcaBorcluMu(s)).forEach(s => {
+        const bedel = yedekParcaBedeli(s);
+        ekle(s.currency || "TRY", bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates));
       });
     }
     const detailMainCur = detailView?.currency || "TRY";

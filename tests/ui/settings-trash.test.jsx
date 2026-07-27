@@ -59,6 +59,22 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(sonuc.find(x => x.id === "c1").deletedAt).toBeUndefined();
   });
 
+  it("soft-silinmiş yedek parça satışı çöp kutusunda görünür ve 'Geri Al' deletedAt'i temizler", () => {
+    let sonuc = null;
+    const rec = { id: 700, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, deletedAt: "2026-07-26T09:00:00.000Z", tahsisler: [] };
+    const setYedekParcaSatislar = vi.fn((updater) => { sonuc = updater([rec]); });
+    renderTrash({
+      rawDealers: [{ id: 5, name: "Bayi X" }], rawParts: [{ id: 7, ad: "Dişli" }],
+      rawYedekParcaSatislar: [rec], setYedekParcaSatislar,
+    });
+    expect(screen.getByText("Yedek Parça Satışı")).toBeTruthy();
+    expect(screen.getByText(/Bayi X · Dişli · 3 adet/)).toBeTruthy();
+    const satir = screen.getByText(/Bayi X · Dişli/).closest("tr");
+    fireEvent.click(within(satir).getByText("Geri Al"));
+    expect(setYedekParcaSatislar).toHaveBeenCalled();
+    expect(sonuc.find(x => x.id === 700).deletedAt).toBeUndefined();
+  });
+
   it("parça tipi 'Kalıcı Sil' sonrası setPartTypeDefs kaydı diziden çıkarır", () => {
     let sonuc = null;
     const setPartTypeDefs = vi.fn((updater) => { sonuc = updater([{ id: "tip_1", ad: "Conta", deletedAt: "2026-07-20T10:00:00.000Z" }]); });

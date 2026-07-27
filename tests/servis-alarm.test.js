@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { yeniBekleyenler, panoDisiBildirimVerilsinMi } from "../src/lib/servisAlarm.js";
+import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "../src/lib/servisAlarm.js";
 
 // Servis Panosu alarmı: uzaktan gelen yeni "Bekliyor" servisin tespiti. Bu saf fonksiyon,
 // bilinen id kümesinde OLMAYAN + durum "Bekliyor" + panoda gizli olmayan servisleri döner.
@@ -46,6 +46,61 @@ describe("yeniBekleyenler", () => {
 
   it("bilinen küme dizi olarak da verilebilir", () => {
     expect(yeniBekleyenler([1], [{ id: 1, durum: "Bekliyor" }, { id: 2, durum: "Bekliyor" }])).toEqual([2]);
+  });
+
+  it("planlanmış (ileri zamanlı) yeni Bekliyor servisi HENÜZ yeni sayılmaz", () => {
+    const now = "2026-07-26T10:00:00";
+    const services = [{ id: 9, durum: "Bekliyor", fabrikaGirisZamani: "2026-07-28T08:00" }]; // ileri
+    expect(yeniBekleyenler(new Set(), services, now)).toEqual([]);
+  });
+
+  it("planlanan servis giriş anı geçince yeni sayılır (düşüş anında alarm)", () => {
+    const services = [{ id: 9, durum: "Bekliyor", fabrikaGirisZamani: "2026-07-28T08:00" }];
+    expect(yeniBekleyenler(new Set(), services, "2026-07-28T07:59:00")).toEqual([]); // henüz değil
+    expect(yeniBekleyenler(new Set(), services, "2026-07-28T08:00:30")).toEqual([9]); // düştü
+  });
+});
+
+// Planlanmış servis: ileri zamana alınmış, henüz panoya düşmemiş Bekliyor servisi.
+describe("servisPlanlandiMi", () => {
+  const now = "2026-07-26T10:00:00";
+  it("ileri fabrikaGirisZamani + Bekliyor → planlanmış (true)", () => {
+    expect(servisPlanlandiMi({ durum: "Bekliyor", fabrikaGirisZamani: "2026-07-28T08:00" }, now)).toBe(true);
+  });
+  it("geçmiş/şimdi giriş → planlanmış değil (false)", () => {
+    expect(servisPlanlandiMi({ durum: "Bekliyor", fabrikaGirisZamani: "2026-07-25T08:00" }, now)).toBe(false);
+    expect(servisPlanlandiMi({ durum: "Bekliyor", fabrikaGirisZamani: "2026-07-26T10:00:00" }, now)).toBe(false);
+  });
+  it("Bekliyor olmayan durum planlanmış sayılmaz (Yapılıyor/Tamamlandı görünür)", () => {
+    expect(servisPlanlandiMi({ durum: "Yapılıyor", fabrikaGirisZamani: "2026-07-28T08:00" }, now)).toBe(false);
+  });
+  it("giriş zamanı yoksa / nowIso yoksa / bozuksa false", () => {
+    expect(servisPlanlandiMi({ durum: "Bekliyor" }, now)).toBe(false);
+    expect(servisPlanlandiMi({ durum: "Bekliyor", fabrikaGirisZamani: "2026-07-28T08:00" }, null)).toBe(false);
+    expect(servisPlanlandiMi(null, now)).toBe(false);
+  });
+});
+
+// Kargo, servisle AYNI alarmı paylaşır: "Hazırlanıyor" (ilk sütun) durumunda düşen kargo "yeni" sayılır.
+describe("yeniKargolar", () => {
+  const now = "2026-07-26T10:00:00";
+  it("bilinende olmayan 'Hazırlanıyor' kargo yeni sayılır", () => {
+    const sat = [
+      { id: 10, kargoDurum: "Hazırlanıyor" },        // yeni
+      { id: 11, kargoDurum: "Kargoya Verildi" },      // ilk sütun değil → sayılmaz
+      { id: 12, kargoDurum: "" },                     // durumsuz → sayılmaz
+    ];
+    expect(yeniKargolar(new Set(), sat, now)).toEqual([10]);
+  });
+  it("bilinen / silinmiş / planlanmış (ileri düşme) kargo sayılmaz", () => {
+    expect(yeniKargolar(new Set([10]), [{ id: 10, kargoDurum: "Hazırlanıyor" }], now)).toEqual([]);
+    expect(yeniKargolar(new Set(), [{ id: 13, kargoDurum: "Hazırlanıyor", deletedAt: "x" }], now)).toEqual([]);
+    expect(yeniKargolar(new Set(), [{ id: 14, kargoDurum: "Hazırlanıyor", panoDusmeZamani: "2099-01-01T08:00" }], now)).toEqual([]);
+  });
+  it("planlanan kargo düşme zamanı geçince yeni sayılır", () => {
+    const sat = [{ id: 15, kargoDurum: "Hazırlanıyor", panoDusmeZamani: "2026-07-28T08:00" }];
+    expect(yeniKargolar(new Set(), sat, "2026-07-28T07:59:00")).toEqual([]);
+    expect(yeniKargolar(new Set(), sat, "2026-07-28T08:00:30")).toEqual([15]);
   });
 });
 

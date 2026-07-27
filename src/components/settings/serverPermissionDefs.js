@@ -70,12 +70,28 @@ export const CUSTOMER_ACTION_GROUPS = [
     { id: "cust_service_delete",      label: "Servis kaydını sil" },
     { id: "cust_service_pano_kaldir", label: "Panodan kaldır (arşivle)" },
     { id: "cust_service_pano_arsiv",  label: "Arşivi görüntüle / panoya geri al" },
+    // Servis ve Kargo Panosu'ndaki "Yeni Yedek Parça Satışı" düğmesi (bu grup UserManager'da
+    // "Servis Panosu işlemleri" akordeonu olarak görünür).
+    { id: "servis_yedek_parca_add",   label: "Yeni yedek parça satışı (pano)" },
+    // Kargo kartlarının pano işlemleri (servislerin pano izinlerinin kargo karşılıkları).
+    { id: "kargo_pano_kaldir",        label: "Kargoyu panodan kaldır / hemen düşür" },
+    { id: "kargo_pano_arsiv",         label: "Kargo arşivini görüntüle / panoya geri al" },
+    // Extra Kalıp kargo kartlarının pano işlemleri (aynı desen).
+    { id: "kalip_pano_kaldir",        label: "Kalıp kargosunu panodan kaldır / hemen düşür" },
+    { id: "kalip_pano_arsiv",         label: "Kalıp kargo arşivini görüntüle / panoya geri al" },
   ]},
   { grup: "Makina Geçmişi — Kalıp", items: [
     { id: "cust_kalip_add",     label: "Extra Kalıp Satışı ekle" },
     { id: "cust_kalip_edit",    label: "Kalıp satışını düzenle" },
     { id: "cust_kalip_payment", label: "Kalıp ödeme durumu" },
     { id: "cust_kalip_delete",  label: "Kalıp satışını sil" },
+  ]},
+  { grup: "Yedek Parça Satışı", items: [
+    // Müşteri detay modalındaki "Yedek Parça Satışı" düğmesi + makina geçmişindeki kargo satırı işlemleri.
+    { id: "cust_yedek_parca_add",     label: "Yedek parça satışı ekle (müşteri detayı)" },
+    { id: "cust_yedek_parca_edit",    label: "Yedek parça satışını düzenle" },
+    { id: "cust_yedek_parca_payment", label: "Yedek parça ödeme durumu" },
+    { id: "cust_yedek_parca_delete",  label: "Yedek parça satışını sil" },
   ]},
   { grup: "Ödemeler / Kapora", items: [
     { id: "cust_payment_add",  label: "Kapora / ödeme ekle" },
@@ -101,6 +117,10 @@ export const DEALER_ACTION_GROUPS = [
   { grup: "Dosyalar", items: [
     { id: "dealer_dosya_add", label: "Dosya ekle" },
     { id: "dealer_dosya_del", label: "Dosya sil" },
+  ]},
+  { grup: "Yedek Parça Satışı", items: [
+    // Bayi detay modalındaki "Yedek Parça Satışı" düğmesi.
+    { id: "dealer_yedek_parca_add", label: "Yedek parça satışı ekle (bayi)" },
   ]},
 ];
 
@@ -173,6 +193,11 @@ export const STOCK_ACTION_GROUPS = [
     { id: "stock_uretim_print",  label: "Formu yazdır" },
     { id: "stock_uretim_mail",   label: "E-posta ile gönder" },
     { id: "stock_uretim_delete", label: "Formu sil" },
+  ]},
+  { grup: "Yedek Parça Satışı (Bayi/Kargo)", items: [
+    { id: "yedek_parca_add",    label: "Yedek parça satışı ekle" },
+    { id: "yedek_parca_edit",   label: "Satış düzenle / makinaya tahsis et" },
+    { id: "yedek_parca_delete", label: "Satış sil" },
   ]},
 ];
 

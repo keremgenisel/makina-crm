@@ -1,10 +1,11 @@
 // Anasayfa "Son Satışlar" — makina satışları (installDate'li müşteriler) + Extra Kalıp satışları
-// (partSales.tur === "Kalıp") tek listede, tarihe göre (yeni → eski) sıralı, ilk `limit` kayıt.
-// NOT: Yedek parça satışları (tur !== "Kalıp") BİLİNÇLİ olarak dışarıda — bayi satışı + tur
-// tutarsızlığı ayrı bir planda ele alınacak (bkz. plan: anasayfa-son-satislar.md).
+// (partSales.tur === "Kalıp") + yedek parça (kargo) satışları tek listede, tarihe göre (yeni → eski)
+// sıralı, ilk `limit` kayıt. Yedek parça alıcısı bayi VEYA müşteri olabilir.
 
-export function sonSatislar(customers = [], partSales = [], limit = 10) {
+export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar = [], dealers = [], parts = [], limit = 10) {
   const custAd = new Map((customers || []).map((c) => [c.id, c.name]));
+  const dealerAd = new Map((dealers || []).map((d) => [d.id, d.name]));
+  const partAd = new Map((parts || []).map((p) => [String(p.id), p.ad]));
   const rows = [];
 
   // Makina satışları: satış tarihi = installDate.
@@ -28,6 +29,20 @@ export function sonSatislar(customers = [], partSales = [], limit = 10) {
       detay: (p.ad || "—") + (p.olcu ? ` (${p.olcu})` : ""),
       tarih: p.tarih,
       tutar: p.ucret, currency: p.currency || "TRY",
+      konum: "",
+    });
+  }
+
+  // Yedek parça (kargo) satışları — alıcı bayi VEYA müşteri.
+  for (const s of yedekParcaSatislar || []) {
+    if (s.deletedAt) continue;
+    const musteri = s.aliciTipi === "musteri";
+    rows.push({
+      tip: "yedek", key: `y${s.id}`, custId: musteri ? (s.musteriId ?? null) : null,
+      ad: (musteri ? custAd.get(Number(s.musteriId)) : dealerAd.get(Number(s.dealerId))) || "—",
+      detay: (partAd.get(String(s.partId)) || "Yedek parça") + ` · ${s.miktar || 0} adet`,
+      tarih: s.tarih,
+      tutar: (parseInt(s.miktar) || 0) * (Number(s.birimFiyat) || 0), currency: s.currency || "TRY",
       konum: "",
     });
   }

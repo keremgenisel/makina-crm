@@ -5,7 +5,7 @@ import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   calcKalanBorc, stripAutoPrint, simdiYerel,
-  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde,
+  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi,
 } from "../../lib/utils";
 import {
   printServiceForm as printServiceFormTemplate,
@@ -20,10 +20,14 @@ import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
+import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
+import { yeniYedekParcaSatis, yedekParcaRec } from "../../lib/yedekParcaSatis";
+import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { yerelServisEkle } from "../../lib/yerelServis";
+import { servisPlanlandiMi } from "../../lib/servisAlarm";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
@@ -44,16 +48,17 @@ export const CustomerDetailModal = ({
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   setStock,
-  setPartStock, setPartStockLog,
+  setPartStock, setPartStockLog, partStock = [], partStockLog = [],
   parts = [], models = [], dealers, factory, calisanlar = [],
   geoData, loadingGeo,
   kdvRates, appSettings,
   showToast,
-  kalipDefs = [], partTypeDefs = [],
+  kalipDefs = [], partTypeDefs = [], yedekParcaSatislar = [], setYedekParcaSatislar = null,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
   const [pkForm, setPkForm] = useState(null);
+  const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu müşteri alıcı seçili)
   // Elektrik kesintisine karşı form taslakları (bkz. useFormDraft)
   const svDraftKey = svModal ? (svModal === "add" ? `servis:${detailView?.id}:new` : `servis:${svForm.id}`) : null;
   const svDraft = useFormDraft(svDraftKey, svModal ? svForm : null, setSvForm);
@@ -66,11 +71,15 @@ export const CustomerDetailModal = ({
   const [confirmDeletePaymentId, setConfirmDeletePaymentId] = useState(null);
   const [confirmDeleteServiceId, setConfirmDeleteServiceId] = useState(null);
   const [confirmDeletePartSaleId, setConfirmDeletePartSaleId] = useState(null);
+  const [confirmDeleteYedekParca, setConfirmDeleteYedekParca] = useState(null);
   const [printLangModal, setPrintLangModal] = useState(null);
   const [sandikModal, setSandikModal] = useState(null);
   const { mailDraft, setMailDraft, mailSendState, setMailSendState, sendMail } = useMailSender(serverPermissions);
 
   const { lockConflict: detailLock, forceAcquire: forceDetailLock } = useLock("customer", detailView?.id ?? null);
+  // Yedek parça (kargo) satışı DÜZENLERKEN "yedek_parca" kilidi al — Stok sekmesi ve Servis/Kargo
+  // Panosu ile aynı alanı paylaşır, aynı satış aynı anda iki yerden düzenlenemez.
+  const { lockConflict: ypLock, forceAcquire: forceYpLock } = useLock("yedek_parca", ypForm?.id ?? null);
 
   const todayStr = today();
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -81,8 +90,8 @@ export const CustomerDetailModal = ({
     detailKalanBorcToplam, detailBekleyenCek, detailEnYakinCekVade, detailBekleyenTaksit, detailTaksitGecikmisVar, detailEnYakinTaksitVade, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
     detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
   } = useMemo(
-    () => deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName }),
-    [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName]
+    () => deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts }),
+    [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts]
   );
 
   // ── Servis parça stok ──
@@ -156,7 +165,9 @@ export const CustomerDetailModal = ({
       // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.
       const yeniRec = { ...rec, id: newId };
       if (yeniRec.durum === "Bekliyor" && !yeniRec.fabrikaGirisZamani) yeniRec.fabrikaGirisZamani = simdiYerel();
-      yerelServisEkle(newId); // kendi eklediğimiz servis, uygulama geneli bildirimde "uzaktan geldi" sayılmasın
+      // Hemen düşen servisi "kendi ekledik" işaretle (oluşturmada bildirim/ses çıkmasın). Planlanmış
+      // (ileri zamanlı) servis ise İŞARETLENMEZ: düştüğünde oluşturan dahil herkese bildirim gelsin.
+      if (!servisPlanlandiMi(yeniRec, simdiYerel())) yerelServisEkle(newId);
       setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
       deductServiceParts(rec.degisenParcalar, newId);
       bindServisDosyalari(newId, dosyaTaslaklari);
@@ -189,6 +200,54 @@ export const CustomerDetailModal = ({
     showToast("Servis kaydı silindi.");
   };
 
+  // ── Yedek parça (kargo) satışı — bu müşteri alıcı olarak seçili gelir ──
+  const openAddYedekParca = () => {
+    if (!canDo("cust_yedek_parca_add")) return;
+    setYpForm({ aliciTipi: "musteri", musteriId: detailView.id, dealerId: "", partId: "", miktar: "", birimFiyat: "", currency: "TRY", tarih: today(), faturaTipi: normalizeSaleType(detailView.faturali) || "Faturalı Yurtiçi", odendi: false, kargoDurum: "Hazırlanıyor" });
+  };
+  const openEditYedekParca = (rec) => {
+    if (!canDo("cust_yedek_parca_edit")) return;
+    setYpForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: rec.birimFiyat ?? "" });
+  };
+  const saveYedekParca = () => {
+    if (ypForm.id) {
+      // Düzenleme: Stok alt-sekmesindeki mantığın aynısı — eski stok hareketini geri al, yeniyi düş
+      // (parça/miktar değişmiş olabilir), stok eksiye düşmesin, kayıt aynı id ile güncellensin.
+      const sonuc = yedekParcaRec(ypForm);
+      if (!sonuc.ok) { showToast(sonuc.hata, "err"); return; }
+      const rec = sonuc.rec, eskiId = ypForm.id;
+      yedekParcaGeriAl(eskiId, setPartStock, setPartStockLog);
+      const eskiDusum = (partStockLog || []).filter(l => l.referansId === eskiId && l.tip === "bayi_satis" && String(l.partId) === String(rec.partId)).reduce((s, l) => s + Math.abs(l.miktar), 0);
+      const kullanilabilir = totalMiktar(partStock, rec.partId) + eskiDusum;
+      const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
+      yedekParcaDus(rec.partId, dusulen, eskiId, setPartStock, setPartStockLog);
+      setYedekParcaSatislar(p => p.map(s => s.id === eskiId ? { ...s, ...rec } : s));
+      logAction({ serverPermissions, action: "duzenlendi", entity: "yedek_parca_satis", entityId: eskiId, entityName: detailView?.name });
+      showToast("Yedek parça satışı güncellendi.");
+      setYpForm(null);
+      return;
+    }
+    // Ekleme: Alıcı bu müşteri (makina) olduğundan yeniYedekParcaSatis parçayı otomatik bu makinaya tahsis eder.
+    const r = yeniYedekParcaSatis(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    if (!r.ok) { showToast(r.hata, "err"); return; }
+    logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: r.id, entityName: detailView?.name });
+    showToast("Yedek parça satışı kaydedildi, stoktan düşüldü.");
+    setYpForm(null);
+  };
+  const deleteYedekParca = (rec) => {
+    if (!canDo("cust_yedek_parca_delete") || !setYedekParcaSatislar) return;
+    yedekParcaGeriAl(rec.id, setPartStock, setPartStockLog);
+    setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, deletedAt: new Date().toISOString() } : s));
+    logAction({ serverPermissions, action: "silindi", entity: "yedek_parca_satis", entityId: rec.id, entityName: detailView?.name });
+    showToast("Yedek parça satışı silindi, stok geri alındı.");
+    setConfirmDeleteYedekParca(null);
+  };
+  const toggleYedekParcaOdendi = (rec) => {
+    if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
+    const yeni = !rec.odendi;
+    setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: yeni } : s));
+    logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: rec.id, entityName: detailView?.name });
+  };
   // ── Extra Kalıp satışları ──
   const openAddPartSale = () => {
     setPkForm({ customerId: detailView.id, kaliplar: [], currency: "TRY", tarih: today(), odendi: false, faturaTipi: normalizeSaleType(detailView.faturali), satisFirma: factoryName, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
@@ -202,6 +261,10 @@ export const CustomerDetailModal = ({
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
       satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
       satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
+      // Servis ve Kargo Panosu (kargo takibi) alanları — düzenlemede "panoya gönder" toggle'ı seçili
+      // gelsin diye kargoDurum'u da taşı (yoksa panoyaGonder=!!form.kargoDurum false döner).
+      kargoDurum: ps.kargoDurum || "", kargoFirma: ps.kargoFirma || "", kargoTakipNo: ps.kargoTakipNo || "",
+      kargoTarih: ps.kargoTarih || "", kargoSorumlusu: ps.kargoSorumlusu || "", panoDusmeZamani: ps.panoDusmeZamani || "",
     });
   };
   const savePartSale = () => {
@@ -215,11 +278,16 @@ export const CustomerDetailModal = ({
       // Satış yapan firma bilgisi YALNIZ partSale kaydına yazılır (aşağıdaki setCustomers'a değil)
       satisFirma: pkForm.satisFirma ?? null, satisFirmaAd: pkForm.satisFirmaAd ?? "", satisFirmaYetkili: pkForm.satisFirmaYetkili ?? "",
       satisFirmaTel: pkForm.satisFirmaTel ?? "", satisFirmaUlke: pkForm.satisFirmaUlke ?? "", satisFirmaSehir: pkForm.satisFirmaSehir ?? "",
+      // Servis ve Kargo Panosu (kargo takibi) alanları — form-seviyesi, batch'teki tüm kalıplara uygulanır.
+      kargoDurum: pkForm.kargoDurum || "", kargoFirma: pkForm.kargoFirma ?? "", kargoTakipNo: pkForm.kargoTakipNo ?? "",
+      kargoTarih: pkForm.kargoTarih ?? "", kargoSorumlusu: pkForm.kargoSorumlusu ?? "", panoDusmeZamani: pkForm.panoDusmeZamani ?? "",
     };
     if (pkForm.id) {
       const k = satirlar[0];
       const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder };
-      setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields } : x));
+      // Panoya sonradan gönderilen (veya eski) kalıpta olusturmaZamani olmayabilir; eksikse şimdi damgala
+      // ki pano sıralamasında "en son eklenen üstte" doğru çalışsın (yoksa T00:00'a düşüp altta kalır).
+      setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() } : x));
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
         : c));
@@ -227,7 +295,11 @@ export const CustomerDetailModal = ({
       showToast("Kayıt güncellendi.");
     } else {
       const batchId = uid();
-      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder }));
+      // olusturmaZamani: panoda "en son eklenen üstte" sıralaması için tam zaman damgası (servis
+      // fabrikaGirisZamani / kargo olusturmaZamani ile aynı rol). Gün-bazlı tarih T00:00'a düşer,
+      // aynı günkü servis/kargo hep üstüne çıkardı — bu yüzden gerçek zaman gerekiyor.
+      const olusturmaZamani = simdiYerel();
+      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, olusturmaZamani, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder }));
       setPartSales(p => [...p, ...yeniKayitlar]);
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
@@ -313,6 +385,13 @@ export const CustomerDetailModal = ({
   const detailYedekParcalar = useMemo(
     () => (partSales || []).filter(p => !p.deletedAt && p.customerId === detailView?.id && p.tur !== "Kalıp"),
     [partSales, detailView?.id]
+  );
+  // Bu müşteriye yapılan yedek parça (kargo) satışları — dosya bağlanabilecek hedefler ({id, ad})
+  const detailYedekKargolar = useMemo(
+    () => (yedekParcaSatislar || [])
+      .filter(s => !s.deletedAt && s.aliciTipi === "musteri" && Number(s.musteriId) === detailView?.id)
+      .map(s => ({ id: s.id, ad: `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}` })),
+    [yedekParcaSatislar, parts, detailView?.id]
   );
   const detailOdemeler = useMemo(
     () => (payments || []).filter(p => !p.deletedAt && p.customerId === detailView?.id).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "")),
@@ -536,11 +615,11 @@ export const CustomerDetailModal = ({
     printServiceFormTemplate(sv, customers, kdvRates, servisT(lang), kaseResmi, factory, await servisResimleri(sv));
   const printMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs);
+    printMachineReportTemplate(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs, yedekParcaSatislar, dealers);
   };
   const openMailMachineReport = (lang = "TR") => {
     if (!detailView) return;
-    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs));
+    const html = stripAutoPrint(buildMachineReportHtml(detailView, detailHistory, partSales, makinaT(lang), kaseResmi, parts, factory, partTypeDefs, yedekParcaSatislar, dealers));
     const sablon = renderMailTemplate(appSettings?.mailTemplates, lang === "EN" ? "makinaRaporuEN" : "makinaRaporu", {
       firma: detailView.name || "", firmaAdi: factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina",
     });
@@ -720,7 +799,7 @@ export const CustomerDetailModal = ({
               <CustomerFilesSection
                 key={detailView.id}
                 detailView={detailView} dosyalar={dosyalar} setDosyalar={setDosyalar} detailDosyalar={detailDosyalar}
-                detailServices={detailServices} detailKalipSatislari={detailKalipSatislari} detailYedekParcalar={detailYedekParcalar} detailOdemeler={detailOdemeler}
+                detailServices={detailServices} detailKalipSatislari={detailKalipSatislari} detailYedekParcalar={detailYedekParcalar} detailYedekKargolar={detailYedekKargolar} detailOdemeler={detailOdemeler}
                 services={services} partSales={partSales} payments={payments} customers={customers}
                 dosyaFiltre={dosyaFiltre} setDosyaFiltre={setDosyaFiltre}
                 canDo={canDo} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast} serverPermissions={serverPermissions}
@@ -802,6 +881,7 @@ export const CustomerDetailModal = ({
                   {canDo("cust_payment_add") && <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>}
                   {canDo("cust_service_add") && <Btn small variant="ghost" onClick={openAddService}><Icon name="plus" size={12} /> Yeni Servis Talebi</Btn>}
                   {canDo("cust_kalip_add") && <Btn small variant="ghost" onClick={openAddPartSale}><Icon name="parts" size={12} /> Extra Kalıp Satışı</Btn>}
+                  {canDo("cust_yedek_parca_add") && setYedekParcaSatislar && <Btn small variant="ghost" onClick={openAddYedekParca}><Icon name="parts" size={12} /> Yedek Parça Satışı</Btn>}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {canDo("cust_detail_new_owner") && (
@@ -840,6 +920,9 @@ export const CustomerDetailModal = ({
               onDeleteService={setConfirmDeleteServiceId}
               onEditPartSale={openEditPartSale}
               onDeletePartSale={setConfirmDeletePartSaleId}
+              onEditYedekParca={setYedekParcaSatislar ? openEditYedekParca : null}
+              onDeleteYedekParca={setYedekParcaSatislar ? setConfirmDeleteYedekParca : null}
+              onToggleYedekParcaOdendi={setYedekParcaSatislar ? toggleYedekParcaOdendi : null}
               onEditPayment={openEditPayment}
               onToggleCekTahsil={toggleCekTahsil}
               onDeletePayment={setConfirmDeletePaymentId}
@@ -1105,6 +1188,15 @@ export const CustomerDetailModal = ({
         />
       )}
 
+      {confirmDeleteYedekParca && (
+        <ConfirmDialog
+          title="Yedek parça satışını sil"
+          message={`Bu yedek parça (kargo) satışı Çöp Kutusu'na taşınacak ve düşülen ${confirmDeleteYedekParca.miktar} adet stoğa geri eklenecek. Makina tahsisleri de kaldırılır.`}
+          onConfirm={() => deleteYedekParca(confirmDeleteYedekParca)}
+          onCancel={() => setConfirmDeleteYedekParca(null)}
+        />
+      )}
+
 
       {svModal && (
         <ServiceForm
@@ -1121,11 +1213,21 @@ export const CustomerDetailModal = ({
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
-          dealers={dealers} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
+          dealers={dealers} calisanlar={calisanlar} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
       )}
+
+      {ypForm && ((ypLock && ypForm.id) ? (
+        <Modal title="Yedek Parça Satışını Düzenle" onClose={() => setYpForm(null)}>
+          <LockConflict lockedBy={ypLock.lockedBy} lockedAt={ypLock.lockedAt} onForce={forceYpLock} onCancel={() => setYpForm(null)} />
+        </Modal>
+      ) : (
+        <YedekParcaSatisForm title={ypForm.id ? "Yedek Parça Satışını Düzenle" : "Yedek Parça Satışı"} form={ypForm} setForm={setYpForm}
+          dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
+      ))}
 
       {sandikModal && (
         <Modal title="Sandık Etiketi" wide onClose={() => setSandikModal(null)}>

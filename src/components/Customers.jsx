@@ -13,6 +13,7 @@ export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = null,
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -62,9 +63,9 @@ export const Customers = ({
 
   const debtorIds = useMemo(() => {
     const ids = new Set();
-    customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName)) ids.add(c.id); });
+    customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName, yedekParcaSatislar)) ids.add(c.id); });
     return ids;
-  }, [customers, services, partSales, factoryName]);
+  }, [customers, services, partSales, factoryName, yedekParcaSatislar]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
@@ -577,9 +578,10 @@ export const Customers = ({
           customers={customers} setCustomers={setCustomers}
           services={services} setServices={setServices}
           partSales={partSales} setPartSales={setPartSales}
+          yedekParcaSatislar={yedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
           payments={payments} setPayments={setPayments}
           setStock={setStock}
-          setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          setPartStock={setPartStock} setPartStockLog={setPartStockLog} partStock={partStock} partStockLog={partStockLog}
           parts={parts} models={models} dealers={dealers} factory={factory}
           geoData={geoData} loadingGeo={loadingGeo}
           kdvRates={kdvRates} appSettings={appSettings}

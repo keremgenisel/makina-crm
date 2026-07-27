@@ -12,7 +12,7 @@ const BLOB_SECTIONS = [
   "customers", "services", "partSales", "payments", "dealers", "stock", "notes",
   "parts", "partStock", "partStockLog", "gorusmeler", "dosyalar", "kalipDefs", "standardModels",
   "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari",
-  "partTypeDefs", "calisanlar",
+  "partTypeDefs", "calisanlar", "yedekParcaSatislar",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -33,6 +33,7 @@ const SECTION_GROUP = {
   partStock: "stockActions",
   partStockLog: "stockActions",
   uretimFormlari: "stockActions",
+  yedekParcaSatislar: "stockActions",
   notes: "notActions",
   kalipDefs: "settings",
   partTypeDefs: "settings",
@@ -64,7 +65,7 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 const BOLUM_SEKMELERI = {
   customers:      ["customers", "dealers", "stock", "settings"],
   services:       ["customers", "dealers", "settings", "servis"],
-  partSales:      ["customers", "stock", "settings"],
+  partSales:      ["customers", "stock", "settings", "servis"],
   payments:       ["customers", "settings"],
   gorusmeler:     ["customers", "dashboard", "settings"],
   dosyalar:       ["customers", "dealers", "settings", "servis"],
@@ -76,9 +77,13 @@ const BOLUM_SEKMELERI = {
   // "servis": Servis Panosu'ndaki servis formu, müşteri detayındakiyle aynı — değişen parça
   // seçilince stoktan düşer/geri alır. Servis katı kiosk kullanıcısı (tabs:["servis"]) bu yüzden
   // servis kaynaklı stok hareketini yazabilmeli, yoksa parçalı servis kaydı 403 alır.
-  partStock:      ["stock", "customers", "settings", "servis"],
-  partStockLog:   ["stock", "customers", "settings", "servis"],
+  // yedek parça satışı Stok sekmesinin yanı sıra müşteri ve bayi detay modallarından da eklenebilir
+  // → stok hareketi (partStock/partStockLog) o sekmelerde de yazılabilmeli, yoksa satış 403 alır.
+  partStock:      ["stock", "customers", "dealers", "settings", "servis"],
+  partStockLog:   ["stock", "customers", "dealers", "settings", "servis"],
   uretimFormlari: ["stock", "settings"],
+  // yedek parça satışı Stok + müşteri detayı + bayi detayı + Servis Panosu'ndan eklenebilir.
+  yedekParcaSatislar: ["stock", "customers", "dealers", "servis", "settings"],
   notes:          ["notes", "settings"],
   kalipDefs:      ["settings"],
   partTypeDefs:   ["settings"],
@@ -205,6 +210,13 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
   for (const section of changedSections) {
     const group = SECTION_GROUP[section];
     if (!group) return { ok: false, reddedilenBolum: section }; // haritada yok → güvenli tarafta reddet
+    // yedek parça satışı birden çok boyuta yayılır (müşteri/bayi/pano/stok EKLE izinleri): stok grubu
+    // boş olsa da bu izinlerden biri varsa yazılabilmeli, yoksa müşteri/bayi detayından ekleme 403 alırdı.
+    if (section === "yedekParcaSatislar") {
+      if (grupEngelli(perms, "stockActions") && !yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section };
+      if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
+      continue;
+    }
     if (grupEngelli(perms, group)) return { ok: false, reddedilenBolum: section };
     // appSettings iki sahipli: sekme denetimi bölüm değil ALAN düzeyinde yapılır.
     if (section === "appSettings" && oldBlob && newBlob) {
@@ -237,6 +249,7 @@ const EYLEM_IDLERI = {
   faturalar:      { ekle: "evrak_fatura_add", sil: "evrak_fatura_delete" },
   stock:          { ekle: "stock_makina_add", sil: "stock_makina_delete" },
   uretimFormlari: { ekle: "stock_uretim_add", sil: "stock_uretim_delete" },
+  yedekParcaSatislar: { ekle: "yedek_parca_add", sil: "yedek_parca_delete" },
   notes:          { ekle: "not_add",          sil: "not_delete" },
   teklifler: {
     ekle: (r) => (r?.type === "proforma" ? "evrak_proforma_add" : "evrak_teklif_add"),
@@ -248,6 +261,30 @@ const EYLEM_IDLERI = {
 function eylemIzinli(perms, group, actionId) {
   const a = perms[group];
   return !Array.isArray(a) || a.includes(actionId);
+}
+
+// Yedek parça satışı EKLE izni dört ayrı arayüzden gelir (Stok sekmesi, müşteri detayı, bayi detayı,
+// pano); her biri kendi izin id'siyle butonu gizler. Sunucu kaydın hangi arayüzden geldiğini blob'dan
+// AYIRT EDEMEZ, bu yüzden EKLE bu izinlerden HERHANGİ biri varsa kabul edilir (kullanıcı-onaylı sınır:
+// arayüzde ayrışır, sunucuda "biri yeterli"). Boyutlardan biri tanımsızsa (dizi değil) tam erişimdir.
+const YEDEK_PARCA_EKLE_IZINLERI = [
+  ["customerActions", "cust_yedek_parca_add"],
+  ["customerActions", "servis_yedek_parca_add"],
+  ["dealerActions", "dealer_yedek_parca_add"],
+  ["stockActions", "yedek_parca_add"],
+];
+function yedekParcaEkleyebilir(perms) {
+  return YEDEK_PARCA_EKLE_IZINLERI.some(([g, id]) => eylemIzinli(perms, g, id));
+}
+
+// Yedek parça satışı SİL izni de iki arayüzden gelir (Stok sekmesi ve müşteri detayı); blob arayüzü
+// ayırt edemediğinden herhangi biri yeterli (EKLE ile aynı esnek/kullanıcı-onaylı yaklaşım).
+const YEDEK_PARCA_SIL_IZINLERI = [
+  ["stockActions", "yedek_parca_delete"],
+  ["customerActions", "cust_yedek_parca_delete"],
+];
+function yedekParcaSilebilir(perms) {
+  return YEDEK_PARCA_SIL_IZINLERI.some(([g, id]) => eylemIzinli(perms, g, id));
 }
 
 // Gelen blob'daki izinsiz EKLE/SİL'leri yakalar. Dönüş { ok:true } | { ok:false, reddedilenBolum, islem, gerekli }.
@@ -268,6 +305,11 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
     // EKLE: eskide olmayan yeni id
     for (const r of yeniArr) {
       if (r.id == null || eskiById.has(r.id)) continue;
+      // yedek parça satışı EKLE dört boyuttan gelebilir → herhangi biri yeterli (bkz. yedekParcaEkleyebilir).
+      if (section === "yedekParcaSatislar") {
+        if (!yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: "yedek_parca_add" };
+        continue;
+      }
       const id = idBul(map.ekle, r);
       if (id && !eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: id };
     }
@@ -276,6 +318,11 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       if (!aktifMi(r)) continue;
       const y = yeniById.get(r.id);
       if (y && !y.deletedAt) continue; // duruyor ve aktif → silme değil
+      // yedek parça satışı SİL iki boyuttan gelebilir → herhangi biri yeterli (bkz. yedekParcaSilebilir).
+      if (section === "yedekParcaSatislar") {
+        if (!yedekParcaSilebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "yedek_parca_delete" };
+        continue;
+      }
       const id = idBul(map.sil, r);
       if (id && !eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: id };
     }

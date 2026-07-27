@@ -53,6 +53,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   rawTeklifler = [], setTeklifler = null,
   faturalar = [], setFaturalar = null, rawFaturalar = [],
   rawGorusmeler, setGorusmeler, rawDosyalar = [], setDosyalar = null, rawUretimFormlari = [], setUretimFormlari = null,
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, rawYedekParcaSatislar = [],
   serverPermissions = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
 }) => {
@@ -148,7 +149,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </div>
 
         {/* SAĞ İÇERİK — İşlem Geçmişi ve Parça/Yedek Parça tabloları geniş, tam görünsün */}
-        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "yedekparca") ? 1200 : 760 }}>
+        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: msg.type === "ok" ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", color: msg.type === "ok" ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)" }}>
@@ -167,6 +168,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           factory={factory} kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} calisanlar={calisanlar} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
           uretimFormlari={rawUretimFormlari} gorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
+          yedekParcaSatislar={yedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
           setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} setStock={setStock} setCustomModels={setCustomModels}
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setCalisanlar={setCalisanlar} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
@@ -253,7 +255,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
-         gorusmeler={rawGorusmeler} calisanlar={calisanlar} serverPermissions={serverPermissions}/>
+         gorusmeler={rawGorusmeler} calisanlar={calisanlar} yedekParcaSatislar={yedekParcaSatislar} serverPermissions={serverPermissions}/>
       )}
 
       {settingsTab === "import" && (
@@ -286,7 +288,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
          rawGorusmeler={rawGorusmeler} setGorusmeler={setGorusmeler}
          rawDosyalar={rawDosyalar} setDosyalar={setDosyalar}
          rawPartTypeDefs={rawPartTypeDefs} setPartTypeDefs={setPartTypeDefs}
-         rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}/>
+         rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}
+         rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}/>
       )}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}
