@@ -13,7 +13,11 @@ const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, geoData = null, loadingGeo = false }) => {
   const [custSearch, setCustSearch] = useState("");
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
-  const panoyaGonder = !!form.kargoDurum; // Servis Panosuna gönderiliyor mu (kargoDurum set ise evet)
+  // Panoya gönderme iki yolla: "Fabrika Teslim" VEYA "Kargo" (yedek parça formuyla aynı). İkisi de
+  // kargoDurum'u set eder; ayrımı fabrikaTeslim bayrağı yapar (panoda 🏭 FABRİKA TESLİM vs 📦 KARGO).
+  const panoda = !!form.kargoDurum;
+  const fabrikaTeslim = !!form.fabrikaTeslim;
+  const kargoGonder = panoda && !fabrikaTeslim;
   const panoDusIleri = !!form.panoDusmeZamani && new Date(form.panoDusmeZamani).getTime() > Date.now();
   const factoryName = factory?.name || "Altuntaş Makina";
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false);
@@ -228,30 +232,38 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         </div>
       )}
 
-      {/* Servis ve Kargo Panosuna gönder — servis formundaki "Servis Panosunda göster" ile aynı desen.
-          Açıkken kalıp panoya (Bekliyor) düşer + kargo bilgisi alanları görünür. Satış firmasından bağımsız. */}
+      {/* Panoya gönderme: üstte "Fabrika Teslim", altında "Kargo" (yedek parça formuyla aynı). İkisi de
+          kalıbı panoya (Bekliyor) düşürür; Fabrika Teslim'de panoda 🏭 FABRİKA TESLİM, Kargo'da 📦 KARGO. */}
       {selectedCust && (
         <div style={{ marginTop: 12, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: panoyaGonder ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", padding: "10px 12px" }}>
-            <input type="checkbox" checked={panoyaGonder}
-              onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: fabrikaTeslim ? "var(--ambBg, #fffbeb)" : "var(--n100, #f8fafc)", padding: "10px 12px", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+            <input type="checkbox" checked={fabrikaTeslim}
+              onChange={e => setForm(p => ({ ...p, fabrikaTeslim: e.target.checked, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--amb600, #d97706)" }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: fabrikaTeslim ? "var(--amb800, #92400e)" : "var(--n600, #475569)" }}>
+              <Icon name="store" size={14} /> Fabrika Teslim (panoya düşer, kargo yerine "Fabrika Teslim")
+            </span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: kargoGonder ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", padding: "10px 12px" }}>
+            <input type="checkbox" checked={kargoGonder}
+              onChange={e => setForm(p => ({ ...p, fabrikaTeslim: false, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
               style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--blu600, #2563eb)" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: panoyaGonder ? "var(--blu700, #1d4ed8)" : "var(--n600, #475569)" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: kargoGonder ? "var(--blu700, #1d4ed8)" : "var(--n600, #475569)" }}>
               📦 Servis ve Kargo Panosuna gönder (kargo takibi)
             </span>
           </label>
-          {panoyaGonder && (
+          {panoda && (
             <div style={{ padding: 12, display: "grid", gap: 10, borderTop: "1px solid var(--n200, #e2e8f0)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
-                <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />
-                <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />
+              <div style={{ display: "grid", gridTemplateColumns: fabrikaTeslim ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 8 }}>
+                {!fabrikaTeslim && <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />}
+                {!fabrikaTeslim && <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />}
                 <Input type="date" value={form.kargoTarih || ""} onChange={e => setForm(p => ({ ...p, kargoTarih: e.target.value }))} />
                 <Select value={form.kargoDurum || "Hazırlanıyor"} onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.value }))}>
                   {KARGO_DURUMLARI.map(d => <option key={d}>{d}</option>)}
                 </Select>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <Field label="Kargoyu Verecek Kişi">
+                <Field label={fabrikaTeslim ? "Teslim Eden Kişi" : "Kargoyu Verecek Kişi"}>
                   <Input list="kalip-kargoci-listesi" value={form.kargoSorumlusu || ""} placeholder="Seçin veya yazın..."
                     onChange={e => setForm(p => ({ ...p, kargoSorumlusu: e.target.value }))} />
                   <datalist id="kalip-kargoci-listesi">{kargociAdlari.map(a => <option key={a} value={a} />)}</datalist>

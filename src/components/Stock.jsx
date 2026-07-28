@@ -24,6 +24,7 @@ export const Stock = ({
   serverPermissions = null,
   defaultSubTab = "makina",
   yedekOdakId = null, onYedekOdakConsumed = null,
+  geoData = null, loadingGeo = false,
 }) => {
   const [subTab, setSubTab] = useState(defaultSubTab || "makina");
   // Bayi detayından "Yedek Parça Satışına git" — ilgili sekmeyi aç (zaten stok'a mount olurken açılır,
@@ -71,9 +72,10 @@ export const Stock = ({
       {subTab === "yedeksatis" && (
         <YedekParcaSatisTab
           yedekParcaSatislar={yedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
-          dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar}
+          dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} factory={factory}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock}
+          kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock} serverPermissions={serverPermissions}
+          geoData={geoData} loadingGeo={loadingGeo}
           odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed} />
       )}
       {subTab === "uretim" && (

@@ -30,7 +30,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
   const [raporAy, setRaporAy] = useState(oncekiAy);
   const aylikRapor = () => {
     // Hesap motoru saf ve testli (src/lib/aylikRapor.js); seçilen ay + önceki ay birlikte
-    const veri = { customers, services, partSales, payments, teklifler };
+    const veri = { customers, services, partSales, payments, teklifler, dealers, yedekParcaSatislar };
     const secenekler = { factoryName, kdvRates, factory, rates };
     const rapor = hesaplaAylikRapor(veri, raporAy, secenekler);
     rapor.onceki = hesaplaAylikRapor(veri, oncekiAyStr(raporAy), secenekler);

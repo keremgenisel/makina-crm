@@ -5,7 +5,7 @@ import { useMailSender, MailComposeModal } from "./MailCompose";
 import { uid, bumpId, today, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
-import { yeniYedekParcaSatis } from "../lib/yedekParcaSatis";
+import { yeniYedekParcaSatisCoklu } from "../lib/yedekParcaSatis";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
@@ -18,13 +18,14 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu bayi alıcı seçili)
   const openAddYedekParca = (dealer) => {
     if (!canDo("dealer_yedek_parca_add")) return;
-    setYpForm({ aliciTipi: "bayi", dealerId: dealer.id, musteriId: "", partId: "", miktar: "", birimFiyat: "", currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false, kargoDurum: "Hazırlanıyor" });
+    setYpForm({ aliciTipi: "bayi", dealerId: dealer.id, musteriId: "", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }], currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false });
   };
   const saveYedekParca = () => {
-    const r = yeniYedekParcaSatis(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    const r = yeniYedekParcaSatisCoklu(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
     if (!r.ok) { showToast(r.hata, "err"); return; }
-    logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: r.id, entityName: dealers.find(d => d.id === Number(ypForm.dealerId))?.name });
-    showToast("Yedek parça satışı kaydedildi, stoktan düşüldü.");
+    const bayiAd = dealers.find(d => d.id === Number(ypForm.dealerId))?.name;
+    r.ids.forEach(id => logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: id, entityName: bayiAd }));
+    showToast(r.n > 1 ? `${r.n} yedek parça satışı kaydedildi, stoktan düşüldü.` : "Yedek parça satışı kaydedildi, stoktan düşüldü.");
     setYpForm(null);
   };
 
@@ -116,6 +117,12 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       .filter(s => !s.deletedAt && s.aliciTipi !== "musteri" && Number(s.dealerId) === detailView.id)
       .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
   }, [yedekParcaSatislar, detailView]);
+  // Dosya bağlama hedefleri: toplu satış (aynı batchId) TEK seçenek (id = birincil kayıt).
+  const dealerYedekKargoDosyaHedefleri = useMemo(() => {
+    const m = new Map();
+    for (const s of dealerYedekParca) { const k = s.batchId != null ? "b:" + s.batchId : "s:" + s.id; if (!m.has(k)) m.set(k, []); m.get(k).push(s); }
+    return [...m.values()].map(g => ({ id: g[0].id, ad: g.map(s => `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}`).join(", ") }));
+  }, [dealerYedekParca, parts]);
   const dealerYpFiltered = useMemo(() => {
     if (!dealerYpSearch.trim()) return dealerYedekParca;
     const q = aramaNormalize(dealerYpSearch.trim());
@@ -680,7 +687,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           {!detailView._isFactory && (
             <DealerFilesSection key={detailView.id} dealer={detailView} dosyalar={dosyalar} setDosyalar={setDosyalar}
               services={dealerServices} customers={customers} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} cevrimdisi={dosyaCevrimdisi}
-              yedekKargolar={dealerYedekParca.map(s => ({ id: s.id, ad: `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}` }))}
+              yedekKargolar={dealerYedekKargoDosyaHedefleri}
               odak={dosyaOdak} onOdakChange={setDosyaOdak} />
           )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
@@ -699,6 +706,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       {ypForm && (
         <YedekParcaSatisForm title="Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          geoData={geoData} loadingGeo={loadingGeo}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       )}
 

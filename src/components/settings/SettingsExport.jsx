@@ -5,7 +5,26 @@ import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV
 import { Icon, Btn } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
+import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { useMailSender, MailComposeModal } from "../MailCompose";
+
+// Yedek parça (kargo) satışları dışa aktarım başlığı + satırı (saf; test edilebilir).
+// Alıcı adı/türü ortak yardımcılarla çözülür → bayi / müşteri / anlaşmasız dış firma doğru gösterilir.
+export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
+export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [] } = {}) => {
+  const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
+  const tur = { "MÜŞTERİ": "Müşteri", "ANLAŞMASIZ SERVİS": "Anlaşmasız Servis", "BAYİ": "Bayi" }[aliciRozet(s).label] || "Bayi";
+  const part = parts.find(p => String(p.id) === String(s.partId)) || {};
+  const tahsis = (s.tahsisler || []).map(t => `${t.miktar} → ${customers.find(c => c.id === t.customerId)?.name || t.makinaSerbest || "(makina)"}`).join("; ");
+  const teslimSekli = s.fabrikaTeslim ? "Fabrika Teslim" : (s.kargoDurum ? "Kargo" : "—");
+  const teslimatAdresi = s.teslimatFarkli
+    ? [s.teslimatAd, s.teslimatAdres, [s.teslimatIlce, s.teslimatSehir].filter(Boolean).join(" / "), s.teslimatUlke, s.teslimatTel].filter(Boolean).join(" · ")
+    : "";
+  return [tur, aliciAd(s, dealers, customers), part.ad || s.partId, parseInt(s.miktar) || 0,
+    parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
+    (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih || "", s.odendi ? "Evet" : "Hayır",
+    teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis];
+};
 
 export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], yedekParcaSatislar = [], serverPermissions = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
@@ -329,17 +348,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportYedekParcaSatislar = async (mode = "download") => {
-    const head = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Makina Tahsisleri"];
-    const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
-    const rows = [head, ...yedekParcaSatislar.filter(s => !s.deletedAt).map(s => {
-      const alici = s.aliciTipi === "musteri" ? (customers.find(c => c.id === s.musteriId)?.name || "—") : (dealers.find(d => d.id === s.dealerId)?.name || "—");
-      const part = parts.find(p => String(p.id) === String(s.partId)) || {};
-      const tahsis = (s.tahsisler || []).map(t => `${t.miktar} → ${customers.find(c => c.id === t.customerId)?.name || t.makinaSerbest || "(makina)"}`).join("; ");
-      return [s.aliciTipi === "musteri" ? "Müşteri" : "Bayi", alici, part.ad || s.partId, parseInt(s.miktar) || 0,
-        parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
-        (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih || "", s.odendi ? "Evet" : "Hayır",
-        s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", tahsis];
-    })];
+    const rows = [YEDEK_PARCA_EXPORT_HEAD, ...yedekParcaSatislar.filter(s => !s.deletedAt).map(s => yedekParcaExportRow(s, { dealers, customers, parts }))];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça Satışları"); openExportMailXLSXBase64(b64, "yedek-parca-satislari.xlsx", "Yedek Parça (Kargo) Satışları"); return; }
       await downloadXlsx(rows, "yedek-parca-satislari.xlsx", "Yedek Parça Satışları"); flash("ok", "Yedek parça satışları Excel olarak indirildi.");

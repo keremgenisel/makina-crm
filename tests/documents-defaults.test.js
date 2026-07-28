@@ -21,3 +21,17 @@ describe("makeEmpty — Model Yılı varsayılanı", () => {
     expect(f.modelYiliDegeri).toBe("");
   });
 });
+
+describe("makeEmpty — proforma no (belge detayından düzenlenebilir olması için üretilir)", () => {
+  it("yeni proforma yıl bazlı bir no ile gelir", () => {
+    const f = makeEmpty("proforma", [], null, "TR", null);
+    const yil = new Date().getFullYear();
+    expect(f.no).toMatch(new RegExp(`^${yil}-\\d{5}$`));
+  });
+
+  it("proforma no'su teklif sırasından bağımsız artar (kendi tipinin sırası)", () => {
+    const mevcut = [{ type: "proforma", no: `${new Date().getFullYear()}-00003` }];
+    const f = makeEmpty("proforma", mevcut, null, "TR", null);
+    expect(f.no).toBe(`${new Date().getFullYear()}-00004`);
+  });
+});

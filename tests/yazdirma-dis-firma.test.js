@@ -42,18 +42,42 @@ describe("makina raporu: satılan yedek parçalar", () => {
     expect(html).toContain("Bayi üzerinden: Bayi X"); // bayi tarafından tahsis edildiyse gösterilir
   });
 
-  it("doğrudan müşteriye satış 'Doğrudan'; başka makinaya tahsis bu raporda görünmez", () => {
+  it("doğrudan müşteriye satış kaynağı = fabrika firma adı; başka makinaya tahsis bu raporda görünmez", () => {
     const yps = [
       { id: 651, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 1, tarih: "2026-07-20", tahsisler: [{ miktar: 1, customerId: 1 }] },
       { id: 652, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, tarih: "2026-07-21", tahsisler: [{ miktar: 3, customerId: 999 }] },
     ];
+    const html = buildMachineReportHtml(musteri, [], [], {}, "", parts, { name: "FABRİKA-TEST A.Ş." }, [], yps, dealers);
+    expect(html).toContain("FABRİKA-TEST A.Ş."); // "Doğrudan" yerine fabrika firma adı yazılır
+    expect(html).not.toContain("Doğrudan");
+    expect(html).toContain("SATILAN YEDEK PARÇALAR (1 kayıt)"); // 999'a tahsis bu makinada görünmez
+  });
+
+  it("fabrika bilgisi yoksa doğrudan satış geri-uyumla 'Doğrudan' gösterir", () => {
+    const yps = [{ id: 651, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 1, tarih: "2026-07-20", tahsisler: [{ miktar: 1, customerId: 1 }] }];
     const html = buildMachineReportHtml(musteri, [], [], {}, "", parts, null, [], yps, dealers);
     expect(html).toContain("Doğrudan");
-    expect(html).toContain("SATILAN YEDEK PARÇALAR (1 kayıt)"); // 999'a tahsis bu makinada görünmez
   });
 
   it("bu makinaya tahsis yoksa yedek parça bölümü çıkmaz", () => {
     const html = buildMachineReportHtml(musteri, [], [], {}, "", parts, null, [], [], dealers);
     expect(html).not.toContain("SATILAN YEDEK PARÇALAR");
+  });
+});
+
+describe("servis formu — değişen parça fiyatı garanti içinde gizlenir", () => {
+  const svcBase = { id: 9, customerId: 1, date: "2026-07-17", yapilanIsler: "bakım", parcaCurrency: "TRY",
+    degisenParcalar: [{ ad: "Piston", fiyat: 1500 }] };
+
+  it("Garanti İçi: parça adı çıkar ama fiyatı YAZILMAZ", () => {
+    const html = buildServiceFormHtml({ ...svcBase, type: "Garanti İçi", parcaUcretsizMi: true }, [musteri], []);
+    expect(html).toContain("Piston");
+    expect(html).not.toMatch(/Piston[^<]*1[\.\s]?500/); // fiyat parantezi yok
+  });
+
+  it("Garanti Dışı: parça fiyatı yazılır", () => {
+    const html = buildServiceFormHtml({ ...svcBase, type: "Garanti Dışı" }, [musteri], []);
+    expect(html).toContain("Piston");
+    expect(html).toMatch(/Piston[^<]*1[\.\s]?500/); // fiyat gösterilir
   });
 });

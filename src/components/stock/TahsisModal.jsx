@@ -69,5 +69,14 @@ export const tahsisToplam = (s) => (s?.tahsisler || []).reduce((t, x) => t + (pa
 // Yedek parça satışının alıcısı: bayi VEYA müşteri (aliciTipi). Legacy kayıtlarda aliciTipi yok → bayi.
 export const aliciAd = (s, dealers = [], customers = []) => {
   if (s?.aliciTipi === "musteri") return (customers.find(c => c.id === s.musteriId)?.name) || "(müşteri yok)";
+  if (s?.disFirma) return s.disFirmaAd || "(dış firma)"; // anlaşmasız dış firma alıcı (kayıtlı bayi değil)
   return (dealers.find(d => d.id === s?.dealerId)?.name) || "(bayi yok)";
+};
+
+// Alıcı türü rozeti (etiket + renk). 3 tür: müşteri (mavi), anlaşmasız servis (mor), bayi (amber).
+// Anlaşmasız dış firma (disFirma) artık "BAYİ" değil "ANLAŞMASIZ SERVİS" olarak gösterilir.
+export const aliciRozet = (s) => {
+  if (s?.aliciTipi === "musteri") return { label: "MÜŞTERİ", bg: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" };
+  if (s?.disFirma) return { label: "ANLAŞMASIZ SERVİS", bg: "var(--purBg2, #ede9fe)", color: "var(--pur700, #6d28d9)" };
+  return { label: "BAYİ", bg: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" };
 };

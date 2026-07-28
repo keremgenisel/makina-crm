@@ -7,7 +7,7 @@ import {
   sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
 
-export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [] }) {
+export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [], customers = [] }) {
     const detailHistory = detailView
       ? services.filter(s => s.customerId === detailView.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
       : [];
@@ -37,7 +37,9 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         // Not: eskiden a.id - b.id ile sıralanıyordu (sıralı ID = oluşturma sırası varsayımı).
         // uid() artık rastgele ID ürettiği için bu varsayım geçersiz; doğal dizi sırası
         // (partSales'e eklenme = oluşturma sırası) hem eski hem yeni veride doğru sonucu verir.
-        ev.push({ kind: "part", date: psList[0].tarih, color: "var(--orTx, #c2410c)", title: "Kalıp Verildi", psList });
+        // Teslim türü başlığa yansır (yedek parçadaki gibi, iconsuz): panodaysa "(Fabrika Teslim)"/"(Kargo)".
+        const teslim = psList[0].kargoDurum ? (psList[0].fabrikaTeslim ? " (Fabrika Teslim)" : " (Kargo)") : "";
+        ev.push({ kind: "part", date: psList[0].tarih, color: "var(--orTx, #c2410c)", title: "Kalıp Verildi" + teslim, psList });
       });
       (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
         ev.push({
@@ -48,31 +50,58 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         });
       });
       // Yedek parça (kargo) satışları makina geçmişine düşer:
-      // - Müşterinin KENDİ alımı (aliciTipi "musteri", bu makina) → düzenlenip silinebilir tek olay
-      //   (fiyat + ödeme durumu ile; `yp` = satış kaydı, timeline aksiyonlarını bağlar).
+      // - Müşterinin KENDİ alımı (aliciTipi "musteri", bu makina) → düzenlenip silinebilir olay.
+      //   TOPLU satış (aynı batchId) TEK olayda toplanır; `ypGrup` = gruptaki tüm kayıtlar, `yp` = birincil.
       // - Bayi alımından bu makinaya TAHSİS edilen parçalar → salt-okunur (borçlusu bayi).
+      const parcaAdiOf = (s) => parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça";
+      // Teslim türü başlığa yansır: fabrika teslim → "Fabrika Teslim", aksi halde "Kargo".
+      const ypBaslik = (s) => s.fabrikaTeslim ? "Yedek Parça (Fabrika Teslim)" : "Yedek Parça (Kargo)";
+      const custYp = (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id);
+      const ypGruplar = new Map(); // batchId (yoksa id) → kayıtlar
+      for (const s of custYp) { const k = s.batchId != null ? "b:" + s.batchId : "s:" + s.id; if (!ypGruplar.has(k)) ypGruplar.set(k, []); ypGruplar.get(k).push(s); }
+      for (const kayitlar of ypGruplar.values()) {
+        const ilk = kayitlar[0];
+        ev.push({
+          kind: "part", date: ilk.tarih, color: "var(--cyan, #0891b2)",
+          title: ypBaslik(ilk),
+          desc: kayitlar.map(s => `${s.miktar} adet ${parcaAdiOf(s)}`).join(", "),
+          yp: ilk, ypGrup: kayitlar,
+        });
+      }
+      // Bayi/dış firma/müşteri alımından bu makinaya TAHSİS edilen parça (salt-okunur). Müşteri-alıcı
+      // kendi makinasına satışlar yukarıda işlendi, atla. Başlıkta Kargo/Fabrika Teslim GÖSTERİLMEZ;
+      // bunun yerine alıcı TÜRÜ parantez içinde (ör. "Yedek Parça (anlaşmasız servis)"), kim tahsis etti
+      // (alıcı ADI) açıklamaya yazılır.
+      const tahsisEdenTip = (s) => s.aliciTipi === "musteri" ? "Müşteri" : s.disFirma ? "Anlaşmasız Servis" : "Bayi";
+      const tahsisEdenAd = (s) =>
+        s.aliciTipi === "musteri" ? ((customers || []).find(c => c.id === Number(s.musteriId))?.name || "müşteri")
+        : s.disFirma ? (s.disFirmaAd || "anlaşmasız servis")
+        : ((dealers || []).find(d => d.id === s.dealerId)?.name || "bayi");
+      // Tahsisleri BATCH (satın alma) bazında TEK olayda topla: bir batch birden çok parça satırı (kalem)
+      // içerebilir; her kalemin bu makinaya tahsis edilen toplam adedi ayrı yazılır, kalem>1 ise "N kalem".
+      const tahsisGruplari = new Map(); // batch anahtarı → { tip, ad, tarih, kalemler:[{miktar,parca}] }
       (yedekParcaSatislar || []).forEach(s => {
         if (s.deletedAt) return;
-        const part = (parts || []).find(p => String(p.id) === String(s.partId));
-        if (s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id) {
-          // Fiyat + ödendi toggle'ı MachineTimeline'da (kalıp/servis gibi) ayrı ücret satırında gösterilir.
-          ev.push({
-            kind: "part", date: s.tarih, color: "var(--cyan, #0891b2)",
-            title: "Yedek Parça (Kargo)",
-            desc: `${s.miktar} adet ${parcaAdi(part) || "yedek parça"}`,
-            yp: s,
-          });
-        } else {
-          (s.tahsisler || []).filter(t => t.customerId === detailView.id).forEach(t => {
-            const bayi = (dealers || []).find(d => d.id === s.dealerId);
-            ev.push({
-              kind: "part", date: t.tarih || s.tarih, color: "var(--cyan, #0891b2)",
-              title: "Yedek Parça (Kargo)",
-              desc: `${t.miktar} adet ${parcaAdi(part) || "yedek parça"}${bayi ? " · bayi " + bayi.name : ""}`,
-            });
-          });
-        }
+        if (s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id) return;
+        const buMakina = (s.tahsisler || []).filter(t => t.customerId === detailView.id);
+        if (!buMakina.length) return;
+        const miktar = buMakina.reduce((sum, t) => sum + (parseInt(t.miktar) || 0), 0);
+        const sonTarih = buMakina.reduce((mx, t) => (String(t.tarih || s.tarih) > mx ? String(t.tarih || s.tarih) : mx), String(s.tarih || ""));
+        const key = s.batchId != null ? "b:" + s.batchId : "s:" + s.id;
+        if (!tahsisGruplari.has(key)) tahsisGruplari.set(key, { tip: tahsisEdenTip(s), ad: tahsisEdenAd(s), tarih: sonTarih, kalemler: [] });
+        const g = tahsisGruplari.get(key);
+        g.kalemler.push({ miktar, parca: parcaAdiOf(s) });
+        if (sonTarih > g.tarih) g.tarih = sonTarih;
       });
+      for (const g of tahsisGruplari.values()) {
+        const kalemMetni = g.kalemler.map(k => `${k.miktar} adet ${k.parca}`).join(", ");
+        const kalemEk = g.kalemler.length > 1 ? ` · ${g.kalemler.length} kalem` : "";
+        ev.push({
+          kind: "part", date: g.tarih, color: "var(--cyan, #0891b2)",
+          title: `Yedek Parça (${g.tip})${kalemEk}`,
+          desc: `${kalemMetni} · ${g.ad} tarafından tahsis edildi`,
+        });
+      }
       (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
         const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
         ev.push({

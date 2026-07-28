@@ -13,13 +13,6 @@ const parts = [{ id: 7, ad: "Dişli", kod: "D-7" }];
 const customers = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1" }];
 const satis = { id: 650, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 5, birimFiyat: 100, currency: "TRY", tarih: "2026-07-15", kargoDurum: "Hazırlanıyor", kargoFirma: "Yurtiçi", kargoTakipNo: "TK1", tahsisler: [] };
 
-const makinaSec = (arama, adSecili) => {
-  const inp = screen.getByPlaceholderText(/Firma \/ model \/ seri no ara/);
-  fireEvent.focus(inp);
-  fireEvent.change(inp, { target: { value: arama } });
-  fireEvent.mouseDown(screen.getByText(adSecili));
-};
-
 describe("KargoKart", () => {
   it("📦 KARGO etiketi + alıcı + makina durumu gösterir, tıklanınca id ile onClick", () => {
     const onClick = vi.fn();
@@ -32,6 +25,35 @@ describe("KargoKart", () => {
     expect(art).toBeTruthy();
     fireEvent.click(art);
     expect(onClick).toHaveBeenCalledWith(650);
+  });
+
+  it("fabrikaTeslim: pil '📦 KARGO' yerine '🏭 FABRİKA TESLİM' gösterir", () => {
+    render(<KargoKart s={{ ...satis, fabrikaTeslim: true }} dealers={dealers} parts={parts} customers={customers} canKargo onClick={vi.fn()} />);
+    expect(screen.getByText(/🏭 FABRİKA TESLİM/)).toBeTruthy();
+    expect(screen.queryByText(/📦 KARGO/)).toBeNull();
+  });
+
+  it("fabrikaTeslim + 'Kargoya Verildi' → durum etiketi 'Teslime Hazır' (kargo yerine)", () => {
+    render(<KargoKart s={{ ...satis, kargoDurum: "Kargoya Verildi", fabrikaTeslim: true }} dealers={dealers} parts={parts} customers={customers} canKargo onClick={vi.fn()} />);
+    expect(screen.getByText("Teslime Hazır")).toBeTruthy();
+    expect(screen.queryByText("Kargoya Verildi")).toBeNull();
+  });
+
+  it("kalıp kartında da fabrikaTeslim → '🏭 FABRİKA TESLİM'", () => {
+    const kalip = { id: 900, customerId: 1, tur: "Kalıp", ad: "K", kargoDurum: "Hazırlanıyor", fabrikaTeslim: true, tarih: "2026-07-20" };
+    render(<KargoKart s={kalip} tur="kalip" customers={customers} calisanlar={[]} canKargo onClick={vi.fn()} />);
+    expect(screen.getByText(/🏭 FABRİKA TESLİM/)).toBeTruthy();
+    expect(screen.queryByText(/📦 KARGO/)).toBeNull();
+  });
+
+  it("farklı teslimat adresi: kartta 📍 rozet + şehir/ilçe gösterir", () => {
+    render(<KargoKart s={{ ...satis, teslimatFarkli: true, teslimatSehir: "Ankara", teslimatIlce: "Sincan" }} dealers={dealers} parts={parts} customers={customers} canKargo onClick={vi.fn()} />);
+    expect(screen.getByText(/📍 Farklı adres · Ankara \/ Sincan/)).toBeTruthy();
+  });
+
+  it("farklı teslimat adresi yoksa 📍 rozet çıkmaz", () => {
+    render(<KargoKart s={satis} dealers={dealers} parts={parts} customers={customers} canKargo onClick={vi.fn()} />);
+    expect(screen.queryByText(/Farklı adres/)).toBeNull();
   });
 
   it("kartta tahsis/makina bilgisi HİÇ yazmaz (tahsissiz, kısmi, tam — hepsinde); fiyat da yok", () => {
@@ -119,7 +141,7 @@ describe("KargoDetayModal", () => {
   const Harness = ({ canKargo = true }) => {
     const [sat, setSat] = useState([satis]);
     const detay = sat.find(s => s.id === 650);
-    return <KargoDetayModal satis={detay} setYedekParcaSatislar={setSat}
+    return <KargoDetayModal grup={detay ? [detay] : null} setYedekParcaSatislar={setSat}
       dealers={dealers} parts={parts} customers={customers} canKargo={canKargo} onClose={vi.fn()} showToast={vi.fn()} />;
   };
 
@@ -132,25 +154,41 @@ describe("KargoDetayModal", () => {
 
   it("satışın notu detay modalında gösterilir", () => {
     const notlu = { ...satis, notlar: "Acil gönderilecek" };
-    const H = () => { const [sat, setSat] = useState([notlu]); return <KargoDetayModal satis={sat[0]} setYedekParcaSatislar={setSat} dealers={dealers} parts={parts} customers={customers} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
+    const H = () => { const [sat, setSat] = useState([notlu]); return <KargoDetayModal grup={[sat[0]]} setYedekParcaSatislar={setSat} dealers={dealers} parts={parts} customers={customers} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
     render(<H />);
     expect(screen.getByText("Acil gönderilecek")).toBeTruthy();
   });
 
-  it("panodan makinaya tahsis → kısmi duruma geçer", () => {
+  it("kargo detay modalında 'Kargo Etiketi' yazdır düğmesi var", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: /Makinaya Tahsis Et/ }));
-    makinaSec("ABC", /ABC Makina/);
-    fireEvent.change(document.querySelector('input[type="number"]'), { target: { value: "2" } });
-    fireEvent.click(screen.getByRole("button", { name: "Tahsis Et" }));
-    expect(screen.getByText(/→ ABC Makina/)).toBeTruthy();
-    expect(screen.getByText(/3 bekliyor/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Kargo Etiketi/ })).toBeTruthy();
+  });
+
+  it("kargo detay modalında makina tahsisi YOK (tahsis yalnız Stok sekmesinde yapılır)", () => {
+    render(<Harness />);
+    expect(screen.queryByRole("button", { name: /Tahsis Et/ })).toBeNull();
+    expect(screen.queryByText(/Makina Tahsisleri/)).toBeNull();
+  });
+
+  it("farklı teslimat adresi: modalda ayrı 'Teslimat (kargo) Adresi' kutusu gösterir", () => {
+    const teslimatli = { ...satis, teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "0312 111 22 33", teslimatAdres: "Başkent OSB No:8", teslimatSehir: "Ankara", teslimatIlce: "Sincan" };
+    const H = () => { const [sat, setSat] = useState([teslimatli]); return <KargoDetayModal grup={[sat[0]]} setYedekParcaSatislar={setSat} dealers={dealers} parts={parts} customers={customers} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
+    render(<H />);
+    expect(screen.getByText(/Teslimat \(kargo\) Adresi/)).toBeTruthy();
+    expect(screen.getByText("Şantiye Deposu")).toBeTruthy();
+    expect(screen.getByText("Başkent OSB No:8")).toBeTruthy();
+    expect(screen.getByText("Ankara / Sincan")).toBeTruthy();
+  });
+
+  it("farklı teslimat adresi yoksa modalda kutu çıkmaz", () => {
+    render(<Harness />);
+    expect(screen.queryByText(/Teslimat \(kargo\) Adresi/)).toBeNull();
   });
 
   it("müşteri alıcıda yetkili/telefon/adres (telefon ayrı satır) görünür", () => {
     const zengin = [{ id: 2, name: "DEF Sanayi", yetkili1Ad: "Ayşe Kaya", yetkili1Tel: "0212 555 11 22", phone: "0212 000 00 00", adres: "OSB 5. Cadde No 12", city: "İstanbul", ilce: "Tuzla", country: "Türkiye" }];
     const musSatis = { ...satis, id: 660, aliciTipi: "musteri", musteriId: 2, dealerId: null, tahsisler: [] };
-    const H = () => { const [sat, setSat] = useState([musSatis]); return <KargoDetayModal satis={sat[0]} setYedekParcaSatislar={setSat} dealers={dealers} parts={parts} customers={zengin} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
+    const H = () => { const [sat, setSat] = useState([musSatis]); return <KargoDetayModal grup={[sat[0]]} setYedekParcaSatislar={setSat} dealers={dealers} parts={parts} customers={zengin} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
     render(<H />);
     expect(screen.getByText("Ayşe Kaya")).toBeTruthy();       // Yetkili 1 (ad tek başına)
     expect(screen.getByText("0212 555 11 22")).toBeTruthy();  // Yetkili 1 Tel. ayrı satır
@@ -161,7 +199,7 @@ describe("KargoDetayModal", () => {
   it("bayi alıcıda 'İletişim Kişisi' + 'Telefon' ayrı satırlarda görünür", () => {
     const zenginBayi = [{ id: 5, name: "Bayi X", contact: "Ali Veli", phone: "0555 111 22 33", adres: "Sanayi Sitesi 3", city: "Kocaeli", country: "Türkiye" }];
     const bayiSatis = { ...satis, id: 661, aliciTipi: "bayi", dealerId: 5, tahsisler: [] };
-    const H = () => { const [sat, setSat] = useState([bayiSatis]); return <KargoDetayModal satis={sat[0]} setYedekParcaSatislar={setSat} dealers={zenginBayi} parts={parts} customers={customers} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
+    const H = () => { const [sat, setSat] = useState([bayiSatis]); return <KargoDetayModal grup={[sat[0]]} setYedekParcaSatislar={setSat} dealers={zenginBayi} parts={parts} customers={customers} canKargo onClose={vi.fn()} showToast={vi.fn()} />; };
     render(<H />);
     expect(screen.getByText("İletişim Kişisi")).toBeTruthy();
     expect(screen.getByText("Ali Veli")).toBeTruthy();

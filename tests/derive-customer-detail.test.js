@@ -61,10 +61,12 @@ describe("deriveCustomerDetail", () => {
       ],
     }];
     const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers, parts }));
-    const kargo = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
-    expect(kargo).toHaveLength(1); // yalnız bu makinaya tahsis edilen
-    expect(kargo[0].desc).toMatch(/2 adet Dişli/);
-    expect(kargo[0].desc).toMatch(/bayi Bayi X/);
+    const tahsis = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(tahsis).toHaveLength(1); // yalnız bu makinaya tahsis edilen
+    expect(tahsis[0].title).toBe("Yedek Parça (Bayi)"); // alıcı türü parantezde; Kargo/Fabrika Teslim yok
+    expect(tahsis[0].title).not.toMatch(/Kargo|Fabrika Teslim/);
+    expect(tahsis[0].desc).toMatch(/2 adet Dişli/);
+    expect(tahsis[0].desc).toMatch(/Bayi X tarafından tahsis edildi/);
   });
 
   it("henüz tahsis edilmemiş yedek parça satışı hiçbir makinaya düşmez", () => {
@@ -87,13 +89,89 @@ describe("deriveCustomerDetail", () => {
     expect(olaylar[0].desc).toMatch(/5 adet Dişli/);
   });
 
-  it("bayi alımından tahsis edilen yedek parça olayı salt-okunur (yp yok)", () => {
+  it("toplu satış (aynı batchId) makina geçmişinde TEK olayda toplanır (ypGrup)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const parts = [{ id: 7, ad: "Dişli" }, { id: 8, ad: "Piston" }];
+    const yedekParcaSatislar = [
+      { id: 900, batchId: 555, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 3, birimFiyat: 100, currency: "TRY", tarih: "2026-04-01", odendi: false, tahsisler: [] },
+      { id: 901, batchId: 555, aliciTipi: "musteri", musteriId: 1, partId: "8", miktar: 2, birimFiyat: 50, currency: "TRY", tarih: "2026-04-01", odendi: false, tahsisler: [] },
+    ];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, parts }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
+    expect(olaylar).toHaveLength(1);              // 2 kayıt → tek olay
+    expect(olaylar[0].ypGrup).toHaveLength(2);
+    expect(olaylar[0].desc).toMatch(/Dişli/);
+    expect(olaylar[0].desc).toMatch(/Piston/);
+  });
+
+  it("Kalıp Verildi başlığı teslim türünü içerir (panodaysa Fabrika Teslim / Kargo, değilse suffix yok)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const fab = [{ id: 20, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-01", ucret: 100, currency: "TRY", kargoDurum: "Hazırlanıyor", fabrikaTeslim: true }];
+    const kargo = [{ id: 21, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-02", ucret: 100, currency: "TRY", kargoDurum: "Hazırlanıyor", fabrikaTeslim: false }];
+    const yok = [{ id: 22, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-03", ucret: 100, currency: "TRY" }]; // panoda değil
+    expect(deriveCustomerDetail(base({ detailView, partSales: fab })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi (Fabrika Teslim)");
+    expect(deriveCustomerDetail(base({ detailView, partSales: kargo })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi (Kargo)");
+    expect(deriveCustomerDetail(base({ detailView, partSales: yok })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi");
+  });
+
+  it("fabrikaTeslim satış makina geçmişinde 'Yedek Parça (Fabrika Teslim)' başlığıyla görünür", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const fab = [{ id: 900, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 3, birimFiyat: 100, currency: "TRY", tarih: "2026-04-01", odendi: false, fabrikaTeslim: true, tahsisler: [] }];
+    const kargo = [{ id: 901, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 2, birimFiyat: 100, currency: "TRY", tarih: "2026-04-02", odendi: false, fabrikaTeslim: false, tahsisler: [] }];
+    const rf = deriveCustomerDetail(base({ detailView, yedekParcaSatislar: fab, parts }));
+    expect(rf.detailTimelineEvents.find(e => e.yp)?.title).toBe("Yedek Parça (Fabrika Teslim)");
+    const rk = deriveCustomerDetail(base({ detailView, yedekParcaSatislar: kargo, parts }));
+    expect(rk.detailTimelineEvents.find(e => e.yp)?.title).toBe("Yedek Parça (Kargo)");
+  });
+
+  it("bayi alımından tahsis edilen yedek parça olayı salt-okunur (yp yok) + kim tahsis etti", () => {
     const detailView = { id: 1, name: "A", currency: "TRY" };
     const yedekParcaSatislar = [{ id: 650, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [{ customerId: 1, miktar: 5 }] }];
     const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers: [{ id: 5, name: "Bayi X" }] }));
-    const olaylar = r.detailTimelineEvents.filter(e => e.title === "Yedek Parça (Kargo)");
+    const olaylar = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
     expect(olaylar).toHaveLength(1);
-    expect(olaylar[0].yp).toBeUndefined();
+    expect(olaylar[0].title).toBe("Yedek Parça (Bayi)");
+    expect(olaylar[0].yp).toBeUndefined();       // salt-okunur (düzenlenemez)
+    expect(olaylar[0].desc).toMatch(/Bayi X tarafından tahsis edildi/);
+  });
+
+  it("anlaşmasız dış firma alımından tahsiste başlık 'Yedek Parça (Anlaşmasız Servis)' + kim tahsis etti", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [{ id: 651, aliciTipi: "bayi", disFirma: true, disFirmaAd: "X Servis", dealerId: null, partId: "7", miktar: 3, tarih: "2026-04-02", tahsisler: [{ customerId: 1, miktar: 3 }] }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, parts: [{ id: 7, ad: "Dişli" }] }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(olaylar).toHaveLength(1);
+    expect(olaylar[0].title).toBe("Yedek Parça (Anlaşmasız Servis)");
+    expect(olaylar[0].desc).toMatch(/X Servis tarafından tahsis edildi/);
+  });
+
+  it("aynı batch'ten birden çok parça bu makinaya tahsis edilince TEK olayda toplanır ('N kalem')", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const parts = [{ id: 7, ad: "Dişli" }, { id: 8, ad: "Piston" }];
+    const yedekParcaSatislar = [
+      { id: 900, batchId: 555, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [{ customerId: 1, miktar: 2, tarih: "2026-04-05" }] },
+      { id: 901, batchId: 555, aliciTipi: "bayi", dealerId: 5, partId: "8", miktar: 4, tarih: "2026-04-01", tahsisler: [{ customerId: 1, miktar: 3, tarih: "2026-04-06" }] },
+    ];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, parts, dealers: [{ id: 5, name: "Bayi X" }] }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(olaylar).toHaveLength(1);                       // 2 kayıt → tek olay
+    expect(olaylar[0].title).toBe("Yedek Parça (Bayi) · 2 kalem");
+    expect(olaylar[0].desc).toMatch(/2 adet Dişli/);
+    expect(olaylar[0].desc).toMatch(/3 adet Piston/);
+    expect(olaylar[0].desc).toMatch(/Bayi X tarafından tahsis edildi/);
+  });
+
+  it("aynı satıştan (parça) taksitli iki tahsis toplanır (5 adet), kalem tek → '· N kalem' yok", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [{ id: 902, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [
+      { customerId: 1, miktar: 2, tarih: "2026-04-05" }, { customerId: 1, miktar: 3, tarih: "2026-04-08" },
+    ] }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, parts: [{ id: 7, ad: "Dişli" }], dealers: [{ id: 5, name: "Bayi X" }] }));
+    const olaylar = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(olaylar).toHaveLength(1);
+    expect(olaylar[0].title).toBe("Yedek Parça (Bayi)");   // tek kalem → kalem eki yok
+    expect(olaylar[0].desc).toMatch(/5 adet Dişli/);       // 2 + 3 birleşti
   });
 
   it("müşteriye yapılan ödenmemiş yedek parça (kargo) satışı borca eklenir (KDV dahil)", () => {

@@ -113,6 +113,16 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     expect(r.bekleyenCekDetay[0].tutar).toEqual({ TRY: 150000 });
   });
 
+  it("tahsilatYontemKirilimi: gerçekleşen tahsilatı yöntem başına (Nakit/Çek) toplar", () => {
+    const map = Object.fromEntries(r.tahsilatYontemKirilimi.map(x => [x.yontem, x]));
+    expect(map["Nakit"].tutar).toEqual({ TRY: 200000 });
+    expect(map["Nakit"].adet).toBe(1);
+    expect(map["Çek"].tutar).toEqual({ TRY: 50000 }); // yalnız tahsil edilmiş çek
+    expect(map["Çek"].adet).toBe(1);
+    // Bekleyen çek (150.000) gerçekleşen sayılmadığı için yöntem kırılımına girmez
+    expect(map["Çek"].tutar.TRY).toBe(50000);
+  });
+
   it("alacakDetay: firma firma açık borcu kaynaklarıyla toplar", () => {
     expect(r.alacakDetay).toHaveLength(1);
     expect(r.alacakDetay[0].firma).toBe("A");
@@ -162,6 +172,71 @@ describe("hesaplaAylikRapor yönetici özeti + KDV beyanname özeti", () => {
     const rTL = hesaplaAylikRapor(veri, "2026-06", { ...secenekler, rates: { usd: 40, eur: 45 } });
     expect(rTL.ozet.ciroNetTL).toBe(830000);   // hepsi TRY olduğu için TL == TRY
     expect(rTL.ozet.toplamKdvTL).toBe(121000);
+  });
+});
+
+describe("hesaplaAylikRapor — yedek parça (kargo) satışları (yeni dizi)", () => {
+  const kargoVeri = {
+    customers: [{ id: 1, name: "Müş A", currency: "TRY", kalanBorc: 0 }],
+    services: [], partSales: [], payments: [], teklifler: [],
+    dealers: [{ id: 5, name: "Bayi X" }],
+    yedekParcaSatislar: [
+      // Müşteriye satış (ay içi, ödendi, KARGO) — bedel 2000, KDV 400
+      { id: 70, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 2, birimFiyat: 1000, currency: "TRY", tarih: "2026-06-10", faturaTipi: "Faturalı Yurtiçi", odendi: true, kargoDurum: "Kargoya Verildi" },
+      // Bayiye satış (ay içi, ödenmedi, FABRİKA TESLİM) — bedel 1500, KDV 300
+      { id: 71, aliciTipi: "bayi", dealerId: 5, partId: "8", miktar: 3, birimFiyat: 500, currency: "TRY", tarih: "2026-06-12", faturaTipi: "Faturalı Yurtiçi", odendi: false, fabrikaTeslim: true, kargoDurum: "Hazırlanıyor" },
+      // Anlaşmasız servise (dış firma) satış (ay içi, ödenmedi, faturasız → KDV 0, PANOYA GÖNDERİLMEMİŞ) — bedel 100
+      { id: 72, aliciTipi: "bayi", disFirma: true, disFirmaAd: "Harici Ltd", partId: "8", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-06-20", faturaTipi: "Faturasız Yurtiçi", odendi: false },
+      // Başka ay (Mayıs, ödenmedi) — ciroya girmez ama açık alacağa girer (anlık bakiye)
+      { id: 73, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 5, birimFiyat: 200, currency: "TRY", tarih: "2026-05-01", faturaTipi: "Faturasız Yurtiçi", odendi: false },
+      // Silinmiş — hiç sayılmaz
+      { id: 74, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, birimFiyat: 100, currency: "TRY", tarih: "2026-06-15", odendi: false, deletedAt: "2026-06-16" },
+    ],
+  };
+  const rk = hesaplaAylikRapor(kargoVeri, "2026-06", secenekler);
+
+  it("ay içi kargo satışları adet/miktar/tutar (müşteri+bayi+dış firma; Mayıs ve silinmiş hariç)", () => {
+    expect(rk.yedekKargoAdet).toBe(3);
+    expect(rk.yedekKargoMiktar).toBe(6);                       // 2+3+1
+    expect(rk.yedekKargoTutar).toEqual({ TRY: 3600 });         // 2000+1500+100
+  });
+
+  it("müşteri / bayi ayrımı: dış firma bayi tarafında sayılır", () => {
+    expect(rk.yedekKargoMusteriTutar).toEqual({ TRY: 2000 });  // yalnız 70
+    expect(rk.yedekKargoBayiTutar).toEqual({ TRY: 1600 });     // 71 bayi + 72 dış firma
+  });
+
+  it("kargo KDV'si ciroNet ve toplamKdv'ye katılır", () => {
+    expect(rk.yedekKargoKdv).toEqual({ TRY: 700 });            // 400+300+0
+    expect(rk.kdvKalemleri.yedekKargo).toEqual({ TRY: 700 });
+    expect(rk.toplamKdv).toEqual({ TRY: 700 });                // başka KDV kaynağı yok
+    expect(rk.ozet.ciroNet).toEqual({ TRY: 3600 });            // net bedel (KDV hariç), başka ciro yok
+  });
+
+  it("yedekKargoDetay: alıcı adı + türü verir (anlaşmasız servis adıyla)", () => {
+    expect(rk.yedekKargoDetay).toHaveLength(3);
+    const dis = rk.yedekKargoDetay.find(x => x.aliciTuru === "Anlaşmasız Servis");
+    expect(dis.firma).toBe("Harici Ltd");
+    const bayi = rk.yedekKargoDetay.find(x => x.aliciTuru === "Bayi");
+    expect(bayi.firma).toBe("Bayi X");
+    expect(rk.yedekKargoDetay.some(x => x.aliciTuru === "Müşteri" && x.firma === "Müş A")).toBe(true);
+  });
+
+  it("teslim şekli ayrımı: kargo / fabrika teslim / panoya gönderilmemiş", () => {
+    // 70 kargo · 71 fabrika teslim · 72 panoya gönderilmedi
+    expect(rk.yedekKargoTeslim).toEqual({ kargo: 1, fabrikaTeslim: 1, gonderilmedi: 1 });
+    expect(rk.yedekKargoDetay.find(x => x.firma === "Müş A").teslimSekli).toBe("Kargo");
+    expect(rk.yedekKargoDetay.find(x => x.firma === "Bayi X").teslimSekli).toBe("Fabrika Teslim");
+    expect(rk.yedekKargoDetay.find(x => x.firma === "Harici Ltd").teslimSekli).toBe("Panoya gönderilmedi");
+  });
+
+  it("ödenmemiş kargo açık alacağa girer (tarih filtresiz, silinmiş hariç); borçlu firma sayısı kaynak bazlı", () => {
+    // 71: 1500+300=1800 · 72: 100+0=100 · 73(Mayıs): 1000+0=1000 → toplam 2900
+    expect(rk.acikBorc).toEqual({ TRY: 2900 });
+    // Borçlular: Müş A (73), Bayi X (71), Harici Ltd (72) = 3 farklı firma
+    expect(rk.borcluFirma).toBe(3);
+    expect(rk.alacakDetay).toHaveLength(3);
+    expect(rk.alacakDetay.find(x => x.firma === "Bayi X").kaynaklar).toContain("Yedek parça (kargo)");
   });
 });
 

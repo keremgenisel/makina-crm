@@ -7,21 +7,40 @@ import { yerelServisEkle } from "./yerelServis";
 // Form → normalize + doğrula → { ok, rec } | { ok:false, hata }. Alıcı bayi VEYA müşteri olabilir.
 export function yedekParcaRec(form) {
   const aliciTipi = form.aliciTipi === "musteri" ? "musteri" : "bayi";
-  const dealerId = aliciTipi === "bayi" && form.dealerId ? Number(form.dealerId) : null;
+  // "Diğer" = anlaşmasız dış firma alıcı (bayi tipinde; kayıtlı bayi yok, bilgiler yalnız bu kayda yazılır).
+  const disFirma = aliciTipi === "bayi" && !!form.disFirma;
+  const dealerId = (aliciTipi === "bayi" && !disFirma && form.dealerId) ? Number(form.dealerId) : null;
   const musteriId = aliciTipi === "musteri" && form.musteriId ? Number(form.musteriId) : null;
   const partId = form.partId ? String(form.partId) : null;
   const miktar = parseInt(form.miktar) || 0;
-  if (aliciTipi === "bayi" ? !dealerId : !musteriId) return { ok: false, hata: aliciTipi === "bayi" ? "Alıcı bayi seçin." : "Alıcı müşteri seçin." };
+  if (aliciTipi === "bayi") {
+    if (disFirma) { if (!String(form.disFirmaAd || "").trim()) return { ok: false, hata: "Dış firma adını girin." }; }
+    else if (!dealerId) return { ok: false, hata: "Alıcı bayi seçin." };
+  } else if (!musteriId) return { ok: false, hata: "Alıcı müşteri seçin." };
   if (!partId) return { ok: false, hata: "Yedek parça seçin." };
   if (!(miktar > 0)) return { ok: false, hata: "Miktar 0'dan büyük olmalı." };
   return { ok: true, rec: {
     aliciTipi, dealerId, musteriId, partId, miktar,
+    // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
+    disFirma,
+    disFirmaAd: disFirma ? String(form.disFirmaAd || "").trim() : "", disFirmaYetkili: disFirma ? (form.disFirmaYetkili || "") : "",
+    disFirmaTel: disFirma ? (form.disFirmaTel || "") : "", disFirmaAdres: disFirma ? (form.disFirmaAdres || "") : "",
+    disFirmaUlke: disFirma ? (form.disFirmaUlke || "") : "", disFirmaSehir: disFirma ? (form.disFirmaSehir || "") : "",
     birimFiyat: parseMoney(form.birimFiyat), currency: form.currency || "TRY",
     tarih: form.tarih || today(), faturaTipi: form.faturaTipi || "Faturalı Yurtiçi", odendi: !!form.odendi,
-    // Her yedek parça satışı kargoyla gider → varsayılan "Hazırlanıyor" ki NEREDEN girilirse girilsin
-    // (müşteri/bayi detayı, Stok, pano) Servis ve Kargo Panosu'na (Bekliyor sütunu) düşsün.
-    kargoFirma: form.kargoFirma || "", kargoTakipNo: form.kargoTakipNo || "", kargoTarih: form.kargoTarih || "", kargoDurum: form.kargoDurum || "Hazırlanıyor",
+    // Servis ve Kargo Panosuna gönderme OPT-IN (formda checkbox). kargoDurum boşsa panoya düşmez;
+    // checkbox işaretlenince "Hazırlanıyor" gelir. (Eskiden her satış zorunlu panoya düşüyordu.)
+    kargoFirma: form.kargoFirma || "", kargoTakipNo: form.kargoTakipNo || "", kargoTarih: form.kargoTarih || "", kargoDurum: form.kargoDurum || "",
+    fabrikaTeslim: !!form.fabrikaTeslim, // panoda kargo yerine "Fabrika Teslim" göster
+    // Farklı teslimat (sevk) adresi — alıcının kayıtlı adresi yerine bu satışa özel adres. Alıcı türünden
+    // bağımsız (bayi/müşteri/dış firma hepsinde). teslimatFarkli false ise diğer alanlar boşlanır.
+    teslimatFarkli: !!form.teslimatFarkli,
+    teslimatAd: form.teslimatFarkli ? (form.teslimatAd || "") : "", teslimatTel: form.teslimatFarkli ? (form.teslimatTel || "") : "",
+    teslimatAdres: form.teslimatFarkli ? (form.teslimatAdres || "") : "", teslimatUlke: form.teslimatFarkli ? (form.teslimatUlke || "") : "",
+    teslimatSehir: form.teslimatFarkli ? (form.teslimatSehir || "") : "", teslimatIlce: form.teslimatFarkli ? (form.teslimatIlce || "") : "",
     kargoSorumlusu: form.kargoSorumlusu || "", panoDusmeZamani: form.panoDusmeZamani || "", notlar: form.notlar || "",
+    // batchId: aynı formdan (toplu satış) çıkan satırlar tek grup → panoda tek kart, geçmişte tek olay.
+    batchId: form.batchId ?? null,
   } };
 }
 
@@ -59,4 +78,32 @@ export function yeniYedekParcaSatis(form, { setYedekParcaSatislar, setPartStock,
   // zamanlı) kargo İŞARETLENMEZ → düştüğünde oluşturan dahil herkese alarm/bildirim gelsin (servisle aynı).
   if (!kargoPlanlandiMi(sonuc.rec, simdiYerel())) yerelServisEkle(id);
   return { ok: true, id };
+}
+
+// Çoklu satır (form.satirlar = [{partId, miktar, birimFiyat}]) → her satır AYRI bir satış kaydı
+// (mevcut "parça başına kayıt" modeli). Ortak alanlar (alıcı, tarih, para birimi, kargo, fatura,
+// ödeme, not) tüm satırlara uygulanır. Aynı parçadan birden çok satır olursa stok kontrolü yerel bir
+// görünümle tükenir (React state güncellemesi asenkron; art arda yedekParcaDus gerçek state'i doğru
+// biriktirir, yalnız kırpma hesabı için yerel görünüm gerekli). Dönüş { ok, ids, n } | { ok:false, hata }.
+export function yeniYedekParcaSatisCoklu(form, deps) {
+  const satirlar = (form.satirlar || []).filter(s => s && s.partId && (parseInt(s.miktar) || 0) > 0);
+  if (!satirlar.length) return { ok: false, hata: "En az bir yedek parça ekleyin (parça + miktar)." };
+  // Tek batchId → tüm satırlar aynı gruba (birden fazla satır varsa; tek satırda da grup id verilir,
+  // panoda/geçmişte grup mantığı bozulmasın diye zararsız).
+  const batchId = satirlar.length > 1 ? uid() : null;
+  const ids = [];
+  const stokGorunum = new Map(); // partId → kalan (aynı parça birden çok satırda tükensin)
+  for (const s of satirlar) {
+    const pid = String(s.partId);
+    if (!stokGorunum.has(pid)) stokGorunum.set(pid, totalMiktar(deps.partStock, pid));
+    const eldeki = stokGorunum.get(pid);
+    const r = yeniYedekParcaSatis(
+      { ...form, partId: pid, miktar: s.miktar, birimFiyat: s.birimFiyat, batchId },
+      { ...deps, partStock: [{ id: "_v", partId: pid, miktar: Math.max(0, eldeki) }] }
+    );
+    if (!r.ok) return r;
+    ids.push(r.id);
+    stokGorunum.set(pid, eldeki - (parseInt(s.miktar) || 0));
+  }
+  return { ok: true, ids, n: satirlar.length };
 }

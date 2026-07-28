@@ -2,7 +2,7 @@
 // Bayiye yapılan ödenmemiş yedek parça (kargo) satışı, bayi detay modalındaki "Ödenmemiş Parça
 // Borcu" kutusuna borç olarak yansır (servis kaynaklı parça borcuyla aynı kutuda).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 
 afterEach(cleanup);
 import { SimpleDealers } from "../../src/components/SimpleDealers";
@@ -67,6 +67,18 @@ describe("SimpleDealers — Yedek Parça Geçmişi", () => {
   it("yedek parça satışı yoksa 'Yedek Parça Geçmişi' bölümü görünmez", () => {
     render(<SimpleDealers {...baseProps([])} />);
     expect(screen.queryByText(/Yedek Parça Geçmişi/)).toBeNull();
+  });
+
+  it("dosya bağlama dropdown'ında toplu satış (aynı batchId) TEK seçenek (tek tek değil)", () => {
+    const yp = [
+      { id: 700, batchId: 999, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, currency: "TRY", tarih: "2026-07-01" },
+      { id: 701, batchId: 999, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, currency: "TRY", tarih: "2026-07-01" },
+      { id: 702, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, currency: "TRY", tarih: "2026-07-02" }, // batchId yok → kendi seçeneği
+    ];
+    render(<SimpleDealers {...baseProps(yp)} setDosyalar={vi.fn()} dosyalar={[]} />);
+    const sel = screen.getByTitle("Yeni dosyanın bağlanacağı kayıt");
+    const ypOpts = within(sel).getAllByRole("option").filter(o => /Yedek Parça \(Kargo\)/.test(o.textContent));
+    expect(ypOpts).toHaveLength(2); // 3 kayıt → 2 seçenek (batch tek + tekil bir)
   });
 });
 

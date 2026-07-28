@@ -29,10 +29,13 @@ describe("ServisPanosu — Kanban", () => {
 
   it("3 sütun; kartlar durumuna göre gruplanır; durumsuz servis görünmez", () => {
     render(<ServisPanosu {...props()} />);
-    // Sütun başlıkları (görünen ad); saklanan `durum` değeri Bekliyor/Yapılıyor/Tamamlandı olarak kalır.
-    expect(screen.getByRole("heading", { name: "Bekliyor / Fabrikaya Giriş" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Bakım Onarım Yapılıyor" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Bakım Onarım Tamamlandı" })).toBeTruthy();
+    // Sütun başlıkları nötr (Tasarım A); tür karşılıkları alt satırda. Saklanan `durum` değeri değişmez.
+    expect(screen.getByRole("heading", { name: "Bekliyor" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "İşlemde" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Tamamlandı" })).toBeTruthy();
+    // Alt satırda tür karşılıkları (servis / kargo / fabrika teslim)
+    expect(screen.getByText(/Fabrikaya Giriş/)).toBeTruthy();
+    expect(screen.getByText(/Teslime Hazır/)).toBeTruthy();
     // 2 kartlı servis görünür (id 10, 11), durumsuz (99) müşteri adı 1 kez... hepsi ABC olduğundan
     // kart sayısını data ile kontrol edelim: sütun sayaçları 1 / 1 / 0
     const sayaclar = [...document.querySelectorAll("section")].map(s => s.textContent.match(/\d+/)?.[0]);
@@ -91,6 +94,26 @@ describe("ServisPanosu — Kanban", () => {
     fireEvent.click(screen.getByRole("button", { name: /Kaldır/ }));
     const guncelle = setYedekParcaSatislar.mock.calls.at(-1)[0];
     expect(guncelle([{ id: 700 }])[0].panoGizli).toBe(true);
+  });
+
+  it("toplu satış (aynı batchId) panoda TEK kart + sürükleyince TÜM grup durum değiştirir", () => {
+    const setYedekParcaSatislar = vi.fn();
+    const parts = [{ id: 7, ad: "Dişli" }, { id: 8, ad: "Piston" }];
+    const yp = [
+      { id: 700, batchId: 555, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, kargoDurum: "Hazırlanıyor", tahsisler: [] },
+      { id: 701, batchId: 555, aliciTipi: "bayi", dealerId: 5, partId: "8", miktar: 2, kargoDurum: "Hazırlanıyor", tahsisler: [] },
+    ];
+    render(<ServisPanosu {...kargoProps({ yedekParcaSatislar: yp, setYedekParcaSatislar, parts })} />);
+    // İki kayıt ama TEK kargo kartı (article) — "2 kalem" işareti
+    expect(screen.getByText(/2 kalem/)).toBeTruthy();
+    expect(screen.getAllByText(/📦 KARGO/)).toHaveLength(1);
+    // Yapılıyor'a bırak → grubun HER İKİ kaydı da durum değiştirir
+    const yapiliyor = [...document.querySelectorAll("section")].find(s => s.textContent.includes("Yapılıyor"));
+    fireEvent.drop(yapiliyor, { dataTransfer: { getData: () => "kargo:700" } });
+    const guncelle = setYedekParcaSatislar.mock.calls.at(-1)[0];
+    const sonuc = guncelle(yp);
+    expect(sonuc.find(s => s.id === 700).kargoDurum).toBe("Kargoya Verildi");
+    expect(sonuc.find(s => s.id === 701).kargoDurum).toBe("Kargoya Verildi"); // grup birlikte hareket
   });
 
   it("ileri tarihli kargo (panoDusmeZamani) 'Planlanan'da görünür (servisler gibi)", () => {

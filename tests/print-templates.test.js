@@ -27,6 +27,27 @@ describe("buildPrintHtml — İngilizce proforma model yılı", () => {
   });
 });
 
+describe("buildPrintHtml — proforma no (yurt dışı fatura gibi)", () => {
+  it("Türkçe proformada 'Proforma No' + numara görünür", () => {
+    const html = buildPrintHtml({ type: "proforma", dil: "TR", currency: "TRY", firma: "ACME Ltd.", satirlar: [], kdvOrani: "0", no: "2026-00042" }, factory);
+    expect(html).toContain("Proforma No");
+    expect(html).toContain("2026-00042");
+  });
+
+  it("İngilizce proformada 'Proforma No' + numara görünür", () => {
+    const html = buildPrintHtml(enProforma({ no: "2026-00099" }), factory);
+    expect(html).toContain("Proforma No");
+    expect(html).toContain("2026-00099");
+  });
+
+  it("teklifte etiket hâlâ 'Teklif No' (proforma etiketine dönmedi)", () => {
+    const html = buildPrintHtml({ type: "teklif", dil: "TR", currency: "TRY", firma: "ACME", satirlar: [], kdvOrani: "0", no: "2026-00007" }, factory);
+    expect(html).toContain("Teklif No");
+    expect(html).not.toContain("Proforma No");
+    expect(html).toContain("2026-00007");
+  });
+});
+
 describe("buildPrintHtml — belge-belge çeviri (teklif/proforma namespace)", () => {
   const teklif = (over = {}) => ({ type: "teklif", dil: "TR", currency: "TRY", firma: "X", satirlar: [], kdvOrani: "20", ...over });
   it("teklif kendi namespace başlığını kullanır", () => {
@@ -150,6 +171,45 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).toContain("Gerçekleşen tahsilat");
     expect(html).toContain("KDV ÖZETİ (beyanname)");
     expect(html).toContain("BU AY DOĞAN TOPLAM KDV");
+  });
+
+  it("yedek parça (kargo) satışları: satır + firma firma detay tablosu render edilir", () => {
+    const kargoVeri = {
+      customers: [{ id: 1, name: "Müş A", currency: "TRY", kalanBorc: 0 }],
+      services: [], partSales: [], payments: [], teklifler: [],
+      dealers: [{ id: 5, name: "Bayi X" }],
+      yedekParcaSatislar: [
+        { id: 70, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 2, birimFiyat: 1000, currency: "TRY", tarih: "2026-06-10", faturaTipi: "Faturalı Yurtiçi", odendi: true, kargoDurum: "Kargoya Verildi" },
+        { id: 71, aliciTipi: "bayi", dealerId: 5, partId: "8", miktar: 3, birimFiyat: 500, currency: "TRY", tarih: "2026-06-12", faturaTipi: "Faturalı Yurtiçi", odendi: false, fabrikaTeslim: true, kargoDurum: "Hazırlanıyor" },
+        { id: 72, aliciTipi: "bayi", disFirma: true, disFirmaAd: "Harici Ltd", partId: "8", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-06-14", faturaTipi: "Faturasız Yurtiçi", odendi: false },
+      ],
+    };
+    const rk = hesaplaAylikRapor(kargoVeri, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlK = buildAylikRaporHtml(rk, { name: "Altuntaş Makina" });
+    expect(htmlK).toContain("Yedek parça (kargo) satışı");
+    expect(htmlK).toContain("YEDEK PARÇA (KARGO) ALAN FİRMALAR");
+    expect(htmlK).toContain("Bayi X");
+    expect(htmlK).toContain("Müş A");
+    expect(htmlK).toContain("Anlaşmasız Servis");                 // dış firma türü etiketi
+    expect(htmlK).toContain("Harici Ltd");
+    expect(htmlK).toContain("Teslim şekli");                       // özet satır
+    expect(htmlK).toContain("Fabrika Teslim");                     // teslim kolonu değeri
+  });
+
+  it("tahsilat yöntem kırılımı raporda gösterilir (Nakit/Havale ayrı satır)", () => {
+    const odemeVeri = {
+      customers: [{ id: 1, name: "Müş A", currency: "TRY", kalanBorc: 0 }],
+      services: [], partSales: [], teklifler: [],
+      payments: [
+        { id: 30, customerId: 1, tarih: "2026-06-08", tutar: 100000, currency: "TRY", yontem: "Nakit" },
+        { id: 31, customerId: 1, tarih: "2026-06-09", tutar: 250000, currency: "TRY", yontem: "Havale" },
+      ],
+    };
+    const ro = hesaplaAylikRapor(odemeVeri, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlO = buildAylikRaporHtml(ro, { name: "Altuntaş Makina" });
+    expect(htmlO).toContain("YÖNTEM KIRILIMI");
+    expect(htmlO).toContain("Havale");
+    expect(htmlO).toContain("250.000");
   });
 
   it("rates verilince özet ≈ TL toplamı gösterir (çok dövizli veri)", () => {

@@ -564,6 +564,7 @@ export const Documents = ({
   const save = () => {
     if (!form.firma.trim()) { showToast("Firma adı girilmedi.", "err"); return; }
     if (form.type === "teklif" && !form.no.trim()) { showToast("Teklif numarası girilmedi.", "err"); return; }
+    if (form.type === "proforma" && !String(form.no || "").trim()) { showToast("Proforma numarası girilmedi.", "err"); return; }
     const entry = stripTeklifImages({ ...form }); // resimler kayıtta tutulmaz, kullanım anında doldurulur
     const isUpdate = !!form.id;
     if (!entry.id) entry.id = uid();
@@ -1179,7 +1180,7 @@ export const Documents = ({
           {/* Belge alanları — tümü birleşik sırada */}
           {(() => {
             const teklif_keys = ["no", "tarih", "dil", "currency", "kdvOrani", "gtipNo", "modelYiliDegeri", "kur"];
-            const proforma_keys = ["tarih", "dil", "currency", "kdvOrani", "gtipNo", "modelYiliDegeri", "kur", "teslimYeri", "not", "ek"];
+            const proforma_keys = ["no", "tarih", "dil", "currency", "kdvOrani", "gtipNo", "modelYiliDegeri", "kur", "teslimYeri", "not", "ek"];
             const defaultKeys = form.type === "proforma" ? proforma_keys : teklif_keys;
             const BELGE_WIDE = new Set(["forwarder", "teslimYeri", "not", "ek", "modelYiliDegeri"]);
             const ordered = getUnifiedOrder(form.type, "belge", defaultKeys);
@@ -1188,14 +1189,13 @@ export const Documents = ({
                 {ordered.map(key => {
                   const cf = cfById(form.type, key);
                   if (cf) return <div key={key}><CfInput cf={cf} dil={form.dil} value={getCfValue(cf.id)} onChange={v => setCfValue(cf.id, v)} inputStyle={inputStyle} /></div>;
-                  if (key === "no" && form.type !== "teklif") return null;
                   if (!canShow(form.type, "belge", key)) return null;
                   if ((key === "gtipNo" || key === "teslimYeri" || key === "not" || key === "ek") && form.type !== "proforma") return null;
                   if (key === "kur" && form.type === "proforma" && form.currency === "TRY") return null;
                   if (key === "kur" && form.type !== "proforma") return null;
                   const wide = BELGE_WIDE.has(key);
                   const ws = wide ? { gridColumn: "1 / -1" } : {};
-                  if (key === "no") return <div key={key}><Field label="Teklif No"><input {...f("no")} style={inputStyle} /></Field></div>;
+                  if (key === "no") return <div key={key}><Field label={form.type === "proforma" ? "Proforma No" : "Teklif No"}><input {...f("no")} style={inputStyle} /></Field></div>;
                   if (key === "tarih") return <div key={key}><Field label="Tarih"><input type="date" {...f("tarih")} style={inputStyle} /></Field></div>;
                   if (key === "dil") return (
                     <div key={key}><Field label="Dil">

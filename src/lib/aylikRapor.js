@@ -17,7 +17,7 @@ const teklifToplami = (t) => (t.satirlar || []).reduce((s, r) =>
 const TEKLIF_DURUM_ETIKET = { taslak: "Taslak", gonderildi: "Gönderildi", onaylandi: "Onaylandı", iptal: "İptal" };
 
 // ay: "YYYY-MM". Dönem etiketi için ayın ilk/son günü gg.aa.yyyy biçiminde üretilir.
-export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [], payments = [], teklifler = [] }, ay, { factoryName = "Altuntaş Makina", kdvRates, factory = null, rates = null } = {}) => {
+export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [], payments = [], teklifler = [], dealers = [], yedekParcaSatislar = [] }, ay, { factoryName = "Altuntaş Makina", kdvRates, factory = null, rates = null } = {}) => {
   const [yil, ayNo] = String(ay).split("-").map(Number);
   const ayIci = (t) => !!t && String(t).slice(0, 7) === ay;
   const gunSayisi = new Date(yil, ayNo, 0).getDate();
@@ -29,11 +29,16 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const canliKalipSatislari = partSales.filter(p => !p.deletedAt);
   const canliOdemeler = payments.filter(p => !p.deletedAt);
   const canliTeklifler = teklifler.filter(t => !t.deletedAt);
+  const canliYedekKargo = yedekParcaSatislar.filter(s => !s.deletedAt);
 
   // Müşteri adı çözümleme (servis/parça/ödeme kayıtları customerId tutar, adı bulundur) —
   // müşteri sonradan silinse bile ham customers dizisinden adı yakalanır, bulunamazsa "—".
   const custAdMap = new Map(customers.map(c => [String(c.id), c.name]));
   const custAdi = (id) => custAdMap.get(String(id)) || "—";
+  // Yedek parça (kargo) alıcısının adı — müşteri / bayi / anlaşmasız dış firma (ekrandaki aliciAd ile aynı).
+  const dealerAdi = (id) => dealers.find(d => d.id === Number(id))?.name || "—";
+  const kargoAlici = (s) => s.aliciTipi === "musteri" ? custAdi(s.musteriId) : s.disFirma ? (s.disFirmaAd || "Dış firma") : dealerAdi(s.dealerId);
+  const kargoBedeli = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
 
   // ── SATIŞLAR ────────────────────────────────────────────────────────────────
   const satislar = canliMusteriler.filter(c => !c.isResale && ayIci(c.installDate));
@@ -88,6 +93,37 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const yedekParcaDetay = yedekParca.map(p => ({
     firma: custAdi(p.customerId), miktar: parseInt(p.miktar) || 1,
     tutar: p.ucretsizMi ? {} : tekPara(p.currency, p.ucret),
+  }));
+
+  // ── YEDEK PARÇA (KARGO) SATIŞLARI — ayrı dizi (partSales'ten bağımsız; alıcı bayi/dış firma VEYA müşteri) ──
+  // Ekrandaki Finance ile AYNI kural: müşteriye satış "Toplam Parça Ücreti", bayi/dış firmaya satış
+  // "Anlaşmalı/Bayi Parça" tarafında sayılır. Rapora net bedel (ciroNet) + KDV (toplamKdv) olarak katılır.
+  const ayYedekKargo = canliYedekKargo.filter(s => ayIci(s.tarih) && kargoBedeli(s) > 0);
+  // Teslim şekli: fabrikaTeslim bayrağı → "Fabrika Teslim"; panoya kargo olarak düşmüşse "Kargo";
+  // hiç panoya gönderilmemiş satış "Panoya gönderilmedi" (yine de gelir/alacak sayılır).
+  const teslimSekli = (s) => s.fabrikaTeslim ? "Fabrika Teslim" : (s.kargoDurum ? "Kargo" : "Panoya gönderilmedi");
+  const aliciTuru = (s) => s.aliciTipi === "musteri" ? "Müşteri" : s.disFirma ? "Anlaşmasız Servis" : "Bayi";
+  const yedekKargoTutar = {}, yedekKargoKdv = {}, yedekKargoMusteriTutar = {}, yedekKargoBayiTutar = {};
+  const yedekKargoTeslim = { kargo: 0, fabrikaTeslim: 0, gonderilmedi: 0 };
+  let yedekKargoMiktar = 0;
+  ayYedekKargo.forEach(s => {
+    const bedel = kargoBedeli(s), c = s.currency;
+    yedekKargoMiktar += parseInt(s.miktar) || 0;
+    paraEkle(yedekKargoTutar, c, bedel);
+    paraEkle(s.aliciTipi === "musteri" ? yedekKargoMusteriTutar : yedekKargoBayiTutar, c, bedel);
+    paraEkle(yedekKargoKdv, c, calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates));
+    if (s.fabrikaTeslim) yedekKargoTeslim.fabrikaTeslim++;
+    else if (s.kargoDurum) yedekKargoTeslim.kargo++;
+    else yedekKargoTeslim.gonderilmedi++;
+  });
+  const yedekKargoDetay = ayYedekKargo.map(s => ({
+    firma: kargoAlici(s),
+    aliciTuru: aliciTuru(s),
+    teslimSekli: teslimSekli(s),
+    miktar: parseInt(s.miktar) || 0,
+    tutar: tekPara(s.currency, kargoBedeli(s)),
+    kdv: tekPara(s.currency, calcKDV(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates)),
+    odendi: s.odendi === true,
   }));
 
   // Anlaşmalı servis firmalarına satılan parçalar (Altuntaş dışı servislerdeki Altuntaş parçaları)
@@ -154,15 +190,22 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const bekleyenCekDetay = bekleyenCekler.map(p => ({
     firma: custAdi(p.customerId), tutar: tekPara(p.currency, p.tutar), vadeTarihi: p.vadeTarihi || "",
   }));
+  // Yöntem kırılımı — gerçekleşen tahsilatın Nakit / Havale / Çek / Kredi Kartı vb. dağılımı (para birimi başına).
+  const tahsilatYontemMap = {};
+  gerceklesen.forEach(p => { const y = p.yontem || "Nakit"; if (!tahsilatYontemMap[y]) tahsilatYontemMap[y] = {}; paraEkle(tahsilatYontemMap[y], p.currency, p.tutar); });
+  const tahsilatYontemKirilimi = Object.entries(tahsilatYontemMap)
+    .map(([yontem, tutar]) => ({ yontem, tutar, adet: gerceklesen.filter(p => (p.yontem || "Nakit") === yontem).length }))
+    .sort((a, b) => b.adet - a.adet);
 
   // ── ALACAK DURUMU (rapor tarihi itibarıyla) ─────────────────────────────────
   const borclular = canliMusteriler.filter(c => customerHasAnyDebt(c, canliServisler, canliKalipSatislari, factoryName));
   const alacak = {};
   // Firma firma alacak detayı — her müşterinin toplam açık borcu ve borcun kaynak(lar)ı
   const alacakMap = new Map(); // id -> { firma, tutar:{}, kaynaklar:Set }
-  const ekleAlacak = (id, cur, v, kaynak) => {
-    const key = String(id);
-    if (!alacakMap.has(key)) alacakMap.set(key, { firma: custAdi(id), tutar: {}, kaynaklar: new Set() });
+  const ekleAlacak = (id, cur, v, kaynak) => ekleAlacakAd(String(id), custAdi(id), cur, v, kaynak);
+  // Ad-anahtarlı ekleme — müşteri olmayan borçlular (bayi / dış firma yedek parça kargosu) için.
+  const ekleAlacakAd = (key, firma, cur, v, kaynak) => {
+    if (!alacakMap.has(key)) alacakMap.set(key, { firma, tutar: {}, kaynaklar: new Set() });
     const rec = alacakMap.get(key);
     paraEkle(rec.tutar, cur, v);
     rec.kaynaklar.add(kaynak);
@@ -178,6 +221,13 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     const kdvli = parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     paraEkle(alacak, p.currency, kdvli);
     ekleAlacak(p.customerId, p.currency, kdvli, p.tur === "YedekParca" ? "Yedek parça" : "Extra kalıp");
+  });
+  // Ödenmemiş yedek parça (kargo) satışları — müşteri alıcı kendi firma satırına birleşir; bayi/dış firma ayrı satır.
+  canliYedekKargo.filter(s => s.odendi === false && kargoBedeli(s) > 0).forEach(s => {
+    const kdvli = kargoBedeli(s) + calcKDV(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates);
+    paraEkle(alacak, s.currency, kdvli);
+    if (s.aliciTipi === "musteri") ekleAlacak(s.musteriId, s.currency, kdvli, "Yedek parça (kargo)");
+    else ekleAlacakAd(s.disFirma ? "x:" + (s.disFirmaAd || "") : "b:" + s.dealerId, kargoAlici(s), s.currency, kdvli, "Yedek parça (kargo)");
   });
   const alacakDetay = [...alacakMap.values()].map(x => ({ firma: x.firma, tutar: x.tutar, kaynaklar: [...x.kaynaklar] }));
 
@@ -202,10 +252,10 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     return s;
   };
   const topla = (...objs) => { const r = {}; objs.forEach(o => { for (const k in (o || {})) r[k] = (r[k] || 0) + o[k]; }); return r; };
-  // Toplam ciro (KDV hariç net): makina + işçilik + Altuntaş servis parçası + extra kalıp + yedek parça + anlaşmalı parça
-  const ciroNet = topla(satisTutar, iscilikTutar, servisParcaTutar, extraKalipTutar, yedekParcaTutar, anlasmaliParcaTutar);
-  // Bu ay doğan toplam KDV (beyanname özeti): satış + servis/parça + extra kalıp + anlaşmalı parça
-  const toplamKdv = topla(satisKdv, servisKdv, extraKalipKdv, anlasmaliParcaKdv);
+  // Toplam ciro (KDV hariç net): makina + işçilik + Altuntaş servis parçası + extra kalıp + yedek parça + anlaşmalı parça + yedek parça (kargo)
+  const ciroNet = topla(satisTutar, iscilikTutar, servisParcaTutar, extraKalipTutar, yedekParcaTutar, anlasmaliParcaTutar, yedekKargoTutar);
+  // Bu ay doğan toplam KDV (beyanname özeti): satış + servis/parça + extra kalıp + anlaşmalı parça + yedek parça (kargo)
+  const toplamKdv = topla(satisKdv, servisKdv, extraKalipKdv, anlasmaliParcaKdv, yedekKargoKdv);
   const ozet = {
     ciroNet, tahsilat: tahsilatTutar, alacak,
     ciroNetTL: rates ? toTL(ciroNet) : null,
@@ -226,14 +276,17 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     extraKalipAdet: extraKalip.length, extraKalipTutar, extraKalipKdv, extraKalipDetay,
     yedekParcaAdet: yedekParca.length, yedekParcaTutar, yedekParcaDetay,
     anlasmaliParcaTutar, anlasmaliParcaDetay,
+    // Yedek parça (kargo) satışları (yeni dizi)
+    yedekKargoAdet: ayYedekKargo.length, yedekKargoMiktar, yedekKargoTutar, yedekKargoKdv,
+    yedekKargoMusteriTutar, yedekKargoBayiTutar, yedekKargoTeslim, yedekKargoDetay,
     // Servis
     servisAdet: ayServisler.length, iscilikTutar, servisParcaTutar, servisKdv, servisKirilimi, servisDetay,
     // Tahsilat
-    tahsilatAdet: gerceklesen.length, tahsilatTutar, tahsilatDetay,
+    tahsilatAdet: gerceklesen.length, tahsilatTutar, tahsilatDetay, tahsilatYontemKirilimi,
     bekleyenCekAdet: bekleyenCekler.length, bekleyenCekTutar, bekleyenCekDetay,
     cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
-    // Alacak (rapor anı)
-    borcluFirma: borclular.length, acikBorc: alacak, alacakDetay,
+    // Alacak (rapor anı) — borçlu firma sayısı tüm kaynakları (bakiye/servis/kalıp/kargo) kapsar
+    borcluFirma: alacakMap.size, acikBorc: alacak, alacakDetay,
     gecikenCek: canliOdemeler.filter(isCekVadesiGecmis).length,
     gecikenTaksit: canliMusteriler.filter(taksitGecikmisMi).length,
     // Teklifler
@@ -241,7 +294,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     bekleyenTeklif: canliTeklifler.filter(t => t.type === "teklif" && t.durum === "gonderildi").length,
     // Yönetici özeti + KDV beyanname özeti
     ozet, toplamKdv, anlasmaliParcaKdv,
-    kdvKalemleri: { satis: satisKdv, servis: servisKdv, extraKalip: extraKalipKdv, anlasmaliParca: anlasmaliParcaKdv },
+    kdvKalemleri: { satis: satisKdv, servis: servisKdv, extraKalip: extraKalipKdv, anlasmaliParca: anlasmaliParcaKdv, yedekKargo: yedekKargoKdv },
   };
 };
 

@@ -83,6 +83,7 @@ const BUILTIN_BELGE = {
     { key: "kur",             label: "Kur",                  enDefault: "Exchange Rate" },
   ],
   proforma: [
+    { key: "no",              label: "Proforma No",          enDefault: "Proforma No" },
     { key: "tarih",           label: "Tarih",                enDefault: "Date" },
     { key: "dil",             label: "Dil",                  enDefault: "Language" },
     { key: "currency",        label: "Para Birimi",          enDefault: "Currency" },

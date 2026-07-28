@@ -1,7 +1,7 @@
 // Yedek parça satışı ortak kayıt mantığı (src/lib/yedekParcaSatis.js). Stok sekmesi + müşteri detay
 // modalı + bayi detay modalı bunu paylaşır; doğrulama ve stok düşümü tek kaynaktan çalışsın.
 import { describe, it, expect } from "vitest";
-import { yedekParcaRec, yeniYedekParcaSatis, musteriTahsisi, kargoPlanlandiMi } from "../src/lib/yedekParcaSatis.js";
+import { yedekParcaRec, yeniYedekParcaSatis, yeniYedekParcaSatisCoklu, musteriTahsisi, kargoPlanlandiMi } from "../src/lib/yedekParcaSatis.js";
 import { setIdCounter } from "../src/lib/utils.js";
 import { yerelServisMi } from "../src/lib/yerelServis.js";
 
@@ -15,11 +15,45 @@ describe("yedekParcaRec (doğrulama + normalize)", () => {
     expect(r.rec.notlar).toBe("Acil gönder"); // regresyon: not kayda geçmiyordu
   });
 
-  it("kargoDurum verilmezse 'Hazırlanıyor' varsayılır (her satış panoya/Bekliyor'a düşsün)", () => {
-    // Regresyon: müşteri/bayi detayından girilen satış kargoDurum'suz kalıp panoya düşmüyordu.
+  it("Diğer (anlaşmasız dış firma) alıcı: disFirma + firma bilgileri kayda geçer, dealerId null", () => {
+    const r = yedekParcaRec({ aliciTipi: "bayi", disFirma: true, disFirmaAd: "Harici Ltd", disFirmaYetkili: "Ali", disFirmaTel: "0555", disFirmaUlke: "Türkiye", disFirmaSehir: "Bursa", partId: "7", miktar: "2" });
+    expect(r.ok).toBe(true);
+    expect(r.rec.disFirma).toBe(true);
+    expect(r.rec.disFirmaAd).toBe("Harici Ltd");
+    expect(r.rec.dealerId).toBe(null);
+  });
+
+  it("Diğer alıcıda firma adı boşsa hata döner", () => {
+    const r = yedekParcaRec({ aliciTipi: "bayi", disFirma: true, disFirmaAd: "  ", partId: "7", miktar: "2" });
+    expect(r.ok).toBe(false);
+    expect(r.hata).toMatch(/Dış firma adı/);
+  });
+
+  it("farklı teslimat adresi: teslimatFarkli true ise alanlar kayda geçer (alıcı türünden bağımsız)", () => {
+    const r = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", teslimatFarkli: true,
+      teslimatAd: "Şantiye", teslimatTel: "0312", teslimatAdres: "OSB No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan" });
+    expect(r.ok).toBe(true);
+    expect(r.rec.teslimatFarkli).toBe(true);
+    expect(r.rec.teslimatAd).toBe("Şantiye");
+    expect(r.rec.teslimatAdres).toBe("OSB No:8");
+    expect(r.rec.teslimatSehir).toBe("Ankara");
+    expect(r.rec.teslimatIlce).toBe("Sincan");
+  });
+
+  it("farklı teslimat adresi: teslimatFarkli yoksa alanlar boşlanır (sızıntı olmasın)", () => {
+    // Kutu işaretlenmeden alanlarda değer kalmışsa (kullanıcı işaretleyip vazgeçti) normalize temizler.
+    const r = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", teslimatAd: "Kalmış", teslimatAdres: "Eski adres" });
+    expect(r.rec.teslimatFarkli).toBe(false);
+    expect(r.rec.teslimatAd).toBe("");
+    expect(r.rec.teslimatAdres).toBe("");
+  });
+
+  it("kargoDurum OPT-IN: verilmezse boş (panoya düşmez); verilirse korunur", () => {
+    // Panoya gönderme artık formdaki checkbox ile opt-in. Checkbox kapalıyken kargoDurum boş → panoda görünmez.
     const r = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1" });
-    expect(r.rec.kargoDurum).toBe("Hazırlanıyor");
-    // Açıkça verilen değer korunur:
+    expect(r.rec.kargoDurum).toBe("");
+    // Checkbox açıkken (kargoDurum verilir) korunur:
+    expect(yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", kargoDurum: "Hazırlanıyor" }).rec.kargoDurum).toBe("Hazırlanıyor");
     expect(yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", kargoDurum: "Teslim Edildi" }).rec.kargoDurum).toBe("Teslim Edildi");
   });
 
@@ -126,6 +160,52 @@ describe("yeniYedekParcaSatis (oluştur + stok düş)", () => {
     expect(satislar.get()).toHaveLength(0);
     expect(stock.get()[0].miktar).toBe(10);
     expect(log.get()).toHaveLength(0);
+  });
+});
+
+describe("yeniYedekParcaSatisCoklu (çoklu satır → çoklu kayıt)", () => {
+  it("her parça satırı için ayrı kayıt oluşturur ve ortak alanları uygular", () => {
+    setIdCounter(3000);
+    const satislar = holder([]);
+    const stock = holder([{ id: 1, partId: "7", miktar: 10 }, { id: 2, partId: "8", miktar: 10 }]);
+    const log = holder([]);
+    const r = yeniYedekParcaSatisCoklu(
+      { aliciTipi: "bayi", dealerId: "5", currency: "USD", odendi: true,
+        satirlar: [{ partId: "7", miktar: "3", birimFiyat: "100" }, { partId: "8", miktar: "2", birimFiyat: "50" }] },
+      { setYedekParcaSatislar: satislar.set, setPartStock: stock.set, setPartStockLog: log.set, partStock: stock.get() }
+    );
+    expect(r.ok).toBe(true);
+    expect(r.n).toBe(2);
+    expect(satislar.get()).toHaveLength(2);
+    // Ortak alanlar her kayıtta
+    expect(satislar.get().every(s => s.dealerId === 5 && s.currency === "USD" && s.odendi === true)).toBe(true);
+    // Stok her parçadan düştü
+    expect(stock.get().find(x => x.partId === "7").miktar).toBe(7); // 10 - 3
+    expect(stock.get().find(x => x.partId === "8").miktar).toBe(8); // 10 - 2
+  });
+
+  it("aynı parçadan iki satır → stok toplamdan düşer (yerel görünüm tükenir)", () => {
+    const satislar = holder([]);
+    const stock = holder([{ id: 1, partId: "7", miktar: 10 }]);
+    const log = holder([]);
+    const r = yeniYedekParcaSatisCoklu(
+      { aliciTipi: "bayi", dealerId: "5", satirlar: [{ partId: "7", miktar: "4" }, { partId: "7", miktar: "3" }] },
+      { setYedekParcaSatislar: satislar.set, setPartStock: stock.set, setPartStockLog: log.set, partStock: stock.get() }
+    );
+    expect(r.ok).toBe(true);
+    expect(stock.get().find(x => x.partId === "7").miktar).toBe(3); // 10 - 4 - 3
+  });
+
+  it("hiç geçerli satır yoksa hata döner, kayıt/stok değişmez", () => {
+    const satislar = holder([]);
+    const stock = holder([{ id: 1, partId: "7", miktar: 10 }]);
+    const r = yeniYedekParcaSatisCoklu(
+      { aliciTipi: "bayi", dealerId: "5", satirlar: [{ partId: "", miktar: "3" }, { partId: "7", miktar: "0" }] },
+      { setYedekParcaSatislar: satislar.set, setPartStock: stock.set, setPartStockLog: holder([]).set, partStock: stock.get() }
+    );
+    expect(r.ok).toBe(false);
+    expect(satislar.get()).toHaveLength(0);
+    expect(stock.get()[0].miktar).toBe(10);
   });
 });
 

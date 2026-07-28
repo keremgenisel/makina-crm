@@ -247,7 +247,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             const v = e.target.value;
             // "Diğer"den başka bir değere geçilince dış firma alanlarını temizle (eski değer kalmasın)
             setForm(p => v === "Diğer" ? { ...p, islemFirma: v }
-              : { ...p, islemFirma: v, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaUlke: "", islemFirmaSehir: "" });
+              : { ...p, islemFirma: v, islemFirmaAd: "", islemFirmaYetkili: "", islemFirmaTel: "", islemFirmaAdres: "", islemFirmaUlke: "", islemFirmaSehir: "" });
           }}>
             <option value={factoryName}>{factoryName}</option>
             {anlasmaliFirmalar.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
@@ -271,6 +271,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             <Field label="Yetkili Kişi"><Input value={form.islemFirmaYetkili || ""} onChange={e => setForm(p => ({ ...p, islemFirmaYetkili: e.target.value }))} placeholder="Yetkili" /></Field>
             <Field label="Telefon"><Input value={form.islemFirmaTel || ""} onChange={e => setForm(p => ({ ...p, islemFirmaTel: e.target.value }))} placeholder="Telefon" /></Field>
           </div>
+          <Field label="Adres"><Input value={form.islemFirmaAdres || ""} onChange={e => setForm(p => ({ ...p, islemFirmaAdres: e.target.value }))} placeholder="Açık adres (cadde, mahalle, no)" /></Field>
           <CountryCityFields country={form.islemFirmaUlke || ""} city={form.islemFirmaSehir || ""}
             onCountry={v => setForm(p => ({ ...p, islemFirmaUlke: v, islemFirmaSehir: "" }))}
             onCity={v => setForm(p => ({ ...p, islemFirmaSehir: v }))}

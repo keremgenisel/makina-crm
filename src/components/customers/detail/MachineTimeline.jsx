@@ -21,6 +21,7 @@ export const MachineTimeline = ({
   onDeleteService,
   onEditPartSale,
   onDeletePartSale,
+  onPrintKalipEtiket = null,
   onEditYedekParca = null,
   onDeleteYedekParca = null,
   onToggleYedekParcaOdendi = null,
@@ -92,6 +93,7 @@ export const MachineTimeline = ({
                       <span onClick={canDo("cust_kalip_edit") ? () => onEditPartSale(psList[0]) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
                         style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
                       {dosyaAdet && <AtesRozeti n={dosyaAdet("kalip", psList[0].id)} onClick={() => onDosyaBadge("kalip", psList[0].id)} />}
+                      {onPrintKalipEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintKalipEtiket(psList)}><Icon name="print" size={11} /></Btn>}
                       {canDo("cust_kalip_delete") && (
                         <button onClick={() => onDeletePartSale(psList[0].id)} title="Extra Kalıp kaydını sil"
                           style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
@@ -100,22 +102,31 @@ export const MachineTimeline = ({
                       )}
                     </>
                   ) : (
-                    <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
-                      {ev.title} <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>({psList.length} kalıp)</span>
-                    </span>
+                    <>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
+                        {ev.title} <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>({psList.length} kalıp)</span>
+                      </span>
+                      {onPrintKalipEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintKalipEtiket(psList)}><Icon name="print" size={11} /></Btn>}
+                    </>
                   )
-                ) : ev.kind === "part" && ev.yp ? (
+                ) : ev.kind === "part" && ev.yp ? (() => {
+                  // Toplu satış (birden çok kalem) tek olay → başlığa tıklayınca TÜM grup çoklu-satır
+                  // formunda düzenlenir; Sil TÜM grubu kaldırır.
+                  const tekli = !ev.ypGrup || ev.ypGrup.length === 1;
+                  const duzenlenebilir = canDo("cust_yedek_parca_edit") && onEditYedekParca;
+                  return (
                   <>
-                    <span onClick={canDo("cust_yedek_parca_edit") && onEditYedekParca ? () => onEditYedekParca(ev.yp) : undefined} title={canDo("cust_yedek_parca_edit") && onEditYedekParca ? "Düzenlemek için tıklayın" : undefined}
-                      style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_yedek_parca_edit") && onEditYedekParca ? "pointer" : "default", textDecoration: canDo("cust_yedek_parca_edit") && onEditYedekParca ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                    <span onClick={duzenlenebilir ? () => onEditYedekParca(ev.yp) : undefined} title={duzenlenebilir ? "Düzenlemek için tıklayın" : undefined}
+                      style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: duzenlenebilir ? "pointer" : "default", textDecoration: duzenlenebilir ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}{!tekli ? ` (${ev.ypGrup.length} kalem)` : ""}</span>
                     {canDo("cust_yedek_parca_delete") && onDeleteYedekParca && (
-                      <button onClick={() => onDeleteYedekParca(ev.yp)} title="Yedek parça (kargo) satışını sil"
+                      <button onClick={() => onDeleteYedekParca(ev.yp)} title={tekli ? "Yedek parça (kargo) satışını sil" : "Toplu satışın tümünü sil"}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
                         <Icon name="trash" size={11} /> Sil
                       </button>
                     )}
                   </>
-                ) : ev.kind === "payment" && payment ? (
+                  );
+                })() : ev.kind === "payment" && payment ? (
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
@@ -168,15 +179,17 @@ export const MachineTimeline = ({
                 {sv?.tech && <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>· {sv.tech}</span>}
                 {sv?.repairPlace && <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>· {sv.repairPlace}</span>}
               </div>
-              {sv && disServisMi(sv) && (sv.islemFirmaYetkili || sv.islemFirmaTel || sv.islemFirmaUlke || sv.islemFirmaSehir) && (
+              {sv && disServisMi(sv) && (sv.islemFirmaYetkili || sv.islemFirmaTel || sv.islemFirmaAdres || sv.islemFirmaUlke || sv.islemFirmaSehir) && (
                 <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>
-                  {[sv.islemFirmaYetkili, sv.islemFirmaTel, [sv.islemFirmaSehir, sv.islemFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
+                  {[sv.islemFirmaYetkili, sv.islemFirmaTel, [sv.islemFirmaAdres, [sv.islemFirmaSehir, sv.islemFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")].filter(Boolean).join(" · ")}
                 </div>
               )}
               {ev.desc && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
               {ev.yp && (() => {
-                const bedel = yedekParcaBedeli(ev.yp);
-                const kdv = calcKDV(ev.yp.faturaTipi, bedel, ev.yp.tarih, kdvRates);
+                // Toplu satış → grubun toplam bedeli + KDV (tek satır); tek satışta grup = [yp].
+                const grup = ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp];
+                const bedel = grup.reduce((t, s) => t + yedekParcaBedeli(s), 0);
+                const kdv = grup.reduce((t, s) => t + calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates), 0);
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>

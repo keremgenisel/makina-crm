@@ -305,7 +305,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
       [L.disServisLabel, islemFirmaGoster(sv)],
       ...(sv.islemFirmaYetkili ? [[L.yetkiliLabel, sv.islemFirmaYetkili]] : []),
       ...(sv.islemFirmaTel ? [[L.firmaTelLabel, sv.islemFirmaTel]] : []),
-      ...((sv.islemFirmaSehir || sv.islemFirmaUlke) ? [[L.firmaAdresLabel, [lang === "EN" ? latinize(sv.islemFirmaSehir) : sv.islemFirmaSehir, lang === "EN" ? (COUNTRY_EN[sv.islemFirmaUlke] || sv.islemFirmaUlke) : sv.islemFirmaUlke].filter(Boolean).join(", ")]] : []),
+      ...((sv.islemFirmaAdres || sv.islemFirmaSehir || sv.islemFirmaUlke) ? [[L.firmaAdresLabel, [lang === "EN" ? latinize(sv.islemFirmaAdres) : sv.islemFirmaAdres, [lang === "EN" ? latinize(sv.islemFirmaSehir) : sv.islemFirmaSehir, lang === "EN" ? (COUNTRY_EN[sv.islemFirmaUlke] || sv.islemFirmaUlke) : sv.islemFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")]] : []),
     ] : []),
     [L.servisUcretiLabel, ucret],
     ...(sv.degisenParcalar?.length ? [[L.parcaUcretiLabel, parcaUcret]] : []),
@@ -361,12 +361,14 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   ${sv.degisenParcalar?.length ? `
   <h2>${esc(L.degisenParcalarBaslik)}</h2>
   ${(() => {
+    // Garanti İçi serviste parçalar garanti kapsamında değişir → fiyat yazılmaz.
+    const garantiKapsaminda = sv.type === "Garanti İçi";
     const lines = parcaGruplari(sv.degisenParcalar).map(({ p, adet }) => {
       const ad = lang === "EN" ? parcaAdiEN(p) : parcaAdi(p);
       const fiyat = typeof p === "object" ? parseMoney(p.fiyat) : 0;
       const suffix = (typeof p === "object" && p.disTedarik) ? (lang === "EN" ? " [Ext. Supply]" : " [Dış Tedarik]") : "";
       const adetTxt = adet > 1 ? ` x${adet}` : "";
-      return esc(fiyat > 0 ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})${adetTxt}` : `${ad}${suffix}${adetTxt}`);
+      return esc((fiyat > 0 && !garantiKapsaminda) ? `${ad}${suffix} (${fmtCur(fiyat, sv.parcaCurrency)})${adetTxt}` : `${ad}${suffix}${adetTxt}`);
     });
     const cellStyle = "border:none;padding:8px;vertical-align:top;font-size:10.5px;line-height:1.6;width:50%";
     if (lines.length <= 5) {
@@ -496,8 +498,11 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
     }
   }
   yedekParcaTahsisleri.sort((a, b) => String(a.tarih || "").localeCompare(String(b.tarih || "")));
+  // Bayi üzerinden gelmeyen (müşterinin doğrudan aldığı) satırlarda "Doğrudan" yerine fabrikanın
+  // firma adını yaz (satış firma seçicideki "Fabrika" karşılığı).
+  const fabrikaKaynakAd = factory?.name || factory?.evrakFirmaAdi || L.kaynakDogrudan;
   const yedekParcaRows = yedekParcaTahsisleri.map(r =>
-    `<tr><td>${esc(fmtTR(r.tarih))}</td><td>${esc(r.ad)}</td><td>${esc(r.miktar)}</td><td>${r.bayi ? `${esc(L.kaynakBayi)}: ${esc(r.bayi)}` : esc(L.kaynakDogrudan)}</td></tr>`
+    `<tr><td>${esc(fmtTR(r.tarih))}</td><td>${esc(r.ad)}</td><td>${esc(r.miktar)}</td><td>${r.bayi ? `${esc(L.kaynakBayi)}: ${esc(r.bayi)}` : esc(fabrikaKaynakAd)}</td></tr>`
   ).join("");
 
   const html = `<!DOCTYPE html>
@@ -672,6 +677,172 @@ export function buildSandikEtiketiHtml(gonderen, alici, translations = {}) {
 </html>`;
 }
 
+// ── Sevk / Kargo Etiketi (100×150 mm, yatay) ───────────────────────────────────
+// Yedek parça (kargo / fabrika teslim / farklı adres) VE Extra Kalıp (kargo / fabrika teslim)
+// satışları için TEK şablon. Başlıklar (GÖNDEREN / ALICI / Firma / Yetkili / Tel / Adres /
+// İÇERİK / TESLİM ŞEKLİ / TARİH / KARGO-TAKİP NO) her durumda birebir aynı; yalnız alanlara
+// giren veri değişir. Kaynak farkını iki adaptör (yedekParcaEtiketVerisi / kalipEtiketVerisi)
+// normalize eder, builder tek kalır. Gönderen her durumda fabrikadır.
+const etiketGonderen = (factory) => {
+  const f = factory || {};
+  return {
+    ad: f.evrakFirmaAdi || f.name || "Altuntaş Makina",
+    adres: f.adres || f.address || "",
+    city: f.city || "", country: f.country || "",
+    phone: f.phone || "", email: f.email || "",
+  };
+};
+
+// Yedek parça satış batch'i (grup) → etiket verisi. Farklı adres (teslimatFarkli) ise büyük yazan
+// firma teslimat firması/kişisidir (Seçenek B; sipariş veren gösterilmez); adres teslimat adresidir.
+export function yedekParcaEtiketVerisi(grup, { parts = [], dealers = [], customers = [], factory = null } = {}) {
+  const list = Array.isArray(grup) ? grup.filter(Boolean) : [grup].filter(Boolean);
+  const s = list[0] || {};
+  const buyerAdi = (r) => r.aliciTipi === "musteri"
+    ? (customers.find(x => x.id === Number(r.musteriId))?.name || "(müşteri)")
+    : r.disFirma ? (r.disFirmaAd || "(dış firma)")
+    : (dealers.find(x => x.id === Number(r.dealerId))?.name || "(bayi)");
+  let alici;
+  if (s.teslimatFarkli) {
+    alici = { firma: s.teslimatAd || buyerAdi(s), yetkili: "", tel: s.teslimatTel || "",
+      adres: s.teslimatAdres || "", city: s.teslimatSehir || "", ilce: s.teslimatIlce || "", country: s.teslimatUlke || "" };
+  } else if (s.aliciTipi === "musteri") {
+    const c = customers.find(x => x.id === Number(s.musteriId)) || {};
+    alici = { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
+      adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
+  } else if (s.disFirma) {
+    alici = { firma: s.disFirmaAd || "(dış firma)", yetkili: s.disFirmaYetkili || "", tel: s.disFirmaTel || "",
+      adres: s.disFirmaAdres || "", city: s.disFirmaSehir || "", ilce: "", country: s.disFirmaUlke || "" };
+  } else {
+    const d = dealers.find(x => x.id === Number(s.dealerId)) || {};
+    alici = { firma: d.name || "(bayi)", yetkili: d.yetkili1Ad || "", tel: d.phone || "",
+      adres: d.adres || "", city: d.city || "", ilce: d.ilce || "", country: d.country || "" };
+  }
+  const icerik = list.map(g => ({ ad: parcaAdi(parts.find(p => String(p.id) === String(g.partId))) || "(parça)", miktar: parseInt(g.miktar) || 0 }));
+  const fabrikaTeslim = !!s.fabrikaTeslim;
+  return {
+    gonderen: etiketGonderen(factory), alici, icerik,
+    opts: { teslimSekli: fabrikaTeslim ? "Fabrika Teslim" : "Kargo", tarih: fmtTR(s.tarih),
+      kargoFirma: fabrikaTeslim ? "" : (s.kargoFirma || ""), kargoTakipNo: fabrikaTeslim ? "" : (s.kargoTakipNo || "") },
+  };
+}
+
+// Extra Kalıp (partSales) satış batch'i → etiket verisi. Alıcı = müşteri. Kalıpta farklı adres
+// yoktur; içerik "kalıp adı · Ölçü".
+export function kalipEtiketVerisi(grup, { customers = [], factory = null } = {}) {
+  const list = Array.isArray(grup) ? grup.filter(Boolean) : [grup].filter(Boolean);
+  const s = list[0] || {};
+  const c = customers.find(x => x.id === Number(s.customerId)) || {};
+  const alici = { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
+    adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
+  const icerik = list.map(g => ({ ad: `${g.ad || "(kalıp)"}${g.olcu ? " · Ölçü: " + g.olcu : ""}`, miktar: 1 }));
+  const fabrikaTeslim = !!s.fabrikaTeslim;
+  return {
+    gonderen: etiketGonderen(factory), alici, icerik,
+    opts: { teslimSekli: fabrikaTeslim ? "Fabrika Teslim" : "Kargo", tarih: fmtTR(s.tarih),
+      kargoFirma: fabrikaTeslim ? "" : (s.kargoFirma || ""), kargoTakipNo: fabrikaTeslim ? "" : (s.kargoTakipNo || "") },
+  };
+}
+
+// Saf HTML üreteci. veri = { gonderen, alici, icerik[], opts }.
+export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
+  const g = gonderen || {}, a = alici || {}, o = opts || {};
+  const gonderenSatirlar = [g.adres, [g.city, g.country].filter(Boolean).join(" / "), g.phone]
+    .filter(Boolean).map(x => `<div class="fl">${esc(x)}</div>`).join("");
+  // İlçesi olan adreste sıra: ilçe / şehir · ülke (ilçe yoksa yalnız şehir · ülke).
+  const aliciAdres = [a.adres, [a.ilce, a.city].filter(Boolean).join(" / "), a.country].filter(Boolean).join(" · ");
+  const kv = (k, v) => v ? `<div class="kv"><b>${esc(k)}</b>${esc(v)}</div>` : "";
+  const satirlar = (icerik.length ? icerik : [{ ad: "—", miktar: 0 }]).map(it =>
+    `<div class="item"><span class="nm">${esc(it.ad)}</span><span class="lead"></span><span class="qt">${it.miktar ? esc(String(it.miktar)) + " adet" : ""}</span></div>`
+  ).join("");
+  return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Kargo Etiketi</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; }
+  .label { width: 150mm; height: 100mm; border: 1.2mm solid #000; display: flex; flex-direction: column; overflow: hidden; }
+  /* Üst bant (logo + SEVK) ~%50 alçaltıldı → içeriğe dikey yer açar. */
+  .head { display: flex; border-bottom: 1.2mm solid #000; }
+  .brand { flex: 1; padding: 1.5mm 5mm; display: flex; align-items: center; }
+  .brand img { height: 8mm; object-fit: contain; display: block; }
+  .kind { width: 58mm; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8pt; font-weight: 900; letter-spacing: 1px; padding: 1.5mm; }
+  .parties { display: flex; border-bottom: 1mm solid #000; }
+  .party { flex: 1; padding: 3mm 4.5mm; }
+  .party.to { flex: 1.35; border-left: 1mm solid #000; }
+  .h { font-size: 8pt; font-weight: 900; letter-spacing: 2px; color: #555; margin-bottom: 1.5mm; }
+  .from-name { font-size: 10.5pt; font-weight: 800; margin-bottom: 1mm; }
+  .fl { font-size: 8.5pt; color: #333; line-height: 1.5; }
+  .to-name { font-size: 15pt; font-weight: 900; line-height: 1.1; margin-bottom: 1.5mm; overflow-wrap: anywhere; }
+  .kv { font-size: 9.5pt; line-height: 1.55; }
+  .kv b { display: inline-block; min-width: 20mm; font-weight: 700; }
+  .items { flex: 1; padding: 2.8mm 4.5mm; border-bottom: 1mm solid #000; overflow: hidden; }
+  /* İçerik iki sütun (yan yana) → aynı yükseklikte iki kat kalem sığar. Satırlar satır-satır dolar. */
+  .item-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 6mm; }
+  .item { display: flex; justify-content: space-between; align-items: baseline; font-size: 10pt; padding: 0.5mm 0; gap: 3mm; }
+  .item .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .qt { font-weight: 800; white-space: nowrap; }
+  .item .lead { flex: 1; border-bottom: 0.3mm dotted #999; transform: translateY(-1mm); min-width: 4mm; }
+  /* Alt bant (teslim şekli / tarih / kargo takip) ~%50 alçaltıldı. */
+  .foot { display: flex; }
+  .fc { flex: 1; padding: 1.2mm 4.5mm; }
+  .fc + .fc { border-left: 0.4mm solid #000; }
+  .fc .fh { font-size: 6.5pt; font-weight: 800; letter-spacing: 1px; color: #555; }
+  .fc .fv { font-size: 8.5pt; font-weight: 800; margin-top: 0.4mm; }
+  @media print { @page { size: 150mm 100mm; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="label">
+  <div class="head">
+    <div class="brand"><img src="${LOGO}" alt="Logo"></div>
+    <div class="kind">SEVK / KARGO ETİKETİ</div>
+  </div>
+  <div class="parties">
+    <div class="party from">
+      <div class="h">GÖNDEREN</div>
+      <div class="from-name">${esc(g.ad)}</div>
+      ${gonderenSatirlar}
+    </div>
+    <div class="party to">
+      <div class="h">ALICI</div>
+      <div class="to-name">${esc(a.firma || "—")}</div>
+      ${kv("Yetkili", a.yetkili)}
+      ${kv("Tel", a.tel)}
+      ${kv("Adres", aliciAdres)}
+    </div>
+  </div>
+  <div class="items">
+    <div class="h">İÇERİK</div>
+    <div class="item-grid">${satirlar}</div>
+  </div>
+  <div class="foot">
+    <div class="fc"><div class="fh">TESLİM ŞEKLİ</div><div class="fv">${esc(o.teslimSekli || "—")}</div></div>
+    <div class="fc"><div class="fh">TARİH</div><div class="fv">${esc(o.tarih || "—")}</div></div>
+  </div>
+</div>
+<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };</script>
+</body>
+</html>`;
+}
+
+// Etiket verisini yazdır (Electron önizleme penceresi; tarayıcıda blob fallback).
+export function printKargoEtiketi(veri) {
+  const html = buildKargoEtiketiHtml(veri.gonderen, veri.alici, veri.icerik, veri.opts);
+  if (window.appPrint) { window.appPrint.printHtml(html, null, "kargo-etiketi.pdf"); return; }
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  if (!win) { const el = document.createElement("a"); el.href = url; el.download = "kargo-etiketi.html"; el.click(); }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// Bileşenlerin çağırdığı kısayollar: adaptör + yazdır tek adımda.
+export function yedekParcaEtiketYazdir(grup, deps) { printKargoEtiketi(yedekParcaEtiketVerisi(grup, deps)); }
+export function kalipEtiketYazdir(grup, deps) { printKargoEtiketi(kalipEtiketVerisi(grup, deps)); }
+
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
 export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = [], yedekParcaSatislar = [], dealers = []) {
   const defaultName = `makina-raporu-${(detailView.serialNo || detailView.name || "kayit").replace(/\s+/g, "-")}.pdf`;
@@ -702,7 +873,7 @@ export const DEFAULT_TRANSLATIONS = {
     alicrLabel: "ALICI BİLGİLERİ", firmLabel: "Firma", yetkiliLabel: "Yetkili / Tel",
     adresLabel: "Adres", vergiLabel: "Vergi No / Dairesi",
     docLabelTeklif: "TEKLİF BİLGİLERİ", docLabelProforma: "PROFORMA BİLGİLERİ",
-    tarihLabel: "Tarih", noLabel: "Teklif No",
+    tarihLabel: "Tarih", noLabel: "Teklif No", proformaNoLabel: "Proforma No",
     modelYiliLabel: "Model Yılı", modelYiliSuffix: "Yeni ve Kullanılmamıştır",
     kurLabel: "Kur (Bugün)", teslimYeriLabel: "Teslim Yeri",
     authorityLabel: "Yetkili", forwarderLabel: "Gönderen",
@@ -728,7 +899,7 @@ export const DEFAULT_TRANSLATIONS = {
     alicrLabel: "BUYER INFORMATION", firmLabel: "Company", yetkiliLabel: "Contact / Phone",
     adresLabel: "Address", vergiLabel: "Tax No / Office",
     docLabelTeklif: "QUOTATION DETAILS", docLabelProforma: "PROFORMA DETAILS",
-    tarihLabel: "Date", noLabel: "Quote No",
+    tarihLabel: "Date", noLabel: "Quote No", proformaNoLabel: "Proforma No",
     modelYiliLabel: "Model Year", modelYiliSuffix: "New and Unused",
     kurLabel: "Exchange Rate", teslimYeriLabel: "Delivery Point",
     authorityLabel: "Authority", forwarderLabel: "Forwarder",
@@ -870,7 +1041,7 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
       <td style="text-align:right;vertical-align:middle;white-space:nowrap;">
         <div style="display:inline-block;background:${BRAND};color:#fff;padding:7px 16px;border-radius:6px;text-align:center;">
           <div style="font-size:13px;font-weight:900;letter-spacing:1px;">${L.title}</div>
-          ${!isProforma && form.no ? `<div style="font-size:10px;margin-top:3px;opacity:.9;">${form.no}</div>` : ""}
+          ${form.no ? `<div style="font-size:10px;margin-top:3px;opacity:.9;">${form.no}</div>` : ""}
           <div style="font-size:10px;margin-top:3px;opacity:.9;">${fmtTR(form.tarih) || ""}</div>
         </div>
       </td>
@@ -890,13 +1061,13 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
               <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${fl("belge", "forwarder")}</td>
               <td style="padding:4px 8px 2px;font-weight:700;">${companyName}</td>
             </tr>` : ""}
-            ${!isProforma ? `<tr>
-              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${L.noLabel}</td>
+            ${(form.no || !isProforma) ? `<tr>
+              <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;color:#888;font-size:9px;font-weight:600;width:42%;">${isProforma ? L.proformaNoLabel : L.noLabel}</td>
               <td style="padding:${!isHiddenPrint("belge", "forwarder") ? "2px" : "4px"} 8px 2px;font-weight:700;">${form.no || "—"}</td>
             </tr>` : ""}
             <tr>
-              <td style="padding:${isProforma && isHiddenPrint("belge", "forwarder") ? "4px" : "2px"} 8px 2px;color:#888;font-size:9px;font-weight:600;">${L.tarihLabel}</td>
-              <td style="padding:${isProforma ? "4px" : "2px"} 8px 2px;">${fmtTR(form.tarih) || ""}</td>
+              <td style="padding:2px 8px 2px;color:#888;font-size:9px;font-weight:600;">${L.tarihLabel}</td>
+              <td style="padding:2px 8px 2px;">${fmtTR(form.tarih) || ""}</td>
             </tr>
             ${!isHiddenPrint("belge", "modelYiliDegeri") ? `<tr>
               <td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.modelYiliLabel}</td>
@@ -968,7 +1139,8 @@ export function buildPrintHtml(form, factory, translations = {}, kaseResmi = "",
               <td style="padding:4px 8px 2px;color:#888;font-size:9px;font-weight:600;width:35%;">COMPANY</td>
               <td style="padding:4px 8px 2px;font-weight:700;font-size:11px;color:#1a1a1a;">${companyName}</td>
             </tr>
-            ${companyAddr ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">ADDRESS</td><td style="padding:2px 8px;">${companyAddr}</td></tr>` : ""}
+            ${form.no ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">${L.proformaNoLabel}</td><td style="padding:2px 8px;font-weight:700;">${form.no}</td></tr>` : ""}
+            ${companyAddr ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">ADDRESS</td><td style="padding:2px 8px;">${companyAddr}</td></tr>` : ""}
             ${companyLoc ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">COUNTRY / CITY</td><td style="padding:2px 8px;">${companyLoc}</td></tr>` : ""}
             ${companyPhone ? `<tr style="background:#fff;"><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">PHONE</td><td style="padding:2px 8px;">${companyPhone}</td></tr>` : ""}
             ${companyEmail ? `<tr><td style="padding:2px 8px;color:#888;font-size:9px;font-weight:600;">EMAIL</td><td style="padding:2px 8px;">${companyEmail}</td></tr>` : ""}
@@ -1412,6 +1584,8 @@ export function buildAylikRaporHtml(rapor, factory) {
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.ad}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet} adet</td></tr>`).join("");
   const servisRows = (rapor.servisKirilimi || []).map(x =>
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.tip}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${x.adet}</td></tr>`).join("");
+  const tahsilatYontemRows = (rapor.tahsilatYontemKirilimi || []).map(x =>
+    `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.yontem}</td><td style="padding:3px 8px;font-size:11px;text-align:right;color:#64748b;">${x.adet} kayıt</td><td style="padding:3px 0;font-size:11px;text-align:right;font-weight:700;">${paraSatir(x.tutar)}</td></tr>`).join("");
 
   // ── Firma firma detay tabloları ──
   const gun = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return mm ? `${mm[3]}.${mm[2]}.${mm[1]}` : (iso || "—"); };
@@ -1430,6 +1604,8 @@ export function buildAylikRaporHtml(rapor, factory) {
     (rapor.extraKalipDetay || []).map(r => [r.firma, r.adet, paraSatir(r.tutar)]), ["left", "right", "right"]);
   const yedekParcaDetayTablo = detayTablo("YEDEK PARÇA ALAN FİRMALAR", ["Firma", "Miktar", "Tutar"],
     (rapor.yedekParcaDetay || []).map(r => [r.firma, r.miktar, paraSatir(r.tutar)]), ["left", "right", "right"]);
+  const yedekKargoDetayTablo = detayTablo("YEDEK PARÇA (KARGO) ALAN FİRMALAR", ["Alıcı", "Tür", "Teslim", "Miktar", "Tutar", "KDV", "Durum"],
+    (rapor.yedekKargoDetay || []).map(r => [r.firma, r.aliciTuru, r.teslimSekli, r.miktar, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "right", "right", "right", "left"]);
   const anlasmaliParcaDetayTablo = detayTablo("ANLAŞMALI SERVİSLERE PARÇA (firma firma)", ["Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"],
     (rapor.anlasmaliParcaDetay || []).map(r => [r.firma, r.servisFirma, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "right", "right", "left"]);
   const servisDetayTablo = detayTablo("SERVİS VERİLEN FİRMALAR (firma firma)", ["Firma", "Tip", "İşçilik", "Parça", "KDV", "Durum"],
@@ -1470,6 +1646,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Satış (makina) KDV'si", paraSatir(rapor.kdvKalemleri?.satis))}
     ${st("Servis + parça KDV'si", paraSatir(rapor.kdvKalemleri?.servis))}
     ${st("Extra kalıp KDV'si", paraSatir(rapor.kdvKalemleri?.extraKalip))}
+    ${st("Yedek parça (kargo) KDV'si", paraSatir(rapor.kdvKalemleri?.yedekKargo))}
     ${st("Anlaşmalı servis parçası KDV'si", paraSatir(rapor.kdvKalemleri?.anlasmaliParca))}
     <tr><td style="padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;">BU AY DOĞAN TOPLAM KDV</td><td style="padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;">${paraSatir(rapor.toplamKdv)}</td></tr>
   </table>
@@ -1514,10 +1691,15 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Extra kalıp satışı", `${rapor.extraKalipAdet} adet · ${paraSatir(rapor.extraKalipTutar)}${ga(paraSatir(o?.extraKalipTutar))}`)}
     ${st("Extra kalıp KDV'si", paraSatir(rapor.extraKalipKdv))}
     ${st("Yedek parça satışı", `${rapor.yedekParcaAdet} adet · ${paraSatir(rapor.yedekParcaTutar)}`)}
+    ${st("Yedek parça (kargo) satışı", `${rapor.yedekKargoAdet || 0} satış · ${rapor.yedekKargoMiktar || 0} adet · ${paraSatir(rapor.yedekKargoTutar)}${ga(paraSatir(o?.yedekKargoTutar))}`)}
+    ${(paraSatir(rapor.yedekKargoMusteriTutar) !== "—" || paraSatir(rapor.yedekKargoBayiTutar) !== "—") ? st("&nbsp;&nbsp;↳ Müşteri / Bayi ayrımı", `${paraSatir(rapor.yedekKargoMusteriTutar)} / ${paraSatir(rapor.yedekKargoBayiTutar)}`) : ""}
+    ${rapor.yedekKargoAdet > 0 ? st("&nbsp;&nbsp;↳ Teslim şekli", `${rapor.yedekKargoTeslim?.kargo || 0} kargo · ${rapor.yedekKargoTeslim?.fabrikaTeslim || 0} fabrika teslim${rapor.yedekKargoTeslim?.gonderilmedi ? ` · ${rapor.yedekKargoTeslim.gonderilmedi} panoya gönderilmemiş` : ""}`) : ""}
+    ${st("Yedek parça (kargo) KDV'si", paraSatir(rapor.yedekKargoKdv))}
     ${st("Anlaşmalı servislere parça", paraSatir(rapor.anlasmaliParcaTutar))}
   </table>
   ${extraKalipDetayTablo}
   ${yedekParcaDetayTablo}
+  ${yedekKargoDetayTablo}
   ${anlasmaliParcaDetayTablo}`)}
 
   ${kutu("SERVİS", `<table>
@@ -1539,6 +1721,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Ay içinde alınan, vadesi bekleyen çek", `${rapor.bekleyenCekAdet} adet · ${paraSatir(rapor.bekleyenCekTutar)}`)}
     ${st("Ay içinde tahsil edilen çek", rapor.cekTahsilAdet + " adet")}
   </table>
+  ${tahsilatYontemRows ? `${altBaslik("YÖNTEM KIRILIMI")}<table>${tahsilatYontemRows}</table>` : ""}
   ${tahsilatDetayTablo}
   ${bekleyenCekDetayTablo}`)}
 
