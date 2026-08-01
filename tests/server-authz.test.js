@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
-  degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -349,6 +349,72 @@ describe("eylemDenetimi — eylem düzeyi (ekle/sil) yetki", () => {
 
   it("EYLEM_IDLERI'ndeki her bölüm geçerli bir gruba bağlı", () => {
     for (const section of Object.keys(EYLEM_IDLERI)) {
+      expect(SECTION_GROUP[section], section).toBeTruthy();
+    }
+  });
+});
+
+describe("eylemDenetimi — alan düzeyi düzenleme (pano kutu sürükleme)", () => {
+  // Kargo kutusu sürükleme = yalnız kargoDurum alanı değişir → yedek_parca_edit ister.
+  it("kargo durum değişince: yedek_parca_edit YOKsa reddedilir", () => {
+    const eski = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Hazırlanıyor", odendi: false }] };
+    const yeni = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Kargoya Verildi", odendi: false }] };
+    const perms = JSON.stringify({ stockActions: ["yedek_parca_add"] }); // edit yok
+    const r = eylemDenetimi(eski, yeni, perms, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("duzenle");
+    expect(r.gerekli).toBe("yedek_parca_edit");
+  });
+
+  it("kargo durum değişince: yedek_parca_edit VARsa geçer", () => {
+    const eski = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Hazırlanıyor" }] };
+    const yeni = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Kargoya Verildi" }] };
+    const perms = JSON.stringify({ stockActions: ["yedek_parca_edit"] });
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
+  it("kargo başka alan (ödendi) değişince izinsiz de geçer — yanlış-pozitif olmasın", () => {
+    const eski = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Hazırlanıyor", odendi: false }] };
+    const yeni = { yedekParcaSatislar: [{ id: 9, kargoDurum: "Hazırlanıyor", odendi: true }] };
+    const perms = JSON.stringify({ stockActions: ["yedek_parca_add"] }); // edit yok
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
+  // Servis kutusu sürükleme = yalnız durum alanı değişir → cust_service_edit ister.
+  it("servis durum değişince: cust_service_edit YOKsa reddedilir", () => {
+    const eski = { services: [{ id: 3, durum: "Bekliyor" }] };
+    const yeni = { services: [{ id: 3, durum: "Yapılıyor" }] };
+    const perms = JSON.stringify({ customerActions: ["cust_service_add"] }); // edit yok
+    const r = eylemDenetimi(eski, yeni, perms, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("duzenle");
+    expect(r.gerekli).toBe("cust_service_edit");
+  });
+
+  it("servis durum değişince: cust_service_edit VARsa geçer (kiosk kullanıcısı)", () => {
+    const eski = { services: [{ id: 3, durum: "Bekliyor" }] };
+    const yeni = { services: [{ id: 3, durum: "Yapılıyor" }] };
+    const perms = JSON.stringify({ customerActions: ["cust_service_add", "cust_service_edit"] });
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
+  it("izlenen alan zaman damgasıyla birlikte değişse de yalnız durum alanına bakılır (yeni kayıt EKLE dalında)", () => {
+    // eskide olmayan yeni servis: alan denetimi atlar (EKLE dalı denetler), çift-red olmaz
+    const eski = { services: [] };
+    const yeni = { services: [{ id: 3, durum: "Bekliyor" }] };
+    const perms = JSON.stringify({ customerActions: ["cust_service_add"] }); // edit yok ama ekle var
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
+  it("admin ve izin tanımsız → alan denetimi de atlanır", () => {
+    const eski = { services: [{ id: 3, durum: "Bekliyor" }] };
+    const yeni = { services: [{ id: 3, durum: "Yapılıyor" }] };
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ customerActions: [] }), "admin").ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, null, "user").ok).toBe(true);
+  });
+
+  it("ALAN_IZINLERI'ndeki her bölüm geçerli bir gruba bağlı", () => {
+    for (const section of Object.keys(ALAN_IZINLERI)) {
       expect(SECTION_GROUP[section], section).toBeTruthy();
     }
   });

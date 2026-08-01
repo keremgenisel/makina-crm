@@ -257,6 +257,17 @@ const EYLEM_IDLERI = {
   },
 };
 
+// ── Alan (field) düzeyi düzenleme yetkisi ────────────────────────────────────────
+// eylemDenetimi yalnız EKLE/SİL yakalar; düzenleme bilinçli olarak bölüm düzeyinde bırakıldı
+// (ödendi/taksit gibi toggle'lar düzenleme gibi görünüp yanlış-pozitif yapardı). Ama panoda
+// KUTU SÜRÜKLEME = tek bir durum alanının değişmesidir ve kendi iznine bağlanabilir: yalnız o
+// alan değiştiyse ilgili izni iste, kaydın diğer alanları (ödendi vb.) dokunulmadan kalsın.
+// Böylece kutu sürükleme (kargo/servis durum) sunucuda da izne bağlanır, diğer düzenlemeler değil.
+const ALAN_IZINLERI = {
+  services:           [{ alan: "durum",      group: "customerActions", id: "cust_service_edit" }],
+  yedekParcaSatislar: [{ alan: "kargoDurum", group: "stockActions",    id: "yedek_parca_edit" }],
+};
+
 // Bir eylem id'si kullanıcının grup dizisinde izinli mi? Dizi değilse (tanımsız) tam erişim.
 function eylemIzinli(perms, group, actionId) {
   const a = perms[group];
@@ -327,6 +338,20 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       if (id && !eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: id };
     }
   }
+  // DÜZENLEME (alan düzeyi): eskide+yenide aynı id'li kayıtta, izlenen bir alan değiştiyse iznini iste.
+  for (const [section, alanlar] of Object.entries(ALAN_IZINLERI)) {
+    const yeniArr = yeni[section];
+    if (!Array.isArray(yeniArr)) continue; // istemci bu bölümü göndermedi → dokunulmadı
+    const eskiById = new Map((Array.isArray(eski[section]) ? eski[section] : []).map(r => [r.id, r]));
+    for (const r of yeniArr) {
+      const e = eskiById.get(r.id);
+      if (!e) continue; // yeni kayıt → EKLE dalında denetlendi, düzenleme değil
+      for (const { alan, group, id } of alanlar) {
+        if (stableStringify(e[alan]) === stableStringify(r[alan])) continue; // o alan değişmemiş
+        if (!eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "duzenle", gerekli: id };
+      }
+    }
+  }
   return { ok: true };
 }
 
@@ -382,5 +407,5 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 
 module.exports = {
   BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
-  stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

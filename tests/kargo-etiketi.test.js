@@ -105,10 +105,19 @@ describe("kalipEtiketVerisi", () => {
 });
 
 describe("buildKargoEtiketiHtml — boyut ve kaçış", () => {
-  it("100×150 mm yatay sayfa ayarı içerir", () => {
+  it("100×150 mm yatay sayfa ayarı içerir; çerçeve kenardan içeride (kenar payı için)", () => {
     const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [{ ad: "z", miktar: 1 }], {});
     expect(html).toContain("size: 150mm 100mm");
-    expect(html).toContain("width: 150mm; height: 100mm");
+    // Çerçeve 142×92 + 4mm margin = 150×100 fiziksel etiket (kenardaki çizgi kırpılmasın diye).
+    expect(html).toContain("width: 142mm; height: 92mm");
+    expect(html).toContain("margin: 4mm auto");
+  });
+  it("SEVK bandı siyah zemin KULLANMAZ (yazıcı arka planı basmıyor); yazı siyah, logo grayscale", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [], {});
+    // .kind artık siyah zemin/beyaz yazı içermemeli.
+    expect(html).not.toContain("background: #000; color: #fff");
+    expect(html).toContain("SEVK / KARGO ETİKETİ"); // metin hâlâ var
+    expect(html).toContain("brightness(0)"); // logo düz siyah (termal yazıcı için)
   });
   it("adreste ilçesi olan yer: ilçe / şehir sırasıyla yazılır", () => {
     const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y", adres: "OSB 1. Cad.", ilce: "Gebze", city: "Kocaeli", country: "Türkiye" }, [], {});

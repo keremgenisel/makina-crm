@@ -763,12 +763,18 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; }
-  .label { width: 150mm; height: 100mm; border: 1.2mm solid #000; display: flex; flex-direction: column; overflow: hidden; }
+  /* Çerçeve kenardan 4mm içeride: termal yazıcının basılamayan payı + mekanik kaymayı tolere eder,
+     kenardaki çizgi kırpılmasın (142×92 + her yönde 4mm margin = 150×100 fiziksel etiket). */
+  .label { width: 142mm; height: 92mm; margin: 4mm auto; border: 1mm solid #000; display: flex; flex-direction: column; overflow: hidden; }
   /* Üst bant (logo + SEVK) ~%50 alçaltıldı → içeriğe dikey yer açar. */
-  .head { display: flex; border-bottom: 1.2mm solid #000; }
+  .head { display: flex; border-bottom: 1mm solid #000; }
   .brand { flex: 1; padding: 1.5mm 5mm; display: flex; align-items: center; }
-  .brand img { height: 8mm; object-fit: contain; display: block; }
-  .kind { width: 58mm; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8pt; font-weight: 900; letter-spacing: 1px; padding: 1.5mm; }
+  /* Logo düz siyah — termal (Palmx) yazıcı tek renk basar; gri tonlama noktalı/soluk çıkar,
+     brightness(0) net siyah silüet verir. */
+  .brand img { height: 8mm; object-fit: contain; display: block; filter: grayscale(1) brightness(0); }
+  /* SEVK bandı: siyah zemin KALDIRILDI (yazıcı arka planı basmıyordu, beyaz yazı görünmüyordu).
+     Zemin beyaz, yazı siyah; sol çizgiyle ayrılmış hücre. */
+  .kind { width: 58mm; color: #000; border-left: 1mm solid #000; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8pt; font-weight: 900; letter-spacing: 1px; padding: 1.5mm; }
   .parties { display: flex; border-bottom: 1mm solid #000; }
   .party { flex: 1; padding: 3mm 4.5mm; }
   .party.to { flex: 1.35; border-left: 1mm solid #000; }

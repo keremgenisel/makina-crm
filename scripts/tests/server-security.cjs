@@ -31,6 +31,12 @@ const PARTIAL  = JSON.stringify({ customerActions: ["cust_add", "cust_edit"], de
 const SEKME_ONLY = JSON.stringify({ tabs: ["dashboard", "customers", "dealers", "stock", "evrak", "notes"] });
 // Bayi sorumlusu: müşteri tarafına hiç yazma yok, bayi tarafı açık (dosya IDOR senaryosu).
 const BAYICI = JSON.stringify({ customerActions: [], dealerActions: ["dealer_add", "dealer_edit", "dealer_dosya_del"], evrakActions: [], stockActions: [], notActions: [], settings: ["server"] });
+// Servis kiosk: pano kutu sürükleme (servis durum) izni yok/var senaryoları.
+const KIOSK_NOEDIT = JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add"] });                       // durum sürükleyemez
+const KIOSK_EDIT   = JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] }); // sürükleyebilir
+// Stok kullanıcısı: kargo kutu sürükleme (kargoDurum) izni yok/var senaryoları.
+const STOK_NOEDIT = JSON.stringify({ tabs: ["stock"], stockActions: ["yedek_parca_add"] });   // kargo durum sürükleyemez
+const STOK_EDIT   = JSON.stringify({ tabs: ["stock"], stockActions: ["yedek_parca_edit"] });  // sürükleyebilir
 
 let fail = 0;
 const check = (name, ok) => { console.log((ok ? "PASS" : "FAIL") + "  " + name); if (!ok) fail++; };
@@ -47,6 +53,10 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("part",  bcrypt.hashSync("part123", 10), "user", PARTIAL);
   dbmod.createUser("sekme", bcrypt.hashSync("sekme123", 10), "user", SEKME_ONLY);
   dbmod.createUser("bayici", bcrypt.hashSync("bayi123", 10), "user", BAYICI);
+  dbmod.createUser("kioskNoEdit", bcrypt.hashSync("kiosk123", 10), "user", KIOSK_NOEDIT);
+  dbmod.createUser("kioskEdit",   bcrypt.hashSync("kiosk123", 10), "user", KIOSK_EDIT);
+  dbmod.createUser("stokNoEdit",  bcrypt.hashSync("stok123", 10), "user", STOK_NOEDIT);
+  dbmod.createUser("stokEdit",    bcrypt.hashSync("stok123", 10), "user", STOK_EDIT);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -54,6 +64,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     dealers: [{ id: 2, name: "Bayi" }],
     teklifler: [{ id: 3, type: "teklif", no: "T-1", firma: "F", satirlar: [] }],
     notes: [{ id: 4, text: "not" }],
+    services: [{ id: 7, customerId: 1, type: "Bakım", durum: "Bekliyor" }],
+    yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Hazırlanıyor" }],
     appSettings: { kdvRates: { tr: 20 }, pinnedPartIds: [], autoBackup: false, lastBackup: null },
   });
 
@@ -146,6 +158,31 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const pinData = await (await api("/api/data", {}, sekmeTok)).json();
   check("sekme-kısıtlı kullanıcı parça sabitleyebilir (Stok sekmesi açık, appSettings alan düzeyi) → 200",
     (await postData({ appSettings: { ...pinData.appSettings, pinnedPartIds: ["7"] } }, pinVer, sekmeTok)).status === 200);
+
+  // ── Pano kutu sürükleme = alan-düzeyi düzenleme yetkisi (kargo + servis durum) ──
+  // Durum değişikliği bir düzenlemedir; sunucu bunu artık ilgili düzenleme iznine bağlar.
+  // Önce kayıtları tazele: önceki müşteri yazıları DELETE FROM customers yapıp FK-cascade ile
+  // services'i sildiği için başlangıç durumunu (Bekliyor/Hazırlanıyor) yeniden kur.
+  await postData({
+    services: [{ id: 7, customerId: 1, type: "Bakım", durum: "Bekliyor" }],
+    yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Hazırlanıyor" }],
+  }, await curVer(adminTok), adminTok);
+  const kioskNoTok = (await login("kioskNoEdit", "kiosk123")).body.token;
+  const kioskYesTok = (await login("kioskEdit", "kiosk123")).body.token;
+  const stokNoTok = (await login("stokNoEdit", "stok123")).body.token;
+  const stokYesTok = (await login("stokEdit", "stok123")).body.token;
+  // servis durum sürükle: edit yok → 403, edit var → 200
+  check("servis durum sürükleme: cust_service_edit YOK → 403",
+    (await postData({ services: [{ id: 7, customerId: 1, type: "Bakım", durum: "Yapılıyor" }] }, await curVer(kioskNoTok), kioskNoTok)).status === 403);
+  const svSonra = await (await api("/api/data", {}, adminTok)).json();
+  check("reddedilen servis sürüklemesi durumu değiştirmedi", svSonra.services.find(s => s.id === 7)?.durum === "Bekliyor");
+  check("servis durum sürükleme: cust_service_edit VAR (kiosk) → 200",
+    (await postData({ services: [{ id: 7, customerId: 1, type: "Bakım", durum: "Yapılıyor" }] }, await curVer(kioskYesTok), kioskYesTok)).status === 200);
+  // kargo durum sürükle: edit yok → 403, edit var → 200
+  check("kargo durum sürükleme: yedek_parca_edit YOK → 403",
+    (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokNoTok), stokNoTok)).status === 403);
+  check("kargo durum sürükleme: yedek_parca_edit VAR → 200",
+    (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokYesTok), stokYesTok)).status === 200);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek
