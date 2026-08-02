@@ -265,6 +265,7 @@ const EYLEM_IDLERI = {
 // Böylece kutu sürükleme (kargo/servis durum) sunucuda da izne bağlanır, diğer düzenlemeler değil.
 const ALAN_IZINLERI = {
   services:           [{ alan: "durum",      group: "customerActions", id: "cust_service_edit" }],
+  partSales:          [{ alan: "kargoDurum", group: "customerActions", id: "cust_kalip_edit" }],
   yedekParcaSatislar: [{ alan: "kargoDurum", group: "stockActions",    id: "yedek_parca_edit" }],
 };
 

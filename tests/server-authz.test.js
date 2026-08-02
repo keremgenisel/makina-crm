@@ -398,6 +398,31 @@ describe("eylemDenetimi — alan düzeyi düzenleme (pano kutu sürükleme)", ()
     expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
   });
 
+  // Extra Kalıp kargo kutusu sürükleme = partSales.kargoDurum değişir → cust_kalip_edit ister.
+  it("kalıp kargo durum değişince: cust_kalip_edit YOKsa reddedilir", () => {
+    const eski = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Hazırlanıyor", odendi: false }] };
+    const yeni = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Kargoya Verildi", odendi: false }] };
+    const perms = JSON.stringify({ customerActions: ["cust_kalip_add"] }); // edit yok
+    const r = eylemDenetimi(eski, yeni, perms, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("duzenle");
+    expect(r.gerekli).toBe("cust_kalip_edit");
+  });
+
+  it("kalıp kargo durum değişince: cust_kalip_edit VARsa geçer", () => {
+    const eski = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Hazırlanıyor" }] };
+    const yeni = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Kargoya Verildi" }] };
+    const perms = JSON.stringify({ customerActions: ["cust_kalip_edit"] });
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
+  it("kalıp başka alan (ödendi) değişince izinsiz de geçer — yanlış-pozitif olmasın", () => {
+    const eski = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Hazırlanıyor", odendi: false }] };
+    const yeni = { partSales: [{ id: 5, tur: "Kalıp", kargoDurum: "Hazırlanıyor", odendi: true }] };
+    const perms = JSON.stringify({ customerActions: ["cust_kalip_add"] }); // edit yok
+    expect(eylemDenetimi(eski, yeni, perms, "user").ok).toBe(true);
+  });
+
   it("izlenen alan zaman damgasıyla birlikte değişse de yalnız durum alanına bakılır (yeni kayıt EKLE dalında)", () => {
     // eskide olmayan yeni servis: alan denetimi atlar (EKLE dalı denetler), çift-red olmaz
     const eski = { services: [] };

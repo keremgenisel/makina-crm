@@ -63,20 +63,29 @@ export const CUSTOMER_ACTION_GROUPS = [
     { id: "cust_detail_print",       label: "Yazdır / Sandık Etiketi" },
     { id: "cust_detail_mail",        label: "E-posta gönder" },
   ]},
-  { grup: "Makina Geçmişi — Servisler", items: [
+  // ── Servis ve Kargo Panosu izinleri ──────────────────────────────────────────
+  // Bu gruplar `servisPano: true` ile işaretli; UserManager onları ayrı "Servis Panosu
+  // işlemleri" akordeonunda toplar (Müşteri işlemlerinden ayrılır). Hepsi customerActions
+  // boyutundadır (ayrı sunucu boyutu yok), bilinçli olarak alt başlıklara bölünmüştür ki
+  // uzun düz liste yerine anlaşılır dursun. Yeni bir servis-pano izni eklenince yeni id'yi
+  // uygun alt gruba koy + server-permission-defs.test.js sıralamasını güncelle.
+  { grup: "Servis Kaydı", servisPano: true, items: [
     { id: "cust_service_add",         label: "Yeni servis talebi ekle" },
     { id: "cust_service_edit",        label: "Servis kaydını düzenle" },
     { id: "cust_service_payment",     label: "Servis / parça ödeme durumu" },
     { id: "cust_service_delete",      label: "Servis kaydını sil" },
+  ]},
+  { grup: "Servis Kartı (Pano)", servisPano: true, items: [
     { id: "cust_service_pano_kaldir", label: "Panodan kaldır (arşivle)" },
     { id: "cust_service_pano_arsiv",  label: "Arşivi görüntüle / panoya geri al" },
-    // Servis ve Kargo Panosu'ndaki "Yeni Yedek Parça Satışı" düğmesi (bu grup UserManager'da
-    // "Servis Panosu işlemleri" akordeonu olarak görünür).
+  ]},
+  { grup: "Kargo Panosu", servisPano: true, items: [
+    // Servis ve Kargo Panosu'ndaki "Yeni Yedek Parça Satışı" düğmesi.
     { id: "servis_yedek_parca_add",   label: "Yeni yedek parça satışı (pano)" },
-    // Kargo kartlarının pano işlemleri (servislerin pano izinlerinin kargo karşılıkları).
     { id: "kargo_pano_kaldir",        label: "Kargoyu panodan kaldır / hemen düşür" },
     { id: "kargo_pano_arsiv",         label: "Kargo arşivini görüntüle / panoya geri al" },
-    // Extra Kalıp kargo kartlarının pano işlemleri (aynı desen).
+  ]},
+  { grup: "Extra Kalıp Kargo Panosu", servisPano: true, items: [
     { id: "kalip_pano_kaldir",        label: "Kalıp kargosunu panodan kaldır / hemen düşür" },
     { id: "kalip_pano_arsiv",         label: "Kalıp kargo arşivini görüntüle / panoya geri al" },
   ]},

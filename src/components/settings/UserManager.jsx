@@ -163,13 +163,15 @@ export function UserManager({ flash, settingsGroups = [] }) {
   });
   const grupBaslikStyle = { fontSize: 10, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 5 };
   const yesil = { activeBg: "var(--grnBg2, #dcfce7)", activeBorder: "var(--grnBr3, #86efac)", emptyText: "Varsayılan (tüm işlemler açık)" };
-  // Servis Panosu izinleri customerActions içindeki bu grupta; ayrı akordeona taşınır (görünürlük).
-  const SERVIS_GRUP = "Makina Geçmişi — Servisler";
+  // Servis Panosu izinleri customerActions içindeki `servisPano:true` gruplarında; ayrı akordeona
+  // taşınır (görünürlük). O gruplar kendi içlerinde alt başlıklara bölünmüştür (Servis Kaydı,
+  // Servis Kartı, Kargo Panosu, Extra Kalıp Kargo Panosu) — akordeon her alt başlığı ayrı gösterir.
+  const servisPanoGrubuMu = (g) => g.servisPano === true;
   // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans,
   // Evrak, Notlar, Servis Panosu, Ayarlar. (Anasayfa/Harita'nın işlem izni yok.)
   const permSections = [
     { key: "customer", title: "Müşteri işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
-      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => g.grup !== SERVIS_GRUP), ...yesil },
+      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => !servisPanoGrubuMu(g)), ...yesil },
     { key: "dealer", title: "Bayi işlemleri", on: editDealerActionsOn, selected: editDealerActions, setSelected: setEditDealerActions,
       setOn: (v) => { setEditDealerActionsOn(v); if (v) setEditDealerActions([...allDealerActionIds]); }, groups: DEALER_ACTION_GROUPS, ...yesil },
     { key: "stock", title: "Stok işlemleri", on: editStockActionsOn, selected: editStockActions, setSelected: setEditStockActions,
@@ -184,7 +186,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
     // yok. Görünürlük için kendi başlığına alındı ama aynı customerActions durumunu paylaşır —
     // "özelleştir" anahtarı Müşteri işlemleri ile ortaktır.
     { key: "servis", title: "Servis Panosu işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
-      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => g.grup === SERVIS_GRUP),
+      setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(servisPanoGrubuMu),
       ...yesil, emptyText: "Varsayılan (tüm servis işlemleri açık)" },
     { key: "settings", title: "Ayarlar bölümleri", on: editSettingsOn, selected: editSettings, setSelected: setEditSettings,
       setOn: (v) => { setEditSettingsOn(v); if (v) setEditSettings([...allSettingIds]); },

@@ -9,6 +9,7 @@ const { registerSystemHandlers } = require("./ipc/system.cjs");
 const { registerAuditHandlers } = require("./ipc/audit.cjs");
 const { registerFileHandlers } = require("./ipc/files.cjs");
 const { registerHaritaHandlers } = require("./ipc/harita.cjs");
+const { registerServisPencereHandlers } = require("./ipc/servis-pencere.cjs");
 const { ikinciEkran } = require("./haritaEkran.cjs");
 
 // ── Otomatik güncelleme (electron-updater) ──
@@ -27,6 +28,7 @@ app.commandLine.appendSwitch("lang", "tr");
 
 let mainWin = null;
 let haritaWin = null; // Faaliyet Haritası ayrı penceresi (tekil)
+let servisWin = null; // Servis ve Kargo Panosu ayrı penceresi (tekil)
 let tray = null;
 let allowCloseWithoutPrompt = false;
 
@@ -38,6 +40,7 @@ function pencereleriGoster() {
     mainWin.focus();
   }
   if (haritaWin && !haritaWin.isDestroyed()) haritaWin.show();
+  if (servisWin && !servisWin.isDestroyed()) servisWin.show();
 }
 
 // Faaliyet Haritası'nı ayrı pencerede aç; zaten açıksa öne getir (tekil).
@@ -94,6 +97,61 @@ function haritaPenceresiAcVeyaOdakla() {
   if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("harita:acildi");
 }
 
+// Servis ve Kargo Panosu'nu ayrı pencerede aç; zaten açıksa öne getir (tekil). Harita penceresiyle
+// aynı iskelet — tek farkı preload'u (preload-servis.cjs) ve yüklediği sayfa (servis.html).
+function servisPenceresiAcVeyaOdakla() {
+  if (servisWin && !servisWin.isDestroyed()) {
+    if (servisWin.isMinimized()) servisWin.restore();
+    servisWin.show();
+    servisWin.focus();
+    return;
+  }
+
+  const anaBounds = mainWin && !mainWin.isDestroyed()
+    ? mainWin.getBounds()
+    : { x: 0, y: 0, width: 1280, height: 820 };
+  let hedef = null;
+  try { hedef = ikinciEkran(screen.getAllDisplays(), anaBounds); } catch { /* screen yok — varsayılan */ }
+
+  const opts = {
+    show: false, autoHideMenuBar: true, title: "Servis ve Kargo Panosu — Altunmak CRM",
+    webPreferences: {
+      preload: path.join(__dirname, "preload-servis.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  };
+  if (hedef) { opts.x = hedef.x; opts.y = hedef.y; opts.width = hedef.width; opts.height = hedef.height; }
+  else { opts.width = 1280; opts.height = 860; }
+
+  servisWin = new BrowserWindow(opts);
+
+  // Güvenlik: bu pencere ana pencereden hiçbir korumayı miras almaz, kendisi kurar.
+  servisWin.webContents.on("will-navigate", (e, url) => {
+    const devUrl = process.env.VITE_DEV_SERVER_URL;
+    const isLocal = url.startsWith("file://") || (devUrl && url.startsWith(devUrl));
+    if (!isLocal) e.preventDefault();
+  });
+  servisWin.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    servisWin.loadURL(process.env.VITE_DEV_SERVER_URL.replace(/\/$/, "") + "/servis.html");
+  } else {
+    servisWin.loadFile(path.join(__dirname, "../dist/servis.html"));
+  }
+
+  servisWin.once("ready-to-show", () => { servisWin.show(); servisWin.focus(); });
+
+  // close preventDefault EDİLMEZ → gerçekten kapanır (ana pencerenin aksine).
+  servisWin.on("closed", () => {
+    servisWin = null;
+    if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("servis:kapandi");
+  });
+
+  // Ana pencereye "açıldı" bildir → veri push'unu başlatsın (hemen bir kez + değişimlerde).
+  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("servis:acildi");
+}
+
 function getTrayIcon() {
   const candidates = [
     path.join(process.resourcesPath || "", "icon.png"),
@@ -127,6 +185,14 @@ registerHaritaHandlers(ipcMain, {
     mainWin.show();
     mainWin.focus();
     mainWin.webContents.send("harita:firmaSec", id);
+  },
+});
+registerServisPencereHandlers(ipcMain, {
+  acVeyaOdakla: servisPenceresiAcVeyaOdakla,
+  getServisWin: () => servisWin,
+  // Ayrı pano penceresinden gelen yazma (mutate) → ana pencereye ilet (state'i orada uygulanır).
+  mutasyonAnaPencere: (yuk) => {
+    if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("servis:mutate", yuk);
   },
 });
 
@@ -310,6 +376,7 @@ function createWindow() {
     e.preventDefault();
     mainWin.hide();
     if (haritaWin && !haritaWin.isDestroyed()) haritaWin.hide();
+    if (servisWin && !servisWin.isDestroyed()) servisWin.hide();
   });
 
   mainWin.once("ready-to-show", () => {

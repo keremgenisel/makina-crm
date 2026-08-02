@@ -4,7 +4,7 @@
 // ServiceForm'u açar. Ayrıca Ayarlar > Firma Çalışanları CRUD ve servis formundaki teknisyen seçicisi.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { useState } from "react";
-import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within, act } from "@testing-library/react";
 
 afterEach(cleanup);
 import { ServisPanosu } from "../../src/components/ServisPanosu";
@@ -635,5 +635,71 @@ describe("ServisPanosu — yeni-servis alarmı", () => {
     const yeniKargo = { id: 701, dealerId: 5, aliciTipi: "bayi", partId: "7", miktar: 2, currency: "TRY", tarih: "2026-07-25", kargoDurum: "Hazırlanıyor", tahsisler: [] };
     rerender(<ServisPanosu {...base} yedekParcaSatislar={[yeniKargo]} />);
     expect(document.querySelector(".servis-alarm-yanip")).toBeNull();
+  });
+});
+
+// Pano kutu sürükleme YUMUŞAK KİLİDİ: bir kaydı başka kullanıcı düzenliyorsa (o kayıt kilitliyse)
+// sürüklemeyi reddeder + toast gösterir. Kilit listesi window.crmLocks.list()'ten gelir.
+describe("ServisPanosu — sürükleme yumuşak kilidi", () => {
+  const musteriler2 = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1" }];
+  const dt2 = (raw) => ({ getData: () => raw, setData: () => {}, dropEffect: "", effectAllowed: "" });
+  const sutun = (ad) => [...document.querySelectorAll("section")].find(s => s.textContent.includes(ad));
+  const stubLocks = (rows) => { window.crmLocks = { list: () => Promise.resolve(rows) }; };
+  afterEach(() => { delete window.crmLocks; });
+
+  const baseProps = (over = {}) => ({
+    services: [{ id: 10, customerId: 1, type: "Periyodik Bakım", durum: "Bekliyor", date: "2026-07-20", tech: "" }],
+    setServices: vi.fn(), customers: musteriler2, calisanlar: [], showToast: vi.fn(),
+    serverPermissions: null, aktifKullanici: "kiosk", ...over,
+  });
+
+  it("başkası müşteriyi kilitlemişse servis kartı taşınmaz (setServices çağrılmaz, toast çıkar)", async () => {
+    stubLocks([{ entity_type: "customer", entity_id: "1", locked_by: "ofis", locked_at: "2026-08-02T10:00:00" }]);
+    const setServices = vi.fn(); const showToast = vi.fn();
+    render(<ServisPanosu {...baseProps({ setServices, showToast })} />);
+    await act(async () => {}); // kilit listesi state'e otursun
+    fireEvent.drop(sutun("Tamamlandı"), { dataTransfer: dt2("10") });
+    expect(setServices).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining("ofis"), "err");
+  });
+
+  it("kilit BENİM üzerimdeyse (aktif kullanıcı) sürükleme engellenmez", async () => {
+    stubLocks([{ entity_type: "customer", entity_id: "1", locked_by: "kiosk" }]);
+    const setServices = vi.fn();
+    render(<ServisPanosu {...baseProps({ setServices })} />);
+    await act(async () => {});
+    fireEvent.drop(sutun("Tamamlandı"), { dataTransfer: dt2("10") });
+    expect(setServices).toHaveBeenCalled();
+  });
+
+  it("kilit yoksa servis kartı normal taşınır", async () => {
+    stubLocks([]);
+    const setServices = vi.fn();
+    render(<ServisPanosu {...baseProps({ setServices })} />);
+    await act(async () => {});
+    fireEvent.drop(sutun("Tamamlandı"), { dataTransfer: dt2("10") });
+    expect(setServices).toHaveBeenCalled();
+  });
+
+  it("başkası yedek parça satışını kilitlemişse kargo kartı taşınmaz", async () => {
+    stubLocks([{ entity_type: "yedek_parca", entity_id: "700", locked_by: "ofis" }]);
+    const setYedekParcaSatislar = vi.fn(); const showToast = vi.fn();
+    const yp = [{ id: 700, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, kargoDurum: "Hazırlanıyor", tahsisler: [] }];
+    render(<ServisPanosu {...baseProps({ setYedekParcaSatislar, showToast, kargoYetki: true, dealers: [{ id: 5, name: "Bayi X" }], parts: [{ id: 7, ad: "Dişli" }], yedekParcaSatislar: yp })} />);
+    await act(async () => {});
+    fireEvent.drop(sutun("Yapılıyor"), { dataTransfer: dt2("kargo:700") });
+    expect(setYedekParcaSatislar).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining("ofis"), "err");
+  });
+
+  it("başkası kalıp satışını kilitlemişse kalıp kargo kartı taşınmaz", async () => {
+    stubLocks([{ entity_type: "part_sale", entity_id: "900", locked_by: "ofis" }]);
+    const setPartSales = vi.fn(); const showToast = vi.fn();
+    const partSales = [{ id: 900, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", kargoDurum: "Hazırlanıyor", tarih: "2026-07-20" }];
+    render(<ServisPanosu {...baseProps({ setPartSales, showToast, kalipYetki: true, partSales })} />);
+    await act(async () => {});
+    fireEvent.drop(sutun("Yapılıyor"), { dataTransfer: dt2("kalip:900") });
+    expect(setPartSales).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining("ofis"), "err");
   });
 });

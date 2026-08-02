@@ -10,7 +10,7 @@ export default defineConfig({
       // Çok sayfalı: ana uygulama + ayrı Faaliyet Haritası penceresi. Yollar kök dizine
       // göre çözülür. import.meta.glob harita chunk'ları iki entry arasında PAYLAŞILIR
       // (kopyalanmaz), harita verisi tek sefer bundle olur.
-      input: { main: "index.html", harita: "harita.html" },
+      input: { main: "index.html", harita: "harita.html", servis: "servis.html" },
     },
   },
 });

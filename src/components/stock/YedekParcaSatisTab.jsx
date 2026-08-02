@@ -68,6 +68,9 @@ export const YedekParcaSatisTab = ({
   // Eşzamanlı düzenleme kilidi: aynı yedek parça satışını iki kullanıcı aynı anda düzenleyemesin.
   const { lockConflict: ypLock, forceAcquire: forceYpLock } = useLock("yedek_parca", modal?.edit?.id ?? null);
   const [tahsisSv, setTahsisSv] = useState(null); // tahsis modalı açık satış
+  // Makinaya tahsis de aynı "yedek_parca" alanını kilitler — satış düzenleme / kargo detay / pano ile
+  // ortak, böylece aynı satış iki yerden aynı anda tahsis/düzenleme yapılamaz (kalan miktar yarışı).
+  const { lockConflict: tahsisLock, forceAcquire: forceTahsisLock } = useLock("yedek_parca", tahsisSv?.id ?? null);
   const [silOnay, setSilOnay] = useState(null);
   const [filtre, setFiltre] = useState("hepsi"); // "hepsi" | "eksik" — ikisi de alıcıya göre gruplu (varsayılan katlı)
   const [arama, setArama] = useState("");
@@ -333,12 +336,17 @@ export const YedekParcaSatisTab = ({
           kdvRates={kdvRates} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)} />
       ))}
 
-      {tahsisSv && (
+      {tahsisSv && (tahsisLock ? (
+        <Modal title="Makinaya Tahsis" onClose={() => setTahsisSv(null)}>
+          <LockConflict lockedBy={tahsisLock.lockedBy} lockedAt={tahsisLock.lockedAt}
+            onForce={forceTahsisLock} onCancel={() => setTahsisSv(null)} />
+        </Modal>
+      ) : (
         <TahsisModal customers={customers}
           kalan={(parseInt(tahsisSv.miktar) || 0) - tahsisToplam(tahsisSv)}
           onEkle={(t) => { tahsisEkle(tahsisSv.id, t); setTahsisSv(null); }}
           onClose={() => setTahsisSv(null)} showToast={showToast} />
-      )}
+      ))}
 
       {silOnay && (
         <ConfirmDialog title="Satışı sil" message={`Bu yedek parça satışı silinecek ve düşülen ${silOnay.miktar} adet stoğa geri eklenecek. Makina tahsisleri de kaldırılır.`}

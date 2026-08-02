@@ -74,7 +74,8 @@ export const ServisPanosu = ({
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, appSettings = null,
   showToast = () => {}, serverPermissions = null, kiosk = false, onKilitle = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null, kargoYetki = false,
-  partSales = [], setPartSales = null, kalipYetki = false,
+  partSales = [], setPartSales = null, kalipYetki = false, aktifKullanici = "",
+  onAyriPencere = null,
 }) => {
   const canDo = makeCanDo(serverPermissions, "customerActions");
   const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
@@ -113,6 +114,24 @@ export const ServisPanosu = ({
   const [dragKapaliId, setDragKapaliId] = useState(null);
   const [arsivAcik, setArsivAcik] = useState(false);
   const [planAcik, setPlanAcik] = useState(false);
+  // Aktif kayıt kilitleri (başka kullanıcı bir kaydı düzenliyorsa). Kutu sürükleme anlık bir işlem
+  // olduğu için modal gibi hard-lock TUTMAYIZ; bunun yerine sürükleme anında "başkası düzenliyor mu"
+  // diye bu listeye bakıp reddederiz (yumuşak koruma). Liste sunucudan gelir, kilit değişince yenilenir.
+  const [kilitler, setKilitler] = useState([]);
+  useEffect(() => {
+    if (!window.crmLocks?.list) return;
+    let active = true;
+    const yenile = () => window.crmLocks.list().then(r => { if (active) setKilitler(Array.isArray(r) ? r : []); }).catch(() => {});
+    yenile();
+    const off = window.appServer?.onLocksChanged?.(yenile);
+    return () => { active = false; if (typeof off === "function") off(); };
+  }, []);
+  // entityType + id kümesi için, AKTİF kullanıcıdan BAŞKASININ tuttuğu kilidi döndürür (yoksa null).
+  const baskasiKilitli = (entityType, ids) => {
+    const set = new Set((Array.isArray(ids) ? ids : [ids]).map(String));
+    return kilitler.find(k => k.entity_type === entityType && set.has(String(k.entity_id)) && k.locked_by !== aktifKullanici) || null;
+  };
+  const kilitReddet = (k) => showToast(`Bu kayıt "${k.locked_by}" tarafından düzenleniyor, taşınamadı.`, "err");
 
   // Servis DÜZENLERKEN, o servisin müşterisi için kilit al — müşteri detayındaki düzenlemeyle
   // AYNI kilit alanını ("customer") paylaşır, böylece kiosk + ofis aynı kaydı aynı anda düzenleyemez.
@@ -258,6 +277,7 @@ export const ServisPanosu = ({
     const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
     // Toplu satış tek kart → grubun TÜM kayıtları birlikte hareket eder.
     const idler = new Set(grupIdleri(yedekParcaSatislar, id));
+    const k = baskasiKilitli("yedek_parca", [...idler]); if (k) return kilitReddet(k);
     // Tamamlandı (Teslim Edildi) dışına sürüklenirse arşiv bayrağını temizle (kart panoda kalsın).
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
     auditKargo("durum_degisti", id, { durum: kargoDurum });
@@ -300,6 +320,7 @@ export const ServisPanosu = ({
     if (!setPartSales || !canKalipDuzenle) return;
     const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
     const idler = new Set(grupIdleri(partSales, id));
+    const k = baskasiKilitli("part_sale", [...idler]); if (k) return kilitReddet(k);
     setPartSales(p => p.map(s => idler.has(s.id) ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
     auditKalip("durum_degisti", id, { durum: kargoDurum });
   };
@@ -365,6 +386,10 @@ export const ServisPanosu = ({
 
   const durumDegistir = (id, durum) => {
     if (!setServices || !canDo("cust_service_edit")) return;
+    // Servis kaydı, müşteri detayı/servis düzenleme ile aynı "customer" alanını kilitler. O müşteriyi
+    // başkası düzenliyorsa (müşteri detayı/kiosk servis formu açık) kartı taşımayı reddet.
+    const sv = services.find(s => s.id === id);
+    if (sv?.customerId != null) { const k = baskasiKilitli("customer", sv.customerId); if (k) return kilitReddet(k); }
     const ts = simdiYerel();
     // Tamamlandı dışına geri sürüklenirse arşiv bayrağını da temizle (kart yeniden panoda görünsün).
     setServices(p => p.map(s => {
@@ -615,10 +640,12 @@ export const ServisPanosu = ({
             <span style={{ fontSize: 17, fontWeight: 800, color: "#ff9d5c", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{saat}</span>
             <span style={{ fontSize: 17, fontWeight: 800, color: "#d4a584", fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{tarih}</span>
           </div>
-          {(canDo("cust_service_add") || kargoEkleGoster || (kiosk && onKilitle)) && (
+          {(canDo("cust_service_add") || kargoEkleGoster || (kiosk && onKilitle) || (onAyriPencere && !kiosk)) && (
             <div style={{ display: "flex", gap: 8 }}>
               {canDo("cust_service_add") && <Btn small onClick={acEkle}><Icon name="plus" size={14} /> Yeni Servis Talebi</Btn>}
               {kargoEkleGoster && <Btn small onClick={openAddYedekParca}><Icon name="parts" size={14} /> Yeni Yedek Parça Satışı</Btn>}
+              {/* Yalnız ana penceredeki sekmede görünür; ayrı pencerenin içinde prop geçilmez → çıkmaz. */}
+              {onAyriPencere && !kiosk && <Btn small variant="ghost" onClick={onAyriPencere} title="Servis Panosunu ayrı pencerede aç (2. monitör)"><Icon name="expand" size={14} /> Ayrı Pencere</Btn>}
               {kiosk && onKilitle && <Btn small variant="ghost" onClick={onKilitle} title="Kilitle"><Icon name="lock" size={14} /></Btn>}
             </div>
           )}

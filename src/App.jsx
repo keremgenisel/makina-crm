@@ -61,6 +61,7 @@ export default function App() {
   const [sidebarDar, setSidebarDar] = useState(() => { try { return localStorage.getItem("sidebarDar") === "1"; } catch { return false; } });
   const toggleSidebar = () => setSidebarDar(v => { const n = !v; try { localStorage.setItem("sidebarDar", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
   const [haritaAcik, setHaritaAcik] = useState(false); // Faaliyet Haritası ayrı penceresi açık mı
+  const [servisPanoAcik, setServisPanoAcik] = useState(false); // Servis ve Kargo Panosu ayrı penceresi açık mı
   const [haritaUlke, setHaritaUlke] = useState(null);  // Harita drill durumu — sekme değişip dönünce korunsun
   const [haritaIl, setHaritaIl] = useState(null);
   const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, pinnedPartIds: [] });
@@ -260,6 +261,14 @@ export default function App() {
     if (!window.appHarita) return;
     const a = window.appHarita.onAcildi(() => setHaritaAcik(true));
     const k = window.appHarita.onKapandi(() => setHaritaAcik(false));
+    return () => { a?.(); k?.(); };
+  }, []);
+
+  // ── Servis ve Kargo Panosu ayrı penceresi: açık/kapalı durumunu izle ──
+  useEffect(() => {
+    if (!window.appServisPano) return;
+    const a = window.appServisPano.onAcildi(() => setServisPanoAcik(true));
+    const k = window.appServisPano.onKapandi(() => setServisPanoAcik(false));
     return () => { a?.(); k?.(); };
   }, []);
 
@@ -754,6 +763,42 @@ export default function App() {
     return () => gozlemci.disconnect();
   }, [haritaAcik, liveCustomers, liveDealers, factory]);
 
+  // ── Servis ve Kargo Panosu ayrı penceresine veri push (açıkken, her değişimde + tema) ──
+  // YAZILABİLİR diziler (services/yedekParcaSatislar/partSales/partStock/partStockLog/dosyalar) TAM
+  // haliyle (silinmişler dahil) gider — pencere güncelleyiciyi (p => ...) bu TAM tabana uygular, geri
+  // dönen değer setX'e verildiğinde soft-delete kayıtları KORUNUR (ana uygulamayla aynı semantik;
+  // pencere gösterirken kendisi withoutDeleted uygular). Salt-okunur diziler live gider.
+  useEffect(() => {
+    if (!servisPanoAcik || !window.appServisPano) return;
+    const push = () => window.appServisPano.veriPush({
+      services, yedekParcaSatislar, partSales, partStock, partStockLog, dosyalar, // TAM (yazma tabanı)
+      customers: liveCustomers, dealers: liveDealers, parts: liveParts, calisanlar: liveCalisanlar, // live (salt-okunur)
+      factory, appSettings, geoData, loadingGeo,
+      serverPermissions: effectivePermissions, aktifKullanici: savedUsername,
+      kargoYetki, kalipYetki, dosyaCevrimdisi: readOnly,
+      tema: document.documentElement.getAttribute("data-theme") || "light",
+    });
+    push();
+    const gozlemci = new MutationObserver(push);
+    gozlemci.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => gozlemci.disconnect();
+  }, [servisPanoAcik, services, yedekParcaSatislar, partSales, partStock, partStockLog, dosyalar,
+      liveCustomers, liveDealers, liveParts, liveCalisanlar, factory, appSettings, geoData, loadingGeo,
+      effectivePermissions, savedUsername, kargoYetki, kalipYetki, readOnly]);
+
+  // ── Ayrı pano penceresinden gelen yazmalar → App state'ine uygula (kayıt/DB burada) ──
+  useEffect(() => {
+    if (!window.appServisPano?.onMutate) return undefined;
+    const setterMap = {
+      services: setServices, yedekParcaSatislar: setYedekParcaSatislar, partSales: setPartSales,
+      partStock: setPartStock, partStockLog: setPartStockLog, dosyalar: setDosyalar,
+    };
+    return window.appServisPano.onMutate(({ key, value }) => {
+      const set = setterMap[key];
+      if (set && Array.isArray(value)) set(value);
+    });
+  }, []);
+
   // loadFromStorageRef: her render'da güncellenir, hem ilk yükleme hem remote-update soft reload'da kullanılır
   loadFromStorageRef.current = async () => {
     suppressSaveRef.current = true; // yükleme sırasında debounced save tetiklenmesin
@@ -996,7 +1041,7 @@ export default function App() {
         setPartStock={setPartStock} setPartStockLog={setPartStockLog}
         dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline}
         yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} kargoYetki={kargoYetki}
-        appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} />
+        appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />
     </div>
   );
 
@@ -1213,7 +1258,7 @@ export default function App() {
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} yedekParcaSatislar={liveYedekParcaSatislar} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onDonusturTeklif={handleDonusturTeklif} onDonusturMakina={handleDonusturMakina} onKaydetSatis={handleKaydetSatis} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
-        {activeTab === "servis"    && <ServisPanosu services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar} parts={liveParts} dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo} setPartStock={setPartStock} setPartStockLog={setPartStockLog} partStock={partStock} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} kargoYetki={kargoYetki} partSales={livePartSales} setPartSales={setPartSales} kalipYetki={kalipYetki} appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} />}
+        {activeTab === "servis"    && <ServisPanosu services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar} parts={liveParts} dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo} setPartStock={setPartStock} setPartStockLog={setPartStockLog} partStock={partStock} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} kargoYetki={kargoYetki} partSales={livePartSales} setPartSales={setPartSales} kalipYetki={kalipYetki} appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} onAyriPencere={window.appServisPano ? () => window.appServisPano.ac() : null} />}
         {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} onAyriPencere={window.appHarita ? () => window.appHarita.ac() : null} onFirmaSec={haritadanMusteriAc} baslangicUlke={haritaUlke} baslangicIl={haritaIl} onDurumChange={haritaDurumChange} onFabrikaKonum={serverMode !== "active" ? (konum) => { setFactory(prev => ({ ...prev, haritaKonum: konum })); showToast("Fabrika pin konumu kaydedildi."); } : null} />}
         {activeTab === "settings"  && <Settings  customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} calisanlar={liveCalisanlar} setCalisanlar={setCalisanlar} rawCalisanlar={calisanlar} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} rawYedekParcaSatislar={yedekParcaSatislar} serverPermissions={effectivePermissions} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
       </div>

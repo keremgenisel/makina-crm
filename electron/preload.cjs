@@ -204,6 +204,33 @@ contextBridge.exposeInMainWorld("appHarita", {
   },
 });
 
+// Servis ve Kargo Panosu ayrı penceresi — ana pencere tarafı köprüsü. Harita'dan farkı ÇİFT YÖNLÜ:
+// veriPush ile pano verisini aşağı gönderir, onMutate ile penceredeki yazmaları geri alır (App
+// state'ine uygular). Kaydı/DB'yi yalnız ana pencere yönetir.
+contextBridge.exposeInMainWorld("appServisPano", {
+  ac: () => ipcRenderer.invoke("servis:ac"),                    // ayrı pencerede aç / öne getir
+  veriPush: (veri) => ipcRenderer.send("servis:veriPush", veri), // ana pencere → pano verisi
+  onAcildi: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("servis:acildi");
+    ipcRenderer.on("servis:acildi", h);
+    return () => ipcRenderer.removeListener("servis:acildi", h);
+  },
+  onKapandi: (cb) => {
+    const h = () => cb();
+    ipcRenderer.removeAllListeners("servis:kapandi");
+    ipcRenderer.on("servis:kapandi", h);
+    return () => ipcRenderer.removeListener("servis:kapandi", h);
+  },
+  // Ayrı penceredeki yazma: { key, value } — App ilgili state'i (key) value ile günceller.
+  onMutate: (cb) => {
+    const h = (_e, yuk) => cb(yuk);
+    ipcRenderer.removeAllListeners("servis:mutate");
+    ipcRenderer.on("servis:mutate", h);
+    return () => ipcRenderer.removeListener("servis:mutate", h);
+  },
+});
+
 contextBridge.exposeInMainWorld("crmLocks", {
   acquire:    (entityType, entityId, force = false) => ipcRenderer.invoke("crm:lock:acquire", { entityType, entityId, force }),
   release:    (entityType, entityId) => ipcRenderer.invoke("crm:lock:release", { entityType, entityId }),

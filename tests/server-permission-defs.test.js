@@ -32,13 +32,27 @@ describe("izin tanım verisi tutarlılığı", () => {
     const allIds = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
     expect(new Set(allIds).size).toBe(allIds.length);
   });
-  // UserManager, Servis Panosu izinlerini ayrı akordeona bu grup ADIYLA süzüyor
-  // (SERVIS_GRUP = "Makina Geçmişi — Servisler"). Ad değişirse o bölüm sessizce boşalır.
-  it("servis izinleri UserManager'ın beklediği grup adı altında ve tam", () => {
-    const servisGrup = CUSTOMER_ACTION_GROUPS.find(g => g.grup === "Makina Geçmişi — Servisler");
-    expect(servisGrup, "SERVIS_GRUP adı UserManager ile eşleşmiyor").toBeTruthy();
-    const ids = servisGrup.items.map(i => i.id);
+  // UserManager, Servis Panosu izinlerini ayrı akordeona `servisPano:true` bayrağıyla süzüyor
+  // (eski tek "Makina Geçmişi — Servisler" grubu alt başlıklara bölündü). Bayrak kaybolursa
+  // o izinler ya Müşteri akordeonuna sızar ya da Servis akordeonu boşalır.
+  it("servis pano izinleri servisPano:true gruplarında, alt başlıklara bölünmüş ve tam", () => {
+    const servisGruplar = CUSTOMER_ACTION_GROUPS.filter(g => g.servisPano === true);
+    // Beklenen alt başlıklar (UserManager bunları başlık başlık gösterir)
+    expect(servisGruplar.map(g => g.grup)).toEqual(["Servis Kaydı", "Servis Kartı (Pano)", "Kargo Panosu", "Extra Kalıp Kargo Panosu"]);
+    // Tüm servis-pano id'leri (sıra: gruplar + grup içi) — eskiden tek grupta olan 11 iznin tamamı
+    const ids = servisGruplar.flatMap(g => g.items.map(i => i.id));
     expect(ids).toEqual(["cust_service_add", "cust_service_edit", "cust_service_payment", "cust_service_delete", "cust_service_pano_kaldir", "cust_service_pano_arsiv", "servis_yedek_parca_add", "kargo_pano_kaldir", "kargo_pano_arsiv", "kalip_pano_kaldir", "kalip_pano_arsiv"]);
+  });
+
+  it("servisPano grupları Müşteri işlemleri akordeonuna sızmaz (ayrım net)", () => {
+    // Müşteri akordeonu servisPano OLMAYAN gruplar; hiçbir cust_service_*/kargo_pano_*/kalip_pano_* içermez
+    const musteriIds = CUSTOMER_ACTION_GROUPS.filter(g => !g.servisPano).flatMap(g => g.items.map(i => i.id));
+    for (const id of ["cust_service_add", "cust_service_edit", "cust_service_pano_kaldir", "servis_yedek_parca_add", "kargo_pano_kaldir", "kalip_pano_arsiv"]) {
+      expect(musteriIds, id).not.toContain(id);
+    }
+    // Ama gerçek müşteri izinleri orada durur
+    expect(musteriIds).toContain("cust_add");
+    expect(musteriIds).toContain("cust_yedek_parca_add");
   });
 
   it("yedek parça satışı EKLE izinleri üç arayüz için üç ayrı boyutta tanımlı", () => {

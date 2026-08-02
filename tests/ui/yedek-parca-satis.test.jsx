@@ -285,6 +285,26 @@ describe("YedekParcaSatisTab — eşzamanlı düzenleme kilidi", () => {
     expect(await screen.findByText("Yedek Parça Satışını Düzenle")).toBeTruthy();
     expect(screen.queryByText("Bu kayıt şu an düzenleniyor")).toBeNull();
   });
+
+  it("makinaya tahsis açılırken başkasında kilitliyse tahsis yerine kilit uyarısı gösterir", async () => {
+    const acquire = vi.fn().mockResolvedValue({ ok: false, lockedBy: "Ofis", lockedAt: new Date().toISOString() });
+    window.crmLocks = { acquire, release: vi.fn().mockResolvedValue({}) };
+    render(<Harness baslangic={[satis5]} />);
+    fireEvent.click(screen.getByRole("button", { name: /Makinaya tahsis et/ }));
+    expect(acquire).toHaveBeenCalledWith("yedek_parca", "650", false);
+    expect(await screen.findByText("Bu kayıt şu an düzenleniyor")).toBeTruthy();
+    expect(screen.getByText(/Ofis/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Tahsis Et$/ })).toBeNull(); // tahsis alanları gizli
+  });
+
+  it("tahsis kilidi alınırsa tahsis modalı normal açılır", async () => {
+    const acquire = vi.fn().mockResolvedValue({ ok: true });
+    window.crmLocks = { acquire, release: vi.fn().mockResolvedValue({}) };
+    render(<Harness baslangic={[satis5]} />);
+    fireEvent.click(screen.getByRole("button", { name: /Makinaya tahsis et/ }));
+    expect(await screen.findByRole("button", { name: /^Tahsis Et$/ })).toBeTruthy();
+    expect(screen.queryByText("Bu kayıt şu an düzenleniyor")).toBeNull();
+  });
 });
 
 describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
