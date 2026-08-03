@@ -112,6 +112,12 @@ describe("buildKargoEtiketiHtml — boyut ve kaçış", () => {
     expect(html).toContain("width: 142mm; height: 92mm");
     expect(html).toContain("margin: 4mm auto");
   });
+  it("ekran önizlemesinde üstten boşluk verir; baskıda @page margin:0 bozulmaz", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [], {});
+    // Ekran-yalnız üst boşluk (banner'a yapışmasın); print @page hâlâ margin:0.
+    expect(html).toContain("@media screen { body { padding-top: 10mm; } }");
+    expect(html).toContain("@page { size: 150mm 100mm; margin: 0; }");
+  });
   it("SEVK bandı siyah zemin KULLANMAZ (yazıcı arka planı basmıyor); yazı siyah, logo grayscale", () => {
     const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [], {});
     // .kind artık siyah zemin/beyaz yazı içermemeli.
@@ -133,10 +139,21 @@ describe("buildKargoEtiketiHtml — boyut ve kaçış", () => {
     expect(html).not.toContain("KARGO / TAKİP NO");
     expect(html).not.toContain("Aras");
   });
-  it("içerik iki sütun (yan yana) yerleşir — kalabalık batch sığsın", () => {
-    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [{ ad: "a", miktar: 1 }, { ad: "b", miktar: 2 }], {});
-    expect(html).toContain("item-grid");
+  it("kalabalık batch (>3 kalem) iki sütuna yerleşir — sığsın", () => {
+    const cok = [1, 2, 3, 4].map(n => ({ ad: "k" + n, miktar: n }));
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, cok, {});
+    expect(html).toContain('class="item-grid"'); // .tek YOK → 2 sütun
     expect(html).toContain("grid-template-columns: 1fr 1fr");
+  });
+  it("az kalem (≤3) tek sütun kullanır — uzun içerik tam genişlik", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [{ ad: "125*1500 mm KONVEYÖR BANDI", miktar: 1 }], {});
+    expect(html).toContain('class="item-grid tek"');
+    expect(html).toContain(".item-grid.tek { grid-template-columns: 1fr; }");
+  });
+  it("uzun içerik KESİLMEZ — sarma açık (min-width:0 + overflow-wrap)", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [{ ad: "z", miktar: 1 }], {});
+    expect(html).toContain("min-width: 0; overflow-wrap: anywhere; white-space: normal;");
+    expect(html).not.toContain("text-overflow: ellipsis"); // eski kırpma kaldırıldı
   });
   it("firma adı HTML-kaçışlı yazılır", () => {
     const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: '<img src=x onerror=alert(1)>' }, [], {});

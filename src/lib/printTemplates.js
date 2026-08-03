@@ -752,9 +752,12 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   // İlçesi olan adreste sıra: ilçe / şehir · ülke (ilçe yoksa yalnız şehir · ülke).
   const aliciAdres = [a.adres, [a.ilce, a.city].filter(Boolean).join(" / "), a.country].filter(Boolean).join(" · ");
   const kv = (k, v) => v ? `<div class="kv"><b>${esc(k)}</b>${esc(v)}</div>` : "";
-  const satirlar = (icerik.length ? icerik : [{ ad: "—", miktar: 0 }]).map(it =>
+  const kalemler = icerik.length ? icerik : [{ ad: "—", miktar: 0 }];
+  const satirlar = kalemler.map(it =>
     `<div class="item"><span class="nm">${esc(it.ad)}</span><span class="lead"></span><span class="qt">${it.miktar ? esc(String(it.miktar)) + " adet" : ""}</span></div>`
   ).join("");
+  // Az kalem → tek sütun (uzun içerik tam genişlik alsın, kırpılmasın); çok kalem → 2 sütun (sığsın).
+  const tekSutun = kalemler.length <= 3;
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -785,10 +788,13 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   .kv { font-size: 9.5pt; line-height: 1.55; }
   .kv b { display: inline-block; min-width: 20mm; font-weight: 700; }
   .items { flex: 1; padding: 2.8mm 4.5mm; border-bottom: 1mm solid #000; overflow: hidden; }
-  /* İçerik iki sütun (yan yana) → aynı yükseklikte iki kat kalem sığar. Satırlar satır-satır dolar. */
+  /* İçerik iki sütun (yan yana) → aynı yükseklikte iki kat kalem sığar. Satırlar satır-satır dolar.
+     .tek: az kalem varken tek sütun (uzun içerik tam genişlik). */
   .item-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 6mm; }
+  .item-grid.tek { grid-template-columns: 1fr; }
   .item { display: flex; justify-content: space-between; align-items: baseline; font-size: 10pt; padding: 0.5mm 0; gap: 3mm; }
-  .item .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* min-width:0 + sarma → uzun içerik KESİLMEZ, gerekirse alt satıra taşar (kırpma yok). */
+  .item .nm { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
   .item .qt { font-weight: 800; white-space: nowrap; }
   .item .lead { flex: 1; border-bottom: 0.3mm dotted #999; transform: translateY(-1mm); min-width: 4mm; }
   /* Alt bant (teslim şekli / tarih / kargo takip) ~%50 alçaltıldı. */
@@ -797,6 +803,9 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   .fc + .fc { border-left: 0.4mm solid #000; }
   .fc .fh { font-size: 6.5pt; font-weight: 800; letter-spacing: 1px; color: #555; }
   .fc .fv { font-size: 8.5pt; font-weight: 800; margin-top: 0.4mm; }
+  /* Ekran önizlemesinde etiketi "Baskı Önizleme" banner'ından biraz aşağı al (yalnız ekran;
+     baskıda @page margin:0 ve etiketin 4mm termal payı aynen kalır, fiziksel hizayı bozmaz). */
+  @media screen { body { padding-top: 10mm; } }
   @media print { @page { size: 150mm 100mm; margin: 0; } }
 </style>
 </head>
@@ -822,7 +831,7 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   </div>
   <div class="items">
     <div class="h">İÇERİK</div>
-    <div class="item-grid">${satirlar}</div>
+    <div class="item-grid${tekSutun ? " tek" : ""}">${satirlar}</div>
   </div>
   <div class="foot">
     <div class="fc"><div class="fh">TESLİM ŞEKLİ</div><div class="fv">${esc(o.teslimSekli || "—")}</div></div>
