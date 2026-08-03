@@ -781,18 +781,20 @@ export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   .parties { display: flex; border-bottom: 1mm solid #000; }
   .party { flex: 1; padding: 3mm 4.5mm; }
   .party.to { flex: 1.35; border-left: 1mm solid #000; }
-  .h { font-size: 8pt; font-weight: 900; letter-spacing: 2px; color: #555; margin-bottom: 1.5mm; }
-  .from-name { font-size: 10.5pt; font-weight: 800; margin-bottom: 1mm; }
-  .fl { font-size: 8.5pt; color: #333; line-height: 1.5; }
-  .to-name { font-size: 15pt; font-weight: 900; line-height: 1.1; margin-bottom: 1.5mm; overflow-wrap: anywhere; }
-  .kv { font-size: 9.5pt; line-height: 1.55; }
-  .kv b { display: inline-block; min-width: 20mm; font-weight: 700; }
+  /* Gönderen+alıcı fontları ~%25 küçültüldü → uzun adreste (7+ satır) bile içerik/alt bant taşmasın.
+     Alıcı firma adı gönderendekiyle AYNI boyutta (8pt/800) — eskiden 15pt idi, uzun adreste şişiriyordu. */
+  .h { font-size: 6pt; font-weight: 900; letter-spacing: 2px; color: #555; margin-bottom: 1.2mm; }
+  .from-name { font-size: 8pt; font-weight: 800; margin-bottom: 1mm; }
+  .fl { font-size: 6.5pt; color: #333; line-height: 1.5; }
+  .to-name { font-size: 8pt; font-weight: 800; line-height: 1.2; margin-bottom: 1mm; overflow-wrap: anywhere; }
+  .kv { font-size: 7pt; line-height: 1.5; }
+  .kv b { display: inline-block; min-width: 15mm; font-weight: 700; }
   .items { flex: 1; padding: 2.8mm 4.5mm; border-bottom: 1mm solid #000; overflow: hidden; }
   /* İçerik iki sütun (yan yana) → aynı yükseklikte iki kat kalem sığar. Satırlar satır-satır dolar.
      .tek: az kalem varken tek sütun (uzun içerik tam genişlik). */
   .item-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 6mm; }
   .item-grid.tek { grid-template-columns: 1fr; }
-  .item { display: flex; justify-content: space-between; align-items: baseline; font-size: 10pt; padding: 0.5mm 0; gap: 3mm; }
+  .item { display: flex; justify-content: space-between; align-items: baseline; font-size: 8pt; padding: 0.5mm 0; gap: 3mm; }
   /* min-width:0 + sarma → uzun içerik KESİLMEZ, gerekirse alt satıra taşar (kırpma yok). */
   .item .nm { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
   .item .qt { font-weight: 800; white-space: nowrap; }

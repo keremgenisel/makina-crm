@@ -155,6 +155,16 @@ describe("buildKargoEtiketiHtml — boyut ve kaçış", () => {
     expect(html).toContain("min-width: 0; overflow-wrap: anywhere; white-space: normal;");
     expect(html).not.toContain("text-overflow: ellipsis"); // eski kırpma kaldırıldı
   });
+  it("alıcı firma adı gönderendekiyle AYNI boyutta (8pt); eski 15pt değil", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [], {});
+    expect(html).toContain(".from-name { font-size: 8pt;");
+    expect(html).toContain(".to-name { font-size: 8pt;");
+    expect(html).not.toContain("font-size: 15pt"); // uzun adreste şişiren büyük başlık kaldırıldı
+  });
+  it("içerik satırları da 8pt", () => {
+    const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: "Y" }, [{ ad: "z", miktar: 1 }], {});
+    expect(html).toContain(".item { display: flex; justify-content: space-between; align-items: baseline; font-size: 8pt;");
+  });
   it("firma adı HTML-kaçışlı yazılır", () => {
     const html = buildKargoEtiketiHtml({ ad: "X" }, { firma: '<img src=x onerror=alert(1)>' }, [], {});
     expect(html).not.toContain("<img src=x");
