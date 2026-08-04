@@ -314,6 +314,9 @@ export const CustomerDetailModal = ({
       kargoDurum: ps.kargoDurum || "", kargoFirma: ps.kargoFirma || "", kargoTakipNo: ps.kargoTakipNo || "",
       kargoTarih: ps.kargoTarih || "", kargoSorumlusu: ps.kargoSorumlusu || "", panoDusmeZamani: ps.panoDusmeZamani || "",
       fabrikaTeslim: !!ps.fabrikaTeslim,
+      // Farklı teslimat (sevk) adresi — düzenlemede alanlar dolu gelsin.
+      teslimatFarkli: !!ps.teslimatFarkli, teslimatAd: ps.teslimatAd || "", teslimatTel: ps.teslimatTel || "",
+      teslimatAdres: ps.teslimatAdres || "", teslimatUlke: ps.teslimatUlke || "", teslimatSehir: ps.teslimatSehir || "", teslimatIlce: ps.teslimatIlce || "",
     });
   };
   const savePartSale = () => {
@@ -331,6 +334,17 @@ export const CustomerDetailModal = ({
       kargoDurum: pkForm.kargoDurum || "", kargoFirma: pkForm.kargoFirma ?? "", kargoTakipNo: pkForm.kargoTakipNo ?? "",
       kargoTarih: pkForm.kargoTarih ?? "", kargoSorumlusu: pkForm.kargoSorumlusu ?? "", panoDusmeZamani: pkForm.panoDusmeZamani ?? "",
       fabrikaTeslim: !!pkForm.fabrikaTeslim, // panoda kargo yerine "Fabrika Teslim"
+      // Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). teslimatFarkli
+      // false ise diğer alanlar boşlanır (yedek parça formundaki desenle aynı).
+      ...(() => {
+        const farkli = !pkForm.fabrikaTeslim && !!pkForm.teslimatFarkli;
+        return {
+          teslimatFarkli: farkli,
+          teslimatAd: farkli ? (pkForm.teslimatAd ?? "") : "", teslimatTel: farkli ? (pkForm.teslimatTel ?? "") : "",
+          teslimatAdres: farkli ? (pkForm.teslimatAdres ?? "") : "", teslimatUlke: farkli ? (pkForm.teslimatUlke ?? "") : "",
+          teslimatSehir: farkli ? (pkForm.teslimatSehir ?? "") : "", teslimatIlce: farkli ? (pkForm.teslimatIlce ?? "") : "",
+        };
+      })(),
     };
     if (pkForm.id) {
       const k = satirlar[0];

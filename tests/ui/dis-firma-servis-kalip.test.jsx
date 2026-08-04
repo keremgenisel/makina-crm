@@ -94,6 +94,31 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
     expect(sonForm.fabrikaTeslim).toBe(true);
     expect(sonForm.kargoDurum).toBeFalsy();                          // teslim şekli AYRI → panoya düşürmez
     expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull(); // fabrika teslimde kargo firma yok
+    expect(screen.queryByText(/Farklı adrese kargolat/)).toBeNull();  // fabrika teslimde farklı adres yok
+  });
+
+  it("'Farklı adrese kargolat' Kargo seçiliyken görünür; işaretleyince teslimat alanları + 'Müşterinin adresini doldur' çıkar", () => {
+    let sonForm;
+    const zenginCust = [{ id: 1, name: "ABC Makina", faturali: "Faturalı Yurtiçi", phone: "0262 111", adres: "OSB 3. Cad", city: "Kocaeli", country: "Türkiye", ilce: "Gebze" }];
+    const H = () => {
+      const [form, setForm] = useState({ customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "100" }], currency: "TRY" });
+      sonForm = form;
+      return <PartSaleForm title="Extra Kalıp Satışı" form={form} setForm={setForm} customers={zenginCust} kalipDefs={[]} dealers={dealers} factory={{ name: "Altuntaş Makina" }} onSave={vi.fn()} onCancel={vi.fn()} />;
+    };
+    render(<H />);
+    // Teslim şekli varsayılan Kargo → "Farklı adrese kargolat" panodan bağımsız görünür.
+    const tesToggle = screen.getByText(/Farklı adrese kargolat/).closest("label").querySelector('input[type="checkbox"]');
+    expect(tesToggle.checked).toBe(false);
+    expect(screen.queryByPlaceholderText("Cadde, mahalle, no")).toBeNull();
+    fireEvent.click(tesToggle);
+    expect(sonForm.teslimatFarkli).toBe(true);
+    expect(screen.getByPlaceholderText("Cadde, mahalle, no")).toBeTruthy();
+    // "Müşterinin adresini doldur" müşterinin kayıtlı adresini kopyalar.
+    fireEvent.click(screen.getByRole("button", { name: /Müşterinin adresini doldur/ }));
+    expect(sonForm.teslimatAd).toBe("ABC Makina");
+    expect(sonForm.teslimatAdres).toBe("OSB 3. Cad");
+    expect(sonForm.teslimatSehir).toBe("Kocaeli");
+    expect(sonForm.teslimatIlce).toBe("Gebze");
   });
 });
 

@@ -102,6 +102,17 @@ describe("kalipEtiketVerisi", () => {
     expect(v.opts.teslimSekli).toBe("Fabrika Teslim");
     expect(v.opts.kargoTakipNo).toBe("");
   });
+
+  it("farklı adres (Seçenek B): büyük ALICI teslimat firması/adresi olur, sipariş veren müşteri gizli", () => {
+    const v = kalipEtiketVerisi([{ id: 202, customerId: 10, ad: "K1", olcu: "30×20", kargoDurum: "Hazırlanıyor",
+      teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "0212 111", teslimatAdres: "Sanayi Mah. 5. Sok",
+      teslimatSehir: "İstanbul", teslimatIlce: "Tuzla", teslimatUlke: "Türkiye" }], deps);
+    expect(v.alici.firma).toBe("Şube Deposu");       // teslimat firması/kişisi (sipariş veren müşteri değil)
+    expect(v.alici.firma).not.toBe("Anadolu Kalıp A.Ş.");
+    expect(v.alici.adres).toBe("Sanayi Mah. 5. Sok");
+    expect(v.alici.city).toBe("İstanbul");
+    expect(v.alici.ilce).toBe("Tuzla");
+  });
 });
 
 describe("buildKargoEtiketiHtml — boyut ve kaçış", () => {

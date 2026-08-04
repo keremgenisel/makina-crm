@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "3.16.0",
+  "version": "3.16.1",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -38,7 +38,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "selfsigned": "^5.5.0",
-    "undici": "^8.8.0",
+    "undici": "^8.10.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {

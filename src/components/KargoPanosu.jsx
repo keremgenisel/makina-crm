@@ -59,8 +59,9 @@ export const KargoKart = ({ s, dealers = [], parts = [], customers = [], calisan
       {kalip && satisFirmaGoster(s) && (
         <div style={{ display: "inline-block", fontSize: 10.5, fontWeight: 700, marginTop: 4, borderRadius: 6, padding: "2px 7px", color: "var(--n600, #475569)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)" }}>Satış Yapan: {satisFirmaGoster(s)}</div>
       )}
-      {/* Farklı teslimat adresi varsa kartta uyarı — kargoyu hazırlayan yanlış adrese göndermez. */}
-      {!kalip && s.teslimatFarkli && (
+      {/* Farklı teslimat adresi varsa kartta uyarı — kargoyu hazırlayan yanlış adrese göndermez.
+          Hem yedek parça hem Extra Kalıp kargosu için (ikisinde de teslimatFarkli var). */}
+      {s.teslimatFarkli && (
         <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--acc, #e85d1a)", marginTop: 7, padding: "5px 9px", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 8 }}>
           📍 Farklı adres{[s.teslimatSehir, s.teslimatIlce].filter(Boolean).join(" / ") ? ` · ${[s.teslimatSehir, s.teslimatIlce].filter(Boolean).join(" / ")}` : ""}
         </div>
@@ -149,8 +150,9 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
             ))}
           </div>
         )}
-        {/* Farklı teslimat (sevk) adresi — alıcının fatura/iletişim adresinden ayrı, vurgulu kutu. */}
-        {!kalip && satis.teslimatFarkli && (
+        {/* Farklı teslimat (sevk) adresi — alıcının fatura/iletişim adresinden ayrı, vurgulu kutu.
+            Hem yedek parça hem Extra Kalıp kargosu için. */}
+        {satis.teslimatFarkli && (
           <div style={{ marginTop: 12, border: "1px solid var(--ambBr3, #fed7aa)", background: "var(--ambBg3, #fff7ed)", borderRadius: 12, padding: "12px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--acc, #e85d1a)", marginBottom: 8 }}>📍 Teslimat (kargo) Adresi</div>
             <div style={{ display: "grid", gap: 3, fontSize: 12 }}>

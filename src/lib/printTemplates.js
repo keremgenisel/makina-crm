@@ -732,14 +732,18 @@ export function yedekParcaEtiketVerisi(grup, { parts = [], dealers = [], custome
   };
 }
 
-// Extra Kalıp (partSales) satış batch'i → etiket verisi. Alıcı = müşteri. Kalıpta farklı adres
-// yoktur; içerik "kalıp adı · Ölçü".
+// Extra Kalıp (partSales) satış batch'i → etiket verisi. Alıcı = müşteri. İçerik "kalıp adı · Ölçü".
+// Farklı adres (teslimatFarkli) ise büyük yazan firma teslimat firması/kişisidir (Seçenek B; sipariş
+// veren müşteri gösterilmez); adres teslimat adresidir — yedek parça etiketiyle aynı davranış.
 export function kalipEtiketVerisi(grup, { customers = [], factory = null } = {}) {
   const list = Array.isArray(grup) ? grup.filter(Boolean) : [grup].filter(Boolean);
   const s = list[0] || {};
   const c = customers.find(x => x.id === Number(s.customerId)) || {};
-  const alici = { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
-    adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
+  const alici = s.teslimatFarkli
+    ? { firma: s.teslimatAd || c.name || "(müşteri)", yetkili: "", tel: s.teslimatTel || "",
+        adres: s.teslimatAdres || "", city: s.teslimatSehir || "", ilce: s.teslimatIlce || "", country: s.teslimatUlke || "" }
+    : { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
+        adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
   const icerik = list.map(g => ({ ad: `${g.ad || "(kalıp)"}${g.olcu ? " · Ölçü: " + g.olcu : ""}`, miktar: 1 }));
   const fabrikaTeslim = !!s.fabrikaTeslim;
   return {

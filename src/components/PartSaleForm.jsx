@@ -23,6 +23,12 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false);
 
   const isEdit = !!form.id;
+  // "Alıcının adresini doldur" — teslimat alanlarına müşterinin kayıtlı adresini kopyalar (Extra Kalıp
+  // alıcısı her zaman müşteridir). Sonra kullanıcı üstünde değişebilir.
+  const adresDoldur = () => {
+    const c = selectedCust || {};
+    setForm(p => ({ ...p, teslimatAd: c.name || "", teslimatTel: c.phone || c.yetkili1Tel || "", teslimatAdres: c.adres || "", teslimatUlke: c.country || "", teslimatSehir: c.city || "", teslimatIlce: c.ilce || "" }));
+  };
   const kaliplar = form.kaliplar || [];
   const kaliplarToplam = kaliplar.reduce((s, k) => s + parseMoney(k.fiyat), 0);
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
@@ -265,6 +271,39 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 onChange={e => setForm(p => ({ ...p, kargoSorumlusu: e.target.value }))} />
               <datalist id="kalip-kargoci-listesi">{kargociAdlari.map(a => <option key={a} value={a} />)}</datalist>
             </Field>
+            {/* Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). Müşterinin
+                kayıtlı adresi yerine bu satışa özel adres; boşsa müşterinin adresine gider. */}
+            {!fabrikaTeslim && (
+              <div style={{ borderTop: "2px dashed var(--ambBr3, #fed7aa)", paddingTop: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input type="checkbox" checked={!!form.teslimatFarkli}
+                    onChange={e => setForm(p => ({ ...p, teslimatFarkli: e.target.checked }))}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a" }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "#e85d1a" }}>📍 Farklı adrese kargolat</span>
+                  {form.teslimatFarkli && (
+                    <button type="button" onClick={adresDoldur}
+                      style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#e85d1a", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
+                      ⤵ Müşterinin adresini doldur
+                    </button>
+                  )}
+                </label>
+                {form.teslimatFarkli && (
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <Field label="Teslim Alacak (kişi / firma)"><Input value={form.teslimatAd || ""} onChange={e => setForm(p => ({ ...p, teslimatAd: e.target.value }))} placeholder="Teslim alacak kişi/firma" /></Field>
+                      <Field label="Telefon"><Input value={form.teslimatTel || ""} onChange={e => setForm(p => ({ ...p, teslimatTel: e.target.value }))} placeholder="Telefon" /></Field>
+                    </div>
+                    <Field label="Açık Adres"><Input value={form.teslimatAdres || ""} onChange={e => setForm(p => ({ ...p, teslimatAdres: e.target.value }))} placeholder="Cadde, mahalle, no" /></Field>
+                    <CountryCityFields country={form.teslimatUlke || ""} city={form.teslimatSehir || ""} ilce={form.teslimatIlce || ""}
+                      onCountry={v => setForm(p => ({ ...p, teslimatUlke: v, teslimatSehir: "", teslimatIlce: "" }))}
+                      onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
+                      onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
+                      geoData={geoData} loadingGeo={loadingGeo} />
+                    <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, müşterinin kayıtlı adresine gider.</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Panoya gönderme — AYRI opt-in. Kapalıyken kayıt panoya düşmez (eski satışlar için bırak). ── */}
