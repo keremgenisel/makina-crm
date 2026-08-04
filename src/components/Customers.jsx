@@ -21,7 +21,7 @@ export const Customers = ({
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], partTypeDefs = [], calisanlar = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
-  serverPermissions = null,
+  serverPermissions = null, onGoYedekParca = null,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -570,6 +570,7 @@ export const Customers = ({
           dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
           detailView={detailView}
           onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
+          onGoYedekParca={onGoYedekParca ? (id) => { setDetailViewId(null); onGoYedekParca(id); } : null}
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}

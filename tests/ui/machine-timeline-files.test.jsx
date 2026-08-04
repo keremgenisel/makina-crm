@@ -56,3 +56,44 @@ describe("MachineTimeline ataş rozeti", () => {
     expect(screen.queryByTitle("Bu kayda ait dosyalar")).toBeNull();
   });
 });
+
+// Bayiden bu makinaya TAHSİS edilen yedek parça satırı salt-okunur ama tıklanabilir olmalı:
+// tıklayınca Stok'taki satışa gitmek için onGoYedekParca(satisId) çağrılır (düzenleme değil).
+describe("MachineTimeline bayi tahsis satırı → Stok'a git", () => {
+  const tahsisEvent = { kind: "part", ypTahsisId: 650, title: "Yedek Parça (Bayi)", desc: "4 adet cccccc · Ege Makina Ltd. tarafından tahsis edildi", date: "2026-07-27", color: "#0891b2" };
+
+  it("onGoYedekParca varsa başlık tıklanabilir ve satisId ile çağrılır", () => {
+    const onGoYedekParca = vi.fn();
+    render(<MachineTimeline {...baseProps}
+      detailTimelineEvents={[tahsisEvent]} onGoYedekParca={onGoYedekParca} />);
+    const baslik = screen.getByTitle("Yedek parça satışına git");
+    fireEvent.click(baslik);
+    expect(onGoYedekParca).toHaveBeenCalledWith(650);
+  });
+
+  it("onGoYedekParca yoksa satır tıklanabilir görünmez (salt-okunur)", () => {
+    render(<MachineTimeline {...baseProps}
+      detailTimelineEvents={[tahsisEvent]} onGoYedekParca={null} />);
+    expect(screen.queryByTitle("Yedek parça satışına git")).toBeNull();
+    expect(screen.getByText("Yedek Parça (Bayi)")).toBeTruthy(); // yine de görünür
+  });
+});
+
+// Müşterinin KENDİ yedek parça satışı satırında Kargo Etiketi yazdır düğmesi (Extra Kalıp'takiyle aynı).
+describe("MachineTimeline yedek parça — Kargo Etiketi yazdır", () => {
+  const ypEvent = { kind: "part", yp: { id: 700, partId: "7", miktar: 4, currency: "TRY" }, ypGrup: [{ id: 700, partId: "7", miktar: 4, currency: "TRY" }], title: "Yedek Parça (Kargo)", date: "2026-07-27", color: "#0891b2" };
+
+  it("onPrintYedekParcaEtiket verilince yazdır düğmesi çıkar ve grup ile çağrılır", () => {
+    const onPrint = vi.fn();
+    render(<MachineTimeline {...baseProps}
+      detailTimelineEvents={[ypEvent]} onPrintYedekParcaEtiket={onPrint} />);
+    fireEvent.click(screen.getByTitle("Kargo Etiketi Yazdır"));
+    expect(onPrint).toHaveBeenCalledWith(ypEvent.ypGrup);
+  });
+
+  it("onPrintYedekParcaEtiket yoksa yazdır düğmesi çıkmaz", () => {
+    render(<MachineTimeline {...baseProps}
+      detailTimelineEvents={[ypEvent]} onPrintYedekParcaEtiket={null} />);
+    expect(screen.queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
+  });
+});

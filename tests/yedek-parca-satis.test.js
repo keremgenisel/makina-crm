@@ -232,4 +232,8 @@ describe("musteriTahsisi (alıcı müşteriyse otomatik tam tahsis)", () => {
     expect(musteriTahsisi({ aliciTipi: "musteri", miktar: 4 })).toEqual([]);
     expect(musteriTahsisi({ aliciTipi: "musteri", musteriId: 7, miktar: 0 })).toEqual([]);
   });
+  it("geçmiş tarihli satışta tahsis tarihi SATIŞ tarihini alır (bugünü değil) — makina raporu bugünü göstermesin", () => {
+    const t = musteriTahsisi({ aliciTipi: "musteri", musteriId: 7, miktar: 4, tarih: "2025-03-14" });
+    expect(t[0].tarih).toBe("2025-03-14");
+  });
 });

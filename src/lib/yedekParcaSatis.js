@@ -58,7 +58,10 @@ export function kargoPlanlandiMi(s, nowIso) {
 export function musteriTahsisi(rec) {
   const miktar = parseInt(rec?.miktar) || 0;
   if (rec?.aliciTipi !== "musteri" || !rec?.musteriId || !(miktar > 0)) return [];
-  return [{ miktar, customerId: Number(rec.musteriId), serialNo: "", makinaSerbest: "", tarih: today() }];
+  // Tahsis satış anında yapılıyor → tarihi satışın tarihi olsun (bugün DEĞİL). Geçmiş tarihli bir
+  // satışta makina geçmiş raporu tahsis tarihini (t.tarih) satış tarihinin önüne aldığı için, bugünün
+  // tarihi damgalanırsa raporda geçmiş tarih yerine bugün görünüyordu.
+  return [{ miktar, customerId: Number(rec.musteriId), serialNo: "", makinaSerbest: "", tarih: rec.tarih || today() }];
 }
 
 // Yeni satış oluştur (add) + parçayı stoktan düş. Alıcı müşteriyse otomatik o makinaya tahsis eder.

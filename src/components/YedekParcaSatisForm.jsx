@@ -12,11 +12,11 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false || d.anlasmaliServisMi);
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
   const panoDusIleri = !!form.panoDusmeZamani && new Date(form.panoDusmeZamani).getTime() > Date.now();
-  // Panoya gönderme iki yolla: "Fabrika Teslim" (fabrikaTeslim) VEYA "Kargo" (kargo). İkisi de kargoDurum'u
-  // set eder (panoya düşürür); ayrımı fabrikaTeslim bayrağı yapar (panoda 🏭 FABRİKA TESLİM vs 📦 KARGO).
+  // Teslim şekli (fabrikaTeslim) ile panoya gönderme (kargoDurum) AYRI iki karar: teslim şekli her zaman
+  // kayda/etikete/makina geçmişine yazılır ama panoya DÜŞÜRMEZ; panoya gönderme ayrı bir opt-in kutudur
+  // (eski/geçmiş tarihli satışlar canlı panoyu kirletmesin diye kapalı bırakılabilir).
   const panoda = !!form.kargoDurum;
   const fabrikaTeslim = !!form.fabrikaTeslim;
-  const kargoGonder = panoda && !fabrikaTeslim;
   const isEdit = !!form.id;
   const aliciTipi = form.aliciTipi || "bayi";
   const disFirma = !!form.disFirma; // "Diğer" = anlaşmasız dış firma alıcı (bayi tipinde, kayıtlı bayi değil)
@@ -199,40 +199,95 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         </Select>
       </Field>
 
-      {/* Panoya gönderme: üstte "Fabrika Teslim", altında "Kargo". İkisi de panoya düşürür (kargoDurum set);
-          Fabrika Teslim işaretliyse panoda 🏭 FABRİKA TESLİM, Kargo'da 📦 KARGO görünür. Karşılıklı dışlarlar. */}
+      {/* ── Teslim Şekli — HER ZAMAN kayda/etikete/makina geçmişine yazılır, panoya DÜŞÜRMEZ ──
+          Segment seçici yalnız fabrikaTeslim bayrağını değiştirir (kargoDurum'a dokunmaz). */}
+      <div style={{ marginTop: 12 }}>
+        <Field label="Teslim Şekli">
+          <div style={{ display: "inline-flex", gap: 4, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 9, padding: 3 }}>
+            {[[true, "🏭 Fabrika Teslim"], [false, "📦 Kargo"]].map(([ft, l]) => {
+              const secili = fabrikaTeslim === ft;
+              return (
+                <button key={l} type="button"
+                  onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "", teslimatFarkli: false } : {}) }))}
+                  style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                    background: secili ? "#e85d1a" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
+              );
+            })}
+          </div>
+        </Field>
+
+        {/* Teslim detayları (teslim şekline göre) — panodan bağımsız, boş bırakılabilir. */}
+        <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: fabrikaTeslim ? "1fr" : "1.4fr 1.4fr 1fr", gap: 8 }}>
+            {!fabrikaTeslim && <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />}
+            {!fabrikaTeslim && <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />}
+            <Field label={fabrikaTeslim ? "Teslim Tarihi" : "Kargo Tarihi"}>
+              <Input type="date" value={form.kargoTarih || ""} onChange={e => setForm(p => ({ ...p, kargoTarih: e.target.value }))} />
+            </Field>
+          </div>
+          <Field label={fabrikaTeslim ? "Teslim Eden Kişi" : "Kargoyu Veren Kişi"}>
+            <Input list="yedek-parca-kargoci-listesi" value={form.kargoSorumlusu || ""} placeholder="Seçin veya yazın..."
+              onChange={e => setForm(p => ({ ...p, kargoSorumlusu: e.target.value }))} />
+            <datalist id="yedek-parca-kargoci-listesi">{kargociAdlari.map(a => <option key={a} value={a} />)}</datalist>
+          </Field>
+          {/* Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). Alıcının kayıtlı
+              adresi yerine bu satışa özel adres; boşsa alıcının adresine gider. Üç alıcı türünde de aynı. */}
+          {!fabrikaTeslim && (
+            <div style={{ borderTop: "2px dashed var(--ambBr3, #fed7aa)", paddingTop: 12 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!form.teslimatFarkli}
+                  onChange={e => setForm(p => ({ ...p, teslimatFarkli: e.target.checked }))}
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a" }} />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "#e85d1a" }}>📍 Farklı adrese kargolat</span>
+                {form.teslimatFarkli && (
+                  <button type="button" onClick={adresDoldur}
+                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#e85d1a", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
+                    ⤵ Alıcının adresini doldur
+                  </button>
+                )}
+              </label>
+              {form.teslimatFarkli && (
+                <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="Teslim Alacak (kişi / firma)"><Input value={form.teslimatAd || ""} onChange={e => setForm(p => ({ ...p, teslimatAd: e.target.value }))} placeholder="Teslim alacak kişi/firma" /></Field>
+                    <Field label="Telefon"><Input value={form.teslimatTel || ""} onChange={e => setForm(p => ({ ...p, teslimatTel: e.target.value }))} placeholder="Telefon" /></Field>
+                  </div>
+                  <Field label="Açık Adres"><Input value={form.teslimatAdres || ""} onChange={e => setForm(p => ({ ...p, teslimatAdres: e.target.value }))} placeholder="Cadde, mahalle, no" /></Field>
+                  <CountryCityFields country={form.teslimatUlke || ""} city={form.teslimatSehir || ""} ilce={form.teslimatIlce || ""}
+                    onCountry={v => setForm(p => ({ ...p, teslimatUlke: v, teslimatSehir: "", teslimatIlce: "" }))}
+                    onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
+                    onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
+                    geoData={geoData} loadingGeo={loadingGeo} />
+                  <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, alıcının kayıtlı adresine gider.</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Panoya gönderme — AYRI opt-in. Kapalıyken kayıt panoya düşmez (eski satışlar için bırak). ── */}
       <div style={{ marginTop: 12, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: fabrikaTeslim ? "var(--ambBg, #fffbeb)" : "var(--n100, #f8fafc)", padding: "10px 12px", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-          <input type="checkbox" checked={fabrikaTeslim}
-            onChange={e => setForm(p => ({ ...p, fabrikaTeslim: e.target.checked, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
-            style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--amb600, #d97706)" }} />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: fabrikaTeslim ? "var(--amb800, #92400e)" : "var(--n600, #475569)" }}>
-            <Icon name="store" size={14} /> Fabrika Teslim (panoya düşer, kargo yerine "Fabrika Teslim")
-          </span>
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: kargoGonder ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", padding: "10px 12px" }}>
-          <input type="checkbox" checked={kargoGonder}
-            onChange={e => setForm(p => ({ ...p, fabrikaTeslim: false, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
-            style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--blu600, #2563eb)" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: kargoGonder ? "var(--blu700, #1d4ed8)" : "var(--n600, #475569)" }}>
-            📦 Servis ve Kargo Panosuna gönder (kargo takibi)
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", background: panoda ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", padding: "10px 12px" }}>
+          <input type="checkbox" checked={panoda}
+            onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.checked ? (p.kargoDurum || "Hazırlanıyor") : "" }))}
+            style={{ width: 16, height: 16, cursor: "pointer", marginTop: 2, accentColor: "var(--blu600, #2563eb)" }} />
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: panoda ? "var(--blu700, #1d4ed8)" : "var(--n600, #475569)" }}>
+              📦 Servis ve Kargo Panosuna gönder (takip)
+            </span>
+            <span style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 2 }}>
+              {panoda ? "Panoda takip edilecek." : "Kapalı: yalnızca kayıt olur, panoya düşmez."}
+            </span>
           </span>
         </label>
         {panoda && (
           <div style={{ padding: 12, display: "grid", gap: 10, borderTop: "1px solid var(--n200, #e2e8f0)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: fabrikaTeslim ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 8 }}>
-              {!fabrikaTeslim && <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />}
-              {!fabrikaTeslim && <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />}
-              <Input type="date" value={form.kargoTarih || ""} onChange={e => setForm(p => ({ ...p, kargoTarih: e.target.value }))} />
-              <Select value={form.kargoDurum || "Hazırlanıyor"} onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.value }))}>
-                {KARGO_DURUMLARI.map(d => <option key={d}>{d}</option>)}
-              </Select>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <Field label={fabrikaTeslim ? "Teslim Eden Kişi" : "Kargoyu Verecek Kişi"}>
-                <Input list="yedek-parca-kargoci-listesi" value={form.kargoSorumlusu || ""} placeholder="Seçin veya yazın..."
-                  onChange={e => setForm(p => ({ ...p, kargoSorumlusu: e.target.value }))} />
-                <datalist id="yedek-parca-kargoci-listesi">{kargociAdlari.map(a => <option key={a} value={a} />)}</datalist>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <Field label="Pano Durumu">
+                <Select value={form.kargoDurum || "Hazırlanıyor"} onChange={e => setForm(p => ({ ...p, kargoDurum: e.target.value }))}>
+                  {KARGO_DURUMLARI.map(d => <option key={d}>{d}</option>)}
+                </Select>
               </Field>
               <Field label="Panoya Düşme Zamanı">
                 <Input type="datetime-local" value={(form.panoDusmeZamani || "").slice(0, 16)}
@@ -242,39 +297,6 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                 </span>
               </Field>
             </div>
-            {/* Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). Alıcının kayıtlı
-                adresi yerine bu satışa özel adres; boşsa alıcının adresine gider. Üç alıcı türünde de aynı. */}
-            {kargoGonder && (
-              <div style={{ borderTop: "2px dashed var(--ambBr3, #fed7aa)", marginTop: 2, paddingTop: 12 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input type="checkbox" checked={!!form.teslimatFarkli}
-                    onChange={e => setForm(p => ({ ...p, teslimatFarkli: e.target.checked }))}
-                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a" }} />
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "#e85d1a" }}>📍 Farklı adrese kargolat</span>
-                  {form.teslimatFarkli && (
-                    <button type="button" onClick={adresDoldur}
-                      style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#e85d1a", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
-                      ⤵ Alıcının adresini doldur
-                    </button>
-                  )}
-                </label>
-                {form.teslimatFarkli && (
-                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label="Teslim Alacak (kişi / firma)"><Input value={form.teslimatAd || ""} onChange={e => setForm(p => ({ ...p, teslimatAd: e.target.value }))} placeholder="Teslim alacak kişi/firma" /></Field>
-                      <Field label="Telefon"><Input value={form.teslimatTel || ""} onChange={e => setForm(p => ({ ...p, teslimatTel: e.target.value }))} placeholder="Telefon" /></Field>
-                    </div>
-                    <Field label="Açık Adres"><Input value={form.teslimatAdres || ""} onChange={e => setForm(p => ({ ...p, teslimatAdres: e.target.value }))} placeholder="Cadde, mahalle, no" /></Field>
-                    <CountryCityFields country={form.teslimatUlke || ""} city={form.teslimatSehir || ""} ilce={form.teslimatIlce || ""}
-                      onCountry={v => setForm(p => ({ ...p, teslimatUlke: v, teslimatSehir: "", teslimatIlce: "" }))}
-                      onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
-                      onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
-                      geoData={geoData} loadingGeo={loadingGeo} />
-                    <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, alıcının kayıtlı adresine gider.</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>

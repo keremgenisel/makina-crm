@@ -334,17 +334,18 @@ describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
     expect(screen.queryByRole("button", { name: /Parça Ekle/ })).toBeNull();
   });
 
-  it("'Servis ve Kargo Panosuna gönder' checkbox opt-in: varsayılan KAPALI, işaretleyince kargo alanları açılır", () => {
+  it("'Servis ve Kargo Panosuna gönder' opt-in: varsayılan KAPALI (panoya düşmez), işaretleyince pano alanları açılır", () => {
     render(<FormHarness />);
     const toggle = screen.getByText(/Servis ve Kargo Panosuna gönder/).closest("label").querySelector('input[type="checkbox"]');
     expect(toggle.checked).toBe(false);                            // varsayılan kapalı (panoya düşmez)
-    expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull();
+    expect(screen.queryByText("Pano Durumu")).toBeNull();
+    // Kargo firma/takip teslim şekline (varsayılan Kargo) bağlı; panodan bağımsız zaten görünür.
+    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy();
     fireEvent.click(toggle);
-    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy(); // açılınca kargo alanları
-    expect(screen.getByPlaceholderText("Takip no")).toBeTruthy();
+    expect(screen.getByText("Pano Durumu")).toBeTruthy();          // opt-in işaretlenince pano alanları
   });
 
-  it("'Fabrika Teslim' checkbox: panoya düşürür (kargoDurum set) + fabrikaTeslim:true + kargo firma/takip GİZLİ", () => {
+  it("'Fabrika Teslim' seçmek fabrikaTeslim:true yapar, panoya DÜŞÜRMEZ, kargo firma/takip gizlenir", () => {
     let sonForm;
     const H = () => {
       const [form, setForm] = useState({ aliciTipi: "bayi", dealerId: 5, satirlar: [{ partId: "7", miktar: "2", birimFiyat: "100" }], currency: "TRY", tarih: "2026-07-20", faturaTipi: "Faturalı Yurtiçi" });
@@ -352,10 +353,9 @@ describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
       return <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={[{ id: 1, partId: "7", miktar: 10 }]} onSave={vi.fn()} onCancel={vi.fn()} />;
     };
     render(<H />);
-    const fab = screen.getByText(/Fabrika Teslim/).closest("label").querySelector('input[type="checkbox"]');
-    fireEvent.click(fab);
+    fireEvent.click(screen.getByRole("button", { name: /Fabrika Teslim/ }));
     expect(sonForm.fabrikaTeslim).toBe(true);
-    expect(sonForm.kargoDurum).toBe("Hazırlanıyor");       // panoya düşer
+    expect(sonForm.kargoDurum).toBeFalsy();                // teslim şekli AYRI karar → panoya düşürmez
     expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull(); // fabrika teslimde kargo firma yok
     expect(screen.getByText("Teslim Eden Kişi")).toBeTruthy();         // etiket "Teslim Eden Kişi"
   });
@@ -380,7 +380,7 @@ describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
     expect(screen.getByText("Şehir")).toBeTruthy();
   });
 
-  it("'Farklı adrese kargolat' yalnız Kargo seçiliyken görünür; işaretleyince teslimat alanları açılır", () => {
+  it("'Farklı adrese kargolat' Kargo seçiliyken görünür (panodan bağımsız); işaretleyince teslimat alanları açılır", () => {
     let sonForm;
     const H = () => {
       const [form, setForm] = useState({ aliciTipi: "bayi", dealerId: 5, satirlar: [{ partId: "7", miktar: "2", birimFiyat: "100" }], currency: "TRY", faturaTipi: "Faturalı Yurtiçi" });
@@ -388,9 +388,7 @@ describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
       return <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={[{ id: 1, partId: "7", miktar: 10 }]} onSave={vi.fn()} onCancel={vi.fn()} />;
     };
     render(<H />);
-    // Kargo kapalıyken teslimat seçeneği yok
-    expect(screen.queryByText(/Farklı adrese kargolat/)).toBeNull();
-    fireEvent.click(screen.getByText(/Servis ve Kargo Panosuna gönder/).closest("label").querySelector('input[type="checkbox"]'));
+    // Teslim şekli varsayılan Kargo → teslimat seçeneği panoya BAKMADAN görünür.
     const tesToggle = screen.getByText(/Farklı adrese kargolat/).closest("label").querySelector('input[type="checkbox"]');
     expect(tesToggle.checked).toBe(false);
     expect(screen.queryByPlaceholderText("Cadde, mahalle, no")).toBeNull();
@@ -446,17 +444,16 @@ describe("YedekParcaSatisForm — çoklu parça (ekleme modu)", () => {
     expect(sonForm.teslimatTel).toBe("0262 111 22 33");
   });
 
-  it("Kargo ve Fabrika Teslim karşılıklı dışlar (birini işaretleyince öteki kapanır)", () => {
+  it("Teslim Şekli segmenti Kargo↔Fabrika Teslim geçişi (fabrikaTeslim bayrağı), kargoDurum'a dokunmaz", () => {
     let sonForm;
     const H = () => {
-      const [form, setForm] = useState({ aliciTipi: "bayi", dealerId: 5, satirlar: [{ partId: "7", miktar: "2", birimFiyat: "100" }], currency: "TRY", fabrikaTeslim: true, kargoDurum: "Hazırlanıyor" });
+      const [form, setForm] = useState({ aliciTipi: "bayi", dealerId: 5, satirlar: [{ partId: "7", miktar: "2", birimFiyat: "100" }], currency: "TRY", fabrikaTeslim: true });
       sonForm = form;
       return <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={[{ id: 1, partId: "7", miktar: 10 }]} onSave={vi.fn()} onCancel={vi.fn()} />;
     };
     render(<H />);
-    const kargo = screen.getByText(/Servis ve Kargo Panosuna gönder/).closest("label").querySelector('input[type="checkbox"]');
-    fireEvent.click(kargo); // kargo işaretle → fabrikaTeslim false olur
+    fireEvent.click(screen.getByRole("button", { name: /📦 Kargo/ })); // Kargo'ya geç → fabrikaTeslim false
     expect(sonForm.fabrikaTeslim).toBe(false);
-    expect(sonForm.kargoDurum).toBe("Hazırlanıyor");
+    expect(sonForm.kargoDurum).toBeFalsy(); // teslim şekli değişimi panoya SOKMAZ
   });
 });

@@ -1,5 +1,5 @@
 import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
-import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, ODEME_YONTEMLERI } from "../lib/constants";
+import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize } from "../lib/utils";
 
@@ -414,7 +414,13 @@ export const CountryCityFields = ({ country, city, ilce, onCountry, onCity, onIl
     }
   }
   // API gelmediyse Türkiye için statik 81 il devreye girer
-  const cityList = fromApi.length > 0 ? fromApi : staticCities(country);
+  const base = fromApi.length > 0 ? fromApi : staticCities(country);
+  // API'nin döndürmediği şehirleri (ör. Suudi Arabistan-Unaizah, Kosova-Peje) elle tamamla — liste
+  // dolu olunca alan <Select> olduğu için aksi halde bu şehirler hiç seçilemiyordu.
+  const supplement = CITY_SUPPLEMENT[country] || [];
+  const cityList = supplement.length
+    ? [...new Set([...base, ...supplement])].sort((a, b) => a.localeCompare(b, "tr"))
+    : base;
   const ilceListesi = (onIlce && country === "Türkiye" && ILCELER[city]) || null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: ilceListesi ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>

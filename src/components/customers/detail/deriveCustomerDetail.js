@@ -37,8 +37,13 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         // Not: eskiden a.id - b.id ile sıralanıyordu (sıralı ID = oluşturma sırası varsayımı).
         // uid() artık rastgele ID ürettiği için bu varsayım geçersiz; doğal dizi sırası
         // (partSales'e eklenme = oluşturma sırası) hem eski hem yeni veride doğru sonucu verir.
-        // Teslim türü başlığa yansır (yedek parçadaki gibi, iconsuz): panodaysa "(Fabrika Teslim)"/"(Kargo)".
-        const teslim = psList[0].kargoDurum ? (psList[0].fabrikaTeslim ? " (Fabrika Teslim)" : " (Kargo)") : "";
+        // Teslim türü başlığa yansır (iconsuz). Teslim şekli panodan AYRI kaydedildiği için: Fabrika
+        // Teslim seçiliyse panoya düşmese de gösterilir; Kargo yalnız panodaysa VEYA kargo bilgisi
+        // (firma/takip/tarih/kişi) doluysa "(Kargo)" gösterilir → teslim şekli hiç seçilmemiş eski düz
+        // "Kalıp Verildi" kayıtları "(Kargo)" ile kirlenmez.
+        const p0 = psList[0];
+        const kargoBilgisiVar = !!(p0.kargoDurum || p0.kargoFirma || p0.kargoTakipNo || p0.kargoTarih || p0.kargoSorumlusu);
+        const teslim = p0.fabrikaTeslim ? " (Fabrika Teslim)" : (kargoBilgisiVar ? " (Kargo)" : "");
         ev.push({ kind: "part", date: psList[0].tarih, color: "var(--orTx, #c2410c)", title: "Kalıp Verildi" + teslim, psList });
       });
       (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {
@@ -88,7 +93,9 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         const miktar = buMakina.reduce((sum, t) => sum + (parseInt(t.miktar) || 0), 0);
         const sonTarih = buMakina.reduce((mx, t) => (String(t.tarih || s.tarih) > mx ? String(t.tarih || s.tarih) : mx), String(s.tarih || ""));
         const key = s.batchId != null ? "b:" + s.batchId : "s:" + s.id;
-        if (!tahsisGruplari.has(key)) tahsisGruplari.set(key, { tip: tahsisEdenTip(s), ad: tahsisEdenAd(s), tarih: sonTarih, kalemler: [] });
+        // satisId: satıra tıklayınca Stok > Yedek Parça Satışı'nda bu satışa odaklanmak için (batch'te
+        // ilk kayıt; Stok sekmesi id'yi batch'e göre bulup vurguluyor). Salt-okunur kalır, düzenleme değil.
+        if (!tahsisGruplari.has(key)) tahsisGruplari.set(key, { tip: tahsisEdenTip(s), ad: tahsisEdenAd(s), tarih: sonTarih, kalemler: [], satisId: s.id });
         const g = tahsisGruplari.get(key);
         g.kalemler.push({ miktar, parca: parcaAdiOf(s) });
         if (sonTarih > g.tarih) g.tarih = sonTarih;
@@ -100,6 +107,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
           kind: "part", date: g.tarih, color: "var(--cyan, #0891b2)",
           title: `Yedek Parça (${g.tip})${kalemEk}`,
           desc: `${kalemMetni} · ${g.ad} tarafından tahsis edildi`,
+          ypTahsisId: g.satisId, // tıklayınca Stok'taki satışa git (salt-okunur)
         });
       }
       (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {

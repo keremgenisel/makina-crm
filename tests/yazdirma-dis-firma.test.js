@@ -63,6 +63,15 @@ describe("makina raporu: satılan yedek parçalar", () => {
     const html = buildMachineReportHtml(musteri, [], [], {}, "", parts, null, [], [], dealers);
     expect(html).not.toContain("SATILAN YEDEK PARÇALAR");
   });
+
+  it("geçmiş tarihli müşteri satışında rapor SATIŞ tarihini gösterir — eski kayıtta tahsise bugün damgalı olsa bile", () => {
+    // Eski (düzeltme öncesi) kayıt: satış 2025-03-14, otomatik tahsise kayıt günü (2026-07-30) damgalanmış.
+    const yps = [{ id: 653, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 1, tarih: "2025-03-14",
+      tahsisler: [{ miktar: 1, customerId: 1, tarih: "2026-07-30" }] }];
+    const html = buildMachineReportHtml(musteri, [], [], {}, "", parts, { name: "FABRİKA-TEST A.Ş." }, [], yps, dealers);
+    expect(html).toContain("2025"); // satış tarihi (14.03.2025) yazılır
+    expect(html).not.toContain("30.07.2026"); // tahsise damgalı bugünün tarihi DEĞİL
+  });
 });
 
 describe("servis formu — değişen parça fiyatı garanti içinde gizlenir", () => {

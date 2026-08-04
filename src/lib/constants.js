@@ -106,6 +106,15 @@ export const staticCities = (country) =>
   : country === "Kuzey Kıbrıs Türk Cumhuriyeti" ? CITIES_KKTC
   : [];
 
+// API (countriesnow.space) bazı şehirleri döndürmüyor; o şehir açılır listede çıkmadığı için
+// (liste dolu olunca alan serbest metin değil <Select> oluyor) kullanıcı seçemiyordu. Ülke bazında
+// (Türkçe ülke adıyla, COUNTRIES ile aynı yazım) elle tamamlanır; CountryCityFields API listesiyle
+// birleştirir. Yeni eksik şehir çıkarsa buraya ekleyin.
+export const CITY_SUPPLEMENT = {
+  "Suudi Arabistan": ["Unaizah"],
+  "Kosova": ["Peje"],
+};
+
 // ── Seed Data ──────────────────────────────────────────────────────────────
 export const INIT_CUSTOMERS = [];
 

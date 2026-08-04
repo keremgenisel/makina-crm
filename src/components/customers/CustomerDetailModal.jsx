@@ -15,6 +15,7 @@ import {
   buildSandikEtiketiHtml,
   DEFAULT_SANDIK_TRANSLATIONS,
   kalipEtiketYazdir,
+  yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar } from "../ui";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
@@ -55,6 +56,7 @@ export const CustomerDetailModal = ({
   kdvRates, appSettings,
   showToast,
   kalipDefs = [], partTypeDefs = [], yedekParcaSatislar = [], setYedekParcaSatislar = null,
+  onGoYedekParca = null,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -984,6 +986,8 @@ export const CustomerDetailModal = ({
               onEditYedekParca={setYedekParcaSatislar ? openEditYedekParca : null}
               onDeleteYedekParca={setYedekParcaSatislar ? setConfirmDeleteYedekParca : null}
               onToggleYedekParcaOdendi={setYedekParcaSatislar ? toggleYedekParcaOdendi : null}
+              onGoYedekParca={onGoYedekParca}
+              onPrintYedekParcaEtiket={(grup) => yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory })}
               onEditPayment={openEditPayment}
               onToggleCekTahsil={toggleCekTahsil}
               onDeletePayment={setConfirmDeletePaymentId}

@@ -494,7 +494,12 @@ export function buildMachineReportHtml(detailView, detailHistory, partSales, tra
       if (t.customerId !== detailView.id) continue;
       const part = (parts || []).find(p => String(p.id) === String(s.partId));
       const bayi = s.aliciTipi === "bayi" ? ((dealers || []).find(d => d.id === s.dealerId)?.name || "") : "";
-      yedekParcaTahsisleri.push({ tarih: t.tarih || s.tarih, ad: part?.ad || "—", miktar: t.miktar, bayi });
+      // Müşterinin KENDİ makinasına doğrudan alımında tahsis = satış olayı → SATIŞ tarihini kullan
+      // (ekrandaki makina geçmişiyle aynı). Eski kayıtlarda otomatik tahsise bugünün tarihi damgalandığı
+      // için geçmiş tarihli satışta rapor bugünü gösteriyordu; bu okuma-tarafı kuralı onları da düzeltir.
+      const musteriKendiMakinasi = s.aliciTipi === "musteri" && Number(s.musteriId) === t.customerId;
+      const tarih = musteriKendiMakinasi ? (s.tarih || t.tarih) : (t.tarih || s.tarih);
+      yedekParcaTahsisleri.push({ tarih, ad: part?.ad || "—", miktar: t.miktar, bayi });
     }
   }
   yedekParcaTahsisleri.sort((a, b) => String(a.tarih || "").localeCompare(String(b.tarih || "")));

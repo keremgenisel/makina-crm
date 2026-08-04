@@ -67,6 +67,7 @@ describe("deriveCustomerDetail", () => {
     expect(tahsis[0].title).not.toMatch(/Kargo|Fabrika Teslim/);
     expect(tahsis[0].desc).toMatch(/2 adet Dişli/);
     expect(tahsis[0].desc).toMatch(/Bayi X tarafından tahsis edildi/);
+    expect(tahsis[0].ypTahsisId).toBe(650); // tıklayınca Stok'taki bu satışa gidilsin
   });
 
   it("henüz tahsis edilmemiş yedek parça satışı hiçbir makinaya düşmez", () => {
@@ -104,14 +105,18 @@ describe("deriveCustomerDetail", () => {
     expect(olaylar[0].desc).toMatch(/Piston/);
   });
 
-  it("Kalıp Verildi başlığı teslim türünü içerir (panodaysa Fabrika Teslim / Kargo, değilse suffix yok)", () => {
+  it("Kalıp Verildi başlığı teslim türünü içerir (kural b: Fabrika Teslim hep; Kargo panoda/bilgi varsa; eski düz kayıt temiz)", () => {
     const detailView = { id: 1, name: "A", currency: "TRY" };
-    const fab = [{ id: 20, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-01", ucret: 100, currency: "TRY", kargoDurum: "Hazırlanıyor", fabrikaTeslim: true }];
-    const kargo = [{ id: 21, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-02", ucret: 100, currency: "TRY", kargoDurum: "Hazırlanıyor", fabrikaTeslim: false }];
-    const yok = [{ id: 22, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-03", ucret: 100, currency: "TRY" }]; // panoda değil
-    expect(deriveCustomerDetail(base({ detailView, partSales: fab })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi (Fabrika Teslim)");
-    expect(deriveCustomerDetail(base({ detailView, partSales: kargo })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi (Kargo)");
-    expect(deriveCustomerDetail(base({ detailView, partSales: yok })).detailTimelineEvents.find(e => e.psList)?.title).toBe("Kalıp Verildi");
+    const baslik = (partSales) => deriveCustomerDetail(base({ detailView, partSales })).detailTimelineEvents.find(e => e.psList)?.title;
+    const k = (extra) => [{ id: 20, customerId: 1, tur: "Kalıp", ad: "K", tarih: "2026-03-01", ucret: 100, currency: "TRY", ...extra }];
+    // Fabrika Teslim panoya düşmese de gösterilir (teslim şekli panodan ayrı kaydedildi).
+    expect(baslik(k({ fabrikaTeslim: true, kargoDurum: "Hazırlanıyor" }))).toBe("Kalıp Verildi (Fabrika Teslim)");
+    expect(baslik(k({ fabrikaTeslim: true, kargoDurum: "" }))).toBe("Kalıp Verildi (Fabrika Teslim)");
+    // Kargo: panodaysa VEYA kargo bilgisi (firma/takip/tarih/kişi) doluysa "(Kargo)".
+    expect(baslik(k({ fabrikaTeslim: false, kargoDurum: "Hazırlanıyor" }))).toBe("Kalıp Verildi (Kargo)");
+    expect(baslik(k({ fabrikaTeslim: false, kargoDurum: "", kargoFirma: "Aras" }))).toBe("Kalıp Verildi (Kargo)");
+    // Eski düz kayıt (teslim şekli/bilgisi hiç yok) → suffix yok, kirlenmez.
+    expect(baslik(k({}))).toBe("Kalıp Verildi");
   });
 
   it("fabrikaTeslim satış makina geçmişinde 'Yedek Parça (Fabrika Teslim)' başlığıyla görünür", () => {

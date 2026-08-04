@@ -25,6 +25,8 @@ export const MachineTimeline = ({
   onEditYedekParca = null,
   onDeleteYedekParca = null,
   onToggleYedekParcaOdendi = null,
+  onGoYedekParca = null, // bayiden tahsis edilen (salt-okunur) satıra tıklayınca Stok'taki satışa git
+  onPrintYedekParcaEtiket = null, // müşterinin kendi yedek parça satışı için kargo etiketi yazdır
   onEditPayment,
   onToggleCekTahsil,
   onDeletePayment,
@@ -118,6 +120,7 @@ export const MachineTimeline = ({
                   <>
                     <span onClick={duzenlenebilir ? () => onEditYedekParca(ev.yp) : undefined} title={duzenlenebilir ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: duzenlenebilir ? "pointer" : "default", textDecoration: duzenlenebilir ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}{!tekli ? ` (${ev.ypGrup.length} kalem)` : ""}</span>
+                    {onPrintYedekParcaEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintYedekParcaEtiket(ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp])}><Icon name="print" size={11} /></Btn>}
                     {canDo("cust_yedek_parca_delete") && onDeleteYedekParca && (
                       <button onClick={() => onDeleteYedekParca(ev.yp)} title={tekli ? "Yedek parça (kargo) satışını sil" : "Toplu satışın tümünü sil"}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
@@ -126,7 +129,13 @@ export const MachineTimeline = ({
                     )}
                   </>
                   );
-                })() : ev.kind === "payment" && payment ? (
+                })() : ev.kind === "part" && ev.ypTahsisId ? (
+                  // Bayi/dış firma alımından bu makinaya TAHSİS edilen parça (salt-okunur). Tıklayınca
+                  // Stok > Yedek Parça Satışı'nda o satışa gidilir (burada düzenlenmez; borçlusu bayi).
+                  <span onClick={onGoYedekParca ? () => onGoYedekParca(ev.ypTahsisId) : undefined}
+                    title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
+                    style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: onGoYedekParca ? "pointer" : "default", textDecoration: onGoYedekParca ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                ) : ev.kind === "payment" && payment ? (
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>

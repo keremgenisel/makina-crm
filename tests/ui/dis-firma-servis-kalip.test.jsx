@@ -58,18 +58,20 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
     expect(screen.getByText("Firma Adı")).toBeTruthy();
   });
 
-  it("'Servis ve Kargo Panosuna gönder' anahtarı kargo alanlarını açar (kargoDurum set olur)", () => {
+  it("'Servis ve Kargo Panosuna gönder' opt-in: varsayılan kapalı (panoya düşmez), işaretleyince Pano Durumu açılır", () => {
     const H = () => {
       const [form, setForm] = useState({ customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "" }], currency: "TRY" });
       return <PartSaleForm title="Extra Kalıp Satışı" form={form} setForm={setForm} customers={customers} kalipDefs={[]} dealers={dealers} calisanlar={[{ id: 1, ad: "Ahmet" }]} factory={{ name: "Altuntaş Makina" }} onSave={vi.fn()} onCancel={vi.fn()} />;
     };
     render(<H />);
-    expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull(); // kapalıyken yok
-    fireEvent.click(screen.getByText(/Servis ve Kargo Panosuna gönder/));
-    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy(); // açılınca kargo alanları
+    expect(screen.queryByText("Pano Durumu")).toBeNull(); // kapalıyken pano alanları yok
+    // Kargo firma/takip teslim şekline (varsayılan Kargo) bağlı; panodan bağımsız zaten görünür.
+    expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy();
     expect(screen.getByPlaceholderText("Takip no")).toBeTruthy();
-    // "Kargoyu Verecek Kişi" önerileri fabrika çalışanlarından gelmeli (datalist)
+    // "Kargoyu Veren Kişi" önerileri fabrika çalışanlarından gelmeli (datalist, panodan bağımsız)
     expect(document.querySelector('#kalip-kargoci-listesi option[value="Ahmet"]')).toBeTruthy();
+    fireEvent.click(screen.getByText(/Servis ve Kargo Panosuna gönder/));
+    expect(screen.getByText("Pano Durumu")).toBeTruthy(); // opt-in işaretlenince pano alanları
   });
 
   it("düzenlemede kargoDurum dolu form ile açılınca 'panoya gönder' seçili + kargo alanları görünür", () => {
@@ -80,7 +82,7 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
     expect(screen.getByPlaceholderText("Kargo firması")).toBeTruthy();
   });
 
-  it("'Fabrika Teslim' checkbox: panoya düşürür + kargo firma/takip GİZLİ (yedek parçadaki gibi)", () => {
+  it("'Fabrika Teslim' seçmek fabrikaTeslim:true yapar, panoya DÜŞÜRMEZ, kargo firma/takip gizlenir", () => {
     let sonForm;
     const H = () => {
       const [form, setForm] = useState({ customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "100" }], currency: "TRY" });
@@ -88,9 +90,9 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
       return <PartSaleForm title="Extra Kalıp Satışı" form={form} setForm={setForm} customers={customers} kalipDefs={[]} dealers={dealers} factory={{ name: "Altuntaş Makina" }} onSave={vi.fn()} onCancel={vi.fn()} />;
     };
     render(<H />);
-    fireEvent.click(screen.getByText(/Fabrika Teslim/));
+    fireEvent.click(screen.getByRole("button", { name: /Fabrika Teslim/ }));
     expect(sonForm.fabrikaTeslim).toBe(true);
-    expect(sonForm.kargoDurum).toBe("Hazırlanıyor");                 // panoya düşer
+    expect(sonForm.kargoDurum).toBeFalsy();                          // teslim şekli AYRI → panoya düşürmez
     expect(screen.queryByPlaceholderText("Kargo firması")).toBeNull(); // fabrika teslimde kargo firma yok
   });
 });
