@@ -120,6 +120,23 @@ describe("PartSaleForm — Satış Yapan Firma = Diğer", () => {
     expect(sonForm.teslimatSehir).toBe("Kocaeli");
     expect(sonForm.teslimatIlce).toBe("Gebze");
   });
+
+  it("ödendi işaretliyken Ödeme Yöntemi çıkar; Çek seçilince vade + tahsil kutusu açılır", () => {
+    let sonForm;
+    const H = () => {
+      const [form, setForm] = useState({ customerId: 1, kaliplar: [{ ad: "K", olcu: "", fiyat: "100" }], currency: "TRY", odendi: true, yontem: "Nakit" });
+      sonForm = form;
+      return <PartSaleForm title="Extra Kalıp Satışı" form={form} setForm={setForm} customers={customers} kalipDefs={[]} dealers={dealers} factory={{ name: "Altuntaş Makina" }} onSave={vi.fn()} onCancel={vi.fn()} />;
+    };
+    render(<H />);
+    expect(screen.getByText("Ödeme Yöntemi")).toBeTruthy();
+    expect(screen.queryByText("Çek Vade Tarihi")).toBeNull();
+    const secici = screen.getByText("Ödeme Yöntemi").closest("div").querySelector("select");
+    fireEvent.change(secici, { target: { value: "Çek" } });
+    expect(sonForm.yontem).toBe("Çek");
+    expect(screen.getByText("Çek Vade Tarihi")).toBeTruthy();
+    expect(screen.getByText(/tahsil edilene kadar borçlu sayılır/)).toBeTruthy();
+  });
 });
 
 describe("MachineTimeline — dış firma bilgisi makina geçmişinde görünür", () => {

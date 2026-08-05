@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
@@ -29,9 +29,18 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
     const c = selectedCust || {};
     setForm(p => ({ ...p, teslimatAd: c.name || "", teslimatTel: c.phone || c.yetkili1Tel || "", teslimatAdres: c.adres || "", teslimatUlke: c.country || "", teslimatSehir: c.city || "", teslimatIlce: c.ilce || "" }));
   };
-  const kaliplar = form.kaliplar || [];
+  // Ekleme modunda kalıplar yedek parça formundaki gibi satır satır girilir (her satır: kalıp seçici +
+  // ölçü + fiyat + üretim formu). En az bir boş satır gösterilir. Düzenleme modunda tek kalıp düzenlenir.
+  const bosKalip = { ad: "", olcu: "", fiyat: "", uretimFormGonder: false };
+  const kaliplar = form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
   const kaliplarToplam = kaliplar.reduce((s, k) => s + parseMoney(k.fiyat), 0);
+  const kalipSatirlar = () => form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
+  const kalipSet = (i, alan, deger) => setForm(p => ({ ...p, kaliplar: kalipSatirlar().map((k, idx) => idx === i ? { ...k, [alan]: deger } : k) }));
+  const kalipSil = (i) => setForm(p => ({ ...p, kaliplar: (p.kaliplar || []).filter((_, idx) => idx !== i) }));
+  const kalipEkle = () => setForm(p => ({ ...p, kaliplar: [...kalipSatirlar(), { ...bosKalip }] }));
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
+  // Kalıp satırına model seç: adı yaz, ölçüyü müşterinin kayıtlı kalıp ölçüsünden ön-doldur.
+  const kalipSec = (i, def) => setForm(p => ({ ...p, kaliplar: kalipSatirlar().map((k, idx) => idx === i ? { ...k, ad: def.ad, olcu: k.olcu || (selectedCust?.kaliplar?.find(kk => kk.ad === def.ad)?.olcu || "") } : k) }));
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
@@ -88,85 +97,41 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         )}
       </Field>
 
-      <Field label="Veriliş Tarihi"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
-
-      {!isEdit && (
-        <Field label="Kalıp Ekle">
-          {kalipDefs.length === 0 ? (
-            <div style={{ fontSize: 11, color: "var(--red600, #dc2626)" }}>Tanımlı kalıp yok. Ayarlar → Katalog → Kalıp Modelleri'nden ekleyin.</div>
-          ) : (
-            // Aynı kalıp birden fazla kez eklenebilir (örn. farklı ölçüde veya aynı ölçüde 2 adet) — her ekleme kendi satırını oluşturur
-            <SearchPick items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id} placeholder="Kalıp ara..."
-              onPick={k => {
-                const olcu = selectedCust?.kaliplar?.find(kk => kk.ad === k.ad)?.olcu || "";
-                setForm(prev => ({ ...prev, kaliplar: [...(prev.kaliplar || []), { ad: k.ad, olcu, fiyat: "", uretimFormGonder: false }] }));
-              }} />
+      {/* Veriliş tarihi ile para birimi yan yana. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Veriliş Tarihi"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
+        <Field label="Para Birimi">
+          <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+            <option value="TRY">₺ Türk Lirası</option>
+            <option value="USD">$ Dolar (USD)</option>
+            <option value="EUR">€ Euro (EUR)</option>
+          </Select>
+          {(form.currency || "TRY") !== "TRY" && (
+            <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg2, #dbeafe)", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
           )}
         </Field>
-      )}
+      </div>
 
-      {isEdit && (
-        <Field label="Kalıp Modeli">
-          <Select value={kaliplar[0]?.ad || ""} onChange={e => {
-            const ad = e.target.value;
-            const custOlcu = selectedCust?.kaliplar?.find(k => k.ad === ad)?.olcu || "";
-            setForm(p => ({ ...p, kaliplar: [{ ...(p.kaliplar?.[0] || {}), ad, olcu: custOlcu || p.kaliplar?.[0]?.olcu || "" }] }));
-          }}>
-            <option value="">Seçin...</option>
-            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
-          </Select>
-        </Field>
-      )}
-
-      {kaliplar.length > 0 && (
-        <Field label={isEdit ? "Kalıp Ölçüsü ve Fiyatı" : `Seçilen Kalıplar (${kaliplar.length})`}>
-          {kaliplar.map((k, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr 1fr auto" : "1fr 110px 110px auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
-              {!isEdit && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--orTx, #c2410c)" }}>{k.ad}</span>}
-              <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm"
-                onChange={e => setForm(prev => {
-                  const arr = [...(prev.kaliplar || [])];
-                  arr[i] = { ...arr[i], olcu: e.target.value };
-                  return { ...prev, kaliplar: arr };
-                })} />
-              <MoneyInput value={k.fiyat} sym={CUR_SYM[form.currency || "TRY"]}
-                onChange={v => setForm(prev => {
-                  const arr = [...(prev.kaliplar || [])];
-                  arr[i] = { ...arr[i], fiyat: v };
-                  return { ...prev, kaliplar: arr };
-                })} />
-              <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
-                <input type="checkbox" checked={!!k.uretimFormGonder}
-                  onChange={e => setForm(prev => {
-                    const arr = [...(prev.kaliplar || [])];
-                    arr[i] = { ...arr[i], uretimFormGonder: e.target.checked };
-                    return { ...prev, kaliplar: arr };
-                  })}
-                  style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
-                Üretim formuna gönder
-              </label>
-              {!isEdit && (
-                <button type="button" title="Bu kalıbı kaldır"
-                  onClick={() => setForm(prev => ({ ...prev, kaliplar: (prev.kaliplar || []).filter((_, idx) => idx !== i) }))}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
-              )}
-            </div>
-          ))}
-        </Field>
-      )}
-
+      {/* Satış yapan firma ile fatura tipi yan yana. */}
       {selectedCust && (
-        <Field label="Satış Yapan Firma">
-          <Select value={form.satisFirma || factoryName} onChange={e => {
-            const v = e.target.value;
-            setForm(p => v === "Diğer" ? { ...p, satisFirma: v }
-              : { ...p, satisFirma: v, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
-          }}>
-            <option value={factoryName}>{factoryName}</option>
-            {bayiler.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-            <option value="Diğer">Diğer (anlaşmasız firma)…</option>
-          </Select>
-        </Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Satış Yapan Firma">
+            <Select value={form.satisFirma || factoryName} onChange={e => {
+              const v = e.target.value;
+              setForm(p => v === "Diğer" ? { ...p, satisFirma: v }
+                : { ...p, satisFirma: v, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
+            }}>
+              <option value={factoryName}>{factoryName}</option>
+              {bayiler.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+              <option value="Diğer">Diğer (anlaşmasız firma)…</option>
+            </Select>
+          </Field>
+          <Field label="Fatura Tipi">
+            <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+              {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+            </Select>
+          </Field>
+        </div>
       )}
 
       {/* Kalıbı bizden alan, anlaşmalı olmadığımız bir firma aracılığıyla satıldıysa: firma
@@ -186,35 +151,110 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         </div>
       )}
 
-      {selectedCust && (
-        <Field label="Fatura Tipi">
-          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-          </Select>
-        </Field>
-      )}
-
-      {selectedCust && (
-        <Field label="Para Birimi">
-          <Select value={form.currency || "TRY"} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
-            <option value="TRY">₺ Türk Lirası</option>
-            <option value="USD">$ Dolar (USD)</option>
-            <option value="EUR">€ Euro (EUR)</option>
-          </Select>
-          {(form.currency || "TRY") !== "TRY" && (
-            <span style={{ display: "inline-block", marginTop: 5, fontSize: 11, fontWeight: 700, color: "var(--blu700, #1d4ed8)", background: "var(--bluBg2, #dbeafe)", padding: "4px 10px", borderRadius: 8 }}>Yurt dışı</span>
+      {/* Kalıplar — yedek parça formundaki "Yedek Parçalar" tasarımıyla aynı: her satır bir kart
+          (kalıp seçici/çip · ölçü · fiyat · sil) + altında üretim-formu kutusu; altta "+ Kalıp Ekle". */}
+      {!isEdit ? (
+        <Field label="Kalıplar">
+          {kalipDefs.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--red600, #dc2626)" }}>Tanımlı kalıp yok. Ayarlar → Katalog → Kalıp Modelleri'nden ekleyin.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {kaliplar.map((k, i) => (
+                <div key={i} style={{ display: "grid", gap: 8, padding: 8, border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, background: "var(--n100, #f8fafc)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1.3fr 1.2fr auto", gap: 8, alignItems: "start" }}>
+                    <div>
+                      {k.ad ? (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, background: "var(--surface, #fff)" }}>
+                          <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--orTx, #c2410c)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.ad}</div>
+                          <button type="button" onClick={() => kalipSet(i, "ad", "")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", flexShrink: 0 }}><Icon name="close" size={13} /></button>
+                        </div>
+                      ) : (
+                        // Aynı kalıp birden fazla satırda olabilir (farklı ölçü/adet) — her satır kendi kaydını oluşturur.
+                        <SearchPick items={kalipDefs} getLabel={d => d.ad} getKey={d => d.id} placeholder="Kalıp ara..." onPick={d => kalipSec(i, d)} />
+                      )}
+                    </div>
+                    <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm" onChange={e => kalipSet(i, "olcu", e.target.value)} />
+                    <MoneyInput value={k.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => kalipSet(i, "fiyat", v)} />
+                    <button type="button" onClick={() => kalipSil(i)} disabled={kaliplar.length <= 1} title="Satırı sil"
+                      style={{ background: "none", border: "none", cursor: kaliplar.length <= 1 ? "default" : "pointer", color: kaliplar.length <= 1 ? "var(--n300, #cbd5e1)" : "var(--red600, #dc2626)", padding: "8px 4px" }}>
+                      <Icon name="trash" size={15} />
+                    </button>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
+                    <input type="checkbox" checked={!!k.uretimFormGonder} onChange={e => kalipSet(i, "uretimFormGonder", e.target.checked)}
+                      style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                    Üretim formuna gönder
+                  </label>
+                </div>
+              ))}
+              <button type="button" onClick={kalipEkle}
+                style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>
+                <Icon name="plus" size={13} /> Kalıp Ekle
+              </button>
+            </div>
           )}
         </Field>
-      )}
+      ) : (<>
+        <Field label="Kalıp Modeli">
+          <Select value={kaliplar[0]?.ad || ""} onChange={e => {
+            const ad = e.target.value;
+            const custOlcu = selectedCust?.kaliplar?.find(k => k.ad === ad)?.olcu || "";
+            setForm(p => ({ ...p, kaliplar: [{ ...(p.kaliplar?.[0] || {}), ad, olcu: custOlcu || p.kaliplar?.[0]?.olcu || "" }] }));
+          }}>
+            <option value="">Seçin...</option>
+            {kalipDefs.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
+          </Select>
+        </Field>
+        {kaliplar.length > 0 && (
+          <Field label="Kalıp Ölçüsü ve Fiyatı">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "center" }}>
+              <Input value={kaliplar[0]?.olcu || ""} placeholder="Ölçü, örn: 55x125 mm" onChange={e => kalipSet(0, "olcu", e.target.value)} />
+              <MoneyInput value={kaliplar[0]?.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => kalipSet(0, "fiyat", v)} />
+              <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
+                <input type="checkbox" checked={!!kaliplar[0]?.uretimFormGonder} onChange={e => kalipSet(0, "uretimFormGonder", e.target.checked)}
+                  style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                Üretim formuna gönder
+              </label>
+            </div>
+          </Field>
+        )}
+      </>)}
 
-      {/* Ödeme durumu */}
+      {/* Ödeme durumu + yöntemi (makina satışıyla aynı). Ödendi işaretliyken yöntem seçilir; Çek ise
+          vade + tahsil takibi (çek tahsil edilene kadar borçlu sayılır). */}
       {selectedCust && kaliplarToplam > 0 && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginTop: 8 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
-            {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
-          </span>
-        </label>
+        <div style={{ marginTop: 8 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+              {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
+            </span>
+          </label>
+          {form.odendi && (
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
+                <Field label="Ödeme Yöntemi">
+                  <Select value={form.yontem || "Nakit"} onChange={e => setForm(p => ({ ...p, yontem: e.target.value }))}>
+                    {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+                  </Select>
+                </Field>
+                {form.yontem === "Çek" && (
+                  <Field label="Çek Vade Tarihi">
+                    <Input type="date" value={form.vadeTarihi || ""} onChange={e => setForm(p => ({ ...p, vadeTarihi: e.target.value }))} />
+                  </Field>
+                )}
+              </div>
+              {form.yontem === "Çek" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
+                  <input type="checkbox" checked={!!form.tahsilEdildi} onChange={e => setForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: form.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                    {form.tahsilEdildi ? "Çek tahsil edildi (bankada karşılandı)" : "Çek henüz tahsil edilmedi (tahsil edilene kadar borçlu sayılır)"}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Kalıp fiyatları toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}

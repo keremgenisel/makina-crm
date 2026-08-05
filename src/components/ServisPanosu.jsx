@@ -753,7 +753,7 @@ export const ServisPanosu = ({
                             </div>
                           );
                         })}
-                        {/* Planlanan kalıp kargoları — 🧩 işaretli */}
+                        {/* Planlanan kalıp kargoları — kutu (box) ikonuyla işaretli */}
                         {kalipPlanlananlar.map(s => {
                           const c = custMap[Number(s.customerId)];
                           const grup = s._grup && s._grup.length ? s._grup : [s];

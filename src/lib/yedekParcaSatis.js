@@ -28,6 +28,10 @@ export function yedekParcaRec(form) {
     disFirmaUlke: disFirma ? (form.disFirmaUlke || "") : "", disFirmaSehir: disFirma ? (form.disFirmaSehir || "") : "",
     birimFiyat: parseMoney(form.birimFiyat), currency: form.currency || "TRY",
     tarih: form.tarih || today(), faturaTipi: form.faturaTipi || "Faturalı Yurtiçi", odendi: !!form.odendi,
+    // Ödeme yöntemi (makina satışıyla aynı). Çek ise vade + tahsil takibi; çek tahsil edilene kadar
+    // borçlu sayılır (bkz. satisTahsilEdildi). Çek değilse çek alanları boşlanır.
+    yontem: form.yontem || "Nakit", vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
+    tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
     // Servis ve Kargo Panosuna gönderme OPT-IN (formda checkbox). kargoDurum boşsa panoya düşmez;
     // checkbox işaretlenince "Hazırlanıyor" gelir. (Eskiden her satış zorunlu panoya düşüyordu.)
     kargoFirma: form.kargoFirma || "", kargoTakipNo: form.kargoTakipNo || "", kargoTarih: form.kargoTarih || "", kargoDurum: form.kargoDurum || "",

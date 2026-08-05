@@ -14,6 +14,8 @@ const ACTION_LABELS = {
   veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
+  cek_tahsil_edildi: "Çek Tahsil Edildi", cek_tahsil_iptal: "Çek Tahsil İptal",
+  kalip_cek_tahsil_edildi: "Kalıp Çeki Tahsil Edildi", kalip_cek_tahsil_iptal: "Kalıp Çeki Tahsil İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
   temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
   // Servis ve Kargo Panosu + yedek parça satışı işlemleri

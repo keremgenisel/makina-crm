@@ -12,7 +12,19 @@ const col = (row, ad) => row[YEDEK_PARCA_EXPORT_HEAD.indexOf(ad)];
 
 describe("yedekParcaExportRow", () => {
   it("başlık yeni sütunları içerir", () => {
-    for (const h of ["Teslim Şekli", "Farklı Teslimat Adresi"]) expect(YEDEK_PARCA_EXPORT_HEAD).toContain(h);
+    for (const h of ["Teslim Şekli", "Farklı Teslimat Adresi", "Ödeme Yöntemi", "Çek Durumu"]) expect(YEDEK_PARCA_EXPORT_HEAD).toContain(h);
+  });
+
+  it("ödeme yöntemi + çek durumu sütunları", () => {
+    const cek = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: true, yontem: "Çek", tahsilEdildi: false }, deps);
+    expect(col(cek, "Ödendi")).toBe("Evet");
+    expect(col(cek, "Ödeme Yöntemi")).toBe("Çek");
+    expect(col(cek, "Çek Durumu")).toBe("Beklemede");
+    const nakit = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: true, yontem: "Nakit" }, deps);
+    expect(col(nakit, "Ödeme Yöntemi")).toBe("Nakit");
+    expect(col(nakit, "Çek Durumu")).toBe("");
+    const odenmemis = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: false }, deps);
+    expect(col(odenmemis, "Ödeme Yöntemi")).toBe(""); // ödenmemişte yöntem boş
   });
 
   it("müşteri alıcı: tür 'Müşteri', ad doğru", () => {

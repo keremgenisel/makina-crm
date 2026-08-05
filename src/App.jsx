@@ -719,7 +719,7 @@ export default function App() {
       }
       if (kalipId.has(id)) {
         const s = livePartSalesRef.current.find(x => x.id === id);
-        return `🧩 ${cmap[Number(s?.customerId)]?.name || "kalıp"}`;
+        return `📦 ${cmap[Number(s?.customerId)]?.name || "kalıp"}`;
       }
       return cmap[Number(liveServices.find(x => x.id === id)?.customerId)]?.name || "(müşteri yok)";
     });

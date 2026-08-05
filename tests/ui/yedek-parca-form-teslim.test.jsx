@@ -48,3 +48,24 @@ describe("YedekParcaSatisForm — teslim şekli panoya düşürmez", () => {
     expect(screen.getByText("Pano Durumu")).toBeTruthy();
   });
 });
+
+describe("YedekParcaSatisForm — ödeme yöntemi (Nakit/Kredi Kartı/Çek)", () => {
+  const dolu = { satirlar: [{ partId: "7", miktar: "2", birimFiyat: "100" }] }; // toplam>0 → ödeme bloğu
+
+  it("ödendi işaretli değilken Ödeme Yöntemi görünmez", () => {
+    render(<Harness initial={{ ...dolu, odendi: false }} />);
+    expect(screen.getByText(/tahsil edilmedi \(ödenmedi\)/)).toBeTruthy();
+    expect(screen.queryByText("Ödeme Yöntemi")).toBeNull();
+  });
+
+  it("ödendi işaretliyken Ödeme Yöntemi seçici çıkar; Çek seçilince vade + tahsil kutusu açılır", () => {
+    render(<Harness initial={{ ...dolu, odendi: true, yontem: "Nakit" }} />);
+    expect(screen.getByText("Ödeme Yöntemi")).toBeTruthy();
+    expect(screen.queryByText("Çek Vade Tarihi")).toBeNull();
+    // Nakit → Çek'e geçir
+    const secici = screen.getByText("Ödeme Yöntemi").closest("div").querySelector("select");
+    fireEvent.change(secici, { target: { value: "Çek" } });
+    expect(screen.getByText("Çek Vade Tarihi")).toBeTruthy();
+    expect(screen.getByText(/tahsil edilene kadar borçlu sayılır/)).toBeTruthy();
+  });
+});

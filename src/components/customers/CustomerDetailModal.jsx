@@ -217,6 +217,7 @@ export const CustomerDetailModal = ({
         batchEdit: true, batchId: rec.batchId,
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
         currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi,
+        yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
         kargoSorumlusu: rec.kargoSorumlusu, panoDusmeZamani: rec.panoDusmeZamani, notlar: rec.notlar,
         satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: s.birimFiyat })),
@@ -296,6 +297,14 @@ export const CustomerDetailModal = ({
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni } : s));
     [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
   };
+  // Yedek parça çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır (satisTahsilEdildi).
+  const toggleYedekParcaCekTahsil = (rec) => {
+    if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
+    const yeni = !rec.tahsilEdildi;
+    const idler = new Set(ypGrupIdleri(rec));
+    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, tahsilEdildi: yeni } : s));
+    [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "cek_tahsil_edildi" : "cek_tahsil_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+  };
   // ── Extra Kalıp satışları ──
   const openAddPartSale = () => {
     setPkForm({ customerId: detailView.id, kaliplar: [], currency: "TRY", tarih: today(), odendi: false, faturaTipi: normalizeSaleType(detailView.faturali), satisFirma: factoryName, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
@@ -306,6 +315,7 @@ export const CustomerDetailModal = ({
       id: ps.id, customerId: ps.customerId,
       kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: ps.ucret || "" }],
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
+      yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
       satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
       satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
@@ -327,6 +337,9 @@ export const CustomerDetailModal = ({
       customerId: selectedCust.id, tur: "Kalıp", tarih: pkForm.tarih || today(),
       currency: pkForm.currency || "TRY", ucretsizMi: false,
       odendi: !!pkForm.odendi, faturaTipi: pkForm.faturaTipi,
+      // Ödeme yöntemi (makina satışıyla aynı). Çek ise vade + tahsil; çek tahsil edilene kadar borçlu.
+      yontem: pkForm.yontem || "Nakit", vadeTarihi: pkForm.yontem === "Çek" ? (pkForm.vadeTarihi || "") : "",
+      tahsilEdildi: pkForm.yontem === "Çek" ? !!pkForm.tahsilEdildi : false,
       // Satış yapan firma bilgisi YALNIZ partSale kaydına yazılır (aşağıdaki setCustomers'a değil)
       satisFirma: pkForm.satisFirma ?? null, satisFirmaAd: pkForm.satisFirmaAd ?? "", satisFirmaYetkili: pkForm.satisFirmaYetkili ?? "",
       satisFirmaTel: pkForm.satisFirmaTel ?? "", satisFirmaUlke: pkForm.satisFirmaUlke ?? "", satisFirmaSehir: pkForm.satisFirmaSehir ?? "",
@@ -379,6 +392,13 @@ export const CustomerDetailModal = ({
     const yeniDurum = !ps.odendi;
     setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum } : x));
     logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+  };
+  // Extra Kalıp çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır.
+  const togglePartSaleCekTahsil = (ps) => {
+    if (!setPartSales) return;
+    const yeni = !ps.tahsilEdildi;
+    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, tahsilEdildi: yeni } : x));
+    logAction({ serverPermissions, action: yeni ? "kalip_cek_tahsil_edildi" : "kalip_cek_tahsil_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
   };
   const deletePartSale = (id) => {
     if (!setPartSales) return;
@@ -1000,6 +1020,8 @@ export const CustomerDetailModal = ({
               onEditYedekParca={setYedekParcaSatislar ? openEditYedekParca : null}
               onDeleteYedekParca={setYedekParcaSatislar ? setConfirmDeleteYedekParca : null}
               onToggleYedekParcaOdendi={setYedekParcaSatislar ? toggleYedekParcaOdendi : null}
+              onToggleYedekParcaCekTahsil={setYedekParcaSatislar ? toggleYedekParcaCekTahsil : null}
+              onTogglePartSaleCekTahsil={setPartSales ? togglePartSaleCekTahsil : null}
               onGoYedekParca={onGoYedekParca}
               onPrintYedekParcaEtiket={(grup) => yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory })}
               onEditPayment={openEditPayment}

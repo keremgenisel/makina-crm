@@ -5,7 +5,7 @@ import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
-import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi } from "../lib/utils";
+import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
@@ -224,7 +224,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     });
     // Ödenmemiş yedek parça (kargo) satışları — bayi + müşteri (alacak anlık bakiye: tarih filtresiz).
-    (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.odendi === false).forEach(s => {
+    // Çek ile ödenip henüz tahsil edilmemiş olanlar da borç (isYedekParcaBorcluMu → satisTahsilEdildi).
+    (yedekParcaSatislar || []).filter(s => isYedekParcaBorcluMu(s)).forEach(s => {
       const bedel = kargoBedel(s);
       if (bedel <= 0) return;
       alacak[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);

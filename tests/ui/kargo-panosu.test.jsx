@@ -111,7 +111,7 @@ describe("KargoKart", () => {
     expect(screen.queryByRole("button", { name: /Kaldır/ })).toBeNull();
   });
 
-  it("tur='kalip': 🧩 KALIP rozeti, müşteri adı, kalıp adı/ölçü, satış firma rozeti; tahsis/adet yok", () => {
+  it("tur='kalip': KALIP rozeti, müşteri adı, kalıp adı/ölçü, satış firma rozeti; tahsis/adet yok", () => {
     const kalip = { id: 900, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", olcu: "55x125", kargoDurum: "Hazırlanıyor", satisFirma: "Bayi X", tarih: "2026-07-20" };
     render(<KargoKart s={kalip} tur="kalip" customers={customers} calisanlar={[]} canKargo onClick={vi.fn()} />);
     expect(screen.getByText(/KALIP/)).toBeTruthy();

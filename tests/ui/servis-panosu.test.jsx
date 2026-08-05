@@ -54,7 +54,7 @@ describe("ServisPanosu — Kanban", () => {
     setYedekParcaSatislar: vi.fn(), ...over,
   });
 
-  it("Extra Kalıp (partSales, kargoDurum) panoda 🧩 kart olarak görünür; sürükleyince setPartSales durum çeker", () => {
+  it("Extra Kalıp (partSales, kargoDurum) panoda KALIP kartı olarak görünür; sürükleyince setPartSales durum çeker", () => {
     const setPartSales = vi.fn();
     const partSales = [{ id: 900, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", olcu: "55x125", kargoDurum: "Hazırlanıyor", tarih: "2026-07-20" }];
     render(<ServisPanosu {...props({ kalipYetki: true, partSales, setPartSales })} />);

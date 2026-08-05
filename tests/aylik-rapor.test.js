@@ -51,8 +51,9 @@ describe("hesaplaAylikRapor", () => {
   });
 
   it("gerçekleşen tahsilata bekleyen çek girmez, tahsil edilmiş çek girer, silinmiş ödeme sayılmaz", () => {
-    expect(r.tahsilatTutar).toEqual({ TRY: 250000 }); // 200.000 nakit + 50.000 tahsil edilmiş çek
-    expect(r.tahsilatAdet).toBe(2);
+    // 200.000 nakit + 50.000 tahsil edilmiş çek + 25.000 tahsil edilmiş Extra Kalıp (id=20, Nakit, KDV yok)
+    expect(r.tahsilatTutar).toEqual({ TRY: 275000 });
+    expect(r.tahsilatAdet).toBe(3);
     expect(r.bekleyenCekAdet).toBe(1);
     expect(r.bekleyenCekTutar).toEqual({ TRY: 150000 });
     expect(r.cekTahsilAdet).toBe(1);
@@ -106,17 +107,18 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
   });
 
   it("tahsilatDetay: kimden tahsil edildiğini yöntemle listeler, bekleyen çek ayrı dizide", () => {
-    expect(r.tahsilatDetay).toHaveLength(2); // nakit 200.000 + tahsil edilmiş çek 50.000
-    expect(r.tahsilatDetay.map(x => x.yontem).sort()).toEqual(["Nakit", "Çek"]);
+    // nakit 200.000 + tahsil edilmiş çek 50.000 + Extra Kalıp tahsilatı 25.000 (Nakit)
+    expect(r.tahsilatDetay).toHaveLength(3);
+    expect(r.tahsilatDetay.map(x => x.yontem).sort()).toEqual(["Nakit", "Nakit", "Çek"]);
     expect(r.tahsilatDetay.every(x => x.firma === "A")).toBe(true);
     expect(r.bekleyenCekDetay).toHaveLength(1);
     expect(r.bekleyenCekDetay[0].tutar).toEqual({ TRY: 150000 });
   });
 
-  it("tahsilatYontemKirilimi: gerçekleşen tahsilatı yöntem başına (Nakit/Çek) toplar", () => {
+  it("tahsilatYontemKirilimi: gerçekleşen tahsilatı yöntem başına (Nakit/Çek) toplar; satış tahsilatları da katılır", () => {
     const map = Object.fromEntries(r.tahsilatYontemKirilimi.map(x => [x.yontem, x]));
-    expect(map["Nakit"].tutar).toEqual({ TRY: 200000 });
-    expect(map["Nakit"].adet).toBe(1);
+    expect(map["Nakit"].tutar).toEqual({ TRY: 225000 }); // 200.000 ödeme + 25.000 Extra Kalıp
+    expect(map["Nakit"].adet).toBe(2);
     expect(map["Çek"].tutar).toEqual({ TRY: 50000 }); // yalnız tahsil edilmiş çek
     expect(map["Çek"].adet).toBe(1);
     // Bekleyen çek (150.000) gerçekleşen sayılmadığı için yöntem kırılımına girmez
@@ -156,7 +158,7 @@ describe("hesaplaAylikRapor yönetici özeti + KDV beyanname özeti", () => {
   it("ozet.ciroNet: makina + işçilik + parça + extra kalıp + yedek parça + anlaşmalı parça (KDV hariç)", () => {
     // 800.000 makina + 5.000 işçilik + 25.000 extra kalıp = 830.000
     expect(r.ozet.ciroNet).toEqual({ TRY: 830000 });
-    expect(r.ozet.tahsilat).toEqual({ TRY: 250000 });
+    expect(r.ozet.tahsilat).toEqual({ TRY: 275000 }); // + 25.000 tahsil edilmiş Extra Kalıp (satış tahsilatı)
     expect(r.ozet.alacak.TRY).toBe(106000);
   });
 

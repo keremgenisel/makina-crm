@@ -95,7 +95,8 @@ dbmod.writeBlobToDb({
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true,
-    teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla" }],
+    teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
+    yontem: "Kredi Kartı", vadeTarihi: "", tahsilEdildi: false }],
   payments: [], dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
     { id: 650, dealerId: 3, aliciTipi: "bayi", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
@@ -104,7 +105,7 @@ dbmod.writeBlobToDb({
       tahsisler: [ { miktar: 2, customerId: 500, serialNo: "S-1", makinaSerbest: "", tarih: "2026-07-20" },
                    { miktar: 1, customerId: null, serialNo: "", makinaSerbest: "Bayi X kendi müşterisi", tarih: "2026-07-21" } ] },
     // Alıcı müşteri (bayiye değil son müşteriye satış) — musteriId dolu, dealerId boş; panoGizli (arşiv) true; fabrika teslim
-    { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [] },
+    { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, yontem: "Çek", vadeTarihi: "2026-10-01", tahsilEdildi: true, kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [] },
     // Anlaşmasız dış firma alıcı (kayıtlı bayi değil) — bilgiler kayda yazılır
     { id: 652, aliciTipi: "bayi", dealerId: null, disFirma: true, disFirmaAd: "Harici Parça Ltd", disFirmaYetkili: "Veli Kaya", disFirmaTel: "05553334455", disFirmaAdres: "Sanayi Sitesi 3. Blok No:7", disFirmaUlke: "Türkiye", disFirmaSehir: "Ankara", partId: "8", miktar: 2, birimFiyat: 75, currency: "TRY", tarih: "2026-07-19", odendi: false, tahsisler: [] },
   ],
@@ -153,6 +154,8 @@ check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p =
 check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.kargoDurum === "Kargoya Verildi" && p?.kargoFirma === "Yurtiçi" && p?.kargoTakipNo === "KL-1" && p?.kargoTarih === "2026-07-20" && p?.kargoSorumlusu === "Ahmet" && p?.panoDusmeZamani === "2026-07-25T08:00" && p?.panoGizli === true; })());
 check("partSale fabrikaTeslim (Extra Kalıp fabrika teslim, boolean) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.fabrikaTeslim === true; })());
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
+check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
+check("yedek parça ödeme yöntemi + çek tahsil (boolean) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return s?.yontem === "Çek" && s?.vadeTarihi === "2026-10-01" && s?.tahsilEdildi === true; })());
 check("partSale olusturmaZamani roundtrip (pano sıralaması: en son eklenen üstte)", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.olusturmaZamani === "2026-07-20T14:35:10"; })());
 check("yedek parça satışı roundtrip (parent alanları + kargo)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.dealerId === 3 && String(s?.partId) === "7" && s?.miktar === 5 && s?.birimFiyat === 120 && s?.odendi === false && s?.kargoTakipNo === "TK123" && s?.kargoDurum === "Kargoya Verildi" && (blob.yedekParcaSatislar || []).length === 3; })());
 check("yedek parça tahsisleri (child tablo) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); const t = s?.tahsisler || []; return t.length === 2 && t[0].miktar === 2 && t[0].customerId === 500 && t[0].serialNo === "S-1" && t[1].customerId == null && t[1].makinaSerbest === "Bayi X kendi müşterisi"; })());

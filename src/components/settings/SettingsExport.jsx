@@ -10,7 +10,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 
 // Yedek parça (kargo) satışları dışa aktarım başlığı + satırı (saf; test edilebilir).
 // Alıcı adı/türü ortak yardımcılarla çözülür → bayi / müşteri / anlaşmasız dış firma doğru gösterilir.
-export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
+export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
 export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [] } = {}) => {
   const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
   const tur = { "MÜŞTERİ": "Müşteri", "ANLAŞMASIZ SERVİS": "Anlaşmasız Servis", "BAYİ": "Bayi" }[aliciRozet(s).label] || "Bayi";
@@ -20,9 +20,11 @@ export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [
   const teslimatAdresi = s.teslimatFarkli
     ? [s.teslimatAd, s.teslimatAdres, [s.teslimatIlce, s.teslimatSehir].filter(Boolean).join(" / "), s.teslimatUlke, s.teslimatTel].filter(Boolean).join(" · ")
     : "";
+  const cekDurum = s.yontem === "Çek" ? (s.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
   return [tur, aliciAd(s, dealers, customers), part.ad || s.partId, parseInt(s.miktar) || 0,
     parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
     (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih || "", s.odendi ? "Evet" : "Hayır",
+    s.odendi ? (s.yontem || "Nakit") : "", cekDurum,
     teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis];
 };
 
@@ -188,17 +190,22 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPartSales = async (mode = "download") => {
-    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No"];
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Ödeme Yöntemi", "Çek Durumu", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No", "Farklı Teslimat Adresi"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
+      const cekDurum = p.yontem === "Çek" ? (p.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
+      const teslimatAdresi = p.teslimatFarkli
+        ? [p.teslimatAd, p.teslimatAdres, [p.teslimatIlce, p.teslimatSehir].filter(Boolean).join(" / "), p.teslimatUlke, p.teslimatTel].filter(Boolean).join(" · ")
+        : "";
       return [c.name, p.tur, p.ad, p.olcu, p.tarih,
         p.satisFirma === "Diğer" ? (p.satisFirmaAd || "Diğer") : p.satisFirma, p.satisFirmaYetkili, p.satisFirmaTel, p.satisFirmaUlke, p.satisFirmaSehir,
         curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
         parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır",
+        (p.odendi && !p.ucretsizMi) ? (p.yontem || "Nakit") : "", cekDurum,
         p.teklifId ? (teklifler.find(t => t.id === p.teklifId)?.no || p.teklifId) : "",
         p.uretimFormGonder ? "Evet" : "Hayır",
-        p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || ""];
+        p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || "", teslimatAdresi];
     })];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Kalıp Satışları"); openExportMailXLSXBase64(b64, "extra-kalip-satislari.xlsx", "Extra Kalıp Satışları"); return; }

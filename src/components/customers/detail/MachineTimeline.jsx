@@ -25,6 +25,8 @@ export const MachineTimeline = ({
   onEditYedekParca = null,
   onDeleteYedekParca = null,
   onToggleYedekParcaOdendi = null,
+  onToggleYedekParcaCekTahsil = null, // yedek parça çeki tahsil edildi/beklemede toggle
+  onTogglePartSaleCekTahsil = null,   // Extra Kalıp çeki tahsil edildi/beklemede toggle
   onGoYedekParca = null, // bayiden tahsis edilen (salt-okunur) satıra tıklayınca Stok'taki satışa git
   onPrintYedekParcaEtiket = null, // müşterinin kendi yedek parça satışı için kargo etiketi yazdır
   onEditPayment,
@@ -211,6 +213,15 @@ export const MachineTimeline = ({
                         {ev.yp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                       </button>
                     )}
+                    {ev.yp.odendi && ev.yp.yontem && (
+                      <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)" }}>{ev.yp.yontem}</span>
+                    )}
+                    {ev.yp.odendi && ev.yp.yontem === "Çek" && canDo("cust_yedek_parca_payment") && onToggleYedekParcaCekTahsil && (
+                      <button onClick={() => onToggleYedekParcaCekTahsil(ev.yp)}
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: ev.yp.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: ev.yp.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                        {ev.yp.tahsilEdildi ? "Çek tahsil edildi" : "Çek beklemede · işaretle: tahsil edildi"}
+                      </button>
+                    )}
                   </div>
                 );
               })()}
@@ -250,6 +261,15 @@ export const MachineTimeline = ({
                           <button onClick={() => onTogglePartSaleOdendi(p)}
                             style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: p.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: p.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
                             {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                          </button>
+                        )}
+                        {p.odendi && p.yontem && !p.ucretsizMi && (
+                          <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)" }}>{p.yontem}</span>
+                        )}
+                        {p.odendi && p.yontem === "Çek" && !p.ucretsizMi && canDo("cust_kalip_payment") && onTogglePartSaleCekTahsil && (
+                          <button onClick={() => onTogglePartSaleCekTahsil(p)}
+                            style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: p.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: p.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                            {p.tahsilEdildi ? "Çek tahsil edildi" : "Çek beklemede · işaretle: tahsil edildi"}
                           </button>
                         )}
                         {psList.length > 1 && canDo("cust_kalip_delete") && (

@@ -548,12 +548,17 @@ export const isServisBorcluMu = (sv, factoryName = "Altuntaş Makina") => {
 // Altuntaş satışıdır ama borçlusu müşteri değil, işlemi yapan anlaşmalı firmadır)
 export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makina") =>
   isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && sv.odendi === false;
-// Extra Kalıp satışı borçlu mu
+// Bir satışın (Extra Kalıp / yedek parça) parası GERÇEKTEN geldi mi? = ödendi VE (Çek değilse ya da
+// çek tahsil edildiyse). odendi ödemenin alındığını, tahsilEdildi çekin bankada karşılandığını gösterir;
+// çek alınmış ama tahsil edilmemişse para henüz gelmemiştir → tahsil edilmemiş sayılır (makina çekiyle
+// aynı mantık, bkz. isPaymentReceived). yontem alanı olmayan eski kayıtlar Nakit gibi davranır.
+export const satisTahsilEdildi = (s) => !!s?.odendi && (s?.yontem !== "Çek" || s?.tahsilEdildi === true);
+// Extra Kalıp satışı borçlu mu (ödenmemiş VEYA çek henüz tahsil edilmemiş)
 /** @param {import("../types").PartSale} ps @returns {boolean} */
-export const isPartSaleBorcluMu = (ps) => ps.odendi === false;
+export const isPartSaleBorcluMu = (ps) => !satisTahsilEdildi(ps);
 // Yedek parça (kargo) satışı — parça bedeli (miktar × birim fiyat; KDV hariç) ve borçlu mu
 export const yedekParcaBedeli = (s) => (parseInt(s?.miktar) || 0) * parseMoney(s?.birimFiyat);
-export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && s?.odendi === false;
+export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && !satisTahsilEdildi(s);
 // ── Mükerrer kayıt tespiti ───────────────────────────────────────────────────
 // Telefonu karşılaştırma anahtarına indir: rakamları ayıkla, son 10 hane (0/ülke kodu farkları elenir)
 const telAnahtar = (t) => { const d = String(t || "").replace(/\D/g, ""); return d.length >= 7 ? d.slice(-10) : ""; };

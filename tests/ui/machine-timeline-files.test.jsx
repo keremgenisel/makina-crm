@@ -97,3 +97,27 @@ describe("MachineTimeline yedek parça — Kargo Etiketi yazdır", () => {
     expect(screen.queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
   });
 });
+
+// Ödeme yöntemi rozeti + çek tahsil toggle: ödendi + Çek + tahsil edilmemiş yedek parça satırında
+// "Çek beklemede" düğmesi çıkar, tıklayınca onToggleYedekParcaCekTahsil çağrılır.
+describe("MachineTimeline — ödeme yöntemi rozeti + çek tahsil toggle", () => {
+  it("yedek parça: ödendi+Çek+tahsil edilmemiş → yöntem rozeti + çek toggle; tıklama callback çağırır", () => {
+    const onToggleCek = vi.fn();
+    const yp = { id: 700, aliciTipi: "musteri", musteriId: 1, miktar: 2, birimFiyat: 100, currency: "TRY", faturaTipi: "Faturasız Yurtiçi", tarih: "2026-07-11", odendi: true, yontem: "Çek", tahsilEdildi: false };
+    const ev = [{ kind: "part", date: "2026-07-11", color: "#0891b2", title: "Yedek Parça (Kargo)", desc: "2 adet X", yp }];
+    render(<MachineTimeline {...baseProps} kdvRates={[]} canDo={() => true} detailTimelineEvents={ev}
+      onToggleYedekParcaOdendi={vi.fn()} onToggleYedekParcaCekTahsil={onToggleCek} />);
+    expect(screen.getByText("Çek")).toBeTruthy(); // yöntem rozeti
+    fireEvent.click(screen.getByRole("button", { name: /işaretle: tahsil edildi/ }));
+    expect(onToggleCek).toHaveBeenCalledWith(yp);
+  });
+
+  it("yedek parça: Nakit ödemede çek toggle çıkmaz", () => {
+    const yp = { id: 701, aliciTipi: "musteri", musteriId: 1, miktar: 2, birimFiyat: 100, currency: "TRY", faturaTipi: "Faturasız Yurtiçi", tarih: "2026-07-11", odendi: true, yontem: "Nakit" };
+    const ev = [{ kind: "part", date: "2026-07-11", color: "#0891b2", title: "Yedek Parça (Kargo)", desc: "2 adet X", yp }];
+    render(<MachineTimeline {...baseProps} kdvRates={[]} canDo={() => true} detailTimelineEvents={ev}
+      onToggleYedekParcaOdendi={vi.fn()} onToggleYedekParcaCekTahsil={vi.fn()} />);
+    expect(screen.getByText("Nakit")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /tahsil edildi/ })).toBeNull();
+  });
+});

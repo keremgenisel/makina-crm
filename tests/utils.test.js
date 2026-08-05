@@ -5,6 +5,7 @@ import {
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
   girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
+  satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -69,6 +70,36 @@ describe("calcKDV", () => {
   it("Faturasız ve yurtdışı satışta KDV 0", () => {
     expect(calcKDV("Faturasız Yurtiçi", 100000, "2026-01-01", rates)).toBe(0);
     expect(calcKDV("Faturalı Yurtdışı", 100000, "2026-01-01", rates)).toBe(0);
+  });
+});
+
+describe("satisTahsilEdildi + borç predikatları (çek tahsil edilene kadar borçlu)", () => {
+  it("ödenmedi → tahsil edilmedi, borçlu", () => {
+    expect(satisTahsilEdildi({ odendi: false })).toBe(false);
+    expect(isPartSaleBorcluMu({ odendi: false })).toBe(true);
+    expect(isYedekParcaBorcluMu({ odendi: false })).toBe(true);
+  });
+  it("ödendi + Nakit/Kredi Kartı → tahsil edildi, borçlu değil", () => {
+    expect(satisTahsilEdildi({ odendi: true, yontem: "Nakit" })).toBe(true);
+    expect(satisTahsilEdildi({ odendi: true, yontem: "Kredi Kartı" })).toBe(true);
+    expect(isPartSaleBorcluMu({ odendi: true, yontem: "Nakit" })).toBe(false);
+  });
+  it("ödendi + Çek + tahsil edilmedi → HÂLÂ borçlu", () => {
+    const cek = { odendi: true, yontem: "Çek", tahsilEdildi: false };
+    expect(satisTahsilEdildi(cek)).toBe(false);
+    expect(isPartSaleBorcluMu(cek)).toBe(true);
+    expect(isYedekParcaBorcluMu(cek)).toBe(true);
+  });
+  it("ödendi + Çek + tahsil edildi → tahsil edildi, borçlu değil", () => {
+    const cek = { odendi: true, yontem: "Çek", tahsilEdildi: true };
+    expect(satisTahsilEdildi(cek)).toBe(true);
+    expect(isPartSaleBorcluMu(cek)).toBe(false);
+  });
+  it("yontem alanı olmayan eski ödendi kayıt Nakit gibi → tahsil edildi", () => {
+    expect(satisTahsilEdildi({ odendi: true })).toBe(true);
+  });
+  it("silinmiş yedek parça satışı borçlu sayılmaz", () => {
+    expect(isYedekParcaBorcluMu({ odendi: false, deletedAt: "2026-01-01" })).toBe(false);
   });
 });
 

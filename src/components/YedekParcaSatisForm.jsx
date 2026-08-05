@@ -1,4 +1,4 @@
-import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
@@ -113,13 +113,19 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         )}
       </Field>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      {/* Tarih · Para Birimi · Fatura Tipi aynı satırda. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         <Field label="Tarih"><Input type="date" value={form.tarih || today()} onChange={e => setForm(p => ({ ...p, tarih: e.target.value }))} /></Field>
         <Field label="Para Birimi">
           <Select value={cur} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
             <option value="TRY">₺ Türk Lirası</option>
             <option value="USD">$ Dolar (USD)</option>
             <option value="EUR">€ Euro (EUR)</option>
+          </Select>
+        </Field>
+        <Field label="Fatura Tipi">
+          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
           </Select>
         </Field>
       </div>
@@ -193,11 +199,6 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         </Field>
       )}
 
-      <Field label="Fatura Tipi">
-        <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-          {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-        </Select>
-      </Field>
 
       {/* ── Teslim Şekli — HER ZAMAN kayda/etikete/makina geçmişine yazılır, panoya DÜŞÜRMEZ ──
           Segment seçici yalnız fabrikaTeslim bayrağını değiştirir (kargoDurum'a dokunmaz). */}
@@ -301,14 +302,41 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         )}
       </div>
 
-      {/* Ödeme durumu */}
+      {/* Ödeme durumu + yöntemi (makina satışıyla aynı). Ödendi işaretliyken yöntem seçilir; Çek ise
+          vade + tahsil takibi (çek tahsil edilene kadar borçlu sayılır). */}
       {toplam > 0 && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginTop: 4 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
-            {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
-          </span>
-        </label>
+        <div style={{ marginTop: 4 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+              {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
+            </span>
+          </label>
+          {form.odendi && (
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
+                <Field label="Ödeme Yöntemi">
+                  <Select value={form.yontem || "Nakit"} onChange={e => setForm(p => ({ ...p, yontem: e.target.value }))}>
+                    {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+                  </Select>
+                </Field>
+                {form.yontem === "Çek" && (
+                  <Field label="Çek Vade Tarihi">
+                    <Input type="date" value={form.vadeTarihi || ""} onChange={e => setForm(p => ({ ...p, vadeTarihi: e.target.value }))} />
+                  </Field>
+                )}
+              </div>
+              {form.yontem === "Çek" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
+                  <input type="checkbox" checked={!!form.tahsilEdildi} onChange={e => setForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: form.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                    {form.tahsilEdildi ? "Çek tahsil edildi (bankada karşılandı)" : "Çek henüz tahsil edilmedi (tahsil edilene kadar borçlu sayılır)"}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {toplam > 0 && (
