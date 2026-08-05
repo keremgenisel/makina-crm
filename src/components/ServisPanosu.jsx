@@ -70,7 +70,7 @@ const bosForm = (factoryName) => ({
 export const ServisPanosu = ({
   services = [], setServices, customers = [], calisanlar = [], factory = null,
   parts = [], dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
-  setPartStock = null, setPartStockLog = null, partStock = [],
+  setPartStock = null, setPartStockLog = null, partStock = [], partStockLog = [],
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, appSettings = null,
   showToast = () => {}, serverPermissions = null, kiosk = false, onKilitle = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null, kargoYetki = false,
@@ -502,7 +502,7 @@ export const ServisPanosu = ({
         yerelServisEkle(newId);
       }
       setServices(p => p.some(s => s.id === newId) ? p : [yeniRec, ...p]);
-      servisParcaDus(rec.degisenParcalar, newId, setPartStock, setPartStockLog);
+      servisParcaDus(rec.degisenParcalar, newId, setPartStock, setPartStockLog, partStock, partStockLog);
       bindServisDosyalari(newId, dosyaTaslaklari);
       logAction({ serverPermissions, action: "olusturuldu", entity: "servis", entityId: newId, entityName: cust?.name, detail: { type: rec.type } });
       showToast(dosyaTaslaklari.length ? `Servis talebi kaydedildi (${dosyaTaslaklari.length} dosya eklendi).` : "Servis talebi kaydedildi → Bekliyor.");
@@ -517,7 +517,7 @@ export const ServisPanosu = ({
   const restoreThenSave = (rec) => {
     servisParcaGeriAl(form.id, setPartStock, setPartStockLog);
     setServices(p => p.map(s => s.id === form.id ? rec : s));
-    servisParcaDus(rec.degisenParcalar, form.id, setPartStock, setPartStockLog);
+    servisParcaDus(rec.degisenParcalar, form.id, setPartStock, setPartStockLog, partStock, partStockLog);
   };
 
   // Teknisyen seçenekleri (form.tech listede yoksa onu da göster ki eski/serbest değer kaybolmasın)

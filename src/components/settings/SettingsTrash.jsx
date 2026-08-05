@@ -45,11 +45,15 @@ export const SettingsTrash = ({
         : c));
       showToast("Extra Kalıp kaydı geri alındı.");
     } else if (ps.tur === "YedekParca") {
-      // Satış soft-silinince stok restore edilmişti — geri alınca tekrar düşmeli
+      // Satış soft-silinince stok restore edilmişti — geri alınca tekrar düşmeli (stok eksiye düşmeden;
+      // mevcut kadarı düşülür, log da o kadar → tutarlı).
       if (ps.partId && parseInt(ps.miktar) > 0 && setPartStock && setPartStockLog) {
         const pid = String(ps.partId);
-        setPartStock(ps2 => mergeAndUpdate(ps2, pid, totalMiktar(ps2, pid) - parseInt(ps.miktar)));
-        setPartStockLog(lg => [...lg, { id: uid(), partId: pid, miktar: -parseInt(ps.miktar), tip: "satis", referansId: ps.id, tarih: today(), notlar: "Çöp kutusundan geri alındı" }]);
+        const dus = Math.min(parseInt(ps.miktar), Math.max(0, totalMiktar(partStock, pid)));
+        if (dus > 0) {
+          setPartStock(ps2 => mergeAndUpdate(ps2, pid, totalMiktar(ps2, pid) - dus));
+          setPartStockLog(lg => [...lg, { id: uid(), partId: pid, miktar: -dus, tip: "satis", referansId: ps.id, tarih: today(), notlar: "Çöp kutusundan geri alındı" }]);
+        }
       }
       showToast("Yedek Parça satışı geri alındı.");
     } else {

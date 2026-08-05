@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { logAction, getAuditUsername, snapshotOnceki } from "../../lib/audit";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
+import { servisParcaDus, servisParcaGeriAl } from "../../lib/servisStok";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   calcKalanBorc, stripAutoPrint, simdiYerel,
@@ -98,41 +99,13 @@ export const CustomerDetailModal = ({
   );
 
   // ── Servis parça stok ──
-  const deductServiceParts = (degisenParcalar, serviceId) => {
-    if (!setPartStock || !setPartStockLog) return;
-    const valid = (degisenParcalar || []).filter(p => p && p.partId && parseInt(p.miktar) > 0);
-    if (valid.length === 0) return;
-    setPartStock(ps => {
-      let updated = [...ps];
-      valid.forEach(r => {
-        const pid = String(r.partId);
-        updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) - parseInt(r.miktar));
-      });
-      return updated;
-    });
-    setPartStockLog(lg => [
-      ...lg,
-      ...valid.map(r => ({ id: uid(), partId: String(r.partId), miktar: -parseInt(r.miktar), tip: "servis", referansId: serviceId, tarih: today(), notlar: "" })),
-    ]);
-  };
-
-  const restoreServiceParts = (serviceId) => {
-    if (!setPartStock || !setPartStockLog) return;
-    setPartStockLog(lg => {
-      const toRestore = lg.filter(l => l.referansId === serviceId && l.tip === "servis" && l.partId);
-      if (toRestore.length > 0) {
-        setPartStock(ps => {
-          let updated = [...ps];
-          toRestore.forEach(l => {
-            const pid = String(l.partId);
-            updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
-          });
-          return updated;
-        });
-      }
-      return lg.filter(l => !(l.referansId === serviceId && l.tip === "servis" && l.partId));
-    });
-  };
+  // Servis parça düşümü/geri-alması TEK kaynakta (lib/servisStok) — Servis Panosu ile aynı; stok
+  // hiçbir zaman eksiye düşmez (kırparak düşer). Düzenlemede sıra: geri al → yeniden düş (kırpma tabanı
+  // geri-alma sonrası stok; servisParcaDus partStock+partStockLog snapshot'larından hesaplar).
+  const deductServiceParts = (degisenParcalar, serviceId) =>
+    servisParcaDus(degisenParcalar, serviceId, setPartStock, setPartStockLog, partStock, partStockLog);
+  const restoreServiceParts = (serviceId) =>
+    servisParcaGeriAl(serviceId, setPartStock, setPartStockLog);
 
   // ── Servis kayıtları ──
   const openAddService = () => {
@@ -347,6 +320,9 @@ export const CustomerDetailModal = ({
       kargoDurum: pkForm.kargoDurum || "", kargoFirma: pkForm.kargoFirma ?? "", kargoTakipNo: pkForm.kargoTakipNo ?? "",
       kargoTarih: pkForm.kargoTarih ?? "", kargoSorumlusu: pkForm.kargoSorumlusu ?? "", panoDusmeZamani: pkForm.panoDusmeZamani ?? "",
       fabrikaTeslim: !!pkForm.fabrikaTeslim, // panoda kargo yerine "Fabrika Teslim"
+      // Teslim şekli açık işaret: form her zaman bir seçim yapar (Kargo varsayılan). Timeline etiketi
+      // bunu esas alır; eski (teslimSekli boş) düz "Kalıp Verildi" kayıtları sezgiye düşer.
+      teslimSekli: pkForm.fabrikaTeslim ? "fabrika" : "kargo",
       // Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). teslimatFarkli
       // false ise diğer alanlar boşlanır (yedek parça formundaki desenle aynı).
       ...(() => {

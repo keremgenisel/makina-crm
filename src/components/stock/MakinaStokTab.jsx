@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
-import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar } from "../../lib/utils";
+import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -36,23 +36,26 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "", parcalar: [] }); setShowAllParts(false); setModal("add"); };
   const openEdit = s => { setForm({ ...s, parcalar: s.parcalar || [] }); setShowAllParts(false); setModal({ edit: s }); };
 
+  // Makina üretiminde kit parçalarını stoktan düş. Stok hiçbir zaman eksiye düşmez (kırparak düşer);
+  // kit eksik parçayla da kaydedilir, stok 0 kalır. Düzenlemede sıra "eski kit geri al → yeniden düş"
+  // olduğundan kırpma tabanı geri-alma sonrası stok: partStock+partStockLog snapshot'ından bu makinanın
+  // eski makina_uretimi düşümleri geri eklenir (add'de o makinaya log yok → taban = partStock). Log
+  // kırpılmış gerçek düşümü tutar → geri-alma tutarlı.
   const deductParts = (parcalar, stockId) => {
     const valid = parcalar.filter(r => r.partId && parseInt(r.miktar) > 0);
     if (!valid.length) return;
-    const logEntries = valid.map(r => ({
-      id: uid(), partId: String(r.partId), miktar: -parseInt(r.miktar),
-      tip: "makina_uretimi", referansId: stockId, tarih: today(), notlar: form.model,
-    }));
+    const taban = stokGeriEklenmis(partStock, partStockLog, stockId, "makina_uretimi");
+    const { dusumler } = stokKirparakDus(taban, valid);
+    if (!dusumler.length) return;
     setPartStock(ps => {
       let updated = [...ps];
-      valid.forEach(r => {
-        const qty = parseInt(r.miktar);
-        const pid = String(r.partId);
-        updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) - qty);
-      });
+      dusumler.forEach(d => { updated = mergeAndUpdate(updated, d.partId, totalMiktar(updated, d.partId) - d.adet); });
       return updated;
     });
-    setPartStockLog(log => [...log, ...logEntries]);
+    setPartStockLog(log => [...log, ...dusumler.map(d => ({
+      id: uid(), partId: d.partId, miktar: -d.adet,
+      tip: "makina_uretimi", referansId: stockId, tarih: today(), notlar: form.model,
+    }))]);
   };
 
   const save = () => {

@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS part_sales (
   odendi INTEGER, faturaTipi TEXT, ucretsizMi INTEGER, batchId INTEGER, deletedAt TEXT,
   teklifId INTEGER, uretimFormGonder INTEGER, uretimFormId INTEGER,
   satisFirma TEXT, satisFirmaAd TEXT, satisFirmaYetkili TEXT, satisFirmaTel TEXT, satisFirmaUlke TEXT, satisFirmaSehir TEXT,
-  kargoDurum TEXT, kargoFirma TEXT, kargoTakipNo TEXT, kargoTarih TEXT, kargoSorumlusu TEXT, panoDusmeZamani TEXT, panoGizli INTEGER, olusturmaZamani TEXT, fabrikaTeslim INTEGER,
+  kargoDurum TEXT, kargoFirma TEXT, kargoTakipNo TEXT, kargoTarih TEXT, kargoSorumlusu TEXT, panoDusmeZamani TEXT, panoGizli INTEGER, olusturmaZamani TEXT, fabrikaTeslim INTEGER, teslimSekli TEXT,
   teslimatFarkli INTEGER, teslimatAd TEXT, teslimatTel TEXT, teslimatAdres TEXT, teslimatUlke TEXT, teslimatSehir TEXT, teslimatIlce TEXT,
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER
 );
@@ -359,7 +359,7 @@ const PART_SALES_TEKLIF_URETIM_COLUMNS = [["teklifId", "INTEGER"], ["uretimFormG
 // kaydedilen anlaşmasız firma bilgileri — müşteri/bayi kaydı oluşturulmaz.
 const PART_SALES_SATIS_FIRMA_COLUMNS = [["satisFirma", "TEXT"], ["satisFirmaAd", "TEXT"], ["satisFirmaYetkili", "TEXT"], ["satisFirmaTel", "TEXT"], ["satisFirmaUlke", "TEXT"], ["satisFirmaSehir", "TEXT"]];
 // Extra Kalıp'ın Servis ve Kargo Panosu'na "kargo" olarak düşmesi için sevkiyat alanları (panoGizli INTEGER).
-const PART_SALES_KARGO_COLUMNS = [["kargoDurum", "TEXT"], ["kargoFirma", "TEXT"], ["kargoTakipNo", "TEXT"], ["kargoTarih", "TEXT"], ["kargoSorumlusu", "TEXT"], ["panoDusmeZamani", "TEXT"], ["panoGizli", "INTEGER"], ["olusturmaZamani", "TEXT"], ["fabrikaTeslim", "INTEGER"], ["teslimatFarkli", "INTEGER"], ["teslimatAd", "TEXT"], ["teslimatTel", "TEXT"], ["teslimatAdres", "TEXT"], ["teslimatUlke", "TEXT"], ["teslimatSehir", "TEXT"], ["teslimatIlce", "TEXT"], ["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
+const PART_SALES_KARGO_COLUMNS = [["kargoDurum", "TEXT"], ["kargoFirma", "TEXT"], ["kargoTakipNo", "TEXT"], ["kargoTarih", "TEXT"], ["kargoSorumlusu", "TEXT"], ["panoDusmeZamani", "TEXT"], ["panoGizli", "INTEGER"], ["olusturmaZamani", "TEXT"], ["fabrikaTeslim", "INTEGER"], ["teslimSekli", "TEXT"], ["teslimatFarkli", "INTEGER"], ["teslimatAd", "TEXT"], ["teslimatTel", "TEXT"], ["teslimatAdres", "TEXT"], ["teslimatUlke", "TEXT"], ["teslimatSehir", "TEXT"], ["teslimatIlce", "TEXT"], ["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahsilEdildi", "INTEGER"]];
 const KALIPLAR_URETIM_COLUMNS = [["uretimFormGonder", "INTEGER"], ["uretimFormId", "INTEGER"]];
 // Bayiye yedek parça (kargo) satışı — kargo takibi ve not alanları (tablo SCHEMA'da tüm alanlarıyla
 // oluşur; bu liste eski/kısmi bir DB'de eksik kalırsa tamamlar — dört-nokta kuralı gereği).
@@ -520,12 +520,12 @@ function populateAll(conn, data, skip = new Set()) {
     const stmt = conn.prepare(`
       INSERT INTO part_sales (id, customer_id, tur, ad, olcu, tarih, ucret, currency, odendi, faturaTipi, ucretsizMi, batchId, deletedAt, teklifId, uretimFormGonder, uretimFormId,
         satisFirma, satisFirmaAd, satisFirmaYetkili, satisFirmaTel, satisFirmaUlke, satisFirmaSehir,
-        kargoDurum, kargoFirma, kargoTakipNo, kargoTarih, kargoSorumlusu, panoDusmeZamani, panoGizli, olusturmaZamani, fabrikaTeslim,
+        kargoDurum, kargoFirma, kargoTakipNo, kargoTarih, kargoSorumlusu, panoDusmeZamani, panoGizli, olusturmaZamani, fabrikaTeslim, teslimSekli,
         teslimatFarkli, teslimatAd, teslimatTel, teslimatAdres, teslimatUlke, teslimatSehir, teslimatIlce,
         yontem, vadeTarihi, tahsilEdildi)
       VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt, @teklifId, @uretimFormGonder, @uretimFormId,
         @satisFirma, @satisFirmaAd, @satisFirmaYetkili, @satisFirmaTel, @satisFirmaUlke, @satisFirmaSehir,
-        @kargoDurum, @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoSorumlusu, @panoDusmeZamani, @panoGizli, @olusturmaZamani, @fabrikaTeslim,
+        @kargoDurum, @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoSorumlusu, @panoDusmeZamani, @panoGizli, @olusturmaZamani, @fabrikaTeslim, @teslimSekli,
         @teslimatFarkli, @teslimatAd, @teslimatTel, @teslimatAdres, @teslimatUlke, @teslimatSehir, @teslimatIlce,
         @yontem, @vadeTarihi, @tahsilEdildi)
     `);
@@ -540,7 +540,7 @@ function populateAll(conn, data, skip = new Set()) {
         satisFirmaTel: p.satisFirmaTel ?? null, satisFirmaUlke: p.satisFirmaUlke ?? null, satisFirmaSehir: p.satisFirmaSehir ?? null,
         kargoDurum: p.kargoDurum ?? null, kargoFirma: p.kargoFirma ?? null, kargoTakipNo: p.kargoTakipNo ?? null,
         kargoTarih: p.kargoTarih ?? null, kargoSorumlusu: p.kargoSorumlusu ?? null, panoDusmeZamani: p.panoDusmeZamani ?? null,
-        panoGizli: toInt(p.panoGizli), olusturmaZamani: p.olusturmaZamani ?? null, fabrikaTeslim: toInt(p.fabrikaTeslim),
+        panoGizli: toInt(p.panoGizli), olusturmaZamani: p.olusturmaZamani ?? null, fabrikaTeslim: toInt(p.fabrikaTeslim), teslimSekli: p.teslimSekli ?? null,
         teslimatFarkli: toInt(p.teslimatFarkli), teslimatAd: p.teslimatAd ?? null, teslimatTel: p.teslimatTel ?? null,
         teslimatAdres: p.teslimatAdres ?? null, teslimatUlke: p.teslimatUlke ?? null, teslimatSehir: p.teslimatSehir ?? null, teslimatIlce: p.teslimatIlce ?? null,
         yontem: p.yontem ?? null, vadeTarihi: p.vadeTarihi ?? null, tahsilEdildi: toInt(p.tahsilEdildi),
@@ -798,6 +798,10 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "uretim_formlari", URETIM_FORMLARI_KAPALI_COLUMN);
   ensureColumns(conn, "dosyalar", DOSYALAR_DEALER_COLUMN);
   ensureColumns(conn, "notes", NOTES_OLUSTURAN_COLUMN);
+  // Yedek parça stoğu hiçbir zaman eksiye düşmesin (sıfırda kalsın): eski sürümlerde servis/kit
+  // tüketimi negatife düşürmüş olabilir → depolanan negatif satırları bir kerelik 0'a çek. İdempotent
+  // (negatif yoksa no-op); okuma tarafı da Math.max(0,...) ile ayrıca güvence altına alır.
+  try { conn.prepare(`UPDATE part_stock SET miktar = 0 WHERE miktar < 0`).run(); } catch { /* tablo yoksa yok say */ }
 }
 
 function migrateFromJsonIfNeeded() {
@@ -974,7 +978,9 @@ function readBlobFromDb() {
   }));
 
   const partStock = db.prepare(`SELECT * FROM part_stock`).all().map((s) => ({
-    id: s.id, partId: String(s.part_id), miktar: s.miktar, notlar: s.notlar, sonGuncelleme: s.sonGuncelleme,
+    // Stok hiçbir zaman eksiye düşmez (sıfırda kalır) — okumada da güvence altına al: eski/negatif
+    // kalmış satırlar 0 olarak döner (uygulama asla negatif görmez; sonraki kayıtta 0 kalıcılaşır).
+    id: s.id, partId: String(s.part_id), miktar: Math.max(0, Number(s.miktar) || 0), notlar: s.notlar, sonGuncelleme: s.sonGuncelleme,
   }));
   const partStockLog = db.prepare(`SELECT * FROM part_stock_log`).all().map((l) => ({
     id: l.id, partId: String(l.part_id), miktar: l.miktar, tip: l.tip, referansId: l.referans_id, tarih: l.tarih, notlar: l.notlar,

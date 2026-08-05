@@ -36,6 +36,7 @@ try {
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00" }],
     partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", satisFirma: "Diğer", satisFirmaAd: "Aracı",
+      teslimSekli: "kargo",
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
     // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
@@ -62,6 +63,7 @@ check("temiz kurulumda calismaSaatleri kolonu oluştu + tam turu", blob.appSetti
 check("temiz kurulumda dış firma sütunları oluştu (service)", (() => { const s = (blob.services || []).find(x => x.id === 5); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Dış Servis" && s?.islemFirmaTel === "0500"; })());
 check("temiz kurulumda dış firma sütunları oluştu (partSale)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı"; })());
 check("temiz kurulumda Extra Kalıp teslimat sütunları oluştu (partSale)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.teslimatFarkli === true && p?.teslimatAd === "Depo" && p?.teslimatSehir === "Bursa" && p?.teslimatIlce === "Nilüfer"; })());
+check("temiz kurulumda Extra Kalıp teslimSekli sütunu oluştu (partSale)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.teslimSekli === "kargo"; })());
 check("temiz kurulumda ödeme yöntemi sütunları oluştu (partSale çek)", (() => { const p = (blob.partSales || []).find(x => x.id === 6); return p?.yontem === "Çek" && p?.vadeTarihi === "2026-11-01" && p?.tahsilEdildi === true; })());
 check("temiz kurulumda servis durum + panoGizli sütunu + çalışanlar (meta)", (() => { const s = (blob.services || []).find(x => x.id === 5); const c = (blob.calisanlar || []).find(x => x.id === 9); return s?.durum === "Bekliyor" && s?.panoGizli === true && c?.ad === "Ali Veli"; })());
 check("temiz kurulumda servis zaman damgası sütunu oluştu", (() => { const s = (blob.services || []).find(x => x.id === 5); return s?.fabrikaGirisZamani === "2026-07-20T08:00:00"; })());

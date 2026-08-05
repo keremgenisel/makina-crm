@@ -658,6 +658,39 @@ export const mergeAndUpdate = (partStock, pid, newMiktar, extraFields = {}) => {
   return [...partStock, { id: uid(), partId: pidStr, miktar: newMiktar, sonGuncelleme: today(), ...extraFields }];
 };
 
+// Bir parça listesini (kalemler = [{partId, miktar}]) verili partStock'tan KIRPARAK düşer: stok
+// hiçbir zaman sıfırın altına inmez (mevcuttan fazlası istenirse yalnız mevcut kadarı düşer, gerisi
+// "fantom" kalır — satış/servis yine tam kaydedilir). Aynı parça birden çok kalemde geçerse çalışan
+// kopya üzerinden tükenir. Dönüş: { partStock: yeni dizi, dusumler: [{partId, adet}] } — adet GERÇEK
+// düşülen (kırpılmış, >0). dusumler hem stok yazımı hem log için TEK kaynak olsun diye döner (stok ile
+// log arasında sapma olmasın).
+export const stokKirparakDus = (partStock, kalemler) => {
+  let updated = [...(partStock || [])];
+  const dusumler = [];
+  (kalemler || []).forEach(k => {
+    const pid = k && k.partId != null ? String(k.partId) : null;
+    const istenen = parseInt(k && k.miktar) || 0;
+    if (!pid || !(istenen > 0)) return;
+    const eldeki = Math.max(0, totalMiktar(updated, pid));
+    const dus = Math.min(istenen, eldeki);
+    if (dus > 0) { updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) - dus); dusumler.push({ partId: pid, adet: dus }); }
+  });
+  return { partStock: updated, dusumler };
+};
+
+// Bir referansa (servis / makina üretimi) ait daha önce düşülmüş stok hareketlerini partStock'a geri
+// eklenmiş SALT-HESAP kopya döndürür (state'i değiştirmez). "Geri al + yeniden düş" (edit) akışında,
+// yeniden-düşüşün kırpma tabanı geri-alma SONRASI stok olmalıdır; bu snapshot onu verir. Ekleme (add)
+// akışında ilgili referansa ait log olmadığından partStock aynen döner.
+export const stokGeriEklenmis = (partStock, partStockLog, referansId, tip) => {
+  let updated = [...(partStock || [])];
+  (partStockLog || []).filter(l => l && l.partId && l.tip === tip && String(l.referansId) === String(referansId)).forEach(l => {
+    const pid = String(l.partId);
+    updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
+  });
+  return updated;
+};
+
 export const withoutDeleted = arr => (arr || []).filter(x => !x.deletedAt);
 
 // Dosya arşivi: servise bağlı bir dosya, servisin göründüğü HER iki yerde de listelenmeli —

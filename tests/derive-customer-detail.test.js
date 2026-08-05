@@ -117,6 +117,10 @@ describe("deriveCustomerDetail", () => {
     expect(baslik(k({ fabrikaTeslim: false, kargoDurum: "", kargoFirma: "Aras" }))).toBe("Kalıp Verildi (Kargo)");
     // Eski düz kayıt (teslim şekli/bilgisi hiç yok) → suffix yok, kirlenmez.
     expect(baslik(k({}))).toBe("Kalıp Verildi");
+    // Açık teslimSekli: form her zaman bir seçim yazar. Kargo seçilip HİÇBİR kargo alanı doldurulmasa
+    // (panoya da gönderilmese) bile "(Kargo)" gösterilir — kullanıcı raporladığı hata.
+    expect(baslik(k({ teslimSekli: "kargo", fabrikaTeslim: false, kargoDurum: "" }))).toBe("Kalıp Verildi (Kargo)");
+    expect(baslik(k({ teslimSekli: "fabrika", fabrikaTeslim: true }))).toBe("Kalıp Verildi (Fabrika Teslim)");
   });
 
   it("fabrikaTeslim satış makina geçmişinde 'Yedek Parça (Fabrika Teslim)' başlığıyla görünür", () => {

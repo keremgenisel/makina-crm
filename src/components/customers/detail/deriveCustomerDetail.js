@@ -37,13 +37,16 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         // Not: eskiden a.id - b.id ile sıralanıyordu (sıralı ID = oluşturma sırası varsayımı).
         // uid() artık rastgele ID ürettiği için bu varsayım geçersiz; doğal dizi sırası
         // (partSales'e eklenme = oluşturma sırası) hem eski hem yeni veride doğru sonucu verir.
-        // Teslim türü başlığa yansır (iconsuz). Teslim şekli panodan AYRI kaydedildiği için: Fabrika
-        // Teslim seçiliyse panoya düşmese de gösterilir; Kargo yalnız panodaysa VEYA kargo bilgisi
-        // (firma/takip/tarih/kişi) doluysa "(Kargo)" gösterilir → teslim şekli hiç seçilmemiş eski düz
-        // "Kalıp Verildi" kayıtları "(Kargo)" ile kirlenmez.
+        // Teslim türü başlığa yansır (iconsuz). Açık teslimSekli varsa onu esas al (Kargo seçilip hiç
+        // kargo bilgisi doldurulmasa da "(Kargo)" gösterilir). teslimSekli yoksa (eski kayıt) eski sezgiye
+        // düş: Fabrika Teslim seçiliyse gösterilir; Kargo yalnız panodaysa VEYA kargo bilgisi
+        // (firma/takip/tarih/kişi) doluysa gösterilir → teslim şekli hiç seçilmemiş eski düz "Kalıp
+        // Verildi" kayıtları "(Kargo)" ile kirlenmez.
         const p0 = psList[0];
         const kargoBilgisiVar = !!(p0.kargoDurum || p0.kargoFirma || p0.kargoTakipNo || p0.kargoTarih || p0.kargoSorumlusu);
-        const teslim = p0.fabrikaTeslim ? " (Fabrika Teslim)" : (kargoBilgisiVar ? " (Kargo)" : "");
+        const teslim = p0.teslimSekli === "fabrika" ? " (Fabrika Teslim)"
+          : p0.teslimSekli === "kargo" ? " (Kargo)"
+          : p0.fabrikaTeslim ? " (Fabrika Teslim)" : (kargoBilgisiVar ? " (Kargo)" : "");
         ev.push({ kind: "part", date: psList[0].tarih, color: "var(--orTx, #c2410c)", title: "Kalıp Verildi" + teslim, psList });
       });
       (partSales || []).filter(ps => ps.customerId === detailView.id && ps.tur !== "Kalıp").forEach(ps => {

@@ -6,6 +6,7 @@ import {
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
   girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
+  stokKirparakDus, stokGeriEklenmis, totalMiktar,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -182,6 +183,46 @@ describe("parcaGruplari — değişen parçaları adete göre grupla (x2, x3…)
     expect(parcaGruplari([])).toEqual([]);
     expect(parcaGruplari(null)).toEqual([]);
     expect(parcaGruplari(undefined)).toEqual([]);
+  });
+});
+
+describe("stokKirparakDus (stok eksiye düşmez)", () => {
+  it("mevcut kadar düşer, fazlası fantom kalır (stok 0)", () => {
+    const { partStock, dusumler } = stokKirparakDus([{ partId: "7", miktar: 5 }], [{ partId: "7", miktar: 8 }]);
+    expect(totalMiktar(partStock, "7")).toBe(0);
+    expect(dusumler).toEqual([{ partId: "7", adet: 5 }]);
+  });
+  it("yeterli stokta tam düşer", () => {
+    const { partStock, dusumler } = stokKirparakDus([{ partId: "7", miktar: 10 }], [{ partId: "7", miktar: 3 }]);
+    expect(totalMiktar(partStock, "7")).toBe(7);
+    expect(dusumler).toEqual([{ partId: "7", adet: 3 }]);
+  });
+  it("aynı parça birden çok kalemde yerel kalan üzerinden tükenir (toplam eksiye düşmez)", () => {
+    const { partStock, dusumler } = stokKirparakDus(
+      [{ partId: "7", miktar: 4 }],
+      [{ partId: "7", miktar: 3 }, { partId: "7", miktar: 3 }]
+    );
+    expect(totalMiktar(partStock, "7")).toBe(0);      // 4 → 1 → 0
+    expect(dusumler).toEqual([{ partId: "7", adet: 3 }, { partId: "7", adet: 1 }]);
+  });
+  it("stok 0 / geçersiz kalemlerde düşüm yok", () => {
+    expect(stokKirparakDus([{ partId: "7", miktar: 0 }], [{ partId: "7", miktar: 2 }]).dusumler).toEqual([]);
+    expect(stokKirparakDus([{ partId: "7", miktar: 5 }], [{ partId: "", miktar: 2 }, { partId: "7", miktar: 0 }]).dusumler).toEqual([]);
+  });
+});
+
+describe("stokGeriEklenmis (geri-al sonrası kırpma tabanı)", () => {
+  it("referansa ait düşümleri partStock'a geri ekler", () => {
+    const base = stokGeriEklenmis(
+      [{ partId: "7", miktar: 2 }],
+      [{ id: 1, partId: "7", miktar: -4, tip: "servis", referansId: 42 }, { id: 2, partId: "7", miktar: -1, tip: "servis", referansId: 99 }],
+      42, "servis"
+    );
+    expect(totalMiktar(base, "7")).toBe(6);  // 2 + 4 (yalnız 42, tip servis)
+  });
+  it("ilgili referans/tip yoksa partStock aynen döner (add akışı)", () => {
+    const base = stokGeriEklenmis([{ partId: "7", miktar: 5 }], [], 1234, "servis");
+    expect(totalMiktar(base, "7")).toBe(5);
   });
 });
 
