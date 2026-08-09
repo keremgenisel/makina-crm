@@ -1,6 +1,6 @@
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { today, fmtTR, getKdvRateForDate } from "../../lib/utils";
-import { Icon, Btn } from "../ui";
+import { Icon, Btn, DateInput } from "../ui";
 import { Section } from "./Section";
 
 export const SettingsKdv = ({ appSettings, setAppSettings }) => {
@@ -27,7 +27,7 @@ export const SettingsKdv = ({ appSettings, setAppSettings }) => {
         <div key={i} style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
           <div>
             <label style={{ fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 }}>Geçerli Olduğu Tarih</label>
-            <input type="date" value={p.from || ""} onChange={e => updateRow(i, "from", e.target.value)}
+            <DateInput value={p.from || ""} onChange={e => updateRow(i, "from", e.target.value)}
               style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" }} />
           </div>
           <div style={{ position: "relative", width: 100 }}>

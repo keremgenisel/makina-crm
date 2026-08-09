@@ -4,7 +4,7 @@ import { renderMailTemplate } from "../../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { fmtKalipCapi } from "../../lib/utils";
-import { Btn, Icon, Modal, LockConflict } from "../ui";
+import { Btn, Icon, Modal, LockConflict, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { buildPrintHtml, groupByMusteri, fmtDate } from "./uretimFormPrint";
 import { emptyRow } from "./uretimFormModel";
@@ -327,13 +327,13 @@ export function UretimFormu({
         <div style={{ display: "flex", gap: 14, marginBottom: 18, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", marginBottom: 4 }}>BAŞLANGIÇ TARİHİ</div>
-            <input type="date" value={form.baslangicTarihi || ""}
+            <DateInput value={form.baslangicTarihi || ""}
               onChange={e => setForm(f => ({ ...f, baslangicTarihi: e.target.value }))}
               style={{ border: "1.5px solid var(--n200, #e2e8f0)", borderRadius: 7, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--n400, #94a3b8)", marginBottom: 4 }}>BİTİŞ TARİHİ</div>
-            <input type="date" value={form.bitisTarihi || ""}
+            <DateInput value={form.bitisTarihi || ""}
               onChange={e => setForm(f => ({ ...f, bitisTarihi: e.target.value }))}
               style={{ border: "1.5px solid var(--n200, #e2e8f0)", borderRadius: 7, padding: "6px 10px", fontSize: 13, fontFamily: "inherit" }} />
           </div>

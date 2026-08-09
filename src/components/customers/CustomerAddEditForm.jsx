@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
 export const CustomerAddEditForm = ({
@@ -413,7 +413,7 @@ export const CustomerAddEditForm = ({
       <Field label="Ödeme Planı (isteğe bağlı taksit vadeleri)">
         {(form.odemePlani || []).map((r, i) => (
           <div key={r.id ?? i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-            <input type="date" value={r.vadeTarihi || ""} disabled={!!r.odemeId}
+            <DateInput value={r.vadeTarihi || ""} disabled={!!r.odemeId}
               onChange={e => setForm(p => ({ ...p, odemePlani: p.odemePlani.map((x, xi) => xi === i ? { ...x, vadeTarihi: e.target.value } : x) }))}
               style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: r.odemeId ? "var(--n150, #f1f5f9)" : "var(--n100, #f8fafc)" }} />
             <div style={{ width: 160 }}>

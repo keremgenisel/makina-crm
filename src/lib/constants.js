@@ -113,6 +113,7 @@ export const staticCities = (country) =>
 export const CITY_SUPPLEMENT = {
   "Suudi Arabistan": ["Unaizah"],
   "Kosova": ["Peje"],
+  "Libya": ["Trablus"],
 };
 
 // ── Seed Data ──────────────────────────────────────────────────────────────
@@ -218,7 +219,7 @@ export const SERVIS_ALARM_VARSAYILAN = { acik: false, sesSn: 25, yanipSn: 40 };
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.17.1";
+export const APP_VERSION = "3.17.2";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

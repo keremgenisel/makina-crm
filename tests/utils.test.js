@@ -7,6 +7,7 @@ import {
   girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
+  servisParcaSatirTutari, altuntasParcaBedeli,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -183,6 +184,25 @@ describe("parcaGruplari — değişen parçaları adete göre grupla (x2, x3…)
     expect(parcaGruplari([])).toEqual([]);
     expect(parcaGruplari(null)).toEqual([]);
     expect(parcaGruplari(undefined)).toEqual([]);
+  });
+});
+
+describe("servisParcaSatirTutari (birim fiyat × miktar)", () => {
+  it("miktar fiyatı çarpar", () => {
+    expect(servisParcaSatirTutari({ fiyat: 9000, miktar: 2 })).toBe(18000);
+    expect(servisParcaSatirTutari({ fiyat: "9.000", miktar: 3 })).toBe(27000);
+  });
+  it("miktar yoksa 1 kabul edilir", () => {
+    expect(servisParcaSatirTutari({ fiyat: 9000 })).toBe(9000);
+    expect(servisParcaSatirTutari({ fiyat: 9000, miktar: 0 })).toBe(9000); // 0/geçersiz → 1
+  });
+  it("string (eski) parça kaydı 0", () => {
+    expect(servisParcaSatirTutari("Dişli")).toBe(0);
+  });
+  it("altuntasParcaBedeli dış tedarik fallback'inde de miktar çarpar (bizden olanları toplar)", () => {
+    // stored parcaUcretiAltuntastan yoksa + disTedarik varsa → bizden olan satırlar miktarıyla toplanır
+    const sv = { degisenParcalar: [{ fiyat: 9000, miktar: 2, disTedarik: false }, { fiyat: 5000, miktar: 1, disTedarik: true }] };
+    expect(altuntasParcaBedeli(sv)).toBe(18000); // yalnız bizden (9000×2), dış tedarik hariç
   });
 });
 

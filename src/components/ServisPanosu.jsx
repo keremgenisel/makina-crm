@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
@@ -432,15 +432,36 @@ export const ServisPanosu = ({
   };
   const arsivGorebilir = canDo("cust_service_pano_arsiv");
   const [arsivTemizleOnay, setArsivTemizleOnay] = useState(false);
-  // Arşivi temizle: arşivlenen (Tamamlandı + panoGizli) servislerin durum'unu boşaltıp panodan
-  // TAMAMEN çıkarır. Servis kaydı ve zaman damgaları müşteri kartında/geçmişte DURUR (silinmez).
+  // Arşivi temizle: arşivlenen (Tamamlandı + panoGizli) kartları panodan TAMAMEN çıkarır — servis
+  // için durum'u, kargo/kalıp için kargoDurum'u boşaltır (panodan çıkar, "panoya gönderilmemiş" hale
+  // gelir). Kayıtlar (servis müşteri kartında; kargo/kalıp satışı Stok'ta/geçmişte) DURUR, silinmez.
+  // Her tür kendi "kaldır" iznine bağlı; toplu (batchId) kargo/kalıpta grubun TÜM üyeleri temizlenir.
   const arsivTemizle = () => {
-    if (!setServices || !canDo("cust_service_pano_kaldir")) return;
-    const ids = new Set(arsivlenenler.map(s => s.id));
-    setServices(p => p.map(s => ids.has(s.id) ? { ...s, durum: "", panoGizli: false } : s));
+    let n = 0;
+    if (setServices && canDo("cust_service_pano_kaldir") && arsivlenenler.length) {
+      const ids = new Set(arsivlenenler.map(s => s.id));
+      setServices(p => p.map(s => ids.has(s.id) ? { ...s, durum: "", panoGizli: false } : s));
+      n += arsivlenenler.length;
+    }
+    if (setYedekParcaSatislar && canKargoKaldir && kargoArsivlenenler.length) {
+      const ids = new Set(kargoArsivlenenler.flatMap(s => (s._grup || [s]).map(x => x.id)));
+      setYedekParcaSatislar(p => p.map(s => ids.has(s.id) ? { ...s, kargoDurum: "", panoGizli: false } : s));
+      n += kargoArsivlenenler.length;
+    }
+    if (setPartSales && canKalipKaldir && kalipArsivlenenler.length) {
+      const ids = new Set(kalipArsivlenenler.flatMap(s => (s._grup || [s]).map(x => x.id)));
+      setPartSales(p => p.map(s => ids.has(s.id) ? { ...s, kargoDurum: "", panoGizli: false } : s));
+      n += kalipArsivlenenler.length;
+    }
     setArsivTemizleOnay(false);
-    showToast(`${ids.size} arşivlenen servis panodan kaldırıldı (kayıtlar müşteri kartında duruyor).`);
+    showToast(`${n} arşivlenen kart panodan kaldırıldı (kayıtlar duruyor).`);
   };
+  // Arşivi Temizle düğmesi/onayı: kullanıcının temizleyebileceği (arşivini görüp + kaldırabildiği) en
+  // az bir tür arşivlenmiş kart varsa görünür.
+  const arsivTemizlenebilir =
+    (arsivGorebilir && arsivlenenler.length > 0 && canDo("cust_service_pano_kaldir")) ||
+    (canKargoArsiv && kargoArsivlenenler.length > 0 && canKargoKaldir) ||
+    (canKalipArsiv && kalipArsivlenenler.length > 0 && canKalipKaldir);
 
   // Servis Formu yazdır — müşteri detayındaki printServiceForm ile birebir aynı (aynı şablon,
   // aynı çeviri/kaşe/resim bağlamı), böylece iki çıktı asla ayrışmaz.
@@ -486,8 +507,8 @@ export const ServisPanosu = ({
   const kaydet = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
     const cust = customers.find(c => c.id === Number(form.customerId));
-    const parcaUcreti = (form.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
-    const parcaUcretiAltuntastan = (form.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + parseMoney(p.fiyat), 0);
+    const parcaUcreti = (form.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const parcaUcretiAltuntastan = (form.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency };
     if (svModal === "add") {
       bumpId(customers, services);
@@ -790,10 +811,10 @@ export const ServisPanosu = ({
                         {arsivGorebilir && arsivlenenler.map(sv => Kart({ sv, arsiv: true, key: sv.id }))}
                         {canKargoArsiv && kargoArsivlenenler.map(s => <KargoKart key={"k" + s.id} s={s} dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} canKargo={canKargoDuzenle} arsiv onClick={setKargoDetayId} onGeriAl={() => kargoPanoGizle(s.id, false)} />)}
                         {canKalipArsiv && kalipArsivlenenler.map(s => <KargoKart key={"kl" + s.id} s={s} tur="kalip" customers={customers} calisanlar={calisanlar} canKargo={canKalipDuzenle} arsiv onClick={setKalipDetayId} onGeriAl={() => kalipPanoGizle(s.id, false)} />)}
-                        {arsivGorebilir && arsivlenenler.length > 0 && canDo("cust_service_pano_kaldir") && (
+                        {arsivTemizlenebilir && (
                           <button type="button" onClick={() => setArsivTemizleOnay(true)}
                             style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: "var(--red600, #dc2626)", background: "none", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, cursor: "pointer", padding: "6px 10px" }}>
-                            🗑 Arşivi Temizle (servisler)
+                            🗑 Arşivi Temizle
                           </button>
                         )}
                       </div>
@@ -902,7 +923,7 @@ export const ServisPanosu = ({
         <ConfirmDialog
           title="Arşivi Temizle"
           confirmLabel="Evet, Temizle"
-          message={`${arsivlenenler.length} arşivlenen servis panodan tamamen kaldırılacak. Servis kayıtları ve zaman bilgileri müşteri kartında/geçmişinde kalır; yalnız Servis Panosu arşivinden çıkar.`}
+          message={`${(arsivGorebilir ? arsivlenenler.length : 0) + (canKargoArsiv ? kargoArsivlenenler.length : 0) + (canKalipArsiv ? kalipArsivlenenler.length : 0)} arşivlenen kart panodan tamamen kaldırılacak. Kayıtlar (servis müşteri kartında; kargo/kalıp satışı Stok ve makina geçmişinde) KALIR; yalnız Servis ve Kargo Panosu arşivinden çıkar.`}
           onConfirm={arsivTemizle}
           onCancel={() => setArsivTemizleOnay(false)}
         />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -57,7 +57,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   const hasAltuntasParca = parcalar.some(p => !p.disTedarik);
   // parcaUcretsizMi: dış tedarik parça varsa her zaman false (o parçaların fiyatı girilmeli)
   const parcaUcretsizMi = parcalar.length === 0 || (!hasDisTedarikParca && warrantyAktif && !form.parcaGarantiDisi);
-  const parcaUcretiToplam = parcalar.reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
+  const parcaUcretiToplam = parcalar.reduce((s, p) => s + servisParcaSatirTutari(p), 0);
   const svUcretliTipi = form.type === "Garanti Dışı" || form.type === "Periyodik Bakım";
   const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
   const matchedCustomers = custSearch.trim()
@@ -398,8 +398,13 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               ].filter(Boolean).join(" ");
               return (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "#ea580c" : itemColor }}>
-                    {ad}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "#ea580c" : itemColor, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ad}</span>
+                    {!parcaUcretsizMi && (parseInt(p.miktar) || 1) > 1 && parseMoney(p.fiyat) > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--n400, #94a3b8)" }}>
+                        {(parseInt(p.miktar) || 1)} × {fmtCur(parseMoney(p.fiyat), form.currency || "TRY")} = {fmtCur(servisParcaSatirTutari(p), form.currency || "TRY")}
+                      </span>
+                    )}
                   </span>
                   {hasComponentId && (
                     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>

@@ -31,6 +31,13 @@ describe("CountryCityFields — API'nin döndürmediği şehirler (CITY_SUPPLEME
     expect(sehirSecenekleri(container)).toContain("Peje");
   });
 
+  it("Libya'da Trablus seçenek olarak çıkar (API listesi boş olsa da)", () => {
+    const { container } = render(
+      <CountryCityFields country="Libya" city="" onCountry={() => {}} onCity={() => {}} geoData={{}} />
+    );
+    expect(sehirSecenekleri(container)).toContain("Trablus");
+  });
+
   it("supplement olmayan ülkede davranış değişmez (yalnız API şehirleri)", () => {
     const geoData = { "Germany": ["Berlin", "Munich"] };
     const { container } = render(

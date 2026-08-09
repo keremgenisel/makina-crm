@@ -1,6 +1,6 @@
 import { uid, parseMoney, numberToWordsEN } from "../../lib/utils";
 import { COUNTRIES, CURRENCIES } from "../../lib/constants";
-import { Icon, Field, Btn, Modal, LockConflict } from "../ui";
+import { Icon, Field, Btn, Modal, LockConflict, DateInput } from "../ui";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
 
@@ -84,7 +84,7 @@ export const FaturaFormModal = ({
           <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Fatura Bilgileri</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <Field label="Fatura No"><input value={faturaForm.no} onChange={e => setFaturaForm(p => ({ ...p, no: e.target.value }))} style={inputStyle} placeholder="INV-2024-001" /></Field>
-            <Field label="Tarih"><input type="date" value={faturaForm.tarih} onChange={e => setFaturaForm(p => ({ ...p, tarih: e.target.value }))} style={inputStyle} /></Field>
+            <Field label="Tarih"><DateInput value={faturaForm.tarih} onChange={e => setFaturaForm(p => ({ ...p, tarih: e.target.value }))} style={inputStyle} /></Field>
           </div>
           <Field label="Para Birimi">
             <select value={faturaForm.currency} onChange={e => { const cur = e.target.value; setFaturaForm(p => ({ ...p, currency: cur })); fetchFaturaRate(cur); }} style={inputStyle}>

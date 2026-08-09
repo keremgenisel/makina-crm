@@ -15,6 +15,21 @@ import { MachineTimeline } from "../../src/components/customers/detail/MachineTi
 const customers = [{ id: 1, name: "ABC Makina", faturali: "Faturalı Yurtiçi" }];
 const dealers = [{ id: 3, name: "Anadolu Bayi", bayiMi: true, anlasmaliServisMi: true }];
 
+describe("ServiceForm — parça ücreti adet × fiyat", () => {
+  const svProps = (form) => ({ title: "Yeni Servis Talebi", form, setForm: vi.fn(), customers, dealers, factory: { name: "Altuntaş Makina" }, onSave: vi.fn(), onCancel: vi.fn() });
+
+  it("2 adet × 9.000 → parça toplamı 18.000 (adet fiyatı çarpar), satır alt-toplamı gösterilir", () => {
+    render(<ServiceForm {...svProps({
+      customerId: 1, type: "Garanti Dışı", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", parcaGarantiDisi: true,
+      degisenParcalar: [{ partId: "7", ad: "aaaaaa", miktar: 2, fiyat: 9000, disTedarik: false }],
+    })} />);
+    // Satır alt-toplamı: "2 × ₺9.000 = ₺18.000"
+    expect(screen.getByText(/2 × .*= .*18\.000/)).toBeTruthy();
+    // Alttaki genel toplam parça ücretini adetle çarpar (9.000 değil 18.000)
+    expect(screen.getByText(/Toplam \(Servis \+ Parça\):.*18\.000/)).toBeTruthy();
+  });
+});
+
 describe("ServiceForm — İşlemi Yapan Firma = Diğer", () => {
   const svProps = (form) => ({ title: "Yeni Servis Talebi", form, setForm: vi.fn(), customers, dealers, factory: { name: "Altuntaş Makina" }, onSave: vi.fn(), onCancel: vi.fn() });
 

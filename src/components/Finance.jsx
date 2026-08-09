@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
 import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
-import { Modal, Pagination, Icon, Btn } from "./ui";
+import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu } from "../lib/utils";
@@ -62,7 +62,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     kdvMakina, kdvServis, kdvParca, kdvKalip,
   } = useMemo(() => {
     // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
-    // (<input type="date"> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
+    // (<DateInput> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
     // kullanmak, tarihsiz-saat ISO string'lerinin UTC olarak yorumlanması yüzünden yerel saat dilimine
     // göre (özellikle UTC'nin gerisindeki dilimlerde) bir gün kayma riski taşıyordu — ay/yıl sınırındaki
     // bir kayıt yanlış aya/yıla sayılabilirdi. Bunun yerine string'in kendisi üzerinde (saat dilimine
@@ -432,10 +432,10 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       {range === "custom" && (
         <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Başlangıç:</span>
-          <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+          <DateInput value={customStart} onChange={e => setCustomStart(e.target.value)}
             style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13 }} />
           <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bitiş:</span>
-          <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+          <DateInput value={customEnd} onChange={e => setCustomEnd(e.target.value)}
             style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13 }} />
         </div>
       )}

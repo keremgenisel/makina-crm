@@ -71,9 +71,28 @@ export const Field = ({ label, children }) => {
 // caller'ınkinin üzerine yazıp yok sayıyordu; aynı davranışı koruyoruz ki aydınlık mod
 // birebir aynı kalsın. (Birkaç yerde ölü kalan style prop'u var: SettingsCompany IBAN
 // monospace, PickOrType marginTop — eskiden de etkisizdi.)
-export const Input = ({ style: _ignoredStyle, ...props }) => (
-  <input lang={props.type === "date" ? "tr" : undefined} {...props} className="input" />
-);
+// Native <input type="date"/"datetime-local"> KONTROLLÜ (value + her onChange'de setState) kullanıldığında
+// Chromium/Electron, kullanıcı tarihi ELLE yazarken her tuşta gelen re-render'da alanın düzenleme
+// durumunu sıfırlıyor → yazılan tarih "eski değerine geri dönüyor". Çözüm: alanı KONTROLSÜZ tut
+// (defaultValue) ve DOM değerini yalnız DIŞ value gerçekten değiştiğinde VE alan odakta değilken
+// senkronla — kullanıcı yazarken React araya girip ezmesin. onChange yine parent'a normal iletilir.
+export const DateInput = ({ type = "date", value = "", onChange, ...props }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    // Odaktayken (kullanıcı yazıyor) DOM'a dokunma; yalnız harici değişimi (odak dışı) yansıt.
+    if (el && document.activeElement !== el && el.value !== (value || "")) el.value = value || "";
+  }, [value]);
+  return (
+    <input ref={ref} lang="tr" {...props} type={type} defaultValue={value || ""}
+      onChange={e => onChange?.(e)} />
+  );
+};
+
+export const Input = ({ style: _ignoredStyle, ...props }) =>
+  (props.type === "date" || props.type === "datetime-local")
+    ? <DateInput {...props} className="input" />
+    : <input {...props} className="input" />;
 // Şifre alanı — sağda göz ikonuyla göster/gizle. `Input` ile aynı props (value/onChange/placeholder/
 // autoFocus/onKeyDown), type="password" sabit (toggle iç state'le yönetiliyor, dışarıdan verilmez).
 export const PasswordInput = (props) => {

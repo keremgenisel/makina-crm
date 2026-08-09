@@ -6,7 +6,7 @@ import { servisParcaDus, servisParcaGeriAl } from "../../lib/servisStok";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   calcKalanBorc, stripAutoPrint, simdiYerel,
-  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi,
+  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari,
 } from "../../lib/utils";
 import {
   printServiceForm as printServiceFormTemplate,
@@ -18,7 +18,7 @@ import {
   kalipEtiketYazdir,
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
@@ -131,9 +131,9 @@ export const CustomerDetailModal = ({
   };
   const saveService = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
-    const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + parseMoney(typeof p === "string" ? 0 : p.fiyat), 0);
+    const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     // Yalnızca Altuntaş'tan alınan parçaların toplamı — dış tedarik parçalar Altuntaş'a gelir/borç olarak yazılmaz
-    const parcaUcretiAltuntastan = (svForm.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + parseMoney(p.fiyat), 0);
+    const parcaUcretiAltuntastan = (svForm.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency };
     if (svModal === "add") {
       bumpId(customers, services);
@@ -817,13 +817,13 @@ export const CustomerDetailModal = ({
                       <Select value={gorusmeForm.tur} onChange={e => setGorusmeForm(p => ({ ...p, tur: e.target.value }))}>
                         {["Gelen Arama", "Giden Arama", "Ziyaret", "E-posta", "Diğer"].map(t => <option key={t} value={t}>{t}</option>)}
                       </Select>
-                      <input type="date" value={gorusmeForm.tarih} onChange={e => setGorusmeForm(p => ({ ...p, tarih: e.target.value }))}
+                      <DateInput value={gorusmeForm.tarih} onChange={e => setGorusmeForm(p => ({ ...p, tarih: e.target.value }))}
                         style={{ padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--surface, #ffffff)" }} />
                     </div>
                     <Input value={gorusmeForm.not} onChange={e => setGorusmeForm(p => ({ ...p, not: e.target.value }))} placeholder="Görüşme notu (ne konuşuldu, ne bekleniyor)" />
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>Takip tarihi (opsiyonel):</span>
-                      <input type="date" value={gorusmeForm.takipTarihi} onChange={e => setGorusmeForm(p => ({ ...p, takipTarihi: e.target.value }))}
+                      <DateInput value={gorusmeForm.takipTarihi} onChange={e => setGorusmeForm(p => ({ ...p, takipTarihi: e.target.value }))}
                         style={{ padding: "6px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--surface, #ffffff)" }} />
                       <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                         <Btn small variant="ghost" onClick={() => setGorusmeForm(null)}>Vazgeç</Btn>

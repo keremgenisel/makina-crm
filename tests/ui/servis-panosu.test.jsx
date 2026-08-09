@@ -499,6 +499,56 @@ describe("ServiceForm — Yapılan İşlem: 'Kargo' seçeneği kaldırıldı (es
   });
 });
 
+describe("ServisPanosu — Arşivi Temizle (servis + kargo + kalıp)", () => {
+  // Arşive gönderilen (panoGizli) kargo/kalıp kartları da "Arşivi Temizle" ile panodan tamamen
+  // çıkarılabilmeli — eskiden yalnız servisler temizleniyordu, kargo/fabrika teslim kutuları arşivde
+  // takılı kalıyordu. Temizleme kargoDurum'u boşaltır (kayıt Stok'ta durur).
+  const arsivProps = (over = {}) => ({
+    services: [], setServices: vi.fn(), customers: musteriler, calisanlar, showToast: vi.fn(),
+    serverPermissions: null,
+    kargoYetki: true, kalipYetki: true, dealers: [{ id: 5, name: "Bayi X" }], parts: [{ id: 7, ad: "Dişli" }],
+    yedekParcaSatislar: [{ id: 900, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, tarih: "2026-07-20", kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [] }],
+    setYedekParcaSatislar: vi.fn(),
+    partSales: [{ id: 800, customerId: 1, tur: "Kalıp", ad: "Adana Kalıbı", olcu: "55x125", kargoDurum: "Teslim Edildi", panoGizli: true, tarih: "2026-07-19" }],
+    setPartSales: vi.fn(),
+    ...over,
+  });
+
+  it("arşivlenen kargo + kalıp da 'Arşivi Temizle' ile panodan çıkar (kargoDurum boşalır, panoGizli false)", () => {
+    const p = arsivProps();
+    render(<ServisPanosu {...p} />);
+    // Arşiv akordeonunu aç (Tamamlandı sütununda)
+    fireEvent.click(screen.getByText(/Arşivlenenler/));
+    // Temizle → onay
+    fireEvent.click(screen.getByText("🗑 Arşivi Temizle"));
+    fireEvent.click(screen.getByText("Evet, Temizle"));
+    // Kargo temizlendi
+    expect(p.setYedekParcaSatislar).toHaveBeenCalled();
+    const yeniKargo = p.setYedekParcaSatislar.mock.calls.at(-1)[0](p.yedekParcaSatislar);
+    expect(yeniKargo.find(s => s.id === 900).kargoDurum).toBe("");
+    expect(yeniKargo.find(s => s.id === 900).panoGizli).toBe(false);
+    // Kalıp temizlendi
+    expect(p.setPartSales).toHaveBeenCalled();
+    const yeniKalip = p.setPartSales.mock.calls.at(-1)[0](p.partSales);
+    expect(yeniKalip.find(s => s.id === 800).kargoDurum).toBe("");
+    expect(yeniKalip.find(s => s.id === 800).panoGizli).toBe(false);
+  });
+
+  it("toplu (batchId) kargoda arşiv temizleme grubun TÜM üyelerini kaldırır", () => {
+    const yedekParcaSatislar = [
+      { id: 901, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, tarih: "2026-07-20", kargoDurum: "Teslim Edildi", panoGizli: true, batchId: 5000, tahsisler: [] },
+      { id: 902, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, tarih: "2026-07-20", kargoDurum: "Teslim Edildi", panoGizli: true, batchId: 5000, tahsisler: [] },
+    ];
+    const p = arsivProps({ yedekParcaSatislar, partSales: [] });
+    render(<ServisPanosu {...p} />);
+    fireEvent.click(screen.getByText(/Arşivlenenler/));
+    fireEvent.click(screen.getByText("🗑 Arşivi Temizle"));
+    fireEvent.click(screen.getByText("Evet, Temizle"));
+    const yeni = p.setYedekParcaSatislar.mock.calls.at(-1)[0](yedekParcaSatislar);
+    expect(yeni.every(s => s.kargoDurum === "" && s.panoGizli === false)).toBe(true); // grubun ikisi de
+  });
+});
+
 describe("ServiceForm — ileri tarihli servis (panoya düşme zamanı)", () => {
   const Harness = () => {
     const [form, setForm] = useState({ customerId: 1, degisenParcalar: [], currency: "TRY", tech: "", date: today(), durum: "Bekliyor" });

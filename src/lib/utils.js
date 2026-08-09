@@ -427,6 +427,13 @@ export const parcaAdi = (p) => (typeof p === "string" ? p : (p?.ad || ""));
 // Değişen parçaları kimliğe göre grupla (aynı parça/fiyat/dış-tedarik birleşir) ve adetlerini topla.
 // Her parçanın kendi miktarı (varsa) sayılır; aynı parça birden çok kez seçildiyse adetler toplanır.
 // İlk görülme sırasını korur. Döner: [{ p, adet }] — p ilk örnektir.
+// Bir servis "değişen parça" satırının toplam tutarı = birim fiyat × miktar (miktar yoksa 1).
+// `fiyat` birim fiyattır (parça seçilince tanımlı birim fiyat gelir; miktar ayrı alan). String (eski)
+// parça kaydının fiyatı yoktur → 0. Servis parça ücreti hesaplayan HER yer bunu kullanmalı ki adet
+// fiyatı çarpsın (yoksa 2 adet × 9.000 = 9.000 gibi eksik toplam çıkar).
+export const servisParcaSatirTutari = (p) =>
+  (typeof p === "object" && p !== null) ? parseMoney(p.fiyat ?? p.ucret) * (parseInt(p.miktar) || 1) : 0;
+
 export const parcaGruplari = (parcalar) => {
   const out = [];
   const idx = {};
@@ -519,7 +526,7 @@ export const altuntasParcaBedeli = (sv) => {
   if (sv.parcaUcretiAltuntastan !== undefined) return parseMoney(sv.parcaUcretiAltuntastan);
   const p = sv.degisenParcalar;
   if (Array.isArray(p) && p.some(i => typeof i === "object" && i.disTedarik))
-    return p.filter(i => typeof i !== "string" && !i.disTedarik).reduce((s, i) => s + parseMoney(i.fiyat ?? i.ucret), 0);
+    return p.filter(i => typeof i !== "string" && !i.disTedarik).reduce((s, i) => s + servisParcaSatirTutari(i), 0);
   return parseMoney(sv.parcaUcreti);
 };
 // Serviste BİZDEN satılan yedek parçanın kanalı (Anasayfa "Son Servis Talepleri" rozeti için).

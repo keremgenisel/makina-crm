@@ -90,7 +90,9 @@ dbmod.writeBlobToDb({
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
-    { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true }],
+    { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
+      // Değişen parçalar JSON olarak saklanır (miktar/fiyat dahil); parça ücreti = miktar × fiyat = 18000.
+      degisenParcalar: [{ partId: "7", ad: "aaaaaa", miktar: 2, fiyat: 9000, disTedarik: false }], parcaUcreti: 18000, parcaCurrency: "TRY", parcaGarantiDisi: true }],
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
@@ -160,6 +162,7 @@ check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boole
 check("partSale fabrikaTeslim (Extra Kalıp fabrika teslim, boolean) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.fabrikaTeslim === true; })());
 check("partSale teslimSekli (açık teslim şekli işareti) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimSekli === "fabrika"; })());
 check("partStock negatif satır 0'a çekilir (stok eksiye düşmez); pozitif satır korunur", (() => { const neg = (blob.partStock || []).find(x => x.id === 71); const pos = (blob.partStock || []).find(x => x.id === 70); return neg?.miktar === 0 && pos?.miktar === 12; })());
+check("servis degisenParcalar (miktar/fiyat) + parcaUcreti (miktar×fiyat) roundtrip", (() => { const sv = (blob.services || []).find(x => x.id === 3); const p = sv?.degisenParcalar?.[0]; return p?.miktar === 2 && Number(p?.fiyat) === 9000 && p?.partId === "7" && p?.disTedarik === false && sv?.parcaUcreti === 18000 && sv?.parcaCurrency === "TRY"; })());
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
 check("yedek parça ödeme yöntemi + çek tahsil (boolean) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return s?.yontem === "Çek" && s?.vadeTarihi === "2026-10-01" && s?.tahsilEdildi === true; })());

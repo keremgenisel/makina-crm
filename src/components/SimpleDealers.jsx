@@ -523,10 +523,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
                           {s.degisenParcalar.map((p, i) => {
                             const isDisTedarik = typeof p === "object" && !!p.disTedarik;
-                            const fiyat = typeof p === "object" ? parseMoney(p.fiyat || p.ucret) : 0;
+                            const adet = typeof p === "object" ? (parseInt(p.miktar) || 1) : 1;
+                            const satirTutar = typeof p === "object" ? parseMoney(p.fiyat || p.ucret) * adet : 0; // birim × adet
                             return (
                               <span key={i} style={{ fontSize: 11, fontWeight: 700, background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "#e0f2fe", color: isDisTedarik ? "#ea580c" : "var(--blue2, #0369a1)", border: isDisTedarik ? "1px solid var(--ambBr3, #fed7aa)" : "none", borderRadius: 20, padding: "3px 10px" }}>
-                                {p.ad || p.name || "—"}{isDisTedarik ? " · Dış Tedarik" : ""}{fiyat > 0 ? ` · ${fmtCur(fiyat, s.parcaCurrency || "TRY")}` : ""}
+                                {p.ad || p.name || "—"}{adet > 1 ? ` x${adet}` : ""}{isDisTedarik ? " · Dış Tedarik" : ""}{satirTutar > 0 ? ` · ${fmtCur(satirTutar, s.parcaCurrency || "TRY")}` : ""}
                               </span>
                             );
                           })}

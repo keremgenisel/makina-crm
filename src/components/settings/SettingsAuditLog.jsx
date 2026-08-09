@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Btn, Icon, ConfirmDialog, Modal } from "../ui";
+import { Btn, Icon, ConfirmDialog, Modal, DateInput } from "../ui";
 import { logAction } from "../../lib/audit";
 
 const ENTITY_LABELS = {
@@ -248,9 +248,9 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
         </select>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
-        <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
+        <DateInput value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inp }} title="Başlangıç tarihi" />
         <span style={{ color: "var(--n400, #94a3b8)", fontSize: 13 }}>—</span>
-        <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
+        <DateInput value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inp }} title="Bitiş tarihi" />
         <Btn onClick={applyFilters}>Ara</Btn>
         {hasActiveFilter && (
           <Btn variant="ghost" onClick={resetFilters}>Sıfırla</Btn>

@@ -4,7 +4,7 @@ import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect } from "./ui";
+import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect, DateInput } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -1196,7 +1196,7 @@ export const Documents = ({
                   const wide = BELGE_WIDE.has(key);
                   const ws = wide ? { gridColumn: "1 / -1" } : {};
                   if (key === "no") return <div key={key}><Field label={form.type === "proforma" ? "Proforma No" : "Teklif No"}><input {...f("no")} style={inputStyle} /></Field></div>;
-                  if (key === "tarih") return <div key={key}><Field label="Tarih"><input type="date" {...f("tarih")} style={inputStyle} /></Field></div>;
+                  if (key === "tarih") return <div key={key}><Field label="Tarih"><DateInput {...f("tarih")} style={inputStyle} /></Field></div>;
                   if (key === "dil") return (
                     <div key={key}><Field label="Dil">
                       <select value={form.dil} onChange={e => {
@@ -1453,7 +1453,7 @@ export const Documents = ({
               if (key === "teslimSekli") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimSekli", "Teslim Şekli")}><input {...f("teslimSekli")} style={inputStyle} /></Field></div>;
               if (key === "teslimYeri") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimYeri", "Teslim Yeri / Gümrük Notu")}><textarea {...f("teslimYeri")} style={taStyle} /></Field></div>;
               if (key === "teslimSuresi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimSuresi", "Teslim Süresi")}><input {...f("teslimSuresi")} style={inputStyle} /></Field></div>;
-              if (key === "teslimTarihi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimTarihi", "Teslim Tarihi")}><input type="date" {...f("teslimTarihi")} style={inputStyle} /></Field></div>;
+              if (key === "teslimTarihi") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teslimTarihi", "Teslim Tarihi")}><DateInput {...f("teslimTarihi")} style={inputStyle} /></Field></div>;
               if (key === "teklifGecerlilik") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "teklifGecerlilik", "Teklif Geçerlilik Süresi")}><input {...f("teklifGecerlilik")} style={inputStyle} /></Field></div>;
               if (key === "kur") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "kur", "Kur (Bugün)")}><input value={form.kur ?? ""} onChange={e => applyManualKur(e.target.value)} style={inputStyle} placeholder="1 EUR = 52,00 TL" /></Field></div>;
               if (key === "not") return <div key={key} style={ws}><Field label={getFieldLabel("teklif", "kosullar", "not", "Not")}><textarea {...f("not")} style={taStyle} /></Field></div>;
