@@ -7,7 +7,7 @@ import {
   girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
-  servisParcaSatirTutari, altuntasParcaBedeli,
+  servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
 } from "../src/lib/utils";
 
 describe("parseMoney", () => {
@@ -184,6 +184,22 @@ describe("parcaGruplari — değişen parçaları adete göre grupla (x2, x3…)
     expect(parcaGruplari([])).toEqual([]);
     expect(parcaGruplari(null)).toEqual([]);
     expect(parcaGruplari(undefined)).toEqual([]);
+  });
+});
+
+describe("faturaBedeliOf (yalnız Faturalı'da geçerli)", () => {
+  it("Faturalı satışta fatura bedelini döner", () => {
+    expect(faturaBedeliOf({ faturali: "Faturalı Yurtiçi", faturaBedeli: 50000 })).toBe(50000);
+    expect(faturaBedeliOf({ faturali: "Faturalı Yurtdışı", faturaBedeli: "1.250,50" })).toBe(1250.5);
+  });
+  it("Faturasız satışta 0 döner (Faturalı'dan çevrilmiş hayalet bedeli sızmaz)", () => {
+    expect(faturaBedeliOf({ faturali: "Faturasız Yurtiçi", faturaBedeli: 50000 })).toBe(0);
+    expect(faturaBedeliOf({ faturali: "Faturasız Yurtdışı", faturaBedeli: 99999 })).toBe(0);
+  });
+  it("boş/eksik güvenli", () => {
+    expect(faturaBedeliOf({ faturali: "Faturalı Yurtiçi" })).toBe(0);
+    expect(faturaBedeliOf({})).toBe(0);
+    expect(faturaBedeliOf(null)).toBe(0);
   });
 });
 

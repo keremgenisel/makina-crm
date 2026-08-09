@@ -5,7 +5,7 @@
 import {
   parseMoney, calcKDV, customerHasAnyDebt, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
-  isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi,
+  isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf,
 } from "./utils";
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
@@ -42,11 +42,11 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
 
   // ── SATIŞLAR ────────────────────────────────────────────────────────────────
   const satislar = canliMusteriler.filter(c => !c.isResale && ayIci(c.installDate));
-  const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) > 0 ? c.fabrikaSatisBedeli : c.faturaBedeli;
+  const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) > 0 ? c.fabrikaSatisBedeli : faturaBedeliOf(c);
   const satisTutar = {}, faturaTutar = {}, satisKdv = {}, komisyonTutar = {};
   satislar.forEach(c => {
     paraEkle(satisTutar, c.currency, gercekBedel(c));
-    paraEkle(faturaTutar, c.currency, c.faturaBedeli);
+    paraEkle(faturaTutar, c.currency, faturaBedeliOf(c));
     paraEkle(satisKdv, c.currency, calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates));
     paraEkle(komisyonTutar, c.currency, c.komisyon);
   });

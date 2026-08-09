@@ -350,7 +350,7 @@ export const CustomerAddEditForm = ({
           </Select>
         </Field>
         <Field label="Satış Tipi">
-          <Select value={normalizeSaleType(form.faturali)} onChange={e => setForm(p => ({ ...p, faturali: e.target.value }))}>
+          <Select value={normalizeSaleType(form.faturali)} onChange={e => setForm(p => ({ ...p, faturali: e.target.value, ...(isFaturali(e.target.value) ? {} : { faturaBedeli: "" }) }))}>
             {SALE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </Select>
         </Field>

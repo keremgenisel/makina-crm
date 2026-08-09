@@ -6,7 +6,7 @@ import { servisParcaDus, servisParcaGeriAl } from "../../lib/servisStok";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   calcKalanBorc, stripAutoPrint, simdiYerel,
-  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari,
+  withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf,
 } from "../../lib/utils";
 import {
   printServiceForm as printServiceFormTemplate,
@@ -882,7 +882,7 @@ export const CustomerDetailModal = ({
               {[
                 ["Fatura Durumu", detailView.faturali ? `${detailView.faturali}${detailView.faturali === "Faturasız" ? " (KDV HARİÇ)" : ""}` : ""],
                 ["Fabrika Satış Bedeli (KDV'siz)", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
-                ["Fatura Bedeli", detailView.faturaBedeli ? fmtCur(detailView.faturaBedeli, detailView.currency) : ""],
+                ["Fatura Bedeli", faturaBedeliOf(detailView) ? fmtCur(faturaBedeliOf(detailView), detailView.currency) : ""],
                 ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates), detailView.currency) : ""],
                 ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
                 ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV: ${fmtCur(detailServisKdv, detailMainCur)}` : ""],

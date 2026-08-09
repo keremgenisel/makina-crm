@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -237,6 +237,8 @@ export const Customers = ({
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
+      // Faturasız satışta fatura bedeli kavramı yok → hayalet değer kalmasın (kaynak temizliği).
+      if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
@@ -278,6 +280,8 @@ export const Customers = ({
       return;
     } else {
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
+      // Faturalı → Faturasız çevrilince eski fatura bedeli kayıtta kalmasın (kaynak temizliği).
+      if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);

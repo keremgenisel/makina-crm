@@ -77,10 +77,14 @@ check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total ===
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
   customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850,
+    faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
     city: "İstanbul", ilce: "Kadıköy",
-    kaliplar: [{ ad: "Hamburger", olcu: "10", uretimFormGonder: true, uretimFormId: 77 }] }],
+    kaliplar: [{ ad: "Hamburger", olcu: "10", uretimFormGonder: true, uretimFormId: 77 }] },
+    // Faturalı → Faturasıza çevrilmiş kayıt: uygulama faturaBedeli'ni "" yapar. Kapat/aç sonrası
+    // eski bedel GERİ GELMEMELİ (falsy kalmalı).
+    { id: 501, name: "Faturasız Müşteri", model: "AK100_DS", faturali: "Faturasız Yurtiçi", faturaBedeli: "", fabrikaSatisBedeli: 500000 }],
   partTypeDefs: [
     { id: "standart", ad: "Standart", renk: "slate", makinaSecici: false, stokDus: false, raporGoster: false, sistem: true },
     { id: "konveyor", ad: "Konveyör Saç", renk: "blu", makinaSecici: true, stokDus: true, raporGoster: false, sistem: true, rol: "konveyor" },
@@ -162,6 +166,7 @@ check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boole
 check("partSale fabrikaTeslim (Extra Kalıp fabrika teslim, boolean) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.fabrikaTeslim === true; })());
 check("partSale teslimSekli (açık teslim şekli işareti) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimSekli === "fabrika"; })());
 check("partStock negatif satır 0'a çekilir (stok eksiye düşmez); pozitif satır korunur", (() => { const neg = (blob.partStock || []).find(x => x.id === 71); const pos = (blob.partStock || []).find(x => x.id === 70); return neg?.miktar === 0 && pos?.miktar === 12; })());
+check("Faturalı müşteride faturaBedeli persist; Faturasıza çevrilende temizlenmiş bedel geri gelmez (falsy)", (() => { const fatura = blob.customers.find(c => c.id === 500); const faturasiz = blob.customers.find(c => c.id === 501); return Number(fatura?.faturaBedeli) === 600000 && !faturasiz?.faturaBedeli && Number(faturasiz?.fabrikaSatisBedeli) === 500000; })());
 check("servis degisenParcalar (miktar/fiyat) + parcaUcreti (miktar×fiyat) roundtrip", (() => { const sv = (blob.services || []).find(x => x.id === 3); const p = sv?.degisenParcalar?.[0]; return p?.miktar === 2 && Number(p?.fiyat) === 9000 && p?.partId === "7" && p?.disTedarik === false && sv?.parcaUcreti === 18000 && sv?.parcaCurrency === "TRY"; })());
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());

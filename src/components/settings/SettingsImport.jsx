@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower, bumpId, normalizeSaleType, fmt, fmtTR } from "../../lib/utils";
+import { trLower, bumpId, normalizeSaleType, fmt, fmtTR, isFaturali } from "../../lib/utils";
 import { PART_TYPE_PALETTE_KEYS } from "../../lib/constants";
 import { Icon, Btn, Modal } from "../ui";
 import { Section } from "./Section";
@@ -145,7 +145,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         ...(kalipCapi ? { kalipCapi } : {}),
         installDate, warrantyEnd,
         faturali: satisTipi,
-        faturaBedeli, fabrikaSatisBedeli: gercekBedel || faturaBedeli,
+        // Faturasız satırda fatura bedeli saklanmaz (hayalet olmasın); gerçek tutar fabrikaSatisBedeli'nde korunur.
+        faturaBedeli: isFaturali(satisTipi) ? faturaBedeli : "", fabrikaSatisBedeli: gercekBedel || faturaBedeli,
         komisyon: moneyNum(cell(16)), extraKalipFiyati: moneyNum(cell(17)), kalanBorc: moneyNum(cell(18)),
         serialNo, aciklama: cell(20),
         yetkili1Ad: cell(27) || mevcut?.yetkili1Ad || "", yetkili1Tel: cell(28) || mevcut?.yetkili1Tel || "",

@@ -260,6 +260,11 @@ export const normalizeSaleType = (v) => {
 };
 export const isFaturali = (saleType) => normalizeSaleType(saleType).startsWith("Faturalı");
 export const isYurtIci = (saleType) => normalizeSaleType(saleType).endsWith("Yurtiçi");
+// Bir makina kaydının GEÇERLİ fatura bedeli: yalnız Faturalı satışta anlamlıdır. Faturasız'da 0 döner
+// → Faturalı'dan Faturasız'a çevrilmiş kayıtta kalabilen "hayalet" fatura bedeli hesaplara/gösterime
+// sızmaz. Kaydetmede alan temizlenir (kaynak); bu da okuma tarafı savunma katmanıdır (legacy kayıtları
+// migration'sız kapsar).
+export const faturaBedeliOf = (c) => isFaturali(c?.faturali) ? parseMoney(c?.faturaBedeli) : 0;
 // KDV oranı zaman içinde değiştiği için (bkz. DEFAULT_KDV_RATES) tek bir sayı yerine dönemli bir
 // liste tutulur — bu fonksiyon verilen tarihte geçerli olan oranı bulur. Tarihler bu projenin var
 // olan konvansiyonuyla (Finance.jsx) düz string karşılaştırmasıyla işlenir, Date'e çevrilmez.

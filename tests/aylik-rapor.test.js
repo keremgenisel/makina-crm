@@ -50,6 +50,17 @@ describe("hesaplaAylikRapor", () => {
     expect(r.komisyonTutar).toEqual({ TRY: 20000 });
   });
 
+  it("Faturalı'dan Faturasız'a çevrilmiş kayıttaki hayalet faturaBedeli faturaTutar'a girmez", () => {
+    const veri2 = {
+      customers: [{ id: 9, name: "Z", model: "AK100", installDate: "2026-06-12", currency: "TRY", fabrikaSatisBedeli: 500000, faturaBedeli: 400000, faturali: "Faturasız Yurtiçi", kalanBorc: 0 }],
+      services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [],
+    };
+    const r2 = hesaplaAylikRapor(veri2, "2026-06", secenekler);
+    expect(r2.faturaTutar.TRY || 0).toBe(0);   // Faturasız → hayalet fatura bedeli sayılmaz
+    expect(r2.satisKdv.TRY || 0).toBe(0);      // Faturasız → KDV yok
+    expect(r2.satisTutar.TRY).toBe(500000);    // gerçek bedel fabrikaSatisBedeli'nden gelir
+  });
+
   it("gerçekleşen tahsilata bekleyen çek girmez, tahsil edilmiş çek girer, silinmiş ödeme sayılmaz", () => {
     // 200.000 nakit + 50.000 tahsil edilmiş çek + 25.000 tahsil edilmiş Extra Kalıp (id=20, Nakit, KDV yok)
     expect(r.tahsilatTutar).toEqual({ TRY: 275000 });

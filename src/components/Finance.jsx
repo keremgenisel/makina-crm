@@ -5,7 +5,7 @@ import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
-import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu } from "../lib/utils";
+import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
@@ -118,7 +118,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     // Faturasız satışlarda fatura bedeli kasıtlı olarak gerçek satış bedelinden daha düşük tutulabiliyor
     // (bkz. müşteri formundaki "Gerçek bedelden farklı olabilir" notu) — bu yüzden "gelir" sayılırken
     // her zaman gerçek bedel (Fabrika Satış Bedeli, yoksa faturaya düş) kullanılmalı, ham faturaBedeli değil.
-    const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli);
+    const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
     sales.forEach(c => {
       const k = cur(c.currency);
       const gercek = gercekBedel(c);
@@ -129,7 +129,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       // ayrı bir amaçla komisyonu EKLER (bkz. utils.js calcCiro yorum satırı) — burada Toplam Bedel/ciro hesabı farklı.
       toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar;
       komisyon[k] += parseMoney(c.komisyon);
-      faturaBedeliToplam[k] += parseMoney(c.faturaBedeli);
+      faturaBedeliToplam[k] += faturaBedeliOf(c);
       kdvMakina[k] += kdvTutar;
     });
     // Anlaşmalı bir firma yaptıysa servis ücretini müşteri o firmaya öder, Altuntaş'a değil —

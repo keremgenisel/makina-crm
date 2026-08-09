@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount } from "../../lib/utils";
+import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount, faturaBedeliOf } from "../../lib/utils";
 import { Icon, Btn } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
@@ -73,10 +73,10 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       const k = cur(c.currency);
       const tip = normalizeSaleType(c.faturali);
       const kdvTutar = calcKDV(tip, c.faturaBedeli, c.installDate, kdvRates);
-      gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || parseMoney(c.faturaBedeli);
+      gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
       // Komisyon GİDER olarak çıkarılır (eklenmez) — Finance.jsx'teki Toplam Bedel ile tutarlı
       toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
-      if (isFaturali(tip)) faturaliTutar[k] += parseMoney(c.faturaBedeli);
+      if (isFaturali(tip)) faturaliTutar[k] += faturaBedeliOf(c);
       kdv[k] += kdvTutar;
       komisyon[k] += parseMoney(c.komisyon);
       alacak[k] += parseMoney(c.kalanBorc);
@@ -134,7 +134,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       (c.kaliplar || []).map(k => `${k.ad}${k.olcu ? " (" + k.olcu + ")" : ""}`).join(", "),
       c.installDate, c.warrantyEnd, c.satisYapan, normalizeSaleType(c.faturali),
       curName[CURRENCIES.includes(c.currency) ? c.currency : "TRY"],
-      parseMoney(c.fabrikaSatisBedeli), parseMoney(c.faturaBedeli), calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates),
+      parseMoney(c.fabrikaSatisBedeli), faturaBedeliOf(c), calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates),
       parseMoney(c.komisyon), parseMoney(c.extraKalipFiyati), parseMoney(c.kalanBorc),
       c.isResale ? "Evet" : "Hayır",
       c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel,
@@ -395,7 +395,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         fmtD(c.installDate),
         fmtD(c.warrantyEnd),
         parseMoney(c.fabrikaSatisBedeli) || "",
-        parseMoney(c.faturaBedeli) || "",
+        faturaBedeliOf(c) || "",
         parseMoney(c.komisyon) || "",
         parseMoney(c.extraKalipFiyati) || "",
         parseMoney(c.kalanBorc) || "",
