@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES } from "../lib/constants";
+import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { KartTaksitAlani } from "./KartTaksitAlani";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [] }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [] }) => {
   // Teknisyen: firma çalışanları (Ayarlar) açılır listeden seçilir; listede olmayan harici usta için
   // "Diğer (elle yaz)" seçeneği serbest metin kutusu açar. Açılır liste, seçili olsa bile TÜM çalışanları
   // gösterir (datalist gibi önce silmek gerekmez).
@@ -60,6 +61,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   const parcaUcretiToplam = parcalar.reduce((s, p) => s + servisParcaSatirTutari(p), 0);
   const svUcretliTipi = form.type === "Garanti Dışı" || form.type === "Periyodik Bakım";
   const ucretliVarMi = (svUcretliTipi && parseMoney(form.servisUcreti) > 0) || (!parcaUcretsizMi && parcaUcretiToplam > 0);
+  // Ödeme yöntemi / kredi kartı komisyonu için ortak billable toplam (servis + ücretli parça) ve KDV oranı.
+  const svParcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
+  const svToplam = parseMoney(form.servisUcreti) + (svParcaVar ? parcaUcretiToplam : 0);
+  const svKdvOran = /Faturalı/.test(form.faturaTipi || "Faturalı Yurtiçi") ? getKdvRateForDate(form.date, kdvRates) : 0;
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
@@ -483,14 +488,62 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      {/* Ödeme durumu — servis ve parça ücreti tek ortak toggle ile yönetilir */}
+      {/* Ödeme durumu + yöntemi (satış formlarıyla aynı) — servis ve parça ücreti tek ortak tahsilat.
+          Ödendi işaretliyken yöntem seçilir; Kredi Kartı'da taksit + komisyon, Çek'te vade + tahsil takibi. */}
       {ucretliVarMi && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 4 }}>
-          <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
-            {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
-          </span>
-        </label>
+        <div style={{ marginBottom: 4 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+              {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
+            </span>
+          </label>
+          {form.odendi && (
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
+                <Field label="Ödeme Yöntemi">
+                  <Select value={form.yontem || "Nakit"} onChange={e => {
+                    const v = e.target.value;
+                    // Kredi kartı = zorunlu faturalı (KDV her zaman uygulanır).
+                    setForm(p => ({ ...p, yontem: v, ...(v === "Kredi Kartı" && !/Faturalı/.test(p.faturaTipi || "") ? { faturaTipi: "Faturalı Yurtiçi" } : {}) }));
+                  }}>
+                    {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+                  </Select>
+                </Field>
+                {form.yontem === "Çek" && (
+                  <Field label="Çek Vade Tarihi">
+                    <Input type="date" value={form.vadeTarihi || ""} onChange={e => setForm(p => ({ ...p, vadeTarihi: e.target.value }))} />
+                  </Field>
+                )}
+              </div>
+              {form.yontem === "Kredi Kartı" && (
+                <KartTaksitAlani ayar={krediKartiKomisyonlari}
+                  tutar={svToplam + calcKDV(form.faturaTipi, svToplam, form.date, kdvRates)} currency={form.currency || "TRY"} kdvOrani={svKdvOran}
+                  taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
+                  hedefNet={form.kkHedefNet ?? ""} setHedefNet={v => setForm(p => ({ ...p, kkHedefNet: v }))}
+                  onUygula={(kart, malBedeli) => {
+                    // Gross-up: billable toplamı (servis + ücretli parça) mal bedeline eşitle → toplam+KDV = kart tutarı.
+                    // Aynı oranı servis ücretine ve (ücretliyse) her parça fiyatına uygula (Extra Kalıp/Yedek Parça deseni).
+                    const factor = svToplam > 0 ? malBedeli / svToplam : 1;
+                    setForm(p => ({
+                      ...p,
+                      servisUcreti: Math.round(parseMoney(p.servisUcreti) * factor),
+                      ...(svParcaVar ? { degisenParcalar: (p.degisenParcalar || []).map(pc => typeof pc === "string" ? pc : { ...pc, fiyat: Math.round(parseMoney(pc.fiyat) * factor) }) } : {}),
+                    }));
+                  }} />
+              )}
+              {form.yontem === "Çek" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
+                  <input type="checkbox" checked={!!form.tahsilEdildi} onChange={e => setForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: form.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                    {form.tahsilEdildi ? "Çek tahsil edildi (bankada karşılandı)" : "Çek henüz tahsil edilmedi (tahsil edilene kadar borçlu sayılır)"}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Servis ücreti + parça ücretleri toplamı — Faturalı Yurtiçi'de KDV dahil toplam da gösterilir */}

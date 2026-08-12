@@ -30,3 +30,83 @@ describe("Dashboard Takipten Kaldır yetkisi", () => {
     expect(screen.getByText("Takipten Kaldır")).toBeTruthy();
   });
 });
+
+describe("Beklenen Tahsilat — çeklerin hepsi görünür (7 gün penceresi çekleri kısıtlamaz)", () => {
+  const uzakVade = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10); // 90 gün sonra (pencere dışı)
+  const props = {
+    ...ortak, teklifler: [],
+    customers: [{ id: 1, name: "Çek Firma", currency: "TRY" }],
+    payments: [{ id: 10, customerId: 1, yontem: "Çek", tahsilEdildi: false, vadeTarihi: uzakVade, tutar: 5000, currency: "TRY" }],
+    tahsilatTakipGun: 7,
+  };
+  it("vadesi 90 gün sonra olan tahsil edilmemiş çek anasayfada görünür", () => {
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.getByText(/Beklenen Tahsilat/)).toBeTruthy();
+    expect(screen.getByText("Çek Firma")).toBeTruthy();
+  });
+  it("tahsil edilmiş çek görünmez", () => {
+    const odenmis = { ...props, payments: [{ ...props.payments[0], tahsilEdildi: true }] };
+    render(<Dashboard {...odenmis} serverPermissions={null} />);
+    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+  });
+  it("vadesi 90 gün sonra olan açık taksit de anasayfada görünür", () => {
+    const taksitli = {
+      ...ortak, teklifler: [], payments: [],
+      customers: [{ id: 2, name: "Taksit Firma", currency: "TRY", odemePlani: [{ id: 5, vadeTarihi: uzakVade, tutar: 3000, odemeId: null }] }],
+    };
+    render(<Dashboard {...taksitli} serverPermissions={null} />);
+    expect(screen.getByText(/Beklenen Tahsilat/)).toBeTruthy();
+    expect(screen.getByText("Taksit Firma")).toBeTruthy();
+  });
+});
+
+describe("Beklenen Tahsilat — bloke kredi kartı (tek çekim) anasayfada görünür", () => {
+  const gelecek = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // hesaba geçiş ileride
+  const gecmis = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);   // çoktan hesaba geçti
+  const base = {
+    ...ortak, teklifler: [],
+    customers: [{ id: 1, name: "Kart Müşteri", currency: "TRY" }],
+  };
+  it("blokajı devam eden tek çekim kredi kartı ödemesi görünür", () => {
+    const props = { ...base, payments: [{ id: 20, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 3000, netTutar: 117000 } }] };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.getByText(/Beklenen Tahsilat/)).toBeTruthy();
+    expect(screen.getByText("Kart Müşteri")).toBeTruthy();
+  });
+  it("hesaba geçmiş (blokaj dolmuş) kredi kartı görünmez", () => {
+    const props = { ...base, payments: [{ id: 21, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gecmis, toplamKesinti: 3000, netTutar: 117000 } }] };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+  });
+  it("taksitli (blokaj 0) kredi kartı görünmez", () => {
+    const props = { ...base, payments: [{ id: 22, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 0, hesabaGecis: gecmis, toplamKesinti: 3000, netTutar: 117000 } }] };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+  });
+});
+
+describe("Beklenen Tahsilat — çekler tüm satış kaynaklarından + vadesiz de görünür", () => {
+  const bugun = new Date().toISOString().slice(0, 10);
+  it("Extra Kalıp satışındaki tahsil edilmemiş çek anasayfada görünür", () => {
+    const props = {
+      ...ortak, teklifler: [], payments: [], kdvRates: [{ from: "2000-01-01", rate: 20 }],
+      customers: [{ id: 1, name: "Kalıp Müşteri", currency: "TRY" }],
+      partSales: [{ id: 30, customerId: 1, tur: "Kalıp", ucret: 10000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Çek", vadeTarihi: "2027-01-01", tahsilEdildi: false }],
+    };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.getByText(/Beklenen Tahsilat/)).toBeTruthy();
+    expect(screen.getByText("Kalıp Müşteri")).toBeTruthy();
+  });
+  it("vade tarihi girilmemiş çek de görünür (vade belirtilmemiş)", () => {
+    const props = {
+      ...ortak, teklifler: [],
+      customers: [{ id: 1, name: "Vadesiz Çek Firma", currency: "TRY" }],
+      payments: [{ id: 31, customerId: 1, yontem: "Çek", tutar: 5000, currency: "TRY", tahsilEdildi: false, vadeTarihi: "" }],
+    };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.getByText(/Beklenen Tahsilat/)).toBeTruthy();
+    expect(screen.getByText("Vadesiz Çek Firma")).toBeTruthy();
+    expect(screen.getByText(/vade belirtilmemiş/)).toBeTruthy();
+    expect(bugun).toBeTruthy();
+  });
+});

@@ -8,7 +8,7 @@ export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
   stock, models, kalipDefs = [], dealers, factory,
   kdvRates, payments, geoData, loadingGeo,
-  addLabel, entity, parts = [], partTypeDefs = [],
+  addLabel, entity, parts = [], partTypeDefs = [], krediKartiKomisyonlari = null,
   draftBar = null,
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
@@ -390,7 +390,10 @@ export const CustomerAddEditForm = ({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
-          <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]} />
+          <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
+            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"}
+            kdvOrani={isFaturali(form.faturali) ? getKdvRateForDate(form.installDate, kdvRates) : 0}
+            onFaturaBedeli={mb => setForm(p => ({ ...p, faturaBedeli: Math.round(mb), faturali: isFaturali(p.faturali) ? p.faturali : "Faturalı Yurtiçi" }))} />
           <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
         </Field>
       ) : (
@@ -423,8 +426,8 @@ export const CustomerAddEditForm = ({
             </div>
             {r.odemeId
               ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "3px 8px", borderRadius: 6 }}>✓ Ödendi</span>
-              : <button onClick={() => setForm(p => ({ ...p, odemePlani: p.odemePlani.filter((_, xi) => xi !== i) }))}
-                  style={{ background: "none", border: "none", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 15, padding: "0 4px" }} title="Taksiti sil">✕</button>}
+              : <button type="button" onClick={() => setForm(p => ({ ...p, odemePlani: p.odemePlani.filter((_, xi) => xi !== i) }))}
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }} title="Taksiti sil">🗑</button>}
           </div>
         ))}
         <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, odemePlani: [...(p.odemePlani || []), { id: Date.now() + Math.random(), vadeTarihi: "", tutar: "", odemeId: null }] }))}>

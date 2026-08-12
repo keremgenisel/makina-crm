@@ -60,7 +60,7 @@ export const YedekParcaSatisTab = ({
   partStock = [], setPartStock, partStockLog = [], setPartStockLog,
   kdvRates = DEFAULT_KDV_RATES, showToast = () => {}, canDoStock = () => true, serverPermissions = null,
   odakId = null, onOdakConsumed = null,
-  geoData = null, loadingGeo = false,
+  geoData = null, loadingGeo = false, krediKartiKomisyonlari = null,
 }) => {
   const audit = (action, id, rec, detail) => logAction({ serverPermissions, action, entity: "yedek_parca_satis", entityId: id, entityName: aliciAd(rec, dealers, customers), detail });
   const [modal, setModal] = useState(null);   // "add" | {edit: rec}
@@ -151,12 +151,12 @@ export const YedekParcaSatisTab = ({
   const kaydet = () => {
     if (modal === "add") {
       // Çoklu satır: her parça satırı ayrı kayıt (stok kontrolü eksiye düşmez, alıcı müşteriyse otomatik tahsis).
-      const r = yeniYedekParcaSatisCoklu(form, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+      const r = yeniYedekParcaSatisCoklu(form, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock, ayar: krediKartiKomisyonlari, kdvRates });
       if (!r.ok) { showToast(r.hata, "err"); return; }
       r.ids.forEach(id => audit("olusturuldu", id, form));
       showToast(r.n > 1 ? `${r.n} yedek parça satışı kaydedildi, stoktan düşüldü.` : "Yedek parça satışı kaydedildi, stoktan düşüldü.");
     } else {
-      const sonuc = yedekParcaRec(form);
+      const sonuc = yedekParcaRec(form, krediKartiKomisyonlari, kdvRates);
       if (!sonuc.ok) { showToast(sonuc.hata, "err"); return; }
       const rec = sonuc.rec, eski = modal.edit;
       // Parça/miktar değişmiş olabilir → eski stok hareketini geri al, yenisini düş.
@@ -333,7 +333,7 @@ export const YedekParcaSatisTab = ({
         <YedekParcaSatisForm
           title={modal === "add" ? "Yeni Yedek Parça Satışı" : "Yedek Parça Satışını Düzenle"}
           form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar}
-          kdvRates={kdvRates} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)} />
+          kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)} />
       ))}
 
       {tahsisSv && (tahsisLock ? (

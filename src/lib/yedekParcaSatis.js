@@ -1,11 +1,15 @@
 // Yedek parça (kargo) satışı ortak kayıt mantığı. Stok > Yedek Parça Satışı sekmesi, müşteri detay
 // modalı ve bayi detay modalı aynı doğrulama + kayıt yolunu kullanır (ayrışmasın diye tek kaynak).
-import { uid, today, parseMoney, simdiYerel, totalMiktar } from "./utils";
+import { uid, today, parseMoney, simdiYerel, totalMiktar, calcKDV } from "./utils";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { yerelServisEkle } from "./yerelServis";
+import { kartKomisyonuSnapshot } from "./krediKarti";
 
 // Form → normalize + doğrula → { ok, rec } | { ok:false, hata }. Alıcı bayi VEYA müşteri olabilir.
-export function yedekParcaRec(form) {
+// ayar = krediKartiKomisyonlari (kredi kartı komisyon tablosu), kdvRates = KDV oran dönemleri —
+// yöntem Kredi Kartı ise komisyon, KDV DAHİL satış tutarı (birimFiyat×miktar + KDV) üzerinden hesaplanır
+// (banka komisyonu KDV dahil çekilen tutardan keser). yansitildi=false → Finance komisyonu net cirodan düşer.
+export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   const aliciTipi = form.aliciTipi === "musteri" ? "musteri" : "bayi";
   // "Diğer" = anlaşmasız dış firma alıcı (bayi tipinde; kayıtlı bayi yok, bilgiler yalnız bu kayda yazılır).
   const disFirma = aliciTipi === "bayi" && !!form.disFirma;
@@ -32,6 +36,15 @@ export function yedekParcaRec(form) {
     // borçlu sayılır (bkz. satisTahsilEdildi). Çek değilse çek alanları boşlanır.
     yontem: form.yontem || "Nakit", vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
     tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
+    // Kredi kartı: taksit sayısı + komisyon snapshot (KDV DAHİL satış tutarı üzerinden; yansitildi=false).
+    taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
+    kartKomisyonu: (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar)
+      ? (() => {
+          const netTutar = parseMoney(form.birimFiyat) * (parseInt(form.miktar) || 0);
+          const kdvDahil = netTutar + calcKDV(form.faturaTipi || "Faturalı Yurtiçi", netTutar, form.tarih || today(), kdvRates);
+          return kartKomisyonuSnapshot(kdvDahil, form.taksitSayisi, ayar, form.tarih || today(), false);
+        })()
+      : null,
     // Servis ve Kargo Panosuna gönderme OPT-IN (formda checkbox). kargoDurum boşsa panoya düşmez;
     // checkbox işaretlenince "Hazırlanıyor" gelir. (Eskiden her satış zorunlu panoya düşüyordu.)
     kargoFirma: form.kargoFirma || "", kargoTakipNo: form.kargoTakipNo || "", kargoTarih: form.kargoTarih || "", kargoDurum: form.kargoDurum || "",
@@ -71,8 +84,8 @@ export function musteriTahsisi(rec) {
 // Yeni satış oluştur (add) + parçayı stoktan düş. Alıcı müşteriyse otomatik o makinaya tahsis eder.
 // Stok yetersiz olsa da satış TAM miktarla kaydedilir; stoktan yalnız MEVCUT kadarı düşülür (stok
 // eksiye düşmez). Dönüş { ok, id } | { ok:false, hata }.
-export function yeniYedekParcaSatis(form, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock = [] }) {
-  const sonuc = yedekParcaRec(form);
+export function yeniYedekParcaSatis(form, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock = [], ayar = null, kdvRates = undefined }) {
+  const sonuc = yedekParcaRec(form, ayar, kdvRates);
   if (!sonuc.ok) return sonuc;
   const id = uid();
   const tahsisler = musteriTahsisi(sonuc.rec); // alıcı müşteri → otomatik tam tahsis; bayi → boş

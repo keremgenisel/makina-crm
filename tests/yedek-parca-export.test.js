@@ -61,3 +61,26 @@ describe("yedekParcaExportRow", () => {
     expect(col(r2, "Farklı Teslimat Adresi")).toBe("");
   });
 });
+
+import { kartTaksitEtiket, kartKomisyonTutar } from "../src/components/settings/SettingsExport";
+
+describe("kredi kartı export kolonları (taksit + komisyon)", () => {
+  it("başlıkta Taksit Sayısı + Kredi Kartı Komisyonu var", () => {
+    for (const h of ["Taksit Sayısı", "Kredi Kartı Komisyonu"]) expect(YEDEK_PARCA_EXPORT_HEAD).toContain(h);
+  });
+  it("kredi kartı satırında taksit etiketi + komisyon tutarı çıkar", () => {
+    const rec = { yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: { toplamKesinti: 7.97 } };
+    expect(kartTaksitEtiket(rec)).toBe("3 Taksit");
+    expect(kartKomisyonTutar(rec)).toBe(7.97);
+    expect(kartTaksitEtiket({ yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: {} })).toBe("Tek Çekim");
+  });
+  it("kredi kartı değilse boş", () => {
+    expect(kartTaksitEtiket({ yontem: "Nakit" })).toBe("");
+    expect(kartKomisyonTutar({ yontem: "Çek", kartKomisyonu: { toplamKesinti: 5 } })).toBe("");
+  });
+  it("yedek parça export satırında kredi kartı kolonları dolu gelir", () => {
+    const row = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, birimFiyat: 100, currency: "TRY", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { toplamKesinti: 60.54 } }, deps);
+    expect(col(row, "Taksit Sayısı")).toBe("6 Taksit");
+    expect(col(row, "Kredi Kartı Komisyonu")).toBe(60.54);
+  });
+});

@@ -75,6 +75,7 @@ export const Stock = ({
           dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} factory={factory}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock} serverPermissions={serverPermissions}
+          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed} />
       )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
+import { kartKomisyonuSnapshot } from "../lib/krediKarti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -95,15 +96,17 @@ export const Customers = ({
     : searched;
   const sorted = sortBy ? [...filtered].sort((a, b) => {
     let av, bv;
-    if (sortBy === "name") { av = trLower(a.name); bv = trLower(b.name); }
+    if (sortBy === "sira") { av = girisNo[a.id] ?? 0; bv = girisNo[b.id] ?? 0; } // "Sıra" numarasına göre
+    else if (sortBy === "name") { av = trLower(a.name); bv = trLower(b.name); }
     else if (sortBy === "model") { av = trLower(a.model); bv = trLower(b.model); }
     else if (sortBy === "warranty") { av = a.warrantyEnd || ""; bv = b.warrantyEnd || ""; }
     else if (sortBy === "date") { av = a.installDate || ""; bv = b.installDate || ""; }
     else return 0;
     if (av < bv) return sortDir === "asc" ? -1 : 1;
     if (av > bv) return sortDir === "asc" ? 1 : -1;
-    return 0;
-  }) : [...filtered].sort((a, b) => (b.installDate || "").localeCompare(a.installDate || ""));
+    return b.id - a.id; // eşitlikte id ile stabil (aynı tarihli kayıtlar karışmasın; girisNo id-artan verildiği için ters)
+    // Varsayılan (sortBy yok): satış tarihine göre yeniden eskiye; aynı tarihte id azalan → "Sıra" temiz azalır.
+  }) : [...filtered].sort((a, b) => (b.installDate || "").localeCompare(a.installDate || "") || (b.id - a.id));
   const toggleSort = (col) => {
     if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortBy(col); setSortDir("asc"); }
@@ -251,6 +254,7 @@ export const Customers = ({
           id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: parseMoney(r.tutar),
           currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit",
           ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
+          ...(r.yontem === "Kredi Kartı" && r.taksitSayisi ? { taksitSayisi: r.taksitSayisi, kartKomisyonu: kartKomisyonuSnapshot(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, clean.installDate || today(), !!r.kkYansit) } : {}),
         }));
         setPayments(p => [...yeniOdemeler, ...p]);
       }
@@ -460,7 +464,7 @@ export const Customers = ({
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
               {[
-                ...(isCustomer ? [{ h: "Sıra", key: null }] : []),
+                ...(isCustomer ? [{ h: "Sıra", key: "sira" }] : []),
                 { h: "Satın Alan", key: "name" },
                 { h: "Satış Yapan", key: null },
                 { h: "Ülke / Şehir", key: null },
@@ -622,6 +626,7 @@ export const Customers = ({
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts} partTypeDefs={partTypeDefs}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}
+          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
         />

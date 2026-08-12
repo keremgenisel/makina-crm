@@ -1634,13 +1634,13 @@ export function buildAylikRaporHtml(rapor, factory) {
     (rapor.yedekKargoDetay || []).map(r => [r.firma, r.aliciTuru, r.teslimSekli, r.miktar, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "right", "right", "right", "left"]);
   const anlasmaliParcaDetayTablo = detayTablo("ANLAŞMALI SERVİSLERE PARÇA (firma firma)", ["Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"],
     (rapor.anlasmaliParcaDetay || []).map(r => [r.firma, r.servisFirma, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "right", "right", "left"]);
-  const servisDetayTablo = detayTablo("SERVİS VERİLEN FİRMALAR (firma firma)", ["Firma", "Tip", "İşçilik", "Parça", "KDV", "Durum"],
+  const servisDetayTablo = detayTablo("SERVİS VERİLEN FİRMALAR", ["Firma", "Tip", "İşçilik", "Parça", "KDV", "Durum"],
     (rapor.servisDetay || []).map(r => [r.firma, r.tip, paraSatir(r.iscilik), paraSatir(r.parca), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "right", "right", "right", "left"]);
   const tahsilatDetayTablo = detayTablo("KİMDEN TAHSİL EDİLDİ", ["Firma", "Yöntem", "Tarih", "Tutar"],
     (rapor.tahsilatDetay || []).map(r => [r.firma, r.yontem, gun(r.tarih), paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
   const bekleyenCekDetayTablo = detayTablo("VADESİ BEKLEYEN ÇEKLER", ["Firma", "Vade", "Tutar"],
     (rapor.bekleyenCekDetay || []).map(r => [r.firma, gun(r.vadeTarihi), paraSatir(r.tutar)]), ["left", "left", "right"]);
-  const alacakDetayTablo = detayTablo("BORÇLU FİRMALAR (firma firma)", ["Firma", "Kaynak", "Açık Borç"],
+  const alacakDetayTablo = detayTablo("BORÇLU FİRMALAR", ["Firma", "Kaynak", "Açık Borç"],
     (rapor.alacakDetay || []).map(r => [r.firma, (r.kaynaklar || []).join(", "), paraSatir(r.tutar)]), ["left", "left", "right"]);
   const teklifDetayTablo = detayTablo("VERİLEN TEKLİFLER (firma firma)", ["Firma", "Durum", "Tarih", "Tutar"],
     (rapor.teklifDetay || []).map(r => [r.firma, r.durum, gun(r.tarih), paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
@@ -1659,6 +1659,8 @@ export function buildAylikRaporHtml(rapor, factory) {
       <div style="padding:10px 14px;background:#fffaf5;">
         <table>
           ${ozetSatir("Toplam ciro (net, KDV hariç)", ozet.ciroNet, ozet.ciroNetTL)}
+          ${(ozet.krediKartiSatis && Object.values(ozet.krediKartiSatis).some(v => v > 0)) ? ozetSatir("Kredi kartı ile satış (KDV dahil)", ozet.krediKartiSatis, ozet.krediKartiSatisTL) : ""}
+          ${(ozet.bankaKomisyonu && Object.values(ozet.bankaKomisyonu).some(v => v > 0)) ? ozetSatir("Toplam ödenen banka komisyonu", ozet.bankaKomisyonu, ozet.bankaKomisyonuTL) : ""}
           ${ozetSatir("Gerçekleşen tahsilat", ozet.tahsilat, ozet.tahsilatTL)}
           ${ozetSatir("Açık alacak (güncel bakiye)", ozet.alacak, ozet.alacakTL)}
           ${ozetSatir("Bu ay doğan KDV", ozet.toplamKdv, ozet.toplamKdvTL)}

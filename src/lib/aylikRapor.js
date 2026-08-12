@@ -230,7 +230,8 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     rec.kaynaklar.add(kaynak);
   };
   canliMusteriler.forEach(c => { if (parseMoney(c.kalanBorc) > 0) { paraEkle(alacak, c.currency, c.kalanBorc); ekleAlacak(c.id, c.currency, c.kalanBorc, "Makina bakiyesi"); } });
-  canliServisler.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && s.odendi === false).forEach(s => {
+  // Çek tahsil edilmemiş / kredi kartı bloke (tek çekim, hesaba geçmemiş) servisler de alacak (satisTahsilEdildi false).
+  canliServisler.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && !satisTahsilEdildi(s)).forEach(s => {
     const toplam = (isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0) + (isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0);
     const kdvli = toplam + calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
     paraEkle(alacak, s.currency, kdvli);
@@ -276,12 +277,33 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const ciroNet = topla(satisTutar, iscilikTutar, servisParcaTutar, extraKalipTutar, yedekParcaTutar, anlasmaliParcaTutar, yedekKargoTutar);
   // Bu ay doğan toplam KDV (beyanname özeti): satış + servis/parça + extra kalıp + anlaşmalı parça + yedek parça (kargo)
   const toplamKdv = topla(satisKdv, servisKdv, extraKalipKdv, anlasmaliParcaKdv, yedekKargoKdv);
+  // ── Toplam Ödenen Banka Komisyonu — bu ayki TÜM kredi kartlı ödeme + kalıp/yedek parça satışlarının
+  // komisyon snapshot'ı (müşteriye yansıtılan dahil; banka her durumda keser). Gider olarak gösterilir.
+  const bankaKomisyonuTutar = {};
+  const komisyonEkle = (rec) => {
+    const kk = rec && rec.kartKomisyonu;
+    if (rec?.yontem === "Kredi Kartı" && kk && Number(kk.toplamKesinti) > 0) paraEkle(bankaKomisyonuTutar, rec.currency, Number(kk.toplamKesinti));
+  };
+  ayOdemeler.forEach(komisyonEkle);
+  ayKalipSatislari.forEach(komisyonEkle);
+  ayYedekKargo.forEach(komisyonEkle);
+  ayServisler.forEach(komisyonEkle);
+  // ── Kredi kartı ile satış — ödeme yöntemi Kredi Kartı olan satış/tahsilatların toplamı (KDV dahil,
+  // kartla çekilen tutar). Makina ödemeleri (payment) + Extra Kalıp + Yedek Parça + Servis. Para birimi başına.
+  const krediKartiSatisTutar = {};
+  const kartSatisEkle = (bedel, currency, faturaTipi, tarih) => { if (bedel > 0) paraEkle(krediKartiSatisTutar, currency, bedel + calcKDV(faturaTipi, bedel, tarih, kdvRates)); };
+  ayKalipSatislari.forEach(p => { if (p.yontem === "Kredi Kartı") kartSatisEkle(parseMoney(p.ucret), p.currency, p.faturaTipi, p.tarih); });
+  ayYedekKargo.forEach(s => { if (s.yontem === "Kredi Kartı") kartSatisEkle(kargoBedeli(s), s.currency, s.faturaTipi, s.tarih); });
+  ayServisler.forEach(s => { if (s.yontem === "Kredi Kartı") kartSatisEkle(parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)), s.currency, s.faturaTipi, s.date); });
+  ayOdemeler.forEach(p => { if (p.yontem === "Kredi Kartı") paraEkle(krediKartiSatisTutar, p.currency, parseMoney(p.tutar)); }); // ödeme zaten KDV dahil kart tutarı
   const ozet = {
     ciroNet, tahsilat: tahsilatTutar, alacak,
     ciroNetTL: rates ? toTL(ciroNet) : null,
     tahsilatTL: rates ? toTL(tahsilatTutar) : null,
     alacakTL: rates ? toTL(alacak) : null,
     toplamKdv, toplamKdvTL: rates ? toTL(toplamKdv) : null,
+    krediKartiSatis: krediKartiSatisTutar, krediKartiSatisTL: rates ? toTL(krediKartiSatisTutar) : null,
+    bankaKomisyonu: bankaKomisyonuTutar, bankaKomisyonuTL: rates ? toTL(bankaKomisyonuTutar) : null,
   };
 
   return {
@@ -312,6 +334,8 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     // Teklifler
     teklifAdet: ayTeklifler.length, onaylananTeklif: onaylanan, teklifDetay,
     bekleyenTeklif: canliTeklifler.filter(t => t.type === "teklif" && t.durum === "gonderildi").length,
+    // Kredi kartı ile satış (KDV dahil) + toplam ödenen banka komisyonu (gider)
+    krediKartiSatisTutar, bankaKomisyonuTutar,
     // Yönetici özeti + KDV beyanname özeti
     ozet, toplamKdv, anlasmaliParcaKdv,
     kdvKalemleri: { satis: satisKdv, servis: servisKdv, extraKalip: extraKalipKdv, anlasmaliParca: anlasmaliParcaKdv, yedekKargo: yedekKargoKdv },

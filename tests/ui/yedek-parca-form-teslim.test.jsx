@@ -69,3 +69,37 @@ describe("YedekParcaSatisForm — ödeme yöntemi (Nakit/Kredi Kartı/Çek)", ()
     expect(screen.getByText(/tahsil edilene kadar borçlu sayılır/)).toBeTruthy();
   });
 });
+
+describe("YedekParcaSatisForm — para birimi değişince parça USD/EUR fiyatı gelir", () => {
+  const parts = [{ id: 5, ad: "Kompresör", fiyatTRY: 1000, fiyatUSD: 30, fiyatEUR: 28 }];
+  function CurHarness() {
+    const [form, setForm] = React.useState({ aliciTipi: "bayi", currency: "TRY", satirlar: [{ partId: "5", miktar: "2", birimFiyat: "1000" }] });
+    return (<>
+      <div data-testid="bf">{String(form.satirlar[0].birimFiyat)}</div>
+      <div data-testid="cur">{String(form.currency)}</div>
+      <YedekParcaSatisForm title="Yeni Satış" form={form} setForm={setForm} parts={parts} onSave={() => {}} onCancel={() => {}} />
+    </>);
+  }
+  it("TRY→USD geçince tanımlı USD fiyatı (30) birim fiyata gelir", () => {
+    render(<CurHarness />);
+    expect(screen.getByTestId("bf").textContent).toBe("1000");
+    const pbSecici = screen.getByDisplayValue("₺ Türk Lirası");
+    fireEvent.change(pbSecici, { target: { value: "USD" } });
+    expect(screen.getByTestId("cur").textContent).toBe("USD");
+    expect(screen.getByTestId("bf").textContent).toBe("30");
+    // USD→EUR: EUR fiyatı 28
+    fireEvent.change(screen.getByDisplayValue("$ Dolar (USD)"), { target: { value: "EUR" } });
+    expect(screen.getByTestId("bf").textContent).toBe("28");
+  });
+  it("o para biriminde tanımlı fiyat yoksa mevcut değer korunur", () => {
+    const parts2 = [{ id: 5, ad: "Kompresör", fiyatTRY: 1000 }]; // sadece TRY
+    function H2() {
+      const [form, setForm] = React.useState({ aliciTipi: "bayi", currency: "TRY", satirlar: [{ partId: "5", miktar: "1", birimFiyat: "1000" }] });
+      return (<><div data-testid="bf2">{String(form.satirlar[0].birimFiyat)}</div>
+        <YedekParcaSatisForm title="Yeni Satış" form={form} setForm={setForm} parts={parts2} onSave={() => {}} onCancel={() => {}} /></>);
+    }
+    render(<H2 />);
+    fireEvent.change(screen.getByDisplayValue("₺ Türk Lirası"), { target: { value: "USD" } });
+    expect(screen.getByTestId("bf2").textContent).toBe("1000"); // USD fiyatı yok → korunur
+  });
+});

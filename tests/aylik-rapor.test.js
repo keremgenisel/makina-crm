@@ -259,3 +259,49 @@ describe("oncekiAyStr", () => {
     expect(oncekiAyStr("2026-01")).toBe("2025-12");
   });
 });
+
+describe("hesaplaAylikRapor — kredi kartı komisyonu (banka kesintisi)", () => {
+  const veriKK = {
+    customers: [{ id: 1, name: "A", model: "AK100", installDate: "2026-06-10", currency: "TRY", fabrikaSatisBedeli: 100000, faturali: "Faturasız Yurtiçi", kalanBorc: 0, satisYapan: "Altuntaş Makina" }],
+    services: [], partSales: [], teklifler: [], dealers: [], yedekParcaSatislar: [],
+    payments: [
+      // Kredi kartı, biz yüklendik (yansitildi=false), blokaj yok → tahsilata girer + komisyon net gelirden düşer
+      { id: 50, customerId: 1, tarih: "2026-06-08", tutar: 108000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: { toplamKesinti: 8000, blokajGun: 0, hesabaGecis: "2026-06-08", yansitildi: false } },
+      // Komisyonu müşteriye yansıttık (yansitildi=true) → tahsilata girer ama komisyon DÜŞÜLMEZ
+      { id: 51, customerId: 1, tarih: "2026-06-09", tutar: 105000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: { toplamKesinti: 5000, blokajGun: 0, hesabaGecis: "2026-06-09", yansitildi: true } },
+      // Tek çekim, bloke (hesaba geçiş uzak gelecek) → tahsilata GİRMEZ; komisyonu yine tahakkuk eder
+      { id: 52, customerId: 1, tarih: "2026-06-10", tutar: 30000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { toplamKesinti: 2000, blokajGun: 40, hesabaGecis: "2999-01-01", yansitildi: false } },
+    ],
+  };
+  const rk = hesaplaAylikRapor(veriKK, "2026-06", secenekler);
+
+  it("banka komisyonu = TÜM kredi kartı komisyonlarının toplamı (müşteriye yansıtılan dahil)", () => {
+    expect(rk.bankaKomisyonuTutar.TRY).toBe(15000); // 8000 + 5000 (gross-up) + 2000 (bloke)
+    expect(rk.ozet.bankaKomisyonu.TRY).toBe(15000);
+  });
+  it("kredi kartı ile satış = kredi kartlı ödeme/satış toplamı (ödeme p.tutar KDV dahil)", () => {
+    expect(rk.krediKartiSatisTutar.TRY).toBe(243000); // 108000 + 105000 + 30000 (üç kredi kartı ödemesi)
+    expect(rk.ozet.krediKartiSatis.TRY).toBe(243000);
+  });
+  it("bloke tek çekim tahsilata girmez; hemen geçen kart + gross-up girer", () => {
+    expect(rk.tahsilatTutar.TRY).toBe(213000); // 108000 + 105000 (bloke 30000 hariç)
+  });
+});
+
+describe("hesaplaAylikRapor — bloke kredi kartı / çek servisleri alacağa (borçlu firma) girer", () => {
+  const mk = (svc) => ({
+    customers: [{ id: 1, name: "S Firma", currency: "TRY", kalanBorc: 0 }],
+    services: [{ id: 10, customerId: 1, date: "2026-06-12", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturasız Yurtiçi", ...svc }],
+    partSales: [], teklifler: [], dealers: [], yedekParcaSatislar: [], payments: [],
+  });
+  it("kredi kartı tek çekim BLOKE servis (odendi olsa da) açık borçta görünür", () => {
+    const rk = hesaplaAylikRapor(mk({ odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2999-01-01" } }), "2026-06", secenekler);
+    expect(rk.acikBorc.TRY).toBe(5000); // faturasız → KDV yok
+    expect(rk.borcluFirma).toBe(1);
+  });
+  it("hesaba geçmiş (blokaj dolmuş) kredi kartı servis alacakta değil", () => {
+    const rk = hesaplaAylikRapor(mk({ odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 0, hesabaGecis: "2020-01-01" } }), "2026-06", secenekler);
+    expect(rk.acikBorc.TRY || 0).toBe(0);
+    expect(rk.borcluFirma).toBe(0);
+  });
+});

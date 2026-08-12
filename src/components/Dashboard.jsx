@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisYedekParcaDurumu } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, sumBekleyenCek, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisYedekParcaDurumu, calcKDV } from "../lib/utils";
+import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, tahsilatTakipGun = 7, onOpenTeklif = null, onDismissTakip = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [] }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
@@ -134,21 +135,60 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   }, [teklifler, teklifTakipGun]);
   const gunFarki = (tarih) => Math.max(0, Math.floor((new Date(todayStr) - new Date(tarih)) / 86400000));
 
-  // Beklenen tahsilat: önümüzdeki 7 gün + gecikenler — tahsil edilmemiş çekler ve açık taksitler (F3+F10)
+  // Beklenen tahsilat: tahsil edilmemiş ÇEKLERİN HEPSİ + açık TAKSİTLERİN HEPSİ + BLOKE KREDİ KARTI
+  // (tek çekimde para blokaj süresince hesaba geçmez → hesaba geçiş tarihine kadar beklenen tahsilat).
+  // Kullanıcı isteğiyle pencere (tahsilatTakipGun) kısıtlaması yok — vadesi olan tümü görünür. (F3+F10)
   const beklenenTahsilat = useMemo(() => {
-    const limit = new Date(); limit.setDate(limit.getDate() + (tahsilatTakipGun || 7));
-    const limitStr = limit.toISOString().slice(0, 10);
     const items = [];
+    const kdvli = (tutar, faturaTipi, tarih) => parseMoney(tutar) + calcKDV(faturaTipi, tutar, tarih, kdvRates);
+    // Tahsil edilmemiş çekler — makina ödemesi + Extra Kalıp + Yedek Parça (vade tarihi olmasa da göster).
     payments.forEach(p => {
-      if (p.yontem === "Çek" && !p.tahsilEdildi && !p.deletedAt && p.vadeTarihi && p.vadeTarihi <= limitStr)
-        items.push({ key: `cek-${p.id}`, tip: "Çek", customerId: p.customerId, vade: p.vadeTarihi, tutar: p.tutar, currency: p.currency });
+      if (p.yontem === "Çek" && !p.tahsilEdildi && !p.deletedAt)
+        items.push({ key: `cek-${p.id}`, tip: "Çek", customerId: p.customerId, vade: p.vadeTarihi || "", tutar: parseMoney(p.tutar), currency: p.currency });
+    });
+    partSales.forEach(ps => {
+      if (ps.yontem === "Çek" && !ps.tahsilEdildi && !ps.deletedAt)
+        items.push({ key: `cekps-${ps.id}`, tip: "Çek", customerId: ps.customerId, vade: ps.vadeTarihi || "", tutar: kdvli(ps.ucret, ps.faturaTipi, ps.tarih), currency: ps.currency });
+    });
+    yedekParcaSatislar.forEach(s => {
+      if (!(s.yontem === "Çek" && !s.tahsilEdildi && !s.deletedAt)) return;
+      const bedel = (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+      const base = { key: `cekyp-${s.id}`, tip: "Çek", vade: s.vadeTarihi || "", tutar: bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates), currency: s.currency };
+      if (s.aliciTipi === "musteri") items.push({ ...base, customerId: s.musteriId });
+      else items.push({ ...base, customerId: null, firmaAd: s.disFirma ? (s.disFirmaAd || "Dış firma") : (dealers.find(d => d.id === Number(s.dealerId))?.name || "Bayi") });
+    });
+    services.forEach(s => {
+      if (!(s.yontem === "Çek" && !s.tahsilEdildi && !s.deletedAt)) return;
+      const bedel = parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)); // servis + ücretli parça
+      items.push({ key: `ceksv-${s.id}`, tip: "Çek", customerId: s.customerId, vade: s.vadeTarihi || "", tutar: bedel + calcKDV(s.faturaTipi, bedel, s.date, kdvRates), currency: s.currency });
     });
     customers.forEach(c => (c.odemePlani || []).forEach(r => {
-      if (!r.odemeId && r.vadeTarihi && r.vadeTarihi <= limitStr)
+      if (!r.odemeId && r.vadeTarihi)
         items.push({ key: `tk-${c.id}-${r.id}`, tip: "Taksit", customerId: c.id, vade: r.vadeTarihi, tutar: r.tutar, currency: c.currency });
     }));
-    return items.sort((a, b) => (a.vade || "").localeCompare(b.vade || ""));
-  }, [payments, customers, tahsilatTakipGun]);
+    // Bloke kredi kartı: blokajGun>0 ve henüz hesaba geçmemiş (kartTahsilEdildiMi false) → hesaba geçiş tarihi vade.
+    const bloke = (kk) => kk && Number(kk.blokajGun) > 0 && !kartTahsilEdildiMi(kk, todayStr);
+    const kartTutar = (kk) => (Number(kk?.netTutar) || 0) + (Number(kk?.toplamKesinti) || 0); // çekilen kart tutarı (KDV dahil)
+    payments.forEach(p => {
+      if (p.yontem === "Kredi Kartı" && !p.deletedAt && bloke(p.kartKomisyonu))
+        items.push({ key: `kk-${p.id}`, tip: "Kredi Kartı", customerId: p.customerId, vade: p.kartKomisyonu.hesabaGecis, tutar: parseMoney(p.tutar), currency: p.currency });
+    });
+    partSales.forEach(ps => {
+      if (ps.yontem === "Kredi Kartı" && ps.odendi && !ps.deletedAt && bloke(ps.kartKomisyonu))
+        items.push({ key: `kkps-${ps.id}`, tip: "Kredi Kartı", customerId: ps.customerId, vade: ps.kartKomisyonu.hesabaGecis, tutar: kartTutar(ps.kartKomisyonu), currency: ps.currency });
+    });
+    yedekParcaSatislar.forEach(s => {
+      if (!(s.yontem === "Kredi Kartı" && s.odendi && !s.deletedAt && bloke(s.kartKomisyonu))) return;
+      const base = { key: `kkyp-${s.id}`, tip: "Kredi Kartı", vade: s.kartKomisyonu.hesabaGecis, tutar: kartTutar(s.kartKomisyonu), currency: s.currency };
+      if (s.aliciTipi === "musteri") items.push({ ...base, customerId: s.musteriId });
+      else items.push({ ...base, customerId: null, firmaAd: s.disFirma ? (s.disFirmaAd || "Dış firma") : (dealers.find(d => d.id === Number(s.dealerId))?.name || "Bayi") });
+    });
+    services.forEach(s => {
+      if (!(s.yontem === "Kredi Kartı" && s.odendi && !s.deletedAt && bloke(s.kartKomisyonu))) return;
+      items.push({ key: `kksv-${s.id}`, tip: "Kredi Kartı", customerId: s.customerId, vade: s.kartKomisyonu.hesabaGecis, tutar: kartTutar(s.kartKomisyonu), currency: s.currency });
+    });
+    return items.sort((a, b) => (a.vade || "9999").localeCompare(b.vade || "9999")); // vadesiz olanlar sona
+  }, [payments, customers, partSales, yedekParcaSatislar, services, dealers, todayStr, kdvRates]);
 
   // Borcun bir kısmı/tamamı tahsil edilmemiş çekten kaynaklanıyorsa, "ödememiş" ile karışmaması için
   // ayrı bir rozet gösterilir — vadesi de geçmişse daha acil (kırmızı) bir tona döner.
@@ -404,18 +444,22 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       {beklenenTahsilat.length > 0 && (
         <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid var(--grn600, #16a34a)", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "var(--grn700, #15803d)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
-            Beklenen Tahsilat ({beklenenTahsilat.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· önümüzdeki {tahsilatTakipGun || 7} gün + gecikenler</span>
+            Beklenen Tahsilat ({beklenenTahsilat.length}) <span style={{ fontWeight: 500, textTransform: "none" }}>· tahsil edilmemiş tüm çekler + açık taksitler + bloke kredi kartı</span>
           </div>
           {beklenenTahsilat.map(item => {
-            const gecikti = item.vade < todayStr;
+            const gecikti = item.vade && item.vade < todayStr;
+            const isKart = item.tip === "Kredi Kartı";
+            const rozetBg = item.tip === "Çek" ? "var(--ambBg2, #fef3c7)" : isKart ? "var(--purBg2, #ede9fe)" : "var(--bluBg2, #dbeafe)";
+            const rozetFg = item.tip === "Çek" ? "var(--amb800, #92400e)" : isKart ? "var(--purTx, #7c3aed)" : "var(--blu700, #1d4ed8)";
+            const ad = item.firmaAd || custName(item.customerId);
             return (
-              <div key={item.key} onClick={() => goToCustomer(item.customerId)} title="Müşteri detayını aç"
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", cursor: "pointer" }}>
+              <div key={item.key} onClick={item.customerId ? () => goToCustomer(item.customerId) : undefined} title={item.customerId ? "Müşteri detayını aç" : undefined}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", cursor: item.customerId ? "pointer" : "default" }}>
                 <div>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{custName(item.customerId)}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: item.tip === "Çek" ? "var(--ambBg2, #fef3c7)" : "var(--bluBg2, #dbeafe)", color: item.tip === "Çek" ? "var(--amb800, #92400e)" : "var(--blu700, #1d4ed8)" }}>{item.tip}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{ad}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: rozetBg, color: rozetFg }}>{item.tip}</span>
                   <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 8, color: gecikti ? "var(--red700, #b91c1c)" : "var(--grn700, #15803d)" }}>
-                    {gecikti ? `⚠ ${fmtTR(item.vade)} (gecikti)` : fmtTR(item.vade)}
+                    {!item.vade ? "vade belirtilmemiş" : gecikti ? `⚠ ${fmtTR(item.vade)} (gecikti)` : `${fmtTR(item.vade)}${isKart ? " (hesaba geçiş)" : ""}`}
                   </span>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn700, #15803d)" }}>{fmtCur(item.tutar, item.currency)}</span>

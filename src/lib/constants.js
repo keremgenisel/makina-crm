@@ -219,7 +219,39 @@ export const SERVIS_ALARM_VARSAYILAN = { acik: false, sesSn: 25, yanipSn: 40 };
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
-export const APP_VERSION = "3.17.4";
+// ── Kredi Kartı Taksit Komisyonları (Ayarlar > Evrak & Süreçler) ──
+// Kartla satışta banka, taksit sayısına göre komisyon keser. "oran" = banka ekranındaki Komisyon
+// Oranı (BSMV DÂHİL); uygulama üye işyeri ücreti + BSMV'yi (oran/1.05 ve ×%5) ayrıştırır. "katkiPayi"
+// = ayrı Taksitli Satış Katkı Payı oranı (orana dâhil DEĞİL). "blokajGun" = paranın hesaba geçmesi
+// için beklenen gün (tek çekimde ~40; taksitlide 0 → hemen). taksit:1 = Tek Çekim.
+// Değerler örnek banka tablosundan; kullanıcı Ayarlar'dan düzenler. appSettings.krediKartiKomisyonlari
+// içinde { bsmv, satirlar } olarak saklanır (KDV oran tablosu deseni).
+export const DEFAULT_KK_BSMV = 5;
+export const DEFAULT_KK_KOMISYONLARI = {
+  bsmv: DEFAULT_KK_BSMV,
+  satirlar: [
+    { taksit: 1, oran: 0, katkiPayi: 0.5, blokajGun: 40 }, // Tek Çekim (oranı kullanıcı girecek)
+    { taksit: 2, oran: 5.6, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 4, oran: 9.34, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 5, oran: 9.34, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 6, oran: 9.34, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 7, oran: 14.95, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 8, oran: 16.82, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 9, oran: 18.69, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 10, oran: 20.55, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 11, oran: 22.42, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 12, oran: 24.29, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 13, oran: 26.16, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 14, oran: 28.03, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 15, oran: 29.9, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 16, oran: 31.77, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 17, oran: 33.64, katkiPayi: 0.5, blokajGun: 0 },
+    { taksit: 18, oran: 35.51, katkiPayi: 0.5, blokajGun: 0 },
+  ],
+};
+
+export const APP_VERSION = "3.18.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

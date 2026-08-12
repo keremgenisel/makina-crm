@@ -1,4 +1,7 @@
 import { CUR_SYM, DEFAULT_KDV_RATE, DEFAULT_KDV_RATES, BACKUP_APP_TAG, SALE_TYPES, ALTUNMAK_MODELS, TRASH_RETENTION_DAYS, CALISMA_SAATLERI_VARSAYILAN } from "./constants";
+// kartTahsilEdildiMi: kredi kartı blokaj süresi dolana kadar ödemeyi "tahsil edilmemiş" sayar.
+// (Döngüsel import güvenli: her iki modül de birbirinin fonksiyonlarını yalnız çalışma anında çağırır.)
+import { kartTahsilEdildiMi } from "./krediKarti";
 
 export const today = () => new Date().toISOString().split("T")[0];
 // gg/aa/yyyy formatı (yyyy-mm-dd → dd/mm/yyyy)
@@ -552,19 +555,28 @@ export const servisYedekParcaDurumu = (sv, factoryName = "Altuntaş Makina") => 
  * @param {string} [factoryName]
  * @returns {boolean}
  */
+// Not: "para geldi mi" artık salt odendi değil; servise ödeme yöntemi eklendiğinden satış tarafıyla aynı
+// satisTahsilEdildi kullanılır — çek tahsil edilene / kredi kartı bloke parası hesaba geçene kadar borçlu.
 export const isServisBorcluMu = (sv, factoryName = "Altuntaş Makina") => {
   const parcaMusteriyeVar = isParcaUcretliMi(sv) && isAltuntasServisi(sv, factoryName);
-  return (isServisUcretliMi(sv, factoryName) || parcaMusteriyeVar) && sv.odendi === false;
+  return (isServisUcretliMi(sv, factoryName) || parcaMusteriyeVar) && !satisTahsilEdildi(sv);
 };
 // Anlaşmalı bir servis firmasının üstlendiği parça borcu (Karar: Seçenek A — parça ücreti gerçek bir
 // Altuntaş satışıdır ama borçlusu müşteri değil, işlemi yapan anlaşmalı firmadır)
 export const isParcaBorcluAnlasmaliFirmaya = (sv, factoryName = "Altuntaş Makina") =>
-  isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && sv.odendi === false;
+  isParcaUcretliMi(sv) && !isAltuntasServisi(sv, factoryName) && !satisTahsilEdildi(sv);
 // Bir satışın (Extra Kalıp / yedek parça) parası GERÇEKTEN geldi mi? = ödendi VE (Çek değilse ya da
 // çek tahsil edildiyse). odendi ödemenin alındığını, tahsilEdildi çekin bankada karşılandığını gösterir;
 // çek alınmış ama tahsil edilmemişse para henüz gelmemiştir → tahsil edilmemiş sayılır (makina çekiyle
 // aynı mantık, bkz. isPaymentReceived). yontem alanı olmayan eski kayıtlar Nakit gibi davranır.
-export const satisTahsilEdildi = (s) => !!s?.odendi && (s?.yontem !== "Çek" || s?.tahsilEdildi === true);
+// Bir kalıp/yedek parça satışı gerçekten tahsil edildi mi: ödendi işaretli olmalı; Çek ise bankada
+// karşılanmalı; Kredi Kartı ise blokaj süresi dolup para hesaba geçmiş olmalı (tek çekimde ~40 gün).
+export const satisTahsilEdildi = (s, bugun = today()) => {
+  if (!s?.odendi) return false;
+  if (s?.yontem === "Çek") return s?.tahsilEdildi === true;
+  if (s?.yontem === "Kredi Kartı") return kartTahsilEdildiMi(s?.kartKomisyonu, bugun);
+  return true;
+};
 // Extra Kalıp satışı borçlu mu (ödenmemiş VEYA çek henüz tahsil edilmemiş)
 /** @param {import("../types").PartSale} ps @returns {boolean} */
 export const isPartSaleBorcluMu = (ps) => !satisTahsilEdildi(ps);
@@ -621,10 +633,15 @@ export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES) => {
   const kdv = calcKDV(customer.faturali, customer.faturaBedeli, customer.installDate, kdvRates);
   return parseMoney(customer.fabrikaSatisBedeli) + kdv + parseMoney(customer.komisyon);
 };
-// Bir ödeme "alınmış" mı sayılır: Nakit/Kredi Kartı girildiği anda alınmış sayılır;
-// Çek ise bankada karşılanana kadar (tahsilEdildi elle işaretlenene kadar) sayılmaz.
-// yontem alanı olmayan eski kayıtlar Nakit gibi davranır (geriye dönük uyumluluk).
-export const isPaymentReceived = (p) => p.yontem !== "Çek" || p.tahsilEdildi === true;
+// Bir ödeme "alınmış" mı sayılır: Nakit girildiği anda alınmış sayılır; Çek ise bankada karşılanana
+// kadar (tahsilEdildi elle işaretlenene kadar) sayılmaz; Kredi Kartı ise blokaj süresi (tek çekimde
+// ~40 gün) dolup para hesaba geçene kadar sayılmaz (kartKomisyonu.hesabaGecis tarihine göre otomatik).
+// yontem alanı olmayan / kartKomisyonu olmayan eski kayıtlar hemen alınmış sayılır (geriye dönük uyum).
+export const isPaymentReceived = (p, bugun = today()) => {
+  if (p.yontem === "Çek") return p.tahsilEdildi === true;
+  if (p.yontem === "Kredi Kartı") return kartTahsilEdildiMi(p.kartKomisyonu, bugun);
+  return true;
+};
 // Bir makinaya (customerId) yapılmış, alınmış sayılan ödemelerin toplamı
 export const sumPayments = (customerId, payments = []) =>
   payments.filter(p => p.customerId === customerId && isPaymentReceived(p)).reduce((sum, p) => sum + parseMoney(p.tutar), 0);

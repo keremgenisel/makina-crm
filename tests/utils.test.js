@@ -8,7 +8,45 @@ import {
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
+  isPaymentReceived, isServisBorcluMu,
 } from "../src/lib/utils";
+
+describe("isServisBorcluMu — ödeme yöntemi farkındalığı (çek/kredi kartı blokaj)", () => {
+  const svc = (extra) => ({ type: "Garanti Dışı", servisUcreti: 5000, islemFirma: "Altuntaş Makina", odendi: true, ...extra });
+  it("nakit ödenmiş servis borçlu değil; ödenmemiş borçlu", () => {
+    expect(isServisBorcluMu(svc({ yontem: "Nakit" }))).toBe(false);
+    expect(isServisBorcluMu(svc({ odendi: false }))).toBe(true);
+  });
+  it("çek tahsil edilene kadar borçlu", () => {
+    expect(isServisBorcluMu(svc({ yontem: "Çek", tahsilEdildi: false }))).toBe(true);
+    expect(isServisBorcluMu(svc({ yontem: "Çek", tahsilEdildi: true }))).toBe(false);
+  });
+  it("kredi kartı bloke para hesaba geçene kadar borçlu", () => {
+    expect(isServisBorcluMu(svc({ yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2999-01-01" } }))).toBe(true);
+    expect(isServisBorcluMu(svc({ yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 0, hesabaGecis: "2020-01-01" } }))).toBe(false);
+  });
+  it("eski (yöntemsiz) ödenmiş servis borçlu değil (geriye dönük uyum)", () => {
+    expect(isServisBorcluMu(svc({}))).toBe(false);
+  });
+});
+
+describe("isPaymentReceived — Kredi Kartı blokajı", () => {
+  it("Nakit hemen; Çek elle tahsil edilince; yontemsiz eski kayıt hemen", () => {
+    expect(isPaymentReceived({ yontem: "Nakit" })).toBe(true);
+    expect(isPaymentReceived({ yontem: "Çek", tahsilEdildi: false })).toBe(false);
+    expect(isPaymentReceived({ yontem: "Çek", tahsilEdildi: true })).toBe(true);
+    expect(isPaymentReceived({ tutar: 100 })).toBe(true);
+  });
+  it("Kredi Kartı taksitli (blokaj 0) hemen; tek çekim blokaj dolana kadar sayılmaz", () => {
+    expect(isPaymentReceived({ yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 0, hesabaGecis: "2026-08-12" } }, "2026-08-12")).toBe(true);
+    const tekCekim = { yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2026-09-21" } };
+    expect(isPaymentReceived(tekCekim, "2026-09-20")).toBe(false);
+    expect(isPaymentReceived(tekCekim, "2026-09-21")).toBe(true);
+  });
+  it("kartKomisyonu olmayan eski Kredi Kartı ödemesi hemen sayılır (geriye dönük uyum)", () => {
+    expect(isPaymentReceived({ yontem: "Kredi Kartı" }, "2026-01-01")).toBe(true);
+  });
+});
 
 describe("parseMoney", () => {
   it("Türkçe biçimli parayı sayıya çevirir", () => {

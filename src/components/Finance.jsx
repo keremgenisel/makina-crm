@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
@@ -60,6 +60,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
     anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
     kdvMakina, kdvServis, kdvParca, kdvKalip,
+    bankaKomisyonu, krediKartiSatis,
   } = useMemo(() => {
     // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
     // (<DateInput> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
@@ -208,13 +209,47 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     const toplamExtraKalipNet = subObj(kalipSatisi, kdvKalip);
     const anlasmaliParcaSatisiNet = subObj(anlasmaliParcaSatisi, kdvAnlasmaliParca);
 
+    // ── Toplam Ödenen Banka Komisyonu — dönemdeki TÜM kredi kartlı ödeme/satışların komisyon snapshot'ı
+    // (müşteriye yansıtılan dahil; banka her durumda keser). Bir gider kalemi olarak gösterilir. Para birimi başına.
+    const bankaKomisyonu = empty3();
+    const komisyonTopla = (rec) => {
+      const kk = rec && rec.kartKomisyonu;
+      if (rec?.yontem === "Kredi Kartı" && kk) {
+        const t = Number(kk.toplamKesinti) || 0;
+        if (t > 0) bankaKomisyonu[cur(rec.currency)] += t;
+      }
+    };
+    kalipSatisInRange.forEach(komisyonTopla);
+    yedekParcaSatisInRange.forEach(komisyonTopla);
+    yedekParcaKargoInRange.forEach(komisyonTopla);
+    svcInRange.forEach(komisyonTopla);   // kredi kartlı servisler
+    (payments || []).filter(p => inRange(p.tarih)).forEach(komisyonTopla);
+
+    // ── Toplam Kredi Kartı ile Satış — yalnızca ödeme yöntemi Kredi Kartı olan satış/tahsilatların toplamı
+    // (kartla çekilen tutar, KDV dahil). Makina ödemeleri (payment) + Extra Kalıp + Yedek Parça + Servis. Para birimi başına.
+    const krediKartiSatis = empty3();
+    [...kalipSatisInRange, ...yedekParcaSatisInRange].forEach(p => {
+      if (p.yontem === "Kredi Kartı") krediKartiSatis[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
+    });
+    yedekParcaKargoInRange.forEach(s => {
+      if (s.yontem === "Kredi Kartı") { const bedel = kargoBedel(s); krediKartiSatis[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates); }
+    });
+    svcInRange.forEach(s => {
+      if (s.yontem !== "Kredi Kartı") return;
+      const bedel = parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)); // servis + ücretli parça
+      if (bedel > 0) krediKartiSatis[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.date, kdvRates);
+    });
+    (payments || []).filter(p => inRange(p.tarih)).forEach(p => {
+      if (p.yontem === "Kredi Kartı") krediKartiSatis[cur(p.currency)] += parseMoney(p.tutar);
+    });
+
     // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
     const alacak = empty3();
     customers.forEach(c => { alacak[cur(c.currency)] += Math.max(parseMoney(c.kalanBorc), 0); });
     // Toplam Alacak — kime borçlu olunduğundan bağımsız, Altuntaş'a ödenmemiş her tutar (işçilik
     // sadece Altuntaş'ın kendi serviysiyse, parça ücreti ise kim yaptıysa yapsın — bkz. isServisBorcluMu'nun
     // müşteri-odaklı tanımından farklı olarak burada anlaşmalı firmanın üstlendiği parça borcu da dahildir).
-    services.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && s.odendi === false).forEach(s => {
+    services.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && !satisTahsilEdildi(s)).forEach(s => {
       const servisVar = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
       const parcaVar = isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0;
       const toplam = servisVar + parcaVar;
@@ -277,9 +312,10 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
       anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
       kdvMakina, kdvServis, kdvParca, kdvKalip,
+      bankaKomisyonu, krediKartiSatis,
     };
      
-  }, [customers, services, partSales, yedekParcaSatislar, range, customStart, customEnd, kdvRates, rates, factoryName]);
+  }, [customers, services, partSales, yedekParcaSatislar, payments, range, customStart, customEnd, kdvRates, rates, factoryName]);
 
   const { page: modelPage, setPage: setModelPage, paged: modelRowsPaged, perPage: MODEL_PER_PAGE } = usePagination(modelRows, 10);
   const { page: sellerPage, setPage: setSellerPage, paged: sellerRowsPaged, perPage: SELLER_PER_PAGE } = usePagination(sellerRows, 10);
@@ -480,6 +516,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />
+        <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatis} color="#8b5cf6" sub="Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV dahil)" />
+        <MultiCard label="Toplam Ödenen Banka Komisyonu" obj={bankaKomisyonu} color="var(--red600, #dc2626)" sub="Kredi kartı satışlarında bankaya ödenen komisyon (gider)" />
       </div>
 
       {/* AYLIK TREND */}

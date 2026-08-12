@@ -95,6 +95,8 @@ dbmod.writeBlobToDb({
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
+      // Servise ödeme yöntemi: kredi kartı + taksit komisyonu snapshot (satış tarafıyla aynı alanlar).
+      yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: { taksit: 3, oran: 7.47, toplamKesinti: 1435, blokajGun: 0, hesabaGecis: "2026-07-20", yansitildi: false },
       // Değişen parçalar JSON olarak saklanır (miktar/fiyat dahil); parça ücreti = miktar × fiyat = 18000.
       degisenParcalar: [{ partId: "7", ad: "aaaaaa", miktar: 2, fiyat: 9000, disTedarik: false }], parcaUcreti: 18000, parcaCurrency: "TRY", parcaGarantiDisi: true }],
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
@@ -102,12 +104,18 @@ dbmod.writeBlobToDb({
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
     teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
-    yontem: "Kredi Kartı", vadeTarihi: "", tahsilEdildi: false }],
-  payments: [], dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
+    yontem: "Kredi Kartı", vadeTarihi: "", tahsilEdildi: false,
+    taksitSayisi: 3, kartKomisyonu: { taksit: 3, oran: 7.47, toplamKesinti: 7.97, netTutar: 92.03, blokajGun: 0, hesabaGecis: "2026-07-20", yansitildi: false } }],
+  payments: [
+    { id: 900, customerId: 500, tarih: "2026-07-22", tutar: 132690.52, currency: "TRY", not: "Kart", yontem: "Kredi Kartı",
+      taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 2880, netTutar: 129810, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: true } },
+  ],
+  dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
     { id: 650, dealerId: 3, aliciTipi: "bayi", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
       kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30", batchId: 777001,
       teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "03121112233", teslimatAdres: "Başkent OSB 15. Cad No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan",
+      yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 60.54, netTutar: 539.46, blokajGun: 0, hesabaGecis: "2026-07-15", yansitildi: false },
       tahsisler: [ { miktar: 2, customerId: 500, serialNo: "S-1", makinaSerbest: "", tarih: "2026-07-20" },
                    { miktar: 1, customerId: null, serialNo: "", makinaSerbest: "Bayi X kendi müşterisi", tarih: "2026-07-21" } ] },
     // Alıcı müşteri (bayiye değil son müşteriye satış) — musteriId dolu, dealerId boş; panoGizli (arşiv) true; fabrika teslim
@@ -144,7 +152,8 @@ dbmod.writeBlobToDb({
     mailTemplates: { teklifProforma: { konu: "Özel Konu {no}", metin: "Özel metin" } },
     calismaSaatleri: { baslangic: "09:00", bitis: "18:30", gunler: [1, 2, 3, 4, 5, 6],
       molalar: [{ baslangic: "12:30", bitis: "13:30" }, { baslangic: "16:00", bitis: "16:15" }] },
-    servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 } },
+    servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
+    krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
 check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTamam === true);
@@ -168,8 +177,13 @@ check("partSale teslimSekli (açık teslim şekli işareti) roundtrip", (() => {
 check("partStock negatif satır 0'a çekilir (stok eksiye düşmez); pozitif satır korunur", (() => { const neg = (blob.partStock || []).find(x => x.id === 71); const pos = (blob.partStock || []).find(x => x.id === 70); return neg?.miktar === 0 && pos?.miktar === 12; })());
 check("Faturalı müşteride faturaBedeli persist; Faturasıza çevrilende temizlenmiş bedel geri gelmez (falsy)", (() => { const fatura = blob.customers.find(c => c.id === 500); const faturasiz = blob.customers.find(c => c.id === 501); return Number(fatura?.faturaBedeli) === 600000 && !faturasiz?.faturaBedeli && Number(faturasiz?.fabrikaSatisBedeli) === 500000; })());
 check("servis degisenParcalar (miktar/fiyat) + parcaUcreti (miktar×fiyat) roundtrip", (() => { const sv = (blob.services || []).find(x => x.id === 3); const p = sv?.degisenParcalar?.[0]; return p?.miktar === 2 && Number(p?.fiyat) === 9000 && p?.partId === "7" && p?.disTedarik === false && sv?.parcaUcreti === 18000 && sv?.parcaCurrency === "TRY"; })());
+check("servis ödeme yöntemi + kredi kartı taksit/komisyon snapshot roundtrip", (() => { const sv = (blob.services || []).find(x => x.id === 3); return sv?.yontem === "Kredi Kartı" && sv?.taksitSayisi === 3 && sv?.kartKomisyonu?.oran === 7.47 && sv?.kartKomisyonu?.toplamKesinti === 1435 && sv?.kartKomisyonu?.yansitildi === false; })());
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
+check("partSale kredi kartı taksit + komisyon snapshot (JSON) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.taksitSayisi === 3 && p?.kartKomisyonu?.oran === 7.47 && p?.kartKomisyonu?.toplamKesinti === 7.97 && p?.kartKomisyonu?.yansitildi === false; })());
+check("payment kredi kartı taksit + komisyon snapshot (blokaj, yansitildi) roundtrip", (() => { const p = (blob.payments || []).find(x => x.id === 900); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31" && p?.kartKomisyonu?.yansitildi === true; })());
+check("yedek parça satışı kredi kartı taksit + komisyon snapshot roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 60.54; })());
+check("appSettings krediKartiKomisyonlari (JSON) roundtrip", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && Array.isArray(a?.satirlar) && a.satirlar.length === 2 && a.satirlar[1]?.taksit === 3 && a.satirlar[1]?.oran === 7.47; })());
 check("yedek parça ödeme yöntemi + çek tahsil (boolean) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return s?.yontem === "Çek" && s?.vadeTarihi === "2026-10-01" && s?.tahsilEdildi === true; })());
 check("partSale olusturmaZamani roundtrip (pano sıralaması: en son eklenen üstte)", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.olusturmaZamani === "2026-07-20T14:35:10"; })());
 check("yedek parça satışı roundtrip (parent alanları + kargo)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.dealerId === 3 && String(s?.partId) === "7" && s?.miktar === 5 && s?.birimFiyat === 120 && s?.odendi === false && s?.kargoTakipNo === "TK123" && s?.kargoDurum === "Kargoya Verildi" && (blob.yedekParcaSatislar || []).length === 3; })());

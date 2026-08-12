@@ -1,7 +1,8 @@
 import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
-import { aramaNormalize } from "../lib/utils";
+import { aramaNormalize, parseMoney } from "../lib/utils";
+import { KartTaksitAlani } from "./KartTaksitAlani";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -202,7 +203,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, kdvOrani = 0, currency = "TRY", onFaturaBedeli = null }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -211,16 +212,25 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺" }) => {
   return (
     <div>
       {satirlar.map((r, i) => (
-        <div key={i} style={{ display: "grid", gridTemplateColumns: r.yontem === "Çek" ? "1fr 1fr 1fr 36px" : "1fr 1fr 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          <Select value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
-            {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
-          </Select>
-          <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
-          {r.yontem === "Çek" && (
-            <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
+        <div key={i} style={{ marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: r.yontem === "Çek" ? "1fr 1fr 1fr 36px" : "1fr 1fr 36px", gap: 8, alignItems: "center" }}>
+            <Select value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
+              {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
+            </Select>
+            <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
+            {r.yontem === "Çek" && (
+              <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
+            )}
+            <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
+              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+          </div>
+          {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
+            <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar)} currency={currency} kdvOrani={kdvOrani}
+              taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
+              yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })}
+              hedefNet={r.kkHedefNet ?? ""} setHedefNet={v => satirGuncelle(i, { kkHedefNet: v })}
+              onUygula={(kart, malBedeli) => { satirGuncelle(i, { tutar: Math.round(kart) }); onFaturaBedeli?.(malBedeli); }} />
           )}
-          <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
-            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
         </div>
       ))}
       <button type="button" onClick={satirEkle}

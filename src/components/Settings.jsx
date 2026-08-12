@@ -21,6 +21,7 @@ import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
 import { SettingsOptimize } from "./settings/SettingsOptimize";
 import { SettingsKdv } from "./settings/SettingsKdv";
+import { SettingsKKKomisyon } from "./settings/SettingsKKKomisyon";
 import { SettingsCompany } from "./settings/SettingsCompany";
 import { SettingsTranslations } from "./settings/SettingsTranslations";
 import { SettingsDanger } from "./settings/SettingsDanger";
@@ -41,7 +42,7 @@ const SETTINGS_GROUPS = [
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }] },
-  { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
+  { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "kkkomisyon", label: "Kredi Kartı Komisyonları", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
 ];
 
@@ -237,6 +238,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       )}
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
+      {settingsTab === "kkkomisyon" && <SettingsKKKomisyon appSettings={appSettings} setAppSettings={setAppSettings} />}
       {settingsTab === "takip" && <SettingsTakip appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "evrak" && <SettingsDocuments appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}

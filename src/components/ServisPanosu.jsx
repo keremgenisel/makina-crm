@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, calcKDV, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { kartKomisyonuSnapshot } from "../lib/krediKarti";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
@@ -97,7 +98,7 @@ export const ServisPanosu = ({
     setYpForm({ aliciTipi: "bayi", dealerId: "", musteriId: "", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }], currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false, kargoDurum: "Hazırlanıyor" });
   };
   const saveYedekParca = () => {
-    const r = yeniYedekParcaSatisCoklu(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    const r = yeniYedekParcaSatisCoklu(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock, ayar: appSettings?.krediKartiKomisyonlari, kdvRates });
     if (!r.ok) { showToast(r.hata, "err"); return; }
     // Hemen düşen kargoyu kendi panomuzda susturur; PLANLANMIŞ kargo düştüğünde yanıp sönsün diye işaretlenmez.
     if (!kargoPlanlandiMi(ypForm, simdiYerel())) r.ids.forEach(id => yerelEklenenRef.current.add(id));
@@ -509,7 +510,14 @@ export const ServisPanosu = ({
     const cust = customers.find(c => c.id === Number(form.customerId));
     const parcaUcreti = (form.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const parcaUcretiAltuntastan = (form.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
-    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency };
+    // Kredi kartı komisyonu — billable toplam (servis + ücretli parça) + KDV üzerinden; Çek/Kredi Kartı normalize.
+    const svBillable = parseMoney(form.servisUcreti) + (parcaUcretsizMi ? 0 : parcaUcreti);
+    const svKdvDahil = svBillable + calcKDV(form.faturaTipi, svBillable, form.date, kdvRates);
+    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency,
+      vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
+      tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
+      taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
+      kartKomisyonu: form.yontem === "Kredi Kartı" ? kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, appSettings?.krediKartiKomisyonlari, form.date, false) : null };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -853,6 +861,7 @@ export const ServisPanosu = ({
       {ypForm && (
         <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       )}
@@ -868,6 +877,7 @@ export const ServisPanosu = ({
         <ServiceForm
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={form} setForm={setForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
+          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
           onSave={kaydet} onCancel={() => setSvModal(null)}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}

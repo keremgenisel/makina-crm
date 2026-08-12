@@ -3,7 +3,7 @@
 // Başlangıç'a göre CANLI numaralar (en eski = 1, en yeni = toplam). Dizi konumuna bağlı değildir;
 // tarihsiz kayıt "—" gösterir. Silince liste küçülür ve otomatik yeniden numaralanır (Option B).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 afterEach(cleanup);
 import { Customers } from "../../src/components/Customers";
@@ -12,6 +12,7 @@ const siraHucresi = (ad) => {
   const row = screen.getByText(ad).closest("tr");
   return row.querySelector("td").textContent.trim();
 };
+const siraSirasi = () => [...document.querySelectorAll("tbody tr td:first-child")].map(td => td.textContent.trim());
 
 describe("Müşteriler — Sıra sütunu (canlı, Garanti Başlangıç'a göre)", () => {
   it("her satır Garanti Başlangıç sırasındaki numarasını gösterir (dizi index'i değil)", () => {
@@ -35,5 +36,25 @@ describe("Müşteriler — Sıra sütunu (canlı, Garanti Başlangıç'a göre)"
     render(<Customers customers={customers} setCustomers={vi.fn()} />);
     expect(siraHucresi("Satılmış")).toBe("1.");
     expect(siraHucresi("Bekleyen")).toBe("—");
+  });
+});
+
+describe("Müşteriler — aynı tarihli kayıtlar karışmaz + Sıra'ya tıklayınca sıralar", () => {
+  // Üçü de AYNI installDate → varsayılan sıralamada (tarih azalan + id azalan) Sıra temiz azalmalı.
+  const customers = [
+    { id: 5, name: "Beş", model: "AK100", installDate: "2023-06-30" }, // girisNo 1
+    { id: 6, name: "Altı", model: "AK100", installDate: "2023-06-30" }, // girisNo 2
+    { id: 7, name: "Yedi", model: "AK100", installDate: "2023-06-30" }, // girisNo 3
+  ];
+  it("varsayılan: aynı tarihte Sıra karışmadan azalır (3,2,1)", () => {
+    render(<Customers customers={customers} setCustomers={vi.fn()} />);
+    expect(siraSirasi()).toEqual(["3.", "2.", "1."]);
+  });
+  it("Sıra başlığına tıklayınca artan sıralar (1,2,3); tekrar tıklayınca azalan", () => {
+    render(<Customers customers={customers} setCustomers={vi.fn()} />);
+    fireEvent.click(screen.getByText("Sıra"));
+    expect(siraSirasi()).toEqual(["1.", "2.", "3."]);
+    fireEvent.click(screen.getByText("Sıra"));
+    expect(siraSirasi()).toEqual(["3.", "2.", "1."]);
   });
 });

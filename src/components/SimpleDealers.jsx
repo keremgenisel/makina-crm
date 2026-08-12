@@ -13,7 +13,7 @@ import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
-  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [] }) => {
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], krediKartiKomisyonlari = null }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
   const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu bayi alıcı seçili)
   const openAddYedekParca = (dealer) => {
@@ -21,7 +21,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     setYpForm({ aliciTipi: "bayi", dealerId: dealer.id, musteriId: "", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }], currency: "TRY", tarih: today(), faturaTipi: "Faturalı Yurtiçi", odendi: false });
   };
   const saveYedekParca = () => {
-    const r = yeniYedekParcaSatisCoklu(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock });
+    const r = yeniYedekParcaSatisCoklu(ypForm, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock, ayar: krediKartiKomisyonlari, kdvRates });
     if (!r.ok) { showToast(r.hata, "err"); return; }
     const bayiAd = dealers.find(d => d.id === Number(ypForm.dealerId))?.name;
     r.ids.forEach(id => logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: id, entityName: bayiAd }));
@@ -707,6 +707,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       {ypForm && (
         <YedekParcaSatisForm title="Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
+          krediKartiKomisyonlari={krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       )}
