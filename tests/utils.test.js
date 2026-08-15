@@ -4,12 +4,41 @@ import {
   parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
-  girisNoHaritasi, servisYedekParcaDurumu, parcaGruplari,
+  girisNoHaritasi, servisYedekParcaDurumu, servisKanali, parcaGruplari,
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
-  isPaymentReceived, isServisBorcluMu,
+  isPaymentReceived, isServisBorcluMu, calcCiro, calcKalanBorc,
 } from "../src/lib/utils";
+import { makinaKartOdemesi } from "../src/lib/krediKarti";
+
+describe("calcCiro / calcKalanBorc — kredi kartı komisyonu KDV matrahında (option B)", () => {
+  const kdvRates = [{ from: "2000-01-01", rate: 20 }];
+  const AYAR = { bsmv: 5, satirlar: [{ taksit: 3, oran: 7.476, katkiPayi: 0.5, blokajGun: 0 }] };
+  // Fabrika 200.000, Fatura 100.000 (düşük fatura), faturalı yurtiçi.
+  const musteri = { id: 1, fabrikaSatisBedeli: 200000, faturaBedeli: 100000, faturali: "Faturalı Yurtiçi", installDate: "2026-08-15", komisyon: 0 };
+  // İlk Ödeme kredi kartı (mal 100.000, 3 taksit, yansıt) → ödeme kaydı
+  const mk = makinaKartOdemesi(100000, 3, AYAR, "2026-08-15", true, 20);
+  const odeme = { id: 9, customerId: 1, tarih: "2026-08-15", tutar: mk.tutar, yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: mk.kartKomisyonu };
+
+  it("payments verilmezse eski davranış (komisyon KDV'si eklenmez)", () => {
+    expect(calcCiro(musteri, kdvRates)).toBe(200000 + 20000); // fabrika + fatura KDV'si
+  });
+  it("kredi kartı yansıt ödemesi varsa borç tabanına komisyon KDV'si eklenir", () => {
+    const ciro = calcCiro(musteri, kdvRates, [odeme]);
+    // komisyon KDV'si = komisyon × %20 → borç tabanı 220.000'den büyük (~222.117)
+    expect(ciro).toBeGreaterThan(220000);
+    expect(ciro).toBeCloseTo(200000 + 20000 + odeme.kartKomisyonu.toplamKesinti * 0.2, 2);
+  });
+  it("Kalan Borç = faturasız fark (100.000): borç tabanı − ödeme (mal+KDV) sıfır kuruşa yuvarlanır", () => {
+    // ödeme tutarı (mal + komisyon dahil KDV) borç tabanından düşer → kalan = fabrika − fatura = 100.000
+    expect(calcKalanBorc(musteri, [odeme], kdvRates)).toBe(100000);
+  });
+  it("nakit ödemede komisyon KDV'si yok (yalnız fatura KDV'si)", () => {
+    const nakit = { id: 8, customerId: 1, tarih: "2026-08-15", tutar: 50000, yontem: "Nakit" };
+    expect(calcCiro(musteri, kdvRates, [nakit])).toBe(200000 + 20000);
+  });
+});
 
 describe("isServisBorcluMu — ödeme yöntemi farkındalığı (çek/kredi kartı blokaj)", () => {
   const svc = (extra) => ({ type: "Garanti Dışı", servisUcreti: 5000, islemFirma: "Altuntaş Makina", odendi: true, ...extra });
@@ -586,6 +615,21 @@ describe("servisYedekParcaDurumu", () => {
   });
   it("bizden ücretli parça + 'Diğer' → 'disServis'", () => {
     expect(servisYedekParcaDurumu({ ...uc, islemFirma: "Diğer", islemFirmaAd: "Harici Servis" })).toBe("disServis");
+  });
+});
+
+describe("servisKanali (parça satışından bağımsız — fabrika servisleri de işaretlenir)", () => {
+  it("parçasız fabrika servisi de 'bizim' döner (servisYedekParcaDurumu null dönerdi)", () => {
+    expect(servisYedekParcaDurumu({ type: "Periyodik Bakım" })).toBeNull(); // eski: parçasızda rozet yok
+    expect(servisKanali({ type: "Periyodik Bakım" })).toBe("bizim");        // yeni: fabrika işareti var
+    expect(servisKanali({ islemFirma: "Altuntaş Makina" })).toBe("bizim");
+  });
+  it("anlaşmalı bayi → 'anlasmaliServis', 'Diğer' → 'disServis'", () => {
+    expect(servisKanali({ islemFirma: "Örnek Bayi" })).toBe("anlasmaliServis");
+    expect(servisKanali({ islemFirma: "Diğer", islemFirmaAd: "Harici" })).toBe("disServis");
+  });
+  it("null/undefined güvenli", () => {
+    expect(servisKanali(null)).toBeNull();
   });
 });
 

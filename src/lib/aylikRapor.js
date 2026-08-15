@@ -7,6 +7,7 @@ import {
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
   isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf,
 } from "./utils";
+import { yansitilanKomisyon } from "./krediKarti";
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
 // Tek kayıt için tek para birimli tutar nesnesi ({TRY:...} gibi) — detay satırlarında kullanılır
@@ -83,8 +84,9 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const extraKalip = ayKalipSatislari.filter(p => p.tur !== "YedekParca");
   const yedekParca = ayKalipSatislari.filter(p => p.tur === "YedekParca");
   const extraKalipTutar = {}, extraKalipKdv = {}, yedekParcaTutar = {};
-  extraKalip.forEach(p => { if (!p.ucretsizMi) { paraEkle(extraKalipTutar, p.currency, p.ucret); paraEkle(extraKalipKdv, p.currency, calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates)); } });
-  yedekParca.forEach(p => { if (!p.ucretsizMi) paraEkle(yedekParcaTutar, p.currency, p.ucret); });
+  // Yansıtılan komisyon KDV matrahında (p.ucret grossed) ama ciroda değil → tutardan düş, KDV'den düşme.
+  extraKalip.forEach(p => { if (!p.ucretsizMi) { paraEkle(extraKalipTutar, p.currency, parseMoney(p.ucret) - yansitilanKomisyon(p)); paraEkle(extraKalipKdv, p.currency, calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates)); } });
+  yedekParca.forEach(p => { if (!p.ucretsizMi) paraEkle(yedekParcaTutar, p.currency, parseMoney(p.ucret) - yansitilanKomisyon(p)); });
   // Firma firma diğer satış detayı (extra kalıp / yedek parça alan müşteriler)
   const extraKalipDetay = extraKalip.map(p => ({
     firma: custAdi(p.customerId), adet: parseInt(p.miktar) || 1,
@@ -109,8 +111,9 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   ayYedekKargo.forEach(s => {
     const bedel = kargoBedeli(s), c = s.currency;
     yedekKargoMiktar += parseInt(s.miktar) || 0;
-    paraEkle(yedekKargoTutar, c, bedel);
-    paraEkle(s.aliciTipi === "musteri" ? yedekKargoMusteriTutar : yedekKargoBayiTutar, c, bedel);
+    const yk = yansitilanKomisyon(s); // ciroda değil, KDV matrahında → tutardan düş
+    paraEkle(yedekKargoTutar, c, bedel - yk);
+    paraEkle(s.aliciTipi === "musteri" ? yedekKargoMusteriTutar : yedekKargoBayiTutar, c, bedel - yk);
     paraEkle(yedekKargoKdv, c, calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates));
     if (s.fabrikaTeslim) yedekKargoTeslim.fabrikaTeslim++;
     else if (s.kargoDurum) yedekKargoTeslim.kargo++;
@@ -155,6 +158,18 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     if (iscilik) paraEkle(iscilikTutar, s.currency, iscilik);
     if (parca) paraEkle(servisParcaTutar, s.parcaCurrency || s.currency, parca);
     if (iscilik + parca > 0) paraEkle(servisKdv, s.currency, calcKDV(s.faturaTipi, iscilik + parca, s.date, kdvRates));
+  });
+  // Yansıtılan komisyon (servis+parça matrahına gömülü) ciroya girmemeli → işçilik/parça oranında düş.
+  // Altuntaş dışı serviste parça payı anlasmaliParcaTutar'dan düşülür (o dizide toplandığı için).
+  ayServisler.forEach(s => {
+    const yk = yansitilanKomisyon(s);
+    if (yk <= 0) return;
+    const isc = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
+    const par = isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0;
+    const tot = isc + par;
+    if (tot <= 0) return;
+    if (isc > 0) paraEkle(iscilikTutar, s.currency, -yk * isc / tot);
+    if (par > 0) paraEkle(isAltuntasServisi(s, factoryName) ? servisParcaTutar : anlasmaliParcaTutar, s.parcaCurrency || s.currency, -yk * par / tot);
   });
   const servisTipMap = {};
   ayServisler.forEach(s => { const k = s.type || "Diğer"; servisTipMap[k] = (servisTipMap[k] || 0) + 1; });

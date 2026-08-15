@@ -2,7 +2,7 @@
 // Regresyon: anlaşmasız dış firma alıcı eskiden "—"/"Bayi" görünüyordu (aliciAd kullanılmıyordu);
 // ayrıca teslim şekli ve farklı teslimat adresi sütunları yoktu.
 import { describe, it, expect } from "vitest";
-import { YEDEK_PARCA_EXPORT_HEAD, yedekParcaExportRow } from "../src/components/settings/SettingsExport";
+import { YEDEK_PARCA_EXPORT_HEAD, yedekParcaExportRow, komisyonYansitildiEtiket, urunBedeliKomisyonHaric } from "../src/components/settings/SettingsExport";
 
 const dealers = [{ id: 5, name: "Bayi X" }];
 const customers = [{ id: 1, name: "Müşteri A" }];
@@ -13,6 +13,38 @@ const col = (row, ad) => row[YEDEK_PARCA_EXPORT_HEAD.indexOf(ad)];
 describe("yedekParcaExportRow", () => {
   it("başlık yeni sütunları içerir", () => {
     for (const h of ["Teslim Şekli", "Farklı Teslimat Adresi", "Ödeme Yöntemi", "Çek Durumu"]) expect(YEDEK_PARCA_EXPORT_HEAD).toContain(h);
+  });
+
+  it("komisyon müşteriye yansıtıldı sütunu (Evet/Hayır/boş)", () => {
+    expect(YEDEK_PARCA_EXPORT_HEAD).toContain("Komisyon Müşteriye Yansıtıldı");
+    const yansit = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { toplamKesinti: 300, yansitildi: true } }, deps);
+    expect(col(yansit, "Komisyon Müşteriye Yansıtıldı")).toBe("Evet");
+    const ustlendik = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { toplamKesinti: 300, yansitildi: false } }, deps);
+    expect(col(ustlendik, "Komisyon Müşteriye Yansıtıldı")).toBe("Hayır");
+    const cekYok = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, odendi: true, yontem: "Nakit" }, deps);
+    expect(col(cekYok, "Komisyon Müşteriye Yansıtıldı")).toBe(""); // KK değil → boş
+  });
+  it("ürün bedeli (komisyon hariç): yansıtta matrah − komisyon; yansıt yoksa aynı", () => {
+    expect(YEDEK_PARCA_EXPORT_HEAD).toContain("Ürün Bedeli (Komisyon Hariç)");
+    // 5 adet × 2200 = 11.000 matrah; komisyon 1000 → ürün bedeli 10.000
+    const yansit = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, birimFiyat: 2200, odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { toplamKesinti: 1000, yansitildi: true } }, deps);
+    expect(col(yansit, "Toplam")).toBe(11000);
+    expect(col(yansit, "Ürün Bedeli (Komisyon Hariç)")).toBe(10000);
+    // yansıt yok → aynı
+    const nakit = yedekParcaExportRow({ aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 5, birimFiyat: 2000, odendi: true, yontem: "Nakit" }, deps);
+    expect(col(nakit, "Ürün Bedeli (Komisyon Hariç)")).toBe(10000);
+  });
+  it("urunBedeliKomisyonHaric saf yardımcısı (orantılı düşüm)", () => {
+    const rec = { yontem: "Kredi Kartı", kartKomisyonu: { yansitildi: true, toplamKesinti: 1000 } };
+    expect(urunBedeliKomisyonHaric(11000, rec)).toBe(10000);                 // tek bedel
+    expect(urunBedeliKomisyonHaric(5500, rec, 11000)).toBe(5000);            // matrahTotal=11000 → orantılı yarısı
+    expect(urunBedeliKomisyonHaric(11000, { yontem: "Nakit" })).toBe(11000); // yansıt yok
+  });
+  it("komisyonYansitildiEtiket saf yardımcısı", () => {
+    expect(komisyonYansitildiEtiket({ yontem: "Kredi Kartı", kartKomisyonu: { yansitildi: true } })).toBe("Evet");
+    expect(komisyonYansitildiEtiket({ yontem: "Kredi Kartı", kartKomisyonu: { yansitildi: false } })).toBe("Hayır");
+    expect(komisyonYansitildiEtiket({ yontem: "Çek" })).toBe("");
+    expect(komisyonYansitildiEtiket(null)).toBe("");
   });
 
   it("ödeme yöntemi + çek durumu sütunları", () => {

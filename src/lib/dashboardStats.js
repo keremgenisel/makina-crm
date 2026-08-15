@@ -12,7 +12,7 @@ export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar =
   for (const c of customers || []) {
     if (!c.installDate || c.deletedAt) continue;
     rows.push({
-      tip: "makina", key: `m${c.id}`, custId: c.id,
+      tip: "makina", key: `m${c.id}`, custId: c.id, recId: c.id,
       ad: c.name || "—",
       detay: (c.model || "—") + (c.serialNo ? ` · ${c.serialNo}` : ""),
       tarih: c.installDate,
@@ -24,7 +24,7 @@ export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar =
   for (const p of partSales || []) {
     if (p.deletedAt || p.tur !== "Kalıp") continue;
     rows.push({
-      tip: "kalip", key: `k${p.id}`, custId: p.customerId ?? null,
+      tip: "kalip", key: `k${p.id}`, custId: p.customerId ?? null, recId: p.id,
       ad: custAd.get(p.customerId) || "—",
       detay: (p.ad || "—") + (p.olcu ? ` (${p.olcu})` : ""),
       tarih: p.tarih,
@@ -38,7 +38,7 @@ export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar =
     if (s.deletedAt) continue;
     const musteri = s.aliciTipi === "musteri";
     rows.push({
-      tip: "yedek", key: `y${s.id}`, custId: musteri ? (s.musteriId ?? null) : null,
+      tip: "yedek", key: `y${s.id}`, custId: musteri ? (s.musteriId ?? null) : null, recId: s.id,
       ad: (musteri ? custAd.get(Number(s.musteriId)) : dealerAd.get(Number(s.dealerId))) || "—",
       detay: (partAd.get(String(s.partId)) || "Yedek parça") + ` · ${s.miktar || 0} adet`,
       tarih: s.tarih,

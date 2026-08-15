@@ -7,6 +7,7 @@ import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
 import { yedekParcaDus, yedekParcaGeriAl } from "../../lib/yedekParcaStok";
 import { yedekParcaRec, yeniYedekParcaSatisCoklu } from "../../lib/yedekParcaSatis";
+import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
 import { logAction } from "../../lib/audit";
 
@@ -144,7 +145,11 @@ export const YedekParcaSatisTab = ({
   };
   const openEdit = (rec) => {
     if (!canDoStock("yedek_parca_edit")) return;
-    setForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: rec.birimFiyat ?? "" });
+    // Komisyon yansıtıldıysa kayıtta birimFiyat = KDV matrahı/miktar; formda kalem göster (komisyon payını çıkar).
+    const komisyon = yansitilanKomisyon(rec);
+    const mik = parseInt(rec.miktar) || 0;
+    const kalemBirim = (komisyon > 0 && mik > 0) ? parseMoney(rec.birimFiyat) - komisyon / mik : (rec.birimFiyat ?? "");
+    setForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: kalemBirim, kkYansit: !!(rec.kartKomisyonu && rec.kartKomisyonu.yansitildi) });
     setModal({ edit: rec });
   };
 

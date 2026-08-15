@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
-import { kartKomisyonuSnapshot } from "../lib/krediKarti";
+import { makinaKartOdemesi } from "../lib/krediKarti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -22,7 +22,7 @@ export const Customers = ({
   searchPlaceholder = "Müşteri ara...", emptyLabel = "Müşteri bulunamadı.", delWord = "müşterisi",
   isCustomer = true, initialFilter = "all", initialDetailId = null, kalipDefs = [], partTypeDefs = [], calisanlar = [], showToast = () => {}, kdvRates = DEFAULT_KDV_RATES,
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
-  serverPermissions = null, onGoYedekParca = null,
+  serverPermissions = null, onGoYedekParca = null, focusServiceId = null, focusKalipId = null, focusGorusmeId = null, focusTaksitId = null, focusOdemeId = null, focusNonce = 0,
 }) => {
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
@@ -246,16 +246,23 @@ export const Customers = ({
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
       const ilkOdemeSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
-      const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0);
+      const odemeKdvOran = calcKDV(clean.faturali, 100, clean.installDate || today(), kdvRates); // faturalı yurtiçi → oran, değilse 0
+      // Kredi kartı ödemesinde girilen tutar KDV hariç mal bedeli → borçtan düşen = mal×(1+KDV) (nakit/çek: girilen tutar).
+      const satirBorcTutari = (r) => (r.yontem === "Kredi Kartı" && r.taksitSayisi ? parseMoney(r.tutar) * (1 + odemeKdvOran / 100) : parseMoney(r.tutar));
+      const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + satirBorcTutari(r), 0);
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (ilkOdemeSatirlari.length > 0 && setPayments) {
-        const yeniOdemeler = ilkOdemeSatirlari.map(r => ({
-          id: uid(), customerId: newId, tarih: clean.installDate || today(), tutar: parseMoney(r.tutar),
-          currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit",
-          ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
-          ...(r.yontem === "Kredi Kartı" && r.taksitSayisi ? { taksitSayisi: r.taksitSayisi, kartKomisyonu: kartKomisyonuSnapshot(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, clean.installDate || today(), !!r.kkYansit) } : {}),
-        }));
+        const odemeTarih = clean.installDate || today();
+        const yeniOdemeler = ilkOdemeSatirlari.map(r => {
+          const base = { id: uid(), customerId: newId, tarih: odemeTarih, currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit" };
+          if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
+            // Faturalıda karta KDV + komisyon eklenir; borçtan KDV dahil (mal×(1+KDV)) düşer (nakit/çek aynen kalır).
+            const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, odemeTarih, !!r.kkYansit, odemeKdvOran);
+            return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
+          }
+          return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
+        });
         setPayments(p => [...yeniOdemeler, ...p]);
       }
       if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
@@ -577,6 +584,12 @@ export const Customers = ({
           gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
           dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
           detailView={detailView}
+          odakServisId={focusServiceId}
+          odakKalipId={focusKalipId}
+          odakGorusmeId={focusGorusmeId}
+          odakTaksitId={focusTaksitId}
+          odakOdemeId={focusOdemeId}
+          odakNonce={focusNonce}
           onClose={() => { setDetailViewId(null); onDetailClosed?.(); }}
           onGoYedekParca={onGoYedekParca ? (id) => { setDetailViewId(null); onGoYedekParca(id); } : null}
           onSwitchMachine={setDetailViewId}

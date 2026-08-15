@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isFaturali, isYurtIci, getKdvRateForDate, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
+import { yansitilanKomisyon } from "../lib/krediKarti";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 
@@ -60,7 +61,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
     anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
     kdvMakina, kdvServis, kdvParca, kdvKalip,
-    bankaKomisyonu, krediKartiSatis,
+    bankaKomisyonu, krediKartiSatisNet, krediKartiSatisKdv,
   } = useMemo(() => {
     // Tarih aralığı sınırlarını hesapla — tarihler "YYYY-MM-DD" string olarak saklanıyor
     // (<DateInput> formatı); bunu new Date(iso) ile parse edip getFullYear()/getMonth()
@@ -120,14 +121,19 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     // (bkz. müşteri formundaki "Gerçek bedelden farklı olabilir" notu) — bu yüzden "gelir" sayılırken
     // her zaman gerçek bedel (Fabrika Satış Bedeli, yoksa faturaya düş) kullanılmalı, ham faturaBedeli değil.
     const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
+    // Kredi kartı komisyonu müşteriye yansıtıldıysa (option B) komisyon da KDV matrahında → o makinaya ait
+    // yansıtılan komisyonların KDV'si fatura KDV'sine eklenir (üstteki KDV kutusu / Kalan Borç ile aynı).
+    const kartKomisyonKdv = (c) => {
+      if (!(isFaturali(c.faturali) && isYurtIci(c.faturali))) return 0;
+      const kom = (payments || []).reduce((s, p) => s + (p.customerId === c.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
+      return kom * getKdvRateForDate(c.installDate, kdvRates) / 100;
+    };
     sales.forEach(c => {
       const k = cur(c.currency);
       const gercek = gercekBedel(c);
-      const kdvTutar = calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates);
+      const kdvTutar = calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates) + kartKomisyonKdv(c);
       gercekCiro[k] += gercek;
-      // Komisyon Toplam Bedel'e hiç dahil edilmez (ne eklenir ne çıkarılır) — kendi ayrı "Toplam Ödenen
-      // Komisyon" kartında gösterilir. calcCiro() kasıtlı olarak kullanılmıyor: o, Kalan Borç tabanı için
-      // ayrı bir amaçla komisyonu EKLER (bkz. utils.js calcCiro yorum satırı) — burada Toplam Bedel/ciro hesabı farklı.
+      // Komisyon principal'i Toplam Bedel'e girmez (bankaya gider); yalnız KDV'si (option B) matrahta.
       toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar;
       komisyon[k] += parseMoney(c.komisyon);
       faturaBedeliToplam[k] += faturaBedeliOf(c);
@@ -165,18 +171,31 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         }
       }
     });
+    // Kredi kartı komisyonu müşteriye yansıtıldıysa (servis+parça matrahına gömülü, yansitildi=true),
+    // komisyon banka gideridir; servis cirosuna girmemeli. İşçilik/parça oranında düşülür (KDV değişmez).
+    svcInRange.forEach(s => {
+      const yk = yansitilanKomisyon(s);
+      if (yk <= 0) return;
+      const isc = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
+      const par = isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0;
+      const tot = isc + par;
+      if (tot <= 0) return;
+      if (isc > 0) servisUcreti[cur(s.currency)] -= yk * isc / tot;
+      if (par > 0) (isAltuntasServisi(s, factoryName) ? parcaUcreti : anlasmaliParcaSatisi)[cur(s.parcaCurrency)] -= yk * par / tot;
+    });
     // Yedek parça (kargo) satışları: müşteriye satış → Toplam Parça Ücreti; bayiye satış → Anlaşmalı/Bayi Parça.
     yedekParcaKargoInRange.forEach(s => {
       const bedel = kargoBedel(s);
       if (bedel <= 0) return;
-      const k = cur(s.currency), kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
-      if (s.aliciTipi === "musteri") { parcaUcreti[k] += bedel + kdv; kdvParca[k] += kdv; }
-      else { anlasmaliParcaSatisi[k] += bedel + kdv; kdvAnlasmaliParca[k] += kdv; }
+      const k = cur(s.currency), kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates), yk = yansitilanKomisyon(s);
+      if (s.aliciTipi === "musteri") { parcaUcreti[k] += bedel + kdv - yk; kdvParca[k] += kdv; }
+      else { anlasmaliParcaSatisi[k] += bedel + kdv - yk; kdvAnlasmaliParca[k] += kdv; }
     });
     const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
     kalipSatisInRange.forEach(p => {
       const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
-      kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv;
+      // Yansıtılan komisyon KDV matrahına dahil (p.ucret grossed) ama ciro değil → banka gideri, düş.
+      kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv - yansitilanKomisyon(p);
       kdvKalip[cur(p.currency)] += kdv;
     });
     const toplamExtraKalip = kalipSatisi;
@@ -225,23 +244,35 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
     svcInRange.forEach(komisyonTopla);   // kredi kartlı servisler
     (payments || []).filter(p => inRange(p.tarih)).forEach(komisyonTopla);
 
-    // ── Toplam Kredi Kartı ile Satış — yalnızca ödeme yöntemi Kredi Kartı olan satış/tahsilatların toplamı
-    // (kartla çekilen tutar, KDV dahil). Makina ödemeleri (payment) + Extra Kalıp + Yedek Parça + Servis. Para birimi başına.
-    const krediKartiSatis = empty3();
+    // ── Toplam Kredi Kartı ile Satış — yalnızca ödeme yöntemi Kredi Kartı olan satış/tahsilatların toplamı.
+    // Kart, KDV DAHİL tutardan çekilir; ama kart (Toplam Parça Ücreti Bedeli gibi) KDV HARİÇ gösterilir:
+    // ana rakam = matrah (KDV hariç), KDV altta ayrıca. krediKartiSatisKdv o KDV'yi toplar. Makina ödemesinde
+    // (payment) fatura tipi olmadığından KDV, müşterinin efektif KDV oranıyla (KDV/(KDV dahil satış tabanı)) ayrılır.
+    const krediKartiSatis = empty3(), krediKartiSatisKdv = empty3();
+    const kartEkle = (k, bedel, kdv) => { krediKartiSatis[k] += bedel + kdv; krediKartiSatisKdv[k] += kdv; };
     [...kalipSatisInRange, ...yedekParcaSatisInRange].forEach(p => {
-      if (p.yontem === "Kredi Kartı") krediKartiSatis[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
+      if (p.yontem === "Kredi Kartı") kartEkle(cur(p.currency), parseMoney(p.ucret), calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates));
     });
     yedekParcaKargoInRange.forEach(s => {
-      if (s.yontem === "Kredi Kartı") { const bedel = kargoBedel(s); krediKartiSatis[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates); }
+      if (s.yontem === "Kredi Kartı") { const bedel = kargoBedel(s); kartEkle(cur(s.currency), bedel, calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates)); }
     });
     svcInRange.forEach(s => {
       if (s.yontem !== "Kredi Kartı") return;
       const bedel = parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)); // servis + ücretli parça
-      if (bedel > 0) krediKartiSatis[cur(s.currency)] += bedel + calcKDV(s.faturaTipi, bedel, s.date, kdvRates);
+      if (bedel > 0) kartEkle(cur(s.currency), bedel, calcKDV(s.faturaTipi, bedel, s.date, kdvRates));
     });
     (payments || []).filter(p => inRange(p.tarih)).forEach(p => {
-      if (p.yontem === "Kredi Kartı") krediKartiSatis[cur(p.currency)] += parseMoney(p.tutar);
+      if (p.yontem !== "Kredi Kartı") return;
+      const tutar = parseMoney(p.tutar);
+      const c = customers.find(x => x.id === p.customerId);
+      // Makina kredi kartı ödemesi faturalı yurtiçide KDV DAHİL saklanır (yansıtmada mal + komisyon dahil KDV).
+      // İçindeki KDV: tutar = mal + (mal+komisyon)×oran → mal = (tutar − komisyon×oran)/(1+oran), KDV = tutar − mal.
+      const oran = c ? calcKDV(c.faturali, 100, p.tarih, kdvRates) : 0; // %
+      const kom = (p.kartKomisyonu && p.kartKomisyonu.yansitildi) ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0;
+      const mal = oran > 0 ? (tutar - kom * oran / 100) / (1 + oran / 100) : tutar;
+      kartEkle(cur(p.currency), mal, tutar - mal);
     });
+    const krediKartiSatisNet = subObj(krediKartiSatis, krediKartiSatisKdv); // KDV hariç (kart KDV dahilinden KDV düşülmüş)
 
     // Toplam Alacağımız — tarih filtresinden bağımsız, her zaman güncel/anlık bakiye
     const alacak = empty3();
@@ -312,7 +343,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
       anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
       kdvMakina, kdvServis, kdvParca, kdvKalip,
-      bankaKomisyonu, krediKartiSatis,
+      bankaKomisyonu, krediKartiSatisNet, krediKartiSatisKdv,
     };
      
   }, [customers, services, partSales, yedekParcaSatislar, payments, range, customStart, customEnd, kdvRates, rates, factoryName]);
@@ -516,7 +547,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />
-        <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatis} color="#8b5cf6" sub="Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV dahil)" />
+        <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatisNet} kdvObj={krediKartiSatisKdv} color="#8b5cf6" sub="Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Banka Komisyonu" obj={bankaKomisyonu} color="var(--red600, #dc2626)" sub="Kredi kartı satışlarında bankaya ödenen komisyon (gider)" />
       </div>
 

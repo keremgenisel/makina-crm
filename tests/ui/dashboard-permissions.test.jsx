@@ -47,7 +47,7 @@ describe("Beklenen Tahsilat — çeklerin hepsi görünür (7 gün penceresi çe
   it("tahsil edilmiş çek görünmez", () => {
     const odenmis = { ...props, payments: [{ ...props.payments[0], tahsilEdildi: true }] };
     render(<Dashboard {...odenmis} serverPermissions={null} />);
-    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+    expect(screen.getByText("Bekleyen tahsilat yok.")).toBeTruthy();
   });
   it("vadesi 90 gün sonra olan açık taksit de anasayfada görünür", () => {
     const taksitli = {
@@ -76,12 +76,12 @@ describe("Beklenen Tahsilat — bloke kredi kartı (tek çekim) anasayfada gör�
   it("hesaba geçmiş (blokaj dolmuş) kredi kartı görünmez", () => {
     const props = { ...base, payments: [{ id: 21, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gecmis, toplamKesinti: 3000, netTutar: 117000 } }] };
     render(<Dashboard {...props} serverPermissions={null} />);
-    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+    expect(screen.getByText("Bekleyen tahsilat yok.")).toBeTruthy();
   });
   it("taksitli (blokaj 0) kredi kartı görünmez", () => {
     const props = { ...base, payments: [{ id: 22, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 0, hesabaGecis: gecmis, toplamKesinti: 3000, netTutar: 117000 } }] };
     render(<Dashboard {...props} serverPermissions={null} />);
-    expect(screen.queryByText(/Beklenen Tahsilat/)).toBeNull();
+    expect(screen.getByText("Bekleyen tahsilat yok.")).toBeTruthy();
   });
 });
 

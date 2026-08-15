@@ -2,6 +2,7 @@ import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount, faturaBedeliOf } from "../../lib/utils";
+import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
 import { Section } from "./Section";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
@@ -12,10 +13,22 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 // taksit 1 = "Tek Çekim"; komisyon = kartKomisyonu.toplamKesinti (banka kesintisi). Kredi kartı değilse boş.
 export const kartTaksitEtiket = (rec) => (rec?.yontem === "Kredi Kartı" && rec?.taksitSayisi) ? (parseInt(rec.taksitSayisi) === 1 ? "Tek Çekim" : `${rec.taksitSayisi} Taksit`) : "";
 export const kartKomisyonTutar = (rec) => (rec?.yontem === "Kredi Kartı" && rec?.kartKomisyonu) ? (Number(rec.kartKomisyonu.toplamKesinti) || 0) : "";
+// Komisyon müşteriye yansıtıldı mı? Evet = müşteri öder (ciroda değil), Hayır = biz üstlendik (giderimiz). KK değilse boş.
+export const komisyonYansitildiEtiket = (rec) => (rec?.yontem === "Kredi Kartı" && rec?.kartKomisyonu) ? (rec.kartKomisyonu.yansitildi ? "Evet" : "Hayır") : "";
+// Komisyon yansıtılmış satışta kayıtta saklanan bedel = KDV matrahı (ürün + komisyon). Salt ÜRÜN fiyatını
+// döndürür: bedel − payına düşen komisyon. matrahTotal verilirse (servis: servis+parça) orantılı düşer.
+// Yansıt yoksa bedel aynen döner.
+export const urunBedeliKomisyonHaric = (bedel, rec, matrahTotal = null) => {
+  const b = parseMoney(bedel);
+  const kom = yansitilanKomisyon(rec);
+  if (!(kom > 0)) return b;
+  const total = matrahTotal != null ? parseMoney(matrahTotal) : b;
+  return total > 0 ? Math.round((b - kom * (b / total)) * 100) / 100 : b;
+};
 
 // Yedek parça (kargo) satışları dışa aktarım başlığı + satırı (saf; test edilebilir).
 // Alıcı adı/türü ortak yardımcılarla çözülür → bayi / müşteri / anlaşmasız dış firma doğru gösterilir.
-export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
+export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Ürün Bedeli (Komisyon Hariç)", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
 export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [] } = {}) => {
   const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
   const tur = { "MÜŞTERİ": "Müşteri", "ANLAŞMASIZ SERVİS": "Anlaşmasız Servis", "BAYİ": "Bayi" }[aliciRozet(s).label] || "Bayi";
@@ -28,8 +41,8 @@ export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [
   const cekDurum = s.yontem === "Çek" ? (s.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
   return [tur, aliciAd(s, dealers, customers), part.ad || s.partId, parseInt(s.miktar) || 0,
     parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
-    (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih || "", s.odendi ? "Evet" : "Hayır",
-    s.odendi ? (s.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s),
+    (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), urunBedeliKomisyonHaric((parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s), s.tarih || "", s.odendi ? "Evet" : "Hayır",
+    s.odendi ? (s.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
     teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis];
 };
 
@@ -156,7 +169,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportServices = async (mode = "download") => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Yapılan İşler", "Müşteri Talimatı"];
+    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Servis Ücreti (Komisyon Hariç)", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Yapılan İşler", "Müşteri Talimatı"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
       const c = customers.find(x => x.id === s.customerId) || {};
@@ -164,8 +177,9 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       return [c.name, c.model, c.serialNo, s.type, s.durum || "", s.repairPlace, s.date, s.tech,
         s.islemFirma === "Diğer" ? (s.islemFirmaAd || "Diğer") : s.islemFirma, s.islemFirmaYetkili, s.islemFirmaTel, s.islemFirmaUlke, s.islemFirmaSehir,
         curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti),
+        urunBedeliKomisyonHaric(s.servisUcreti, s, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti))),
         s.odendi ? "Evet" : "Hayır", s.odendi ? (s.yontem || "Nakit") : "",
-        (s.yontem === "Çek" && s.vadeTarihi) ? fmtTR(s.vadeTarihi) : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s),
+        (s.yontem === "Çek" && s.vadeTarihi) ? fmtTR(s.vadeTarihi) : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
         s.yapilanIsler, s.musteriTalimati];
     })];
     try {
@@ -199,7 +213,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPartSales = async (mode = "download") => {
-    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No", "Farklı Teslimat Adresi"];
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ürün Fiyatı (Komisyon Hariç)", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No", "Farklı Teslimat Adresi"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
@@ -210,8 +224,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       return [c.name, p.tur, p.ad, p.olcu, p.tarih,
         p.satisFirma === "Diğer" ? (p.satisFirmaAd || "Diğer") : p.satisFirma, p.satisFirmaYetkili, p.satisFirmaTel, p.satisFirmaUlke, p.satisFirmaSehir,
         curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"],
-        parseMoney(p.ucret), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır",
-        (p.odendi && !p.ucretsizMi) ? (p.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(p), kartKomisyonTutar(p),
+        parseMoney(p.ucret), p.ucretsizMi ? "" : urunBedeliKomisyonHaric(p.ucret, p), p.ucretsizMi ? "Evet" : "Hayır", p.faturaTipi, p.odendi ? "Evet" : "Hayır",
+        (p.odendi && !p.ucretsizMi) ? (p.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(p), kartKomisyonTutar(p), komisyonYansitildiEtiket(p),
         p.teklifId ? (teklifler.find(t => t.id === p.teklifId)?.no || p.teklifId) : "",
         p.uretimFormGonder ? "Evet" : "Hayır",
         p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || "", teslimatAdresi];
@@ -225,7 +239,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPayments = async (mode = "download") => {
-    const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Yöntem", "Vade Tarihi", "Tahsil Edildi", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Not"];
+    const head = ["Müşteri", "Tarih", "Para Birimi", "Tutar", "Yöntem", "Vade Tarihi", "Tahsil Edildi", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Not"];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...payments.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
@@ -235,7 +249,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         c.name, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"], parseMoney(p.tutar), yontem,
         cekMi && p.vadeTarihi ? fmtTR(p.vadeTarihi) : "",
         cekMi ? (p.tahsilEdildi ? "Evet" : "Hayır") : "",
-        kartTaksitEtiket(p), kartKomisyonTutar(p),
+        kartTaksitEtiket(p), kartKomisyonTutar(p), komisyonYansitildiEtiket(p),
         p.not,
       ];
     })];

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
 import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { KartTaksitAlani } from "./KartTaksitAlani";
+import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
@@ -64,7 +64,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // Ödeme yöntemi / kredi kartı komisyonu için ortak billable toplam (servis + ücretli parça) ve KDV oranı.
   const svParcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
   const svToplam = parseMoney(form.servisUcreti) + (svParcaVar ? parcaUcretiToplam : 0);
-  const svKdvOran = /Faturalı/.test(form.faturaTipi || "Faturalı Yurtiçi") ? getKdvRateForDate(form.date, kdvRates) : 0;
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
@@ -518,20 +517,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               </div>
               {form.yontem === "Kredi Kartı" && (
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
-                  tutar={svToplam + calcKDV(form.faturaTipi, svToplam, form.date, kdvRates)} currency={form.currency || "TRY"} kdvOrani={svKdvOran}
+                  tutar={svToplam + calcKDV(form.faturaTipi, svToplam, form.date, kdvRates)} currency={form.currency || "TRY"}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
-                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
-                  hedefNet={form.kkHedefNet ?? ""} setHedefNet={v => setForm(p => ({ ...p, kkHedefNet: v }))}
-                  onUygula={(kart, malBedeli) => {
-                    // Gross-up: billable toplamı (servis + ücretli parça) mal bedeline eşitle → toplam+KDV = kart tutarı.
-                    // Aynı oranı servis ücretine ve (ücretliyse) her parça fiyatına uygula (Extra Kalıp/Yedek Parça deseni).
-                    const factor = svToplam > 0 ? malBedeli / svToplam : 1;
-                    setForm(p => ({
-                      ...p,
-                      servisUcreti: Math.round(parseMoney(p.servisUcreti) * factor),
-                      ...(svParcaVar ? { degisenParcalar: (p.degisenParcalar || []).map(pc => typeof pc === "string" ? pc : { ...pc, fiyat: Math.round(parseMoney(pc.fiyat) * factor) }) } : {}),
-                    }));
-                  }} />
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} />
               )}
               {form.yontem === "Çek" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
@@ -559,10 +547,14 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   Toplam (Servis + Parça): {fmtCur(toplam, cur)}
                 </span>
-                {kdv > 0 && (
+                {kdv > 0 && !(form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit) && (
                   <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.date, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
+                )}
+                {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && toplam > 0 && (
+                  <KartYansitmaOzeti netTaban={toplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.date, kdvRates)} currency={cur} />
                 )}
               </>
             );

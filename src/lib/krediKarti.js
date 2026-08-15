@@ -98,6 +98,58 @@ export const kartKomisyonuSnapshot = (tutar, taksit, ayar, tarih, yansitildi = f
   return k ? { ...k, yansitildi: !!yansitildi } : null;
 };
 
+// Yansıtmalı satışın ÜÇLÜ AYRIMI (müşteriye komisyon yansıtıldığında). Girdi netSatis = kalem (ürünün
+// gerçek satış bedeli, KDV hariç = ciro). Komisyon KDV matrahına girer (kdvMatrah = satis + komisyon) ama
+// CİROYA girmez (satis). Banka komisyonu KDV DAHİL çekilen tutardan kesilir, o yüzden gross-up burada olur.
+//   satis    : ciro (kalem)                       → SATIŞ
+//   komisyon : banka kesintisi (= kdvMatrah−satis) → BANKALARA ÖDENEN KOMİSYON
+//   kdv      : (satis+komisyon)×oran               → ÖDENECEK KDV
+//   kartTutari: müşteriden çekilen (KDV dahil)     = satis + komisyon + kdv
+// Geçersiz/çözümsüz → null.
+export const kartYansitmaAyrim = (netSatis, taksit, ayar, kdvOrani = 0, tarih = today()) => {
+  const ters = hesaplaKartTutariNetten(netSatis, taksit, ayar, kdvOrani, tarih);
+  if (!ters) return null;
+  return {
+    satis: parseMoney(netSatis),
+    komisyon: ters.komisyonTutar,       // = kdvMatrah − satis (matematiksel özdeşlik)
+    kdvMatrah: ters.malBedeli,          // KDV matrahı = satis + komisyon
+    kdv: ters.kdvTutar,
+    kartTutari: ters.kartTutari,        // müşteriden çekilen
+    blokajGun: ters.kirilim ? ters.kirilim.blokajGun : 0,
+    hesabaGecis: ters.kirilim ? ters.kirilim.hesabaGecis : null,
+  };
+};
+
+// Makina kredi kartı ödemesi (kapora/taksit). Girilen malBedeli = KDV HARİÇ mal bedeli (Extra Kalıp'taki
+// kalem gibi). Faturalıda karta KDV + komisyon eklenir (kullanıcı kararı: komisyon da vergili, üçlü ayrım).
+// Dönüş { tutar, kartKomisyonu }:
+//   tutar        = müşterinin fatura yükümlülüğü = borçtan düşen = mal × (1 + KDV) (komisyon borca girmez)
+//   kartKomisyonu= snapshot (yansıtmada çekilecek kart tutarı üzerinden, yansitildi=true; değilse KDV dahil
+//                  tutar üzerinden yansitildi=false — komisyonu biz üstleniriz)
+// kdvOran=0 (faturasız/yurtdışı) → tutar = mal, karta KDV eklenmez. taksit yoksa snapshot null.
+export const makinaKartOdemesi = (malBedeli, taksit, ayar, tarih, yansit, kdvOran = 0) => {
+  const mal = parseMoney(malBedeli);
+  const k = Math.max(0, Number(kdvOran) || 0) / 100;
+  const kdvDahil = mal * (1 + k);                 // yansıtma yoksa borçtan düşen (mal + KDV, komisyon vergisiz)
+  if (!taksit) return { tutar: kdvDahil, kartKomisyonu: null };
+  if (yansit) {
+    const a = kartYansitmaAyrim(mal, taksit, ayar, Number(kdvOran) || 0, tarih);
+    // Komisyon da vergili (Extra Kalıp gibi): borçtan düşen = çekilecek kart − komisyon = mal + (komisyon dahil KDV).
+    if (a) return { tutar: a.kartTutari - a.komisyon, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, taksit, ayar, tarih, true) };
+  }
+  return { tutar: kdvDahil, kartKomisyonu: kartKomisyonuSnapshot(kdvDahil, taksit, ayar, tarih, false) };
+};
+
+// Bir kaydın CİRODAN düşülecek yansıtılan-komisyon payı. Yansıtma modelinde (yansitildi=true) satış bedeli
+// alanı KDV matrahını (kalem+komisyon) tutar; komisyon banka gideridir, ciroya girmemeli — bu yüzden ciro
+// toplamalarında bu tutar düşülür (KDV/kalan borç/fatura matrahı DEĞİŞMEZ, onlar matrah üzerinden doğru).
+// yansitildi=false (biz üstlendik) veya kart dışı → 0 (düşüm yok).
+export const yansitilanKomisyon = (rec) => {
+  const kk = rec && rec.kartKomisyonu;
+  if (rec && rec.yontem === "Kredi Kartı" && kk && kk.yansitildi) return Number(kk.toplamKesinti) || 0;
+  return 0;
+};
+
 // Bir kredi kartı ödemesi "hesaba geçti/tahsil edildi" mi: blokaj yoksa hep evet; varsa hesaba
 // geçiş tarihi gelmişse evet. kartKomisyonu yok/eski ödemeler (blokaj bilinmiyor) → tahsil sayılır.
 export const kartTahsilEdildiMi = (kartKomisyonu, bugun = today()) => {

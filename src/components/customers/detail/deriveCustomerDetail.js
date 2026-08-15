@@ -6,6 +6,7 @@ import {
   isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, isPartSaleBorcluMu,
   sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
+import { yansitilanKomisyon } from "../../../lib/krediKarti";
 
 export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [], customers = [] }) {
     const detailHistory = detailView
@@ -114,11 +115,28 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         });
       }
       (payments || []).filter(p => p.customerId === detailView.id).forEach(p => {
-        const yontemTxt = p.yontem === "Çek" ? ` · Çek (Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}${p.tahsilEdildi ? " · Tahsil Edildi" : " · Beklemede"})` : (p.yontem ? ` · ${p.yontem}` : "");
+        // Ödeme yöntemi artık pil (badge) olarak gösteriliyor (kalıp/yedek parça ile tutarlı); desc'te
+        // yalnız çek vadesi kalır (yöntemin kendisi pilde). Çekin tahsil durumu ayrı toggle butonunda.
+        const yontemTxt = p.yontem === "Çek" ? ` · Vade: ${p.vadeTarihi ? fmtTR(p.vadeTarihi) : "—"}` : "";
+        const cur = p.currency || detailView.currency;
+        const not = p.not ? " · " + p.not : "";
+        // Kredi kartı komisyonu müşteriye yansıtılmış makina ödemesinde ÜÇLÜ KIRILIM göster:
+        // saklanan tutar = mal + KDV (borca sayılan); çekilen kart = tutar + komisyon. mal/KDV'yi ayır (Finance formülü).
+        const km = yansitilanKomisyon(p);
+        let tutarTxt;
+        if (km > 0) {
+          const oran = calcKDV(normalizeSaleType(detailView.faturali), 100, p.tarih, kdvRates) / 100;
+          const tutar = parseMoney(p.tutar);
+          const mal = oran > 0 ? (tutar - km * oran) / (1 + oran) : tutar;
+          const kdv = tutar - mal;
+          tutarTxt = `Ödeme: ${fmtCur(mal, cur)} · Komisyon: ${fmtCur(km, cur)}${kdv > 0 ? ` · KDV: ${fmtCur(kdv, cur)}` : ""} · Çekilen kart: ${fmtCur(tutar + km, cur)}`;
+        } else {
+          tutarTxt = fmtCur(p.tutar, cur);
+        }
         ev.push({
           kind: "payment", date: p.tarih, color: "var(--teal, #0d9488)",
           title: "Kapora/Ödeme",
-          desc: `${fmtCur(p.tutar, p.currency || detailView.currency)}${yontemTxt}${p.not ? " · " + p.not : ""}`,
+          desc: `${tutarTxt}${yontemTxt}${not}`,
           payment: p,
         });
       });

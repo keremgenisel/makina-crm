@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 // Kredi Kartı Taksit Komisyonu UI: Ayarlar tablosu (ekle/düzenle) + satış formundaki komisyon kutusu
 // (ileri kırılım + gross-up). Bileşen hatalarını yakalar (kural: her değişiklik testli).
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { useState } from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { SettingsKKKomisyon } from "../../src/components/settings/SettingsKKKomisyon";
-import { KartTaksitAlani } from "../../src/components/KartTaksitAlani";
+import { KartTaksitAlani, KartYansitmaOzeti } from "../../src/components/KartTaksitAlani";
 import { PaymentRowsEditor } from "../../src/components/ui";
 
 afterEach(cleanup);
@@ -28,48 +28,56 @@ describe("SettingsKKKomisyon", () => {
     render(<Harness />);
     expect(screen.getByText("TEK ÇEKİM")).toBeTruthy();
   });
-  it("Satır Ekle yeni satır ekler", () => {
+  it("Satır Ekle taslağa ekler; ancak Kaydet ile appSettings'e yazılır", () => {
     render(<Harness />);
     expect(screen.getByTestId("n").textContent).toBe("2");
     fireEvent.click(screen.getByText(/Satır Ekle/));
-    expect(screen.getByTestId("n").textContent).toBe("3");
+    // Canlı kaydetme yok → appSettings hâlâ 2 (taslakta 3)
+    expect(screen.getByTestId("n").textContent).toBe("2");
+    fireEvent.click(screen.getByRole("button", { name: /Kaydet/ }));
+    expect(screen.getByTestId("n").textContent).toBe("3"); // Kaydet ile kalıcı
   });
 });
 
-describe("KartTaksitAlani — ileri kırılım (455.000 / 3 taksit)", () => {
+describe("KartTaksitAlani — ileri kırılım + yansıt notu (455.000 / 3 taksit)", () => {
   const Harness = ({ yansitIlk = false }) => {
     const [taksit, setTaksit] = useState(3);
     const [yansit, setYansit] = useState(yansitIlk);
-    const [hedef, setHedef] = useState("100000");
-    return <KartTaksitAlani ayar={AYAR} tutar={455000} currency="TRY" kdvOrani={20}
-      taksit={taksit} setTaksit={setTaksit} yansit={yansit} setYansit={setYansit} hedefNet={hedef} setHedefNet={setHedef} />;
+    return <KartTaksitAlani ayar={AYAR} tutar={455000} currency="TRY"
+      taksit={taksit} setTaksit={setTaksit} yansit={yansit} setYansit={setYansit} />;
   };
-  it("banka ekstresiyle birebir toplam kesinti gösterir", () => {
+  it("yansıt kapalı: banka kesintisi 36.290,80 gösterir", () => {
     render(<Harness />);
-    // 36.290,80 ₺ — üye 32.396 + BSMV 1.619,80 + katkı 2.275
     expect(screen.getByText(/36\.290,80/)).toBeTruthy();
   });
-  it("gross-up açıkken çekilecek kart tutarını gösterir (100.000 net / 3 taksit / KDV %20 → 132.7k)", () => {
-    render(<Harness yansitIlk={true} />);
-    expect(screen.getByText(/132\.7/)).toBeTruthy();
+  it("yansıt açık: kalem fiyatı değişmez, komisyonu Toplam'a yönlendiren not gösterir", () => {
+    render(<Harness yansitIlk />);
+    expect(screen.getByText(/Komisyon müşteriye yansıtılıyor/)).toBeTruthy();
+    // Artık "uygula" butonu YOK (satır fiyatına dokunulmuyor)
+    expect(screen.queryByText(/Bu tutarı ödemeye uygula/)).toBeNull();
   });
 });
 
-describe("PaymentRowsEditor — gross-up 'uygula' (makina): tutar + fatura bedeli hizalanır (Öneri 1)", () => {
-  it("uygula → satır tutarı = kart tutarı, onFaturaBedeli = mal bedeli (KDV o tutar üzerinden)", () => {
-    const onFatura = vi.fn();
+describe("KartYansitmaOzeti — üçlü ayrım (kalem 100.000 / 3 taksit / KDV %20)", () => {
+  it("satış = kalem 100.000, çekilecek kart ~132.701 (komisyon KDV matrahında, ciroda değil)", () => {
+    render(<KartYansitmaOzeti netTaban={100000} taksit={3} ayar={AYAR} kdvOrani={20} currency="TRY" />);
+    expect(screen.getByText(/132\.70/)).toBeTruthy();        // çekilecek kart tutarı (~132.701)
+    expect(screen.getByText(/100\.000,00/)).toBeTruthy();    // satış (ciro) = kalem
+  });
+});
+
+describe("PaymentRowsEditor (makina) — faturalıda karta KDV + komisyon eklenir (Extra Kalıp gibi)", () => {
+  it("girilen tutar (mal) sabit; çekilecek kart KDV + komisyon ile ~132.700", () => {
     const Harness = () => {
-      const [rows, setRows] = useState([{ yontem: "Kredi Kartı", tutar: "", kkYansit: true, kkHedefNet: "100000", taksitSayisi: 3 }]);
+      const [rows, setRows] = useState([{ yontem: "Kredi Kartı", tutar: "100000", kkYansit: true, taksitSayisi: 3 }]);
       return (<>
         <div data-testid="tutar">{String(rows[0].tutar)}</div>
-        <PaymentRowsEditor rows={rows} onChange={setRows} krediKartiKomisyonlari={AYAR} kdvOrani={20} currency="TRY" onFaturaBedeli={onFatura} />
+        <PaymentRowsEditor rows={rows} onChange={setRows} krediKartiKomisyonlari={AYAR} currency="TRY" kdvOrani={20} />
       </>);
     };
     render(<Harness />);
-    fireEvent.click(screen.getByText(/Bu tutarı ödemeye uygula/));
-    // 100.000 net / 3 taksit (oran 7,476) / KDV %20 → kart ≈132.700,8 · mal bedeli ≈110.583,9
-    expect(screen.getByTestId("tutar").textContent).toBe("132701");
-    expect(onFatura).toHaveBeenCalled();
-    expect(Math.round(onFatura.mock.calls[0][0])).toBe(110584);
+    expect(screen.getByTestId("tutar").textContent).toBe("100000");   // girilen mal bedeli editör state'inde sabit
+    expect(screen.getByText(/132\.7/)).toBeTruthy();                    // çekilecek kart ~132.700 (KDV + komisyon)
+    expect(screen.queryByText(/Bu tutarı ödemeye uygula/)).toBeNull();
   });
 });

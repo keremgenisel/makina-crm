@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Icon, Btn, Select, ConfirmDialog } from "../../ui";
+import { Icon, SoftBtn, DangerBtn, Select, ConfirmDialog } from "../../ui";
 import { today, fmtTR, fmtCur, uid, bumpId, withDeleted } from "../../../lib/utils";
 import { logAction, getAuditUsername } from "../../../lib/audit";
 
@@ -109,9 +109,9 @@ export function CustomerFilesSection({
             <Select value={bind} onChange={e => setBind(e.target.value)} title="Yeni dosyanın bağlanacağı kayıt">
               {bindSecenekleri()}
             </Select>
-            <Btn small variant="ghost" onClick={async () => { setAcik(true); await add(); }} disabled={busy}>
+            <SoftBtn onClick={async () => { setAcik(true); await add(); }} disabled={busy}>
               <Icon name="plus" size={12} /> {busy ? "Ekleniyor..." : "Dosya Ekle"}
-            </Btn>
+            </SoftBtn>
           </div>
         )}
       </div>
@@ -125,7 +125,7 @@ export function CustomerFilesSection({
         {dosyaFiltre && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 12 }}>
             <span style={{ color: "var(--n500, #64748b)" }}>Filtre: <b>{refEtiketi(dosyaFiltre.refType, dosyaFiltre.refId)}</b></span>
-            <Btn small variant="ghost" onClick={() => setDosyaFiltre(null)}>Tümünü göster ({detailDosyalar.length})</Btn>
+            <SoftBtn onClick={() => setDosyaFiltre(null)}>Tümünü göster ({detailDosyalar.length})</SoftBtn>
           </div>
         )}
         {gosterilecek.length === 0 && (
@@ -150,10 +150,10 @@ export function CustomerFilesSection({
                 title={canDo("cust_dosya_add") ? "Bağı değiştir (tıkla)" : undefined}
                 style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: rz.bg, color: rz.fg, whiteSpace: "nowrap", cursor: canDo("cust_dosya_add") ? "pointer" : "default" }}>{refEtiketi(rt, d.refId)}</span>
             )}
-            <Btn small variant="ghost" onClick={() => openDosya(d)} title="Aç" disabled={dosyaCevrimdisi}>Aç</Btn>
-            <Btn small variant="ghost" onClick={() => downloadDosya(d)} title="İndir" disabled={dosyaCevrimdisi}>İndir</Btn>
+            <SoftBtn onClick={() => openDosya(d)} title="Aç" disabled={dosyaCevrimdisi}>Aç</SoftBtn>
+            <SoftBtn onClick={() => downloadDosya(d)} title="İndir" disabled={dosyaCevrimdisi}>İndir</SoftBtn>
             {canDo("cust_dosya_del") && (
-              <Btn small variant="ghost" onClick={() => setConfirmDelId(d.id)} title="Sil"><Icon name="trash" size={11} /></Btn>
+              <DangerBtn onClick={() => setConfirmDelId(d.id)} title="Sil"><Icon name="trash" size={11} /></DangerBtn>
             )}
           </div>
           );

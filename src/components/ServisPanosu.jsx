@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { today, fmtTR, uid, bumpId, parseMoney, calcKDV, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
-import { kartKomisyonuSnapshot } from "../lib/krediKarti";
+import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
 import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
@@ -490,7 +490,19 @@ export const ServisPanosu = ({
       ? sv.degisenParcalar.map(ad => ({ ad, fiyat: sv.degisenParcalar.length ? parseMoney(sv.parcaUcreti) / sv.degisenParcalar.length : 0 }))
       : (sv.degisenParcalar || []);
     const cust = customers.find(c => c.id === sv.customerId);
-    setForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
+    // Komisyon yansıtıldıysa kayıtta fiyatlar KDV matrahına ölçekli → formda kalem göster (geri küçült).
+    const komisyon = yansitilanKomisyon(sv);
+    let servisUcretiKalem = sv.servisUcreti;
+    let degisenParcalar2 = degisenParcalar;
+    if (komisyon > 0) {
+      const storedParca = degisenParcalar.reduce((s, p) => s + (typeof p === "string" ? 0 : servisParcaSatirTutari(p)), 0);
+      const storedBillable = parseMoney(sv.servisUcreti) + (sv.parcaUcretsizMi ? 0 : storedParca);
+      const rf = storedBillable > 0 ? (storedBillable - komisyon) / storedBillable : 1;
+      servisUcretiKalem = parseMoney(sv.servisUcreti) * rf;
+      if (!sv.parcaUcretsizMi) degisenParcalar2 = degisenParcalar.map(p => typeof p === "string" ? p : { ...p, fiyat: parseMoney(p.fiyat) * rf });
+    }
+    setForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv,
+      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi) });
     setSvModal({ edit: sv });
   };
 
@@ -508,16 +520,33 @@ export const ServisPanosu = ({
   const kaydet = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
     const cust = customers.find(c => c.id === Number(form.customerId));
-    const parcaUcreti = (form.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
-    const parcaUcretiAltuntastan = (form.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
-    // Kredi kartı komisyonu — billable toplam (servis + ücretli parça) + KDV üzerinden; Çek/Kredi Kartı normalize.
-    const svBillable = parseMoney(form.servisUcreti) + (parcaUcretsizMi ? 0 : parcaUcreti);
+    // Komisyon yansıtma: servisUcreti + parça fiyatları KDV matrahına ölçeklenir (CustomerDetailModal.saveService
+    // ile birebir), komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
+    const kalemServis = parseMoney(form.servisUcreti);
+    const kalemParca = (form.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
+    const kkAyar = appSettings?.krediKartiKomisyonlari;
+    const kkKdvOran = calcKDV(form.faturaTipi, 100, form.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    let factor = 1, yansitSnap = null;
+    if (form.yontem === "Kredi Kartı" && form.kkYansit && form.taksitSayisi && kalemBillable > 0) {
+      const a = kartYansitmaAyrim(kalemBillable, form.taksitSayisi, kkAyar, kkKdvOran, form.date);
+      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, kkAyar, form.date, true); }
+    }
+    const olcek = (v) => factor === 1 ? parseMoney(v) : parseMoney(v) * factor;
+    const servisUcretiSave = olcek(form.servisUcreti);
+    const degisenParcalarSave = (parcaUcretsizMi || factor === 1)
+      ? (form.degisenParcalar || [])
+      : (form.degisenParcalar || []).map(p => typeof p === "string" ? p : { ...p, fiyat: olcek(p.fiyat) });
+    const parcaUcreti = degisenParcalarSave.reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
     const svKdvDahil = svBillable + calcKDV(form.faturaTipi, svBillable, form.date, kdvRates);
-    const rec = { ...form, customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency,
+    const rec = { ...form, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+      customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency,
       vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
       tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
       taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
-      kartKomisyonu: form.yontem === "Kredi Kartı" ? kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, appSettings?.krediKartiKomisyonlari, form.date, false) : null };
+      kartKomisyonu: form.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, form.date, false)) : null };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();

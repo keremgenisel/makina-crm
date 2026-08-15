@@ -4,6 +4,7 @@
 // işlemleri (kopyala/sil/varMi) ayrı. Çok kullanıcılı sunucu depolaması Faz 2.
 const path = require("path");
 const fs = require("fs");
+const { zipSync, unzipSync } = require("fflate"); // saf JS zip (native bağımlılık yok; node + electron)
 const { encryptFileBuffer, decryptFileBuffer } = require("./backupCrypto.cjs"); // yalnız node crypto — testte de yüklenir
 
 const IZINLI_UZANTILAR = ["pdf", "jpg", "jpeg", "png", "gif", "webp", "xls", "xlsx", "doc", "docx", "txt", "csv"];
@@ -171,21 +172,78 @@ function geriYukleDosyaKlasoru(app, jsonPath, pass = null) {
     dosyalarDir(app); // hedef klasör yoksa oluştur (dosyaYolu yalnız yol üretir)
     let adet = 0, atlanan = 0;
     for (const f of fs.readdirSync(kaynak)) {
-      const srcPath = path.join(kaynak, f);
-      const sifreli = f.toLowerCase().endsWith(".enc");
-      const hedefAd = sifreli ? f.slice(0, -4) : f; // ".enc" soyulduktan sonraki gerçek ad denetlenir
-      // Beyaz liste dışı (ör. .exe/.bat/.lnk) ya da yol ayracı taşıyan ad → hiç kopyalama.
-      if (!izinliMi(hedefAd) || !depoAdiGuvenliMi(hedefAd)) { atlanan++; continue; }
-      let hedefYol;
-      try { hedefYol = dosyaYolu(app, hedefAd); } catch { atlanan++; continue; }
-      if (sifreli) {
-        if (!pass) continue; // şifreli dosya, parola yok → atla
-        try { fs.writeFileSync(hedefYol, decryptFileBuffer(fs.readFileSync(srcPath), pass)); adet++; }
-        catch { /* yanlış parola/bozuk dosya → atla */ }
-      } else { fs.copyFileSync(srcPath, hedefYol); adet++; }
+      const r = yedekDosyaYaz(app, f, fs.readFileSync(path.join(kaynak, f)), pass);
+      if (r === 1) adet++; else if (r === 0) atlanan++; // -1 = şifreli ama parola yok → sessizce geç
     }
     return { ok: true, adet, atlanan };
   } catch (err) { return { ok: false, error: err.message }; }
 }
 
-module.exports = { IZINLI_UZANTILAR, MAX_BOYUT, uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, depoAdiGuvenliMi, dosyalarDir, dosyaYolu, motwDamgala, kopyala, sil, varMi, pruneOrphans, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru };
+// Tek bir yedek dosya girdisini güvenlik kapılarından geçirip depoya yazar (klasör ve zip
+// yollarının ORTAK yazıcısı — ikisi de aynı beyaz liste + fail-closed yol denetiminden geçsin).
+// ad = girdi adı (".enc" ile bitebilir). buf = ham/şifreli baytlar. Dönüş: 1 yazıldı, 0 atlandı,
+// -1 şifreli ama parola verilmedi (çağıran sessizce atlar).
+//
+// GÜVENLİK: yedek GÜVENİLMEZ girdidir (elle hazırlanabilir). "Fatura.exe" gibi bir dosya, künyesi
+// aynı yedekten "PDF" rozetiyle geldiği için kullanıcı "Aç"a basınca çalışabilirdi. Bu yüzden ad,
+// yükleme uçlarıyla aynı iki kapıdan geçer: izinliMi() beyaz listesi + dosyaYolu() (fail-closed,
+// klasör dışına yazamaz). Liste dışı/yol ayracı taşıyan ad yazılmaz.
+function yedekDosyaYaz(app, ad, buf, pass = null) {
+  const sifreli = String(ad).toLowerCase().endsWith(".enc");
+  const hedefAd = sifreli ? String(ad).slice(0, -4) : String(ad); // ".enc" soyulduktan sonraki gerçek ad denetlenir
+  if (!izinliMi(hedefAd) || !depoAdiGuvenliMi(hedefAd)) return 0;
+  let hedefYol;
+  try { hedefYol = dosyaYolu(app, hedefAd); } catch { return 0; }
+  if (sifreli) {
+    if (!pass) return -1; // şifreli dosya, parola yok → atla
+    try { fs.writeFileSync(hedefYol, decryptFileBuffer(Buffer.from(buf), pass)); return 1; }
+    catch { return 0; } // yanlış parola/bozuk dosya → atla
+  }
+  fs.writeFileSync(hedefYol, Buffer.from(buf));
+  return 1;
+}
+
+// ── Tek dosyalık ZIP yedek (varsayılan) ─────────────────────────────────────────
+// Yedek artık JSON + komşu "-dosyalar" klasörü yerine TEK bir .zip'tir; taşırken bir şey geride
+// kalmaz. İçerik: veri.json (düz veri ya da şifreli zarf) + dosyalar/<ad> (pass varsa <ad>.enc,
+// AES-256-GCM). data = veri.json'a yazılacak nesne; pass verilirse fiziksel dosyalar şifrelenir.
+function zipYedekOlustur(app, data, pass = null) {
+  const girdiler = { "veri.json": Buffer.from(JSON.stringify(data, null, pass ? 0 : 2), "utf-8") };
+  try {
+    const src = dosyalarDir(app);
+    for (const f of fs.readdirSync(src)) {
+      const buf = fs.readFileSync(path.join(src, f));
+      girdiler["dosyalar/" + (pass ? f + ".enc" : f)] = pass ? encryptFileBuffer(buf, pass) : buf;
+    }
+  } catch { /* dosya klasörü yoksa yalnız veri.json */ }
+  return Buffer.from(zipSync(girdiler, { level: 6 }));
+}
+
+// Zip yedeğini açıp veri.json'u parse eder → { veri, arsiv } | null (veri.json yoksa).
+function zipYedekOku(zipYol) {
+  const arsiv = unzipSync(new Uint8Array(fs.readFileSync(zipYol)));
+  const veriBuf = arsiv["veri.json"];
+  if (!veriBuf) return null;
+  return { veri: JSON.parse(Buffer.from(veriBuf).toString("utf-8")), arsiv };
+}
+
+// Yedekteki fiziksel dosyaları depoya geri yükler. Yedek .zip ise içinden (dosyalar/ girdileri),
+// değilse eski komşu "-dosyalar" klasöründen — tek giriş noktası (çağıranlar uzantıyı bilmesin).
+function geriYukleDosyalar(app, yedekYol, pass = null) {
+  if (!/\.zip$/i.test(String(yedekYol))) return geriYukleDosyaKlasoru(app, yedekYol, pass); // eski yedekler
+  try {
+    const arsiv = unzipSync(new Uint8Array(fs.readFileSync(yedekYol)));
+    dosyalarDir(app);
+    let adet = 0, atlanan = 0;
+    for (const yol of Object.keys(arsiv)) {
+      if (!yol.startsWith("dosyalar/")) continue;
+      const f = yol.slice("dosyalar/".length);
+      if (!f || f.includes("/")) { atlanan++; continue; } // yalnız düz dosya (alt klasör yok)
+      const r = yedekDosyaYaz(app, f, arsiv[yol], pass);
+      if (r === 1) adet++; else if (r === 0) atlanan++;
+    }
+    return { ok: true, adet, atlanan };
+  } catch (err) { return { ok: false, error: err.message }; }
+}
+
+module.exports = { IZINLI_UZANTILAR, MAX_BOYUT, uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, depoAdiGuvenliMi, dosyalarDir, dosyaYolu, motwDamgala, kopyala, sil, varMi, pruneOrphans, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru, yedekDosyaYaz, zipYedekOlustur, zipYedekOku, geriYukleDosyalar };

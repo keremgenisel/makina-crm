@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parsePermissions } from "../lib/permissions";
 import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
@@ -57,6 +57,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   yedekParcaSatislar = [], setYedekParcaSatislar = null, rawYedekParcaSatislar = [],
   serverPermissions = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
+  initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 4000); };
   const [msg, setMsg] = useState(null);
@@ -76,6 +77,14 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const grupAdi = (tabId) => SETTINGS_GROUPS.find(g => g.items.some(i => i.id === tabId))?.grup ?? null;
   const [openGroup, setOpenGroup] = useState(() => grupAdi("app"));
   const toggleGroup = (grup) => setOpenGroup(cur => (cur === grup ? null : grup));
+
+  // Genel aramadan gelen deep-link: istenen bölümü aç, grubunu genişlet, sonra parent'ta tüket (tekrar tıklama çalışsın).
+  useEffect(() => {
+    if (!initialTab) return;
+    setSettingsTab(initialTab);
+    setOpenGroup(grupAdi(initialTab));
+    onInitialTabConsumed?.();
+  }, [initialTab]);
 
   return (
     <div>
@@ -238,7 +247,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       )}
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
-      {settingsTab === "kkkomisyon" && <SettingsKKKomisyon appSettings={appSettings} setAppSettings={setAppSettings} />}
+      {settingsTab === "kkkomisyon" && <SettingsKKKomisyon appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
       {settingsTab === "takip" && <SettingsTakip appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "evrak" && <SettingsDocuments appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}

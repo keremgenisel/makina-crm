@@ -1,16 +1,37 @@
+import { useEffect, useRef } from "react";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
   disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli,
 } from "../../../lib/utils";
 import { servisSureleri } from "../../../lib/servisAnaliz";
+import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { Icon, Btn, AtesRozeti } from "../../ui";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
 
+// Kredi kartı komisyonu müşteriye yansıtılmış satışta üçlü kırılım gösterimi:
+// kayıtta saklanan tutar (matrah) = ürün(kalem) + komisyon; müşterinin ödediği = matrah + KDV (çekilen kart).
+// Ürün fiyatını, komisyonu ve KDV'yi AYRI göster (yoksa matrah "ürün fiyatı" sanılıyordu). Yansıt yoksa null → çağıran normal gösterir.
+const kkUcgenMetin = (matrah, komisyon, kdv, currency, bedelLabel = "Ürün") => {
+  if (!(komisyon > 0)) return null;
+  const kalem = matrah - komisyon;
+  return `${bedelLabel}: ${fmtCur(kalem, currency)} · Komisyon: ${fmtCur(komisyon, currency)}${kdv > 0 ? ` · KDV: ${fmtCur(kdv, currency)}` : ""} · Çekilen kart: ${fmtCur(matrah + kdv, currency)}`;
+};
+
+// Tutarlı ödeme-yöntemi pili (başlığın hemen yanında, kapora ile aynı yer) ve "Yazdır" buton stili (servisteki gibi).
+const PIL = { fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)" };
+const YAZDIR_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" };
+const SIL_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" };
+
 export const MachineTimeline = ({
   detailView,
+  odakServisId = null, // genel aramadan gelen: bu servis kaydını vurgula + görünür alana kaydır
+  odakKalipId = null,  // genel aramadan gelen: bu Extra Kalıp satışını (psList içinde) vurgula + kaydır
+  odakTaksitId = null, // anasayfa Beklenen Tahsilat: bu taksit (ödeme planı) olayını vurgula + kaydır
+  odakOdemeId = null,  // anasayfa Borçlu Firmalar: bu ödeme (kapora/çek/kredi kartı) olayını vurgula + kaydır
+  odakNonce = 0,       // her navigasyonda artar → aynı kayda tekrar tıklamada da kaydırma/flaş yeniden tetiklenir
   detailTimelineEvents,
   factoryName,
   kdvRates,
@@ -37,7 +58,17 @@ export const MachineTimeline = ({
   onTahsilTaksit = null,
   dosyaAdet = null,
   onDosyaBadge = null,
-}) => (
+}) => {
+  // Odaklı satıra kaydır (genel aramadan "servis" veya "Extra Kalıp" sonucuna tıklanınca)
+  const odakRef = useRef(null);
+  useEffect(() => {
+    if (odakServisId == null && odakKalipId == null && odakTaksitId == null && odakOdemeId == null) return;
+    // Uzun geçmişte olay çok aşağıda olabilir → görünür alana kaydır (kalıcı vurgu; yanıp sönme yok, Son Satışlar gibi).
+    // odakNonce sayesinde aynı kayda tekrar tıklanınca da (odak değeri değişmese bile) yeniden kaydırır.
+    const t = setTimeout(() => odakRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" }), 120);
+    return () => clearTimeout(t);
+  }, [odakServisId, odakKalipId, odakTaksitId, odakOdemeId, odakNonce, detailTimelineEvents]);
+  return (
   <div style={{ background: "var(--n100, #f8fafc)", borderRadius: 12, padding: "16px 18px" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
       <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
@@ -58,8 +89,16 @@ export const MachineTimeline = ({
         const ps = ev.ps;
         const psList = ev.psList;
         const payment = ev.payment;
+        // Id karşılaştırması tip-güvenli (ödeme/taksit id'leri number iken odak state'e string dönebilir).
+        const esit = (a, b) => a != null && b != null && String(a) === String(b);
+        const odakServisEsles = ev.kind === "service" && esit(sv?.id, odakServisId);
+        const odakKalipEsles = ev.kind === "part" && Array.isArray(psList) && odakKalipId != null && psList.some(x => esit(x?.id, odakKalipId));
+        const odakTaksitEsles = ev.kind === "taksit" && esit(ev.taksit?.id, odakTaksitId);
+        const odakOdemeEsles = ev.kind === "payment" && esit(payment?.id, odakOdemeId);
+        const odakli = odakServisEsles || odakKalipEsles || odakTaksitEsles || odakOdemeEsles;
         return (
-          <div key={i} style={{ display: "flex", gap: 14, position: "relative", paddingBottom: last ? 0 : 18 }}>
+          <div key={i} ref={odakli ? odakRef : null} data-odak-servis={odakServisEsles ? "1" : undefined} data-odak-kalip={odakKalipEsles ? "1" : undefined} data-odak-taksit={odakTaksitEsles ? "1" : undefined} data-odak-odeme={odakOdemeEsles ? "1" : undefined}
+            style={{ display: "flex", gap: 14, position: "relative", paddingBottom: last ? 0 : 18, ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "0 0 0 2px var(--ambBr3, #fed7aa)", borderRadius: 10 } : null) }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ width: 14, height: 14, borderRadius: "50%", background: ev.color, flexShrink: 0, marginTop: 3, border: "3px solid #fff", boxShadow: `0 0 0 2px ${ev.color}33` }} />
               {!last && <div style={{ width: 2, flex: 1, background: "var(--n200, #e2e8f0)", marginTop: 4 }} />}
@@ -71,22 +110,23 @@ export const MachineTimeline = ({
                   <>
                     <span onClick={canDo("cust_service_edit") ? () => onEditService(sv) : undefined} title={canDo("cust_service_edit") ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_service_edit") ? "pointer" : "default", textDecoration: canDo("cust_service_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                    {sv.odendi && sv.yontem && <span style={PIL}>{sv.yontem}</span>}
                     {dosyaAdet && <AtesRozeti n={dosyaAdet("servis", sv.id)} onClick={() => onDosyaBadge("servis", sv.id)} />}
                     {canDo("cust_detail_print") && (
                       <button onClick={() => onPrintOrPick("servis", sv)} title="Servis Formu Yazdır"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        style={YAZDIR_BTN}>
                         <Icon name="print" size={11} /> Yazdır
                       </button>
                     )}
                     {canDo("cust_detail_mail") && (
                       <button onClick={() => onPrintOrPick("mail_servis", sv)} title="Servis Formu E-posta Gönder"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        style={YAZDIR_BTN}>
                         <Icon name="mail" size={11} /> E-posta
                       </button>
                     )}
                     {canDo("cust_service_delete") && (
                       <button onClick={() => onDeleteService(sv.id)} title="Servis kaydını sil"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        style={SIL_BTN}>
                         <Icon name="trash" size={11} /> Sil
                       </button>
                     )}
@@ -96,11 +136,12 @@ export const MachineTimeline = ({
                     <>
                       <span onClick={canDo("cust_kalip_edit") ? () => onEditPartSale(psList[0]) : undefined} title={canDo("cust_kalip_edit") ? "Düzenlemek için tıklayın" : undefined}
                         style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_kalip_edit") ? "pointer" : "default", textDecoration: canDo("cust_kalip_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                      {psList[0].odendi && psList[0].yontem && !psList[0].ucretsizMi && <span style={PIL}>{psList[0].yontem}</span>}
                       {dosyaAdet && <AtesRozeti n={dosyaAdet("kalip", psList[0].id)} onClick={() => onDosyaBadge("kalip", psList[0].id)} />}
-                      {onPrintKalipEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintKalipEtiket(psList)}><Icon name="print" size={11} /></Btn>}
+                      {onPrintKalipEtiket && <button onClick={() => onPrintKalipEtiket(psList)} title="Kargo Etiketi Yazdır" style={YAZDIR_BTN}><Icon name="print" size={11} /> Etiket</button>}
                       {canDo("cust_kalip_delete") && (
                         <button onClick={() => onDeletePartSale(psList[0].id)} title="Extra Kalıp kaydını sil"
-                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                          style={SIL_BTN}>
                           <Icon name="trash" size={11} /> Sil
                         </button>
                       )}
@@ -110,7 +151,8 @@ export const MachineTimeline = ({
                       <span style={{ fontWeight: 700, fontSize: 14, color: ev.color }}>
                         {ev.title} <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>({psList.length} kalıp)</span>
                       </span>
-                      {onPrintKalipEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintKalipEtiket(psList)}><Icon name="print" size={11} /></Btn>}
+                      {psList[0].odendi && psList[0].yontem && !psList[0].ucretsizMi && <span style={PIL}>{psList[0].yontem}</span>}
+                      {onPrintKalipEtiket && <button onClick={() => onPrintKalipEtiket(psList)} title="Kargo Etiketi Yazdır" style={YAZDIR_BTN}><Icon name="print" size={11} /> Etiket</button>}
                     </>
                   )
                 ) : ev.kind === "part" && ev.yp ? (() => {
@@ -122,10 +164,11 @@ export const MachineTimeline = ({
                   <>
                     <span onClick={duzenlenebilir ? () => onEditYedekParca(ev.yp) : undefined} title={duzenlenebilir ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: duzenlenebilir ? "pointer" : "default", textDecoration: duzenlenebilir ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}{!tekli ? ` (${ev.ypGrup.length} kalem)` : ""}</span>
-                    {onPrintYedekParcaEtiket && <Btn small variant="ghost" title="Kargo Etiketi Yazdır" onClick={() => onPrintYedekParcaEtiket(ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp])}><Icon name="print" size={11} /></Btn>}
+                    {ev.yp.odendi && ev.yp.yontem && <span style={PIL}>{ev.yp.yontem}</span>}
+                    {onPrintYedekParcaEtiket && <button onClick={() => onPrintYedekParcaEtiket(ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp])} title="Kargo Etiketi Yazdır" style={YAZDIR_BTN}><Icon name="print" size={11} /> Etiket</button>}
                     {canDo("cust_yedek_parca_delete") && onDeleteYedekParca && (
                       <button onClick={() => onDeleteYedekParca(ev.yp)} title={tekli ? "Yedek parça (kargo) satışını sil" : "Toplu satışın tümünü sil"}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        style={SIL_BTN}>
                         <Icon name="trash" size={11} /> Sil
                       </button>
                     )}
@@ -141,6 +184,7 @@ export const MachineTimeline = ({
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                    {payment.yontem && <span style={PIL}>{payment.yontem}</span>}
                     {dosyaAdet && <AtesRozeti n={dosyaAdet("odeme", payment.id)} onClick={() => onDosyaBadge("odeme", payment.id)} />}
                     {payment.yontem === "Çek" && canDo("cust_payment_edit") && (
                       <button onClick={() => onToggleCekTahsil(payment)}
@@ -150,7 +194,7 @@ export const MachineTimeline = ({
                     )}
                     {canDo("cust_payment_edit") && (
                       <button onClick={() => onDeletePayment(payment.id)} title="Ödemeyi sil"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
+                        style={SIL_BTN}>
                         <Icon name="trash" size={11} /> Sil
                       </button>
                     )}
@@ -200,21 +244,19 @@ export const MachineTimeline = ({
                 // Toplu satış → grubun toplam bedeli + KDV (tek satır); tek satışta grup = [yp].
                 const grup = ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp];
                 const bedel = grup.reduce((t, s) => t + yedekParcaBedeli(s), 0);
+                const kom = grup.reduce((t, s) => t + yansitilanKomisyon(s), 0);
                 const kdv = grup.reduce((t, s) => t + calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates), 0);
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
-                      Yedek Parça Ücreti: {fmtCur(bedel, ev.yp.currency)}
-                      {kdv > 0 && <> · KDV dahil: {fmtCur(bedel + kdv, ev.yp.currency)}</>}
+                      {kkUcgenMetin(bedel, kom, kdv, ev.yp.currency, "Yedek parça")
+                        || <>Yedek Parça Ücreti: {fmtCur(bedel, ev.yp.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(bedel + kdv, ev.yp.currency)}</>}</>}
                     </span>
                     {canDo("cust_yedek_parca_payment") && onToggleYedekParcaOdendi && (
                       <button onClick={() => onToggleYedekParcaOdendi(ev.yp)}
                         style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: ev.yp.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: ev.yp.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
                         {ev.yp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                       </button>
-                    )}
-                    {ev.yp.odendi && ev.yp.yontem && (
-                      <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)" }}>{ev.yp.yontem}</span>
                     )}
                     {ev.yp.odendi && ev.yp.yontem === "Çek" && canDo("cust_yedek_parca_payment") && onToggleYedekParcaCekTahsil && (
                       <button onClick={() => onToggleYedekParcaCekTahsil(ev.yp)}
@@ -255,16 +297,15 @@ export const MachineTimeline = ({
                         )}
                         <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
                           {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
-                          {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")}
+                          {p.ucretsizMi ? "garanti kapsamında (ücretsiz)"
+                            : (kkUcgenMetin(parseMoney(p.ucret), yansitilanKomisyon(p), kdv, p.currency)
+                              || (fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")))}
                         </span>
                         {canDo("cust_kalip_payment") && (
                           <button onClick={() => onTogglePartSaleOdendi(p)}
                             style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: p.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: p.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
                             {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                           </button>
-                        )}
-                        {p.odendi && p.yontem && !p.ucretsizMi && (
-                          <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", border: "1px solid var(--n200, #e2e8f0)" }}>{p.yontem}</span>
                         )}
                         {p.odendi && p.yontem === "Çek" && !p.ucretsizMi && canDo("cust_kalip_payment") && onTogglePartSaleCekTahsil && (
                           <button onClick={() => onTogglePartSaleCekTahsil(p)}
@@ -273,9 +314,8 @@ export const MachineTimeline = ({
                           </button>
                         )}
                         {psList.length > 1 && canDo("cust_kalip_delete") && (
-                          <button onClick={() => onDeletePartSale(p.id)} title="Bu kalıp kaydını sil"
-                            style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 6px", cursor: "pointer" }}>
-                            <Icon name="trash" size={10} />
+                          <button onClick={() => onDeletePartSale(p.id)} title="Bu kalıp kaydını sil" style={SIL_BTN}>
+                            <Icon name="trash" size={11} /> Sil
                           </button>
                         )}
                       </div>
@@ -283,10 +323,12 @@ export const MachineTimeline = ({
                   })}
                   {psList.length > 1 && (() => {
                     const toplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : parseMoney(p.ucret)), 0);
+                    const komToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : yansitilanKomisyon(p)), 0);
                     const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates)), 0);
                     return (
                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--blu700, #1d4ed8)", marginTop: 5 }}>
-                        Toplam: {fmtCur(toplam, psList[0].currency)}{kdvToplam > 0 ? ` · KDV dahil: ${fmtCur(toplam + kdvToplam, psList[0].currency)}` : ""}
+                        {kkUcgenMetin(toplam, komToplam, kdvToplam, psList[0].currency, "Ürün toplam")
+                          || `Toplam: ${fmtCur(toplam, psList[0].currency)}${kdvToplam > 0 ? ` · KDV dahil: ${fmtCur(toplam + kdvToplam, psList[0].currency)}` : ""}`}
                       </div>
                     );
                   })()}
@@ -338,10 +380,10 @@ export const MachineTimeline = ({
                       const toplam = (servisVar ? parseMoney(sv.servisUcreti) : 0) + (parcaVar ? parseMoney(sv.parcaUcreti) : 0);
                       const kdv = calcKDV(sv.faturaTipi, toplam, sv.date, kdvRates);
                       const label = servisVar && parcaVar ? "Servis ve Yedek Parça Ücreti" : servisVar ? "Servis Ücreti" : "Yedek Parça Ücreti";
+                      const ucgen = kkUcgenMetin(toplam, yansitilanKomisyon(sv), kdv, sv.currency, label);
                       return (
                         <span style={{ fontSize: 12, color: "var(--red600, #dc2626)", fontWeight: 700 }}>
-                          {label}: {fmtCur(toplam, sv.currency)}
-                          {kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}
+                          {ucgen || <>{label}: {fmtCur(toplam, sv.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}</>}
                         </span>
                       );
                     }
@@ -366,4 +408,5 @@ export const MachineTimeline = ({
       })
     )}
   </div>
-);
+  );
+};

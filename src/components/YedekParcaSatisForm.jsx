@@ -1,7 +1,7 @@
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { KartTaksitAlani } from "./KartTaksitAlani";
+import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
 // miktar). Alıcı her zaman bir bayi. Makina tahsisi burada YAPILMAZ — satış listesinden (YedekParcaSatisTab)
@@ -243,23 +243,8 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
               {form.yontem === "Kredi Kartı" && (
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
                   tutar={toplam + calcKDV(form.faturaTipi, toplam, form.tarih, kdvRates)} currency={cur}
-                  kdvOrani={/Faturalı/.test(form.faturaTipi || "Faturalı Yurtiçi") ? getKdvRateForDate(form.tarih, kdvRates) : 0}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
-                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
-                  hedefNet={form.kkHedefNet ?? ""} setHedefNet={v => setForm(p => ({ ...p, kkHedefNet: v }))}
-                  onUygula={(kart, malBedeli) => {
-                    // Gross-up: satış tutarını (birimFiyat×miktar) mal bedeline eşitle → ucret+KDV = kart tutarı.
-                    if (isEdit) {
-                      setForm(p => ({ ...p, birimFiyat: miktar > 0 ? Math.round(malBedeli / miktar) : Math.round(malBedeli) }));
-                    } else {
-                      const top = toplam;
-                      setForm(p => ({ ...p, satirlar: (p.satirlar || satirlar).map(s => {
-                        const m = parseInt(s.miktar) || 0, satTutar = m * parseMoney(s.birimFiyat);
-                        const yeni = top > 0 ? satTutar * malBedeli / top : malBedeli / (p.satirlar || satirlar).length;
-                        return { ...s, birimFiyat: m > 0 ? Math.round(yeni / m) : Math.round(yeni) };
-                      }) }));
-                    }
-                  }} />
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} />
               )}
               {form.yontem === "Çek" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
@@ -284,10 +269,14 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   {isEdit ? `Toplam: ${miktar} × ${fmtCur(birim, cur)} = ${fmtCur(toplam, cur)}` : `Genel Toplam (${satirlar.filter(s => s.partId && (parseInt(s.miktar) || 0) > 0).length} kalem): ${fmtCur(toplam, cur)}`}
                 </span>
-                {kdv > 0 && (
+                {kdv > 0 && !(form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit) && (
                   <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.tarih, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
+                )}
+                {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && (
+                  <KartYansitmaOzeti netTaban={toplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} currency={cur} />
                 )}
               </>
             );

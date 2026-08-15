@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile, customerToAliciFields } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
@@ -212,6 +212,7 @@ export const Documents = ({
     setForm(p => p ? ({ ...p, customFieldValues: { ...(p.customFieldValues || {}), [cfId]: val } }) : p);
 
   const [subTab, setSubTab] = useState("teklif"); // "teklif" | "proforma" | "fatura"
+  const [odakDocId, setOdakDocId] = useState(null); // genel aramadan gelen: listede vurgulanacak belge
   const [form, _setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
   const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → müşteri çevirme bildirimi
@@ -469,19 +470,33 @@ export const Documents = ({
     if (!t.kur) fetchAndSetRate(t.currency, { overwrite: false }); // kayıtlı kuru ezme, boşsa doldur
   };
 
-  // Genel arama / Dashboard teklif takibi: belirli bir belgeyi doğrudan aç
+  // Genel arama / Dashboard teklif takibi: belgeyi DÜZENLEMEYE atlamak yerine (servislerdeki gibi)
+  // ilgili listede vurgula + görünür alana kaydır. Düzenleme kullanıcının kendi tıklamasına kalsın.
   useEffect(() => {
     if (openDocId == null) return;
     const t = liveTeklifler.find(x => x.id === openDocId);
     if (t) {
       setSubTab(t.type === "proforma" ? "proforma" : "teklif");
-      // Düzenleme izni yoksa formu açma: listedeki satır tıklaması da aynı izinle kapalı,
-      // arama/anasayfa derin bağlantısı o kapıyı delmemeli. Liste görünümü yeterli.
-      if (canDoEvrak(t.type === "proforma" ? "evrak_proforma_edit" : "evrak_teklif_edit")) openEdit(t);
+      setSearch("");
+      setOdakDocId(openDocId);
     }
     onDocOpenConsumed?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDocId, liveTeklifler]);
+
+  // Odaklı belge başka sayfadaysa o sayfaya geç
+  useEffect(() => {
+    if (odakDocId == null) return;
+    const idx = searched.findIndex(t => t.id === odakDocId);
+    if (idx >= 0) { const hedef = Math.floor(idx / PER_PAGE) + 1; if (hedef !== page) setPage(hedef); }
+  }, [odakDocId, searched]);
+
+  // Odaklı belge satırını görünür alana kaydır (sayfa/subTab yerleşince)
+  const odakDocRef = useRef(null);
+  useEffect(() => {
+    if (odakDocId == null) return;
+    const tmr = setTimeout(() => odakDocRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" }), 60);
+    return () => clearTimeout(tmr);
+  }, [odakDocId, paged, subTab]);
 
   const convertToProforma = (t) => {
     const existingProforma = liveTeklifler.find(p => p.type === "proforma" && p.parentTeklifId === t.id);
@@ -829,7 +844,7 @@ export const Documents = ({
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
         {[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => (
-          <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); }} style={{
+          <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
             borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
             color: subTab === id ? "#e85d1a" : "var(--n400, #94a3b8)",
@@ -865,12 +880,13 @@ export const Documents = ({
               {paged.map(t => {
                 const totals = calcTotals(t);
                 const hasProforma = subTab === "teklif" && liveTeklifler.some(p => p.type === "proforma" && p.parentTeklifId === t.id);
+                const odakli = t.id === odakDocId; // genel aramadan vurgulanan belge
                 return (
-                  <tr key={t.id}
+                  <tr key={t.id} ref={odakli ? odakDocRef : null} data-odak-belge={odakli ? "1" : undefined}
                     onClick={canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? () => openEdit(t) : undefined}
-                    style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default" }}
+                    style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default", ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "inset 3px 0 0 #e85d1a" } : null) }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
-                    onMouseLeave={e => e.currentTarget.style.background = ""}>
+                    onMouseLeave={e => e.currentTarget.style.background = odakli ? "var(--ambBg3, #fff7ed)" : ""}>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>{t.no || "—"}</div>
                       <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{fmtTR(t.tarih)}</div>

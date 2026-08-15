@@ -546,6 +546,11 @@ export const servisYedekParcaDurumu = (sv, factoryName = "Altuntaş Makina") => 
   if (disServisMi(sv)) return "disServis";
   return "anlasmaliServis";
 };
+
+// Servisi kimin yaptığı — yedek parça satışından BAĞIMSIZ (fabrika servisleri de her zaman işaretlenir).
+// "bizim" = fabrika, "disServis" = anlaşmasız dış firma ("Diğer"), "anlasmaliServis" = anlaşmalı bayi servisi.
+export const servisKanali = (sv, factoryName = "Altuntaş Makina") =>
+  !sv ? null : isAltuntasServisi(sv, factoryName) ? "bizim" : disServisMi(sv) ? "disServis" : "anlasmaliServis";
 // Servis kaydından MÜŞTERİNİN borçlu olduğu kısım: işçilik (yalnızca Altuntaş'ın kendi servisiyse —
 // isServisUcretliMi bunu zaten içeriyor) + parça (yalnızca Altuntaş'ın kendi servisiyse). Anlaşmalı
 // bir firma yaptıysa parça borcu müşteriye değil o firmaya aittir (bkz. isParcaBorcluAnlasmaliFirmaya) —
@@ -628,10 +633,19 @@ export const customerHasAnyDebt = (customer, services = [], partSales = [], fact
   if (yedekParcaSatislar.some(s => s.aliciTipi === "musteri" && Number(s.musteriId) === customer.id && isYedekParcaBorcluMu(s))) return true;
   return false;
 };
-// Ciro (gizli ara değer — hiçbir formda ayrı bir alan olarak gösterilmez, sadece Kalan Borç'u türetmek için kullanılır)
-export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES) => {
+// Ciro (gizli ara değer — hiçbir formda ayrı bir alan olarak gösterilmez, sadece Kalan Borç'u türetmek için kullanılır).
+// payments verilirse, kredi kartıyla müşteriye YANSITILAN komisyonun KDV'si de matraha eklenir (option B: komisyon
+// da vergili → üstteki Fatura Bedeli KDV kutusu ile alttaki kart kutusu aynı olsun; faturalı yurtiçide geçerli).
+export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES, payments = []) => {
   const kdv = calcKDV(customer.faturali, customer.faturaBedeli, customer.installDate, kdvRates);
-  return parseMoney(customer.fabrikaSatisBedeli) + kdv + parseMoney(customer.komisyon);
+  let komisyonKdv = 0;
+  if (isFaturali(customer.faturali) && isYurtIci(customer.faturali) && payments && payments.length) {
+    const oran = getKdvRateForDate(customer.installDate, kdvRates);
+    const komToplam = payments.reduce((s, p) =>
+      s + (p && p.customerId === customer.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
+    komisyonKdv = komToplam * oran / 100;
+  }
+  return parseMoney(customer.fabrikaSatisBedeli) + kdv + komisyonKdv + parseMoney(customer.komisyon);
 };
 // Bir ödeme "alınmış" mı sayılır: Nakit girildiği anda alınmış sayılır; Çek ise bankada karşılanana
 // kadar (tahsilEdildi elle işaretlenene kadar) sayılmaz; Kredi Kartı ise blokaj süresi (tek çekimde
@@ -657,7 +671,7 @@ export const taksitGecikmisMi = (c) => (c?.odemePlani || []).some(r => !r.odemeI
 // yuvarlanır (KDV yüzdesi tam sayı vermeyince ortaya çıkan kuruş artıkları "borçlu" sayılmasın) ve
 // 0'ın altına düşürülmez — bu uygulamada "fazla ödeme/alacak" diye bir kavram takip edilmiyor.
 export const calcKalanBorc = (customer, payments = [], kdvRates = DEFAULT_KDV_RATES) =>
-  Math.max(0, Math.round(calcCiro(customer, kdvRates) - sumPayments(customer.id, payments)));
+  Math.max(0, Math.round(calcCiro(customer, kdvRates, payments) - sumPayments(customer.id, payments)));
 
 // Çöp Kutusu: deletedAt'i retention süresinden eski olan kayıtları kalıcı olarak süzer
 // (uygulama açılışında bir defa çalışır) — 12 farklı dizi için aynı mantık birebir tekrarlandığı

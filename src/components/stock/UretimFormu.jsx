@@ -12,6 +12,22 @@ import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+// Bekleyen (uretimFormGonder && !uretimFormId) kalıpların EN ESKİ tarihi — müşteri kalıbı: installDate,
+// Extra Kalıp: ps.tarih. Yeni üretim formu başlangıcını buna çekip "Bekleyen Kalıpları Getir" hepsini yakalar.
+// Sayım (Dashboard.pendingKaliplarCount) tarihten bağımsız; getirme tarih-aralığı bağlı olduğu için gerekli.
+export const enEskiBekleyenKalipTarihi = (customers = [], partSales = []) => {
+  let en = "";
+  for (const c of customers) {
+    if (c.deletedAt || !c.installDate) continue;
+    if ((c.kaliplar || []).some(k => k.uretimFormGonder && !k.uretimFormId) && (!en || c.installDate < en)) en = c.installDate;
+  }
+  for (const ps of partSales) {
+    if (ps.deletedAt || !ps.uretimFormGonder || ps.uretimFormId || !ps.tarih) continue;
+    if (!en || ps.tarih < en) en = ps.tarih;
+  }
+  return en;
+};
+
 const emptyForm = () => ({
   id: uid(),
   baslangicTarihi: todayStr(),
@@ -68,7 +84,11 @@ export function UretimFormu({
 
   // ── Form listesi işlemleri ──────────────────────────────────────────────────
   const openNew = () => {
-    setForm(emptyForm());
+    const f = emptyForm();
+    // Bekleyen kalıplar geçmiş tarihliyse başlangıcı en eskiye çek (bitiş bugün kalır) → hepsi getirilebilir.
+    const en = enEskiBekleyenKalipTarihi(customers, partSales);
+    if (en && en < f.baslangicTarihi) f.baslangicTarihi = en;
+    setForm(f);
     setEditId("new");
   };
 

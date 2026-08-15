@@ -2,6 +2,7 @@
 // servis gelir kuralları, silinmiş kayıtlar ve önceki ay.
 import { describe, it, expect } from "vitest";
 import { hesaplaAylikRapor, oncekiAyStr } from "../src/lib/aylikRapor";
+import { kartYansitmaAyrim, kartKomisyonuSnapshot } from "../src/lib/krediKarti";
 
 const kdvRates = [{ from: "2000-01-01", rate: 20 }];
 const secenekler = { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } };
@@ -303,5 +304,35 @@ describe("hesaplaAylikRapor — bloke kredi kartı / çek servisleri alacağa (b
     const rk = hesaplaAylikRapor(mk({ odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 0, hesabaGecis: "2020-01-01" } }), "2026-06", secenekler);
     expect(rk.acikBorc.TRY || 0).toBe(0);
     expect(rk.borcluFirma).toBe(0);
+  });
+});
+
+// Kredi kartı komisyonu müşteriye yansıtıldığında: komisyon KDV matrahına girer ama CİROYA girmez
+// (çift sayım olmaz). Extra Kalıp üzerinden test — Finance ile aynı yansitilanKomisyon düşümü.
+describe("yansıtılan komisyon: ciroya girmez, KDV matrahında kalır (çift sayım yok)", () => {
+  const AYAR = { bsmv: 5, satirlar: [{ taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] };
+  const a = kartYansitmaAyrim(10000, 3, AYAR, 20, "2026-06-10"); // kalem 10.000, faturalı yurtiçi %20
+  const kkKalip = {
+    id: 50, customerId: 1, tur: "Kalıp", tarih: "2026-06-10", currency: "TRY", faturaTipi: "Faturalı Yurtiçi",
+    odendi: true, yontem: "Kredi Kartı", taksitSayisi: 3,
+    ucret: a.kdvMatrah, // kayıtta ucret = KDV matrahı (kalem + komisyon)
+    kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, 3, AYAR, "2026-06-10", true),
+  };
+  const veri2 = {
+    customers: [{ id: 1, name: "X", installDate: "2020-01-01", currency: "TRY", kalanBorc: 0 }],
+    services: [], partSales: [kkKalip], payments: [], teklifler: [],
+  };
+  const r2 = hesaplaAylikRapor(veri2, "2026-06", secenekler);
+
+  it("Extra Kalıp cirosu = kalem (10.000), komisyon düşülmüş", () => {
+    expect(r2.extraKalipTutar.TRY).toBeCloseTo(10000, 0);
+    expect(r2.ozet.ciroNet.TRY).toBeCloseTo(10000, 0); // 11.057 değil
+  });
+  it("KDV kalem+komisyon (matrah) üzerinden — 2.000'den büyük", () => {
+    expect(r2.extraKalipKdv.TRY).toBeCloseTo(a.kdv, 0);
+    expect(r2.extraKalipKdv.TRY).toBeGreaterThan(2000);
+  });
+  it("komisyon yalnız 'Toplam Ödenen Banka Komisyonu'nda görünür", () => {
+    expect(r2.bankaKomisyonuTutar.TRY).toBeCloseTo(a.komisyon, 0);
   });
 });

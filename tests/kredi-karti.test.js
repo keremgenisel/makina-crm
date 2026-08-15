@@ -3,6 +3,7 @@
 import { describe, it, expect } from "vitest";
 import {
   hesaplaKartKomisyonu, hesaplaKartTutariNetten, hesabaGecisTarihi, kartTahsilEdildiMi, kkToplamOran, kkSatir,
+  kartYansitmaAyrim, yansitilanKomisyon, makinaKartOdemesi, kartKomisyonuSnapshot,
 } from "../src/lib/krediKarti";
 
 // 3 taksit: gerçek üye işyeri %7,12 → BSMV dâhil oran 7,12×1,05 = 7,476 (banka ekranı 7,47'ye yuvarlar).
@@ -95,5 +96,84 @@ describe("yardımcılar", () => {
     expect(kkToplamOran({ oran: 7.47, katkiPayi: 0.5 })).toBeCloseTo(7.97, 6);
     expect(kkSatir(6, AYAR).oran).toBe(9.34);
     expect(kkSatir(2, AYAR)).toBeNull();
+  });
+});
+
+describe("kartYansitmaAyrim (üçlü ayrım: satış / komisyon / KDV)", () => {
+  it("kalem 10.000 / 3 taksit / %20 → satış+komisyon+kdv = çekilen kart", () => {
+    const a = kartYansitmaAyrim(10000, 3, AYAR_YUVARLI, 20);
+    expect(a.satis).toBe(10000);
+    expect(a.komisyon).toBeCloseTo(1057.54, 1);
+    expect(a.kdvMatrah).toBeCloseTo(11057.54, 1);  // = satis + komisyon
+    expect(a.kdv).toBeCloseTo(2211.51, 1);          // matrah × %20
+    expect(a.kartTutari).toBeCloseTo(13269.05, 1);
+    // özdeşlik: kdvMatrah = satis + komisyon; kartTutari = matrah + kdv
+    expect(a.kdvMatrah).toBeCloseTo(a.satis + a.komisyon, 4);
+    expect(a.kartTutari).toBeCloseTo(a.kdvMatrah + a.kdv, 4);
+  });
+  it("KDV komisyon ÜZERİNDEN de hesaplanır (matrah = kalem + komisyon), 2000 değil", () => {
+    const a = kartYansitmaAyrim(10000, 3, AYAR_YUVARLI, 20);
+    expect(a.kdv).toBeGreaterThan(2000); // sadece kalemin KDV'si (2000) değil, komisyon dahil
+  });
+  it("geçersiz → null", () => {
+    expect(kartYansitmaAyrim(0, 3, AYAR_YUVARLI, 20)).toBeNull();
+    expect(kartYansitmaAyrim(10000, 99, AYAR_YUVARLI, 20)).toBeNull();
+  });
+});
+
+describe("makinaKartOdemesi (makina kredi kartı ödemesi)", () => {
+  it("yansıtma (option B): borçtan düşen = çekilecek kart − komisyon = mal + (komisyon dahil KDV)", () => {
+    const mk = makinaKartOdemesi(100000, 3, AYAR, "2026-08-15", true, 20);
+    const a = kartYansitmaAyrim(100000, 3, AYAR, 20, "2026-08-15");
+    expect(mk.tutar).toBeCloseTo(a.kartTutari - a.komisyon, 4);   // ~122.117 (mal 100.000 + KDV ~22.117)
+    expect(mk.tutar).toBeCloseTo(100000 + a.kdv, 4);              // özdeşlik: mal + komisyon dahil KDV
+    expect(mk.tutar).toBeGreaterThan(120000);                    // salt mal×1.20 (120.000) değil
+    expect(mk.kartKomisyonu.yansitildi).toBe(true);
+    expect(mk.kartKomisyonu.toplamKesinti).toBeCloseTo(a.komisyon, 4);
+  });
+  it("faturasız (kdvOran=0): borçtan mal düşer, karta KDV eklenmez", () => {
+    const mk = makinaKartOdemesi(100000, 3, AYAR, "2026-08-15", true, 0);
+    expect(mk.tutar).toBeCloseTo(100000, 0);
+  });
+  it("yansıtma yok: komisyonu biz üstleniriz (yansitildi=false), tutar mal×(1+KDV) (komisyon vergisiz)", () => {
+    const mk = makinaKartOdemesi(100000, 3, AYAR, "2026-08-15", false, 20);
+    expect(mk.tutar).toBeCloseTo(120000, 0);
+    expect(mk.kartKomisyonu.yansitildi).toBe(false);
+  });
+  it("taksit yoksa snapshot null, tutar mal×(1+KDV)", () => {
+    const mk = makinaKartOdemesi(100000, null, AYAR, "2026-08-15", true, 20);
+    expect(mk.tutar).toBeCloseTo(120000, 0);
+    expect(mk.kartKomisyonu).toBeNull();
+  });
+});
+
+describe("yansıt kaydından KALEM geri çıkar (düzenleme yüklemesi)", () => {
+  // Kayıtta ucret=matrah(kalem+komisyon), kartKomisyonu.yansitildi=true saklanır.
+  // Düzenlemeye girince form kalem'i göstermeli: kalem = ucret − yansitilanKomisyon(rec).
+  // Bu invaryant bozulursa "düzenlemede ürün fiyatı değişiyor" hatası olur.
+  it("matrah − yansitilanKomisyon = girilen kalem; yansitildi=true", () => {
+    const kalem = 10000;
+    const a = kartYansitmaAyrim(kalem, 3, AYAR_YUVARLI, 20);
+    const rec = { yontem: "Kredi Kartı", ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, 3, AYAR_YUVARLI, "2026-08-12", true) };
+    expect(rec.kartKomisyonu.yansitildi).toBe(true);             // kutu seçili gelmeli
+    expect(a.kdvMatrah - yansitilanKomisyon(rec)).toBeCloseTo(kalem, 0); // fiyat kalem'e döner (değişmez)
+  });
+  it("çeşitli taksit/kdv için de kalem geri çıkar", () => {
+    for (const [kalem, taksit, kdv] of [[42163, 3, 20], [5000, 6, 20], [100000, 1, 20]]) {
+      const a = kartYansitmaAyrim(kalem, taksit, AYAR, kdv);
+      const rec = { yontem: "Kredi Kartı", ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, taksit, AYAR, "2026-08-12", true) };
+      expect(a.kdvMatrah - yansitilanKomisyon(rec)).toBeCloseTo(kalem, 0);
+    }
+  });
+});
+
+describe("yansitilanKomisyon (ciro düşümü)", () => {
+  const kk = { toplamKesinti: 1057.54, yansitildi: true };
+  it("yansitildi=true kredi kartı → toplamKesinti; değilse 0", () => {
+    expect(yansitilanKomisyon({ yontem: "Kredi Kartı", kartKomisyonu: kk })).toBeCloseTo(1057.54, 2);
+    expect(yansitilanKomisyon({ yontem: "Kredi Kartı", kartKomisyonu: { toplamKesinti: 500, yansitildi: false } })).toBe(0);
+    expect(yansitilanKomisyon({ yontem: "Nakit", kartKomisyonu: kk })).toBe(0);
+    expect(yansitilanKomisyon({ yontem: "Kredi Kartı" })).toBe(0);
+    expect(yansitilanKomisyon(null)).toBe(0);
   });
 });

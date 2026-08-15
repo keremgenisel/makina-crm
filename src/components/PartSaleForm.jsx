@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { KartTaksitAlani } from "./KartTaksitAlani";
+import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
@@ -252,18 +252,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
               {form.yontem === "Kredi Kartı" && (
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
                   tutar={kaliplarToplam + calcKDV(form.faturaTipi, kaliplarToplam, form.tarih, kdvRates)} currency={form.currency || "TRY"}
-                  kdvOrani={/Faturalı/.test(form.faturaTipi || "Faturalı Yurtiçi") ? getKdvRateForDate(form.tarih, kdvRates) : 0}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
-                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
-                  hedefNet={form.kkHedefNet ?? ""} setHedefNet={v => setForm(p => ({ ...p, kkHedefNet: v }))}
-                  onUygula={(kart, malBedeli) => {
-                    // Gross-up: kalem fiyatları toplamını mal bedeline eşitle (KDV bunun üzerinden çıkar,
-                    // ucret+KDV = çekilecek kart tutarı). Tek satır → doğrudan; çok satır → orantılı ölçekle.
-                    const sat = kalipSatirlar(); const top = sat.reduce((s, k) => s + parseMoney(k.fiyat), 0);
-                    setForm(p => ({ ...p, kaliplar: sat.map((k, idx) => (sat.length === 1
-                      ? { ...k, fiyat: Math.round(malBedeli) }
-                      : { ...k, fiyat: Math.round(top > 0 ? parseMoney(k.fiyat) * malBedeli / top : malBedeli / sat.length) })) }));
-                  }} />
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} />
               )}
               {form.yontem === "Çek" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
@@ -288,10 +278,14 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   Toplam: {fmtCur(kaliplarToplam, form.currency || "TRY")}
                 </span>
-                {kdv > 0 && (
+                {kdv > 0 && !(form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit) && (
                   <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.tarih, kdvRates)}): {fmtCur(kdv, form.currency || "TRY")} · KDV dahil toplam: {fmtCur(kaliplarToplam + kdv, form.currency || "TRY")}
                   </div>
+                )}
+                {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && (
+                  <KartYansitmaOzeti netTaban={kaliplarToplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} currency={form.currency || "TRY"} />
                 )}
               </>
             );

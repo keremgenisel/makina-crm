@@ -768,14 +768,14 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     const date = new Date().toISOString().split("T")[0];
     const { canceled, filePath } = await dialog.showSaveDialog({
       title: "Yedek Kaydet",
-      defaultPath: `altunmak-crm-yedek-${date}.json`,
-      filters: [{ name: "JSON Yedek Dosyası", extensions: ["json"] }],
+      defaultPath: `altunmak-crm-yedek-${date}.zip`,
+      filters: [{ name: "CRM Yedek (ZIP)", extensions: ["zip"] }],
     });
     if (canceled || !filePath) return false;
     try {
+      // Tek dosya yedek: veri.json + fiziksel dosyalar aynı .zip içinde (taşırken bir şey geride kalmaz).
       const payload = password ? encryptBackup(data, password) : data;
-      fs.writeFileSync(filePath, JSON.stringify(payload, null, password ? 0 : 2), "utf-8");
-      files.yedekleDosyaKlasoru(app, filePath, password || null); // arşiv dosyaları — parola varsa şifreli
+      fs.writeFileSync(filePath, files.zipYedekOlustur(app, payload, password || null));
       logYerelGuvenlik("yedek_alindi", { sifreli: !!password });
       return true;
     }
@@ -796,9 +796,8 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       const pass = readAutoBackupPassword(app); // ayarlarda kayıtlıysa otomatik yedek şifrelenir
       const payload = pass ? encryptBackup(data, pass) : data;
       const date = new Date().toISOString().split("T")[0];
-      const jsonPath = path.join(folder, `altunmak-crm-otoyedek-${date}.json`);
-      fs.writeFileSync(jsonPath, JSON.stringify(payload, null, pass ? 0 : 2), "utf-8");
-      files.yedekleDosyaKlasoru(app, jsonPath, pass || null); // arşiv dosyaları — parola varsa şifreli
+      const zipPath = path.join(folder, `altunmak-crm-otoyedek-${date}.zip`);
+      fs.writeFileSync(zipPath, files.zipYedekOlustur(app, payload, pass || null)); // veri + dosyalar tek zip
       return true;
     } catch (err) { console.error("Otomatik yedek yazılamadı:", err); return false; }
   });
@@ -815,8 +814,8 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   ipcMain.handle("backup:decrypt", (_e, envelope, password) => {
     try {
       const data = decryptBackup(envelope, password);
-      // Parola doğru → yedekteki şifreli arşiv dosyalarını da aynı parolayla çöz ve geri yükle.
-      if (bekleyenSifreliRestoreYolu) { files.geriYukleDosyaKlasoru(app, bekleyenSifreliRestoreYolu, password); bekleyenSifreliRestoreYolu = null; }
+      // Parola doğru → yedekteki şifreli dosyaları da (zip içinden ya da eski komşu klasörden) aynı parolayla çöz.
+      if (bekleyenSifreliRestoreYolu) { files.geriYukleDosyalar(app, bekleyenSifreliRestoreYolu, password); bekleyenSifreliRestoreYolu = null; }
       return { ok: true, data };
     }
     catch { return { ok: false, error: "Parola yanlış veya dosya bozuk." }; }
@@ -825,19 +824,28 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
   ipcMain.handle("crm:restore", async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       title: "Yedek Dosyası Seç",
-      filters: [{ name: "JSON Yedek Dosyası", extensions: ["json"] }],
+      filters: [{ name: "CRM Yedek", extensions: ["zip", "json"] }], // .zip (yeni) + .json (eski yedekler)
       properties: ["openFile"],
     });
     if (canceled || !filePaths?.[0]) return null;
     // Şifreli yedekse zarf nesnesi döner; renderer parola sorup backup:decrypt ile çözer.
+    const yol = filePaths[0];
     try {
-      const veri = JSON.parse(fs.readFileSync(filePaths[0], "utf-8"));
+      // .zip → içindeki veri.json; .json → eski düz/komşu-klasör yedeği (geriye uyum).
+      let veri;
+      if (/\.zip$/i.test(yol)) {
+        const okunan = files.zipYedekOku(yol);
+        if (!okunan) return null;
+        veri = okunan.veri;
+      } else {
+        veri = JSON.parse(fs.readFileSync(yol, "utf-8"));
+      }
       if (isEncryptedBackup(veri)) {
         // Dosyalar da şifreli; parola backup:decrypt'te gelince geri yüklenecek.
-        bekleyenSifreliRestoreYolu = filePaths[0];
+        bekleyenSifreliRestoreYolu = yol;
       } else {
         bekleyenSifreliRestoreYolu = null;
-        files.geriYukleDosyaKlasoru(app, filePaths[0]); // düz yedek → dosyalar hemen geri gelir
+        files.geriYukleDosyalar(app, yol); // düz yedek → dosyalar hemen geri gelir
       }
       return veri;
     }

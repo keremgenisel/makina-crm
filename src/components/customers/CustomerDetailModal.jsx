@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { logAction, getAuditUsername, snapshotOnceki } from "../../lib/audit";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
@@ -8,7 +8,7 @@ import {
   calcKalanBorc, stripAutoPrint, simdiYerel,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf, getKdvRateForDate,
 } from "../../lib/utils";
-import { kartKomisyonuSnapshot } from "../../lib/krediKarti";
+import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon, makinaKartOdemesi } from "../../lib/krediKarti";
 import {
   printServiceForm as printServiceFormTemplate,
   printMachineReport as printMachineReportTemplate,
@@ -19,7 +19,7 @@ import {
   kalipEtiketYazdir,
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
+import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
@@ -38,6 +38,12 @@ import { MachineTimeline } from "./detail/MachineTimeline";
 
 export const CustomerDetailModal = ({
   detailView,
+  odakServisId = null,
+  odakKalipId = null,
+  odakGorusmeId = null,
+  odakTaksitId = null,
+  odakOdemeId = null,
+  odakNonce = 0,
   onClose,
   onSwitchMachine,
   onOpenEdit,
@@ -119,7 +125,20 @@ export const CustomerDetailModal = ({
       ? sv.degisenParcalar.map(ad => ({ ad, fiyat: sv.degisenParcalar.length ? parseMoney(sv.parcaUcreti) / sv.degisenParcalar.length : 0 }))
       : (sv.degisenParcalar || []);
     const cust = customers.find(c => c.id === sv.customerId);
-    setSvForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv, degisenParcalar });
+    // Komisyon müşteriye yansıtıldıysa kayıtta servisUcreti/parça fiyatları KDV matrahına (kalem+komisyon)
+    // ölçeklenmiş tutulur; formda kalem gösterilmeli → aynı oranda geri küçült (drift'siz, orantı tutarlı).
+    const komisyon = yansitilanKomisyon(sv);
+    let servisUcretiKalem = sv.servisUcreti;
+    let degisenParcalar2 = degisenParcalar;
+    if (komisyon > 0) {
+      const storedParca = degisenParcalar.reduce((s, p) => s + (typeof p === "string" ? 0 : servisParcaSatirTutari(p)), 0);
+      const storedBillable = parseMoney(sv.servisUcreti) + (sv.parcaUcretsizMi ? 0 : storedParca);
+      const rf = storedBillable > 0 ? (storedBillable - komisyon) / storedBillable : 1;
+      servisUcretiKalem = parseMoney(sv.servisUcreti) * rf;
+      if (!sv.parcaUcretsizMi) degisenParcalar2 = degisenParcalar.map(p => typeof p === "string" ? p : { ...p, fiyat: parseMoney(p.fiyat) * rf });
+    }
+    setSvForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv,
+      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi) });
     setSvModal({ edit: sv });
   };
   // Servis formunda eklenen dosya taslaklarını (fiziksel dosya zaten yüklendi) servise bağla.
@@ -132,18 +151,36 @@ export const CustomerDetailModal = ({
   };
   const saveService = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
-    const parcaUcreti = (svForm.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    // Kalem (yansıtma öncesi) billable = servis + ücretli parça. Komisyon müşteriye yansıtılıyorsa
+    // servisUcreti ve parça fiyatları KDV matrahına (kalem+komisyon) ölçeklenerek saklanır (Extra Kalıp deseni,
+    // servis tek kayıt olduğu için orantılı); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
+    const kalemServis = parseMoney(svForm.servisUcreti);
+    const kalemParca = (svForm.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
+    const kkAyar = appSettings?.krediKartiKomisyonlari;
+    const kkKdvOran = calcKDV(svForm.faturaTipi, 100, svForm.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    let factor = 1, yansitSnap = null;
+    if (svForm.yontem === "Kredi Kartı" && svForm.kkYansit && svForm.taksitSayisi && kalemBillable > 0) {
+      const a = kartYansitmaAyrim(kalemBillable, svForm.taksitSayisi, kkAyar, kkKdvOran, svForm.date);
+      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, svForm.taksitSayisi, kkAyar, svForm.date, true); }
+    }
+    const olcek = (v) => factor === 1 ? parseMoney(v) : parseMoney(v) * factor;
+    const servisUcretiSave = olcek(svForm.servisUcreti);
+    // Parça fiyatları yalnız ücretli (parcaUcretsizMi=false) iken ölçeklenir; ücretsizde matraha girmez.
+    const degisenParcalarSave = (parcaUcretsizMi || factor === 1)
+      ? (svForm.degisenParcalar || [])
+      : (svForm.degisenParcalar || []).map(p => typeof p === "string" ? p : { ...p, fiyat: olcek(p.fiyat) });
+    const parcaUcreti = degisenParcalarSave.reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     // Yalnızca Altuntaş'tan alınan parçaların toplamı — dış tedarik parçalar Altuntaş'a gelir/borç olarak yazılmaz
-    const parcaUcretiAltuntastan = (svForm.degisenParcalar || []).filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
-    // Kredi kartı komisyonu: müşterinin ödediği billable toplam (servis + ücretli parça) + KDV üzerinden;
-    // Çek/Kredi Kartı alanları normalize. Snapshot yalnız Kredi Kartı'da (satış tarafıyla aynı, yansitildi:false).
-    const svBillable = parseMoney(svForm.servisUcreti) + (parcaUcretsizMi ? 0 : parcaUcreti);
+    const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
+    const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
     const svKdvDahil = svBillable + calcKDV(svForm.faturaTipi, svBillable, svForm.date, kdvRates);
-    const rec = { ...svForm, customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency,
+    const rec = { ...svForm, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+      customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency,
       vadeTarihi: svForm.yontem === "Çek" ? (svForm.vadeTarihi || "") : "",
       tahsilEdildi: svForm.yontem === "Çek" ? !!svForm.tahsilEdildi : false,
       taksitSayisi: svForm.yontem === "Kredi Kartı" ? (svForm.taksitSayisi ?? null) : null,
-      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, appSettings?.krediKartiKomisyonlari, svForm.date, false) : null };
+      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, svForm.date, false)) : null };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -190,8 +227,18 @@ export const CustomerDetailModal = ({
     if (!canDo("cust_yedek_parca_add")) return;
     setYpForm({ aliciTipi: "musteri", musteriId: detailView.id, dealerId: "", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }], currency: "TRY", tarih: today(), faturaTipi: normalizeSaleType(detailView.faturali) || "Faturalı Yurtiçi", odendi: false });
   };
+  // Komisyon müşteriye yansıtıldıysa kayıtta birimFiyat = KDV matrahı/miktar (kalem+komisyon dahil) tutulur;
+  // formda KALEM birim fiyatı gösterilmeli (Extra Kalıp ile aynı davranış) → komisyonu satır toplamından geri çıkar.
+  const ypKalemBirim = (s) => {
+    const miktar = parseInt(s.miktar) || 0;
+    const matrahToplam = miktar * parseMoney(s.birimFiyat);
+    const kalemToplam = matrahToplam - yansitilanKomisyon(s);
+    return miktar > 0 ? kalemToplam / miktar : parseMoney(s.birimFiyat);
+  };
   const openEditYedekParca = (rec) => {
     if (!canDo("cust_yedek_parca_edit")) return;
+    // Komisyon yansıtıldıysa düzenlemede kutu seçili + taksit dolu gelsin (Extra Kalıp ile birebir).
+    const kkYansit = !!(rec.kartKomisyonu && rec.kartKomisyonu.yansitildi);
     if (rec.batchId != null) {
       // Toplu satış → çoklu-satır formu; kayıtlar satır satır, ortak alanlar üstte.
       const grup = (yedekParcaSatislar || []).filter(s => s.batchId === rec.batchId && !s.deletedAt);
@@ -200,13 +247,14 @@ export const CustomerDetailModal = ({
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
         currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi,
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
+        taksitSayisi: rec.taksitSayisi || "", kkYansit,
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
         kargoSorumlusu: rec.kargoSorumlusu, panoDusmeZamani: rec.panoDusmeZamani, notlar: rec.notlar,
-        satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: s.birimFiyat })),
+        satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: ypKalemBirim(s) })),
       });
       return;
     }
-    setYpForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: rec.birimFiyat ?? "" });
+    setYpForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: ypKalemBirim(rec), taksitSayisi: rec.taksitSayisi || "", kkYansit });
   };
   const saveYedekParca = () => {
     if (ypForm.batchEdit) {
@@ -293,11 +341,15 @@ export const CustomerDetailModal = ({
   };
   const openEditPartSale = (ps) => {
     const cust = customers.find(c => c.id === ps.customerId);
+    // Komisyon müşteriye yansıtıldıysa kayıtta ucret=KDV matrahı (kalem+komisyon) tutulur; formda kalem
+    // gösterilmeli → komisyonu geri çıkar (yansitilanKomisyon). Yansıtılmadıysa ucret zaten kalem.
+    const kalemFiyat = (parseMoney(ps.ucret) - yansitilanKomisyon(ps)) || (ps.ucret || "");
     setPkForm({
       id: ps.id, customerId: ps.customerId,
-      kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: ps.ucret || "" }],
+      kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat }],
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
+      taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
       satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
       satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
@@ -347,16 +399,24 @@ export const CustomerDetailModal = ({
         };
       })(),
     };
-    // Kredi kartı komisyon snapshot'ı — komisyon banka tarafından KDV DAHİL çekilen tutardan kesilir,
-    // bu yüzden ucret+KDV üzerinden hesaplanır. Extra Kalıp'ta tek gelir alanı ucret olduğundan komisyon
-    // Finance'te HER ZAMAN düşülür (yansitildi=false): gross-up'ta ucret zaten mal bedeline (komisyon dahil)
-    // yükseltilir, düşünce net hedefe iner; biz yüklenince de gerçek maliyet olarak düşer.
-    const kkSnap = (ucret) => pkForm.yontem === "Kredi Kartı"
-      ? kartKomisyonuSnapshot(ucret + calcKDV(pkForm.faturaTipi, ucret, ortak.tarih, kdvRates), pkForm.taksitSayisi, appSettings?.krediKartiKomisyonlari, ortak.tarih, false)
-      : null;
+    // Kredi kartı: kalem fiyatından {ucret, kartKomisyonu} üret. Komisyon müşteriye YANSITILDIYSA (kkYansit)
+    // ucret = KDV matrahı (kalem+komisyon); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
+    // Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
+    const kkAyar = appSettings?.krediKartiKomisyonlari;
+    const kkKdvOran = calcKDV(pkForm.faturaTipi, 100, ortak.tarih, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kalipKart = (kalemFiyat) => {
+      const kalem = parseMoney(kalemFiyat);
+      if (pkForm.yontem !== "Kredi Kartı" || !pkForm.taksitSayisi) return { ucret: kalem, kartKomisyonu: null };
+      if (pkForm.kkYansit) {
+        const a = kartYansitmaAyrim(kalem, pkForm.taksitSayisi, kkAyar, kkKdvOran, ortak.tarih);
+        if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, pkForm.taksitSayisi, kkAyar, ortak.tarih, true) };
+      }
+      return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(pkForm.faturaTipi, kalem, ortak.tarih, kdvRates), pkForm.taksitSayisi, kkAyar, ortak.tarih, false) };
+    };
     if (pkForm.id) {
       const k = satirlar[0];
-      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kkSnap(parseMoney(k.fiyat)) };
+      const kk0 = kalipKart(k.fiyat);
+      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kk0.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kk0.kartKomisyonu };
       // Panoya sonradan gönderilen (veya eski) kalıpta olusturmaZamani olmayabilir; eksikse şimdi damgala
       // ki pano sıralamasında "en son eklenen üstte" doğru çalışsın (yoksa T00:00'a düşüp altta kalır).
       setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() } : x));
@@ -371,7 +431,7 @@ export const CustomerDetailModal = ({
       // fabrikaGirisZamani / kargo olusturmaZamani ile aynı rol). Gün-bazlı tarih T00:00'a düşer,
       // aynı günkü servis/kargo hep üstüne çıkardı — bu yüzden gerçek zaman gerekiyor.
       const olusturmaZamani = simdiYerel();
-      const yeniKayitlar = satirlar.map(k => ({ id: uid(), batchId, olusturmaZamani, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: parseMoney(k.fiyat), uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kkSnap(parseMoney(k.fiyat)) }));
+      const yeniKayitlar = satirlar.map(k => { const kkX = kalipKart(k.fiyat); return { id: uid(), batchId, olusturmaZamani, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kkX.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kkX.kartKomisyonu }; });
       setPartSales(p => [...p, ...yeniKayitlar]);
       setCustomers(p => p.map(c => c.id === selectedCust.id
         ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
@@ -414,6 +474,14 @@ export const CustomerDetailModal = ({
   // ── Görüşme kayıtları: telefon/ziyaret notları + takip tarihi ("aranacaklar") ──
   const [gorusmeForm, setGorusmeForm] = useState(null);
   const [gorusmelerAcik, setGorusmelerAcik] = useState(false); // akordeon: varsayılan kapalı
+  // Genel arama / anasayfa "Aranacaklar": bu görüşmeye odaklan → akordeonu aç + satıra kaydır + vurgula.
+  const gorusmeOdakRef = useRef(null);
+  useEffect(() => {
+    if (odakGorusmeId == null) return;
+    setGorusmelerAcik(true);
+    const t = setTimeout(() => gorusmeOdakRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" }), 120);
+    return () => clearTimeout(t);
+  }, [odakGorusmeId, odakNonce]);
   const [confirmDeleteGorusmeId, setConfirmDeleteGorusmeId] = useState(null);
   const detailGorusmeler = useMemo(
     () => gorusmeler.filter(g => !g.deletedAt && g.customerId === detailView?.id).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "")),
@@ -539,11 +607,16 @@ export const CustomerDetailModal = ({
       if (satirlar.length === 0) return;
       const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
       bumpId(customers, services, partSales, payments);
-      const yeniKayitlar = satirlar.map(r => ({
-        id: uid(), ...ortak, tutar: parseMoney(r.tutar), yontem: r.yontem || "Nakit",
-        ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}),
-        ...(r.yontem === "Kredi Kartı" && r.taksitSayisi ? { taksitSayisi: r.taksitSayisi, kartKomisyonu: kartKomisyonuSnapshot(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, ortak.tarih, !!r.kkYansit) } : {}),
-      }));
+      // Kredi kartı ödemesi: girilen tutar KDV hariç mal → karta KDV + komisyon eklenir, borçtan KDV dahil düşer.
+      const odemeKdvOran = calcKDV(detailView?.faturali, 100, ortak.tarih, kdvRates); // faturalı yurtiçi → oran, değilse 0
+      const yeniKayitlar = satirlar.map(r => {
+        const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit" };
+        if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
+          const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, ortak.tarih, !!r.kkYansit, odemeKdvOran);
+          return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
+        }
+        return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
+      });
       newPayments = [...yeniKayitlar, ...payments];
       // Taksit tahsilatıysa taksiti oluşan ödeme kaydına bağla (plan satırı kapanır)
       if (paymentForm._taksitId != null && yeniKayitlar[0]) {
@@ -825,9 +898,9 @@ export const CustomerDetailModal = ({
                     )}
                   </div>
                   {canDo("cust_gorusme_add") && !gorusmeForm && (
-                    <Btn small variant="ghost" onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
+                    <SoftBtn onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
                       <Icon name="plus" size={12} /> Yeni Görüşme
-                    </Btn>
+                    </SoftBtn>
                   )}
                 </div>
                 {(gorusmelerAcik || gorusmeForm) && <>
@@ -857,8 +930,10 @@ export const CustomerDetailModal = ({
                 )}
                 {detailGorusmeler.map(g => {
                   const takipGecikti = g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr;
+                  const odakli = g.id === odakGorusmeId;
                   return (
-                    <div key={g.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", fontSize: 13 }}>
+                    <div key={g.id} ref={odakli ? gorusmeOdakRef : null} data-odak-gorusme={odakli ? "1" : undefined}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--n150, #f1f5f9)", fontSize: 13, ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "0 0 0 2px var(--ambBr3, #fed7aa)", borderRadius: 8 } : null) }}>
                       <span style={{ fontSize: 11, color: "var(--n500, #64748b)", whiteSpace: "nowrap", paddingTop: 2 }}>{fmtTR(g.tarih)}</span>
                       <span style={{ fontSize: 10, fontWeight: 700, background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", borderRadius: 6, padding: "2px 6px", whiteSpace: "nowrap" }}>{g.tur}</span>
                       <div style={{ flex: 1 }}>
@@ -871,12 +946,12 @@ export const CustomerDetailModal = ({
                         {g.kullanici && <div style={{ fontSize: 10, color: "var(--n300, #cbd5e1)", marginTop: 2 }}>{g.kullanici}</div>}
                       </div>
                       {g.takipTarihi && canDo("cust_gorusme_add") && (
-                        <Btn small variant="ghost" onClick={() => toggleGorusmeTamam(g)} title={g.tamamlandi ? "Takibi yeniden aç" : "Takibi tamamlandı işaretle"}>
-                          {g.tamamlandi ? "↺" : "✓"}
-                        </Btn>
+                        <SoftBtn onClick={() => toggleGorusmeTamam(g)} title={g.tamamlandi ? "Takibi yeniden aç" : "Takibi tamamlandı işaretle"}>
+                          <Icon name={g.tamamlandi ? "refresh" : "check"} size={11} />
+                        </SoftBtn>
                       )}
                       {canDo("cust_gorusme_del") && (
-                        <Btn small variant="ghost" onClick={() => setConfirmDeleteGorusmeId(g.id)} title="Görüşmeyi sil"><Icon name="trash" size={11} /></Btn>
+                        <DangerBtn onClick={() => setConfirmDeleteGorusmeId(g.id)} title="Görüşmeyi sil"><Icon name="trash" size={11} /></DangerBtn>
                       )}
                     </div>
                   );
@@ -1002,6 +1077,11 @@ export const CustomerDetailModal = ({
 
             <MachineTimeline
               detailView={detailView}
+              odakServisId={odakServisId}
+              odakKalipId={odakKalipId}
+              odakTaksitId={odakTaksitId}
+              odakOdemeId={odakOdemeId}
+              odakNonce={odakNonce}
               detailTimelineEvents={detailTimelineEvents}
               factoryName={factoryName}
               kdvRates={kdvRates}
@@ -1241,9 +1321,7 @@ export const CustomerDetailModal = ({
           ) : (
             <Field label="Ödeme Satırları">
               <PaymentRowsEditor rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
-                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"}
-                kdvOrani={/Faturalı/.test(detailView?.faturali || "") ? getKdvRateForDate(paymentForm.tarih || today(), kdvRates) : 0}
-                onFaturaBedeli={detailView ? (mb => setCustomers(prev => prev.map(c => c.id === detailView.id ? { ...c, faturaBedeli: Math.round(mb), faturali: /Faturalı/.test(c.faturali || "") ? c.faturali : "Faturalı Yurtiçi" } : c))) : null} />
+                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} />
             </Field>
           )}
           <Field label="Not (isteğe bağlı)">

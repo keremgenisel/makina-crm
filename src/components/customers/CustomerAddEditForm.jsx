@@ -3,6 +3,7 @@ import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/consta
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
+import { kartYansitmaAyrim, makinaKartOdemesi } from "../../lib/krediKarti";
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
@@ -22,6 +23,26 @@ export const CustomerAddEditForm = ({
     && (modal === "add" || (modal?.edit && form.seriNoBekliyor && !modal.edit.serialNo));
   const { lockConflict: serialLock, forceAcquire: forceSerialLock } =
     useLock("stok-seri", isStockSerialPick ? `${form.model}::${form.serialNo}` : null);
+
+  // Kredi kartı + "komisyonu yansıt" (option B): komisyon da KDV matrahında. Bu makinada müşteriye yansıtılan
+  // toplam kart komisyonu (İlk Ödeme satırları + mevcut ödemeler) → hem üstteki Fatura Bedeli KDV kutusu hem
+  // Kalan Borç, KDV'yi (fatura + komisyon) üzerinden gösterir; alttaki kart kutusuyla birebir aynı olur.
+  const kkOran = calcKDV(form.faturali, 100, form.installDate, kdvRates); // uygulanan KDV oranı (0 = faturasız/yurtdışı)
+  const ilkKom = (form._ilkOdemeSatirlari || []).reduce((s, r) => {
+    if (r.yontem !== "Kredi Kartı" || !r.taksitSayisi || !r.kkYansit) return s;
+    const a = kartYansitmaAyrim(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, kkOran, form.installDate);
+    return s + (a ? a.komisyon : 0);
+  }, 0);
+  const mevcutKom = (payments || []).reduce((s, p) =>
+    s + (form.id && p.customerId === form.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
+  const faturaKdvEfektif = calcKDV(form.faturali, parseMoney(form.faturaBedeli) + ilkKom + mevcutKom, form.installDate, kdvRates);
+  const ilkBorcDusen = (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) =>
+    s + (r.yontem === "Kredi Kartı" && r.taksitSayisi
+      ? makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, form.installDate, !!r.kkYansit, kkOran).tutar
+      : parseMoney(r.tutar)), 0);
+  const kalanBorcGoster = modal === "add"
+    ? Math.max(0, Math.round(parseMoney(form.fabrikaSatisBedeli) + faturaKdvEfektif + parseMoney(form.komisyon) - ilkBorcDusen))
+    : calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates);
 
   // Seçilen stok makinanın kit parçalarından, "makinada seç" tipli her tip için bir parça
   // eşleştirir ve tipSecimleri haritasına doldurur. Kit'ten gelen tipler _kitTipler'e yazılır
@@ -372,8 +393,9 @@ export const CustomerAddEditForm = ({
             </div>
             {isYurtIci(form.faturali) && (
               <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
-                KDV (%{getKdvRateForDate(form.installDate, kdvRates)}): <b>{fmtCur(calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
-                {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + calcKDV(form.faturali, form.faturaBedeli, form.installDate, kdvRates), form.currency)}</b>
+                KDV (%{getKdvRateForDate(form.installDate, kdvRates)}): <b>{fmtCur(faturaKdvEfektif, form.currency)}</b>
+                {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + faturaKdvEfektif, form.currency)}</b>
+                {(ilkKom + mevcutKom) > 0 && <span style={{ fontWeight: 400, color: "var(--grn700, #15803d)" }}> · komisyon dahil matrah</span>}
               </div>
             )}
             <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>
@@ -391,9 +413,7 @@ export const CustomerAddEditForm = ({
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
-            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"}
-            kdvOrani={isFaturali(form.faturali) ? getKdvRateForDate(form.installDate, kdvRates) : 0}
-            onFaturaBedeli={mb => setForm(p => ({ ...p, faturaBedeli: Math.round(mb), faturali: isFaturali(p.faturali) ? p.faturali : "Faturalı Yurtiçi" }))} />
+            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} />
           <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
         </Field>
       ) : (
@@ -405,7 +425,7 @@ export const CustomerAddEditForm = ({
 
       <Field label="Kalan Borç">
         <div style={{ fontSize: 16, fontWeight: 800, color: "var(--red600, #dc2626)", padding: "9px 0" }}>
-          {fmtCur(Math.max(0, calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates) - (modal === "add" ? (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) => s + parseMoney(r.tutar), 0) : 0)), form.currency)}
+          {fmtCur(kalanBorcGoster, form.currency)}
         </div>
         <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
       </Field>

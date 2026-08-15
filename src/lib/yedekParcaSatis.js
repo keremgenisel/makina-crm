@@ -3,7 +3,7 @@
 import { uid, today, parseMoney, simdiYerel, totalMiktar, calcKDV } from "./utils";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { yerelServisEkle } from "./yerelServis";
-import { kartKomisyonuSnapshot } from "./krediKarti";
+import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 
 // Form → normalize + doğrula → { ok, rec } | { ok:false, hata }. Alıcı bayi VEYA müşteri olabilir.
 // ayar = krediKartiKomisyonlari (kredi kartı komisyon tablosu), kdvRates = KDV oran dönemleri —
@@ -23,6 +23,25 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   } else if (!musteriId) return { ok: false, hata: "Alıcı müşteri seçin." };
   if (!partId) return { ok: false, hata: "Yedek parça seçin." };
   if (!(miktar > 0)) return { ok: false, hata: "Miktar 0'dan büyük olmalı." };
+  // Kredi kartı: birimFiyat + komisyon snapshot. Komisyon müşteriye YANSITILDIYSA (kkYansit) birimFiyat
+  // KDV matrahına ((kalem+komisyon)/miktar) ölçeklenir → komisyon KDV matrahına girer ama ciroya girmez
+  // (Finance düşer). Yansıtılmadıysa birimFiyat = kalem, snapshot KDV dahil satış tutarı üzerinden (yansitildi=false).
+  const netBirim = parseMoney(form.birimFiyat);
+  const netBedel = netBirim * miktar;
+  const kkTarih = form.tarih || today();
+  const kkFatura = form.faturaTipi || "Faturalı Yurtiçi";
+  let birimFiyatSave = netBirim, kartKomisyonu = null;
+  if (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar) {
+    if (form.kkYansit && netBedel > 0) {
+      const kdvOran = calcKDV(kkFatura, 100, kkTarih, kdvRates); // uygulanan oran (Yurtdışı/Faturasız → 0)
+      const a = kartYansitmaAyrim(netBedel, form.taksitSayisi, ayar, kdvOran, kkTarih);
+      if (a) { birimFiyatSave = miktar > 0 ? a.kdvMatrah / miktar : a.kdvMatrah; kartKomisyonu = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, ayar, kkTarih, true); }
+    }
+    if (!kartKomisyonu) {
+      const kdvDahil = netBedel + calcKDV(kkFatura, netBedel, kkTarih, kdvRates);
+      kartKomisyonu = kartKomisyonuSnapshot(kdvDahil, form.taksitSayisi, ayar, kkTarih, false);
+    }
+  }
   return { ok: true, rec: {
     aliciTipi, dealerId, musteriId, partId, miktar,
     // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
@@ -30,21 +49,14 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     disFirmaAd: disFirma ? String(form.disFirmaAd || "").trim() : "", disFirmaYetkili: disFirma ? (form.disFirmaYetkili || "") : "",
     disFirmaTel: disFirma ? (form.disFirmaTel || "") : "", disFirmaAdres: disFirma ? (form.disFirmaAdres || "") : "",
     disFirmaUlke: disFirma ? (form.disFirmaUlke || "") : "", disFirmaSehir: disFirma ? (form.disFirmaSehir || "") : "",
-    birimFiyat: parseMoney(form.birimFiyat), currency: form.currency || "TRY",
+    birimFiyat: birimFiyatSave, currency: form.currency || "TRY",
     tarih: form.tarih || today(), faturaTipi: form.faturaTipi || "Faturalı Yurtiçi", odendi: !!form.odendi,
     // Ödeme yöntemi (makina satışıyla aynı). Çek ise vade + tahsil takibi; çek tahsil edilene kadar
     // borçlu sayılır (bkz. satisTahsilEdildi). Çek değilse çek alanları boşlanır.
     yontem: form.yontem || "Nakit", vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
     tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
-    // Kredi kartı: taksit sayısı + komisyon snapshot (KDV DAHİL satış tutarı üzerinden; yansitildi=false).
     taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
-    kartKomisyonu: (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar)
-      ? (() => {
-          const netTutar = parseMoney(form.birimFiyat) * (parseInt(form.miktar) || 0);
-          const kdvDahil = netTutar + calcKDV(form.faturaTipi || "Faturalı Yurtiçi", netTutar, form.tarih || today(), kdvRates);
-          return kartKomisyonuSnapshot(kdvDahil, form.taksitSayisi, ayar, form.tarih || today(), false);
-        })()
-      : null,
+    kartKomisyonu,
     // Servis ve Kargo Panosuna gönderme OPT-IN (formda checkbox). kargoDurum boşsa panoya düşmez;
     // checkbox işaretlenince "Hazırlanıyor" gelir. (Eskiden her satış zorunlu panoya düşüyordu.)
     kargoFirma: form.kargoFirma || "", kargoTakipNo: form.kargoTakipNo || "", kargoTarih: form.kargoTarih || "", kargoDurum: form.kargoDurum || "",

@@ -4,7 +4,8 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, pruneOrphans, dosyalarDir, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru } from "../electron/files.cjs";
+import { unzipSync, zipSync } from "fflate";
+import { uzanti, turKategori, izinliMi, optimizeEdilebilirResimMi, sanitizeAd, depoAdi, pruneOrphans, dosyalarDir, yedekKlasorYolu, yedekleDosyaKlasoru, geriYukleDosyaKlasoru, zipYedekOlustur, zipYedekOku, geriYukleDosyalar } from "../electron/files.cjs";
 
 describe("files yardımcıları", () => {
   it("uzanti son uzantıyı küçük harf verir", () => {
@@ -141,5 +142,95 @@ describe("files yardımcıları", () => {
     expect(geriYukleDosyaKlasoru(app4, jsonPath, null).adet).toBe(0);
 
     [tmpApp, tmpBk, tmpApp2].forEach(d => fs.rmSync(d, { recursive: true, force: true }));
+  });
+});
+
+describe("zip yedek — veri + dosyalar tek dosyada", () => {
+  const yeniApp = (etiket) => { const d = fs.mkdtempSync(path.join(os.tmpdir(), etiket)); return { getPath: () => d }; };
+
+  it("zipYedekOlustur: veri.json + dosyalar/<ad> içerir; geriYukleDosyalar dosyaları geri yazar", () => {
+    const app = yeniApp("crm-zip-");
+    fs.writeFileSync(path.join(dosyalarDir(app), "x-a.pdf"), "PDF-IÇERIK");
+    fs.writeFileSync(path.join(dosyalarDir(app), "x-b.jpg"), "JPG-IÇERIK");
+
+    const zipBuf = zipYedekOlustur(app, { customers: [{ id: 1 }], exportDate: "2026-08-15" });
+    const arsiv = unzipSync(new Uint8Array(zipBuf));
+    // veri.json parse olur, düz dosyalar dosyalar/ altında
+    expect(JSON.parse(Buffer.from(arsiv["veri.json"]).toString()).customers.length).toBe(1);
+    expect(arsiv["dosyalar/x-a.pdf"]).toBeTruthy();
+    expect(arsiv["dosyalar/x-b.jpg"]).toBeTruthy();
+
+    // Zip diske yazılıp okunur
+    const tmpBk = fs.mkdtempSync(path.join(os.tmpdir(), "crm-zipbk-"));
+    const zipPath = path.join(tmpBk, "altunmak-crm-yedek-2026-08-15.zip");
+    fs.writeFileSync(zipPath, zipBuf);
+    expect(zipYedekOku(zipPath).veri.exportDate).toBe("2026-08-15");
+
+    // Temiz bir hedefe geri yükle → içerik birebir korunur
+    const app2 = yeniApp("crm-ziprestore-");
+    const gr = geriYukleDosyalar(app2, zipPath);
+    expect(gr.adet).toBe(2);
+    expect(fs.readFileSync(path.join(dosyalarDir(app2), "x-a.pdf"), "utf-8")).toBe("PDF-IÇERIK");
+    expect(fs.readFileSync(path.join(dosyalarDir(app2), "x-b.jpg"), "utf-8")).toBe("JPG-IÇERIK");
+  });
+
+  it("zip: parola verilince dosyalar .enc olarak şifrelenir, doğru parolayla çözülür, yanlışta atlanır", () => {
+    const app = yeniApp("crm-zipenc-");
+    fs.writeFileSync(path.join(dosyalarDir(app), "gizli.pdf"), "SÖZLEŞME GİZLİ");
+    const zipBuf = zipYedekOlustur(app, { format: "altunmak-crm-encrypted" }, "parola123");
+    const arsiv = unzipSync(new Uint8Array(zipBuf));
+    expect(arsiv["dosyalar/gizli.pdf.enc"]).toBeTruthy();       // şifreli ad
+    expect(arsiv["dosyalar/gizli.pdf"]).toBeFalsy();            // düz kopya yok
+    expect(Buffer.from(arsiv["dosyalar/gizli.pdf.enc"]).toString()).not.toContain("SÖZLEŞME"); // düz metin sızmaz
+
+    const tmpBk = fs.mkdtempSync(path.join(os.tmpdir(), "crm-zipencbk-"));
+    const zipPath = path.join(tmpBk, "yedek.zip");
+    fs.writeFileSync(zipPath, zipBuf);
+
+    // Doğru parola → orijinal içerik
+    const app2 = yeniApp("crm-zipdec-");
+    expect(geriYukleDosyalar(app2, zipPath, "parola123").adet).toBe(1);
+    expect(fs.readFileSync(path.join(dosyalarDir(app2), "gizli.pdf"), "utf-8")).toBe("SÖZLEŞME GİZLİ");
+    // Yanlış parola → yazılmaz
+    const app3 = yeniApp("crm-zipwrong-");
+    expect(geriYukleDosyalar(app3, zipPath, "yanlis").adet).toBe(0);
+    expect(fs.existsSync(path.join(dosyalarDir(app3), "gizli.pdf"))).toBe(false);
+    // Parolasız şifreli dosya → atlanır
+    const app4 = yeniApp("crm-zipnopw-");
+    expect(geriYukleDosyalar(app4, zipPath, null).adet).toBe(0);
+  });
+
+  it("güvenlik: zip'teki beyaz liste dışı / yol taşan girdiler geri yüklemede atlanır", () => {
+    // Elle hazırlanmış kötü niyetli zip: .exe, dosyalar/ dışı ve alt-klasörlü girdiler
+    const kotuZip = Buffer.from(zipSync({
+      "veri.json": Buffer.from("{}"),
+      "dosyalar/Fatura.exe": Buffer.from("MZ"),          // beyaz liste dışı
+      "dosyalar/alt/derin.pdf": Buffer.from("x"),        // alt klasör (f.includes("/"))
+      "dosyalar/iyi.pdf": Buffer.from("TEMIZ"),           // yalnız bu yazılmalı
+      "gizli/kacak.pdf": Buffer.from("x"),               // dosyalar/ dışı → hiç bakılmaz
+    }));
+    const tmpBk = fs.mkdtempSync(path.join(os.tmpdir(), "crm-zipkotu-"));
+    const zipPath = path.join(tmpBk, "kotu.zip");
+    fs.writeFileSync(zipPath, kotuZip);
+
+    const app = yeniApp("crm-zipsav-");
+    const gr = geriYukleDosyalar(app, zipPath);
+    expect(gr.adet).toBe(1); // yalnız iyi.pdf
+    const dir = dosyalarDir(app);
+    expect(fs.existsSync(path.join(dir, "iyi.pdf"))).toBe(true);
+    expect(fs.existsSync(path.join(dir, "Fatura.exe"))).toBe(false);
+    expect(fs.readdirSync(dir)).toEqual(["iyi.pdf"]);
+  });
+
+  it("geriYukleDosyalar: .json yolu verilince eski komşu-klasör yedeğini kullanır (geriye uyum)", () => {
+    const app = yeniApp("crm-eski-");
+    const tmpBk = fs.mkdtempSync(path.join(os.tmpdir(), "crm-eskibk-"));
+    const jsonPath = path.join(tmpBk, "eski-yedek.json");
+    // Eski tip yedek: JSON + yanında -dosyalar klasörü
+    fs.mkdirSync(yedekKlasorYolu(jsonPath), { recursive: true });
+    fs.writeFileSync(path.join(yedekKlasorYolu(jsonPath), "eski.pdf"), "ESKI");
+    const gr = geriYukleDosyalar(app, jsonPath);
+    expect(gr.adet).toBe(1);
+    expect(fs.readFileSync(path.join(dosyalarDir(app), "eski.pdf"), "utf-8")).toBe("ESKI");
   });
 });

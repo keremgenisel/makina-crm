@@ -86,6 +86,27 @@ describe("yedekParcaRec (doğrulama + normalize)", () => {
   });
 });
 
+describe("yedekParcaRec — kredi kartı komisyonu yansıtma (düzenlemede kalem geri çıkar)", () => {
+  const AYAR = { bsmv: 5, satirlar: [{ taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] };
+  const KDV = { "2020-01-01": 20 };
+  it("yansıt: birimFiyat=matrah/miktar saklanır, yansitildi=true; (matrah − komisyon)/miktar = girilen kalem", () => {
+    const miktar = 5, kalemBirim = 2000; // kalem toplam 10.000
+    const rec = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: String(miktar), birimFiyat: kalemBirim,
+      currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-08-12", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 3, kkYansit: true }, AYAR, KDV).rec;
+    expect(rec.kartKomisyonu.yansitildi).toBe(true);                 // düzenlemede kutu seçili gelmeli
+    expect(rec.birimFiyat).toBeGreaterThan(kalemBirim);              // matrah/miktar > kalem (komisyon eklendi)
+    const matrahToplam = miktar * rec.birimFiyat;
+    const kalemGeri = (matrahToplam - rec.kartKomisyonu.toplamKesinti) / miktar;
+    expect(kalemGeri).toBeCloseTo(kalemBirim, 0);                    // fiyat kalem'e döner (değişmez)
+  });
+  it("yansıt yok: birimFiyat = kalem (değişmez), yansitildi=false", () => {
+    const rec = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "2", birimFiyat: 3000,
+      currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-08-12", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 3, kkYansit: false }, AYAR, KDV).rec;
+    expect(rec.birimFiyat).toBe(3000);
+    expect(rec.kartKomisyonu.yansitildi).toBe(false);
+  });
+});
+
 describe("yeniYedekParcaSatis (oluştur + stok düş)", () => {
   it("satış kaydı ekler (tahsisler boş) ve parçayı stoktan düşer", () => {
     setIdCounter(2000);

@@ -42,6 +42,29 @@ describe("deriveCustomerDetail", () => {
     expect(r.detailModelInfo).toBeUndefined(); // models boş → find() undefined
   });
 
+  it("kredi kartı komisyonu müşteriye yansıtılmış makina ödemesinde üçlü kırılım gösterir", () => {
+    const detailView = { id: 1, name: "Firma A", installDate: "2026-01-01", faturali: "Faturalı Yurtiçi", currency: "TRY", kaliplar: [] };
+    // Makina KK ödemesi: saklanan tutar = mal + KDV (borca sayılan); komisyon = kartKomisyonu.toplamKesinti; çekilen kart = tutar + komisyon
+    const payments = [{ id: 30, customerId: 1, tarih: "2026-02-01", tutar: 122117, currency: "TRY", yontem: "Kredi Kartı",
+      kartKomisyonu: { toplamKesinti: 8000, yansitildi: true } }];
+    const r = deriveCustomerDetail(base({ detailView, payments }));
+    const odeme = r.detailTimelineEvents.find(e => e.kind === "payment");
+    expect(odeme.desc).toContain("Ödeme:");
+    expect(odeme.desc).toContain("Komisyon:");
+    expect(odeme.desc).toContain("Çekilen kart:");
+    expect(odeme.desc).not.toMatch(/^₺122\.117 · Kredi Kartı/); // eski düz "tutar · yöntem" değil
+  });
+
+  it("yansıt olmayan (nakit/normal) ödemede eski düz tutar gösterimi korunur", () => {
+    const detailView = { id: 1, name: "Firma A", installDate: "2026-01-01", faturali: "Faturalı Yurtiçi", currency: "TRY", kaliplar: [] };
+    const payments = [{ id: 31, customerId: 1, tarih: "2026-02-01", tutar: 5000, currency: "TRY", yontem: "Nakit" }];
+    const r = deriveCustomerDetail(base({ detailView, payments }));
+    const odeme = r.detailTimelineEvents.find(e => e.kind === "payment");
+    expect(odeme.desc).not.toContain("Çekilen kart:");
+    expect(odeme.desc).not.toContain("Nakit"); // yöntem artık pil (badge) olarak gösterilir, desc'te değil
+    expect(odeme.payment.yontem).toBe("Nakit");
+  });
+
   it("başka müşterinin kayıtlarını dahil etmez", () => {
     const detailView = { id: 1, name: "A", currency: "TRY" };
     const services = [{ id: 10, customerId: 999, type: "Garanti İçi", date: "2026-02-01" }];

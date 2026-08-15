@@ -2,7 +2,7 @@ import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize, parseMoney } from "../lib/utils";
-import { KartTaksitAlani } from "./KartTaksitAlani";
+import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -203,7 +203,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, kdvOrani = 0, currency = "TRY", onFaturaBedeli = null }) => {
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0 }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -225,11 +225,16 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
               style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
           </div>
           {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
-            <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar)} currency={currency} kdvOrani={kdvOrani}
-              taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
-              yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })}
-              hedefNet={r.kkHedefNet ?? ""} setHedefNet={v => satirGuncelle(i, { kkHedefNet: v })}
-              onUygula={(kart, malBedeli) => { satirGuncelle(i, { tutar: Math.round(kart) }); onFaturaBedeli?.(malBedeli); }} />
+            <>
+              <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}
+                taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
+                yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })} />
+              {r.kkYansit && parseMoney(r.tutar) > 0 && (
+                // Girilen tutar KDV HARİÇ mal bedeli → faturalıda karta KDV + komisyon eklenir (Extra Kalıp gibi).
+                <KartYansitmaOzeti netTaban={parseMoney(r.tutar)} taksit={r.taksitSayisi} ayar={krediKartiKomisyonlari}
+                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" />
+              )}
+            </>
           )}
         </div>
       ))}
@@ -335,6 +340,17 @@ export const Btn = ({ children, onClick, variant = "primary", small, disabled, t
 
 // Ataş rozeti: bir kayda (servis/kalıp/parça/ödeme) bağlı dosya varsa 📎 + adet; tıklayınca o
 // kaydın dosyaları açılır. Müşteri makina geçmişi ve anlaşmalı servis servis kartları paylaşır.
+// Küçük ikon+metin buton stilleri (Makina Geçmişi'ndeki Yazdır/Sil ile birebir) — modal içindeki
+// tüm aksiyon bölümleri (görüşmeler, dosyalar, timeline) tek görünümü paylaşsın diye ortak.
+const SOFT_BTN_STYLE = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 9px", background: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", border: "1px solid var(--n200, #e2e8f0)" };
+const DANGER_BTN_STYLE = { ...SOFT_BTN_STYLE, background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", border: "1px solid var(--redBr, #fecaca)" };
+export const SoftBtn = ({ children, onClick, disabled, title }) => (
+  <button onClick={onClick} disabled={disabled} title={title} style={{ ...SOFT_BTN_STYLE, opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer" }}>{children}</button>
+);
+export const DangerBtn = ({ children, onClick, disabled, title }) => (
+  <button onClick={onClick} disabled={disabled} title={title} style={{ ...DANGER_BTN_STYLE, opacity: disabled ? 0.5 : 1, cursor: disabled ? "default" : "pointer" }}>{children}</button>
+);
+
 export const AtesRozeti = ({ n, onClick }) => n > 0 ? (
   <button onClick={onClick} title="Bu kayda ait dosyalar"
     style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 7px", cursor: "pointer" }}>
