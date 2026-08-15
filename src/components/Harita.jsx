@@ -267,7 +267,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
         {!seciliUlke ? (
           <>
-            <StatCard label="Satış Yapılan Ülke" value={toplam.ulke} color="#e85d1a"
+            <StatCard label="Satış Yapılan Ülke" value={toplam.ulke} color="var(--brand, #e85d1a)"
               sub={toplam.enCok ? `En çok: ${toplam.enCok} (${ozet[toplam.enCok].makina})` : ""} />
             <StatCard label="Satış Yapılan Şehir" value={toplam.sehir} sub="Toplam" color="var(--blu500, #3b82f6)" />
             <StatCard label="Toplam Makina" value={toplam.makina} sub="Tüm dünya" color="#8b5cf6" />
@@ -302,7 +302,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
                         yalnız pin türleri gösterilir. Satış = nötr konum pini. */}
                     <div className="pin-lej solo">
                       <span><i style={{ background: "var(--n900, #0f172a)" }} />Satış</span>
-                      <span><i style={{ background: "#e85d1a" }} />Fabrika</span>
+                      <span><i style={{ background: "var(--brand, #e85d1a)" }} />Fabrika</span>
                       <span><i style={{ background: "#2563eb" }} />Bayi</span>
                       <span><i style={{ background: "#16a34a" }} />Servis</span>
                       {/* Hem bayi hem anlaşmalı servis: pin yarı mavi yarı yeşil */}
@@ -368,7 +368,7 @@ const IlKartlari = ({ il, veri, toplamMakina }) => {
   const enCok = Object.entries(veri.ilceler).sort((a, b) => b[1] - a[1])[0];
   return (
     <>
-      <StatCard label="İl" value={il} sub={`${Object.keys(veri.ilceler).length} ilçede satış var`} color="#e85d1a" />
+      <StatCard label="İl" value={il} sub={`${Object.keys(veri.ilceler).length} ilçede satış var`} color="var(--brand, #e85d1a)" />
       <StatCard label="Makina" value={makina} color="#8b5cf6"
         sub={toplamMakina ? `Payı: %${Math.round((makina / toplamMakina) * 100)}` : ""} />
       <StatCard label="Satış Yapılan İlçe" value={Object.keys(veri.ilceler).length} color="var(--blu500, #3b82f6)"
@@ -416,7 +416,7 @@ const UlkeKartlari = ({ ulke, ozet, toplamMakina, modul }) => {
   const bolgeSayisi = modul ? Object.keys(bolgeToplami(v.sehirler, modul.SEHIR).bolgeler).length : 0;
   return (
     <>
-      <StatCard label="Ülke" value={ulke} sub={modul ? `${bolgeSayisi} bölgede satış var` : "yükleniyor…"} color="#e85d1a" />
+      <StatCard label="Ülke" value={ulke} sub={modul ? `${bolgeSayisi} bölgede satış var` : "yükleniyor…"} color="var(--brand, #e85d1a)" />
       <StatCard label="Makina" value={v.makina} color="#8b5cf6"
         sub={toplamMakina ? `Payı: %${Math.round((v.makina / toplamMakina) * 100)}` : ""} />
       <StatCard label="Firma" value={v.firma} sub="Bu ülkede" color="var(--grn600, #16a34a)" />

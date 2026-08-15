@@ -437,8 +437,8 @@ export const Customers = ({
           <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
             style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: listFilter === f.v ? "#e85d1a" : "var(--n200, #e2e8f0)",
-              background: listFilter === f.v ? "#e85d1a" : "var(--surface, #ffffff)",
+              border: "1px solid", borderColor: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
+              background: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
               color: listFilter === f.v ? "#fff" : "var(--n500, #64748b)",
             }}>
             {f.l} ({f.count})
@@ -484,7 +484,7 @@ export const Customers = ({
                 { h: "", key: null },
               ].map(({ h, key }) => (
                 <th key={h || "actions"} onClick={key ? () => toggleSort(key) : undefined}
-                  style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: sortBy === key ? "#e85d1a" : "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
+                  style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: sortBy === key ? "var(--brand, #e85d1a)" : "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
                   {h}{key && sortBy === key && <span style={{ fontSize: 10, marginLeft: 4 }}>{sortDir === "asc" ? "▲" : "▼"}</span>}
                 </th>
               ))}
@@ -514,7 +514,7 @@ export const Customers = ({
                       <>
                         <div style={{ fontWeight: 600, fontSize: 13, color: "var(--red600, #dc2626)", textDecoration: "line-through", opacity: .85 }}>{c.prevOwners[0].name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--emerald, #059669)", textDecoration: "underline", textDecorationColor: "#a7f3d0" }}>{c.name}</span>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--emerald, #059669)", textDecoration: "underline", textDecorationColor: "var(--grnBr2, #6ee7b7)" }}>{c.name}</span>
                           {isCustomer && firmCount[trLower(c.name)] > 1 && (
                             <span style={{ fontSize: 10, fontWeight: 800, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px" }}>{firmCount[trLower(c.name)]} makina</span>
                           )}

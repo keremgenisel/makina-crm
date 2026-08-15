@@ -217,7 +217,7 @@ export const YedekParcaSatisTab = ({
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 220 }}>
             {!grupIci && (
-              <div style={{ fontSize: 14, fontWeight: 750, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 7 }}>
                 {aliciAd(s, dealers, customers)}
                 {(() => { const r = aliciRozet(s); return (
                   <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .3, borderRadius: 5, padding: "2px 6px", background: r.bg, color: r.color }}>{r.label}</span>
@@ -249,7 +249,7 @@ export const YedekParcaSatisTab = ({
                 <span>🔗 <strong>{t.miktar} adet</strong> → {custMap[t.customerId]?.name || t.makinaSerbest || "(makina)"}{custMap[t.customerId]?.serialNo ? ` · S/N ${custMap[t.customerId].serialNo}` : t.serialNo ? ` · S/N ${t.serialNo}` : ""}</span>
                 {canDoStock("yedek_parca_edit") && (
                   <button onClick={() => tahsisSil(s.id, i)} title="Tahsisi kaldır"
-                    style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", fontSize: 12 }}>✕</button>
+                    style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}><Icon name="close" size={15} /></button>
                 )}
               </div>
             ))}
@@ -258,7 +258,7 @@ export const YedekParcaSatisTab = ({
 
         <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           {canDoStock("yedek_parca_edit") && kalan > 0 && (
-            <button onClick={() => setTahsisSv(s)} style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "5px 11px" }}>
+            <button onClick={() => setTahsisSv(s)} style={{ fontSize: 12, fontWeight: 600, color: "var(--brand, #e85d1a)", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "5px 11px" }}>
               🔗 Makinaya tahsis et ({kalan} kaldı)
             </button>
           )}
@@ -282,7 +282,7 @@ export const YedekParcaSatisTab = ({
       <div key={g.key} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, background: "var(--surface, #fff)", overflow: "hidden" }}>
         <button onClick={() => toggleAcik(g.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", textAlign: "left", flexWrap: "wrap" }}>
           <span style={{ color: "var(--n400, #94a3b8)", fontSize: 13, width: 12, flexShrink: 0 }}>{acikMi ? "▾" : "▸"}</span>
-          <span style={{ fontSize: 14.5, fontWeight: 750, color: "var(--n900, #0f172a)" }}>{g.ad}</span>
+          <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{g.ad}</span>
           <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .3, borderRadius: 5, padding: "2px 6px", background: g.rozet.bg, color: g.rozet.color }}>{g.rozet.label}</span>
           <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{g.records.length} satış · {g.adet} adet · {curOzet(g.tutarCur) || "—"}</span>
@@ -306,8 +306,8 @@ export const YedekParcaSatisTab = ({
         {[["hepsi", `Tümü (${yedekParcaSatislar.length})`], ["eksik", `Tahsisi eksik (${eksikSayi})`]].map(([v, l]) => (
           <button key={v} onClick={() => setFiltre(v)} style={{
             padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-            border: `1px solid ${filtre === v ? "#e85d1a" : "var(--n200, #e2e8f0)"}`,
-            background: filtre === v ? "#e85d1a" : "transparent", color: filtre === v ? "#fff" : "var(--n500, #64748b)",
+            border: `1px solid ${filtre === v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`,
+            background: filtre === v ? "var(--brand, #e85d1a)" : "transparent", color: filtre === v ? "#fff" : "var(--n500, #64748b)",
           }}>{l}</button>
         ))}
         <div style={{ position: "relative", flex: "1 1 220px", minWidth: 180, maxWidth: 340 }}>

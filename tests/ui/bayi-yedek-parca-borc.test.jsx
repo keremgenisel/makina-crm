@@ -88,15 +88,16 @@ describe("SimpleDealers — Sattığı Extra Kalıplar", () => {
     const partSales = [{ id: 800, tur: "Kalıp", satisFirma: "Bayi X", customerId: 100, ad: "Adana Kalıbı", olcu: "55x125", ucret: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-07-05", odendi: false }];
     render(<SimpleDealers {...baseProps([])} customers={customers} partSales={partSales} />);
     expect(screen.getByText(/Sattığı Extra Kalıplar \(1\)/)).toBeTruthy();
-    expect(screen.getByText(/Adana Kalıbı/)).toBeTruthy();
-    expect(screen.getByText("Müşteri Y")).toBeTruthy();
+    // Ödenmemiş olduğundan hem "Sattığı Extra Kalıplar"da hem de borç kutusunda görünür (>=1)
+    expect(screen.getAllByText(/Adana Kalıbı/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Müşteri Y").length).toBeGreaterThan(0);
   });
 
   it("kalıp kartına tıklayınca onGoCustomerDetail alıcı müşterinin id'siyle çağrılır", () => {
     const onGoCustomerDetail = vi.fn();
     const partSales = [{ id: 800, tur: "Kalıp", satisFirma: "Bayi X", customerId: 100, ad: "Adana Kalıbı", ucret: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-07-05", odendi: false }];
     render(<SimpleDealers {...baseProps([])} customers={customers} partSales={partSales} onGoCustomerDetail={onGoCustomerDetail} />);
-    fireEvent.click(screen.getByText(/Adana Kalıbı/).closest('[title="Müşteri detayını aç"]'));
+    fireEvent.click(screen.getAllByText(/Adana Kalıbı/)[0].closest('[title="Müşteri detayını aç"]'));
     expect(onGoCustomerDetail).toHaveBeenCalledWith(100);
   });
 

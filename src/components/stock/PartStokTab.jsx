@@ -46,7 +46,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
 
   const rowBg = (miktar) => {
     if (miktar === 0) return "var(--redBg, #fef2f2)";
-    if (miktar <= 5)  return "#fefce8";
+    if (miktar <= 5)  return "var(--ambBg2, #fef3c7)";
     return undefined;
   };
   const rowColor = (miktar) => {
@@ -56,7 +56,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
   };
   const cardAccent = (miktar) => {
     if (miktar === 0) return { border: "var(--redBr, #fecaca)", bg: "var(--redBg, #fef2f2)", numColor: "var(--red800, #991b1b)" };
-    if (miktar <= 5)  return { border: "var(--ambBr, #fde68a)", bg: "#fefce8", numColor: "var(--amb800, #92400e)" };
+    if (miktar <= 5)  return { border: "var(--ambBr, #fde68a)", bg: "var(--ambBg2, #fef3c7)", numColor: "var(--amb800, #92400e)" };
     return { border: "var(--grnBr, #bbf7d0)", bg: "var(--grnBg, #f0fdf4)", numColor: "var(--grn700, #15803d)" };
   };
 
@@ -137,7 +137,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
             </div>
           )}
           {dusukSayisi > 0 && (
-            <div style={{ background: "#fefce8", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--amb800, #92400e)", fontWeight: 600 }}>
+            <div style={{ background: "var(--ambBg2, #fef3c7)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--amb800, #92400e)", fontWeight: 600 }}>
               {dusukSayisi} parçada stok azaldı (5 veya altı)
             </div>
           )}
@@ -287,7 +287,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "10px 14px", background: "var(--n100, #f8fafc)", borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", cursor: "pointer" }}
                     onClick={() => togglePin(form.partId)}>
-                    <span style={{ fontSize: 18, color: isPinned ? "#e85d1a" : "var(--n400, #94a3b8)" }}>{isPinned ? "★" : "☆"}</span>
+                    <span style={{ fontSize: 18, color: isPinned ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)" }}>{isPinned ? "★" : "☆"}</span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n900, #0f172a)" }}>{isPinned ? "Dashboarddan Çıkar" : "Dashboarda Ekle"}</div>
                       <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Bu parça dashboard kartlarında {isPinned ? "görünüyor" : "görünmüyor"}</div>

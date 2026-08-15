@@ -349,7 +349,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   };
 
   const FileUploadBtn = ({ onFile, label = "Excel / CSV Yükle" }) => (
-    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "#e85d1a", color: "#fff" }}>
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "var(--brand, #e85d1a)", color: "#fff" }}>
       <Icon name="plus" size={14} /> {label}
       <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
         onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); e.target.value = ""; }} />

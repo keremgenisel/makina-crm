@@ -69,6 +69,8 @@ const TOKENS = [
   ["ambBg4", "#fff7f3", "#2e2013"],  // üretim formu seçili model satırı
   ["ambBr3", "#fed7aa", "#5a4522"],  // turuncu-tint kenarlık
   ["orTx", "#c2410c", "#ff9d5c"],    // koyu-turuncu metin → karanlıkta açık turuncu
+  ["brand", "#e85d1a", "#ff9d5c"],   // MARKA turuncusu (buton/tab/vurgu/accent) → karanlıkta açık turuncu.
+  // Not: kenar çubuğu aktif vurgusu bilerek her iki temada da #e85d1a kalır (App.jsx sidebar), brand'e bağlı DEĞİL.
   // Üretim tablosu: koyu başlıklar HER İKİ temada koyu kalmalı (metin beyaz), satırlar temayla koyulaşmalı
   ["tblGroup", "#1e293b", "#322a20"], // grup başlığı (müşteri-makina)
   ["tblHead", "#334155", "#3d3428"],  // sütun başlığı
@@ -78,6 +80,7 @@ const TOKENS = [
   ["warnBg", "#fef9c3", "#322610"], ["warnBr", "#fde047", "#6b551a"], ["warnTx", "#854d0e", "#f6c453"],
   ["purBg", "#f5f3ff", "#241a33"], ["purTx", "#7c3aed", "#b794f6"],
   ["teal", "#0d9488", "#2dd4bf"], ["cyan", "#0891b2", "#38bdf8"], ["emerald", "#059669", "#34d399"],
+  ["tealBg", "#f0fdfa", "#12241f"], ["tealBr", "#99f6e4", "#2f5a4f"], ["cyanBg", "#ecfeff", "#10262e"], // teal/cyan tint zeminleri (rozet arka planı)
   ["emerald2", "#047857", "#34d399"], ["teal2", "#0f766e", "#2dd4bf"], ["blue2", "#0369a1", "#60a5fa"],
   ["stoneInk", "#1c1917", "#f0eae2"], ["stone", "#78716c", "#a89a8c"],
   ["warmBr", "#fde8d2", "#3a2f22"],  // sıcak açık ayraç kenarlığı

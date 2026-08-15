@@ -330,7 +330,7 @@ export function UretimFormu({
             </Btn>
           ) : (
             <Btn small variant="ghost" onClick={() => setForm(f => ({ ...f, kapali: false }))}
-              style={{ color: "var(--grn800, #065f46)", borderColor: "#a7f3d0", background: "#ecfdf5" }}>
+              style={{ color: "var(--grn800, #065f46)", borderColor: "var(--grnBr2, #6ee7b7)", background: "var(--grnBg, #f0fdf4)" }}>
               Dönemi Yeniden Aç
             </Btn>
           )}
@@ -440,8 +440,8 @@ export function UretimFormu({
                       </td>
                       <td style={{ ...tdSt, textAlign: "center" }}>
                         <button onClick={() => deleteRow(r.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red500, #ef4444)", fontSize: 17, padding: 2, lineHeight: 1 }}>
-                          ×
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red500, #ef4444)", padding: 2, lineHeight: 1 }}>
+                          <Icon name="trash" size={15} />
                         </button>
                       </td>
                     </tr>

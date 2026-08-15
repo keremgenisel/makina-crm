@@ -143,11 +143,11 @@ export const CustomerAddEditForm = ({
               <div
                 key={m.model}
                 onClick={() => { setForm(p => ({ ...p, model: m.model })); setModelPicker(false); }}
-                style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "#e85d1a" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
+                style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
               >
                 <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}</div>
                 <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 2 }}>{m.sogutma}</div>
-                <div style={{ fontSize: 11, color: "#e85d1a", fontWeight: 600 }}>{m.kapasite}</div>
+                <div style={{ fontSize: 11, color: "var(--brand, #e85d1a)", fontWeight: 600 }}>{m.kapasite}</div>
                 <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Ø {m.kalip}</div>
               </div>
             ))}
@@ -206,7 +206,7 @@ export const CustomerAddEditForm = ({
               <Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="AK140-2026-001" autoFocus={form._manualSerial} />
               {(modal === "add" || isSerialPendingEdit) && form._manualSerial && stockForModel.length > 0 && (
                 <button onClick={() => setForm(p => ({ ...p, _manualSerial: false, serialNo: "" }))}
-                  style={{ marginTop: 5, fontSize: 11, color: "#e85d1a", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
+                  style={{ marginTop: 5, fontSize: 11, color: "var(--brand, #e85d1a)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                   Stoktan seçime dön
                 </button>
               )}
@@ -267,7 +267,7 @@ export const CustomerAddEditForm = ({
                   arr[i] = { ...arr[i], uretimFormGonder: e.target.checked };
                   return { ...p, kaliplar: arr };
                 })}
-                style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               Üretim formuna gönder
             </label>
             <button type="button" title="Bu kalıbı sil"
@@ -275,7 +275,7 @@ export const CustomerAddEditForm = ({
                 const arr = (p.kaliplar || []).filter((_, idx) => idx !== i);
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
               })}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}><Icon name="trash" size={15} /></button>
           </div>
         ))}
         <button type="button"
@@ -283,7 +283,7 @@ export const CustomerAddEditForm = ({
             const arr = [...(p.kaliplar || []), { ad: "", olcu: "", uretimFormGonder: false }];
             return { ...p, kaliplar: arr, kalipSayisi: arr.length };
           })}
-          style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "var(--ambBg3, #fff7ed)", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", color: "var(--brand, #e85d1a)", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
           + Kalıp Ekle
         </button>
       </Field>
@@ -447,7 +447,7 @@ export const CustomerAddEditForm = ({
             {r.odemeId
               ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "3px 8px", borderRadius: 6 }}>✓ Ödendi</span>
               : <button type="button" onClick={() => setForm(p => ({ ...p, odemePlani: p.odemePlani.filter((_, xi) => xi !== i) }))}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }} title="Taksiti sil">🗑</button>}
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }} title="Taksiti sil"><Icon name="trash" size={15} /></button>}
           </div>
         ))}
         <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, odemePlani: [...(p.odemePlani || []), { id: Date.now() + Math.random(), vadeTarihi: "", tutar: "", odemeId: null }] }))}>

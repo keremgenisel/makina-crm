@@ -40,7 +40,7 @@ export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, set
         {setYansit && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--n700, #334155)", paddingBottom: 4 }}>
             <input type="checkbox" checked={!!yansit} onChange={e => setYansit(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a", flexShrink: 0 }} />
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)", flexShrink: 0 }} />
             <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
               <b>Komisyonu müşteriye yansıt</b>
               <span style={{ fontSize: 11.5, fontWeight: 400, color: "var(--n500, #64748b)" }}>Elinize geçecek net tutarı girin, çekilecek kart tutarı otomatik hesaplansın</span>
@@ -91,7 +91,7 @@ export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, cu
   );
   return (
     <div style={{ marginTop: 8, border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 10, overflow: "hidden", background: "var(--surface, #fff)" }}>
-      <div style={{ padding: "8px 13px", fontSize: 11.5, fontWeight: 750, color: "var(--amb800, #92400e)", background: "var(--ambBg3, #fff7ed)", borderBottom: "1px solid var(--n200,#e2e8f0)", textTransform: "uppercase", letterSpacing: ".03em" }}>💳 Komisyon müşteriye yansıtıldı</div>
+      <div style={{ padding: "8px 13px", fontSize: 11.5, fontWeight: 800, color: "var(--amb800, #92400e)", background: "var(--ambBg3, #fff7ed)", borderBottom: "1px solid var(--n200,#e2e8f0)", textTransform: "uppercase", letterSpacing: ".03em" }}>💳 Komisyon müşteriye yansıtıldı</div>
       {sat(satisLabel, a.satis, { color: "var(--grn800,#065f46)", style: { fontWeight: 600 } })}
       {sat("Kredi kartı komisyonu (bankaya)", a.komisyon, { plus: true, color: "var(--red700,#b91c1c)" })}
       {kdvOrani > 0 && sat(`KDV matrahı (kalem + komisyon)`, a.kdvMatrah, { color: "var(--n500,#64748b)", style: { fontSize: 12 } })}

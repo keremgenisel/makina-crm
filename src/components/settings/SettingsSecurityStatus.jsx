@@ -227,7 +227,7 @@ export function SettingsSecurityStatus() {
               {ONERILER.map((o, i) => (
                 <div key={i} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#e85d1a", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--brand, #e85d1a)", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{o.baslik}</span>
                     {o.kritik && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--red800, #991b1b)", background: "var(--redBg2, #fee2e2)", borderRadius: 6, padding: "2px 7px" }}>EN YÜKSEK ETKİ</span>}
                   </div>

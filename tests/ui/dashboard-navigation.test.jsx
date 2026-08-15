@@ -2,10 +2,11 @@
 // Anasayfa "Son Satışlar / Son Servisler" satırları menü aramasıyla AYNI davranmalı: tıklayınca
 // ilgili kayda gider — servis/kalıp müşteri detayında highlight (odak), yedek parça Stok'taki satışa.
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 
 afterEach(cleanup);
 import { Dashboard } from "../../src/components/Dashboard";
+import { fmtCur } from "../../src/lib/utils";
 
 const ortak = { dealers: [], stock: [], payments: [], rates: null, teklifler: [] };
 
@@ -41,17 +42,79 @@ describe("Borçlu Firmalar / Bayi modalı — tip pili + highlight", () => {
     expect(onGoCustomerDetail).toHaveBeenCalledWith(1, { taksitId: 77 });
   });
 
-  it("Borçlu Firmalar müşteri: kredi kartı kalemi TUTARLA gösterilir ve tıklayınca ödeme odağıyla gider", () => {
+  it("Borçlu Firmalar müşteri: kredi kartı müşteri modeli gibi kırılır (bloke → hesaba geçiş + komisyon + taksit) ve base pil tıklanınca ödeme odağıyla gider", () => {
     const onGoCustomerDetail = vi.fn();
     const gelecek = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const customers = [{ id: 1, name: "Test Müşteri", kalanBorc: 10000, currency: "TRY" }];
-    const payments = [{ id: 60, customerId: 1, yontem: "Kredi Kartı", tutar: 8000, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 200, netTutar: 7800 } }];
+    const payments = [{ id: 60, customerId: 1, yontem: "Kredi Kartı", tutar: 8000, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 200, netTutar: 7800, taksit: 3, yansitildi: true } }];
     render(<Dashboard {...ortak} customers={customers} services={[]} partSales={[]} yedekParcaSatislar={[]} payments={payments} onGoCustomerDetail={onGoCustomerDetail} />);
     fireEvent.click(screen.getByText("Borçlu Firma"));
-    const pil = screen.getByText(/^Kredi Kartı: /);          // tutar yazılı (ücret görünüyor)
-    expect(pil).toBeTruthy();
-    fireEvent.click(pil);
+    // Kırılım pilleri: bloke tutar → hesaba geçiş, komisyon, taksit
+    expect(screen.getByText(/^Bloke: /)).toBeTruthy();
+    expect(screen.getByText(/^Komisyon: /)).toBeTruthy();
+    expect(screen.getByText(/taksit$/)).toBeTruthy();
+    // Artık base pil tutar TAŞIMAZ ("Kredi Kartı: ₺..." kalktı) — tutar detay pillerinde
+    expect(screen.queryByText(/^Kredi Kartı: /)).toBeNull();
+    // Base "Kredi Kartı" pili tıklanınca ödeme odağıyla gider
+    fireEvent.click(screen.getByTitle("Kredi Kartı — kayda git"));
     expect(onGoCustomerDetail).toHaveBeenCalledWith(1, { odemeId: 60 });
+  });
+
+  it("Borçlu Firmalar servis (Kredi Kartı yansıtıldı): komisyon fiyattan AYRILIR — net Servis/Parça + ayrı Komisyon pili", () => {
+    const gelecek = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const customers = [{ id: 1, name: "Test Müşteri" }];
+    // stored servisUcreti+parcaUcreti komisyon DAHİL (5000+5000=10000), yansıtılan komisyon 200 →
+    // net her biri: 5000 − 200·5000/10000 = 4900. Komisyon ayrı pilde 200.
+    const services = [{ id: 10, customerId: 1, type: "Garanti Dışı", date: "2026-08-12", servisUcreti: 5000, parcaUcreti: 5000, parcaUcretsizMi: false, currency: "TRY", odendi: true, yontem: "Kredi Kartı", faturaTipi: "Faturalı Yurtiçi", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 200, netTutar: 9800, taksit: 2, yansitildi: true } }];
+    render(<Dashboard {...ortak} customers={customers} services={services} partSales={[]} yedekParcaSatislar={[]} onGoCustomerDetail={vi.fn()} />);
+    fireEvent.click(screen.getByText("Borçlu Firma"));
+    expect(screen.getByText(`Servis: ${fmtCur(4900, "TRY")}`)).toBeTruthy();  // net (komisyonsuz)
+    expect(screen.getByText(`Parça: ${fmtCur(4900, "TRY")}`)).toBeTruthy();
+    expect(screen.getByText(`Komisyon: ${fmtCur(200, "TRY")}`)).toBeTruthy(); // komisyon AYRI
+    expect(screen.getByText(`KDV: ${fmtCur(2000, "TRY")}`)).toBeTruthy();     // faturalı yurtiçi → KDV (10000×%20) AYRI pil
+    expect(screen.queryByText(`Parça: ${fmtCur(5000, "TRY")}`)).toBeNull();   // brüt (komisyon dahil) fiyat gösterilmez
+  });
+
+  it("Borçlu Firmalar servis: FATURASIZ satışta KDV pili GÖSTERİLMEZ", () => {
+    const customers = [{ id: 1, name: "Test Müşteri" }];
+    const services = [{ id: 10, customerId: 1, type: "Garanti Dışı", date: "2026-08-12", servisUcreti: 1000, currency: "TRY", odendi: false, yontem: "Nakit", faturaTipi: "Faturasız Yurtiçi" }];
+    render(<Dashboard {...ortak} customers={customers} services={services} partSales={[]} yedekParcaSatislar={[]} onGoCustomerDetail={vi.fn()} />);
+    fireEvent.click(screen.getByText("Borçlu Firma"));
+    expect(screen.getByText(`Servis: ${fmtCur(1000, "TRY")}`)).toBeTruthy();
+    expect(screen.queryByText(/^KDV: /)).toBeNull();
+  });
+
+  it("Borçlu Bayi/Servis: bayinin yedek parça (kargo) VE sattığı Extra Kalıp borçları da görünür", () => {
+    const onGoCustomerDetail = vi.fn();
+    const onGoYedekParca = vi.fn();
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const customers = [{ id: 100, name: "Müşteri Y" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    // bayi alıcı, ödenmemiş yedek parça (kargo) → bayi borcu
+    const yedekParcaSatislar = [{ id: 30, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, birimFiyat: 100, currency: "TRY", tarih: "2026-08-01", odendi: false }];
+    // satisFirma = bayi, ödenmemiş Extra Kalıp → bayi borcu
+    const partSales = [{ id: 40, tur: "Kalıp", customerId: 100, satisFirma: "Bayi X", ad: "Kalıp Z", ucret: 5000, currency: "TRY", tarih: "2026-08-02", odendi: false }];
+    render(<Dashboard {...ortak} dealers={dealers} customers={customers} parts={parts} services={[]} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} onGoCustomerDetail={onGoCustomerDetail} onGoYedekParca={onGoYedekParca} />);
+    fireEvent.click(screen.getByText("Borçlu Bayi/Servis")); // StatCard → modal
+    const modal = within(document.querySelector(".modal-backdrop")); // "Bayi X"/"Kalıp Z" Son Satışlar'da da var → modala sabitle
+    expect(modal.getByText("Bayi X")).toBeTruthy();              // firma başlığı
+    expect(modal.getByText(/^Yedek parça: /)).toBeTruthy();      // yedek parça borç satırı
+    expect(modal.getByText(/^Kalıp: /)).toBeTruthy();            // extra kalıp borç satırı
+    fireEvent.click(modal.getByText(/Kalıp Z/));                 // kalıp satırına tıkla → müşteri detayı
+    expect(onGoCustomerDetail).toHaveBeenCalledWith(100, { kalipId: 40 });
+  });
+
+  it("Borçlu Bayi/Servis: kredi kartlı (bloke) yedek parçada bloke durumu pili görünür", () => {
+    const gelecek = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    // KK, kart çekildi (odendi) ama para bloke (blokajGun>0, hesaba geçmemiş) → borçlu, bloke gösterilmeli
+    const yedekParcaSatislar = [{ id: 30, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 2, birimFiyat: 100, currency: "TRY", tarih: "2026-08-01", odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 20, netTutar: 180, taksit: 1, yansitildi: true } }];
+    render(<Dashboard {...ortak} customers={[]} dealers={dealers} parts={parts} services={[]} partSales={[]} yedekParcaSatislar={yedekParcaSatislar} onGoCustomerDetail={vi.fn()} onGoYedekParca={vi.fn()} />);
+    fireEvent.click(screen.getByText("Borçlu Bayi/Servis"));
+    const modal = within(document.querySelector(".modal-backdrop"));
+    expect(modal.getByText(/^Bloke: /)).toBeTruthy();      // bloke → hesaba geçiş pili
+    expect(modal.getByText(/^Komisyon: /)).toBeTruthy();   // yansıtılan komisyon ayrı pil
   });
 
   it("Borçlu Firmalar: borçlu Extra Kalıp'a tıklayınca kalıp odağıyla gider", () => {

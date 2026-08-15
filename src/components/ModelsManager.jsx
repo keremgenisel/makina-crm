@@ -190,7 +190,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
                         style={{ padding: "5px 8px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", textAlign: "center", fontFamily: "inherit" }} />
                       <button type="button"
                         onClick={() => setMForm(prev => ({ ...prev, defaultParcalar: prev.defaultParcalar.filter((_, idx) => idx !== i) }))}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
                     </div>
                   ))}
                 </div>

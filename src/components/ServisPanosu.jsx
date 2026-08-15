@@ -610,7 +610,7 @@ export const ServisPanosu = ({
           const disServis = disServisMi(sv);
           const rk = disServis
             ? { fg: "var(--amb700, #b45309)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)" }
-            : { fg: "#0d9488", bg: "#f0fdfa", br: "#99f6e4" };
+            : { fg: "var(--teal, #0d9488)", bg: "var(--tealBg, #f0fdfa)", br: "var(--tealBr, #99f6e4)" };
           return (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: rk.fg, background: rk.bg, border: `1px solid ${rk.br}` }}>
               <Icon name="store" size={11} /> {disServis ? "Dış Servis" : "Anlaşmalı Servis"}: {islemFirmaGoster(sv)}
@@ -686,9 +686,9 @@ export const ServisPanosu = ({
       {/* Araç çubuğu */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: kiosk ? "12px 18px" : "0 0 14px", flexShrink: 0,
         ...(kiosk ? { background: "linear-gradient(95deg,#160900 0%,#241205 55%,#33180a 100%)", boxShadow: "0 2px 14px rgba(0,0,0,.28)" } : {}) }}>
-        {kiosk && <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(150deg,#f07a2c,#e85d1a)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="service" size={17} /></div>}
+        {kiosk && <div style={{ width: 32, height: 32, borderRadius: 9, background: "linear-gradient(150deg,#f07a2c,var(--brand, #e85d1a))", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="service" size={17} /></div>}
         <div>
-          <h2 style={{ margin: 0, fontSize: kiosk ? 15 : 20, fontWeight: 750, letterSpacing: kiosk ? ".08em" : "-.01em", color: kiosk ? "#fff" : "var(--n900, #0f172a)" }}>SERVİS VE KARGO PANOSU</h2>
+          <h2 style={{ margin: 0, fontSize: kiosk ? 15 : 20, fontWeight: 800, letterSpacing: kiosk ? ".08em" : "-.01em", color: kiosk ? "#fff" : "var(--n900, #0f172a)" }}>SERVİS VE KARGO PANOSU</h2>
           {kiosk && <div style={{ fontSize: 11, color: "#c9ab95" }}>{factoryName} · Servis Katı</div>}
         </div>
         <div style={{ flex: 1 }} />
@@ -715,7 +715,7 @@ export const ServisPanosu = ({
         const servisler = alarmSeridi.filter(x => x.tur !== "kargo");
         const kargolar = alarmSeridi.filter(x => x.tur === "kargo");
         const bolum = (etiket, liste) => liste.length ? (
-          <span><b style={{ fontWeight: 750 }}>{etiket}</b>{liste.length > 1 ? ` (${liste.length})` : ""}: {liste.map(x => x.ad).join(", ")}</span>
+          <span><b style={{ fontWeight: 800 }}>{etiket}</b>{liste.length > 1 ? ` (${liste.length})` : ""}: {liste.map(x => x.ad).join(", ")}</span>
         ) : null;
         return (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, margin: kiosk ? "0 18px 8px" : "0 0 12px",
@@ -745,7 +745,7 @@ export const ServisPanosu = ({
               <div style={{ padding: "14px 16px 10px", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: d.renk }} />
-                  <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 750, letterSpacing: ".08em", textTransform: "uppercase", color: d.renk }}>{d.baslik}</h3>
+                  <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: d.renk }}>{d.baslik}</h3>
                   <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: d.renk, background: d.bg, border: `1px solid ${d.br}`, borderRadius: 999, padding: "1px 9px", fontVariantNumeric: "tabular-nums" }}>{kartlar.length}</span>
                 </div>
                 {/* Tür bazlı karşılıklar (servis / kargo / fabrika teslim) — kartlar kendi durumunu zaten gösterir. */}
@@ -784,7 +784,7 @@ export const ServisPanosu = ({
                                 <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(sv.fabrikaGirisZamani)}</span>
                                 {canDo("cust_service_edit") && (
                                   <button type="button" onClick={() => hemenDusur(sv.id)}
-                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "var(--brand, #e85d1a)", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
                                     Hemen Düşür
                                   </button>
                                 )}
@@ -803,7 +803,7 @@ export const ServisPanosu = ({
                                 <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(s.panoDusmeZamani)}</span>
                                 {canKargoKaldir && (
                                   <button type="button" onClick={e => { e.stopPropagation(); kargoHemenDusur(s.id); }}
-                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "var(--brand, #e85d1a)", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
                                     Hemen Düşür
                                   </button>
                                 )}
@@ -823,7 +823,7 @@ export const ServisPanosu = ({
                                 <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--amb600, #d97706)" }}>🕒 {fmtZamanTam(s.panoDusmeZamani)}</span>
                                 {canKalipKaldir && (
                                   <button type="button" onClick={e => { e.stopPropagation(); kalipHemenDusur(s.id); }}
-                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "#e85d1a", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
+                                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: "var(--brand, #e85d1a)", background: "none", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, cursor: "pointer", padding: "4px 9px" }}>
                                     Hemen Düşür
                                   </button>
                                 )}

@@ -14,7 +14,7 @@ export const Section = ({ title, icon, children, collapsible = false, defaultOpe
         onClick={collapsible ? () => setOpen(o => !o) : undefined}
         style={{ fontWeight: 700, fontSize: 16, color: "var(--n900, #0f172a)", marginBottom: acik ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "#e85d1a" }}><Icon name={icon} size={18} /></span>{title}
+          <span style={{ color: "var(--brand, #e85d1a)" }}><Icon name={icon} size={18} /></span>{title}
         </span>
         {collapsible && <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{open ? "▾" : "▸"}</span>}
       </div>

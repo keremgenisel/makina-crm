@@ -448,7 +448,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         background: large ? "linear-gradient(135deg,var(--surface, #ffffff),var(--ambBg3, #fff7ed))" : "var(--surface, #ffffff)",
         borderRadius: 12, padding: large ? "22px 24px" : "16px 20px",
         boxShadow: large ? "0 4px 14px rgba(0,0,0,.10)" : "0 1px 4px rgba(0,0,0,.08)",
-        borderTop: large ? `4px solid ${color || "#e85d1a"}` : undefined,
+        borderTop: large ? `4px solid ${color || "var(--brand, #e85d1a)"}` : undefined,
       }}>
         <div style={{ fontSize: large ? 14 : 12, color: "var(--n500, #64748b)", fontWeight: 700, marginBottom: large ? 8 : 6 }}>{label}</div>
         {showCur.map(k => (
@@ -490,8 +490,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         {Object.entries(RANGE_LABELS).filter(([k]) => izinliAraliklar.includes(k)).map(([k, l]) => (
           <button key={k} onClick={() => setRange(k)}
             style={{ padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: range === k ? "#e85d1a" : "var(--n200, #e2e8f0)",
-              background: range === k ? "#e85d1a" : "var(--surface, #ffffff)", color: range === k ? "#fff" : "var(--n500, #64748b)" }}>
+              border: "1px solid", borderColor: range === k ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
+              background: range === k ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: range === k ? "#fff" : "var(--n500, #64748b)" }}>
             {l}
           </button>
         ))}
@@ -507,7 +507,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         </div>
       )}
       <div style={{ fontSize: 13, color: "var(--n400, #94a3b8)", marginBottom: 8 }}>
-        Gösterilen dönem: <b style={{ color: "#e85d1a" }}>{RANGE_LABELS[range]}</b> · {totalMakina} satış kaydı
+        Gösterilen dönem: <b style={{ color: "var(--brand, #e85d1a)" }}>{RANGE_LABELS[range]}</b> · {totalMakina} satış kaydı
       </div>
       {/* KDV Dönemleri: seçili aralıkta birden fazla dönem varsa hangi tarihten itibaren hangi oranın geçerli olduğu gösterilir */}
       <div style={{ fontSize: 12, color: "var(--teal, #0d9488)", fontWeight: 600, marginBottom: 20 }}>
@@ -520,7 +520,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="#e85d1a" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
+        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="var(--brand, #e85d1a)" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
         <MultiCard label="Toplam Alacak" obj={alacak} color="var(--red600, #dc2626)" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="var(--teal, #0d9488)" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
@@ -528,7 +528,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       {/* ADET KARTLARI */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 28 }}>
-        <AdetCard label="Toplam Satılan Makina" value={totalMakina} color="#e85d1a" />
+        <AdetCard label="Toplam Satılan Makina" value={totalMakina} color="var(--brand, #e85d1a)" />
         <AdetCard label="Toplam Satılan Kalıp" value={totalKalip + satilanExtraKalipSayisi} color="var(--blu500, #3b82f6)" />
         <AdetCard label="İlk Satışta Verilen Toplam Kalıp" value={totalKalip} color="#60a5fa" />
         <AdetCard label="Satılan Extra Kalıp" value={satilanExtraKalipSayisi} color="#db2777" />
@@ -558,7 +558,7 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
           {monthly.map((mo, i) => (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{ fontSize: 9, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{mo.gelir > 0 && moneyVisible ? Math.round(mo.gelir / 1000) + "k" : ""}</div>
-              <div style={{ width: "100%", height: `${(mo.gelir / maxMonthly) * 100}px`, minHeight: mo.gelir > 0 ? 4 : 0, background: "linear-gradient(180deg, #e85d1a, #f59e0b)", borderRadius: "4px 4px 0 0" }} />
+              <div style={{ width: "100%", height: `${(mo.gelir / maxMonthly) * 100}px`, minHeight: mo.gelir > 0 ? 4 : 0, background: "linear-gradient(180deg, var(--brand, #e85d1a), #f59e0b)", borderRadius: "4px 4px 0 0" }} />
               <div style={{ fontSize: 9, color: "var(--n500, #64748b)" }}>{mo.label}</div>
             </div>
           ))}

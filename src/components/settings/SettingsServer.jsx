@@ -97,7 +97,7 @@ export function SetupWizard({ onDone, flash }) {
     return () => clearInterval(t);
   }, [lockRemaining > 0]);
 
-  const inp = { padding: "9px 13px", fontSize: 13, borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", width: "100%", boxSizing: "border-box" };
+  const inp = { padding: "8px 12px", fontSize: 14, borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", width: "100%", boxSizing: "border-box" };
 
   const handleSetup = async (e) => {
     e.preventDefault();
@@ -162,7 +162,7 @@ export function SetupWizard({ onDone, flash }) {
       {lockRemaining > 0 && (
         <div style={{ fontSize: 12, color: "var(--amb700, #b45309)", marginTop: -4 }}>Çok fazla yanlış deneme. {lockRemaining} sn sonra tekrar deneyin.</div>
       )}
-      <button type="submit" disabled={loading || lockRemaining > 0} style={{ padding: "10px 20px", background: "#e85d1a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: (loading || lockRemaining > 0) ? "default" : "pointer", opacity: (loading || lockRemaining > 0) ? .7 : 1, width: "fit-content" }}>
+      <button type="submit" disabled={loading || lockRemaining > 0} style={{ padding: "10px 20px", background: "var(--brand, #e85d1a)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: (loading || lockRemaining > 0) ? "default" : "pointer", opacity: (loading || lockRemaining > 0) ? .7 : 1, width: "fit-content" }}>
         {loading ? "Kuruluyor..." : lockRemaining > 0 ? `${lockRemaining} sn bekleyin` : "Sunucuyu Başlat"}
       </button>
     </form>
@@ -224,7 +224,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
     else flash("err", result?.error || "Giriş başarısız");
   };
 
-  const inp = { padding: "9px 13px", fontSize: 13, borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", width: "100%", boxSizing: "border-box" };
+  const inp = { padding: "8px 12px", fontSize: 14, borderRadius: 8, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", width: "100%", boxSizing: "border-box" };
   const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 4 };
 
   if (!window.appServer) return (
@@ -334,7 +334,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
               </button>
             ) : (
               <button onClick={async () => { const r = await window.appServer.startServer(port); if (r?.ok) { flash("ok", `Sunucu başlatıldı — port ${r.port}`); reloadCfg(); } else flash("err", r?.error || "Başlatılamadı"); }}
-                style={{ padding: "9px 18px", background: "#e85d1a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                style={{ padding: "9px 18px", background: "var(--brand, #e85d1a)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Sunucuyu Başlat
               </button>
             )}
@@ -367,7 +367,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={async () => { await window.appServer.logout(); flash("ok", "Oturum kapatıldı."); setTimeout(() => window.location.reload(), 600); }}
-              style={{ padding: "9px 18px", background: "var(--surface, #ffffff)", color: "#e85d1a", border: "1px solid #e85d1a", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              style={{ padding: "9px 18px", background: "var(--surface, #ffffff)", color: "var(--brand, #e85d1a)", border: "1px solid var(--brand, #e85d1a)", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Oturumu Kapat
             </button>
             <button onClick={async () => { await window.appServer.clearConfig(); flash("ok", "Yerel moda geçildi."); setTimeout(() => window.location.reload(), 600); }}
@@ -391,9 +391,9 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
 
       {pick === null && (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-          <button onClick={() => setPick("server")} style={{ flex: 1, minWidth: 200, padding: "20px 18px", background: "var(--ambBg3, #fff7ed)", border: "2px solid #e85d1a", borderRadius: 12, cursor: "pointer", textAlign: "left" }}>
+          <button onClick={() => setPick("server")} style={{ flex: 1, minWidth: 200, padding: "20px 18px", background: "var(--ambBg3, #fff7ed)", border: "2px solid var(--brand, #e85d1a)", borderRadius: 12, cursor: "pointer", textAlign: "left" }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: "var(--orTx, #c2410c)", marginBottom: 6 }}>🖥 Bu PC Sunucu Olsun</div>
-            <div style={{ fontSize: 12, color: "#9a3412", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: "var(--orTx, #c2410c)", lineHeight: 1.5 }}>
               Bu bilgisayar veriye doğrudan erişir ve diğerlerine hizmet verir. Açık kalmalıdır.
             </div>
           </button>
@@ -418,7 +418,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
           <button onClick={() => setPick(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--surface, #ffffff)", border: "1px solid var(--n300, #cbd5e1)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", marginBottom: 18 }}>← Geri</button>
           {connTrust && (
             <div style={{ marginBottom: 16, padding: "14px 16px", background: connTrust.mismatch ? "var(--redBg, #fef2f2)" : "var(--ambBg3, #fff7ed)", border: `1px solid ${connTrust.mismatch ? "#fca5a5" : "var(--ambBr3, #fed7aa)"}`, borderRadius: 10, maxWidth: 400 }}>
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: connTrust.mismatch ? "var(--red800, #991b1b)" : "#9a3412", marginBottom: 6 }}>
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: connTrust.mismatch ? "var(--red800, #991b1b)" : "var(--orTx, #c2410c)", marginBottom: 6 }}>
                 {connTrust.mismatch ? "⚠ Sunucu Kimliği Değişti" : "Sunucuya İlk Bağlantı"}
               </div>
               <div style={{ fontSize: 12, color: "var(--stone, #78716c)", marginBottom: 8, lineHeight: 1.5 }}>
@@ -426,14 +426,14 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
                   ? "Sertifika parmak izi daha önce kaydettiğinizden farklı. Sunucu yeniden kurulduysa normaldir; değilse araya biri girmiş olabilir."
                   : "Bu parmak izinin sunucudaki (Ayarlar > Bu PC Sunucu) değerle aynı olduğunu doğrulayıp güvenin."}
               </div>
-              <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--stoneInk, #1c1917)", background: "var(--surface, #ffffff)", border: "1px solid #e7e5e4", borderRadius: 6, padding: "8px 10px", wordBreak: "break-all", marginBottom: 10 }}>{connTrust.fp}</div>
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--stoneInk, #1c1917)", background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "8px 10px", wordBreak: "break-all", marginBottom: 10 }}>{connTrust.fp}</div>
               <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "var(--stone, #78716c)", marginBottom: 10, cursor: "pointer", lineHeight: 1.45 }}>
                 <input type="checkbox" checked={connTrustChecked} onChange={e => setConnTrustChecked(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
                 <span>Bu parmak izini sunucudaki (Ayarlar &gt; Bu PC Sunucu) değerle karşılaştırdım ve aynı.</span>
               </label>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" disabled={connecting || !connTrustChecked} onClick={() => { const mode = connTrust.mismatch ? "force" : "trust"; setConnTrustMode(mode); setConnTrust(null); doConnect(mode === "force" ? { force: true } : { trust: true }); }}
-                  style={{ padding: "8px 16px", background: (connecting || !connTrustChecked) ? "var(--n300, #cbd5e1)" : connTrust.mismatch ? "var(--red600, #dc2626)" : "#e85d1a", color: "#fff", border: "none", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: (connecting || !connTrustChecked) ? "default" : "pointer" }}>
+                  style={{ padding: "8px 16px", background: (connecting || !connTrustChecked) ? "var(--n300, #cbd5e1)" : connTrust.mismatch ? "var(--red600, #dc2626)" : "var(--brand, #e85d1a)", color: "#fff", border: "none", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: (connecting || !connTrustChecked) ? "default" : "pointer" }}>
                   {connecting ? "Bağlanıyor..." : connTrust.mismatch ? "Yine de Güven" : "Güven ve Bağlan"}
                 </button>
                 <button type="button" onClick={() => { setConnTrust(null); setConnTrustMode(null); }} style={{ padding: "8px 16px", background: "var(--surface, #ffffff)", color: "var(--n500, #64748b)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>Vazgeç</button>

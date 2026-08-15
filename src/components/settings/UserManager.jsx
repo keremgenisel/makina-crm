@@ -219,7 +219,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
           <div style={{ padding: "2px 12px 12px", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", margin: "10px 0" }}>
               <input type="checkbox" checked={sec.on} onChange={e => sec.setOn(e.target.checked)}
-                style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)" }}>Bu kullanıcı için özelleştir</span>
             </label>
             {!sec.on ? (
@@ -268,7 +268,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>Kullanıcılar</div>
-        <button onClick={() => setShowAdd(v => !v)} style={{ padding: "6px 14px", background: "#e85d1a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={() => setShowAdd(v => !v)} style={{ padding: "6px 14px", background: "var(--brand, #e85d1a)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           {showAdd ? "İptal" : "+ Ekle"}
         </button>
       </div>
@@ -388,7 +388,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                             autoComplete="new-password"
                           />
                           <button onClick={() => saveChangePw(u)} disabled={changingPw}
-                            style={{ padding: "7px 16px", background: "#e85d1a", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: changingPw ? .7 : 1 }}>
+                            style={{ padding: "7px 16px", background: "var(--brand, #e85d1a)", color: "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: changingPw ? .7 : 1 }}>
                             {changingPw ? "Kaydediliyor..." : "Kaydet"}
                           </button>
                           <button onClick={() => setChangePwId(null)}

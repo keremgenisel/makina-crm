@@ -222,7 +222,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
               <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
             )}
             <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+              style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
           </div>
           {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
             <>
@@ -239,7 +239,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
         </div>
       ))}
       <button type="button" onClick={satirEkle}
-        style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed #e85d1a", background: "var(--ambBg3, #fff7ed)", color: "#e85d1a", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+        style={{ marginTop: 4, padding: "8px 16px", borderRadius: 8, border: "1px dashed var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", color: "var(--brand, #e85d1a)", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
         + Ödeme Ekle
       </button>
       {toplam > 0 && (
@@ -287,7 +287,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={13} /></span>
               <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder={searchPlaceholder}
-                style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px 7px 28px", border: "1.5px solid #e85d1a", borderRadius: 7, fontSize: 13, outline: "none" }} />
+                style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px 7px 28px", border: "1.5px solid var(--brand, #e85d1a)", borderRadius: 7, fontSize: 13, outline: "none" }} />
             </div>
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto" }}>
@@ -304,7 +304,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
               </button>
             ))}
             {gizliSayisi > 0 && (
-              <div style={{ padding: "8px 12px", fontSize: 11.5, color: "var(--n400, #94a3b8)", borderTop: "1px solid var(--n150, #f1f5f9)", background: "#fafafa" }}>
+              <div style={{ padding: "8px 12px", fontSize: 11.5, color: "var(--n400, #94a3b8)", borderTop: "1px solid var(--n150, #f1f5f9)", background: "var(--n100, #f8fafc)" }}>
                 +{gizliSayisi} sonuç daha — aramak için yazın
               </div>
             )}

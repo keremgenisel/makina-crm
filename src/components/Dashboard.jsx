@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisKanali, calcKDV } from "../lib/utils";
-import { kartTahsilEdildiMi } from "../lib/krediKarti";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi } from "../lib/utils";
+import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
@@ -72,16 +72,39 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     ]);
     const borcluCount = borcluFirmaKeys.size;
 
-    // ── Borçlu Bayi/Servis — anlaşmalı servis firmalarının üstlendiği ödenmemiş parça borcu
-    // (aynı mantık SimpleDealers.jsx'teki borcMap ile — bkz. isParcaBorcluAnlasmaliFirmaya / utils.js) ──
+    // ── Borçlu Bayi/Servis — bir bayinin/anlaşmalı servis firmasının Altuntaş'a ödenmemiş borcu,
+    // ÜÇ kaynaktan: (1) serviste üstlendiği parça borcu, (2) satın aldığı yedek parça (kargo),
+    // (3) sattığı Extra Kalıp bedeli (satisFirma = firma; borç satıcı firmaya atfedilir). Firma adına göre gruplanır.
     const dealerBorcMap = {};
+    // byCur = net+komisyon (gross), kdvByCur = KDV. Firma başlığındaki toplam = byCur + kdvByCur (KDV+komisyon dahil).
+    const ensureBayi = (name) => (dealerBorcMap[name] = dealerBorcMap[name] || { byCur: {}, kdvByCur: {}, servisler: [], yedekler: [], kaliplar: [] });
     services.forEach(s => {
       if (!isParcaBorcluAnlasmaliFirmaya(s, factoryName)) return;
-      const name = s.islemFirma;
-      if (!dealerBorcMap[name]) dealerBorcMap[name] = { byCur: {}, records: [] };
+      const m = ensureBayi(s.islemFirma);
       const curK = s.parcaCurrency || s.currency || "TRY";
-      dealerBorcMap[name].byCur[curK] = (dealerBorcMap[name].byCur[curK] || 0) + parseMoney(s.parcaUcreti);
-      dealerBorcMap[name].records.push(s);
+      m.byCur[curK] = (m.byCur[curK] || 0) + parseMoney(s.parcaUcreti);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates);
+      m.servisler.push(s);
+    });
+    (yedekParcaSatislar || []).forEach(s => {
+      if (s.aliciTipi === "musteri" || !isYedekParcaBorcluMu(s)) return;
+      const bayi = (dealers || []).find(d => d.id === Number(s.dealerId));
+      if (!bayi?.name) return;
+      const m = ensureBayi(bayi.name);
+      const curK = s.currency || "TRY";
+      m.byCur[curK] = (m.byCur[curK] || 0) + yedekParcaBedeli(s);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates);
+      m.yedekler.push(s);
+    });
+    partSales.forEach(p => {
+      if (p.tur !== "Kalıp" || !isPartSaleBorcluMu(p)) return;
+      const firma = p.satisFirma === "Diğer" ? (p.satisFirmaAd || "Diğer") : p.satisFirma;
+      if (!firma || firma === factoryName) return; // fabrika satışı → müşteri borcu, bayi borcu değil
+      const m = ensureBayi(firma);
+      const curK = p.currency || "TRY";
+      m.byCur[curK] = (m.byCur[curK] || 0) + parseMoney(p.ucret);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(p.faturaTipi, parseMoney(p.ucret), p.tarih, kdvRates);
+      m.kaliplar.push(p);
     });
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
 
@@ -201,6 +224,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     if (yontem === "Taksit" || yontem === "Havale") return { background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" };
     return { background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)" }; // Nakit vb.
   };
+  // Borçlu Bayi/Servis kart içi kayıt satırı (servis/yedek parça/kalıp) ortak stili.
+  const BORC_SATIR = { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12, padding: "5px 0", borderTop: "1px solid var(--ambBr, #fde68a)" };
+  const BORC_LINK = { color: "var(--amb800, #92400e)", fontWeight: 600, textDecoration: "underline", textDecorationColor: "var(--ambBr, #fde68a)" };
   // Müşteri kalan borcunun içindeki bekleyen ödeme kalemleri — tutarlı + tıklanınca ilgili kayda highlight.
   // Çek/Kredi Kartı → payment (odemeId), Taksit → ödeme planı satırı (taksitId).
   const musteriBorcKalemleri = (c) => {
@@ -210,8 +236,25 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     (c.odemePlani || []).filter(r => !r.odemeId && r.vadeTarihi)
       .forEach(r => kalemler.push({ tip: "Taksit", tutar: parseMoney(r.tutar), currency: c.currency, odak: { taksitId: r.id } }));
     payments.filter(p => p.customerId === c.id && !p.deletedAt && p.yontem === "Kredi Kartı" && p.kartKomisyonu && Number(p.kartKomisyonu.blokajGun) > 0 && !kartTahsilEdildiMi(p.kartKomisyonu, todayStr))
-      .forEach(p => kalemler.push({ tip: "Kredi Kartı", tutar: parseMoney(p.tutar), currency: p.currency || c.currency, odak: { odemeId: p.id } }));
+      .forEach(p => kalemler.push({ tip: "Kredi Kartı", tutar: parseMoney(p.tutar), currency: p.currency || c.currency, odak: { odemeId: p.id }, kk: p.kartKomisyonu }));
     return kalemler;
+  };
+  // Kredi kartı borç kaleminin müşteri-modeli gibi kırılımı: bloke tutar → hesaba geçiş tarihi, komisyon, taksit.
+  const KK_DETAY = { background: "var(--purBg, #f5f3ff)", color: "var(--purTx, #7c3aed)" };
+  const KDV_RENK = { background: "var(--bluBg, #eff6ff)", color: "var(--blu600, #2563eb)" }; // faturalı satışta ayrı KDV pili
+  const kkDetayPilleri = (kk, currency) => {
+    if (!kk) return [];
+    const arr = [];
+    const komisyon = Number(kk.toplamKesinti) || 0;
+    const bloke = (Number(kk.netTutar) || 0) + komisyon; // çekilen (bloke edilen) kart tutarı
+    // Komisyon YALNIZ müşteriye yansıtıldıysa gösterilir (o zaman fiyat pilinden ayrılmış net tutarı tamamlar);
+    // biz üstlendiysek komisyon müşterinin borcu değil, ayrı pil olarak göstermeyiz.
+    if (komisyon > 0 && kk.yansitildi) arr.push({ metin: `Komisyon: ${fmtCur(komisyon, currency)}`, renk: KK_DETAY });
+    if (Number(kk.taksit) > 1) arr.push({ metin: `${kk.taksit}× taksit`, renk: KK_DETAY });
+    // Bloke (hesaba geçiş) EN SONA: tutar/komisyon/KDV kırılımından sonra, tahsilat zamanlaması bilgisi.
+    if (Number(kk.blokajGun) > 0 && kk.hesabaGecis && !kartTahsilEdildiMi(kk, todayStr))
+      arr.push({ metin: `Bloke: ${fmtCur(bloke, currency)} → ${fmtTR(kk.hesabaGecis)}`, renk: { background: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" } });
+    return arr;
   };
 
   return (
@@ -250,7 +293,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
       {/* 10 sayı kutusu — 5 üstte, 5 altta (tasarım: revize 2) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
-        <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="#e85d1a" onClick={onGoCustomers} />
+        <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="var(--brand, #e85d1a)" onClick={onGoCustomers} />
         <StatCard label="Toplam Bayi"       value={dealers.length}    sub="Görmek için tıkla" color="var(--blu500, #3b82f6)" onClick={onGoDealers} />
         <StatCard label="Stoktaki Makina"   value={stock.length}      sub="Görmek için tıkla" color="#8b5cf6" onClick={onGoStock} />
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
@@ -301,7 +344,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{r.detay}</div>
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center", flexShrink: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(r.tarih)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--brand, #e85d1a)" }}>{fmtTR(r.tarih)}</div>
                   <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{(r.tip === "kalip" || r.tip === "yedek") ? fmtCur(r.tutar, r.currency) : r.konum}</div>
                 </div>
               </div>
@@ -317,7 +360,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             <div style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", marginTop: 3 }}>Rozet servisi kimin yaptığını gösterir; parça ikonu (🔧) o serviste bizden yedek parça satıldığını belirtir.</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--grn700, #15803d)", background: "var(--grnBg, #f0fdf4)", border: "1px solid var(--grnBr, #bbf7d0)" }}>Fabrika</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "#0d9488", background: "#f0fdfa", border: "1px solid #99f6e4" }}>Anlaşmalı Servis</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--teal, #0d9488)", background: "var(--tealBg, #f0fdfa)", border: "1px solid var(--tealBr, #99f6e4)" }}>Anlaşmalı Servis</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, borderRadius: 5, padding: "1px 6px", color: "var(--amb700, #b45309)", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)" }}>Dış Servis</span>
             </div>
           </div>
@@ -329,7 +372,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
             const parcaSatildi = isParcaUcretliMi(sv);
             const ypStil = {
               bizim:          { et: "Fabrika",          fg: "var(--grn700, #15803d)", bg: "var(--grnBg, #f0fdf4)", br: "var(--grnBr, #bbf7d0)" },
-              anlasmaliServis:{ et: "Anlaşmalı Servis", fg: "#0d9488",                 bg: "#f0fdfa",              br: "#99f6e4" },
+              anlasmaliServis:{ et: "Anlaşmalı Servis", fg: "var(--teal, #0d9488)",                 bg: "var(--tealBg, #f0fdfa)",              br: "var(--tealBr, #99f6e4)" },
               disServis:      { et: "Dış Servis",       fg: "var(--amb700, #b45309)", bg: "var(--ambBg, #fffbeb)", br: "var(--ambBr, #fde68a)" },
             }[yp];
             return (
@@ -349,7 +392,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{cust?.model ? `${cust.model} · ` : ""}{sv.type}</div>
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center" }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#e85d1a" }}>{fmtTR(sv.date)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--brand, #e85d1a)" }}>{fmtTR(sv.date)}</div>
                   <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{cust?.country || ""}{cust?.city ? ` / ${cust.city}` : ""}</div>
                 </div>
               </div>
@@ -361,7 +404,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
       {/* Sıra 2: İşlem Bekleyen Onaylı Teklifler | Takip Edilecek Teklifler (50/50) — boş olsa da göster */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, alignItems: "start" }}>
-        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+        <div style={{ background: "var(--surface, #ffffff)", borderTop: "3px solid var(--brand, #e85d1a)", borderRadius: 12, padding: "14px 18px", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "var(--amb800, #92400e)", textTransform: "uppercase", letterSpacing: .5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             İşlem Bekleyen Onaylı Teklifler ({donusturBekleyenlar.length})
           </div>
@@ -389,12 +432,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                   {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "#f97316", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--brand, #e85d1a)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
                       {busy ? "..." : "Müşteri Ekle"}
                     </Btn>
                   )}
                   {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "#f97316", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--brand, #e85d1a)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
                       {busy ? "..." : "Makina Ekle"}
                     </Btn>
                   )}
@@ -516,16 +559,23 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                         <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{c.model || "—"}{c.serialNo ? ` · ${c.serialNo}` : ""}</div>
                         {kalemler.length > 0 && (
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                            {kalemler.map((k, i) => (
-                              <span key={i} onClick={e => { e.stopPropagation(); goToCustomer(c.id, k.odak); }} title={`${k.tip} — kayda git`}
-                                style={{ ...PIL_BASE, ...yontemRenk(k.tip, k.tip === "Çek" && k.gecikti), cursor: "pointer" }}>
-                                {k.tip === "Çek" && k.gecikti ? "⚠ Çek" : k.tip}: {fmtCur(k.tutar, k.currency)}
-                              </span>
-                            ))}
+                            {kalemler.flatMap((k, i) => {
+                              const kkKalem = k.tip === "Kredi Kartı";
+                              const base = (
+                                <span key={`b${i}`} onClick={e => { e.stopPropagation(); goToCustomer(c.id, k.odak); }} title={`${k.tip} — kayda git`}
+                                  style={{ ...PIL_BASE, ...yontemRenk(k.tip, k.tip === "Çek" && k.gecikti), cursor: "pointer" }}>
+                                  {kkKalem ? "Kredi Kartı" : `${k.tip === "Çek" && k.gecikti ? "⚠ Çek" : k.tip}: ${fmtCur(k.tutar, k.currency)}`}
+                                </span>
+                              );
+                              const detay = kkKalem ? kkDetayPilleri(k.kk, k.currency).map((d, j) => (
+                                <span key={`d${i}-${j}`} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>
+                              )) : [];
+                              return [base, ...detay];
+                            })}
                           </div>
                         )}
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(c.kalanBorc, c.currency)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(c.kalanBorc, c.currency)}</div>
                     </div>
                   );
                 })}
@@ -542,22 +592,36 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   // kredi kartında odendi=true (kart çekildi) ama para bloke → yine borçlu, tutar görünmeli.
                   const servisBorclu = isServisUcretliMi(s, factoryName);
                   const parcaBorclu = isParcaUcretliMi(s);
+                  // Komisyon müşteriye yansıtıldıysa servisUcreti/parcaUcreti komisyon DAHİL saklanır;
+                  // pilde net (komisyonsuz) fiyatı göster, komisyonu ayrı pilde (kkDetayPilleri). Oransal böl.
+                  const svKomisyon = yansitilanKomisyon(s);
+                  const stServis = parseMoney(s.servisUcreti), stParca = parseMoney(s.parcaUcreti);
+                  const stToplam = stServis + (s.parcaUcretsizMi ? 0 : stParca);
+                  const netServis = svKomisyon > 0 && stToplam > 0 ? stServis - svKomisyon * stServis / stToplam : stServis;
+                  const netParca = svKomisyon > 0 && stToplam > 0 ? stParca - svKomisyon * stParca / stToplam : stParca;
+                  const svKdv = calcKDV(s.faturaTipi, stToplam, s.date, kdvRates); // faturalı yurtiçi → matrah×oran, değilse 0
+                  const svToplam = (servisBorclu ? netServis : 0) + (parcaBorclu ? netParca : 0); // net (komisyonsuz, KDV hariç); sağdaki toplam bunun üzerine komisyon + KDV ekler
                   return (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId, { servisId: s.id })} title="Servisi müşteri detayında aç"
                       style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", marginBottom: 6, cursor: "pointer" }}
                       onMouseEnter={e => e.currentTarget.style.background = "var(--redBg2, #fee2e2)"}
                       onMouseLeave={e => e.currentTarget.style.background = "var(--redBg, #fef2f2)"}>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           {custName(s.customerId)}
                           {s.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem, s.yontem === "Çek" && isCekVadesiGecmis(s)) }}>{s.yontem === "Çek" && isCekVadesiGecmis(s) ? "⚠ Çek" : s.yontem}</span>}
                         </div>
                         <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{s.type} · {fmtTR(s.date)}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                          {servisBorclu && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem || "") }}>Servis: {fmtCur(netServis, s.currency)}</span>}
+                          {parcaBorclu && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem || "") }}>Parça: {fmtCur(netParca, s.parcaCurrency)}</span>}
+                          {svKdv > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(svKdv, s.currency)}</span>}
+                          {s.yontem === "Kredi Kartı" && kkDetayPilleri(s.kartKomisyonu, s.currency).map((d, j) => (
+                            <span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        {servisBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>Servis: {fmtCur(s.servisUcreti, s.currency)}</div>}
-                        {parcaBorclu && <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>Parça: {fmtCur(s.parcaUcreti, s.parcaCurrency)}</div>}
-                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(svToplam + svKomisyon + svKdv, s.currency)}</div>
                     </div>
                   );
                 })}
@@ -574,14 +638,21 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", marginBottom: 6, cursor: "pointer" }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--redBg2, #fee2e2)"}
                     onMouseLeave={e => e.currentTarget.style.background = "var(--redBg, #fef2f2)"}>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         {custName(p.customerId)}
                         {p.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(p.yontem, p.yontem === "Çek" && isCekVadesiGecmis(p)) }}>{p.yontem === "Çek" && isCekVadesiGecmis(p) ? "⚠ Çek" : p.yontem}</span>}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {fmtTR(p.tarih)}</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        <span style={{ ...PIL_BASE, ...yontemRenk(p.yontem || "") }}>Kalıp: {fmtCur(parseMoney(p.ucret) - yansitilanKomisyon(p), p.currency)}</span>
+                        {calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</span>}
+                        {p.yontem === "Kredi Kartı" && kkDetayPilleri(p.kartKomisyonu, p.currency).map((d, j) => (
+                          <span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(p.ucret, p.currency)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</div>
                   </div>
                 ))}
               </div>
@@ -598,7 +669,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         </Modal>
       )}
 
-      {/* Borçlu Bayi/Servis — anlaşmalı servis firmalarının üstlendiği ödenmemiş parça borcu */}
+      {/* Borçlu Bayi/Servis — bayinin/firmanın ödenmemiş servis parça + yedek parça (kargo) + Extra Kalıp borcu */}
       {showDealerDebtors && (
         <Modal wide title="Borçlu Bayi/Servis" onClose={() => setShowDealerDebtors(false)}>
           <div style={{ maxHeight: 480, overflowY: "auto" }}>
@@ -611,17 +682,38 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{name}</div>
                     <div>
                       {Object.entries(info.byCur).filter(([, v]) => v > 0).map(([k, v]) => (
-                        <span key={k} style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(v, k)}</span>
+                        <span key={k} style={{ fontSize: 13, fontWeight: 800, color: "var(--red600, #dc2626)" }}>{fmtCur(v + (info.kdvByCur[k] || 0), k)}</span>
                       ))}
                     </div>
                   </div>
-                  {info.records.map(s => (
-                    <div key={s.id} onClick={() => goToCustomer(s.customerId, { servisId: s.id })} title="Servisi müşteri detayında aç"
-                      style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12, padding: "5px 0", borderTop: "1px solid var(--ambBr, #fde68a)", cursor: "pointer" }}>
-                      <span style={{ color: "var(--amb800, #92400e)", fontWeight: 600, textDecoration: "underline", textDecorationColor: "var(--ambBr, #fde68a)" }}>
-                        {custName(s.customerId)} · {fmtTR(s.date)}
-                      </span>
+                  {(info.servisler || []).map(s => (
+                    <div key={"sv" + s.id} onClick={() => goToCustomer(s.customerId, { servisId: s.id })} title="Servisi müşteri detayında aç"
+                      style={{ ...BORC_SATIR, cursor: "pointer" }}>
+                      <span style={BORC_LINK}>🔧 {custName(s.customerId)} · {fmtTR(s.date)}</span>
                       {s.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem, s.yontem === "Çek" && isCekVadesiGecmis(s)) }}>{s.yontem === "Çek" && isCekVadesiGecmis(s) ? "⚠ Çek" : s.yontem}</span>}
+                      <span style={{ ...PIL_BASE, background: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" }}>Servis parça: {fmtCur(parseMoney(s.parcaUcreti), s.parcaCurrency || s.currency)}</span>
+                      {calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates), s.parcaCurrency || s.currency)}</span>}
+                      {s.yontem === "Kredi Kartı" && kkDetayPilleri(s.kartKomisyonu, s.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
+                    </div>
+                  ))}
+                  {(info.yedekler || []).map(s => (
+                    <div key={"yp" + s.id} onClick={() => { if (onGoYedekParca) onGoYedekParca(s.id); }} title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
+                      style={{ ...BORC_SATIR, cursor: onGoYedekParca ? "pointer" : "default" }}>
+                      <span style={BORC_LINK}>📦 {parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "Yedek parça"} ×{s.miktar} · {fmtTR(s.tarih)}</span>
+                      {s.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem, s.yontem === "Çek" && isCekVadesiGecmis(s)) }}>{s.yontem === "Çek" && isCekVadesiGecmis(s) ? "⚠ Çek" : s.yontem}</span>}
+                      <span style={{ ...PIL_BASE, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>Yedek parça: {fmtCur(yedekParcaBedeli(s), s.currency)}</span>
+                      {calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates), s.currency)}</span>}
+                      {s.yontem === "Kredi Kartı" && kkDetayPilleri(s.kartKomisyonu, s.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
+                    </div>
+                  ))}
+                  {(info.kaliplar || []).map(p => (
+                    <div key={"kl" + p.id} onClick={() => goToCustomer(p.customerId, { kalipId: p.id })} title="Kalıbı müşteri detayında aç"
+                      style={{ ...BORC_SATIR, cursor: "pointer" }}>
+                      <span style={BORC_LINK}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {custName(p.customerId)} · {fmtTR(p.tarih)}</span>
+                      {p.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(p.yontem, p.yontem === "Çek" && isCekVadesiGecmis(p)) }}>{p.yontem === "Çek" && isCekVadesiGecmis(p) ? "⚠ Çek" : p.yontem}</span>}
+                      <span style={{ ...PIL_BASE, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)" }}>Kalıp: {fmtCur(parseMoney(p.ucret) - yansitilanKomisyon(p), p.currency)}</span>
+                      {calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</span>}
+                      {p.yontem === "Kredi Kartı" && kkDetayPilleri(p.kartKomisyonu, p.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
                     </div>
                   ))}
                 </div>

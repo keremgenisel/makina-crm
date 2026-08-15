@@ -58,12 +58,12 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           {[["bayi", "Bayi"], ["musteri", "Müşteri"]].map(([v, l]) => (
             <button key={v} type="button" onClick={() => setForm(p => ({ ...p, aliciTipi: v, dealerId: "", musteriId: "", disFirma: false }))}
               style={{ padding: "5px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                background: aliciTipi === v ? "#e85d1a" : "transparent", color: aliciTipi === v ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
+                background: aliciTipi === v ? "var(--brand, #e85d1a)" : "transparent", color: aliciTipi === v ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
           ))}
         </div>
         {aliciTipi === "musteri" ? (
           selectedCust ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid var(--brand, #e85d1a)", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
                 <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{selectedCust.model || "Model yok"}{selectedCust.serialNo ? ` · S/N ${selectedCust.serialNo}` : ""}</div>
@@ -96,7 +96,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           </div>
         ) : (
           selectedDealer ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid var(--brand, #e85d1a)", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedDealer.name}</div>
                 <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{[selectedDealer.city, selectedDealer.country].filter(Boolean).join(" / ") || "Konum yok"}</div>
@@ -203,7 +203,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                 );
               })}
               <button type="button" onClick={satirEkle}
-                style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>
+                style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>
                 <Icon name="plus" size={13} /> Parça Ekle
               </button>
             </div>
@@ -295,7 +295,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                 <button key={l} type="button"
                   onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "", teslimatFarkli: false } : {}) }))}
                   style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                    background: secili ? "#e85d1a" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
+                    background: secili ? "var(--brand, #e85d1a)" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
               );
             })}
           </div>
@@ -322,11 +322,11 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                 <input type="checkbox" checked={!!form.teslimatFarkli}
                   onChange={e => setForm(p => ({ ...p, teslimatFarkli: e.target.checked }))}
-                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a" }} />
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "#e85d1a" }}>📍 Farklı adrese kargolat</span>
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)" }} />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "var(--brand, #e85d1a)" }}>📍 Farklı adrese kargolat</span>
                 {form.teslimatFarkli && (
                   <button type="button" onClick={adresDoldur}
-                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#e85d1a", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
+                    style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--brand, #e85d1a)", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
                     ⤵ Alıcının adresini doldur
                   </button>
                 )}

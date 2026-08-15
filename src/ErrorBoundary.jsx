@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component {
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <button onClick={() => window.location.reload()}
-              style={{ background: "#e85d1a", color: "#fff", border: "none", padding: "10px 22px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+              style={{ background: "var(--brand, #e85d1a)", color: "#fff", border: "none", padding: "10px 22px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
               Yeniden Başlat
             </button>
             <button onClick={this.sendReport} disabled={this.state.sending}

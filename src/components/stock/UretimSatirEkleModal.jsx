@@ -119,9 +119,9 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
                 <div key={c.id} onClick={() => pickMusteri(c)} style={{
                   padding: "9px 10px", cursor: "pointer", borderRadius: 8, marginBottom: 3,
                   background: isSel ? "var(--ambBg4, #fff7f3)" : "transparent",
-                  border: isSel ? "1.5px solid #e85d1a" : "1.5px solid transparent",
+                  border: isSel ? "1.5px solid var(--brand, #e85d1a)" : "1.5px solid transparent",
                 }}>
-                  <div style={{ fontWeight: isSel ? 700 : 500, fontSize: 13, color: isSel ? "#e85d1a" : "var(--n800, #1e293b)" }}>{c.name || "—"}</div>
+                  <div style={{ fontWeight: isSel ? 700 : 500, fontSize: 13, color: isSel ? "var(--brand, #e85d1a)" : "var(--n800, #1e293b)" }}>{c.name || "—"}</div>
                   {c.model && <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 1 }}>{c.model}</div>}
                 </div>
               );
@@ -156,14 +156,14 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
                       padding: "9px 10px", cursor: "pointer", borderRadius: 8, marginBottom: 3,
                       display: "flex", alignItems: "center", gap: 10,
                       background: isSel ? "var(--ambBg4, #fff7f3)" : "transparent",
-                      border: isSel ? "1.5px solid #e85d1a" : "1.5px solid transparent",
+                      border: isSel ? "1.5px solid var(--brand, #e85d1a)" : "1.5px solid transparent",
                     }}>
                       {k.resim
                         ? <img src={k.resim} alt="" style={{ width: 40, height: 30, objectFit: "contain", borderRadius: 5, border: "1px solid var(--n200, #e2e8f0)", flexShrink: 0 }} />
                         : <div style={{ width: 40, height: 30, borderRadius: 5, background: "var(--n150, #f1f5f9)", flexShrink: 0 }} />
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: isSel ? 700 : 500, fontSize: 13, color: isSel ? "#e85d1a" : "var(--n800, #1e293b)" }}>{k.ad}</div>
+                        <div style={{ fontWeight: isSel ? 700 : 500, fontSize: 13, color: isSel ? "var(--brand, #e85d1a)" : "var(--n800, #1e293b)" }}>{k.ad}</div>
                         {(k.kod || k.olcu) && (
                           <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 1 }}>
                             {[k.kod, k.olcu].filter(Boolean).join(" · ")}
@@ -172,8 +172,8 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
                       </div>
                       <div style={{
                         width: 20, height: 20, borderRadius: 5, border: "2px solid",
-                        borderColor: isSel ? "#e85d1a" : "var(--n300, #cbd5e1)",
-                        background: isSel ? "#e85d1a" : "var(--surface, #ffffff)",
+                        borderColor: isSel ? "var(--brand, #e85d1a)" : "var(--n300, #cbd5e1)",
+                        background: isSel ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         flexShrink: 0, fontSize: 12, color: "#fff", fontWeight: 700,
                       }}>

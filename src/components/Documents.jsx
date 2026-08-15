@@ -778,7 +778,7 @@ export const Documents = ({
   const showTL = form?.currency !== "TRY";
 
   // ── FORM MODAL ────────────────────────────────────────────────────────────────
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
   const taStyle = { ...inputStyle, resize: "vertical", minHeight: 60 };
 
   // ── LİSTE GÖRÜNÜMÜ ──────────────────────────────────────────────────────────
@@ -846,8 +846,8 @@ export const Documents = ({
         {[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => (
           <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
-            borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: subTab === id ? "#e85d1a" : "var(--n400, #94a3b8)",
+            borderBottom: subTab === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
+            color: subTab === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}
@@ -884,7 +884,7 @@ export const Documents = ({
                 return (
                   <tr key={t.id} ref={odakli ? odakDocRef : null} data-odak-belge={odakli ? "1" : undefined}
                     onClick={canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? () => openEdit(t) : undefined}
-                    style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default", ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "inset 3px 0 0 #e85d1a" } : null) }}
+                    style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default", ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "inset 3px 0 0 var(--brand, #e85d1a)" } : null) }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                     onMouseLeave={e => e.currentTarget.style.background = odakli ? "var(--ambBg3, #fff7ed)" : ""}>
                     <td style={{ padding: "10px 12px" }}>
@@ -1447,7 +1447,7 @@ export const Documents = ({
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 14, paddingTop: 8, borderTop: "2px solid var(--n200, #e2e8f0)" }}>
                 <span>Genel Toplam</span>
-                <span style={{ color: "#e85d1a" }}>{fmtMoney(totals.genelToplam, form.currency)}</span>
+                <span style={{ color: "var(--brand, #e85d1a)" }}>{fmtMoney(totals.genelToplam, form.currency)}</span>
               </div>
             </div>
           </div>

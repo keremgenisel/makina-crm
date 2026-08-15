@@ -197,17 +197,25 @@ describe("GlobalSearch sekme yetkisi", () => {
     expect(row("Garanti Dışı")).toBeTruthy();
   });
 
-  it("bir sonuca tıklayıp geri dönünce arama korunur (sıfırlanmaz)", () => {
+  it("palet kapanınca arama kutusu sıfırlanır (tekrar açınca boş gelir)", () => {
     const onOpenCustomer = vi.fn();
     render(<GlobalSearch {...veri} onOpenCustomer={onOpenCustomer} allowedTabs={["customers"]} />);
+    // Bir sonuca tıklayarak kapat
     fireEvent.click(screen.getByTitle("Genel arama (Ctrl+K)"));
     fireEvent.change(screen.getByPlaceholderText(/Müşteri, seri no/), { target: { value: "genisel" } });
     fireEvent.click(row("Genisel Catering")); // sonuca tıkla → palet kapanır + onOpenCustomer
     expect(onOpenCustomer).toHaveBeenCalledWith(1);
-    // paleti tekrar aç → metin ve sonuçlar korunmuş, sıfırdan yazmak gerekmiyor
+    // paleti tekrar aç → kutu boş, eski arama kelimesi kalmaz
     fireEvent.click(screen.getByTitle("Genel arama (Ctrl+K)"));
-    expect(screen.getByPlaceholderText(/Müşteri, seri no/).value).toBe("genisel");
+    expect(screen.getByPlaceholderText(/Müşteri, seri no/).value).toBe("");
+    expect(row("Genisel Catering")).toBeFalsy(); // eski sonuçlar da gitmiş
+
+    // esc ile kapatınca da sıfırlanır
+    fireEvent.change(screen.getByPlaceholderText(/Müşteri, seri no/), { target: { value: "genisel" } });
     expect(row("Genisel Catering")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.click(screen.getByTitle("Genel arama (Ctrl+K)"));
+    expect(screen.getByPlaceholderText(/Müşteri, seri no/).value).toBe("");
   });
 
   it("klavye: ok tuşu + Enter seçili sonucu açar", () => {

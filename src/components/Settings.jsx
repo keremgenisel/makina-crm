@@ -116,7 +116,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
                         display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
                         padding: "10px 14px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
                         border: "none", marginBottom: 4,
-                        background: active ? "#e85d1a" : "transparent",
+                        background: active ? "var(--brand, #e85d1a)" : "transparent",
                         color: active ? "#fff" : "var(--n600, #475569)",
                         boxShadow: active ? "0 2px 8px rgba(232,93,26,.3)" : "none",
                         transition: "background .15s",

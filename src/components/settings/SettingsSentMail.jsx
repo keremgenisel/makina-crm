@@ -154,8 +154,8 @@ export const SettingsSentMail = () => {
                   {[["all", "Tümü"], ...presentTypes.map(t => [t, TYPE_LABELS[t] || t])].map(([val, label]) => (
                     <button key={val} onClick={() => setTrashTypeFilter(val)}
                       style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                        border: "1px solid", borderColor: trashTypeFilter === val ? "#e85d1a" : "var(--n200, #e2e8f0)",
-                        background: trashTypeFilter === val ? "#e85d1a" : "var(--n100, #f8fafc)",
+                        border: "1px solid", borderColor: trashTypeFilter === val ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
+                        background: trashTypeFilter === val ? "var(--brand, #e85d1a)" : "var(--n100, #f8fafc)",
                         color: trashTypeFilter === val ? "#fff" : "var(--n500, #64748b)" }}>
                       {label}
                     </button>

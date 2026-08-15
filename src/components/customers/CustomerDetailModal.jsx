@@ -850,9 +850,9 @@ export const CustomerDetailModal = ({
                     <div key={m.id}
                       onClick={() => onSwitchMachine(m.id)}
                       style={{ padding: "10px 12px", borderRadius: 10, cursor: "pointer",
-                        border: "1px solid", borderColor: isCurrent ? "#e85d1a" : "var(--n200, #e2e8f0)", background: isCurrent ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}>
+                        border: "1px solid", borderColor: isCurrent ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: isCurrent ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>
-                        {m.model || "Model yok"} {isCurrent && <span style={{ fontSize: 10, color: "#e85d1a", fontWeight: 800 }}>· GÖRÜNTÜLENEN</span>}
+                        {m.model || "Model yok"} {isCurrent && <span style={{ fontSize: 10, color: "var(--brand, #e85d1a)", fontWeight: 800 }}>· GÖRÜNTÜLENEN</span>}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontFamily: "monospace" }}>{m.serialNo || "Seri no yok"}</div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: ok ? "var(--emerald, #059669)" : "var(--red600, #dc2626)", marginTop: 3 }}>
@@ -1016,7 +1016,7 @@ export const CustomerDetailModal = ({
                       <button
                         onClick={() => setCustomers(p => p.map(c => c.id === detailView.id ? { ...c, bantlar: (c.bantlar || []).filter((_, i) => i !== bantIdx) } : c))}
                         title="Eski bant verisini kaldır"
-                        style={{ position: "absolute", top: 6, right: 8, border: "none", background: "transparent", color: "var(--n400, #94a3b8)", cursor: "pointer", fontSize: 14, fontWeight: 700, lineHeight: 1, padding: 2 }}>×</button>
+                        style={{ position: "absolute", top: 6, right: 8, border: "none", background: "transparent", color: "var(--n400, #94a3b8)", cursor: "pointer", lineHeight: 1, padding: 2 }}><Icon name="close" size={15} /></button>
                     )}
                   </div>
                 );

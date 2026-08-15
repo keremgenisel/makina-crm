@@ -75,7 +75,7 @@ export const LockScreen = ({ onUnlock }) => {
           <div className="section-desc">
             Yeni kurtarma kodunuz aşağıdadır. Bu kod yalnızca burada gösterilir, bir yere not alın — eskisi artık geçersizdir.
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 22 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 22 }}>
             {newRecoveryCode}
           </div>
           <Btn onClick={onUnlock}><Icon name="check" size={14} /> Not Aldım, Devam Et</Btn>
@@ -118,7 +118,7 @@ export const LockScreen = ({ onUnlock }) => {
   return (
     <Screen>
       <div style={{ ...cardStyle, textAlign: "center" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--ambBg3, #fff7ed)", color: "#e85d1a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--ambBg3, #fff7ed)", color: "var(--brand, #e85d1a)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
           <Icon name="lock" size={22} />
         </div>
         <div style={{ fontSize: 17, fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 18 }}>Altunmak CRM</div>

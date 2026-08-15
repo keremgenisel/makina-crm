@@ -14,7 +14,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const [showAllParts, setShowAllParts] = useState(false);
   const { lockLoading: stockLockLoading, lockConflict: stockLock, forceAcquire: forceStockLock } = useLock("stock", modal?.edit?.id ?? null);
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", outline: "none", fontFamily: "inherit" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none", fontFamily: "inherit" };
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(stock, {
     searchFields: ["model", "serialNo", "note"],
@@ -143,10 +143,10 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             const active = modelFilter === m;
             return (
               <div key={m} onClick={() => { setModelFilter(active ? null : m); setPage(1); }}
-                style={{ background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${active ? "var(--orTx, #c2410c)" : "#e85d1a"}`, cursor: "pointer" }}
+                style={{ background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${active ? "var(--orTx, #c2410c)" : "var(--brand, #e85d1a)"}`, cursor: "pointer" }}
                 title="Bu modeldeki makinaları göster">
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{m}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#e85d1a" }}>{n} <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>adet</span></div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--brand, #e85d1a)" }}>{n} <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>adet</span></div>
               </div>
             );
           })}
@@ -266,7 +266,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 8 }}>
               {(form.parcalar || []).map((row, i) => (
-                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--n100, #f8fafc)", border: "1px solid #eef2f7", borderRadius: 8, padding: "6px 8px" }}>
+                <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--n100, #f8fafc)", border: "1px solid var(--n80, #eef2f6)", borderRadius: 8, padding: "6px 8px" }}>
                   <select value={row.partId} onChange={e => updateParcaRow(i, "partId", e.target.value)}
                     style={{ ...inputStyle, flex: 1, minWidth: 0 }}>
                     <option value="">Parça seçin...</option>

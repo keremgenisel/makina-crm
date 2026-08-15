@@ -32,7 +32,7 @@ export const TahsisModal = ({ customers = [], kalan, onEkle, onClose, showToast 
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 4 }}>Makina (müşteri)</div>
         {secili ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", border: "2px solid var(--brand, #e85d1a)", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 13 }}>{secili.name}</div>
               <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{secili.model || "Model yok"}{secili.serialNo ? ` · S/N ${secili.serialNo}` : ""}</div>

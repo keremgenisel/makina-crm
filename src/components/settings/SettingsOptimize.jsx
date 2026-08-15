@@ -100,7 +100,7 @@ export const SettingsOptimize = ({
     flash("ok", `${imgs.length} resim optimize edildi, ${savedKb} KB tasarruf (%${pct}).`);
   };
 
-  const groupColor = { "Makina modeli": "var(--blu500, #3b82f6)", "Kalıp": "#8b5cf6", "Parça/Yedek parça": "#f59e0b", "Kaşe/İmza": "#e85d1a" };
+  const groupColor = { "Makina modeli": "var(--blu500, #3b82f6)", "Kalıp": "#8b5cf6", "Parça/Yedek parça": "#f59e0b", "Kaşe/İmza": "var(--brand, #e85d1a)" };
 
   return (
     <Section title="Resim Optimizasyonu" icon="settings">

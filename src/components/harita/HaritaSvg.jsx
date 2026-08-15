@@ -12,7 +12,7 @@ const ETIKET_OLCEK = 0.95; // ekran ölçeği çarpanı → ~11px sabit (bir tı
 
 // Pin renkleri. Bir kayıt hem bayi hem anlaşmalı servis olabilir; o zaman pin yarı mavi
 // yarı yeşil çizilir (aşağıdaki degrade, ortasında sert geçişle iki rengi böler).
-const PIN_RENK = { fabrika: "#e85d1a", bayi: "#2563eb", servis: "#16a34a" };
+const PIN_RENK = { fabrika: "var(--brand, #e85d1a)", bayi: "#2563eb", servis: "#16a34a" };
 const pinRengi = (p) => (p.tur === "fabrika" ? PIN_RENK.fabrika
   : p.cesit === "ikisi" ? "url(#pin-ikisi)"
     : p.cesit === "servis" ? PIN_RENK.servis : PIN_RENK.bayi);

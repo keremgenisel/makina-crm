@@ -48,7 +48,7 @@ const buildDots = () => {
 // Modül seviyesinde bir kere hesaplanır — saf dekoratif olduğu için her render'da yeniden üretmeye gerek yok.
 const DOTS = buildDots();
 
-export const WorldDotMap = ({ color = "#e85d1a", baseOpacity = 0.16, style }) => (
+export const WorldDotMap = ({ color = "var(--brand, #e85d1a)", baseOpacity = 0.16, style }) => (
   <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} preserveAspectRatio="xMidYMid slice"
     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", ...style }}>
     {DOTS.map((d, i) => (

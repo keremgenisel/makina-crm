@@ -46,7 +46,7 @@ export const KargoKart = ({ s, dealers = [], parts = [], customers = [], calisan
         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 800, letterSpacing: .4, borderRadius: 6, padding: "2px 7px", background: d.bg, color: d.renk, border: `1px solid ${d.br}` }}>{s.fabrikaTeslim ? "🏭 FABRİKA TESLİM" : "📦 KARGO"}</span>
         <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--n400, #94a3b8)" }}>{teslimDurumEtiket(s)}</span>
       </div>
-      <div style={{ fontSize: 14, fontWeight: 750, color: "var(--n900, #0f172a)" }}>{baslik}{grup.length > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--n400, #94a3b8)", marginLeft: 6 }}>· {grup.length} kalem</span> : null}</div>
+      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{baslik}{grup.length > 1 ? <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--n400, #94a3b8)", marginLeft: 6 }}>· {grup.length} kalem</span> : null}</div>
       <div style={{ fontSize: 12.5, color: "var(--n600, #475569)", marginTop: 2, display: "flex", flexDirection: "column", gap: 1 }}>
         {grup.map(g => (
           <div key={g.id}>
@@ -139,7 +139,7 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
   return (
     <>
       <Modal title={kalip ? (fabTeslim ? "Extra Kalıp — Fabrika Teslim" : "Extra Kalıp — Kargo") : (fabTeslim ? "Fabrika Teslim / Yedek Parça Satışı" : "Kargo / Yedek Parça Satışı")} onClose={onClose} wide>
-        <div style={{ fontSize: 14, fontWeight: 750, color: "var(--n900, #0f172a)" }}>{baslik}{coklu ? <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", marginLeft: 8 }}>· {grup.length} kalem (toplu satış)</span> : null}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{baslik}{coklu ? <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", marginLeft: 8 }}>· {grup.length} kalem (toplu satış)</span> : null}</div>
         {iletisimSatirlari.length > 0 && (
           <div style={{ display: "grid", gap: 3, margin: "5px 0 0", fontSize: 12 }}>
             {iletisimSatirlari.map(([label, value]) => (

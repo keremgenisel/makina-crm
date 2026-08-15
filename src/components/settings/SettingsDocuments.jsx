@@ -544,7 +544,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
     setTimeout(() => { if (newDraft) autoSaveDraft(newDraft); }, 0);
   };
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none", resize: "vertical" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none", resize: "vertical" };
 
   const sections = SECTIONS[docType] || [];
   const cfsBySection = (sec) => (draft[docType]?.customFields || []).filter(f => f.section === sec);
@@ -561,8 +561,8 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
         {[["teklif", "Teklif"], ["proforma", "Proforma"], ["fatura", "Yurt Dışı Fatura"]].map(([id, label]) => (
           <button key={id} onClick={() => setDocType(id)} style={{
             padding: "7px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
-            borderBottom: docType === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: docType === id ? "#e85d1a" : "var(--n400, #94a3b8)",
+            borderBottom: docType === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
+            color: docType === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}
@@ -629,7 +629,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                     const borderColor = hidden ? "#fca5a5" : "var(--grnBr, #bbf7d0)";
                     const textColor = hidden ? "var(--red700, #b91c1c)" : "var(--grn900, #166534)";
                     return (
-                      <div key={item.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "#fff1f2" : "var(--grnBg, #f0fdf4)", overflow: "hidden", transition: "all .1s" }}>
+                      <div key={item.key} style={{ display: "flex", alignItems: "center", borderRadius: 20, border: `1px solid ${borderColor}`, background: hidden ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", overflow: "hidden", transition: "all .1s" }}>
                         <div onClick={() => toggleHide(sec.key, item.key)}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 8px 5px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: textColor, userSelect: "none", flex: 1 }}>
                           <span style={{ fontSize: 11 }}>{hidden ? "✕" : "✓"}</span>
@@ -647,7 +647,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
                           style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 6px", cursor: idx === arr.length - 1 ? "default" : "pointer", fontSize: 12, color: textColor, opacity: idx === arr.length - 1 ? 0.3 : 0.7, lineHeight: 1 }}>↓</button>
                         <button onClick={() => setDeleteConfirm({ label: chipLabel, onConfirm: () => deleteBuiltin(sec.key, item.key) })}
                           title="Kaldır"
-                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", fontSize: 11, color: "var(--red700, #b91c1c)", opacity: 0.7, lineHeight: 1 }}>✕</button>
+                          style={{ background: "transparent", border: "none", borderLeft: `1px solid ${borderColor}`, padding: "5px 7px", cursor: "pointer", color: "var(--red700, #b91c1c)", opacity: 0.7, lineHeight: 1 }}><Icon name="close" size={12} /></button>
                       </div>
                     );
                   } else {
@@ -781,7 +781,7 @@ const Accordion = ({ label, sKey, openSections, toggle, badge, children }) => {
       <div onClick={() => toggle(sKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, marginBottom: isOpen ? 10 : 0, cursor: "pointer", userSelect: "none" }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>{label}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {badge && <span style={{ fontSize: 11, fontWeight: 700, background: "#e85d1a", color: "#fff", borderRadius: 8, padding: "1px 7px" }}>{badge}</span>}
+          {badge && <span style={{ fontSize: 11, fontWeight: 700, background: "var(--brand, #e85d1a)", color: "#fff", borderRadius: 8, padding: "1px 7px" }}>{badge}</span>}
           <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{isOpen ? "▾" : "▸"}</span>
         </div>
       </div>
@@ -806,7 +806,7 @@ const CfModal = ({ cf, isNew, sections, onChange, onSave, onClose }) => {
   const [optionInput, setOptionInput] = useState({ TR: "", EN: "" });
   const options = cf.options || [];
 
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
 
   const addOption = () => {
     if (!optionInput.TR.trim()) return;
@@ -888,7 +888,7 @@ const CfModal = ({ cf, isNew, sections, onChange, onSave, onClose }) => {
 
 // ── Alan Etiket Düzenleme Modal ────────────────────────────────────────────────
 const FieldLabelModal = ({ modal, onChange, onSave, onReset, onClose }) => {
-  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 7, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
+  const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
   const hasCustom = modal.trValue.trim() || modal.enValue.trim();
   return (
     <Modal title={`"${modal.defaultLabel}" Etiketini Düzenle`} onClose={onClose}>

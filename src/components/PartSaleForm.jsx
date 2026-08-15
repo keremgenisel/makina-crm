@@ -55,7 +55,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "2px solid var(--brand, #e85d1a)", borderRadius: 8, background: "var(--ambBg3, #fff7ed)" }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
               <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>
@@ -183,13 +183,13 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                   </div>
                   <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
                     <input type="checkbox" checked={!!k.uretimFormGonder} onChange={e => kalipSet(i, "uretimFormGonder", e.target.checked)}
-                      style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                      style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
                     Üretim formuna gönder
                   </label>
                 </div>
               ))}
               <button type="button" onClick={kalipEkle}
-                style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>
+                style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: "var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "7px 12px", cursor: "pointer" }}>
                 <Icon name="plus" size={13} /> Kalıp Ekle
               </button>
             </div>
@@ -213,7 +213,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
               <MoneyInput value={kaliplar[0]?.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => kalipSet(0, "fiyat", v)} />
               <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
                 <input type="checkbox" checked={!!kaliplar[0]?.uretimFormGonder} onChange={e => kalipSet(0, "uretimFormGonder", e.target.checked)}
-                  style={{ width: 15, height: 15, accentColor: "#e85d1a", cursor: "pointer" }} />
+                  style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
                 Üretim formuna gönder
               </label>
             </div>
@@ -306,7 +306,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                   <button key={l} type="button"
                     onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "" } : {}) }))}
                     style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                      background: secili ? "#e85d1a" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
+                      background: secili ? "var(--brand, #e85d1a)" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
                 );
               })}
             </div>
@@ -333,11 +333,11 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                   <input type="checkbox" checked={!!form.teslimatFarkli}
                     onChange={e => setForm(p => ({ ...p, teslimatFarkli: e.target.checked }))}
-                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#e85d1a" }} />
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "#e85d1a" }}>📍 Farklı adrese kargolat</span>
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)" }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "var(--brand, #e85d1a)" }}>📍 Farklı adrese kargolat</span>
                   {form.teslimatFarkli && (
                     <button type="button" onClick={adresDoldur}
-                      style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#e85d1a", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
+                      style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--brand, #e85d1a)", background: "var(--surface, #fff)", border: "1px dashed var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
                       ⤵ Müşterinin adresini doldur
                     </button>
                   )}

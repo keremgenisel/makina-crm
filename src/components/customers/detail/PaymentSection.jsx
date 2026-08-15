@@ -23,7 +23,7 @@ export const PaymentSection = ({
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
-        <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderTop: "3px solid #e85d1a", borderRadius: 12, padding: "14px 18px" }}>
+        <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderTop: "3px solid var(--brand, #e85d1a)", borderRadius: 12, padding: "14px 18px" }}>
           <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 700, letterSpacing: .5, marginBottom: 6, textTransform: "uppercase" }}>Toplam Bedel</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{fmtCur(detailCiro, detailView.currency)}</div>
         </div>

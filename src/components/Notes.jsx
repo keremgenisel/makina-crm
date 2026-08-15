@@ -114,7 +114,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
         {/* SOL: not listesi */}
         <div style={{ width: 280, flexShrink: 0, minWidth: 240 }}>
           {canDoNot("not_add") && (
-            <button onClick={yeniNot} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "#e85d1a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <button onClick={yeniNot} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "none", background: "var(--brand, #e85d1a)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <Icon name="edit" size={15} /> Yeni Not
             </button>
           )}
@@ -124,7 +124,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
                 const aktif = filtreBenim === (k === "benim");
                 return (
                   <button key={k} onClick={() => { setFiltreBenim(k === "benim"); setPage(1); }}
-                    style={{ flex: 1, padding: "6px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${aktif ? "#e85d1a" : "var(--n200, #e2e8f0)"}`, background: aktif ? "#e85d1a" : "var(--surface, #ffffff)", color: aktif ? "#fff" : "var(--n500, #64748b)" }}>
+                    style={{ flex: 1, padding: "6px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${aktif ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: aktif ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: aktif ? "#fff" : "var(--n500, #64748b)" }}>
                     {label}
                   </button>
                 );
@@ -145,7 +145,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               const active = n.id === selectedId;
               return (
                 <div key={n.id} onClick={() => requestSelectNote(n)}
-                  style={{ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderLeft: active ? "3px solid #e85d1a" : "3px solid transparent", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  style={{ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid var(--n150, #f1f5f9)", background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderLeft: active ? "3px solid var(--brand, #e85d1a)" : "3px solid transparent", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
                       {active && dirty && <span title="Kaydedilmemiş değişiklikler var" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--amb600, #d97706)", flexShrink: 0 }} />}
@@ -159,7 +159,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
                   </div>
                   {canDoNot("not_delete") && (
                     <button onClick={e => { e.stopPropagation(); setConfirmDelete(n); }} title="Notu sil"
-                      style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+                      style={{ width: 28, height: 28, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={14} /></button>
                   )}
                 </div>
               );

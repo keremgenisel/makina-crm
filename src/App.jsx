@@ -1222,7 +1222,7 @@ export default function App() {
       {updBannerGorunur && (
         <div style={{
           display: "flex", alignItems: "center", gap: 14, flexShrink: 0,
-          background: "linear-gradient(90deg, #e85d1a, #f59e0b)", color: "#fff",
+          background: "linear-gradient(90deg, var(--brand, #e85d1a), #f59e0b)", color: "#fff",
           padding: "10px 20px", fontSize: 13.5, fontWeight: 600,
           boxShadow: "0 2px 10px rgba(0,0,0,.18)", zIndex: 50,
         }}>

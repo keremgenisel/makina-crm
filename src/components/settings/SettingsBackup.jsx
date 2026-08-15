@@ -240,7 +240,7 @@ export const SettingsBackup = ({
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 14 }}>
             <input type="checkbox" checked={appSettings.autoBackup}
               onChange={e => setAppSettings(p => ({ ...p, autoBackup: e.target.checked }))}
-              style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
+              style={{ width: 18, height: 18, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Otomatik Yedekleme</span>
           </label>
 
@@ -373,14 +373,14 @@ export const SettingsBackup = ({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5 }}>Geri yüklenecek bölümler</span>
               <button onClick={() => setRestorePaketler(new Set(restorePaketler.size === RESTORE_PAKETLERI.length ? [] : RESTORE_PAKETLERI.map(pk => pk.id)))}
-                style={{ background: "none", border: "none", color: "#e85d1a", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: "none", border: "none", color: "var(--brand, #e85d1a)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {restorePaketler.size === RESTORE_PAKETLERI.length ? "Tümünü Kaldır" : "Tümünü Seç"}
               </button>
             </div>
             {RESTORE_PAKETLERI.map(pk => (
               <label key={pk.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
                 <input type="checkbox" checked={restorePaketler.has(pk.id)} onChange={() => paketToggle(pk.id)}
-                  style={{ width: 16, height: 16, accentColor: "#e85d1a", cursor: "pointer" }} />
+                  style={{ width: 16, height: 16, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
                 <span style={{ fontWeight: 600, color: "var(--n900, #0f172a)" }}>{pk.ad}</span>
                 {pk.aciklama && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>({pk.aciklama})</span>}
               </label>

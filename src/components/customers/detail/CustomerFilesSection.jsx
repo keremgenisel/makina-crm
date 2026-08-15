@@ -8,7 +8,7 @@ import { logAction, getAuditUsername } from "../../../lib/audit";
 // birden fazla dosya bağlanabilir. Zaman çizelgesindeki ataş rozeti dosyaFiltre'yi ayarlar → bu
 // bölüm o kayda filtreler ve görünüme kayar. dosyaFiltre üst bileşende tutulur (çizelgeyle paylaşımlı).
 const TUR_RENK = { PDF: "var(--red600, #dc2626)", JPG: "var(--purTx, #7c3aed)", XLS: "var(--cyan, #0891b2)", DOC: "var(--blu600, #2563eb)", TXT: "var(--n500, #64748b)", DOSYA: "var(--n400, #94a3b8)" };
-const REF_ROZET = { makina: { bg: "var(--ambBg3, #fff7ed)", fg: "#9a3412" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, kalip: { bg: "var(--bluBg, #eff6ff)", fg: "var(--blu700, #1d4ed8)" }, parca: { bg: "#ecfeff", fg: "#0e7490" }, yedekkargo: { bg: "#ecfeff", fg: "var(--cyan, #0891b2)" }, odeme: { bg: "#f0fdfa", fg: "var(--teal2, #0f766e)" } };
+const REF_ROZET = { makina: { bg: "var(--ambBg3, #fff7ed)", fg: "var(--orTx, #c2410c)" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, kalip: { bg: "var(--bluBg, #eff6ff)", fg: "var(--blu700, #1d4ed8)" }, parca: { bg: "var(--cyanBg, #ecfeff)", fg: "var(--cyan, #0891b2)" }, yedekkargo: { bg: "var(--cyanBg, #ecfeff)", fg: "var(--cyan, #0891b2)" }, odeme: { bg: "var(--tealBg, #f0fdfa)", fg: "var(--teal2, #0f766e)" } };
 const fmtBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
 
 export function CustomerFilesSection({

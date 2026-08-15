@@ -69,7 +69,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
           <div style={{ maxWidth: 420 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 8 }}>İndiriliyor... %{upd.progress}</div>
             <div style={{ height: 8, background: "var(--n150, #f1f5f9)", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ height: 8, width: `${upd.progress}%`, background: "#e85d1a", borderRadius: 6, transition: "width .3s" }} />
+              <div style={{ height: 8, width: `${upd.progress}%`, background: "var(--brand, #e85d1a)", borderRadius: 6, transition: "width .3s" }} />
             </div>
           </div>
         )}
@@ -127,7 +127,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
               checked={!!openAtLogin}
               disabled={openAtLogin === null}
               onChange={e => toggleOpenAtLogin(e.target.checked)}
-              style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
+              style={{ width: 18, height: 18, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)" }}>
               Bilgisayar açılışında otomatik başlat
             </span>

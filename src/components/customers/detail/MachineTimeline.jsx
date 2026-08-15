@@ -350,7 +350,7 @@ export const MachineTimeline = ({
                       const satirTutar = birim * (adet || 1); // birim × adet = satır toplamı
                       const isDisTedarik = typeof p === "object" && !!p.disTedarik;
                       return (
-                        <span key={i} style={{ fontSize: 11, fontWeight: 600, color: isDisTedarik ? "#ea580c" : "var(--blu700, #1d4ed8)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--bluBg, #eff6ff)", border: `1px solid ${isDisTedarik ? "var(--ambBr3, #fed7aa)" : "var(--bluBr, #bfdbfe)"}`, borderRadius: 12, padding: "2px 9px" }}>
+                        <span key={i} style={{ fontSize: 11, fontWeight: 600, color: isDisTedarik ? "var(--brand, #e85d1a)" : "var(--blu700, #1d4ed8)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--bluBg, #eff6ff)", border: `1px solid ${isDisTedarik ? "var(--ambBr3, #fed7aa)" : "var(--bluBr, #bfdbfe)"}`, borderRadius: 12, padding: "2px 9px" }}>
                           {ad}{adet > 1 ? ` x${adet}` : ""}{isDisTedarik ? " · Dış Tedarik" : ""}{satirTutar > 0 ? ` · ${fmtCur(satirTutar, sv.parcaCurrency)}` : ""}
                         </span>
                       );

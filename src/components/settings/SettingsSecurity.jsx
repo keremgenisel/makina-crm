@@ -83,7 +83,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: appLockStatus.enabled ? 14 : 0 }}>
               <input type="checkbox" checked={appLockStatus.enabled}
                 onChange={e => e.target.checked ? openLockModal("setup") : openLockModal("disable")}
-                style={{ width: 18, height: 18, accentColor: "#e85d1a", cursor: "pointer" }} />
+                style={{ width: 18, height: 18, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               <span style={{ fontSize: 14, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Açılışta şifre sorulsun</span>
             </label>
             {appLockStatus.enabled && (
@@ -94,7 +94,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
                   <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 10 }}>
                     <input type="checkbox" checked={!!appSettings.autoLockMinutes}
                       onChange={e => setAppSettings(p => ({ ...p, autoLockMinutes: e.target.checked ? 5 : null }))}
-                      style={{ width: 17, height: 17, accentColor: "#e85d1a", cursor: "pointer" }} />
+                      style={{ width: 17, height: 17, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
                     <span style={{ fontSize: 13, color: "var(--n900, #0f172a)" }}>Hareketsizlik sonrası otomatik kilitle</span>
                   </label>
                   {!!appSettings.autoLockMinutes && (
@@ -112,7 +112,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
                         await window.appLock?.setLockOnClose(val);
                         setAppLockStatus(p => ({ ...p, lockOnClose: val }));
                       }}
-                      style={{ width: 17, height: 17, accentColor: "#e85d1a", cursor: "pointer" }} />
+                      style={{ width: 17, height: 17, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
                     <span style={{ fontSize: 13, color: "var(--n900, #0f172a)" }}>Kapatılıp açılınca da kilitle</span>
                   </label>
                 </div>
@@ -185,7 +185,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
           <div className="section-desc">
             Şifrenizi unutursanız bu kod ile sıfırlayabilirsiniz. Bu kod yalnızca burada gösterilir, bir yere not alın.
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "#e85d1a", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 2, color: "var(--brand, #e85d1a)", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 0", marginBottom: 20, textAlign: "center" }}>
             {lockRecoveryCode}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>

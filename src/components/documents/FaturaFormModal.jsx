@@ -2,7 +2,7 @@ import { uid, parseMoney, numberToWordsEN } from "../../lib/utils";
 import { COUNTRIES, CURRENCIES } from "../../lib/constants";
 import { Icon, Field, Btn, Modal, LockConflict, DateInput } from "../ui";
 
-const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
+const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: "var(--n100, #f8fafc)", outline: "none" };
 
 const calcFaturaTotal = (f) =>
   (f?.satirlar || []).reduce((s, r) => s + (parseMoney(r.birimFiyat) || 0) * (parseFloat(r.adet) || 0), 0);
@@ -205,7 +205,7 @@ export const FaturaFormModal = ({
                   </td>
                   <td style={{ padding: "6px 8px", width: 32 }}>
                     <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: p.satirlar.filter((_, i) => i !== idx) }))}
-                      style={{ background: "none", border: "none", color: "var(--red500, #ef4444)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+                      style={{ background: "none", border: "none", color: "var(--n500, #64748b)", cursor: "pointer", lineHeight: 1 }}><Icon name="close" size={16} /></button>
                   </td>
                 </tr>
               );
@@ -213,7 +213,7 @@ export const FaturaFormModal = ({
           </tbody>
         </table>
         <button onClick={() => setFaturaForm(p => ({ ...p, satirlar: [...(p.satirlar || []), { id: uid(), urunKey: "", urunTip: "", model: "", aciklama: "", tanim: "", seriNo: "", adet: "1", birimFiyat: "" }] }))}
-          style={{ marginTop: 10, fontSize: 13, color: "#e85d1a", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+          style={{ marginTop: 10, fontSize: 13, color: "var(--brand, #e85d1a)", fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
           <Icon name="plus" size={13} /> Satır Ekle
         </button>
       </div>

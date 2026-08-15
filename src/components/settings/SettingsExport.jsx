@@ -463,14 +463,14 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         </div>
 
         {/* Tümünü indir — içe aktarma şablonu formatında (geri yüklenebilir) */}
-        <div style={{ background: "linear-gradient(135deg, #e85d1a, #f59e0b)", borderRadius: 12, padding: "20px 22px", marginBottom: 18, color: "#fff" }}>
+        <div style={{ background: "linear-gradient(135deg, var(--brand, #e85d1a), #f59e0b)", borderRadius: 12, padding: "20px 22px", marginBottom: 18, color: "#fff" }}>
           <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>Tüm Kayıtları İndir (Şablon Formatı)</div>
           <div style={{ fontSize: 12.5, marginBottom: 14, lineHeight: 1.5, opacity: .95 }}>
             Tüm müşteriler ve servis geçmişleri tek Excel dosyasında, <b>içe aktarma şablonuyla aynı sütun düzeninde</b>. Bu dosyayı düzenleyip tekrar İçe Aktar'dan yükleyebilirsiniz. ({customers.length} müşteri)
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button onClick={() => exportAllTemplate("download")}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "var(--surface, #ffffff)", color: "#e85d1a", border: "none" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", background: "var(--surface, #ffffff)", color: "var(--brand, #e85d1a)", border: "none" }}>
               <Icon name="download" size={14} /> Tümünü İndir
             </button>
             <button onClick={() => exportAllTemplate("email")}

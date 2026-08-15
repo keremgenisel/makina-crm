@@ -8,7 +8,7 @@ import { logAction, getAuditUsername } from "../lib/audit";
 // değiştirilebilir (yanlış seçilirse silip yeniden yüklemeye gerek yok). window.appFiles yerel/istemci
 // farkını yönetir; çevrimdışıyken (cevrimdisi) ekleme/açma/indirme kilitlenir.
 const TUR_RENK = { PDF: "var(--red600, #dc2626)", JPG: "var(--purTx, #7c3aed)", XLS: "var(--cyan, #0891b2)", DOC: "var(--blu600, #2563eb)", TXT: "var(--n500, #64748b)", DOSYA: "var(--n400, #94a3b8)" };
-const REF_ROZET = { bayi: { bg: "var(--ambBg, #fffbeb)", fg: "var(--amb800, #92400e)" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, yedekkargo: { bg: "#ecfeff", fg: "var(--cyan, #0891b2)" } };
+const REF_ROZET = { bayi: { bg: "var(--ambBg, #fffbeb)", fg: "var(--amb800, #92400e)" }, servis: { bg: "var(--grnBg, #f0fdf4)", fg: "var(--grn900, #166534)" }, yedekkargo: { bg: "var(--cyanBg, #ecfeff)", fg: "var(--cyan, #0891b2)" } };
 const fmtBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
 
 export function DealerFilesSection({ dealer, dosyalar = [], setDosyalar = null, services = [], customers = [], yedekKargolar = [], canDo = () => true, showToast = () => {}, serverPermissions = null, cevrimdisi = false, odak = null, onOdakChange = null }) {

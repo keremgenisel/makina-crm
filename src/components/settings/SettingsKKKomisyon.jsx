@@ -24,7 +24,7 @@ const normalizeAyar = (a) => ({
     blokajGun: Math.max(0, parseInt(s.blokajGun) || 0),
   })),
 });
-const inpStyle = { padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, width: "100%", boxSizing: "border-box", background: "var(--n100, #f8fafc)", textAlign: "right", fontVariantNumeric: "tabular-nums" };
+const inpStyle = { padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, width: "100%", boxSizing: "border-box", background: "var(--n100, #f8fafc)", textAlign: "right", fontVariantNumeric: "tabular-nums" };
 const lblStyle = { fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 };
 
 export const SettingsKKKomisyon = ({ appSettings, setAppSettings, flash = () => {} }) => {

@@ -131,11 +131,10 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
   }, []);
 
   useEffect(() => {
-    // Kapanınca sorguyu KORU: kullanıcı bir sonuca tıklayıp (ör. müşteri modalı) geri döndüğünde
-    // aynı arama sonuçları dursun, sıfırdan yazmak gerekmesin. Açılışta metni seçili getir ki
-    // istenirse tek tuşla değiştirilebilsin.
-    if (open) setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 50);
-    else setSel(0);
+    // Kapanınca sorguyu SIFIRLA: paleti bir dahaki açışta eski arama kelimesi kutuda kalmasın
+    // (kullanıcı isteği). Açılışta boş kutuya odaklan, doğrudan yeni aramaya başlanabilsin.
+    if (open) setTimeout(() => { inputRef.current?.focus(); }, 50);
+    else { setQ(""); setAktif("all"); setSel(0); }
   }, [open]);
 
   // Seçili satırı görünür alana kaydır
@@ -241,14 +240,14 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
 const S = {
   palet: { display: "flex", flexDirection: "column", background: "var(--surface, #ffffff)", borderRadius: 16, width: "min(94vw, 920px)", maxHeight: "80vh", border: "1px solid var(--n150, #f1f5f9)", boxShadow: "0 24px 70px rgba(20,26,40,.28), 0 4px 14px rgba(20,26,40,.10)", overflow: "hidden" },
   head: { flexShrink: 0, padding: "14px 16px 12px", borderBottom: "1px solid var(--n150, #f1f5f9)" },
-  input: { width: "100%", boxSizing: "border-box", padding: "13px 84px 13px 46px", border: "2px solid #e85d1a", borderRadius: 12, fontSize: 17, outline: "none", background: "var(--surface, #ffffff)", color: "var(--n900, #0f172a)" },
+  input: { width: "100%", boxSizing: "border-box", padding: "13px 84px 13px 46px", border: "2px solid var(--brand, #e85d1a)", borderRadius: 12, fontSize: 17, outline: "none", background: "var(--surface, #ffffff)", color: "var(--n900, #0f172a)" },
   escChip: { position: "absolute", right: 13, fontSize: 11, fontWeight: 600, color: "var(--n400, #94a3b8)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "3px 7px", background: "var(--n100, #f8fafc)" },
   chips: { flexShrink: 0, display: "flex", gap: 7, padding: "12px 16px 2px", overflowX: "auto" },
-  chip: (on) => ({ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: `1px solid ${on ? "#e85d1a" : "var(--n200, #e2e8f0)"}`, background: on ? "#e85d1a" : "var(--n100, #f8fafc)", color: on ? "#fff" : "var(--n500, #64748b)" }),
+  chip: (on) => ({ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 999, border: `1px solid ${on ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: on ? "var(--brand, #e85d1a)" : "var(--n100, #f8fafc)", color: on ? "#fff" : "var(--n500, #64748b)" }),
   chipN: (on) => ({ fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", borderRadius: 999, padding: "1px 7px", minWidth: 20, textAlign: "center", background: on ? "rgba(255,255,255,.24)" : "var(--surface, #fff)", color: on ? "#fff" : "var(--n400, #94a3b8)" }),
   list: { flex: 1, minHeight: 0, overflowY: "auto", padding: "6px 0", scrollPaddingTop: 34, scrollPaddingBottom: 8 },
   grpHead: { position: "sticky", top: 0, zIndex: 2, background: "var(--surface, #ffffff)", display: "flex", alignItems: "center", gap: 6, padding: "9px 16px 5px", fontSize: 10.5, fontWeight: 800, letterSpacing: .6, textTransform: "uppercase", color: "var(--n400, #94a3b8)" },
-  row: (on) => ({ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "8px 16px", cursor: "pointer", textAlign: "left", border: "none", borderLeft: `3px solid ${on ? "#e85d1a" : "transparent"}`, background: on ? "var(--ambBg3, #fff7ed)" : "none", font: "inherit" }),
+  row: (on) => ({ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "8px 16px", cursor: "pointer", textAlign: "left", border: "none", borderLeft: `3px solid ${on ? "var(--brand, #e85d1a)" : "transparent"}`, background: on ? "var(--ambBg3, #fff7ed)" : "none", font: "inherit" }),
   badge: { flex: "0 0 auto", width: 32, height: 32, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 },
   rowT: (on) => ({ display: "block", fontSize: 13.5, fontWeight: 600, color: on ? "var(--orTx, #c2410c)" : "var(--n900, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
   rowM: { display: "block", fontSize: 12, color: "var(--n500, #64748b)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 },

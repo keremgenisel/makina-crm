@@ -50,8 +50,8 @@ export const Stock = ({
         {TABS.map(([id, label]) => (
           <button key={id} onClick={() => setSubTab(id)} style={{
             padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
-            borderBottom: subTab === id ? "2px solid #e85d1a" : "2px solid transparent",
-            color: subTab === id ? "#e85d1a" : "var(--n400, #94a3b8)",
+            borderBottom: subTab === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
+            color: subTab === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
             background: "transparent", marginBottom: -2,
           }}>{label}</button>
         ))}

@@ -77,7 +77,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
-          <div style={{ border: "2px solid #e85d1a", borderRadius: 8, background: "var(--ambBg3, #fff7ed)", overflow: "hidden" }}>
+          <div style={{ border: "2px solid var(--brand, #e85d1a)", borderRadius: 8, background: "var(--ambBg3, #fff7ed)", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px" }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--n900, #0f172a)" }}>{selectedCust.name}</div>
@@ -88,7 +88,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button type="button" onClick={() => setYetkiliAcik(v => !v)}
                   title={yetkiliAcik ? "Yetkili & adresi gizle" : "Yetkili & adresi göster"}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: "#c2410c", background: "var(--surface, #fff)", border: "1px solid #fdba74", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: "var(--orTx, #c2410c)", background: "var(--surface, #fff)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>
                   <Icon name="customers" size={12} /> Yetkili & Adres {yetkiliAcik ? "▴" : "▾"}
                 </button>
                 <button type="button" onClick={() => { setForm(p => ({ ...p, customerId: "" })); setCustSearch(""); setYetkiliAcik(false); }}
@@ -110,7 +110,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               const yetkili2 = yetkili(selectedCust.yetkili2Ad, selectedCust.yetkili2Tel);
               const sehir = [selectedCust.city, selectedCust.ilce, selectedCust.country].filter(Boolean).join(" / ");
               return (
-                <div style={{ display: "grid", gap: 6, padding: "10px 14px", borderTop: "1px dashed #fdba74", background: "var(--surface, #fff)" }}>
+                <div style={{ display: "grid", gap: 6, padding: "10px 14px", borderTop: "1px dashed var(--ambBr3, #fed7aa)", background: "var(--surface, #fff)" }}>
                   {bilgi("Yetkili 1", yetkili1)}
                   {yetkili2 && bilgi("Yetkili 2", yetkili2)}
                   {bilgi("Şirket Tel.", selectedCust.phone)}
@@ -216,7 +216,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", margin: "0 0 12px" }}>
         <input type="checkbox" checked={!!form.durum}
           onChange={e => { setPanoElle(true); setForm(p => ({ ...p, durum: e.target.checked ? (p.durum || "Bekliyor") : "" })); }}
-          style={{ width: 16, height: 16, accentColor: "#e85d1a", cursor: "pointer" }} />
+          style={{ width: 16, height: 16, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--n700, #334155)" }}>Servis Panosunda göster</span>
         <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>(kapalıysa yalnız müşteri geçmişine kaydedilir, panoya düşmez)</span>
       </label>
@@ -402,7 +402,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               ].filter(Boolean).join(" ");
               return (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "#ea580c" : itemColor, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "var(--brand, #e85d1a)" : itemColor, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ad}</span>
                     {!parcaUcretsizMi && (parseInt(p.miktar) || 1) > 1 && parseMoney(p.fiyat) > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--n400, #94a3b8)" }}>
@@ -429,7 +429,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                         return { ...prev, degisenParcalar: arr };
                       })}
                       title={isDisTedarik ? "Dış tedarik — Altuntaş'tan alınmadı" : "Altuntaş'tan alındı"}
-                      style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", padding: "4px 7px", borderRadius: 8, border: isDisTedarik ? "1px solid #f97316" : "1px solid var(--n200, #e2e8f0)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--n100, #f8fafc)", color: isDisTedarik ? "#ea580c" : "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>
+                      style={{ fontSize: 10, fontWeight: 700, cursor: "pointer", padding: "4px 7px", borderRadius: 8, border: isDisTedarik ? "1px solid var(--brand, #e85d1a)" : "1px solid var(--n200, #e2e8f0)", background: isDisTedarik ? "var(--ambBg3, #fff7ed)" : "var(--n100, #f8fafc)", color: isDisTedarik ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>
                       {isDisTedarik ? "Dış Tedarik" : "Bizden"}
                     </button>
                   )}
@@ -443,7 +443,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                   )}
                   <button type="button" title="Bu parçayı kaldır"
                     onClick={() => setForm(prev => ({ ...prev, degisenParcalar: prev.degisenParcalar.filter((_, idx) => idx !== i) }))}
-                    style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🗑</button>
+                    style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
                 </div>
               );
             })}
