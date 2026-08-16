@@ -1321,7 +1321,7 @@ export const CustomerDetailModal = ({
           ) : (
             <Field label="Ödeme Satırları">
               <PaymentRowsEditor rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
-                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} />
+                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()} />
             </Field>
           )}
           <Field label="Not (isteğe bağlı)">

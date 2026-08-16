@@ -16,7 +16,7 @@ const kutu = { marginTop: 10, border: "1px solid var(--n200, #e2e8f0)", borderRa
 const bas = { display: "flex", alignItems: "center", gap: 7, padding: "9px 13px", background: "var(--n100, #f8fafc)", borderBottom: "1px solid var(--n200, #e2e8f0)", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" };
 const satir = (neg) => ({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 13px", fontSize: 13, color: neg ? "var(--red700, #b91c1c)" : "var(--n700, #334155)" });
 
-export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, setTaksit, yansit = false, setYansit }) => {
+export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, setTaksit, yansit = false, setYansit, tarih }) => {
   const { satirlar } = kkAyarNormalize(ayar);
   const sirali = [...satirlar].sort((a, b) => (parseInt(a.taksit) || 0) - (parseInt(b.taksit) || 0));
   const taksitOpsiyon = (t) => (parseInt(t) === 1 ? "Tek Çekim" : `${t} Taksit`);
@@ -24,7 +24,8 @@ export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, set
 
   // yansıt KAPALI → "komisyonu biz üstlenirsek" banka kesintisi (bilgi). yansıt AÇIK → üçlü ayrım (satış /
   // komisyon / KDV) formun Toplam kutusunda gösterilir (satır fiyatına dokunulmaz), burada kısa not durur.
-  const ileri = !yansit && secili ? hesaplaKartKomisyonu(tutar, secili, ayar) : null;
+  // Blokaj/hesaba geçiş tarihi SATIŞ tarihinden hesaplanmalı (eski satış girilirken bugünden değil).
+  const ileri = !yansit && secili ? hesaplaKartKomisyonu(tutar, secili, ayar, tarih || undefined) : null;
 
   return (
     <div style={{ marginTop: 10, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)" }}>
@@ -80,9 +81,10 @@ export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, set
 // Toplam kutusunda gösterilen ÜÇLÜ AYRIM (komisyon müşteriye yansıtıldığında). Ürün/kalem fiyatı
 // hiç değişmez: satış = kalem (ciro), komisyon = banka gideri (KDV matrahına girer ama ciroya girmez),
 // KDV = (kalem+komisyon) üzerinden, çekilecek kart tutarı = üçünün toplamı. netTaban = kalem toplamı (KDV hariç).
-export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, currency = "TRY", satisLabel = "Satış (ciro)" }) => {
+export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, currency = "TRY", satisLabel = "Satış (ciro)", tarih }) => {
   const secili = taksit != null && taksit !== "" ? parseInt(taksit) : "";
-  const a = secili !== "" && netTaban > 0 ? kartYansitmaAyrim(netTaban, secili, ayar, kdvOrani) : null;
+  // Blokaj/hesaba geçiş tarihi SATIŞ tarihinden (eski satış girilirken bugünden değil).
+  const a = secili !== "" && netTaban > 0 ? kartYansitmaAyrim(netTaban, secili, ayar, kdvOrani, tarih || undefined) : null;
   if (!a) return null;
   const sat = (label, val, opt = {}) => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 13px", fontSize: 13, color: opt.color || "var(--n700, #334155)", ...(opt.style || {}) }}>

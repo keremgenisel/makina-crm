@@ -519,7 +519,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
                   tutar={svToplam + calcKDV(form.faturaTipi, svToplam, form.date, kdvRates)} currency={form.currency || "TRY"}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
-                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} />
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} tarih={form.date} />
               )}
               {form.yontem === "Çek" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
@@ -554,7 +554,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 )}
                 {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && toplam > 0 && (
                   <KartYansitmaOzeti netTaban={toplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
-                    kdvOrani={calcKDV(form.faturaTipi, 100, form.date, kdvRates)} currency={cur} />
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.date, kdvRates)} currency={cur} tarih={form.date} />
                 )}
               </>
             );

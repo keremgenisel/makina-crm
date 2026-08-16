@@ -203,7 +203,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0 }) => {
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -228,11 +228,11 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
             <>
               <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}
                 taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
-                yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })} />
+                yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })} tarih={tarih} />
               {r.kkYansit && parseMoney(r.tutar) > 0 && (
                 // Girilen tutar KDV HARİÇ mal bedeli → faturalıda karta KDV + komisyon eklenir (Extra Kalıp gibi).
                 <KartYansitmaOzeti netTaban={parseMoney(r.tutar)} taksit={r.taksitSayisi} ayar={krediKartiKomisyonlari}
-                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" />
+                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" tarih={tarih} />
               )}
             </>
           )}

@@ -427,7 +427,7 @@ export const CustomerAddEditForm = ({
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
-            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} />
+            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate} />
           <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
         </Field>
       ) : (

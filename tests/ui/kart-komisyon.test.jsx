@@ -39,6 +39,17 @@ describe("SettingsKKKomisyon", () => {
   });
 });
 
+describe("KartTaksitAlani — hesaba geçiş SATIŞ tarihinden (eski satış girişi)", () => {
+  it("tarih verilince blokaj o tarihten hesaplanır, bugünden değil (2026-01-01 + 40 gün)", () => {
+    render(<KartTaksitAlani ayar={AYAR} tutar={100000} taksit={1} setTaksit={() => {}} tarih="2026-01-01" />);
+    expect(document.body.textContent).toContain("hesaba geçiş 10/02/2026"); // tek çekim blokaj 40 gün
+  });
+  it("yansıtmalı özet de tarihten hesaplar (KartYansitmaOzeti)", () => {
+    render(<KartYansitmaOzeti netTaban={100000} taksit={1} ayar={AYAR} kdvOrani={20} tarih="2026-01-01" />);
+    expect(document.body.textContent).toContain("hesaba geçiş 10/02/2026");
+  });
+});
+
 describe("KartTaksitAlani — ileri kırılım + yansıt notu (455.000 / 3 taksit)", () => {
   const Harness = ({ yansitIlk = false }) => {
     const [taksit, setTaksit] = useState(3);
