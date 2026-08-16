@@ -623,10 +623,19 @@ export const benzerKayitBul = (kayitlar = [], aday = {}) => {
  * @param {import("../types").Service[]} [services]
  * @param {import("../types").PartSale[]} [partSales]
  * @param {string} [factoryName]
+ * @param {import("../types").YedekParcaSatis[]} [yedekParcaSatislar]
+ * @param {object} [opts] { payments, kdvRates } verilirse kalan borç CANLI hesaplanır (kayıtlı c.kalanBorc
+ *   bayat olabilir — blokajlı kredi kartı henüz hesaba geçmedi ama satış anında borçtan düşülmüş olabilir).
+ *   Verilmezse kayıtlı c.kalanBorc kullanılır (geriye uyumlu).
  * @returns {boolean}
  */
-export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina", yedekParcaSatislar = []) => {
-  if (parseMoney(customer.kalanBorc) > 0) return true;
+export const customerHasAnyDebt = (customer, services = [], partSales = [], factoryName = "Altuntaş Makina", yedekParcaSatislar = [], opts = null) => {
+  // opts.payments verilirse kalan borç = max(kayıtlı, canlı) — bloke KK / tahsil edilmemiş çeki yakalar,
+  // kayıtlı kalanBorc'u olan ama ciro alanı olmayan (içe aktarılmış) kayıtları gizlemez. Yoksa kayıtlı.
+  const kalan = opts && opts.payments
+    ? Math.max(parseMoney(customer.kalanBorc), calcKalanBorc(customer, opts.payments, opts.kdvRates))
+    : parseMoney(customer.kalanBorc);
+  if (kalan > 0) return true;
   if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s, factoryName))) return true;
   if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
   // Müşteriye yapılan yedek parça (kargo) satışı ödenmemişse borç sayılır

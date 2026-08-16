@@ -6,6 +6,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 
 afterEach(cleanup);
 import { Dashboard } from "../../src/components/Dashboard";
+import { fmtCur } from "../../src/lib/utils";
 
 const eskiTarih = new Date(Date.now() - 20 * 86400000).toISOString().slice(0, 10);
 const teklifler = [
@@ -82,6 +83,13 @@ describe("Beklenen Tahsilat — bloke kredi kartı (tek çekim) anasayfada gör�
     const props = { ...base, payments: [{ id: 22, customerId: 1, yontem: "Kredi Kartı", tutar: 120000, currency: "TRY", kartKomisyonu: { blokajGun: 0, hesabaGecis: gecmis, toplamKesinti: 3000, netTutar: 117000 } }] };
     render(<Dashboard {...props} serverPermissions={null} />);
     expect(screen.getByText("Bekleyen tahsilat yok.")).toBeTruthy();
+  });
+  it("gösterilen tutar çekilen kart (Bloke = net + komisyon), borçtan düşen p.tutar değil", () => {
+    // Yansıtmalı: borçtan düşen 120.121; çekilen kart = 120.121 net + 605 komisyon = 120.726.
+    const props = { ...base, payments: [{ id: 23, customerId: 1, yontem: "Kredi Kartı", tutar: 120121, currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: gelecek, toplamKesinti: 605, netTutar: 120121, yansitildi: true } }] };
+    render(<Dashboard {...props} serverPermissions={null} />);
+    expect(screen.getByText(fmtCur(120726, "TRY"))).toBeTruthy();   // çekilen kart tutarı (Bloke)
+    expect(screen.queryByText(fmtCur(120121, "TRY"))).toBeNull();   // borçtan düşen değil
   });
 });
 

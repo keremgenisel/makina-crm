@@ -2,11 +2,11 @@
 // CustomerDetailModal'daki büyük useMemo gövdesinden ayrıldı: SAF hesaplama (setState yok),
 // böylece bağımsız birim-test edilebilir. Bileşen bunu useMemo içinde tek satırla çağırır.
 import {
-  normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, isServisBorcluMu,
+  normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, calcCiro, isServisBorcluMu,
   isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, isPartSaleBorcluMu,
   sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
-import { yansitilanKomisyon } from "../../../lib/krediKarti";
+import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
 
 export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [], customers = [] }) {
     const detailHistory = detailView
@@ -164,8 +164,18 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
     const detailModelInfo = detailView ? models.find(m => m.model === detailView.model) : null;
     const detailWarrantyOk = detailView?.warrantyEnd && detailView.warrantyEnd >= todayStr;
     const detailToplamOdeme = detailView ? sumPayments(detailView.id, payments) : 0;
-    const detailKalanBorc = detailView ? calcKalanBorc(detailView, payments, kdvRates) : 0;
-    const detailCiro = detailKalanBorc + detailToplamOdeme;
+    const detailKalanBorcSaf = detailView ? calcKalanBorc(detailView, payments, kdvRates) : 0;
+    const detailCiro = detailKalanBorcSaf + detailToplamOdeme; // ciro SAF kalır (komisyon ciro değil, çift sayım olmaz)
+    // Yansıtılan kart komisyonu (henüz hesaba geçmemiş bloke ödemelerden): müşteriden çekilen kart tutarı
+    // borca dahil → gösterilen Kalan Borç, Borçlu Firmalar / Beklenen Tahsilat ile tutarlı (çekilen kart = Bloke).
+    const detailBlokeKomisyon = detailView ? payments
+      .filter(p => p.customerId === detailView.id && !p.deletedAt && p.yontem === "Kredi Kartı" && p.kartKomisyonu && Number(p.kartKomisyonu.blokajGun) > 0 && !kartTahsilEdildiMi(p.kartKomisyonu, todayStr))
+      .reduce((s, p) => s + yansitilanKomisyon(p), 0) : 0;
+    // Gösterim: YUVARLANMAMIŞ kalan borç + komisyon → yalnız bir kez (fmtCur) yuvarlanır. calcKalanBorc'un
+    // içindeki Math.round ile komisyonu toplamak çift yuvarlama yapıp Beklenen Tahsilat'la 1 TL saptırıyordu;
+    // burada ham ciro − alınan ödeme kullanılır (matematiksel olarak kartın netTutar'ına eşit).
+    const detailKalanBorcHam = detailView ? Math.max(0, calcCiro(detailView, kdvRates, payments) - detailToplamOdeme) : 0;
+    const detailKalanBorc = detailKalanBorcHam + detailBlokeKomisyon; // gösterim: yansıtılan komisyon dahil (tek yuvarlama)
 
     const detailEkBorcByCur = {};
     if (detailView) {

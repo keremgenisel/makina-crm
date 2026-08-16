@@ -97,8 +97,8 @@ describe("SimpleDealers — Sattığı Extra Kalıplar", () => {
     const onGoCustomerDetail = vi.fn();
     const partSales = [{ id: 800, tur: "Kalıp", satisFirma: "Bayi X", customerId: 100, ad: "Adana Kalıbı", ucret: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-07-05", odendi: false }];
     render(<SimpleDealers {...baseProps([])} customers={customers} partSales={partSales} onGoCustomerDetail={onGoCustomerDetail} />);
-    fireEvent.click(screen.getAllByText(/Adana Kalıbı/)[0].closest('[title="Müşteri detayını aç"]'));
-    expect(onGoCustomerDetail).toHaveBeenCalledWith(100);
+    fireEvent.click(screen.getAllByText(/Adana Kalıbı/)[0].closest('[title="Bu Extra Kalıp olayına git"]'));
+    expect(onGoCustomerDetail).toHaveBeenCalledWith(100, { kalipId: 800 });
   });
 
   it("başka firmanın sattığı kalıp bu bayide görünmez", () => {

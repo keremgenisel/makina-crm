@@ -95,9 +95,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   }, [services, factoryName, kdvRates, yedekParcaSatislar, dealers, partSales]);
   const dealerHasDebt = (d) => !!(borcMap[d.name] && Object.values(borcMap[d.name].byCur).some(v => v > 0));
 
-  const [dealerSvcSearch, setDealerSvcSearch] = useState("");
+  // Detay modalı için TEK genel arama: servis + yedek parça + kalıp geçmişini birlikte filtreler
+  // (eski bölüm-içi ayrı arama kutuları kaldırıldı).
+  const [dealerDetaySearch, setDealerDetaySearch] = useState("");
   const [dosyaOdak, setDosyaOdak] = useState(null); // { refType:"servis", refId } — servis kartındaki ataş rozetine tıklayınca
-  useEffect(() => { setDealerSvcSearch(""); setDealerYpSearch(""); setDealerKalipSearch(""); setDosyaOdak(null); }, [detailView]);
+  useEffect(() => { setDealerDetaySearch(""); setDosyaOdak(null); }, [detailView]);
   // Servis kartındaki ataş rozeti adedi: servise bağlı dosyalar (sahibi bayi VEYA müşteri olabilir;
   // servis kimliği benzersiz olduğu için sahipten bağımsız sayılır).
   const dosyaAdet = (refType, refId) => dosyalar.filter(d => !d.deletedAt && d.refType === refType && d.refId === refId).length;
@@ -110,19 +112,17 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   }, [services, detailView]);
 
   const dealerSvcFiltered = useMemo(() => {
-    if (!dealerSvcSearch.trim()) return dealerServices;
-    const q = dealerSvcSearch.toLocaleLowerCase("tr-TR");
+    if (!dealerDetaySearch.trim()) return dealerServices;
+    const q = aramaNormalize(dealerDetaySearch.trim());
     return dealerServices.filter(s => {
       const cust = customers.find(c => c.id === s.customerId);
-      return (cust?.name || "").toLocaleLowerCase("tr-TR").includes(q) ||
-        (s.type || "").toLocaleLowerCase("tr-TR").includes(q);
+      return aramaNormalize([cust?.name, s.type, s.repairPlace, s.tech, s.date].filter(Boolean).join(" ")).includes(q);
     });
-  }, [dealerServices, dealerSvcSearch, customers]);
+  }, [dealerServices, dealerDetaySearch, customers]);
 
   const { page: svcPage, setPage: setSvcPage, paged: svcPaged } = usePagination(dealerSvcFiltered, 5);
 
   // Bu bayiye yapılan yedek parça (kargo) satışları — "Yedek Parça Geçmişi" bölümü (servis geçmişi gibi)
-  const [dealerYpSearch, setDealerYpSearch] = useState("");
   const dealerYedekParca = useMemo(() => {
     if (!detailView || detailView._isFactory) return [];
     return (yedekParcaSatislar || [])
@@ -136,17 +136,16 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     return [...m.values()].map(g => ({ id: g[0].id, ad: g.map(s => `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}`).join(", ") }));
   }, [dealerYedekParca, parts]);
   const dealerYpFiltered = useMemo(() => {
-    if (!dealerYpSearch.trim()) return dealerYedekParca;
-    const q = aramaNormalize(dealerYpSearch.trim());
+    if (!dealerDetaySearch.trim()) return dealerYedekParca;
+    const q = aramaNormalize(dealerDetaySearch.trim());
     return dealerYedekParca.filter(s => {
       const part = (parts || []).find(p => String(p.id) === String(s.partId));
       return aramaNormalize([parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.kargoDurum, s.tarih].filter(Boolean).join(" ")).includes(q);
     });
-  }, [dealerYedekParca, dealerYpSearch, parts]);
+  }, [dealerYedekParca, dealerDetaySearch, parts]);
   const { page: ypPage, setPage: setYpPage, paged: ypPaged } = usePagination(dealerYpFiltered, 5);
 
   // Bu bayinin/anlaşmalı servisin SATTIĞI Extra Kalıplar (satisFirma = bu firma adı) — "Sattığı Kalıplar" bölümü
-  const [dealerKalipSearch, setDealerKalipSearch] = useState("");
   const dealerKaliplar = useMemo(() => {
     if (!detailView || detailView._isFactory) return [];
     return (partSales || [])
@@ -154,13 +153,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
   }, [partSales, detailView]);
   const dealerKalipFiltered = useMemo(() => {
-    if (!dealerKalipSearch.trim()) return dealerKaliplar;
-    const q = aramaNormalize(dealerKalipSearch.trim());
+    if (!dealerDetaySearch.trim()) return dealerKaliplar;
+    const q = aramaNormalize(dealerDetaySearch.trim());
     return dealerKaliplar.filter(p => {
       const cust = customers.find(c => c.id === p.customerId);
       return aramaNormalize([cust?.name, p.ad, p.olcu, p.tarih].filter(Boolean).join(" ")).includes(q);
     });
-  }, [dealerKaliplar, dealerKalipSearch, customers]);
+  }, [dealerKaliplar, dealerDetaySearch, customers]);
   const { page: kalipPage, setPage: setKalipPage, paged: kalipPaged } = usePagination(dealerKalipFiltered, 5);
 
   const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(dealers, {
@@ -446,8 +445,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   return (
                     <div key={s.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
                       <div
-                        onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
-                        title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
+                        onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId, { servisId: s.id }); } }}
+                        title={onGoCustomerDetail ? "Bu servis olayına git" : undefined}
                         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, cursor: onGoCustomerDetail ? "pointer" : "default" }}>
                         <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "var(--redBr, #fecaca)" }}>
                           {customers.find(c => c.id === s.customerId)?.name || "—"} · {fmtTR(s.date)}
@@ -479,8 +478,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   return (
                     <div key={"kl" + p.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
                       <div
-                        onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId); } }}
-                        title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
+                        onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId, { kalipId: p.id }); } }}
+                        title={onGoCustomerDetail ? "Bu Extra Kalıp olayına git" : undefined}
                         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, cursor: onGoCustomerDetail ? "pointer" : "default" }}>
                         <span style={{ color: "var(--red900, #7f1d1d)", fontWeight: 600, textDecoration: onGoCustomerDetail ? "underline" : "none", textDecorationColor: "var(--redBr, #fecaca)" }}>
                           {p.ad || "Kalıp"}{p.olcu ? ` (${p.olcu})` : ""} · {customers.find(c => c.id === p.customerId)?.name || "—"} · {fmtTR(p.tarih)}
@@ -511,19 +510,20 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               ))}
             </div>
           );
+          // Sağ kolonun tepesinde tek genel arama — servis + yedek parça + kalıp geçmişini birlikte süzer.
+          const genelArama = (
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
+              <input value={dealerDetaySearch}
+                onChange={e => { setDealerDetaySearch(e.target.value); setSvcPage(1); setYpPage(1); setKalipPage(1); }}
+                placeholder="Servis, yedek parça veya kalıp ara..."
+                style={{ width: "100%", padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "var(--n100, #f8fafc)", outline: "none" }} />
+            </div>
+          );
           const servisBlok = isServisli ? (
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
                 Servis Geçmişi ({dealerServices.length})
-              </div>
-              <div style={{ position: "relative", marginBottom: 10 }}>
-                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
-                <input
-                  value={dealerSvcSearch}
-                  onChange={e => { setDealerSvcSearch(e.target.value); setSvcPage(1); }}
-                  placeholder="Müşteri veya servis tipi ara..."
-                  style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
-                />
               </div>
               {svcPaged.length === 0 && (
                 <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
@@ -537,20 +537,23 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   const parcaBizden = parcaUcret > 0 && !s.parcaUcretsizMi;
                   const kdvToplam = parcaBizden ? calcKDV(s.faturaTipi, parcaUcret, s.date, kdvRates) : 0;
                   return (
-                    <div key={s.id} style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b" }}>
+                    <div key={s.id}
+                      onClick={() => { if (onGoCustomerDetail && s.customerId) { setDetailView(null); onGoCustomerDetail(s.customerId, { servisId: s.id }); } }}
+                      title={onGoCustomerDetail && s.customerId ? "Bu servis olayına git" : undefined}
+                      style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid #f59e0b", cursor: onGoCustomerDetail && s.customerId ? "pointer" : "default" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                         <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(s.date) || "—"}</span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)" }}>{s.type || "—"}</span>
                         {cust && (
                           <span
-                            onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId); } }}
+                            onClick={(e) => { e.stopPropagation(); if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(s.customerId, { servisId: s.id }); } }}
                             style={{ fontSize: 11, fontWeight: 700, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", borderRadius: 6, padding: "2px 8px", cursor: onGoCustomerDetail ? "pointer" : "default", textDecoration: onGoCustomerDetail ? "underline" : "none" }}>
                             {cust.name}
                           </span>
                         )}
                         {s.repairPlace && <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>· {s.repairPlace}</span>}
                         {s.tech && <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>· {s.tech}</span>}
-                        {setDosyalar && <span style={{ marginLeft: "auto" }}><AtesRozeti n={dosyaAdet("servis", s.id)} onClick={() => setDosyaOdak({ refType: "servis", refId: s.id })} /></span>}
+                        {setDosyalar && <span style={{ marginLeft: "auto" }} onClick={e => e.stopPropagation()}><AtesRozeti n={dosyaAdet("servis", s.id)} onClick={() => setDosyaOdak({ refType: "servis", refId: s.id })} /></span>}
                       </div>
                       {Array.isArray(s.degisenParcalar) && s.degisenParcalar.length > 0 && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
@@ -608,14 +611,6 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
                 Yedek Parça Geçmişi ({dealerYedekParca.length})
               </div>
-              {dealerYedekParca.length > 5 && (
-                <div style={{ position: "relative", marginBottom: 10 }}>
-                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
-                  <input value={dealerYpSearch} onChange={e => { setDealerYpSearch(e.target.value); setYpPage(1); }}
-                    placeholder="Parça, kargo no ile ara..."
-                    style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
-                </div>
-              )}
               {ypPaged.length === 0 && (
                 <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
               )}
@@ -659,14 +654,6 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
                 Sattığı Extra Kalıplar ({dealerKaliplar.length})
               </div>
-              {dealerKaliplar.length > 5 && (
-                <div style={{ position: "relative", marginBottom: 10 }}>
-                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
-                  <input value={dealerKalipSearch} onChange={e => { setDealerKalipSearch(e.target.value); setKalipPage(1); }}
-                    placeholder="Müşteri, kalıp ile ara..."
-                    style={{ width: "100%", padding: "7px 12px 7px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }} />
-                </div>
-              )}
               {kalipPaged.length === 0 && (
                 <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
               )}
@@ -677,8 +664,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
                   return (
                     <div key={p.id}
-                      onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId); } }}
-                      title={onGoCustomerDetail ? "Müşteri detayını aç" : undefined}
+                      onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId, { kalipId: p.id }); } }}
+                      title={onGoCustomerDetail ? "Bu Extra Kalıp olayına git" : undefined}
                       style={{ background: "var(--n100, #f8fafc)", borderRadius: 10, padding: "12px 14px", borderLeft: "3px solid var(--orTx, #c2410c)", cursor: onGoCustomerDetail ? "pointer" : "default" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                         <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(p.tarih) || "—"}</span>
@@ -709,6 +696,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 {infoGrid}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
+                {genelArama}
                 {servisBlok}
                 {yedekBlok}
                 {kalipBlok}

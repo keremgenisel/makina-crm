@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, isPaymentReceived, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
-import { makinaKartOdemesi } from "../lib/krediKarti";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
+import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -64,9 +64,11 @@ export const Customers = ({
 
   const debtorIds = useMemo(() => {
     const ids = new Set();
-    customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName, yedekParcaSatislar)) ids.add(c.id); });
+    // Kalan borç CANLI hesaplanır (payments+kdvRates) → blokajlı kredi kartı / tahsil edilmemiş çek borçta
+    // görünsün, blokaj dolunca düşsün; Anasayfa "Borçlu Firmalar" kutusuyla tutarlı.
+    customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName, yedekParcaSatislar, { payments, kdvRates })) ids.add(c.id); });
     return ids;
-  }, [customers, services, partSales, factoryName, yedekParcaSatislar]);
+  }, [customers, services, partSales, factoryName, yedekParcaSatislar, payments, kdvRates]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
@@ -245,24 +247,16 @@ export const Customers = ({
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
-      const ilkOdemeSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
       const odemeKdvOran = calcKDV(clean.faturali, 100, clean.installDate || today(), kdvRates); // faturalı yurtiçi → oran, değilse 0
-      // Kredi kartı ödemesinde girilen tutar KDV hariç mal bedeli → borçtan düşen = mal×(1+KDV) (nakit/çek: girilen tutar).
-      const satirBorcTutari = (r) => (r.yontem === "Kredi Kartı" && r.taksitSayisi ? parseMoney(r.tutar) * (1 + odemeKdvOran / 100) : parseMoney(r.tutar));
-      const ilkOdemeAlinanTutar = ilkOdemeSatirlari.filter(isPaymentReceived).reduce((s, r) => s + satirBorcTutari(r), 0);
+      const odemeTarih = clean.installDate || today();
+      // Ödeme kayıtlarını (kredi kartında kartKomisyonu snapshot'ı ile) kurup borçtan düşülecek tutarı ONLARDAN
+      // süz — blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmediğinden borçta kalmalı. Bkz. ilkSatisOdemeleri.
+      const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(_ilkOdemeSatirlari, {
+        customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid,
+      });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
-      if (ilkOdemeSatirlari.length > 0 && setPayments) {
-        const odemeTarih = clean.installDate || today();
-        const yeniOdemeler = ilkOdemeSatirlari.map(r => {
-          const base = { id: uid(), customerId: newId, tarih: odemeTarih, currency: clean.currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit" };
-          if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
-            // Faturalıda karta KDV + komisyon eklenir; borçtan KDV dahil (mal×(1+KDV)) düşer (nakit/çek aynen kalır).
-            const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, odemeTarih, !!r.kkYansit, odemeKdvOran);
-            return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
-          }
-          return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
-        });
+      if (yeniOdemeler.length > 0 && setPayments) {
         setPayments(p => [...yeniOdemeler, ...p]);
       }
       if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });

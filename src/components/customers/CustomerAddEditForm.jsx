@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
-import { fmtCur, calcKDV, parseMoney, sumPayments, calcKalanBorc, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
+import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
-import { kartYansitmaAyrim, makinaKartOdemesi } from "../../lib/krediKarti";
+import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
@@ -36,13 +36,27 @@ export const CustomerAddEditForm = ({
   const mevcutKom = (payments || []).reduce((s, p) =>
     s + (form.id && p.customerId === form.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
   const faturaKdvEfektif = calcKDV(form.faturali, parseMoney(form.faturaBedeli) + ilkKom + mevcutKom, form.installDate, kdvRates);
-  const ilkBorcDusen = (form._ilkOdemeSatirlari || []).filter(isPaymentReceived).reduce((s, r) =>
-    s + (r.yontem === "Kredi Kartı" && r.taksitSayisi
-      ? makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, form.installDate, !!r.kkYansit, kkOran).tutar
-      : parseMoney(r.tutar)), 0);
+  // İlk ödeme satırlarını (kredi kartında kartKomisyonu snapshot'ı ile) kur → borçtan yalnız GERÇEKTEN
+  // tahsil edilenler düşer; blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmedi → düşmez, komisyonu
+  // gösterime eklenir (çekilen kart tutarı = borç). Snapshot'sız ham satırda isPaymentReceived kartı yanlış
+  // "tahsil edildi" sayıyordu (bkz. ilkSatisOdemeleri / doAdd).
+  const ilkKayitlar = (form._ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0).map(r => {
+    if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
+      const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, form.installDate, !!r.kkYansit, kkOran);
+      return { yontem: "Kredi Kartı", tutar: mk.tutar, kartKomisyonu: mk.kartKomisyonu };
+    }
+    return { yontem: r.yontem || "Nakit", tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { tahsilEdildi: false } : {}) };
+  });
+  const ilkBorcDusen = ilkKayitlar.filter(isPaymentReceived).reduce((s, p) => s + parseMoney(p.tutar), 0);
+  // Yansıtılan + blokajlı (henüz hesaba geçmemiş) kredi kartı komisyonu — hem ilk ödemeler hem mevcut ödemeler.
+  const blokeKom = (kk) => kk && kk.yansitildi && Number(kk.blokajGun) > 0 && !kartTahsilEdildiMi(kk) ? Number(kk.toplamKesinti) || 0 : 0;
+  const ilkKomBloke = ilkKayitlar.reduce((s, p) => s + blokeKom(p.kartKomisyonu), 0);
+  const mevcutKomBloke = (payments || []).reduce((s, p) => s + (form.id && p.customerId === form.id && !p.deletedAt && p.yontem === "Kredi Kartı" ? blokeKom(p.kartKomisyonu) : 0), 0);
+  // Gösterilen Kalan Borç, Borçlu Firmalar / Beklenen Tahsilat / müşteri detayıyla birebir aynı: yuvarlanmamış
+  // ciro − alınan ödeme + yansıtılan (bloke) komisyon; tek yuvarlama fmtCur'da (çift yuvarlama 1 TL saptırıyordu).
   const kalanBorcGoster = modal === "add"
-    ? Math.max(0, Math.round(parseMoney(form.fabrikaSatisBedeli) + faturaKdvEfektif + parseMoney(form.komisyon) - ilkBorcDusen))
-    : calcKalanBorc({ ...form, id: form.id ?? -1 }, payments, kdvRates);
+    ? Math.max(0, parseMoney(form.fabrikaSatisBedeli) + faturaKdvEfektif + parseMoney(form.komisyon) - ilkBorcDusen) + ilkKomBloke
+    : Math.max(0, calcCiro({ ...form, id: form.id ?? -1 }, kdvRates, payments) - sumPayments(form.id ?? -1, payments)) + mevcutKomBloke;
 
   // Seçilen stok makinanın kit parçalarından, "makinada seç" tipli her tip için bir parça
   // eşleştirir ve tipSecimleri haritasına doldurur. Kit'ten gelen tipler _kitTipler'e yazılır

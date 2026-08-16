@@ -2,6 +2,7 @@
 // Bileşen içinde büyük bir useMemo iken test edilemiyordu; ayrı saf modül olunca edilebilir.
 import { describe, it, expect } from "vitest";
 import { DEFAULT_KDV_RATES } from "../src/lib/constants";
+import { fmtCur } from "../src/lib/utils";
 import { deriveCustomerDetail } from "../src/components/customers/detail/deriveCustomerDetail.js";
 
 const base = (over = {}) => ({
@@ -204,6 +205,35 @@ describe("deriveCustomerDetail", () => {
     expect(olaylar).toHaveLength(1);
     expect(olaylar[0].title).toBe("Yedek Parça (Bayi)");   // tek kalem → kalem eki yok
     expect(olaylar[0].desc).toMatch(/5 adet Dişli/);       // 2 + 3 birleşti
+  });
+
+  it("bloke kredi kartı (yansıtılan komisyon) gösterilen Kalan Borç'a eklenir ama CİROYA eklenmez", () => {
+    const detailView = { id: 1, name: "kkkkkkk", fabrikaSatisBedeli: 100000, faturaBedeli: 100000, faturali: "Faturalı Yurtiçi", installDate: "2026-01-01", currency: "TRY", kaliplar: [] };
+    // Yansıtmalı bloke KK: borçtan düşen 120.121, komisyon 605 müşteriye yansıtılmış → çekilen kart 120.726.
+    const payments = [{ id: 30, customerId: 1, tarih: "2026-02-01", tutar: 120121, currency: "TRY", yontem: "Kredi Kartı",
+      kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-09-01", toplamKesinti: 605, netTutar: 120121, taksit: 1, yansitildi: true } }];
+    const r = deriveCustomerDetail(base({ detailView, payments }));
+    expect(r.detailKalanBorc).toBe(120726);       // komisyon dahil (çekilen kart = Bloke)
+    expect(r.detailKalanBorcToplam).toBe(120726);
+    expect(r.detailCiro).toBe(120121);            // ciro SAF (komisyon anaparası ciroda değil)
+  });
+
+  it("kalan borç TEK yuvarlanır (çift yuvarlama yok) → Beklenen Tahsilat kartTutar'ıyla aynı gösterim", () => {
+    const detailView = { id: 1, name: "K", fabrikaSatisBedeli: 100000, faturaBedeli: 100000, faturali: "Faturalı Yurtiçi", installDate: "2026-01-01", currency: "TRY", kaliplar: [] };
+    // Kesirli komisyon → ciro 120120,9. Çift yuvarlama olsaydı round(120120,9)+604,5=120725,5 → ₺120.726 (yanlış).
+    const payments = [{ id: 30, customerId: 1, tarih: "2026-02-01", tutar: 120120.9, currency: "TRY", yontem: "Kredi Kartı",
+      kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-09-01", toplamKesinti: 604.5, netTutar: 120120.9, yansitildi: true } }];
+    const r = deriveCustomerDetail(base({ detailView, payments }));
+    expect(r.detailKalanBorc).toBeCloseTo(120725.4, 1);                                  // ham ciro + komisyon (yuvarlanmamış)
+    expect(fmtCur(r.detailKalanBorc, "TRY")).toBe(fmtCur(120120.9 + 604.5, "TRY"));      // Beklenen'in kartTutar gösterimiyle birebir
+  });
+
+  it("komisyon YANSITILMAMIŞ (biz üstlendik) bloke kredi kartı Kalan Borç'a EKLENMEZ", () => {
+    const detailView = { id: 1, name: "A", fabrikaSatisBedeli: 100000, faturaBedeli: 100000, faturali: "Faturalı Yurtiçi", installDate: "2026-01-01", currency: "TRY", kaliplar: [] };
+    const payments = [{ id: 30, customerId: 1, tarih: "2026-02-01", tutar: 120000, currency: "TRY", yontem: "Kredi Kartı",
+      kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-09-01", toplamKesinti: 3000, netTutar: 117000, taksit: 1, yansitildi: false } }];
+    const r = deriveCustomerDetail(base({ detailView, payments }));
+    expect(r.detailKalanBorc).toBe(120000);       // komisyon müşteri borcu değil → eklenmez
   });
 
   it("müşteriye yapılan ödenmemiş yedek parça (kargo) satışı borca eklenir (KDV dahil)", () => {
