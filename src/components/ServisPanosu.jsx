@@ -502,7 +502,8 @@ export const ServisPanosu = ({
       if (!sv.parcaUcretsizMi) degisenParcalar2 = degisenParcalar.map(p => typeof p === "string" ? p : { ...p, fiyat: parseMoney(p.fiyat) * rf });
     }
     setForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv,
-      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi) });
+      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi),
+      kartTarihi: sv.kartKomisyonu?.bazTarih || "" });
     setSvModal({ edit: sv });
   };
 
@@ -527,10 +528,11 @@ export const ServisPanosu = ({
     const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
     const kkAyar = appSettings?.krediKartiKomisyonlari;
     const kkKdvOran = calcKDV(form.faturaTipi, 100, form.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kkTarih = form.kartTarihi || form.date; // blokaj kart işlem tarihinden (boşsa servis tarihi)
     let factor = 1, yansitSnap = null;
     if (form.yontem === "Kredi Kartı" && form.kkYansit && form.taksitSayisi && kalemBillable > 0) {
-      const a = kartYansitmaAyrim(kalemBillable, form.taksitSayisi, kkAyar, kkKdvOran, form.date);
-      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, kkAyar, form.date, true); }
+      const a = kartYansitmaAyrim(kalemBillable, form.taksitSayisi, kkAyar, kkKdvOran, kkTarih);
+      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, kkAyar, kkTarih, true); }
     }
     const olcek = (v) => factor === 1 ? parseMoney(v) : parseMoney(v) * factor;
     const servisUcretiSave = olcek(form.servisUcreti);
@@ -546,7 +548,7 @@ export const ServisPanosu = ({
       vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
       tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
       taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
-      kartKomisyonu: form.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, form.date, false)) : null };
+      kartKomisyonu: form.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false)) : null };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();

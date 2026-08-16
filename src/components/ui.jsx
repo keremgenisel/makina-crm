@@ -228,11 +228,12 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
             <>
               <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}
                 taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
-                yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })} tarih={tarih} />
+                yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })}
+                tarih={tarih} kartTarihi={r.kartTarihi} setKartTarihi={v => satirGuncelle(i, { kartTarihi: v })} />
               {r.kkYansit && parseMoney(r.tutar) > 0 && (
                 // Girilen tutar KDV HARİÇ mal bedeli → faturalıda karta KDV + komisyon eklenir (Extra Kalıp gibi).
                 <KartYansitmaOzeti netTaban={parseMoney(r.tutar)} taksit={r.taksitSayisi} ayar={krediKartiKomisyonlari}
-                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" tarih={tarih} />
+                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" tarih={r.kartTarihi || tarih} />
               )}
             </>
           )}

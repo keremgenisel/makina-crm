@@ -253,7 +253,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
                   tutar={kaliplarToplam + calcKDV(form.faturaTipi, kaliplarToplam, form.tarih, kdvRates)} currency={form.currency || "TRY"}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
-                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))} tarih={form.tarih} />
+                  yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
+                  tarih={form.tarih} kartTarihi={form.kartTarihi} setKartTarihi={v => setForm(p => ({ ...p, kartTarihi: v }))} />
               )}
               {form.yontem === "Çek" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "9px 11px" }}>
@@ -285,7 +286,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                 )}
                 {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && (
                   <KartYansitmaOzeti netTaban={kaliplarToplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
-                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} currency={form.currency || "TRY"} tarih={form.tarih} />
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} currency={form.currency || "TRY"} tarih={form.kartTarihi || form.tarih} />
                 )}
               </>
             );

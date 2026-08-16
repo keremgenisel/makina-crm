@@ -28,17 +28,18 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   // (Finance düşer). Yansıtılmadıysa birimFiyat = kalem, snapshot KDV dahil satış tutarı üzerinden (yansitildi=false).
   const netBirim = parseMoney(form.birimFiyat);
   const netBedel = netBirim * miktar;
-  const kkTarih = form.tarih || today();
+  const kdvTarih = form.tarih || today();                     // KDV oranı SATIŞ tarihinden
+  const kkTarih = form.kartTarihi || form.tarih || today();   // blokaj KART İŞLEM tarihinden (boşsa satış tarihi)
   const kkFatura = form.faturaTipi || "Faturalı Yurtiçi";
   let birimFiyatSave = netBirim, kartKomisyonu = null;
   if (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar) {
     if (form.kkYansit && netBedel > 0) {
-      const kdvOran = calcKDV(kkFatura, 100, kkTarih, kdvRates); // uygulanan oran (Yurtdışı/Faturasız → 0)
+      const kdvOran = calcKDV(kkFatura, 100, kdvTarih, kdvRates); // uygulanan oran (Yurtdışı/Faturasız → 0)
       const a = kartYansitmaAyrim(netBedel, form.taksitSayisi, ayar, kdvOran, kkTarih);
       if (a) { birimFiyatSave = miktar > 0 ? a.kdvMatrah / miktar : a.kdvMatrah; kartKomisyonu = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, ayar, kkTarih, true); }
     }
     if (!kartKomisyonu) {
-      const kdvDahil = netBedel + calcKDV(kkFatura, netBedel, kkTarih, kdvRates);
+      const kdvDahil = netBedel + calcKDV(kkFatura, netBedel, kdvTarih, kdvRates);
       kartKomisyonu = kartKomisyonuSnapshot(kdvDahil, form.taksitSayisi, ayar, kkTarih, false);
     }
   }

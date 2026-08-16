@@ -105,6 +105,18 @@ describe("yedekParcaRec — kredi kartı komisyonu yansıtma (düzenlemede kalem
     expect(rec.birimFiyat).toBe(3000);
     expect(rec.kartKomisyonu.yansitildi).toBe(false);
   });
+  it("kartTarihi (kart işlem tarihi) verilince blokaj/bazTarih o tarihten; boşsa satış tarihi", () => {
+    const AYAR40 = { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }] };
+    // kartTarihi 2026-01-01 → hesaba geçiş 2026-02-10; satış tarihi (08-12) baz alınmaz
+    const rec = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", birimFiyat: 100000,
+      currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-08-12", kartTarihi: "2026-01-01", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kkYansit: false }, AYAR40, KDV).rec;
+    expect(rec.kartKomisyonu.bazTarih).toBe("2026-01-01");
+    expect(rec.kartKomisyonu.hesabaGecis).toBe("2026-02-10");
+    // kartTarihi boş → satış tarihine (08-12) düşer
+    const rec2 = yedekParcaRec({ aliciTipi: "bayi", dealerId: "5", partId: "7", miktar: "1", birimFiyat: 100000,
+      currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-08-12", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kkYansit: false }, AYAR40, KDV).rec;
+    expect(rec2.kartKomisyonu.bazTarih).toBe("2026-08-12");
+  });
 });
 
 describe("yeniYedekParcaSatis (oluştur + stok düş)", () => {

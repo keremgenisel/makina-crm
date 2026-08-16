@@ -42,7 +42,7 @@ export const CustomerAddEditForm = ({
   // "tahsil edildi" sayıyordu (bkz. ilkSatisOdemeleri / doAdd).
   const ilkKayitlar = (form._ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0).map(r => {
     if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
-      const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, form.installDate, !!r.kkYansit, kkOran);
+      const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, r.kartTarihi || form.installDate, !!r.kkYansit, kkOran);
       return { yontem: "Kredi Kartı", tutar: mk.tutar, kartKomisyonu: mk.kartKomisyonu };
     }
     return { yontem: r.yontem || "Nakit", tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { tahsilEdildi: false } : {}) };

@@ -147,6 +147,19 @@ describe("makinaKartOdemesi (makina kredi kartı ödemesi)", () => {
   });
 });
 
+describe("kartKomisyonuSnapshot — bazTarih (kart işlem tarihi) snapshot'a yazılır", () => {
+  it("bazTarih = verilen tarih; blokaj/hesaba geçiş o tarihten (tek çekim, 40 gün)", () => {
+    const snap = kartKomisyonuSnapshot(100000, 1, AYAR, "2026-01-01", false);
+    expect(snap.bazTarih).toBe("2026-01-01");
+    expect(snap.blokajGun).toBe(40);
+    expect(snap.hesabaGecis).toBe("2026-02-10"); // 2026-01-01 + 40 gün
+  });
+  it("makinaKartOdemesi da kartKomisyonu.bazTarih taşır", () => {
+    const mk = makinaKartOdemesi(100000, 1, AYAR, "2026-03-05", false, 20);
+    expect(mk.kartKomisyonu.bazTarih).toBe("2026-03-05");
+  });
+});
+
 describe("yansıt kaydından KALEM geri çıkar (düzenleme yüklemesi)", () => {
   // Kayıtta ucret=matrah(kalem+komisyon), kartKomisyonu.yansitildi=true saklanır.
   // Düzenlemeye girince form kalem'i göstermeli: kalem = ucret − yansitilanKomisyon(rec).

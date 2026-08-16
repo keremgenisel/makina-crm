@@ -16,19 +16,29 @@ const kutu = { marginTop: 10, border: "1px solid var(--n200, #e2e8f0)", borderRa
 const bas = { display: "flex", alignItems: "center", gap: 7, padding: "9px 13px", background: "var(--n100, #f8fafc)", borderBottom: "1px solid var(--n200, #e2e8f0)", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" };
 const satir = (neg) => ({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 13px", fontSize: 13, color: neg ? "var(--red700, #b91c1c)" : "var(--n700, #334155)" });
 
-export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, setTaksit, yansit = false, setYansit, tarih }) => {
+export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, setTaksit, yansit = false, setYansit, tarih, kartTarihi, setKartTarihi }) => {
   const { satirlar } = kkAyarNormalize(ayar);
   const sirali = [...satirlar].sort((a, b) => (parseInt(a.taksit) || 0) - (parseInt(b.taksit) || 0));
   const taksitOpsiyon = (t) => (parseInt(t) === 1 ? "Tek Çekim" : `${t} Taksit`);
   const secili = taksit != null && taksit !== "" ? parseInt(taksit) : "";
 
+  // Blokaj/hesaba geçiş tarihi = kullanıcının girdiği KART İŞLEM TARİHİ (kartTarihi); boşsa kayıt tarihine
+  // (tarih) düşer. Eski satış girilirken bugünden değil, işlem gününden hesaplanır.
+  const kkTarih = kartTarihi || tarih || undefined;
   // yansıt KAPALI → "komisyonu biz üstlenirsek" banka kesintisi (bilgi). yansıt AÇIK → üçlü ayrım (satış /
   // komisyon / KDV) formun Toplam kutusunda gösterilir (satır fiyatına dokunulmaz), burada kısa not durur.
-  // Blokaj/hesaba geçiş tarihi SATIŞ tarihinden hesaplanmalı (eski satış girilirken bugünden değil).
-  const ileri = !yansit && secili ? hesaplaKartKomisyonu(tutar, secili, ayar, tarih || undefined) : null;
+  const ileri = !yansit && secili ? hesaplaKartKomisyonu(tutar, secili, ayar, kkTarih) : null;
 
   return (
     <div style={{ marginTop: 10, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)" }}>
+      {setKartTarihi && (
+        <div>
+          <label style={{ fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 }}>Kart İşlem Tarihi</label>
+          <input type="date" value={kartTarihi || tarih || ""} onChange={e => setKartTarihi(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13.5, background: "var(--surface, #fff)", boxSizing: "border-box", colorScheme: "light dark" }} />
+          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>Blokaj / hesaba geçiş bu tarihten hesaplanır (kartın çekildiği gün).</div>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: setYansit ? "1fr 1.4fr" : "1fr", gap: 10, alignItems: "end" }}>
         <div>
           <label style={{ fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", display: "block", marginBottom: 4 }}>Taksit Sayısı</label>

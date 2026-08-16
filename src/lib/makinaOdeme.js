@@ -25,7 +25,8 @@ export const ilkSatisOdemeleri = (satirlar = [], { customerId, currency = "TRY",
     const base = { id: yeniId(), customerId, tarih, currency: currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit" };
     if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
       // Faturalıda karta KDV + komisyon eklenir; borçtan KDV dahil (mal×(1+KDV)) düşer (nakit/çek aynen kalır).
-      const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, ayar, tarih, !!r.kkYansit, kdvOran);
+      // Blokaj bu satırın KART İŞLEM TARİHİnden (r.kartTarihi) hesaplanır; boşsa ödeme tarihine düşer.
+      const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, ayar, r.kartTarihi || tarih, !!r.kkYansit, kdvOran);
       return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
     }
     return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };

@@ -95,7 +95,10 @@ export const hesaplaKartTutariNetten = (hedefNet, taksit, ayar, kdvOrani = 0, sa
 // iki modda da geçerli (para blokaj süresince bloke). Geçersiz girdi → null.
 export const kartKomisyonuSnapshot = (tutar, taksit, ayar, tarih, yansitildi = false) => {
   const k = hesaplaKartKomisyonu(tutar, taksit, ayar, tarih);
-  return k ? { ...k, yansitildi: !!yansitildi } : null;
+  // bazTarih: blokaj/hesaba geçişin hesaplandığı KART İŞLEM TARİHİ. Düzenlemede kart tarihi alanını geri
+  // doldurmak için snapshot'a yazılır (ayrı DB sütunu gerektirmez — kartKomisyonu zaten JSON). hesabaGecisTarihi
+  // ile aynı normalizasyon: geçerli string ise o, değilse today().
+  return k ? { ...k, yansitildi: !!yansitildi, bazTarih: (typeof tarih === "string" && tarih) ? tarih : today() } : null;
 };
 
 // Yansıtmalı satışın ÜÇLÜ AYRIMI (müşteriye komisyon yansıtıldığında). Girdi netSatis = kalem (ürünün

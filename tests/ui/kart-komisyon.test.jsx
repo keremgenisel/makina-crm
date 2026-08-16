@@ -48,6 +48,17 @@ describe("KartTaksitAlani — hesaba geçiş SATIŞ tarihinden (eski satış gir
     render(<KartYansitmaOzeti netTaban={100000} taksit={1} ayar={AYAR} kdvOrani={20} tarih="2026-01-01" />);
     expect(document.body.textContent).toContain("hesaba geçiş 10/02/2026");
   });
+  it("Kart İşlem Tarihi alanı setKartTarihi ile görünür ve girilen tarih kayıt tarihini geçersiz kılar", () => {
+    render(<KartTaksitAlani ayar={AYAR} tutar={100000} taksit={1} setTaksit={() => {}}
+      tarih="2026-05-01" kartTarihi="2026-01-01" setKartTarihi={() => {}} />);
+    expect(screen.getByText("Kart İşlem Tarihi")).toBeTruthy();        // alan görünür
+    expect(screen.getByDisplayValue("2026-01-01")).toBeTruthy();       // girilen kart tarihi
+    expect(document.body.textContent).toContain("hesaba geçiş 10/02/2026"); // kayıt tarihi (05-01) değil, kart tarihi (01-01) baz
+  });
+  it("setKartTarihi verilmeyince Kart İşlem Tarihi alanı gizli (geri uyum)", () => {
+    render(<KartTaksitAlani ayar={AYAR} tutar={100000} taksit={1} setTaksit={() => {}} tarih="2026-01-01" />);
+    expect(screen.queryByText("Kart İşlem Tarihi")).toBeNull();
+  });
 });
 
 describe("KartTaksitAlani — ileri kırılım + yansıt notu (455.000 / 3 taksit)", () => {

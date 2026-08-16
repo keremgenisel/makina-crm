@@ -149,7 +149,7 @@ export const YedekParcaSatisTab = ({
     const komisyon = yansitilanKomisyon(rec);
     const mik = parseInt(rec.miktar) || 0;
     const kalemBirim = (komisyon > 0 && mik > 0) ? parseMoney(rec.birimFiyat) - komisyon / mik : (rec.birimFiyat ?? "");
-    setForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: kalemBirim, kkYansit: !!(rec.kartKomisyonu && rec.kartKomisyonu.yansitildi) });
+    setForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: kalemBirim, kkYansit: !!(rec.kartKomisyonu && rec.kartKomisyonu.yansitildi), kartTarihi: rec.kartKomisyonu?.bazTarih || "" });
     setModal({ edit: rec });
   };
 

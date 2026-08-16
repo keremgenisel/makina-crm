@@ -138,7 +138,8 @@ export const CustomerDetailModal = ({
       if (!sv.parcaUcretsizMi) degisenParcalar2 = degisenParcalar.map(p => typeof p === "string" ? p : { ...p, fiyat: parseMoney(p.fiyat) * rf });
     }
     setSvForm({ parcaUcreti: "", parcaGarantiDisi: false, faturaTipi: normalizeSaleType(cust?.faturali), ...sv,
-      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi) });
+      degisenParcalar: degisenParcalar2, servisUcreti: servisUcretiKalem, kkYansit: !!(sv.kartKomisyonu && sv.kartKomisyonu.yansitildi),
+      kartTarihi: sv.kartKomisyonu?.bazTarih || "" });
     setSvModal({ edit: sv });
   };
   // Servis formunda eklenen dosya taslaklarını (fiziksel dosya zaten yüklendi) servise bağla.
@@ -159,10 +160,11 @@ export const CustomerDetailModal = ({
     const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
     const kkAyar = appSettings?.krediKartiKomisyonlari;
     const kkKdvOran = calcKDV(svForm.faturaTipi, 100, svForm.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kkTarih = svForm.kartTarihi || svForm.date; // blokaj kart işlem tarihinden (boşsa servis tarihi)
     let factor = 1, yansitSnap = null;
     if (svForm.yontem === "Kredi Kartı" && svForm.kkYansit && svForm.taksitSayisi && kalemBillable > 0) {
-      const a = kartYansitmaAyrim(kalemBillable, svForm.taksitSayisi, kkAyar, kkKdvOran, svForm.date);
-      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, svForm.taksitSayisi, kkAyar, svForm.date, true); }
+      const a = kartYansitmaAyrim(kalemBillable, svForm.taksitSayisi, kkAyar, kkKdvOran, kkTarih);
+      if (a) { factor = a.kdvMatrah / kalemBillable; yansitSnap = kartKomisyonuSnapshot(a.kartTutari, svForm.taksitSayisi, kkAyar, kkTarih, true); }
     }
     const olcek = (v) => factor === 1 ? parseMoney(v) : parseMoney(v) * factor;
     const servisUcretiSave = olcek(svForm.servisUcreti);
@@ -180,7 +182,7 @@ export const CustomerDetailModal = ({
       vadeTarihi: svForm.yontem === "Çek" ? (svForm.vadeTarihi || "") : "",
       tahsilEdildi: svForm.yontem === "Çek" ? !!svForm.tahsilEdildi : false,
       taksitSayisi: svForm.yontem === "Kredi Kartı" ? (svForm.taksitSayisi ?? null) : null,
-      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, svForm.date, false)) : null };
+      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false)) : null };
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -247,14 +249,14 @@ export const CustomerDetailModal = ({
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
         currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi,
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
-        taksitSayisi: rec.taksitSayisi || "", kkYansit,
+        taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "",
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
         kargoSorumlusu: rec.kargoSorumlusu, panoDusmeZamani: rec.panoDusmeZamani, notlar: rec.notlar,
         satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: ypKalemBirim(s) })),
       });
       return;
     }
-    setYpForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: ypKalemBirim(rec), taksitSayisi: rec.taksitSayisi || "", kkYansit });
+    setYpForm({ ...rec, miktar: String(rec.miktar ?? ""), birimFiyat: ypKalemBirim(rec), taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "" });
   };
   const saveYedekParca = () => {
     if (ypForm.batchEdit) {
@@ -350,6 +352,7 @@ export const CustomerDetailModal = ({
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
+      kartTarihi: ps.kartKomisyonu?.bazTarih || "",
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
       satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
       satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
@@ -404,14 +407,15 @@ export const CustomerDetailModal = ({
     // Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
     const kkAyar = appSettings?.krediKartiKomisyonlari;
     const kkKdvOran = calcKDV(pkForm.faturaTipi, 100, ortak.tarih, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kkBazTarih = pkForm.kartTarihi || ortak.tarih; // blokaj kart işlem tarihinden (boşsa satış tarihi); KDV oranı satış tarihinde kalır
     const kalipKart = (kalemFiyat) => {
       const kalem = parseMoney(kalemFiyat);
       if (pkForm.yontem !== "Kredi Kartı" || !pkForm.taksitSayisi) return { ucret: kalem, kartKomisyonu: null };
       if (pkForm.kkYansit) {
-        const a = kartYansitmaAyrim(kalem, pkForm.taksitSayisi, kkAyar, kkKdvOran, ortak.tarih);
-        if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, pkForm.taksitSayisi, kkAyar, ortak.tarih, true) };
+        const a = kartYansitmaAyrim(kalem, pkForm.taksitSayisi, kkAyar, kkKdvOran, kkBazTarih);
+        if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, pkForm.taksitSayisi, kkAyar, kkBazTarih, true) };
       }
-      return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(pkForm.faturaTipi, kalem, ortak.tarih, kdvRates), pkForm.taksitSayisi, kkAyar, ortak.tarih, false) };
+      return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(pkForm.faturaTipi, kalem, ortak.tarih, kdvRates), pkForm.taksitSayisi, kkAyar, kkBazTarih, false) };
     };
     if (pkForm.id) {
       const k = satirlar[0];
@@ -612,7 +616,7 @@ export const CustomerDetailModal = ({
       const yeniKayitlar = satirlar.map(r => {
         const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit" };
         if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
-          const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, ortak.tarih, !!r.kkYansit, odemeKdvOran);
+          const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, r.kartTarihi || ortak.tarih, !!r.kkYansit, odemeKdvOran);
           return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
         }
         return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
