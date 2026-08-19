@@ -217,6 +217,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
 
     let detailServisNet = 0, detailServisKdv = 0;
     let detailExtraKalipNet = 0, detailExtraKalipKdv = 0;
+    let detailYedekParcaNet = 0, detailYedekParcaKdv = 0;
     if (detailView) {
       services.filter(s => s.customerId === detailView.id).forEach(s => {
         if (isServisUcretliMi(s, factoryName) && (s.currency || "TRY") === detailMainCur) {
@@ -235,6 +236,11 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         detailExtraKalipNet += tutar;
         detailExtraKalipKdv += calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
       });
+      (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id && (s.currency || "TRY") === detailMainCur).forEach(s => {
+        const tutar = yedekParcaBedeli(s);
+        detailYedekParcaNet += tutar;
+        detailYedekParcaKdv += calcKDV(s.faturaTipi, tutar, s.tarih, kdvRates);
+      });
     }
 
     const detailLastTransferDate = detailView?.prevOwners?.length > 0 ? detailView.prevOwners[detailView.prevOwners.length - 1].soldDate : null;
@@ -249,5 +255,6 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
       detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
       detailKalanBorcToplam, detailBekleyenCek, detailEnYakinCekVade, detailBekleyenTaksit, detailTaksitGecikmisVar, detailEnYakinTaksitVade, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
       detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
+      detailYedekParcaNet, detailYedekParcaKdv,
     };
 }

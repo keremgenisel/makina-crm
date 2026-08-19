@@ -100,6 +100,7 @@ export const CustomerDetailModal = ({
     detailToplamOdeme, detailKalanBorc, detailCiro, detailEkBorcAyniPB, detailEkBorcDigerPB,
     detailKalanBorcToplam, detailBekleyenCek, detailEnYakinCekVade, detailBekleyenTaksit, detailTaksitGecikmisVar, detailEnYakinTaksitVade, detailCekVadesiGecmisVar, detailMainCur, detailKalipSatisAdedi,
     detailBorcFromPrevOwner, detailServisNet, detailServisKdv, detailExtraKalipNet, detailExtraKalipKdv,
+    detailYedekParcaNet, detailYedekParcaKdv,
   } = useMemo(
     () => deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts, customers }),
     [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts, customers]
@@ -986,6 +987,7 @@ export const CustomerDetailModal = ({
                 ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
                 ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV: ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
                 ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV: ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],
+                ["Yedek Parça", detailYedekParcaNet > 0 ? fmtCur(detailYedekParcaNet, detailMainCur) : "", detailYedekParcaKdv > 0 ? `KDV: ${fmtCur(detailYedekParcaKdv, detailMainCur)}` : ""],
                 ["Satış Yapan", resolveSatisYapan(detailView.satisYapan, factory)],
                 ["Şirket Telefonu", detailView.phone],
                 ["E-posta", detailView.email],

@@ -248,4 +248,17 @@ describe("deriveCustomerDetail", () => {
     expect(r.detailEkBorcAyniPB).toBe(360);
     expect(r.detailKalanBorcToplam).toBe(360);
   });
+
+  it("Yedek Parça (Kargo) kutusu için net (KDV hariç) + KDV toplamları üretir; ödendi/farklı PB/bayi hariç", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const yedekParcaSatislar = [
+      { id: 700, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 3, birimFiyat: 100, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-01", odendi: false, tahsisler: [] }, // 300 net, 60 KDV
+      { id: 701, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 2, birimFiyat: 50, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-02", odendi: true, tahsisler: [] },  // ödendi ama net/KDV kutusuna dahil (ciro), 100 net, 20 KDV
+      { id: 702, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, birimFiyat: 999, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-03", odendi: false, tahsisler: [] }, // bayi alıcı → hariç
+      { id: 703, aliciTipi: "musteri", musteriId: 1, partId: "7", miktar: 1, birimFiyat: 200, currency: "USD", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-04-04", odendi: false, tahsisler: [] }, // farklı PB → hariç
+    ];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar }));
+    expect(r.detailYedekParcaNet).toBe(400);   // 300 + 100 (KDV hariç kalem toplamı)
+    expect(r.detailYedekParcaKdv).toBe(80);    // 60 + 20
+  });
 });
