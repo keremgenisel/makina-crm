@@ -256,6 +256,36 @@ check("çift-yazma sonrası 650 tahsisleri korundu (2 adet)", (reopen2.yedekParc
 check("çift-yazma sonrası 651 tahsisi korundu (1 adet)", (reopen2.yedekParcaSatislar.find(x => x.id === 651)?.tahsisler || []).length === 1);
 check("tahsis artık id taşımıyor (SQLite yönetir)", (reopen2.yedekParcaSatislar.find(x => x.id === 650)?.tahsisler || []).every(t => t.id === undefined));
 
+// ── REGRESYON: yetim müşteri FK'si (silinmiş müşteriye bağlı görüşme/dosya) TÜM save'i patlatıyordu ──
+// SettingsTrash bir müşteriyi kalıcı silerken görüşme/dosyalarını temizlemezse customerId artık olmayan
+// bir müşteriye işaret eder → dosyalar/gorusmeler INSERT "FOREIGN KEY constraint failed" ile transaction'ı
+// geri alır ve uygulamada HİÇBİR alan kaydedilemez. db.cjs yazımda yetim satırları atlayarak self-heal yapmalı.
+const yetim = JSON.parse(JSON.stringify(reopen2));
+const YOK_MUSTERI = 999999; // customers'ta olmayan id
+yetim.gorusmeler = [
+  { id: 7000, customerId: 500, tarih: "2026-08-01", not: "geçerli" },       // geçerli — korunmalı
+  { id: 7001, customerId: YOK_MUSTERI, tarih: "2026-08-01", not: "yetim" }, // yetim — atlanmalı
+];
+yetim.dosyalar = [
+  { id: 8000, customerId: 500, refType: "makina", ad: "gecerli.pdf", dosyaAdi: "g.pdf" },     // geçerli — korunmalı
+  { id: 8001, customerId: YOK_MUSTERI, refType: "makina", ad: "yetim.pdf", dosyaAdi: "y.pdf" }, // yetim — atlanmalı
+  { id: 8002, dealerId: 3, refType: "makina", ad: "bayi.pdf", dosyaAdi: "b.pdf" },             // bayi (customerId yok) — korunmalı
+];
+let yetimPatladi = false;
+try { dbmod.writeBlobToDb(yetim); } catch (e) { yetimPatladi = true; console.error("yetim yazma hatası:", e.message); }
+check("yetim müşteri FK'si save'i patlatmıyor (regresyon)", !yetimPatladi);
+dbmod.close();
+dbmod.migrateFromJsonIfNeeded();
+const reopen3 = dbmod.readBlobFromDb();
+check("yetim görüşme atlandı, geçerli korundu", (() => {
+  const g = reopen3.gorusmeler || [];
+  return g.some(x => x.id === 7000) && !g.some(x => x.id === 7001);
+})());
+check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
+  const d = reopen3.dosyalar || [];
+  return d.some(x => x.id === 8000) && d.some(x => x.id === 8002) && !d.some(x => x.id === 8001);
+})());
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

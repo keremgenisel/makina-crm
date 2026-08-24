@@ -33,6 +33,12 @@ export const SettingsTrash = ({
     setServices(p => p.filter(s => !(s.customerId === c.id && s.deletedAt === c.deletedAt)));
     setPartSales?.(p => p.filter(x => !(x.customerId === c.id && x.deletedAt === c.deletedAt)));
     setPayments?.(p => p.filter(x => !(x.customerId === c.id && x.deletedAt === c.deletedAt)));
+    // Müşteri gidince ona bağlı görüşme/dosyalar da silinmeli — yoksa customerId artık olmayan bir
+    // müşteriye işaret eder (yetim FK) ve TÜM save transaction'ı "FOREIGN KEY constraint failed" ile
+    // çöker (uygulamada hiçbir alan kaydedilemez). Dosyaların fiziksel kopyalarını da temizle.
+    rawDosyalar.filter(d => d.customerId === c.id).forEach(d => window.appFiles?.remove?.(d.dosyaAdi));
+    setDosyalar?.(p => p.filter(x => x.customerId !== c.id));
+    setGorusmeler?.(p => p.filter(g => g.customerId !== c.id));
     showToast("Müşteri kalıcı olarak silindi.");
   };
   const restoreService = (s) => { setServices(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x)); showToast("Servis kaydı geri alındı."); };
@@ -113,6 +119,11 @@ export const SettingsTrash = ({
   };
   const purgeYedekParca = (s) => { setYedekParcaSatislar?.(p => p.filter(x => x.id !== s.id)); showToast("Yedek parça satışı kalıcı olarak silindi."); };
   const emptyTrash = () => {
+    // Çöpten kalıcı silinecek müşterilerin id'leri — bunlara bağlı görüşme/dosyalar kendileri
+    // soft-delete edilmemiş olsa bile silinmeli (yoksa yetim FK → save çöker, bkz. purgeCustomer).
+    const silinenMusteriIdler = new Set(rawCustomers.filter(x => x.deletedAt).map(x => x.id));
+    const gorusmeSil = (g) => g.deletedAt || silinenMusteriIdler.has(g.customerId);
+    const dosyaSil = (d) => d.deletedAt || silinenMusteriIdler.has(d.customerId);
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
     setPartSales?.(p => p.filter(x => !x.deletedAt));
@@ -126,9 +137,9 @@ export const SettingsTrash = ({
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
     setUretimFormlari?.(p => p.filter(x => !x.deletedAt));
-    setGorusmeler?.(p => p.filter(x => !x.deletedAt));
-    rawDosyalar.filter(d => d.deletedAt).forEach(d => window.appFiles?.remove?.(d.dosyaAdi)); // fiziksel dosyaları da sil
-    setDosyalar?.(p => p.filter(x => !x.deletedAt));
+    setGorusmeler?.(p => p.filter(x => !gorusmeSil(x)));
+    rawDosyalar.filter(dosyaSil).forEach(d => window.appFiles?.remove?.(d.dosyaAdi)); // fiziksel dosyaları da sil
+    setDosyalar?.(p => p.filter(x => !dosyaSil(x)));
     setPartTypeDefs?.(p => p.filter(x => !x.deletedAt));
     setCalisanlar?.(p => p.filter(x => !x.deletedAt));
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));

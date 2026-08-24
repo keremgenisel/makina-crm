@@ -75,6 +75,40 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(sonuc.find(x => x.id === 700).deletedAt).toBeUndefined();
   });
 
+  // Regresyon: müşteri kalıcı silinince görüşme/dosyaları temizlenmezse customerId yetim kalır ve
+  // TÜM save transaction'ı "FOREIGN KEY constraint failed" ile çöker (hiçbir alan kaydedilemez).
+  it("müşteri 'Kalıcı Sil' onun görüşme ve dosyalarını da diziden çıkarır (yetim FK önlemi)", () => {
+    const cust = { id: 500, name: "Silinecek Firma", deletedAt: "2026-08-01T10:00:00.000Z" };
+    let dosyaSonuc = null, gorusmeSonuc = null;
+    const setDosyalar = vi.fn((updater) => {
+      dosyaSonuc = updater([
+        { id: 8000, customerId: 500, ad: "a.pdf", dosyaAdi: "a.pdf" },
+        { id: 8002, dealerId: 3, ad: "bayi.pdf", dosyaAdi: "b.pdf" }, // başka sahibin dosyası — kalmalı
+      ]);
+    });
+    const setGorusmeler = vi.fn((updater) => {
+      gorusmeSonuc = updater([
+        { id: 7000, customerId: 500, not: "görüşme" },
+        { id: 7001, customerId: 501, not: "başka müşteri" }, // kalmalı
+      ]);
+    });
+    renderTrash({
+      rawCustomers: [cust],
+      rawDosyalar: [{ id: 8000, customerId: 500, ad: "a.pdf", dosyaAdi: "a.pdf" }],
+      setCustomers: noop, setDosyalar, setGorusmeler,
+    });
+    const satir = screen.getByText("Silinecek Firma").closest("tr");
+    fireEvent.click(within(satir).getByText("Kalıcı Sil"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(setDosyalar).toHaveBeenCalled();
+    expect(setGorusmeler).toHaveBeenCalled();
+    // Müşterinin dosyası/görüşmesi gitti, başkalarınınki kaldı
+    expect(dosyaSonuc.some(x => x.id === 8000)).toBe(false);
+    expect(dosyaSonuc.some(x => x.id === 8002)).toBe(true);
+    expect(gorusmeSonuc.some(x => x.id === 7000)).toBe(false);
+    expect(gorusmeSonuc.some(x => x.id === 7001)).toBe(true);
+  });
+
   it("parça tipi 'Kalıcı Sil' sonrası setPartTypeDefs kaydı diziden çıkarır", () => {
     let sonuc = null;
     const setPartTypeDefs = vi.fn((updater) => { sonuc = updater([{ id: "tip_1", ad: "Conta", deletedAt: "2026-07-20T10:00:00.000Z" }]); });

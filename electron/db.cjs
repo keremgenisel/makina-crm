@@ -609,10 +609,22 @@ function populateAll(conn, data, skip = new Set()) {
     }
   }
 
+  // gorusmeler.customer_id ve dosyalar.customer_id → customers(id) FK'si taşır. Bir müşteri Çöp
+  // Kutusu'ndan KALICI silindiğinde (SettingsTrash) bu çocuk kayıtlar temizlenmezse customerId artık
+  // var olmayan bir müşteriye işaret eder → INSERT "FOREIGN KEY constraint failed" ile TÜM save
+  // transaction'ını geri alır ve uygulamada HİÇBİR alan kaydedilemez hale gelir. Savunma: yazımdan önce
+  // geçerli müşteri id kümesini (tablo bu noktada zaten yazılmış durumda) kur, yetim referanslı satırları
+  // atla. Böylece hem geçmişte oluşmuş yetimler bir sonraki kayıtta kendiliğinden temizlenir (self-heal),
+  // hem de gelecekte hangi yoldan gelirse gelsin yetim FK save'i bir daha kilitleyemez.
+  const gecerliMusteriIdler = new Set(conn.prepare(`SELECT id FROM customers`).all().map((r) => r.id));
+  const musteriYetimMi = (cid) => cid != null && !gecerliMusteriIdler.has(cid);
+  let atlananYetim = 0;
+
   if (Array.isArray(data.gorusmeler) && !skip.has("gorusmeler")) {
     conn.prepare(`DELETE FROM gorusmeler`).run();
     const stmt = conn.prepare(`INSERT INTO gorusmeler (id, customer_id, tarih, tur, notField, takipTarihi, tamamlandi, kullanici, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const g of data.gorusmeler) {
+      if (musteriYetimMi(g.customerId)) { atlananYetim++; continue; }
       stmt.run(g.id, g.customerId ?? null, g.tarih ?? null, g.tur ?? null, g.not ?? null, g.takipTarihi ?? null, toInt(g.tamamlandi), g.kullanici ?? null, g.deletedAt ?? null);
     }
   }
@@ -621,9 +633,11 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM dosyalar`).run();
     const stmt = conn.prepare(`INSERT INTO dosyalar (id, customer_id, dealer_id, refType, refId, ad, dosyaAdi, boyut, tur, tarih, ekleyen, aciklama, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const d of data.dosyalar) {
+      if (musteriYetimMi(d.customerId)) { atlananYetim++; continue; }
       stmt.run(d.id, d.customerId ?? null, d.dealerId ?? null, d.refType ?? null, d.refId ?? null, d.ad ?? null, d.dosyaAdi ?? null, d.boyut ?? null, d.tur ?? null, d.tarih ?? null, d.ekleyen ?? null, d.aciklama ?? null, d.deletedAt ?? null);
     }
   }
+  if (atlananYetim > 0) console.warn(`Yetim FK temizliği: müşterisi silinmiş ${atlananYetim} görüşme/dosya kaydı atlandı.`);
 
   if (Array.isArray(data.dealers) && !skip.has("dealers")) {
     conn.prepare(`DELETE FROM dealers`).run();
