@@ -49,7 +49,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
     const custAd = (id) => custMap[id]?.name || "";
     // Tüm gruplar LİMİTSİZ — kaç eşleşme varsa hepsi gösterilir (hiçbir grupta .slice yok).
     return {
-      musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))) : [],
+      musteriler: izinli("customers") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Ad) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))) : [],
       belgeler:   izinli("evrak") ? teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))) : [],
       bayiler:    izinli("dealers") ? dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))) : [],
       makinalar:  izinli("stock") ? stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))) : [],
@@ -82,7 +82,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
     // Aranan alan sırasıyla aynı öncelik (results filtresiyle birebir): yetkili, telefon, yetkili tel, seri no, model, eski sahip.
     const eslesmeNedeni = (c) => {
       if (aramaNormalize(String(c.name || "")).includes(nq)) return null; // ad zaten görünüyor
-      const alanlar = [["yetkili", c.yetkili1Ad], ["telefon", c.phone], ["yetkili tel", c.yetkili1Tel], ["yetkili tel", c.yetkili2Tel], ["seri no", c.serialNo], ["model", c.model]];
+      const alanlar = [["yetkili", c.yetkili1Ad], ["yetkili", c.yetkili2Ad], ["telefon", c.phone], ["yetkili tel", c.yetkili1Tel], ["yetkili tel", c.yetkili2Tel], ["seri no", c.serialNo], ["model", c.model]];
       for (const [ad, deger] of alanlar) if (deger && aramaNormalize(String(deger)).includes(nq)) return `${ad}: ${deger}`;
       const eski = (c.prevOwners || []).find(o => aramaNormalize(String(o.name || "")).includes(nq));
       return eski ? `eski sahibi: ${eski.name}` : null;

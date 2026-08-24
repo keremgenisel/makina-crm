@@ -73,7 +73,7 @@ export const Customers = ({
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
     searchFn: (c, q) => {
-      const alanlar = ["name", "city", "satisYapan", "contact", "country", "serialNo", "model"];
+      const alanlar = ["name", "city", "satisYapan", "contact", "country", "serialNo", "model", "phone", "yetkili1Ad", "yetkili1Tel", "yetkili2Ad", "yetkili2Tel"];
       if (alanlar.some(f => aramaNormalize(c[f]).includes(q))) return true;
       return (c.prevOwners || []).some(o => aramaNormalize(String(o.name || "")).includes(q));
     },

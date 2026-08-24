@@ -58,6 +58,16 @@ describe("GlobalSearch sekme yetkisi", () => {
     expect(norm(r.textContent)).toMatch(/yetkili: Genisel Bey/); // neden çıktığı görünür
   });
 
+  it("ikinci yetkilinin adıyla (yetkili2Ad) da müşteri bulunur", () => {
+    const customers = [{ id: 11, name: "Bilar Makina Ltd.", yetkili1Ad: "Ali Veli", yetkili2Ad: "Agim Borina" }];
+    render(<GlobalSearch customers={customers} onOpenCustomer={vi.fn()} allowedTabs={["customers"]} />);
+    fireEvent.click(screen.getByTitle("Genel arama (Ctrl+K)"));
+    fireEvent.change(screen.getByPlaceholderText(/Müşteri, seri no/), { target: { value: "agim borina" } });
+    const r = row("Bilar Makina Ltd.");
+    expect(r).toBeTruthy();
+    expect(norm(r.textContent)).toMatch(/yetkili: Agim Borina/); // neden çıktığı görünür
+  });
+
   it("ad zaten eşleşiyorsa neden etiketi gösterilmez", () => {
     const customers = [{ id: 10, name: "Genisel Gıda", yetkili1Ad: "Genisel Bey" }];
     render(<GlobalSearch customers={customers} onOpenCustomer={vi.fn()} allowedTabs={["customers"]} />);

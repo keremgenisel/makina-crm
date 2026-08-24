@@ -11,6 +11,7 @@ const customers = [
   { id: 1, name: "Genisel Catering", model: "AK100" },
   { id: 5, name: "Yeni Sahip Gıda", model: "AK140", prevOwners: [{ name: "Devreden Eski Firma" }] },
   { id: 7, name: "Şişli Gıda Şahin", model: "AK100" },
+  { id: 9, name: "Bilar Makina Ltd.", model: "AK100", yetkili1Ad: "Ali Veli", yetkili2Ad: "Agim Borina" },
 ];
 
 describe("Müşteriler arama — eski sahip adı", () => {
@@ -26,6 +27,13 @@ describe("Müşteriler arama — eski sahip adı", () => {
     fireEvent.change(screen.getByPlaceholderText("Müşteri ara..."), { target: { value: "genisel" } });
     expect(screen.getByText("Genisel Catering")).toBeTruthy();
     expect(screen.queryByText("Yeni Sahip Gıda")).toBeNull();
+  });
+
+  it("ikinci yetkilinin adıyla (yetkili2Ad) da bulunur", () => {
+    render(<Customers customers={customers} setCustomers={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText("Müşteri ara..."), { target: { value: "agim borina" } });
+    expect(screen.getByText("Bilar Makina Ltd.")).toBeTruthy();
+    expect(screen.queryByText("Genisel Catering")).toBeNull();
   });
 
   it("Türkçe karaktersiz aramada da bulur ('sisli sahin' → Şişli ... Şahin)", () => {
