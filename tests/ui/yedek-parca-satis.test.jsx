@@ -48,6 +48,18 @@ describe("YedekParcaSatisTab — liste + durum", () => {
     expect(screen.getByText(/Bayi stoğu \(bekliyor\)/)).toBeTruthy();
   });
 
+  it("satış tarihi gün/ay/yıl gösterilir (ham YYYY-MM-DD değil)", () => {
+    render(<Harness baslangic={[satis5]} />);
+    expect(screen.getByText(/15\/07\/2026/)).toBeTruthy();
+    expect(screen.queryByText(/2026-07-15/)).toBeNull();
+  });
+
+  it("tahsis satırı gün/ay/yıl tarihiyle listelenir", () => {
+    const tahsisli = { ...satis5, id: 652, miktar: 5, tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN-1", tarih: "2026-08-03" }] };
+    render(<Harness baslangic={[tahsisli]} />);
+    expect(screen.getByText(/→ ABC Makina.*03\/08\/2026/)).toBeTruthy();
+  });
+
   it("'tahsisi eksik' filtresi tam-bağlı satışı gizler", () => {
     const tam = { ...satis5, id: 651, miktar: 2, tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN-1", tarih: "2026-07-16" }] };
     render(<Harness baslangic={[satis5, tam]} />);
@@ -240,6 +252,17 @@ describe("YedekParcaSatisTab — makina tahsisi (bölme)", () => {
     // İki tahsis satırı listelenir
     expect(screen.getByText(/→ ABC Makina/)).toBeTruthy();
     expect(screen.getByText(/→ DEF Sanayi/)).toBeTruthy();
+  });
+
+  it("tahsis tarihi geçmişe alınabilir (eski kayıt); tahsis satırı o tarihi gün/ay/yıl gösterir", () => {
+    render(<Harness baslangic={[satis5]} />);
+    fireEvent.click(screen.getByRole("button", { name: /Makinaya tahsis et/ }));
+    makinaSec("ABC", /ABC Makina/);
+    fireEvent.change(document.querySelector('input[type="date"]'), { target: { value: "2026-03-04" } });
+    fireEvent.change(document.querySelector('input[type="number"]'), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: /Tahsis Et/ }));
+    // Tahsis satırı girilen geçmiş tarihi gün/ay/yıl gösterir (bugün değil)
+    expect(screen.getByText(/→ ABC Makina.*04\/03\/2026/)).toBeTruthy();
   });
 
   it("kalandan fazla tahsis engellenir (showToast err, tahsis eklenmez)", () => {

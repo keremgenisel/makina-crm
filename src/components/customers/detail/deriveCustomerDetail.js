@@ -95,7 +95,9 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         const buMakina = (s.tahsisler || []).filter(t => t.customerId === detailView.id);
         if (!buMakina.length) return;
         const miktar = buMakina.reduce((sum, t) => sum + (parseInt(t.miktar) || 0), 0);
-        const sonTarih = buMakina.reduce((mx, t) => (String(t.tarih || s.tarih) > mx ? String(t.tarih || s.tarih) : mx), String(s.tarih || ""));
+        // Olay tarihi = TAHSİS tarihi (satış tarihi DEĞİL). Başlangıç "" → ilk tahsisin tarihi kazanır;
+        // birden çok tahsiste en geç tahsis tarihi. Eski (tarihsiz) tahsis kayıtları için s.tarih'e düşer.
+        const sonTarih = buMakina.reduce((mx, t) => { const d = String(t.tarih || s.tarih || ""); return d > mx ? d : mx; }, "");
         const key = s.batchId != null ? "b:" + s.batchId : "s:" + s.id;
         // satisId: satıra tıklayınca Stok > Yedek Parça Satışı'nda bu satışa odaklanmak için (batch'te
         // ilk kayıt; Stok sekmesi id'yi batch'e göre bulup vurguluyor). Salt-okunur kalır, düzenleme değil.

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { today, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -228,7 +228,7 @@ export const YedekParcaSatisTab = ({
               {parcaAdi(part) || "(parça yok)"} · <strong>{s.miktar} adet</strong> · {fmtCur(toplam, s.currency || "TRY")}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginTop: 2 }}>
-              {s.tarih}{s.kargoDurum ? ` · 📦 ${s.kargoDurum}` : ""}{s.kargoTakipNo ? ` · ${s.kargoFirma || "Kargo"} ${s.kargoTakipNo}` : ""}
+              {fmtTR(s.tarih)}{s.kargoDurum ? ` · 📦 ${s.kargoDurum}` : ""}{s.kargoTakipNo ? ` · ${s.kargoFirma || "Kargo"} ${s.kargoTakipNo}` : ""}
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -246,7 +246,7 @@ export const YedekParcaSatisTab = ({
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
             {s.tahsisler.map((t, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", borderRadius: 8, padding: "5px 10px" }}>
-                <span>🔗 <strong>{t.miktar} adet</strong> → {custMap[t.customerId]?.name || t.makinaSerbest || "(makina)"}{custMap[t.customerId]?.serialNo ? ` · S/N ${custMap[t.customerId].serialNo}` : t.serialNo ? ` · S/N ${t.serialNo}` : ""}</span>
+                <span>🔗 <strong>{t.miktar} adet</strong> → {custMap[t.customerId]?.name || t.makinaSerbest || "(makina)"}{custMap[t.customerId]?.serialNo ? ` · S/N ${custMap[t.customerId].serialNo}` : t.serialNo ? ` · S/N ${t.serialNo}` : ""}{t.tarih ? ` · ${fmtTR(t.tarih)}` : ""}</span>
                 {canDoStock("yedek_parca_edit") && (
                   <button onClick={() => tahsisSil(s.id, i)} title="Tahsisi kaldır"
                     style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}><Icon name="close" size={15} /></button>

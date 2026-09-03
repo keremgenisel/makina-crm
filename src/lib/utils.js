@@ -126,8 +126,11 @@ export const addMonthsToDateStr = (dateStr, months) => {
   const newM = (total % 12) + 1;
   return `${newY}-${String(newM).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 };
-// Türkçe büyük/küçük harf dönüşümü (İ→i, I→ı doğru çalışır)
-export const trLower = (s) => (s || "").toLocaleLowerCase("tr");
+// Türkçe büyük/küçük harf dönüşümü (İ→i, I→ı doğru çalışır).
+// String(s ?? "") ile her tipi güvene alır: sayı/boolean/nesne gibi string-dışı değerler de
+// (örn. XLSX/JSON'dan sayı gelen telefon veya seri no) çökertmeden metne çevrilir — aksi halde
+// .toLocaleLowerCase olmayan bir tipte arama/sıralama TypeError fırlatıyordu.
+export const trLower = (s) => String(s ?? "").toLocaleLowerCase("tr");
 // Arama için Türkçe karakter katlaması: küçült + aksanı ASCII'ye indir. Böylece kullanıcı
 // Türkçe karakter yazsa da yazmasa da eşleşir ("sisli"↔"Şişli", "altuntas"↔"Altuntaş",
 // "isik"↔"IŞIK"). trLower İ→i, I→ı yaptığı için sonra ı→i katlaması ikisini de kapsar.

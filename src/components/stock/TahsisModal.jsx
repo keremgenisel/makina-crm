@@ -10,6 +10,7 @@ export const TahsisModal = ({ customers = [], kalan, onEkle, onClose, showToast 
   const [customerId, setCustomerId] = useState("");
   const [serbest, setSerbest] = useState("");
   const [adet, setAdet] = useState(String(kalan > 0 ? 1 : 0));
+  const [tarih, setTarih] = useState(today()); // varsayılan bugün; eski kayıt için geçmişe alınabilir
   const secili = customerId ? custMap[Number(customerId)] : null;
 
   const ekle = () => {
@@ -22,7 +23,7 @@ export const TahsisModal = ({ customers = [], kalan, onEkle, onClose, showToast 
       customerId: customerId ? Number(customerId) : null,
       serialNo: secili?.serialNo || "",
       makinaSerbest: customerId ? "" : serbest.trim(),
-      tarih: today(),
+      tarih: tarih || today(),
     });
   };
 
@@ -50,9 +51,14 @@ export const TahsisModal = ({ customers = [], kalan, onEkle, onClose, showToast 
           <Input value={serbest} onChange={e => setSerbest(e.target.value)} placeholder="örn: Bayi X'in kendi müşterisi, S/N 1234" />
         </div>
       )}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 4 }}>Adet</div>
         <Input type="number" min="1" max={String(kalan)} value={adet} onChange={e => setAdet(e.target.value)} />
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)", marginBottom: 4 }}>Tahsis Tarihi</div>
+        <Input type="date" value={tarih} onChange={e => setTarih(e.target.value)} />
+        <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 4 }}>Geçmiş kayıt için tahsis tarihini değiştirebilirsiniz.</div>
       </div>
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
         <Btn variant="ghost" onClick={onClose}>Vazgeç</Btn>

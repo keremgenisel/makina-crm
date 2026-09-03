@@ -1,7 +1,7 @@
 // Saf yardımcı fonksiyon testleri (src/lib/utils.js) — framework'süz, Node ortamında koşar.
 import { describe, it, expect } from "vitest";
 import {
-  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
+  parseMoney, normalizeSaleType, calcKDV, customerHasAnyDebt, purgeOldTrash, numberToWordsEN, parseKurRate, calcTL, applyKurToForm, aramaNormalize, trLower, isTailscaleIp, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, dosyaBuKayitYerinde,
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
   girisNoHaritasi, servisYedekParcaDurumu, servisKanali, parcaGruplari,
@@ -412,6 +412,26 @@ describe("aramaNormalize — Türkçe karakter katlamalı arama", () => {
 
   it("alakasız sorgu eşleşmez", () => {
     expect(eslesir("Şişli", "kadikoy")).toBe(false);
+  });
+
+  // Regresyon: string-dışı değerler (XLSX/JSON'dan sayı gelen telefon/seri no, boolean, nesne)
+  // arama/sıralamada TypeError fırlatıyordu ("(s||'').toLocaleLowerCase is not a function").
+  // trLower artık String(s ?? "") ile her tipi güvene alır; arama kutusu çökmemeli.
+  it("string-dışı değerlerde çökmez (sayı/boolean/nesne/dizi güvenle metne çevrilir)", () => {
+    expect(() => trLower(5321234567)).not.toThrow();
+    expect(trLower(5321234567)).toBe("5321234567");
+    expect(trLower(true)).toBe("true");
+    expect(trLower({})).toBe("[object object]");
+    expect(trLower([1, 2])).toBe("1,2");
+    expect(() => aramaNormalize(5321234567)).not.toThrow();
+    expect(aramaNormalize(5321234567).includes("532")).toBe(true); // sayısal telefon aranabilir
+  });
+
+  it("null / undefined / 0 boş veya metin karşılığına iner (çökmeden)", () => {
+    expect(trLower(null)).toBe("");
+    expect(trLower(undefined)).toBe("");
+    expect(trLower(0)).toBe("0");
+    expect(aramaNormalize(null)).toBe("");
   });
 });
 

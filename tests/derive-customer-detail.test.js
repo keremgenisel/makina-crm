@@ -94,6 +94,34 @@ describe("deriveCustomerDetail", () => {
     expect(tahsis[0].ypTahsisId).toBe(650); // tıklayınca Stok'taki bu satışa gidilsin
   });
 
+  it("olay tarihi SATIŞ tarihi değil TAHSİS tarihidir (tahsis satıştan erken/geç olabilir)", () => {
+    const detailView = { id: 1, name: "Kate", currency: "TRY" };
+    const dealers = [{ id: 5, name: "Konya Tarım Makinaları" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    // Satış 15/08/2026, ama tahsis (eski kayıt) 03/03/2026 → olay 03/03/2026 olmalı, 15/08 DEĞİL.
+    const yedekParcaSatislar = [{
+      id: 650, dealerId: 5, partId: "7", miktar: 5, tarih: "2026-08-15",
+      tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN1", tarih: "2026-03-03" }],
+    }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers, parts }));
+    const tahsis = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(tahsis).toHaveLength(1);
+    expect(tahsis[0].date).toBe("2026-03-03"); // tahsis tarihi, satış tarihi değil
+  });
+
+  it("tarihsiz (eski) tahsis kaydında olay tarihi satış tarihine düşer (geriye uyum)", () => {
+    const detailView = { id: 1, name: "A", currency: "TRY" };
+    const dealers = [{ id: 5, name: "Bayi X" }];
+    const parts = [{ id: 7, ad: "Dişli" }];
+    const yedekParcaSatislar = [{
+      id: 650, dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01",
+      tahsisler: [{ miktar: 2, customerId: 1 }], // tarih yok
+    }];
+    const r = deriveCustomerDetail(base({ detailView, yedekParcaSatislar, dealers, parts }));
+    const tahsis = r.detailTimelineEvents.filter(e => e.title?.startsWith("Yedek Parça"));
+    expect(tahsis[0].date).toBe("2026-04-01");
+  });
+
   it("henüz tahsis edilmemiş yedek parça satışı hiçbir makinaya düşmez", () => {
     const detailView = { id: 1, name: "A", currency: "TRY" };
     const yedekParcaSatislar = [{ id: 650, dealerId: 5, partId: "7", miktar: 5, tarih: "2026-04-01", tahsisler: [] }];
