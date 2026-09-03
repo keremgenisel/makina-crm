@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "r
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
-import { withDeleted } from "../lib/utils";
+import { withDeleted, tsToDate } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
@@ -51,9 +51,10 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
     return rest || "Ek metin yok";
   };
   const fmtZaman = (ts) => {
-    if (!ts) return "";
-    const d = new Date(ts);
-    if (isNaN(d)) return ""; // eski/bozuk zaman damgası: "Invalid Date" basma, boş bırak
+    // tsToDate: SQLite'tan string dönen ms damgayı ("1723728000000") da doğru parse eder; reload
+    // sonrası tarih boş kalmasın (new Date(string) "Invalid Date" oluyordu). Geçersizse "" döner.
+    const d = tsToDate(ts);
+    if (!d) return "";
     return d.toLocaleDateString("tr-TR") + " " + d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
   };
 

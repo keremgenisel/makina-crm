@@ -150,6 +150,20 @@ describe("GlobalSearch sekme yetkisi", () => {
     expect(onGoNotes).toHaveBeenCalledWith(600);
   });
 
+  it("not damgası SQLite'tan STRING dönse de arama çökmez ('Invalid time value' regresyonu)", () => {
+    // SQLite updatedAt TEXT kolonu ms sayıyı string olarak döndürür ("1750000000000").
+    // Eski kod new Date(string).toISOString() ile Range: Invalid time value fırlatıp aramayı çökertiyordu.
+    const notes = [{ id: 601, content: "Genisel string damga notu", updatedAt: "1750000000000" }];
+    expect(() => {
+      render(<GlobalSearch notes={notes} onGoNotes={vi.fn()} allowedTabs={["notes"]} />);
+      fireEvent.click(screen.getByTitle("Genel arama (Ctrl+K)"));
+      fireEvent.change(screen.getByPlaceholderText(/Müşteri, seri no/), { target: { value: "genisel" } });
+    }).not.toThrow();
+    const r = row("string damga notu");
+    expect(r).toBeTruthy();
+    expect(norm(r.textContent)).toMatch(/15\/06\/2025/); // damga tarihi gg/aa/yyyy görünür (boş değil)
+  });
+
   it("üretim formu (kalıp adı) aramada çıkar ve tıklayınca onGoUretim çağrılır", () => {
     const onGoUretim = vi.fn();
     const uretimFormlari = [{ id: 500, baslangicTarihi: "2026-07-01", satirlar: [{ kalipAdi: "Genisel Kalıp X", kalipKodu: "GK-1" }] }];

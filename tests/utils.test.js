@@ -9,6 +9,7 @@ import {
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
   isPaymentReceived, isServisBorcluMu, calcCiro, calcKalanBorc,
+  tsToDate, tsGunTR,
 } from "../src/lib/utils";
 import { makinaKartOdemesi } from "../src/lib/krediKarti";
 
@@ -702,5 +703,41 @@ describe("girisNoHaritasi", () => {
     expect(girisNoHaritasi()).toEqual({});
     // id'siz eleman atlanır
     expect(girisNoHaritasi([{ installDate: "2020-01-01" }, { id: "A", installDate: "2019-01-01" }])).toEqual({ A: 1 });
+  });
+});
+
+describe("tsToDate / tsGunTR — ms damgası (SQLite TEXT-affinity: string dönebilir) güvenli çözümü", () => {
+  const ms = Date.UTC(2024, 7, 15, 13, 20, 0); // 2024-08-15T13:20:00Z
+
+  it("sayı ms damgasını parse eder", () => {
+    expect(tsToDate(ms)?.toISOString().slice(0, 10)).toBe("2024-08-15");
+  });
+
+  it("SADECE-RAKAM string ms damgasını da parse eder (SQLite TEXT'ten böyle döner)", () => {
+    // new Date(String(ms)) doğal olarak Invalid Date → tsToDate sayıya çevirip düzeltir.
+    expect(tsToDate(String(ms))?.toISOString().slice(0, 10)).toBe("2024-08-15");
+  });
+
+  it("ISO tarih string'ini de parse eder", () => {
+    expect(tsToDate("2024-08-15T13:20:00Z")?.toISOString().slice(0, 10)).toBe("2024-08-15");
+  });
+
+  it("boş / geçersiz değerlerde null döner, FIRLATMAZ", () => {
+    expect(tsToDate(null)).toBe(null);
+    expect(tsToDate(undefined)).toBe(null);
+    expect(tsToDate("")).toBe(null);
+    expect(tsToDate("abc")).toBe(null);
+    // Aralık dışı ms (> 8.64e15) → Invalid Date → null (uid tabanlı eski damga senaryosu)
+    expect(tsToDate(9e15)).toBe(null);
+    expect(tsToDate("9000000000000000")).toBe(null);
+  });
+
+  it("tsGunTR: string ms damgasında 'Invalid time value' FIRLATMADAN gg/aa/yyyy döner", () => {
+    // Regresyon: GlobalSearch notlar meta'sı new Date(string).toISOString() ile çöküyordu.
+    expect(() => tsGunTR(String(ms))).not.toThrow();
+    expect(tsGunTR(String(ms))).toBe("15/08/2024");
+    expect(tsGunTR(ms)).toBe("15/08/2024");
+    expect(tsGunTR(null)).toBe("");
+    expect(tsGunTR("bozuk")).toBe("");
   });
 });

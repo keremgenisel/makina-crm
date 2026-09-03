@@ -115,6 +115,20 @@ export const fmtZamanTam = (ts) => {
   const hm = (s || "").slice(0, 5);
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}${hm ? " " + hm : ""}` : ts;
 };
+// ms zaman damgasını güvenli Date'e çevirir; geçersizse null. SQLite TEXT-affinity, sayı olan
+// updatedAt/Date.now() damgasını STRING olarak geri döndürür ("1723728000000"); new Date(o string)
+// "Invalid Date" olur ve .toISOString() "Invalid time value" fırlatır (arama kutusunu çökertiyordu).
+// Sadece-rakam string'i sayıya çevirip öyle parse eder; diğer string'ler (ISO) doğrudan parse edilir.
+export const tsToDate = (v) => {
+  if (v == null || v === "") return null;
+  let d;
+  if (typeof v === "number") d = new Date(v);
+  else if (typeof v === "string" && /^\d+$/.test(v.trim())) d = new Date(Number(v));
+  else d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
+// ms zaman damgasından gg/aa/yyyy — geçersiz/boş damgada "" döner (asla fırlatmaz).
+export const tsGunTR = (v) => { const d = tsToDate(v); return d ? fmtTR(d.toISOString().slice(0, 10)) : ""; };
 // "YYYY-MM-DD" tarih string'ine ay ekler, sonucu da string olarak döner — new Date(iso)+setMonth()
 // YERİNE saf sayı aritmetiği kullanılıyor (ay/yıl sınırında UTC yorumlama kaymasına karşı, bkz.
 // Finance.jsx'teki ilgili yorum: tarihler hep string üzerinde karşılaştırılır, Date nesnesine hiç çevrilmez).

@@ -14,6 +14,7 @@ export const ALL_TABS = [
   { id: "notes",     label: "Notlar" },
   { id: "servis",    label: "Servis ve Kargo Panosu" },
   { id: "harita",    label: "Faaliyet Haritası" },
+  { id: "analiz",    label: "Analiz" },
   { id: "settings",  label: "Ayarlar" },
 ];
 export const DEFAULT_USER_TABS = ["dashboard", "customers", "dealers", "stock", "evrak", "notes"];

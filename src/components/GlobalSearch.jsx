@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { aramaNormalize, fmtTR, parcaAdi, fmtCur } from "../lib/utils";
+import { aramaNormalize, fmtTR, tsGunTR, parcaAdi, fmtCur } from "../lib/utils";
 import { aliciAd } from "./stock/TahsisModal";
 import { Icon } from "./ui";
 
@@ -97,7 +97,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
       kaliplar: p => { const c = custMap[p.customerId]; return { uid: `k${p.id}`, baslik: `${p.ad || "Kalıp"}${p.olcu ? ` (${p.olcu})` : ""}`, meta: nokta([c?.name || "—", p.tarih && fmtTR(p.tarih), p.ucret && fmtCur(p.ucret, p.currency)]), onOpen: () => pick(onOpenCustomer, p.customerId, null, p.id) }; },
       uretimler: u => ({ uid: `u${u.id}`, baslik: `Üretim ${u.baslangicTarihi ? fmtTR(u.baslangicTarihi) : ""}${u.bitisTarihi ? ` – ${fmtTR(u.bitisTarihi)}` : ""}`.trim(), meta: nokta([`${(u.satirlar || []).length} kalıp`, u.not, u.kapali && "kapalı"]), onOpen: () => pick(onGoUretim, u.id) }),
       dosyalar: d => { const c = custMap[d.customerId]; return { uid: `f${d.id}`, baslik: d.ad || d.dosyaAdi || "Dosya", meta: nokta([c?.name || "—", d.tarih && fmtTR(d.tarih)]), onOpen: () => pick(onOpenCustomer, d.customerId) }; },
-      notlar: n => ({ uid: `n${n.id}`, baslik: String(n.content || "").split("\n")[0].trim().slice(0, 60) || "Not", meta: n.updatedAt ? fmtTR(new Date(n.updatedAt).toISOString().slice(0, 10)) : "", onOpen: () => pick(onGoNotes, n.id) }),
+      notlar: n => ({ uid: `n${n.id}`, baslik: String(n.content || "").split("\n")[0].trim().slice(0, 60) || "Not", meta: tsGunTR(n.updatedAt), onOpen: () => pick(onGoNotes, n.id) }),
       calisanlar: cx => ({ uid: `emp${cx.id}`, baslik: cx.ad || "—", meta: "Firma çalışanı", onOpen: () => pick(onGoCalisanlar, cx.id) }),
     };
     return KAT_SIRA.filter(k => results[k]?.length).map(k => ({ key: k, ...KAT[k], items: results[k].map(yap[k]) }));
