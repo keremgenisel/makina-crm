@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -401,6 +401,7 @@ const APP_SETTINGS_SERVIS_ALARM_COLUMN = [["servisAlarm", "TEXT"]];
 // Kredi kartı taksit komisyon tablosu (JSON): { bsmv, satirlar:[{taksit,oran,katkiPayi,blokajGun}] }
 const APP_SETTINGS_KK_KOMISYON_COLUMN = [["krediKartiKomisyonlari", "TEXT"]];
 const APP_SETTINGS_MUSTERI_SUTUN_COLUMN = [["musteriSutunlari", "TEXT"]];
+const APP_SETTINGS_ANALIZ_MODEL_COLUMN = [["analizGizliModeller", "TEXT"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -727,8 +728,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []));
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -821,6 +822,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "app_settings", APP_SETTINGS_SERVIS_ALARM_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KK_KOMISYON_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_MUSTERI_SUTUN_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_ANALIZ_MODEL_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
@@ -1106,8 +1108,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();

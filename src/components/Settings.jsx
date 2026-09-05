@@ -207,7 +207,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
-            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} />
+            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts}
+            appSettings={appSettings} setAppSettings={setAppSettings} />
         </Section>
       )}
 

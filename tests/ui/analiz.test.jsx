@@ -88,6 +88,25 @@ describe("Analiz sekmesi", () => {
     expect(within(panel).getByText("3")).toBeTruthy(); // birleşik toplam
   });
 
+  it("Model Servis Yoğunluğu: gizli model panelden ve En Yoğun kutusundan düşer", () => {
+    render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{ analizGizliModeller: ["AK-140"] }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tüm zamanlar" }));
+    const panel = screen.getByText("Model Servis Yoğunluğu").closest("section");
+    expect(panel.textContent).toContain("AK-100");   // görünür model
+    expect(panel.textContent).not.toContain("AK-140"); // gizli model panelde yok
+    // En Yoğun Model kutusu da aynı filtreye tabi → AK-140 gizliyken AK-100
+    const tile = screen.getByText("En Yoğun Model").parentElement;
+    expect(tile.textContent).toContain("AK-100");
+    expect(tile.textContent).not.toContain("AK-140");
+  });
+
+  it("Model Servis Yoğunluğu: servisli tüm modeller gizlenince 'Veri yok'", () => {
+    render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{ analizGizliModeller: ["AK-140", "AK-100"] }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tüm zamanlar" }));
+    const panel = screen.getByText("Model Servis Yoğunluğu").closest("section");
+    expect(within(panel).getByText("Veri yok.")).toBeTruthy();
+  });
+
   it("boş aralıkta boş durum mesajı gösterilir", () => {
     render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{}} />);
     // Özel aralık, 2000 yılı → hiç kayıt yok

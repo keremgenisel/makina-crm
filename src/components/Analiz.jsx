@@ -208,8 +208,12 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   const { ozet } = veri;
   const secili = veri.parcalar.find(p => p.key === seciliKey) || veri.parcalar[0] || null;
   const parcaMax = veri.parcalar[0]?.toplam || 0;
-  const yogunlukMax = Math.max(0, ...veri.modelYogunlugu.map(m => m.oran));
-  const enYogun = veri.modelYogunlugu[0] || null; // en yüksek servis/makina oranı (özet kutusu)
+  // Model Servis Yoğunluğu: yalnız Ayarlar > Katalog > Makina Modelleri'nde işaretli (gizli olmayan) modeller.
+  // Gizli liste boş → tüm modeller (varsayılan). En Yoğun Model özet kutusu da aynı filtreye tabi (tutarlılık).
+  const gizliModeller = new Set(appSettings?.analizGizliModeller || []);
+  const modelYogunlugu = veri.modelYogunlugu.filter(m => !gizliModeller.has(m.model));
+  const yogunlukMax = Math.max(0, ...modelYogunlugu.map(m => m.oran));
+  const enYogun = modelYogunlugu[0] || null; // en yüksek servis/makina oranı (özet kutusu)
   const trendMax = Math.max(1, ...veri.aylikTrend.map(a => a.adet));
   const techMax = Math.max(1, ...veri.teknisyenler.map(t => t.adet));
   const kalipAdMax = veri.kalipAd[0]?.toplam || 0;
@@ -294,7 +298,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   const modalTanim = {
     parca: { baslik: "En Çok Satılan / Değişen Yedek Parçalar", arr: veri.parcalar, node: () => <>{parcaLejant}<div style={listeStil}>{veri.parcalar.map(parcaRow)}</div></> },
     makina: { baslik: "En Çok Servis Alan Makinalar", arr: veri.enCokServisliMakinalar, node: () => makinaTablo(veri.enCokServisliMakinalar) },
-    yogunluk: { baslik: "Model Servis Yoğunluğu", arr: veri.modelYogunlugu, node: () => <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>{veri.modelYogunlugu.map(yogunlukRow)}</div> },
+    yogunluk: { baslik: "Model Servis Yoğunluğu", arr: modelYogunlugu, node: () => <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>{modelYogunlugu.map(yogunlukRow)}</div> },
     teknisyen: { baslik: "Teknisyen Dökümü", arr: veri.teknisyenler, node: () => <div style={listeStil}>{veri.teknisyenler.map(teknisyenRow)}</div> },
     kalipAd: { baslik: "En Çok Kullanılan Kalıp", arr: veri.kalipAd, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipAd.map(k => kalipRow(k, kalipAdMax))}</div></> },
     kalipOlcu: { baslik: "Kalıp Ölçüleri", arr: veri.kalipOlcu, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipOlcu.map(k => kalipRow(k, kalipOlcuMax))}</div></> },
@@ -396,10 +400,10 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
           <section style={{ ...S.panel, gridColumn: "span 5" }}>
             <div style={S.phead}><h2 style={S.h2}>Model Servis Yoğunluğu</h2></div>
             <p style={S.note}>Hesap: o modeldeki toplam servis sayısı, o modelin makina (filo) sayısına bölünür. Filoya normalize edildiği için çok satan model haksız yere “arızalı” görünmez.</p>
-            {veri.modelYogunlugu.length === 0 ? <div style={S.bos}>Veri yok.</div> : (
+            {modelYogunlugu.length === 0 ? <div style={S.bos}>Veri yok.</div> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                {ilk(veri.modelYogunlugu, "yogunluk").map(yogunlukRow)}
-                <TumBtn toplam={veri.modelYogunlugu.length} limit={LIMIT.yogunluk} onAc={() => setModalKey("yogunluk")} />
+                {ilk(modelYogunlugu, "yogunluk").map(yogunlukRow)}
+                <TumBtn toplam={modelYogunlugu.length} limit={LIMIT.yogunluk} onAc={() => setModalKey("yogunluk")} />
               </div>
             )}
           </section>

@@ -5,7 +5,18 @@ import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
 
-export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [] }) => {
+export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], appSettings = {}, setAppSettings = null }) => {
+  // Analiz > Model Servis Yoğunluğu'nda gösterilecek modeller: appSettings.analizGizliModeller = GİZLENEN
+  // model adları. Model adı bu listede YOKSA gösterilir → onay kutusu işaretli = göster (varsayılan: hepsi açık).
+  const gizliSet = new Set(appSettings?.analizGizliModeller || []);
+  const analizGoster = (model) => !gizliSet.has(model);
+  const toggleAnaliz = (model) => {
+    setAppSettings?.(p => {
+      const cur = new Set(p?.analizGizliModeller || []);
+      if (cur.has(model)) cur.delete(model); else cur.add(model);
+      return { ...p, analizGizliModeller: [...cur] };
+    });
+  };
   const empty = { model: "", urunAdi: "", urunAdiEN: "", sogutma: "Soğutmalı", kapasite: "", kalip: "", tanim: "", tanimEN: "", defaultParcalar: [] };
   const [modelModal, setModelModal] = useState(null); // null | { mode: "add" | "edit-std" | "edit-custom", data }
   const [mForm, setMForm] = useState(empty);
@@ -37,6 +48,11 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       if (!oldName || oldName === name) { showToast("Model düzenlendi."); return; }
       setCustomers?.(p => p.map(c => c.model === oldName ? { ...c, model: name } : c));
       setStock?.(p => p.map(s => s.model === oldName ? { ...s, model: name } : s));
+      // Analiz gizli listesindeki adı da taşı — yoksa gizli model rename sonrası tekrar görünür olurdu.
+      setAppSettings?.(p => {
+        const arr = p?.analizGizliModeller || [];
+        return arr.includes(oldName) ? { ...p, analizGizliModeller: arr.map(x => x === oldName ? name : x) } : p;
+      });
       showToast(`Model düzenlendi. "${oldName}" adı geçmiş kayıtlarda da güncellendi.`);
     };
     if (modelModal.mode === "add") {
@@ -71,6 +87,11 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
         {" · "}
         <span style={{ color: m.tanimEN ? "var(--grn600, #16a34a)" : "var(--n300, #cbd5e1)" }}>EN</span>
       </td>
+      <td style={{ padding: "10px 12px", textAlign: "center" }}>
+        <input type="checkbox" checked={analizGoster(m.model)} onChange={() => toggleAnaliz(m.model)}
+          title="Analiz > Model Servis Yoğunluğu'nda göster"
+          style={{ width: 16, height: 16, accentColor: "var(--brand, #e85d1a)", cursor: "pointer", margin: 0 }} />
+      </td>
       <td style={{ padding: "10px 12px" }}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
           <Btn small variant="ghost" onClick={() => openEdit(m, isStd)}><Icon name="edit" size={12} /></Btn>
@@ -101,8 +122,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
-                {["", "Model", "Soğutma", "Kapasite", "Kalıp Çapı", "Tanım", ""].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: h === "" ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>
+                {[["", "img"], ["Model", "model"], ["Soğutma", "sog"], ["Kapasite", "kap"], ["Kalıp Çapı", "cap"], ["Tanım", "tanim"], ["Analiz", "analiz"], ["", "act"]].map(([h, k]) => (
+                  <th key={k} style={{ padding: "8px 12px", textAlign: k === "analiz" ? "center" : (h === "" ? "right" : "left"), fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -120,7 +141,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       {confirmDelModel && (
         <ConfirmDialog
           message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
-          onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setConfirmDelModel(null); showToast("Model silindi."); }}
+          onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setAppSettings?.(p => { const arr = p?.analizGizliModeller || []; return arr.includes(confirmDelModel) ? { ...p, analizGizliModeller: arr.filter(x => x !== confirmDelModel) } : p; }); setConfirmDelModel(null); showToast("Model silindi."); }}
           onCancel={() => setConfirmDelModel(null)}
         />
       )}

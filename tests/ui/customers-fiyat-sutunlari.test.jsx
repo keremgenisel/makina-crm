@@ -16,10 +16,12 @@ const customers = [
     faturali: "Faturasız Yurtiçi", faturaBedeli: 700000, fabrikaSatisBedeli: 790000, komisyon: "", installDate: "2025-02-01" },
 ];
 // Extra Kalıp satışları: makina 1'e 40.000 + 15.000 = 55.000; makina 2'ye hiç.
+// Fiyat part_sales'te `ucret` alanında; ücretsiz (garanti) kalıp toplama katılmaz.
 const partSales = [
-  { id: 800, tur: "Kalıp", customerId: 1, fiyat: 40000, currency: "TRY" },
-  { id: 801, tur: "Kalıp", customerId: 1, fiyat: 15000, currency: "TRY" },
-  { id: 802, tur: "Servis", customerId: 1, fiyat: 999999 }, // Kalıp değil → sayılmaz
+  { id: 800, tur: "Kalıp", customerId: 1, ucret: 40000, currency: "TRY" },
+  { id: 801, tur: "Kalıp", customerId: 1, ucret: 15000, currency: "TRY" },
+  { id: 803, tur: "Kalıp", customerId: 1, ucret: 30000, ucretsizMi: true, currency: "TRY" }, // ücretsiz → sayılmaz
+  { id: 802, tur: "Servis", customerId: 1, ucret: 999999 }, // Kalıp değil → sayılmaz
 ];
 
 const basliklar = () => [...document.querySelectorAll("thead th")].map(th => th.textContent.trim());

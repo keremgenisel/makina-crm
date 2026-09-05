@@ -64,12 +64,14 @@ export const Customers = ({
   // Ayarlar > Uygulama > Müşteri Görünümü'nden açılan fiyat sütunları (yalnız Müşteriler sekmesinde).
   const sut = (isCustomer && appSettings?.musteriSutunlari) || {};
   // Her makinaya (customerId) satılan Extra Kalıpların fiyat toplamı — satır başı tarama yerine tek Map.
+  // Fiyat part_sales'te `ucret` alanında (form UI'da "fiyat" görünür, kayıtta `ucret`); ücretsiz (garanti
+  // kapsamı) kalıplar hariç — detay modal "Extra Kalıp" satırıyla (deriveCustomerDetail) tutarlı.
   const extraKalipMap = useMemo(() => {
     const m = new Map();
     if (!sut.extraKalip) return m;
     (partSales || []).forEach(p => {
-      if (p.deletedAt || p.tur !== "Kalıp" || p.customerId == null) return;
-      m.set(p.customerId, (m.get(p.customerId) || 0) + parseMoney(p.fiyat));
+      if (p.deletedAt || p.tur !== "Kalıp" || p.ucretsizMi || p.customerId == null) return;
+      m.set(p.customerId, (m.get(p.customerId) || 0) + parseMoney(p.ucret));
     });
     return m;
   }, [partSales, sut.extraKalip]);

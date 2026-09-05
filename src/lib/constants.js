@@ -255,7 +255,7 @@ export const DEFAULT_KK_KOMISYONLARI = {
   ],
 };
 
-export const APP_VERSION = "3.26.0";
+export const APP_VERSION = "3.27.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";
