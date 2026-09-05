@@ -306,7 +306,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       const o = empty3(); o[cur(c.currency)] = gercekBedel(c);
       byModel[k].gelir += toTL(o);
     });
-    const modelRows = Object.entries(byModel).sort((a, b) => b[1].gelir - a[1].gelir);
+    // Adet bazlı sıralama: en çok satılan model en üstte (eşitlikte gelire göre).
+    const modelRows = Object.entries(byModel).sort((a, b) => b[1].adet - a[1].adet || b[1].gelir - a[1].gelir);
 
     // ── SATICI/BAYİ BAZLI KIRILIM (gelir ≈ TL karşılığı) ──
     const bySeller = {};
@@ -317,7 +318,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
       const g = empty3(); g[cur(c.currency)] = gercekBedel(c);
       bySeller[k].gelir += toTL(g);
     });
-    const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].gelir - a[1].gelir);
+    // Adet bazlı sıralama: en çok satış yapan en üstte (eşitlikte gelire göre).
+    const sellerRows = Object.entries(bySeller).sort((a, b) => b[1].adet - a[1].adet || b[1].gelir - a[1].gelir);
 
     // ── AYLIK TREND (son 12 ay, satış geliri ≈ TL karşılığı) ──
     const monthly = [];
@@ -589,8 +591,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
           <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>Satış Yapan Bazlı</div>
           {/* Gelir kolonu BİLEREK yok (kullanıcı kararı): satıcı bazında ciro gösterilmek
-              istenmiyor, yalnızca adet. bySeller.gelir yine de hesaplanır çünkü satırlar
-              gelire göre sıralanıyor — kolonu "eksik" sanıp geri ekleme. */}
+              istenmiyor, yalnızca adet. Satırlar adet bazlı sıralanır (bySeller.gelir yalnız
+              adet eşitliğinde tie-break olarak kullanılır) — gelir kolonunu geri ekleme. */}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}

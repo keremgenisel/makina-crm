@@ -99,9 +99,10 @@ const Tile = ({ cap, big, sub, metin }) => (
   </div>
 );
 
+// Finans sekmesindeki tarih aralığı butonlarıyla aynı stil (tasarım tutarlılığı): aktif = dolu turuncu zemin + beyaz yazı.
 const Chip = ({ on, onClick, children }) => (
   <button onClick={onClick} aria-pressed={on}
-    style={{ fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer", padding: "6px 13px", borderRadius: 999, border: "1px solid", borderColor: on ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: on ? "var(--ambBg3, #fff7ed)" : "var(--surface, #fff)", color: on ? "var(--orTx, #c2410c)" : "var(--n500, #64748b)" }}>
+    style={{ fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "7px 16px", borderRadius: 20, border: "1px solid", borderColor: on ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: on ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: on ? "#fff" : "var(--n500, #64748b)" }}>
     {children}
   </button>
 );
