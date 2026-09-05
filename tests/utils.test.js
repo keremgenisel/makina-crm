@@ -9,7 +9,7 @@ import {
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
   isPaymentReceived, isServisBorcluMu, calcCiro, calcKalanBorc,
-  tsToDate, tsGunTR,
+  tsToDate, tsGunTR, mergeAppSettings, disAppSettingsSuz,
 } from "../src/lib/utils";
 import { makinaKartOdemesi } from "../src/lib/krediKarti";
 
@@ -739,5 +739,37 @@ describe("tsToDate / tsGunTR — ms damgası (SQLite TEXT-affinity: string döne
     expect(tsGunTR(ms)).toBe("15/08/2024");
     expect(tsGunTR(null)).toBe("");
     expect(tsGunTR("bozuk")).toBe("");
+  });
+});
+
+describe("mergeAppSettings — çakışma/yeniden-yükleme birleştirmesinde yerel appSettings korunur", () => {
+  it("yerel ayar değişikliği (analizGizliModeller) sunucudaki eski değerin üzerine biner", () => {
+    const yeniden = { analizGizliModeller: [], servisAlarm: { acik: true } }; // sunucudan gelen (eski)
+    const yerel = { analizGizliModeller: ["AK-100"], servisAlarm: { acik: true } }; // bu PC'nin niyeti
+    const r = mergeAppSettings(yeniden, yerel);
+    expect(r.analizGizliModeller).toEqual(["AK-100"]); // yerel kazanır → checkbox kapat-aç'ta kalıcı
+    expect(r.servisAlarm.acik).toBe(true);
+  });
+
+  it("yeniden yüklenenin alanlarını korur, yerelin olmayan alanı ezmez", () => {
+    const yeniden = { kdvRates: [{ rate: 20 }], musteriSutunlari: { faturaBedeli: false } };
+    const yerel = { musteriSutunlari: { faturaBedeli: true } };
+    const r = mergeAppSettings(yeniden, yerel);
+    expect(r.kdvRates).toEqual([{ rate: 20 }]);          // yerelde yok → yeniden yüklenenden korunur
+    expect(r.musteriSutunlari).toEqual({ faturaBedeli: true }); // yerel değişiklik kazanır
+  });
+
+  it("makinaya özgü alanlar (backupFolder vb.) yereli değil, yeniden yükleneni korur", () => {
+    const yeniden = { backupFolder: "C:/yerel", analizGizliModeller: [] };
+    const yerel = { backupFolder: "\\\\saldirgan\\pub", analizGizliModeller: ["AK-100"] };
+    const r = mergeAppSettings(yeniden, yerel);
+    expect(r.backupFolder).toBe("C:/yerel");        // disAppSettingsSuz ile yerel makina-alanı ayıklanır
+    expect(r.analizGizliModeller).toEqual(["AK-100"]);
+  });
+
+  it("yerel yoksa yeniden yüklenenin kopyasını döndürür", () => {
+    const yeniden = { analizGizliModeller: ["X"] };
+    expect(mergeAppSettings(yeniden, null)).toEqual({ analizGizliModeller: ["X"] });
+    expect(mergeAppSettings(null, null)).toEqual({});
   });
 });

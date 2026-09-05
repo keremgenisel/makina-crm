@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { hesaplaAnaliz, BILINMEYEN_MODEL } from "../lib/analiz";
+import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../lib/analiz";
 import { today, addMonthsToDateStr, sureBicimSaat, aramaNormalize } from "../lib/utils";
 import { Modal } from "./ui";
 
@@ -185,7 +185,7 @@ const KalipCubuk = ({ ad, standart = 0, extra = 0, tam }) => {
 };
 
 export const Analiz = ({ customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], appSettings = {} }) => {
-  const [preset, setPreset] = useState("son12"); // 'yil' | 'son12' | 'tum' | 'ozel'
+  const [preset, setPreset] = useState("tum"); // 'yil' | 'son12' | 'tum' | 'ozel' — açılışta tüm zamanlar
   const [ozelBas, setOzelBas] = useState("");
   const [ozelBit, setOzelBit] = useState("");
   const [seciliKey, setSeciliKey] = useState(null);
@@ -194,10 +194,13 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
 
   const aralik = useMemo(() => {
     const bugun = today();
-    if (preset === "yil") return { baslangic: `${bugun.slice(0, 4)}-01-01`, bitis: bugun };
-    if (preset === "son12") return { baslangic: addMonthsToDateStr(bugun, -12), bitis: bugun };
-    if (preset === "ozel") return { baslangic: ozelBas || null, bitis: ozelBit || null };
-    return { baslangic: null, bitis: null }; // tüm zamanlar
+    let r;
+    if (preset === "yil") r = { baslangic: `${bugun.slice(0, 4)}-01-01`, bitis: bugun };
+    else if (preset === "son12") r = { baslangic: addMonthsToDateStr(bugun, -12), bitis: bugun };
+    else if (preset === "ozel") r = { baslangic: ozelBas || null, bitis: ozelBit || null };
+    else r = { baslangic: null, bitis: null }; // tüm zamanlar
+    // Trend granülerliği: Tüm zamanlar hep yıllık, yıl-farklı özel aralık yıllık, diğerleri aylık.
+    return { ...r, trendModu: trendModuSec(preset, r.baslangic, r.bitis) };
   }, [preset, ozelBas, ozelBit]);
 
   const veri = useMemo(
@@ -214,7 +217,8 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   const modelYogunlugu = veri.modelYogunlugu.filter(m => !gizliModeller.has(m.model));
   const yogunlukMax = Math.max(0, ...modelYogunlugu.map(m => m.oran));
   const enYogun = modelYogunlugu[0] || null; // en yüksek servis/makina oranı (özet kutusu)
-  const trendMax = Math.max(1, ...veri.aylikTrend.map(a => a.adet));
+  const trendMax = Math.max(1, ...veri.trend.map(a => a.adet));
+  const trendYillik = veri.trendBirim === "yil";
   const techMax = Math.max(1, ...veri.teknisyenler.map(t => t.adet));
   const kalipAdMax = veri.kalipAd[0]?.toplam || 0;
   const kalipOlcuMax = veri.kalipOlcu[0]?.toplam || 0;
@@ -297,7 +301,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   // "Tümünü göster" ile açılan pencere içerikleri (tüm liste). node() canlı veriden çizilir.
   const modalTanim = {
     parca: { baslik: "En Çok Satılan / Değişen Yedek Parçalar", arr: veri.parcalar, node: () => <>{parcaLejant}<div style={listeStil}>{veri.parcalar.map(parcaRow)}</div></> },
-    makina: { baslik: "En Çok Servis Alan Makinalar", arr: veri.enCokServisliMakinalar, node: () => makinaTablo(veri.enCokServisliMakinalar) },
+    makina: { baslik: "En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar", arr: veri.enCokServisliMakinalar, node: () => makinaTablo(veri.enCokServisliMakinalar) },
     yogunluk: { baslik: "Model Servis Yoğunluğu", arr: modelYogunlugu, node: () => <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>{modelYogunlugu.map(yogunlukRow)}</div> },
     teknisyen: { baslik: "Teknisyen Dökümü", arr: veri.teknisyenler, node: () => <div style={listeStil}>{veri.teknisyenler.map(teknisyenRow)}</div> },
     kalipAd: { baslik: "En Çok Kullanılan Kalıp", arr: veri.kalipAd, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipAd.map(k => kalipRow(k, kalipAdMax))}</div></> },
@@ -387,7 +391,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
 
           {/* En çok servisli makinalar */}
           <section style={{ ...S.panel, gridColumn: "span 7" }}>
-            <div style={S.phead}><h2 style={S.h2}>En Çok Servis Alan Makinalar</h2><span style={S.hint}>Seri No Bazında</span></div>
+            <div style={S.phead}><h2 style={S.h2}>En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar</h2><span style={S.hint}>Seri No Bazında</span></div>
             {veri.enCokServisliMakinalar.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {makinaTablo(ilk(veri.enCokServisliMakinalar, "makina"))}
@@ -435,20 +439,23 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
             )}
           </section>
 
-          {/* Aylık trend */}
+          {/* Servis trendi: aralık > 12 ay ise yıllık, değilse aylık */}
           <section style={{ ...S.panel, gridColumn: "span 12" }}>
-            <div style={S.phead}><h2 style={S.h2}>Aylık Servis Adedi</h2><span style={S.hint}>12 Ay</span></div>
-            {veri.aylikTrend.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${veri.aylikTrend.length}, 1fr)`, gap: 8, alignItems: "end", height: 150, marginTop: 10 }}>
-                {veri.aylikTrend.map(a => {
-                  const et = ayEtiket(a.ay);
+            <div style={S.phead}>
+              <h2 style={S.h2}>{trendYillik ? "Yıllık Servis Adedi" : "Aylık Servis Adedi"}</h2>
+              <span style={S.hint}>{trendYillik ? (veri.trend.length ? `${veri.trend[0].donem}–${veri.trend[veri.trend.length - 1].donem}` : "Yıl bazında") : "12 Ay"}</span>
+            </div>
+            {veri.trend.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${veri.trend.length}, 1fr)`, gap: 8, alignItems: "end", height: 150, marginTop: 10 }}>
+                {veri.trend.map(a => {
+                  const et = trendYillik ? null : ayEtiket(a.donem);
                   const zirve = a.adet === trendMax && a.adet > 0;
                   return (
-                    <div key={a.ay} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 6 }}>
+                    <div key={a.donem} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 6 }}>
                       <span style={{ position: "relative", width: "100%", maxWidth: 30, height: `${(a.adet / trendMax) * 100}%`, minHeight: a.adet > 0 ? 3 : 0, background: SERVIS, borderRadius: "4px 4px 0 0", outline: zirve ? `2px solid ${SERVIS}` : "none", outlineOffset: 1 }}>
                         <span style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", fontSize: 10.5, fontWeight: 700, color: "var(--n500, #64748b)", fontVariantNumeric: "tabular-nums" }}>{a.adet || ""}</span>
                       </span>
-                      <span style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>{et.kisa}{et.kisa === "Oca" ? ` ’${et.yil}` : ""}</span>
+                      <span style={{ fontSize: 10.5, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>{trendYillik ? a.donem : `${et.kisa}${et.kisa === "Oca" ? ` ’${et.yil}` : ""}`}</span>
                     </div>
                   );
                 })}

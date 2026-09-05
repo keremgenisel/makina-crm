@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hesaplaAnaliz, BILINMEYEN_MODEL } from "../src/lib/analiz";
+import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../src/lib/analiz";
 
 // Ortak fixture: 3 makina (AK-140 filo 2, AK-100 filo 1), 2 parça tanımı, 3 servis, 1 kargo, 3 kalıp.
 const customers = [
@@ -32,6 +32,31 @@ const partSales = [
 ];
 
 const veri = () => hesaplaAnaliz({ customers, services, partSales, yedekParcaSatislar, parts });
+
+describe("hesaplaAnaliz — onarım yeri 'Kargo' (eski, kaldırılmış) servis sayılmaz", () => {
+  const cust = [{ id: 1, name: "A", model: "AK-1", serialNo: "S1" }];
+  const svc = [
+    { id: 1, customerId: 1, date: "2025-05-01", type: "Garanti Dışı", repairPlace: "Fabrikada Onarım", degisenParcalar: [{ ad: "Rulman", miktar: 1 }] },
+    { id: 2, customerId: 1, date: "2025-05-02", type: "Garanti Dışı", repairPlace: "Kargo", degisenParcalar: [{ ad: "Kayış", miktar: 5 }] },
+    { id: 3, customerId: 1, date: "2025-05-03", type: "Garanti Dışı", repairPlace: "kargo" }, // küçük harf de hariç
+  ];
+  const v = () => hesaplaAnaliz({ customers: cust, services: svc });
+  it("onarım yeri kırılımında 'Kargo' görünmez, gerçek onarım yerleri sayılır", () => {
+    const oy = v().onarimYerleri;
+    expect(oy.some(x => x.ad.toLowerCase() === "kargo")).toBe(false);
+    expect(oy.find(x => x.ad === "Fabrikada Onarım").adet).toBe(1);
+  });
+  it("toplam servis + en çok servisli makina Kargo'yu saymaz", () => {
+    const r = v();
+    expect(r.ozet.toplamServis).toBe(1); // 3 kayıttan yalnız 1'i gerçek servis
+    expect(r.enCokServisliMakinalar[0].adet).toBe(1);
+  });
+  it("Kargo servisindeki değişen parça da sayılmaz", () => {
+    const p = v().parcalar;
+    expect(p.some(x => x.ad.toLowerCase() === "kayış")).toBe(false); // Kargo servisinin parçası
+    expect(p.some(x => x.ad === "Rulman")).toBe(true);              // gerçek servisinki kalır
+  });
+});
 
 describe("hesaplaAnaliz — yedek parça birleşik toplam (servis + kargo)", () => {
   it("aynı partId serviste ve kargoda tek satırda birleşir, kaynaklar ayrı sayılır", () => {
@@ -106,11 +131,63 @@ describe("hesaplaAnaliz — servis metrikleri", () => {
     expect(tk["Mehmet"].ortIsclikDk).toBe(null); // damga yok
   });
 
-  it("aylık trend son 12 ay, servis olan aylar doğru sayılır", () => {
-    const t = veri().aylikTrend;
+  it("trend: kısa aralık (≤12 ay) AYLIK, servis olan aylar doğru sayılır", () => {
+    const v = veri();
+    expect(v.trendBirim).toBe("ay");
+    const t = v.trend;
     expect(t.length).toBe(12);
-    expect(t[t.length - 1]).toEqual({ ay: "2025-04", adet: 2 }); // en yeni ay = max servis ayı
-    expect(t.find(x => x.ay === "2025-03").adet).toBe(1);
+    expect(t[t.length - 1]).toEqual({ donem: "2025-04", adet: 2 }); // en yeni ay = max servis ayı
+    expect(t.find(x => x.donem === "2025-03").adet).toBe(1);
+  });
+});
+
+describe("trendModuSec — granülerlik kararı (preset temelli)", () => {
+  it("tüm zamanlar HER ZAMAN yıllık (tek yıl verisi olsa bile)", () => {
+    expect(trendModuSec("tum", null, null)).toBe("yil");
+  });
+  it("Son 12 ay / Bu yıl aylık (takvimde 2 yıla yayılsa bile)", () => {
+    expect(trendModuSec("son12", "2025-09-05", "2026-09-05")).toBe("ay");
+    expect(trendModuSec("yil", "2026-01-01", "2026-09-05")).toBe("ay");
+  });
+  it("özel aralık: yıl farklı → yıllık, tek yıl → aylık", () => {
+    expect(trendModuSec("ozel", "2021-01-01", "2025-12-31")).toBe("yil");
+    expect(trendModuSec("ozel", "2023-03-01", "2023-09-30")).toBe("ay");
+    expect(trendModuSec("ozel", null, null)).toBe("ay"); // sınır yok → aylık
+  });
+});
+
+describe("hesaplaAnaliz — trend bucketing (trendModu'ya göre)", () => {
+  const cust = [{ id: 1, name: "A", model: "AK-1", serialNo: "S1" }];
+  const svc = [
+    { id: 1, customerId: 1, date: "2021-05-01" },
+    { id: 2, customerId: 1, date: "2021-08-01" },
+    { id: 3, customerId: 1, date: "2023-02-01" },
+    { id: 4, customerId: 1, date: "2025-06-01" },
+  ];
+  it("trendModu 'yil' + tüm zamanlar → veri yıllarına göre (2021..2025, boş yıl 0)", () => {
+    const v = hesaplaAnaliz({ customers: cust, services: svc }, { trendModu: "yil" });
+    expect(v.trendBirim).toBe("yil");
+    expect(v.trend.map(x => x.donem)).toEqual(["2021", "2022", "2023", "2024", "2025"]);
+    expect(v.trend.find(x => x.donem === "2021").adet).toBe(2);
+    expect(v.trend.find(x => x.donem === "2022").adet).toBe(0); // boş yıl
+    expect(v.trend.find(x => x.donem === "2023").adet).toBe(1);
+    expect(v.trend.find(x => x.donem === "2025").adet).toBe(1);
+  });
+  it("trendModu 'yil' + tek yıl verisi → yine yıllık (tek çubuk)", () => {
+    const tek = [{ id: 9, customerId: 1, date: "2025-06-01" }];
+    const v = hesaplaAnaliz({ customers: cust, services: tek }, { trendModu: "yil" });
+    expect(v.trendBirim).toBe("yil");
+    expect(v.trend).toEqual([{ donem: "2025", adet: 1 }]);
+  });
+  it("trendModu 'yil' + özel aralık → aralık yıllarını kapsar (boş yıllar dahil)", () => {
+    const v = hesaplaAnaliz({ customers: cust, services: svc }, { baslangic: "2021-01-01", bitis: "2025-12-31", trendModu: "yil" });
+    expect(v.trendBirim).toBe("yil");
+    expect(v.trend.length).toBe(5);
+  });
+  it("trendModu 'ay' (varsayılan) → 12 aylık pencere", () => {
+    const v = hesaplaAnaliz({ customers: cust, services: svc }, { baslangic: "2021-01-01", bitis: "2021-09-30" });
+    expect(v.trendBirim).toBe("ay");
+    expect(v.trend.length).toBe(12);
   });
 });
 
@@ -177,7 +254,7 @@ describe("hesaplaAnaliz — boş/eksik girdi güvenli", () => {
     const v = hesaplaAnaliz({});
     expect(v.parcalar).toEqual([]);
     expect(v.enCokServisliMakinalar).toEqual([]);
-    expect(v.aylikTrend).toEqual([]);
+    expect(v.trend).toEqual([]);
     expect(v.kalipAd).toEqual([]);
     expect(v.kalipOlcu).toEqual([]);
     expect(v.kalipModel).toEqual([]);

@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR, INIT_PART_TYPES,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
 import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "./lib/servisAlarm";
 import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
@@ -233,6 +233,11 @@ export default function App() {
       if (mine.deletedAt && !out.deletedAt) out = { ...out, deletedAt: mine.deletedAt };
       return out;
     }));
+    // appSettings singleton'ını da yerel değerle koru (MERGE_KEYS eklerinin korunması gibi):
+    // yeniden-yükleme, bu PC'de yapılıp henüz sunucuya round-trip etmemiş ayar değişikliğini
+    // (Analiz "göster" checkbox'ı = analizGizliModeller, musteriSutunlari, servisAlarm vb.)
+    // sunucudaki eski değerle geri alıyordu (LAN/çok-PC'de "kapat-aç'ta seçim geri geliyor").
+    if (myData?.appSettings) setAppSettings(prev => mergeAppSettings(prev, myData.appSettings));
   };
 
   // ── Sunucu olayları: çakışma / oturum sona erme / versiyon güncelleme ──

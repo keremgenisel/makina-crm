@@ -32,6 +32,43 @@ describe("Analiz sekmesi", () => {
     expect(screen.getByText("En Yoğun Model")).toBeTruthy();
   });
 
+  it("açılışta varsayılan aralık 'Tüm zamanlar' (tıklama gerekmeden seçili)", () => {
+    render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{}} />);
+    expect(screen.getByRole("button", { name: "Tüm zamanlar" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Son 12 ay" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("makina kutusu başlığı 'En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar'", () => {
+    ac();
+    expect(screen.getByText("En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar")).toBeTruthy();
+  });
+
+  it("trend: tek yıl içi özel aralıkta 'Aylık Servis Adedi'", () => {
+    // services 2025-06 → tek-yıl özel aralık (2025) → aylık; veri aralıkta olduğundan panel görünür
+    render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Özel…" }));
+    const inputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(inputs[0], { target: { value: "2025-01-01" } });
+    fireEvent.change(inputs[1], { target: { value: "2025-12-31" } });
+    expect(screen.getByText("Aylık Servis Adedi")).toBeTruthy();
+  });
+
+  it("trend: Tüm zamanlar HER ZAMAN 'Yıllık Servis Adedi' (tek yıl verisi olsa bile)", () => {
+    // services hepsi 2025-06 (tek yıl); tüm zamanlar varsayılan → yine yıllık olmalı (kullanıcı isteği)
+    render(<Analiz customers={customers} services={services} partSales={partSales} yedekParcaSatislar={yedekParcaSatislar} parts={parts} appSettings={{}} />);
+    expect(screen.getByText("Yıllık Servis Adedi")).toBeTruthy();
+  });
+
+  it("trend: çok yıllı veride yıl aralığı ipucu (2021–2025)", () => {
+    const cok = [
+      { id: 1, customerId: 1, date: "2021-05-01", degisenParcalar: [] },
+      { id: 2, customerId: 1, date: "2025-06-01", degisenParcalar: [] },
+    ];
+    render(<Analiz customers={customers} services={cok} partSales={[]} yedekParcaSatislar={[]} parts={[]} appSettings={{}} />);
+    expect(screen.getByText("Yıllık Servis Adedi")).toBeTruthy();
+    expect(screen.getByText("2021–2025")).toBeTruthy();
+  });
+
   it("en çok değişen parça = Rulman 6204 (servis 3), panelde listelenir", () => {
     ac();
     // Panel başlığı + parça adı en az bir yerde geçer

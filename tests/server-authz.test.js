@@ -188,6 +188,19 @@ describe("appSettings alan düzeyi denetimi (bölüm iki sahipli)", () => {
     expect(r.reddedilenAlan).toBe("yeniGizliAyar");
   });
 
+  it("Analiz model gizleme (analizGizliModeller) + müşteri sütunları (musteriSutunlari) Ayarlar sekmesine bağlıdır", () => {
+    const y1 = { appSettings: { ...eski.appSettings, analizGizliModeller: ["AK-100"] } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, y1).reddedilenAlan).toBe("analizGizliModeller");
+    const y2 = { appSettings: { ...eski.appSettings, musteriSutunlari: { faturaBedeli: true } } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, y2).reddedilenAlan).toBe("musteriSutunlari");
+  });
+
+  it("Ayarlar sekmesi açık kullanıcı bu iki alanı değiştirebilir", () => {
+    const ayarKull = JSON.stringify({ tabs: ["settings"] });
+    const yeni = { appSettings: { ...eski.appSettings, analizGizliModeller: ["AK-100"], musteriSutunlari: { faturaBedeli: true } } };
+    expect(yazmaYetkisiVar(ayarKull, "user", ["appSettings"], eski, yeni).ok).toBe(true);
+  });
+
   it("settings grubu tümden engelliyse alan denetimine bakılmadan reddedilir", () => {
     const yeni = { appSettings: { ...eski.appSettings, pinnedPartIds: ["7"] } };
     expect(yazmaYetkisiVar(READONLY, "user", ["appSettings"], eski, yeni).ok).toBe(false);

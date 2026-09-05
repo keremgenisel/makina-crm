@@ -106,6 +106,8 @@ const AYAR_ALAN_SEKMELERI = {
   backupFolder:  ["settings"],
   frequency:     ["settings"],
   pinnedPartIds: ["settings", "stock"],
+  musteriSutunlari:   ["settings"], // Ayarlar > Uygulama > Müşteri Görünümü (liste fiyat sütunları)
+  analizGizliModeller: ["settings"], // Ayarlar > Katalog > Makina Modelleri ("Analiz'de Göster")
 };
 // Hiçbir sekmeye ait olmayan alanlar: otomatik yedekleme her istemcide App.jsx'te çalışır ve
 // başarılı yedek sonrası lastBackup yazar — sekmesi olmayan bu yazma engellenirse Ayarlar

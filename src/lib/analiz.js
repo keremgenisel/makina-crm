@@ -23,10 +23,19 @@ const ayGeri = (ay, k) => {
   const nm = (total % 12) + 1;
   return `${ny}-${String(nm).padStart(2, "0")}`;
 };
+// Trend granülerliği: hangi preset yıllık gösterilsin? "tum" (tüm zamanlar) HER ZAMAN yıllık;
+// "ozel" (özel aralık) yalnız başlangıç ve bitiş FARKLI yıllardaysa yıllık (2021-2025 gibi);
+// "yil"/"son12" ve tek-yıl özel aralık aylık. Süreye değil preset'e bakar (Son 12 ay takvimde 2
+// yıla yayılsa bile aylık kalsın diye — motor baslangic/bitis'ten bunu ayırt edemezdi).
+export const trendModuSec = (preset, baslangic, bitis) => {
+  if (preset === "tum") return "yil";
+  if (preset === "ozel" && baslangic && bitis && baslangic.slice(0, 4) !== bitis.slice(0, 4)) return "yil";
+  return "ay";
+};
 
 export function hesaplaAnaliz(
   { customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], calismaSaatleri } = {},
-  { baslangic = null, bitis = null } = {},
+  { baslangic = null, bitis = null, trendModu = "ay" } = {},
 ) {
   const custById = new Map();
   const custBySerial = new Map();
@@ -42,7 +51,11 @@ export function hesaplaAnaliz(
   const araliktaMi = (d) =>
     (!baslangic || (d && d >= baslangic)) && (!bitis || (d && d <= bitis));
 
-  const rServices = services.filter(s => araliktaMi(s.date));
+  // Onarım yeri "Kargo" olan ESKİ kayıtlar servis sayılmaz (kaldırılan bir onarım-yeri seçeneğiydi;
+  // kullanıcı kararı: Analiz'in hiçbir servis metriğinde sayılmasın/gösterilmesin — onarım yeri kırılımı
+  // ve "En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar" dahil). trLower ile "kargo"/"Kargo" kapsanır.
+  const kargoOnarim = (s) => trLower((s.repairPlace || "").trim()) === "kargo";
+  const rServices = services.filter(s => araliktaMi(s.date) && !kargoOnarim(s));
   const rYedek = yedekParcaSatislar.filter(s => araliktaMi(s.tarih));
   const rKalip = partSales.filter(p => p && p.tur === "Kalıp" && araliktaMi(p.tarih));
 
@@ -154,12 +167,28 @@ export function hesaplaAnaliz(
     ortIsclikDk: e.isclikSay ? Math.round(e.isclikTop / e.isclikSay) : null,
   })).sort((a, b) => b.adet - a.adet);
 
-  // ── Aylık servis trendi (bitiş ayında biten 12 aylık pencere) ──
-  const aySayac = new Map();
-  for (const s of rServices) { const k = (s.date || "").slice(0, 7); if (k) aySayac.set(k, (aySayac.get(k) || 0) + 1); }
-  const sonAy = bitis ? bitis.slice(0, 7) : (aySayac.size ? [...aySayac.keys()].sort().pop() : null);
-  const aylikTrend = [];
-  if (sonAy) for (let i = 11; i >= 0; i--) { const ay = ayGeri(sonAy, i); aylikTrend.push({ ay, adet: aySayac.get(ay) || 0 }); }
+  // ── Servis trendi: trendModu "yil" ise YILLIK, "ay" ise AYLIK (bitiş ayında biten 12 ay) ──
+  // trendModu çağıran tarafça trendModuSec(preset,...) ile belirlenir (Tüm zamanlar hep yıllık,
+  // yıl-farklı özel aralık yıllık, Son 12 ay/Bu yıl aylık). Efektif ilk/son ay: aralık verildiyse
+  // ondan, yoksa (tüm zamanlar) verideki en eski/yeni servis ayı.
+  const aySayac = new Map(), yilSayac = new Map();
+  for (const s of rServices) {
+    const k = (s.date || "").slice(0, 7);
+    if (k) { aySayac.set(k, (aySayac.get(k) || 0) + 1); const y = k.slice(0, 4); yilSayac.set(y, (yilSayac.get(y) || 0) + 1); }
+  }
+  const veriAylar = [...aySayac.keys()].sort();
+  const ilkAy = (baslangic ? baslangic.slice(0, 7) : veriAylar[0]) || null;
+  const sonAy = (bitis ? bitis.slice(0, 7) : veriAylar[veriAylar.length - 1]) || null;
+  let trend = [], trendBirim = "ay";
+  if (ilkAy && sonAy) {
+    if (trendModu === "yil") {
+      trendBirim = "yil";
+      const ilkYil = Number(ilkAy.slice(0, 4)), sonYil = Number(sonAy.slice(0, 4));
+      for (let y = ilkYil; y <= sonYil; y++) trend.push({ donem: String(y), adet: yilSayac.get(String(y)) || 0 });
+    } else {
+      for (let i = 11; i >= 0; i--) { const ay = ayGeri(sonAy, i); trend.push({ donem: ay, adet: aySayac.get(ay) || 0 }); }
+    }
+  }
 
   // ── Kalıp analizi — Extra satış (partSales "Kalıp") + Standart/ilk (makinayla gelen) BİRLEŞİK ──
   // Her boyutta (ad / ölçü / model) tek satırda iki kaynak: standart + extra. Standart kalıplar =
@@ -212,7 +241,7 @@ export function hesaplaAnaliz(
     servisTipleri,
     onarimYerleri,
     teknisyenler,
-    aylikTrend,
+    trend, trendBirim,
     kalipAd,
     kalipOlcu,
     kalipModel,

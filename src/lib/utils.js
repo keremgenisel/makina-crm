@@ -319,6 +319,14 @@ export const disAppSettingsSuz = (uzak) => {
   return kopya;
 };
 
+// Çakışma/yeniden-yükleme birleştirmesinde appSettings singleton'ını korur: sunucudan gelen
+// (yeniden yüklenen) değerin ÜZERİNE bu PC'nin yerel appSettings'ini bindirir (makinaya özgü
+// alanlar hariç, disAppSettingsSuz). Yoksa yeniden-yükleme, bu PC'de yapılıp henüz sunucuya
+// round-trip etmemiş ayar değişikliğini (analizGizliModeller, musteriSutunlari, servisAlarm vb.)
+// sunucudaki eski değerle geri alır — MERGE_KEYS eklerinin korunmasıyla aynı mantık.
+export const mergeAppSettings = (yeniden, yerel) =>
+  yerel ? { ...(yeniden || {}), ...disAppSettingsSuz(yerel) } : { ...(yeniden || {}) };
+
 export const normalizeKdvRates = (appSettings) => {
   if (Array.isArray(appSettings?.kdvRates) && appSettings.kdvRates.length > 0) return appSettings.kdvRates;
   if (typeof appSettings?.kdvRate === "number") return [{ from: "2008-01-01", rate: appSettings.kdvRate }];
