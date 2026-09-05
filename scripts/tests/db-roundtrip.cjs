@@ -153,6 +153,7 @@ dbmod.writeBlobToDb({
     calismaSaatleri: { baslangic: "09:00", bitis: "18:30", gunler: [1, 2, 3, 4, 5, 6],
       molalar: [{ baslangic: "12:30", bitis: "13:30" }, { baslangic: "16:00", bitis: "16:15" }] },
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
+    musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -216,6 +217,7 @@ check("appSettings translations/mailTemplates tam turu", blob.appSettings?.trans
 check("appSettings takip alanları tam turu", blob.appSettings?.teklifTakipGun === 1 && blob.appSettings?.tahsilatTakipGun === 14 && blob.appSettings?.autoLockMinutes === 5);
 check("appSettings calismaSaatleri tam turu", blob.appSettings?.calismaSaatleri?.baslangic === "09:00" && blob.appSettings?.calismaSaatleri?.gunler?.length === 6 && blob.appSettings?.calismaSaatleri?.molalar?.length === 2 && blob.appSettings?.calismaSaatleri?.molalar?.[1]?.bitis === "16:15");
 check("appSettings servisAlarm tam turu", blob.appSettings?.servisAlarm?.acik === true && blob.appSettings?.servisAlarm?.sesSn === 30 && blob.appSettings?.servisAlarm?.yanipSn === 45);
+check("appSettings musteriSutunlari (JSON) roundtrip", (() => { const m = blob.appSettings?.musteriSutunlari; return m?.faturaBedeli === true && m?.fabrikaSatis === false && m?.komisyon === true && m?.extraKalip === true; })());
 
 // ── Tablo atlama bütünlüğü ───────────────────────────────────────────────────
 const v2 = { ...JSON.parse(JSON.stringify(blob)), teklifler: blob.teklifler.map(t => t.id === 102 ? { ...t, durum: "gonderildi" } : t) };

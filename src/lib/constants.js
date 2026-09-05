@@ -216,6 +216,10 @@ export const HAFTA_GUNLERI = [
 // sesSn: ses kaç sn öter; yanipSn: kart kaç sn yanıp söner. Varsayılan kapalı (açan devreye alır).
 export const SERVIS_ALARM_VARSAYILAN = { acik: false, sesSn: 25, yanipSn: 40 };
 
+// Müşteriler listesinde gösterilecek fiyat sütunları (Ayarlar > Uygulama > Müşteri Görünümü).
+// Varsayılan hepsi kapalı: tabloyu kendiliğinden genişletmesin, kullanıcı ayardan açar.
+export const MUSTERI_SUTUN_VARSAYILAN = { faturaBedeli: false, fabrikaSatis: false, komisyon: false, extraKalip: false };
+
 // ── Kapora/Ödeme Yöntemleri ──
 export const ODEME_YONTEMLERI = ["Nakit", "Kredi Kartı", "Çek"];
 
@@ -251,7 +255,7 @@ export const DEFAULT_KK_KOMISYONLARI = {
   ],
 };
 
-export const APP_VERSION = "3.25.0";
+export const APP_VERSION = "3.26.0";
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

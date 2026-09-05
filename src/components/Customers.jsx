@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
@@ -61,6 +61,24 @@ export const Customers = ({
   // göre artan → en eski = 1, en yeni = toplam. Canlı; silme/tarih değişince yeniden numaralanır.
   const girisNo = useMemo(() => girisNoHaritasi(customers), [customers]);
 
+  // Ayarlar > Uygulama > Müşteri Görünümü'nden açılan fiyat sütunları (yalnız Müşteriler sekmesinde).
+  const sut = (isCustomer && appSettings?.musteriSutunlari) || {};
+  // Her makinaya (customerId) satılan Extra Kalıpların fiyat toplamı — satır başı tarama yerine tek Map.
+  const extraKalipMap = useMemo(() => {
+    const m = new Map();
+    if (!sut.extraKalip) return m;
+    (partSales || []).forEach(p => {
+      if (p.deletedAt || p.tur !== "Kalıp" || p.customerId == null) return;
+      m.set(p.customerId, (m.get(p.customerId) || 0) + parseMoney(p.fiyat));
+    });
+    return m;
+  }, [partSales, sut.extraKalip]);
+  // Fiyat sütunu hücresi: sağa hizalı, hafif turuncu zeminli, tabular; 0/boş → "—".
+  const paraTd = (val, cur) => (
+    <td style={{ padding: "13px 16px", textAlign: "right", fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--n700, #334155)", background: "var(--ambBg3, #fff7ed)", whiteSpace: "nowrap" }}>
+      {val > 0 ? fmtCur(val, cur) : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}
+    </td>
+  );
 
   const debtorIds = useMemo(() => {
     const ids = new Set();
@@ -475,10 +493,14 @@ export const Customers = ({
                 { h: "Makina Kalıp Çapı", key: null },
                 { h: "Garanti Bitiş", key: "warranty" },
                 { h: "Fatura", key: null },
+                ...(sut.faturaBedeli ? [{ h: "Fatura Bedeli", key: null, num: true, yeni: true }] : []),
+                ...(sut.fabrikaSatis ? [{ h: "Fabrika Satış", key: null, num: true, yeni: true }] : []),
+                ...(sut.komisyon ? [{ h: "Komisyon", key: null, num: true, yeni: true }] : []),
+                ...(sut.extraKalip ? [{ h: "Extra Kalıp", key: null, num: true, yeni: true }] : []),
                 { h: "", key: null },
-              ].map(({ h, key }) => (
+              ].map(({ h, key, num, yeni }) => (
                 <th key={h || "actions"} onClick={key ? () => toggleSort(key) : undefined}
-                  style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: sortBy === key ? "var(--brand, #e85d1a)" : "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
+                  style={{ padding: "12px 16px", textAlign: num ? "right" : "left", fontSize: 12, fontWeight: 700, color: yeni ? "var(--orTx, #c2410c)" : (sortBy === key ? "var(--brand, #e85d1a)" : "var(--n600, #475569)"), background: yeni ? "var(--ambBg3, #fff7ed)" : undefined, borderBottom: "1px solid var(--n200, #e2e8f0)", cursor: key ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}>
                   {h}{key && sortBy === key && <span style={{ fontSize: 10, marginLeft: 4 }}>{sortDir === "asc" ? "▲" : "▼"}</span>}
                 </th>
               ))}
@@ -558,6 +580,10 @@ export const Customers = ({
                       );
                     })() : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}
                   </td>
+                  {sut.faturaBedeli && paraTd(faturaBedeliOf(c), c.currency)}
+                  {sut.fabrikaSatis && paraTd(parseMoney(c.fabrikaSatisBedeli), c.currency)}
+                  {sut.komisyon && paraTd(parseMoney(c.komisyon), c.currency)}
+                  {sut.extraKalip && paraTd(extraKalipMap.get(c.id) || 0, c.currency)}
                   <td style={{ padding: "13px 16px" }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       {canDo(isCustomer ? "cust_edit" : "dealer_edit") && <Btn small variant="ghost" onClick={() => openEdit(c)}><Icon name="edit" size={12} /></Btn>}
