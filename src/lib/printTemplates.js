@@ -1670,6 +1670,22 @@ export function buildAylikRaporHtml(rapor, factory) {
         </div>
       </div>
     </div>`;
+  // "Toplam ciro nasıl hesaplanır?" — Yönetici Özeti'ndeki tek satırlık toplam cironun kalem kalem
+  // dökümü (müşteriye açıklama). O ayın gerçek değerleriyle otomatik dolar; 7 kalem her zaman toplama oturur.
+  const ciroKalem = (label, obj) => `<tr><td style="padding:3px 8px 3px 0;color:#475569;font-size:11px;">${label}</td><td style="padding:3px 0;font-weight:700;font-size:11.5px;text-align:right;white-space:nowrap;">${paraSatir(obj) || "—"}</td></tr>`;
+  const ciroAciklamaKutusu = kutu("TOPLAM CİRO NASIL HESAPLANIR?", `
+    <div style="font-size:10.5px;color:#475569;margin-bottom:6px;">Toplam ciro, o ay <b>yapılan işin</b> KDV hariç net toplamıdır (parası tahsil edilmiş olsun olmasın). Aşağıdaki 7 kalemin toplamıdır:</div>
+    <table>
+      ${ciroKalem("1. Makina satışı", rapor.satisTutar)}
+      ${ciroKalem("2. Servis işçiliği (Altuntaş, ücretli)", rapor.iscilikTutar)}
+      ${ciroKalem("3. Servis parçası (Altuntaş)", rapor.servisParcaTutar)}
+      ${ciroKalem("4. Extra kalıp satışı", rapor.extraKalipTutar)}
+      ${ciroKalem("5. Yedek parça satışı", rapor.yedekParcaTutar)}
+      ${ciroKalem("6. Anlaşmalı servis parçası", rapor.anlasmaliParcaTutar)}
+      ${ciroKalem("7. Yedek parça (kargo) satışı", rapor.yedekKargoTutar)}
+      <tr><td style="padding:5px 8px 3px 0;font-size:11.5px;font-weight:800;border-top:2px solid #1a1a1a;">TOPLAM CİRO (net, KDV hariç)</td><td style="padding:5px 0 3px;font-weight:800;font-size:12.5px;text-align:right;border-top:2px solid #1a1a1a;white-space:nowrap;">${paraSatir(ozet.ciroNet) || "—"}</td></tr>
+    </table>
+    <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">KDV hariçtir (KDV yukarıda ayrı satırdadır). Tahsilat değil tahakkuktur: iş o ay yapıldıysa parası gelmese de ciroya girer. 2.el makina satışları, silinmiş kayıtlar ve müşteriye yansıtılan kredi kartı komisyonu ciroya dâhil edilmez.</div>`);
   const kdvOzetKutusu = kutu("KDV ÖZETİ (beyanname)", `<table>
     ${st("Satış (makina) KDV'si", paraSatir(rapor.kdvKalemleri?.satis))}
     ${st("Servis + parça KDV'si", paraSatir(rapor.kdvKalemleri?.servis))}
@@ -1701,6 +1717,7 @@ export function buildAylikRaporHtml(rapor, factory) {
   </div>
 
   ${ozetKutusu}
+  ${ciroAciklamaKutusu}
   ${kdvOzetKutusu}
 
   ${kutu("SATIŞLAR", `<table>

@@ -173,6 +173,16 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).toContain("BU AY DOĞAN TOPLAM KDV");
   });
 
+  it("'Toplam ciro nasıl hesaplanır?' kutusu 7 kalemi ve toplamı gösterir", () => {
+    expect(html).toContain("TOPLAM CİRO NASIL HESAPLANIR?");
+    expect(html).toContain("1. Makina satışı");
+    expect(html).toContain("4. Extra kalıp satışı");
+    expect(html).toContain("7. Yedek parça (kargo) satışı");
+    expect(html).toContain("TOPLAM CİRO (net, KDV hariç)");
+    // makina 500.000 + işçilik 5.000 + extra kalıp 25.000 = 530.000 (fixture)
+    expect(html).toContain("530.000");
+  });
+
   it("yedek parça (kargo) satışları: satır + firma firma detay tablosu render edilir", () => {
     const kargoVeri = {
       customers: [{ id: 1, name: "Müş A", currency: "TRY", kalanBorc: 0 }],

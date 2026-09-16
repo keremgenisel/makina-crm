@@ -217,10 +217,15 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     ...satisTahsilatlari,
   ];
   tumTahsilatlar.forEach(t => paraEkle(tahsilatTutar, t.currency, t.tutar));
-  // Firma firma tahsilat detayı — kimden, ne kadar, hangi yöntemle tahsil edildi
-  const tahsilatDetay = tumTahsilatlar.map(t => ({
-    firma: t.firma, tutar: tekPara(t.currency, t.tutar), yontem: t.yontem, tarih: t.tarih, not: t.not,
-  }));
+  // Firma firma tahsilat detayı — kimden, ne kadar, hangi yöntemle tahsil edildi.
+  // Tarihe göre en eskiden en yeniye sıralı (tarih ISO "YYYY-MM-DD" → string karşılaştırması;
+  // tarihsiz kayıtlar en sona). Ödeme defteri + satış tahsilatları karışık geldiği için burada sıralanır.
+  const tahsilatDetay = tumTahsilatlar
+    .slice()
+    .sort((a, b) => (a.tarih || "9999").localeCompare(b.tarih || "9999"))
+    .map(t => ({
+      firma: t.firma, tutar: tekPara(t.currency, t.tutar), yontem: t.yontem, tarih: t.tarih, not: t.not,
+    }));
   const bekleyenCekDetay = bekleyenCekler.map(p => ({
     firma: custAdi(p.customerId), tutar: tekPara(p.currency, p.tutar), vadeTarihi: p.vadeTarihi || "",
   }));

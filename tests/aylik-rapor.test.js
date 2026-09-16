@@ -123,6 +123,8 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     expect(r.tahsilatDetay).toHaveLength(3);
     expect(r.tahsilatDetay.map(x => x.yontem).sort()).toEqual(["Nakit", "Nakit", "Çek"]);
     expect(r.tahsilatDetay.every(x => x.firma === "A")).toBe(true);
+    // En eskiden en yeniye sıralı: Extra Kalıp 06-05, nakit ödeme 06-08, tahsil edilmiş çek 06-10
+    expect(r.tahsilatDetay.map(x => x.tarih)).toEqual(["2026-06-05", "2026-06-08", "2026-06-10"]);
     expect(r.bekleyenCekDetay).toHaveLength(1);
     expect(r.bekleyenCekDetay[0].tutar).toEqual({ TRY: 150000 });
   });
