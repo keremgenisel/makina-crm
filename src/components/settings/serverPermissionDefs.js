@@ -183,6 +183,7 @@ export const FINANCE_ACTION_GROUPS = [
   { grup: "Finans — İşlemler", items: [
     { id: "fin_rapor",           label: "Aylık rapor oluştur" },
     { id: "fin_anlasmali_detay", label: "Anlaşmalı servis detayını aç" },
+    { id: "fin_kart_detay",      label: "Kredi kartı satış detayını aç" },
   ]},
 ];
 

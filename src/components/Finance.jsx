@@ -355,6 +355,8 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
 
   const [showAnlasmaliModal, setShowAnlasmaliModal] = useState(false);
   const [anlasmaliSearch, setAnlasmaliSearch] = useState("");
+  const [showKartModal, setShowKartModal] = useState(false);
+  const [kartSearch, setKartSearch] = useState("");
 
   const anlasmaliServisDetay = useMemo(() => {
     const now = new Date();
@@ -405,9 +407,65 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
 
   const { page: anlasmaliPage, setPage: setAnlasmaliPage, paged: anlasmaliPaged, perPage: ANLASMALI_PER_PAGE } = usePagination(anlasmaliFiltered, 10);
 
+  // Kredi kartı ile satış detayı — "Toplam Kredi Kartı ile Satış" kartına tıklayınca açılır (anlaşmalı
+  // detay ile aynı desen). Kartın toplamını oluşturan tüm kaynaklar: makina ödemesi (payment) + Extra
+  // Kalıp / yedek parça (partSales) + yedek parça (kargo) + servis — yalnız ödeme yöntemi Kredi Kartı.
+  // Satır tutarı KDV DAHİL karttan çekilen tutardır; KDV ayrı kolon.
+  const krediKartiDetay = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const thisMonthKey = `${y}-${String(m + 1).padStart(2, "0")}`;
+    const inR = (iso) => {
+      if (!iso) return range === "all";
+      const s = String(iso);
+      if (range === "all") return true;
+      if (range === "thisMonth") return s.slice(0, 7) === thisMonthKey;
+      if (range === "thisYear") return s.slice(0, 4) === String(y);
+      if (range === "lastYear") return s.slice(0, 4) === String(y - 1);
+      if (range === "custom") { if (customStart && s < customStart) return false; if (customEnd && s > customEnd) return false; return true; }
+      return true;
+    };
+    const custAd = (id) => customers.find(c => String(c.id) === String(id))?.name || "—";
+    const dealerAd = (id) => dealers.find(d => String(d.id) === String(id))?.name || "—";
+    const kargoBedel = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+    const rows = [];
+    (partSales || []).filter(p => !p.deletedAt && p.yontem === "Kredi Kartı" && !p.ucretsizMi && inR(p.tarih)).forEach(p => {
+      const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
+      rows.push({ id: "ps" + p.id, tarih: p.tarih || "", firma: custAd(p.customerId), kaynak: p.tur === "YedekParca" ? "Yedek parça" : "Extra kalıp", tutar: parseMoney(p.ucret) + kdv, kdv, currency: p.currency || "TRY" });
+    });
+    (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.yontem === "Kredi Kartı" && inR(s.tarih)).forEach(s => {
+      const bedel = kargoBedel(s); const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+      const firma = s.aliciTipi === "musteri" ? custAd(s.musteriId) : s.disFirma ? (s.disFirmaAd || "Dış firma") : dealerAd(s.dealerId);
+      rows.push({ id: "yk" + s.id, tarih: s.tarih || "", firma, kaynak: "Yedek parça (kargo)", tutar: bedel + kdv, kdv, currency: s.currency || "TRY" });
+    });
+    (services || []).filter(s => !s.deletedAt && s.yontem === "Kredi Kartı" && inR(s.date)).forEach(s => {
+      const bedel = parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti));
+      if (bedel <= 0) return;
+      const kdv = calcKDV(s.faturaTipi, bedel, s.date, kdvRates);
+      rows.push({ id: "sv" + s.id, tarih: s.date || "", firma: custAd(s.customerId), kaynak: "Servis", tutar: bedel + kdv, kdv, currency: s.currency || "TRY" });
+    });
+    (payments || []).filter(p => !p.deletedAt && p.yontem === "Kredi Kartı" && inR(p.tarih)).forEach(p => {
+      const tutar = parseMoney(p.tutar);
+      const c = customers.find(x => x.id === p.customerId);
+      const oran = c ? calcKDV(c.faturali, 100, p.tarih, kdvRates) : 0;
+      const kom = (p.kartKomisyonu && p.kartKomisyonu.yansitildi) ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0;
+      const mal = oran > 0 ? (tutar - kom * oran / 100) / (1 + oran / 100) : tutar;
+      rows.push({ id: "pm" + p.id, tarih: p.tarih || "", firma: custAd(p.customerId), kaynak: "Makina ödemesi", tutar, kdv: tutar - mal, currency: p.currency || "TRY" });
+    });
+    return rows.sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
+  }, [services, customers, partSales, yedekParcaSatislar, payments, dealers, range, customStart, customEnd, kdvRates]);
+
+  const kartFiltered = useMemo(() => {
+    if (!kartSearch.trim()) return krediKartiDetay;
+    const q = kartSearch.toLocaleLowerCase("tr-TR");
+    return krediKartiDetay.filter(r => r.firma.toLocaleLowerCase("tr-TR").includes(q) || r.kaynak.toLocaleLowerCase("tr-TR").includes(q));
+  }, [krediKartiDetay, kartSearch]);
+
+  const { page: kartPage, setPage: setKartPage, paged: kartPaged, perPage: KART_PER_PAGE } = usePagination(kartFiltered, 10);
+
   // Tarih aralığı değişince listeler yeniden hesaplanıp kısalabilir — sayfa numarası eski/yüksek
   // kalmasın diye aralık değiştiğinde her ikisi de baştan başlar.
-  useEffect(() => { setModelPage(1); setSellerPage(1); setAnlasmaliPage(1); }, [range, customStart, customEnd]);
+  useEffect(() => { setModelPage(1); setSellerPage(1); setAnlasmaliPage(1); setKartPage(1); }, [range, customStart, customEnd]);
 
   // KDV artık tek bir sayı değil, tarihe bağlı dönemler listesi — bu yüzden kartlarda sabit bir
   // "%20" göstermek yerine, seçili tarih aralığında geçerli olan dönem(ler) burada listelenir.
@@ -549,7 +607,9 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
         </div>
         <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />
-        <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatisNet} kdvObj={krediKartiSatisKdv} color="#8b5cf6" sub="Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV hariç)" />
+        <div onClick={canDoFin("fin_kart_detay") ? () => setShowKartModal(true) : undefined} style={{ cursor: canDoFin("fin_kart_detay") ? "pointer" : undefined }} title={canDoFin("fin_kart_detay") ? "Detay için tıklayın" : undefined}>
+          <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatisNet} kdvObj={krediKartiSatisKdv} color="#8b5cf6" sub={"Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV hariç)" + (canDoFin("fin_kart_detay") ? " · detay için tıklayın" : "")} />
+        </div>
         <MultiCard label="Toplam Ödenen Banka Komisyonu" obj={bankaKomisyonu} color="var(--red600, #dc2626)" sub="Kredi kartı satışlarında bankaya ödenen komisyon (gider)" />
       </div>
 
@@ -651,6 +711,44 @@ export const Finance = ({ customers, services, dealers = [], partSales = [], yed
             </tbody>
           </table>
           <Pagination total={anlasmaliFiltered.length} page={anlasmaliPage} setPage={setAnlasmaliPage} perPage={ANLASMALI_PER_PAGE} />
+        </Modal>
+      )}
+
+      {showKartModal && (
+        <Modal title="Kredi Kartı ile Satış Detayı" onClose={() => { setShowKartModal(false); setKartSearch(""); }}>
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={14} /></span>
+            <input
+              value={kartSearch}
+              onChange={e => { setKartSearch(e.target.value); setKartPage(1); }}
+              placeholder="Firma veya kaynak ara..."
+              style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
+            />
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "var(--n100, #f8fafc)" }}>
+                {["Tarih", "Firma", "Kaynak", "Kart Tutarı", "KDV"].map(h => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: ["Kart Tutarı", "KDV"].includes(h) ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {kartPaged.map(r => (
+                <tr key={r.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(r.tarih) || "—"}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 600 }}>{r.firma}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, color: "var(--n500, #64748b)" }}>{r.kaynak}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: moneyVisible ? "#8b5cf6" : "var(--n400, #94a3b8)" }}>{M(fmtCur(r.tutar, r.currency))}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "var(--teal, #0d9488)" : "var(--n400, #94a3b8)" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
+                </tr>
+              ))}
+              {kartFiltered.length === 0 && (
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Kayıt bulunamadı</td></tr>
+              )}
+            </tbody>
+          </table>
+          <Pagination total={kartFiltered.length} page={kartPage} setPage={setKartPage} perPage={KART_PER_PAGE} />
         </Modal>
       )}
     </div>
