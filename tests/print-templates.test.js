@@ -181,6 +181,11 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).toContain("ne için");
     expect(html).toContain("Makina ödemesi"); // tahsilat kaynağı
     expect(html).toContain("Makina bakiyesi"); // alacak kaynağı
+    // Tahsilat kutusu net (KDV hariç) + KDV + toplam ayrı ayrı etiketli
+    expect(html).toContain("Net (KDV hariç)");
+    expect(html).toContain("Toplam (KDV dahil)");
+    // Seçilen ay rozeti ay adını gösterir
+    expect(html).toContain("Haziran 2026");
   });
 
   it("ciro tamamen kaldırıldı; fatura tipi / onarım yeri / yaşlandırma kırılımları var; komisyon yoksa gizli", () => {
@@ -242,7 +247,7 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     const raporTL = hesaplaAylikRapor(veriTL, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" }, rates: { usd: 40, eur: 45 } });
     const htmlTL = buildAylikRaporHtml(raporTL, { name: "Altuntaş Makina" });
     // Makina satışları başlığı her para birimini ayrı gösterir (birleşik ciro/≈ TL kaldırıldı)
-    expect(htmlTL).toContain("500.000 TRY");
+    expect(htmlTL).toContain("500.000 TL"); // TRY raporda TL olarak gösterilir
     expect(htmlTL).toContain("10.000 EUR");
   });
 });
