@@ -4,7 +4,7 @@ import {
   APP_VERSION, DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR, INIT_PART_TYPES,
 } from "./lib/constants";
-import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
+import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
 import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "./lib/servisAlarm";
 import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
@@ -73,7 +73,9 @@ export default function App() {
   const [servisPanoAcik, setServisPanoAcik] = useState(false); // Servis ve Kargo Panosu ayrı penceresi açık mı
   const [haritaUlke, setHaritaUlke] = useState(null);  // Harita drill durumu — sekme değişip dönünce korunsun
   const [haritaIl, setHaritaIl] = useState(null);
-  const [appSettings, setAppSettings] = useState({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, krediKartiKomisyonlari: DEFAULT_KK_KOMISYONLARI, pinnedPartIds: [] });
+  // Otomatik yedek alanları (autoBackup/backupFolder/frequency/lastBackup) makinaya özgüdür: veri
+  // dosyasından/sunucudan gelmez (disAppSettingsSuz), bu PC'nin localStorage'ından okunur.
+  const [appSettings, setAppSettings] = useState(() => ({ autoBackup: false, backupFolder: "", frequency: "weekly", lastBackup: null, kdvRates: DEFAULT_KDV_RATES, krediKartiKomisyonlari: DEFAULT_KK_KOMISYONLARI, pinnedPartIds: [], ...yerelYedekAyariOku() }));
   const [loaded, setLoaded] = useState(false);
   const [saveTrigger, setSaveTrigger] = useState(0); // load sırasında yerel değer sunucuyu ezdiyse save effect'i yeniden tetikler
   const postLoadNeedsSaveRef = useRef(false); // yükleme, sunucudan farklı yerel veri korudu mu
@@ -1015,9 +1017,18 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", flush);
   }, []);
 
+  // Yerel yedek ayarları değişince bu PC'ye yaz (yükleme yolu bunları blob'dan almadığı için
+  // tek kalıcı kaynak burası).
+  useEffect(() => {
+    yerelYedekAyariYaz(appSettings);
+  }, [appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency, appSettings.lastBackup]);
+
   // ── Otomatik yedekleme: açılışta ve ayar değişince vakti geldiyse yedek yaz ──
   useEffect(() => {
     const s = appSettings;
+    // Ayarlar artık açılışta anında hazır (localStorage) — veri yüklenmeden yazılırsa yedek BOŞ
+    // çıkar ve lastBackup damgalanıp gerçek yedek dönem boyunca atlanır; yüklemeyi bekle.
+    if (!loaded) return;
     if (!s?.autoBackup || !s.backupFolder || !window.crmStorage?.writeBackup) return;
     const isDue = () => {
       if (!s.lastBackup) return true;
@@ -1037,7 +1048,7 @@ export default function App() {
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }
-  }, [appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency]);
+  }, [loaded, appSettings.autoBackup, appSettings.backupFolder, appSettings.frequency]);
 
   // Yerel kilit her zaman önce kontrol edilir — server modu aktif olsa bile atlanmaz.
   if (unlocked === null) return null; // appLock.status() bekleniyor

@@ -1592,8 +1592,10 @@ export function buildFaturaHtml(fatura, factory, total, logoB64, kaseResmi = "",
 export function buildAylikRaporHtml(rapor, factory) {
   rapor = escDeep(rapor); factory = escDeep(factory);
   // TRY, raporda "TL" olarak gösterilir (kullanıcı isteği); diğer para birimleri kendi koduyla.
+  // Rakam ile para birimi hiçbir zaman ayrı satıra düşmesin (dar sütunlarda "150.875 / TL" kırılıyordu):
+  // her tutar tek bir nowrap span'ı. Metin içeriği "150.875 TL" olarak değişmez.
   const paraSatir = (obj) => Object.entries(obj || {}).filter(([, v]) => v > 0)
-    .map(([cur, v]) => `${v.toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ${cur === "TRY" ? "TL" : cur}`).join(" + ") || "—";
+    .map(([cur, v]) => `<span style="white-space:nowrap">${v.toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ${cur === "TRY" ? "TL" : cur}</span>`).join(" + ") || "—";
   const kutu = (baslik, icerik) => `
     <div style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;">
       <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 12px;">${baslik}</div>
@@ -1631,10 +1633,18 @@ export function buildAylikRaporHtml(rapor, factory) {
     (rapor.extraKalipDetay || []).map(r => [r.firma, gun(r.tarih), r.teslimSekli, r.adet, paraSatir(r.tutar)]), ["left", "left", "left", "right", "right"]);
   const yedekKargoDetayTablo = detayTablo("YEDEK PARÇA ALAN FİRMALAR (eskiden yeniye)", ["Alıcı", "Tarih", "Tür", "Teslim", "Miktar", "Tutar", "KDV", "Durum"],
     (rapor.yedekKargoDetay || []).map(r => [r.firma, gun(r.tarih), r.aliciTuru, r.teslimSekli, r.miktar, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "left", "right", "right", "right", "left"]);
+  // Bakım onarım Durum sütunu: kredi kartıyla ödenen kayıt "Ödendi" ama para blokajda ise bunu
+  // belirt (yöntem + hesaba geçiş günü) — müşteri "ödendi yazıyor, giren parada neden yok" sormasın.
+  const servisDurum = (r) => {
+    if (r.ucretsiz) return "Ücretsiz";
+    if (!r.odendi) return "Ödenmedi";
+    if (r.yontem === "Kredi Kartı") return r.kkBlokajda ? `Ödendi · Kredi Kartı (blokajda, hesaba geçiş ${gun(r.kkHesabaGecis) || "—"})` : "Ödendi · Kredi Kartı";
+    return "Ödendi";
+  };
   const anlasmaliParcaDetayTablo = detayTablo("ANLAŞMALI SERVİSLERE PARÇA (firma firma · eskiden yeniye)", ["Müşteri Firma", "Tarih", "Servis Firması", "Parça Ücreti", "KDV", "Durum"],
-    (rapor.anlasmaliParcaDetay || []).map(r => [r.firma, gun(r.tarih), r.servisFirma, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "right", "right", "left"]);
+    (rapor.anlasmaliParcaDetay || []).map(r => [r.firma, gun(r.tarih), r.servisFirma, paraSatir(r.tutar), paraSatir(r.kdv), servisDurum(r)]), ["left", "left", "left", "right", "right", "left"]);
   const servisDetayTablo = detayTablo("BAKIM ONARIM VERİLEN FİRMALAR (eskiden yeniye)", ["Firma", "Tarih", "Tip", "İşçilik", "Parça", "KDV", "Durum"],
-    (rapor.servisDetay || []).map(r => [r.firma, gun(r.tarih), r.tip, paraSatir(r.iscilik), paraSatir(r.parca), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "right", "right", "right", "left"]);
+    (rapor.servisDetay || []).map(r => [r.firma, gun(r.tarih), r.tip, paraSatir(r.iscilik), paraSatir(r.parca), paraSatir(r.kdv), servisDurum(r)]), ["left", "left", "left", "right", "right", "right", "left"]);
   const tahsilatDetayTablo = detayTablo("KİMDEN TAHSİL EDİLDİ (eskiden yeniye)", ["Firma", "Yöntem", "Tarih", "Tutar"],
     (rapor.tahsilatDetay || []).map(r => [r.firma, r.yontem, gun(r.tarih), paraSatir(r.tutar)]), ["left", "left", "left", "right"]);
   const bekleyenCekDetayTablo = detayTablo("VADESİ BEKLEYEN ÇEKLER", ["Firma", "Vade", "Tutar"],
@@ -1656,6 +1666,9 @@ export function buildAylikRaporHtml(rapor, factory) {
   const yasPay = (t) => { const tp = yasToplam.TRY || 0, v = (t.tutar || {}).TRY || 0; return tp ? `%${Math.round(v / tp * 100)}` : "—"; };
   const yaslandirmaTablo = detayTablo("YAŞLANDIRMA (borcun yaşına göre)", ["Yaş aralığı", "Firma", "Tutar", "Pay"],
     (rapor.alacakYaslandirma || []).map(x => [x.aralik, x.firma, paraSatir(x.tutar), yasPay(x)]), ["left", "right", "right", "right"]);
+  // Kredi kartı blokajında bekleyenler — açık alacağın kendiliğinden tahsilata düşecek alt kümesi (hesaba geçiş tarihiyle).
+  const kkBlokajdaTablo = detayTablo("KREDİ KARTI BLOKAJINDA BEKLEYENLER (hesaba geçince tahsilata düşer)", ["Firma", "Kaynak", "İşlem tarihi", "Hesaba geçiş", "Tutar"],
+    (rapor.kkBlokajda || []).map(x => [x.firma, x.kaynak, gun(x.tarih), gun(x.hesabaGecis), paraSatir(x.tutar)]), ["left", "left", "left", "left", "right"]);
 
   // ── Bölüm kabuğu: koyu başlık çubuğu (sol ad + sağ tutar) + rozet satırı + gövde ──
   const rozet = (metin, tur) => {
@@ -1685,8 +1698,15 @@ export function buildAylikRaporHtml(rapor, factory) {
       ${tileKirilim(kirilim, cizgi)}
     </div>`;
   // Üstteki tahsilat kutusu: net (KDV hariç) + KDV + toplam ayrı ayrı (kullanıcı kararı); kaynak kırılımı net.
-  const tahsilatKaynakTile = (rapor.tahsilatKaynakKirilimi || []).map(x => ({ ad: `${x.kaynak} (${x.adet})`, tutar: x.net || x.tutar }));
-  const alacakKaynakTile = (rapor.alacakKaynakKirilimi || []).map(x => ({ ad: x.kaynak, tutar: x.tutar }));
+  // Üstteki servis satırı "kaç servis TAHSİL EDİLDİ" demeli (toplam/ücretli servis sayısıyla karışmasın);
+  // motor kaynak adı "Bakım onarım" kalır (testler ona bağlı), yalnız görüntü adı değişir.
+  const KAYNAK_GORUNUM = { "Bakım onarım": "Tahsil edilen bakım onarım" };
+  const tahsilatKaynakTile = (rapor.tahsilatKaynakKirilimi || []).map(x => ({ ad: `${KAYNAK_GORUNUM[x.kaynak] || x.kaynak} (${x.adet})`, tutar: x.net || x.tutar }));
+  const alacakKaynakTile = [
+    ...(rapor.alacakKaynakKirilimi || []).map(x => ({ ad: x.kaynak, tutar: x.tutar })),
+    // Alacağın kredi kartı blokajında bekleyen kısmı (hesaba geçince kendiliğinden tahsilata düşer)
+    ...((rapor.kkBlokajda || []).length ? [{ ad: "↳ bunun KK blokajında (kendiliğinden geçer)", tutar: rapor.kkBlokajdaTutar }] : []),
+  ];
   const paraRow = (label, tutar, emph) => `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:${emph ? 4 : 2}px;"><span style="font-size:${emph ? 11 : 10.5}px;color:${emph ? "#0f766e" : "#64748b"};font-weight:${emph ? 700 : 400};">${label}</span><span style="font-size:${emph ? 18 : 12}px;font-weight:${emph ? 800 : 600};font-variant-numeric:tabular-nums;white-space:nowrap;">${paraSatir(tutar)}</span></div>`;
   const tahsilatTile = `
     <div style="flex:1;min-width:180px;background:#ecfdf7;border:1px solid #b8e6da;border-radius:8px;padding:11px 13px;">
@@ -1694,7 +1714,7 @@ export function buildAylikRaporHtml(rapor, factory) {
       ${paraRow("Net (KDV hariç)", rapor.tahsilatNet, true)}
       ${paraRow("KDV", rapor.tahsilatKdv, false)}
       ${paraRow("Toplam (KDV dahil)", rapor.tahsilatTutar, false)}
-      <div style="font-size:10px;color:#64748b;margin-top:3px;">Fiilen tahsil edilen · nereden geldi (net):</div>
+      <div style="font-size:10px;color:#64748b;margin-top:3px;">Fiilen tahsil edilen · nereden geldi (KDV hariç):</div>
       ${tileKirilim(tahsilatKaynakTile, "#b8e6da")}
     </div>`;
   const ozetKutusu = `
@@ -1706,7 +1726,7 @@ export function buildAylikRaporHtml(rapor, factory) {
           ${tile("#b3401a", "#fdf1ec", "#f0cdbe", "🔴 Açık alacak (tahsil edilecek)", rapor.acikBorc, null, "Birikmiş borç · KDV dahil · 📌 rapor anı · ne için:", alacakKaynakTile)}
         </div>
         <div style="font-size:10.5px;color:#64748b;margin-top:10px;padding-top:8px;border-top:1px dashed #f1e4d6;">
-          ${rapor.satisAdet} makina · ${rapor.servisAdet} servis · ${rapor.extraKalipAdet} extra kalıp · ${rapor.yedekKargoAdet} yedek parça satışı · ${rapor.teklifAdet} teklif · Bu ay doğan KDV: <b>${paraSatir(rapor.toplamKdv)}</b>
+          ${rapor.satisAdet} makina · ${rapor.servisAdet} servis (${rapor.servisUcretliAdet ?? 0} ücretli, ${rapor.servisUcretsizAdet ?? 0} ücretsiz) · ${rapor.extraKalipAdet} extra kalıp · ${rapor.yedekKargoAdet} yedek parça satışı · ${rapor.teklifAdet} teklif · Bu ay doğan KDV: <b>${paraSatir(rapor.toplamKdv)}</b>
         </div>
       </div>
     </div>`;
@@ -1751,7 +1771,7 @@ export function buildAylikRaporHtml(rapor, factory) {
   ${bolum("BAKIM ONARIM GELİRLERİ", netKdvBaslik(rapor.servisNet, rapor.servisBolumKdv), `
     ${rozetSatiri(rozet("Tutarlar KDV hariç", "haric"), rozet(rapor.ayEtiketi, ""))}
     <table>
-      ${st("Servis kaydı", `${rapor.servisAdet} adet${ga(`${o?.servisAdet} adet`)}`)}
+      ${st("Servis kaydı", `${rapor.servisAdet} adet · ${rapor.servisUcretliAdet ?? 0} ücretli · ${rapor.servisUcretsizAdet ?? 0} ücretsiz${ga(`${o?.servisAdet} adet`)}`)}
       ${st("İşçilik geliri", `${paraSatir(rapor.iscilikTutar)}${ga(paraSatir(o?.iscilikTutar))}`)}
       ${st("Parça geliri (Altuntaş servisi)", paraSatir(rapor.servisParcaTutar))}
       ${st("Parça geliri (anlaşmalı servisler)", paraSatir(rapor.anlasmaliParcaTutar))}
@@ -1816,7 +1836,9 @@ export function buildAylikRaporHtml(rapor, factory) {
       ${st("Borçlu firma", rapor.borcluFirma + " firma")}
       ${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}
       ${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}
+      ${(rapor.kkBlokajda || []).length ? st("Kredi kartı blokajında bekleyen (kendiliğinden geçer)", `${rapor.kkBlokajda.length} kayıt · ${paraSatir(rapor.kkBlokajdaTutar)}`) : ""}
     </table>
+    ${kkBlokajdaTablo}
     ${yaslandirmaTablo}
     ${alacakDetayTablo}
     <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Bu bölüm seçilen aya değil, raporun oluşturulduğu andaki güncel duruma aittir.</div>`)}

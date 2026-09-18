@@ -319,6 +319,32 @@ export const disAppSettingsSuz = (uzak) => {
   return kopya;
 };
 
+// Makinaya özgü yedek ayarlarının KALICI yeri: bu PC'nin localStorage'ı (sidebarDar gibi).
+// Yükleme yolu bu alanları blob'dan ayıkladığı için (disAppSettingsSuz) veri dosyasından geri
+// gelmezler — burada saklanmazlarsa "Otomatik Yedekleme" kutusu her açılışta boş gelir
+// (v3.2.0'dan beri yaşanan gerileme). Yalnız YEREL_AYAR_ALANLARI yazılır/okunur.
+export const YEREL_YEDEK_AYARI_ANAHTAR = "yerelYedekAyari";
+export const yerelYedekAyariOku = (storage = globalThis.localStorage) => {
+  try {
+    const ham = storage?.getItem?.(YEREL_YEDEK_AYARI_ANAHTAR);
+    if (!ham) return {};
+    const obj = JSON.parse(ham);
+    if (!obj || typeof obj !== "object") return {};
+    const sonuc = {};
+    for (const alan of YEREL_AYAR_ALANLARI) if (alan in obj) sonuc[alan] = obj[alan];
+    if ("autoBackup" in sonuc) sonuc.autoBackup = sonuc.autoBackup === true;
+    return sonuc;
+  } catch { return {}; }
+};
+export const yerelYedekAyariYaz = (appSettings, storage = globalThis.localStorage) => {
+  try {
+    const obj = {};
+    for (const alan of YEREL_AYAR_ALANLARI) obj[alan] = appSettings?.[alan] ?? null;
+    storage?.setItem?.(YEREL_YEDEK_AYARI_ANAHTAR, JSON.stringify(obj));
+    return true;
+  } catch { return false; }
+};
+
 // Çakışma/yeniden-yükleme birleştirmesinde appSettings singleton'ını korur: sunucudan gelen
 // (yeniden yüklenen) değerin ÜZERİNE bu PC'nin yerel appSettings'ini bindirir (makinaya özgü
 // alanlar hariç, disAppSettingsSuz). Yoksa yeniden-yükleme, bu PC'de yapılıp henüz sunucuya

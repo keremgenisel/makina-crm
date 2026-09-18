@@ -35,6 +35,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
   const [loading, setLoading]   = useState(true);
   const [loadErr, setLoadErr]   = useState(null);
   const [page, setPage]         = useState(1);
+  const [exporting, setExporting] = useState(false); // CSV tam dışa aktarma sürerken düğme kilitli
 
   // Filtre alanları — kullanıcı değiştirir, "Filtrele" veya Enter ile arama tetiklenir
   const [fQ, setFQ]               = useState("");
@@ -48,49 +49,45 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
 
   const genRef = useRef(0);
 
+  // Filtre nesnesinden sorgu parametreleri — sayfa yükleme ve tam dışa aktarma aynı çeviriyi kullanır.
+  const filtreReq = (filters) => ({
+    q: filters.fQ?.trim() || undefined,
+    username: filters.fUser?.trim() || undefined,
+    entity: filters.fEntity || undefined,
+    dateFrom: filters.fDateFrom || undefined,
+    dateTo: filters.fDateTo || undefined,
+  });
+
+  // Tek taşıma katmanı: sunucu modunda /api/audit, yerel modda IPC. limit/offset İSTEKTEN alınır
+  // (eskiden sunucu dalı PER_PAGE'i sabit gönderiyordu → filtreye uyan tümünü çekmek mümkün değildi).
+  // Dönüş: { rows, total } ya da { error }.
+  async function sorgula(req) {
+    if (isServerMode) {
+      const params = new URLSearchParams();
+      params.set("limit", req.limit);
+      params.set("offset", req.offset ?? 0);
+      if (req.q)        params.set("q", req.q);
+      if (req.username) params.set("username", req.username);
+      if (req.entity)   params.set("entity", req.entity);
+      if (req.dateFrom) params.set("dateFrom", req.dateFrom);
+      if (req.dateTo)   params.set("dateTo", req.dateTo);
+      const res = await window.appServer?.apiRequest({ method: "GET", path: `/api/audit?${params}` });
+      return res?.ok ? res.data : { error: res?.error || "Sunucudan veri alınamadı" };
+    }
+    if (!window.auditLog) return { error: "İşlem geçmişi IPC bağlantısı mevcut değil" };
+    const res = await window.auditLog.get(req);
+    return res?.ok ? res : { error: "Veritabanı erişim hatası — yerel mod aktif olmayabilir" };
+  }
+
   async function fetchData(p, filters) {
     const gen = ++genRef.current;
     setLoading(true);
     setLoadErr(null);
-    const offset = (p - 1) * PER_PAGE;
-    const req = {
-      limit: PER_PAGE,
-      offset,
-      q: filters.fQ?.trim() || undefined,
-      username: filters.fUser?.trim() || undefined,
-      entity: filters.fEntity || undefined,
-      dateFrom: filters.fDateFrom || undefined,
-      dateTo: filters.fDateTo || undefined,
-    };
     try {
-      let result;
-      if (isServerMode) {
-        const params = new URLSearchParams();
-        params.set("limit", PER_PAGE);
-        params.set("offset", offset);
-        if (req.q)        params.set("q", req.q);
-        if (req.username) params.set("username", req.username);
-        if (req.entity)   params.set("entity", req.entity);
-        if (req.dateFrom) params.set("dateFrom", req.dateFrom);
-        if (req.dateTo)   params.set("dateTo", req.dateTo);
-        const res = await window.appServer?.apiRequest({ method: "GET", path: `/api/audit?${params}` });
-        result = res?.ok ? res.data : null;
-        if (!result && gen === genRef.current) setLoadErr(res?.error || "Sunucudan veri alınamadı");
-      } else {
-        if (!window.auditLog) {
-          if (gen === genRef.current) { setLoadErr("İşlem geçmişi IPC bağlantısı mevcut değil"); setLoading(false); }
-          return;
-        }
-        const res = await window.auditLog.get(req);
-        if (!res?.ok) {
-          if (gen === genRef.current) { setLoadErr("Veritabanı erişim hatası — yerel mod aktif olmayabilir"); setLoading(false); }
-          return;
-        }
-        result = res;
-      }
-      if (gen === genRef.current && result) {
-        setRows(result.rows || []);
-        setTotal(result.total || 0);
+      const result = await sorgula({ limit: PER_PAGE, offset: (p - 1) * PER_PAGE, ...filtreReq(filters) });
+      if (gen === genRef.current) {
+        if (result.error) setLoadErr(result.error);
+        else { setRows(result.rows || []); setTotal(result.total || 0); }
       }
     } catch (err) {
       console.error("audit log yükleme hatası:", err);
@@ -187,9 +184,22 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
     try { return new Date(ts).toLocaleString("tr-TR"); } catch { return ts; }
   };
 
-  const exportCsv = () => {
+  // CSV İndir: ekrandaki sayfayı DEĞİL, filtreye uyan TÜM kayıtları dışa aktarır. (Hata: eskiden
+  // yalnız görünen `rows` — en fazla PER_PAGE=10 satır — iniyordu; müşteriden istenen geçmiş hep eksik geldi.)
+  const EXPORT_LIMIT = 1000000;
+  const exportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    let tum = [];
+    try {
+      const result = await sorgula({ limit: EXPORT_LIMIT, offset: 0, ...filtreReq(activeFilters) });
+      if (result.error) { flash("Dışa aktarılamadı: " + result.error); return; }
+      tum = result.rows || [];
+    } catch (err) {
+      flash("Dışa aktarılamadı: " + String(err?.message || err)); return;
+    } finally { setExporting(false); }
     const header = ["Zaman", "Kullanıcı", "Rol", "Eylem", "Bölüm", "Kayıt ID", "Kayıt Adı", "Detay"];
-    const csvRows = [header, ...rows.map(r => [
+    const csvRows = [header, ...tum.map(r => [
       fmtTs(r.ts), r.username, r.role || "", ACTION_LABELS[r.action] || r.action,
       ENTITY_LABELS[r.entity] || r.entity, r.entity_id || "", r.entity_name || "", r.detail || "",
     ])];
@@ -199,6 +209,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
     a.href = URL.createObjectURL(blob);
     a.download = `islem-gecmisi-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
+    flash(`${tum.length} kayıt CSV olarak indirildi`);
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -213,7 +224,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--n900, #0f172a)" }}>İşlem Geçmişi</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="ghost" onClick={yenile}><Icon name="refresh" size={14} /> Yenile</Btn>
-          <Btn variant="ghost" onClick={exportCsv}><Icon name="download" size={14} /> CSV İndir</Btn>
+          <Btn variant="ghost" onClick={exportCsv} disabled={exporting}><Icon name="download" size={14} /> {exporting ? "İndiriliyor…" : "CSV İndir"}</Btn>
           <Btn variant="danger" onClick={() => setConfirmClear(true)} disabled={clearing}>
             <Icon name="trash" size={14} /> {clearing ? "Siliniyor..." : "Geçmişi Sil"}
           </Btn>

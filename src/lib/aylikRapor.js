@@ -9,7 +9,7 @@ import {
   normalizeSaleType, tahsilatTarihiOf,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
-import { yansitilanKomisyon } from "./krediKarti";
+import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
 // Tek kayıt için tek para birimli tutar nesnesi ({TRY:...} gibi) — detay satırlarında kullanılır
@@ -168,6 +168,14 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     odendi: s.odendi === true,
   })).sort(tariheGore);
 
+  // Detay satırında ödeme yöntemi: kredi kartıyla ödenen kayıt "Ödendi" görünür ama para blokaj
+  // süresince hesaba geçmemiştir; rapor bunu Durum sütununda belirtir (yöntem + hesaba geçiş günü).
+  const odemeBilgisi = (s) => ({
+    yontem: s.yontem || "",
+    kkBlokajda: s.odendi === true && s.yontem === "Kredi Kartı" && !kartTahsilEdildiMi(s.kartKomisyonu),
+    kkHesabaGecis: s.yontem === "Kredi Kartı" ? (s.kartKomisyonu?.hesabaGecis || "") : "",
+  });
+
   // Anlaşmalı servis firmalarına satılan parçalar (Altuntaş dışı servislerdeki Altuntaş parçaları)
   const anlasmaliParcaTutar = {}, anlasmaliParcaKdv = {};
   const anlasmaliServisler = canliServisler.filter(s => ayIci(s.date) && isParcaUcretliMi(s) && !isAltuntasServisi(s, factoryName));
@@ -185,6 +193,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
       firma: custAdi(s.customerId), tarih: s.date || "", servisFirma: s.islemFirma || "—",
       tutar: tekPara(cur, bedel), kdv: tekPara(cur, calcKDV(s.faturaTipi, bedel, s.date, kdvRates)),
       odendi: s.odendi === true,
+      ...odemeBilgisi(s),
     };
   }).sort(tariheGore);
 
@@ -238,10 +247,11 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   ayServisler.forEach(s => { const k = s.type || "Diğer"; servisTipMap[k] = (servisTipMap[k] || 0) + 1; });
   const servisKirilimi = Object.entries(servisTipMap).sort((a, b) => b[1] - a[1]).map(([tip, adet]) => ({ tip, adet }));
 
-  // Firma firma servis detayı — hangi firmaya servis verildi; işçilik, parça ücreti ve KDV ayrı ayrı.
-  // (Sadece Altuntaş servisinin işçiliği/parçası tutar olarak sayılır; anlaşmalı firma servisleri
-  // yukarıdaki "anlaşmalı parça" bölümünde. Yine de firma servis aldıysa listede görünür.)
-  const servisDetay = ayServisler.map(s => {
+  // Firma firma servis detayı — hangi firmaya BİZ servis verdik; işçilik, parça ücreti ve KDV ayrı ayrı.
+  // Anlaşmalı/dış firmanın yaptığı servisler bu listede YOK (kullanıcı kararı: "bizim tarafımızdan
+  // yapılmadı, iki kere yazmasın") — onlar yalnız "Anlaşmalı servislere parça" tablosunda görünür.
+  // Kayıt adedi (servisAdet) ve kırılımlar yine tüm servisleri sayar.
+  const servisDetay = ayServisler.filter(s => isAltuntasServisi(s, factoryName)).map(s => {
     const iscilik = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
     const parca = (isParcaUcretliMi(s) && isAltuntasServisi(s, factoryName)) ? altuntasParcaBedeli(s) : 0;
     return {
@@ -250,8 +260,15 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
       parca: tekPara(s.parcaCurrency || s.currency, parca),
       kdv: tekPara(s.currency, iscilik + parca > 0 ? calcKDV(s.faturaTipi, iscilik + parca, s.date, kdvRates) : 0),
       odendi: s.odendi === true,
+      // Ücretsiz verilen servis: ne işçilik ne ücretli parça var (fiyat girilmemiş; "ödendi" işareti
+      // kullanıcı için "kapatıldı" anlamına gelir). Raporda "Ödendi" yerine "Ücretsiz" etiketlenir.
+      ucretsiz: !(isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)),
+      ...odemeBilgisi(s),
     };
   }).sort(tariheGore);
+  // Ücretli / ücretsiz servis sayıları — özet ve bölümde "12 servis · 9 ücretli · 3 ücretsiz" için.
+  const servisUcretliAdet = ayServisler.filter(s => isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)).length;
+  const servisUcretsizAdet = ayServisler.length - servisUcretliAdet;
 
   // ── TAHSİLAT (gerçekleşen) ──────────────────────────────────────────────────
   const ayOdemeler = canliOdemeler.filter(p => ayIci(p.tarih));
@@ -400,6 +417,26 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const ALACAK_KAYNAK_SIRA = ["Makina bakiyesi", "Servis", "Extra kalıp", "Yedek parça (kargo ve fabrika teslim)"];
   const alacakKaynakKirilimi = ALACAK_KAYNAK_SIRA.filter(k => alacakKaynakMap[k]).map(k => ({ kaynak: k, tutar: alacakKaynakMap[k] }));
 
+  // ── Kredi kartı blokajında bekleyenler (rapor anı) ──────────────────────────
+  // "Ödendi" işaretli ama bloke para henüz hesaba geçmemiş kredi kartı tahsilatları: servis, extra kalıp,
+  // yedek parça ve makina ödemesi. Açık alacağın bir ALT KÜMESİdir (satisTahsilEdildi/isPaymentReceived
+  // false) ve hesabaGecis gününde kendiliğinden tahsilata düşer — "ne zaman geçecek" diye ayrı gösterilir.
+  const kkBlokajda = [];
+  const kkEkle = (firma, kaynak, tarih, kk, cur, tutar) => kkBlokajda.push({ firma, kaynak, tarih: tarih || "", hesabaGecis: kk?.hesabaGecis || "", tutar: tekPara(cur, tutar) });
+  const kkBloke = (r) => r?.yontem === "Kredi Kartı" && !kartTahsilEdildiMi(r.kartKomisyonu);
+  canliServisler.filter(s => s.odendi && kkBloke(s) && (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s))).forEach(s => {
+    const toplam = (isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0) + (isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0);
+    kkEkle(custAdi(s.customerId), "Servis", s.date, s.kartKomisyonu, s.currency, toplam + calcKDV(s.faturaTipi, toplam, s.date, kdvRates));
+  });
+  canliKalipSatislari.filter(p => p.odendi && !p.ucretsizMi && kkBloke(p)).forEach(p =>
+    kkEkle(custAdi(p.customerId), "Extra kalıp", p.tarih, p.kartKomisyonu, p.currency, parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates)));
+  canliYedekKargo.filter(s => s.odendi && kkBloke(s) && kargoBedeli(s) > 0).forEach(s =>
+    kkEkle(kargoAlici(s), "Yedek parça (kargo ve fabrika teslim)", s.tarih, s.kartKomisyonu, s.currency, kargoBedeli(s) + calcKDV(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates)));
+  canliOdemeler.filter(p => kkBloke(p)).forEach(p => kkEkle(custAdi(p.customerId), "Makina ödemesi", p.tarih, p.kartKomisyonu, p.currency, parseMoney(p.tutar)));
+  kkBlokajda.sort((a, b) => (a.hesabaGecis || "9999").localeCompare(b.hesabaGecis || "9999"));
+  const kkBlokajdaTutar = {};
+  kkBlokajda.forEach(x => { for (const c in x.tutar) paraEkle(kkBlokajdaTutar, c, x.tutar[c]); });
+
   // ── TEKLİFLER ───────────────────────────────────────────────────────────────
   const ayTeklifler = canliTeklifler.filter(t => t.type === "teklif" && ayIci(t.tarih));
   const onaylanan = ayTeklifler.filter(t => t.durum === "onaylandi" || t.satisTamam === true).length;
@@ -477,7 +514,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     yedekKargoMusteriTutar, yedekKargoBayiTutar, yedekKargoTeslim, yedekKargoTeslimTutar, yedekKargoDetay,
     yedekKargoFaturaKirilimi: ftSirali(kargoFatura),
     // Bakım onarım (servis) — bölüm net/KDV toplamı + onarım yeri + fatura tipi kırılımları
-    servisAdet: ayServisler.length, iscilikTutar, servisParcaTutar, servisKdv, servisKirilimi, servisDetay,
+    servisAdet: ayServisler.length, servisUcretliAdet, servisUcretsizAdet, iscilikTutar, servisParcaTutar, servisKdv, servisKirilimi, servisDetay,
     servisNet, servisBolumKdv, onarimYeriKirilimi, servisFaturaKirilimi: ftSirali(servisFatura),
     // Tahsilat
     tahsilatAdet: tumTahsilatlar.length, tahsilatTutar, tahsilatNet, tahsilatKdv, tahsilatDetay, tahsilatYontemKirilimi, tahsilatKaynakKirilimi,
@@ -485,6 +522,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
     // Alacak (rapor anı) — borçlu firma sayısı tüm kaynakları (bakiye/servis/kalıp/kargo) kapsar
     borcluFirma: alacakMap.size, acikBorc: alacak, alacakDetay, alacakYaslandirma, alacakKaynakKirilimi,
+    kkBlokajda, kkBlokajdaTutar,
     gecikenCek: canliOdemeler.filter(isCekVadesiGecmis).length,
     gecikenTaksit: canliMusteriler.filter(taksitGecikmisMi).length,
     // Teklifler
