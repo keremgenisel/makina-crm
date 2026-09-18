@@ -1861,5 +1861,9 @@ export function buildAylikRaporHtml(rapor, factory) {
       ${st("Cevap bekleyen toplam teklif", rapor.bekleyenTeklif + " adet")}
     </table>
     ${teklifDetayTablo}`)}
+  ${rapor.sahipsizAdet > 0 ? `<div style="margin-top:10px;font-size:10px;color:#64748b;border:1px dashed #cbd5e1;border-radius:6px;padding:6px 10px;">
+    Not: müşterisi artık bulunmayan <b>${rapor.sahipsizAdet}</b> sahipsiz kayıt (servis / kalıp / yedek parça / ödeme) bu rapora dahil edilmedi.
+    Temizlik: Ayarlar &gt; Veri Yönetimi &gt; Sahipsiz Kayıtlar.
+  </div>` : ""}
 </body></html>`;
 }

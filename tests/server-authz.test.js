@@ -146,6 +146,68 @@ describe("sekme (tabs) düzeyi yazma kısıtı", () => {
     const r = eylemDenetimi(eski, yeni, izinsiz, "user");
     expect(r.ok).toBe(false);
     expect(r.islem).toBe("sil");
+    // Bölüm düzeyi de silme iznini tanımalı: stok grubu boş, yalnız müşteri-detay silme izni → yazılabilir
+    expect(yazmaYetkisiVar(custDel, "user", ["yedekParcaSatislar"], {}, {}).ok).toBe(true);
+  });
+
+  // Müşteri silme kaskadı: Customers.jsx müşteriyi çöpe taşırken servis/kalıp/ödeme/görüşme/dosya/
+  // yedek parça kayıtlarını AYNI yazımda damgalar. Yalnız cust_delete taşıyan kullanıcı bu çocuk
+  // silmeler için ayrı izin aramadan geçmeli; müşteri silinmiyorsa aynı çocuk silme yine denetlenir.
+  it("müşteri silme kaskadı: cust_delete ile birlikte damgalanan çocuk kayıtlar 403 almaz", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const eski = {
+      customers: [{ id: 500, name: "F" }],
+      services: [{ id: 1, customerId: 500 }],
+      partSales: [{ id: 10, customerId: 500 }],
+      payments: [{ id: 20, customerId: 500 }],
+      gorusmeler: [{ id: 40, customerId: 500 }],
+      dosyalar: [{ id: 50, customerId: 500 }],
+      yedekParcaSatislar: [{ id: 30, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2 }, { id: 31, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 5, tahsisler: [{ customerId: 500, miktar: 1 }] }],
+    };
+    const damga = (arr) => arr.map(r => ({ ...r, deletedAt: ts }));
+    const yeni = {
+      customers: damga(eski.customers), services: damga(eski.services), partSales: damga(eski.partSales), payments: damga(eski.payments),
+      gorusmeler: damga(eski.gorusmeler), dosyalar: damga(eski.dosyalar),
+      yedekParcaSatislar: [{ ...eski.yedekParcaSatislar[0], deletedAt: ts }, { ...eski.yedekParcaSatislar[1], tahsisler: [{ customerId: null, miktar: 1, makinaSerbest: "F (silinen müşteri)" }] }],
+    };
+    const yalnizSil = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_delete"] });
+    expect(eylemDenetimi(eski, yeni, yalnizSil, "user").ok).toBe(true);
+    // Bölüm düzeyi: UserManager stok grubunu yalnız admin açıkça kısıtlarsa yazar; olağan müşteri
+    // kullanıcısında stockActions tanımsızdır → kaskadın stok iadesi (partStock/partStockLog) ve
+    // makinanın stoğa dönüşü (stock) de geçer.
+    const olagan = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_delete"] });
+    const bolumler = ["customers", "services", "partSales", "payments", "gorusmeler", "dosyalar", "yedekParcaSatislar", "partStock", "partStockLog", "stock"];
+    expect(yazmaYetkisiVar(olagan, "user", bolumler, eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, olagan, "user").ok).toBe(true);
+    // Stok grubu açıkça kısıtlı (stockActions: []) cust_delete kullanıcısı: bölüm düzeyi yedek parça
+    // yazımına izin verilir (kaskad), kayıt düzeyi kaskad-dışı silme yine reddedilir.
+    expect(yazmaYetkisiVar(yalnizSil, "user", ["customers", "services", "gorusmeler", "dosyalar", "yedekParcaSatislar"], eski, yeni).ok).toBe(true);
+    // Müşteri yenide hiç yoksa (kalıcı/hard silme) da kaskad sayılır
+    const yeniHard = { ...yeni, customers: [] };
+    expect(eylemDenetimi(eski, yeniHard, yalnizSil, "user").ok).toBe(true);
+    // Başka müşterinin çocuğu aynı yazımda damgalanırsa kaskad değil → 403
+    const eskiIki = { ...eski, customers: [...eski.customers, { id: 600, name: "G" }], services: [...eski.services, { id: 2, customerId: 600 }] };
+    const yeniIki = { ...yeni, customers: [...yeni.customers, { id: 600, name: "G" }], services: [...yeni.services, { id: 2, customerId: 600, deletedAt: ts }] };
+    const rIki = eylemDenetimi(eskiIki, yeniIki, yalnizSil, "user");
+    expect(rIki.ok).toBe(false);
+    expect(rIki.reddedilenBolum).toBe("services");
+  });
+
+  it("müşteri silinmeden aynı çocuk silmeler kaskad sayılmaz → kendi izinleri aranır", () => {
+    const eski = { customers: [{ id: 500, name: "F" }], services: [{ id: 1, customerId: 500 }], yedekParcaSatislar: [{ id: 30, aliciTipi: "musteri", musteriId: 500 }] };
+    const yeni = { customers: eski.customers, services: [{ id: 1, customerId: 500, deletedAt: "x" }], yedekParcaSatislar: [{ id: 30, aliciTipi: "musteri", musteriId: 500, deletedAt: "x" }] };
+    const yalnizSil = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_delete"] });
+    const r = eylemDenetimi(eski, yeni, yalnizSil, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("sil");
+    // müşteri zaten çöpteyken (önceki yazımda silinmiş) çocuk silme de kaskad değildir
+    const eski2 = { ...eski, customers: [{ id: 500, name: "F", deletedAt: "önce" }] };
+    const yeni2 = { ...yeni, customers: eski2.customers };
+    expect(eylemDenetimi(eski2, yeni2, yalnizSil, "user").ok).toBe(false);
+    // cust_delete yoksa kaskad da yok
+    const izinsiz = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_edit"] });
+    const yeniKaskad = { customers: [{ id: 500, name: "F", deletedAt: "x" }], services: yeni.services, yedekParcaSatislar: yeni.yedekParcaSatislar };
+    expect(eylemDenetimi(eski, yeniKaskad, izinsiz, "user").ok).toBe(false);
   });
 });
 

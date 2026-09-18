@@ -215,7 +215,11 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
     // yedek parça satışı birden çok boyuta yayılır (müşteri/bayi/pano/stok EKLE izinleri): stok grubu
     // boş olsa da bu izinlerden biri varsa yazılabilmeli, yoksa müşteri/bayi detayından ekleme 403 alırdı.
     if (section === "yedekParcaSatislar") {
-      if (grupEngelli(perms, "stockActions") && !yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section };
+      // Bölüm düzeyinde EKLE izinleri gibi SİL izinleri (müşteri detayı / müşteri silme kaskadı) da
+      // yeterli; yoksa stok grubu boş bir müşteri kullanıcısı kendi silme iznini kullanamazdı (403).
+      // cust_delete de yeterli: müşteri silme kaskadı alıcı-müşteri satışlarını damgalar (kayıt düzeyi
+      // denetim eylemDenetimi/kaskadSilmeMi'de — kaskad dışı silme yine reddedilir).
+      if (grupEngelli(perms, "stockActions") && !yedekParcaEkleyebilir(perms) && !yedekParcaSilebilir(perms) && !eylemIzinli(perms, "customerActions", "cust_delete")) return { ok: false, reddedilenBolum: section };
       if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
       continue;
     }
@@ -301,6 +305,28 @@ function yedekParcaSilebilir(perms) {
   return YEDEK_PARCA_SIL_IZINLERI.some(([g, id]) => eylemIzinli(perms, g, id));
 }
 
+// ── Müşteri silme kaskadı ────────────────────────────────────────────────────────
+// Müşteri Çöp Kutusu'na taşınınca istemci ona bağlı servis/kalıp/ödeme/görüşme/dosya/yedek parça
+// kayıtlarını da AYNI yazımda damgalar (Customers.jsx confirmDel). Bu çocuk silmeler müşteriyi
+// silme yetkisinin (cust_delete) doğal parçasıdır; her biri için ayrı silme izni aramak, yalnız
+// cust_delete taşıyan meşru kullanıcıyı 403'e düşürürdü. Kural: kaydın müşterisi bu yazımda
+// siliniyorsa (eskide aktif, yenide yok/damgalı) ve kullanıcı cust_delete taşıyorsa serbest.
+const KASKAD_BOLUMLERI = new Set(["services", "partSales", "payments", "gorusmeler", "dosyalar", "yedekParcaSatislar"]);
+function kaskadMusteriId(section, r) {
+  if (section === "yedekParcaSatislar") return r?.aliciTipi === "musteri" ? r.musteriId : null;
+  return r?.customerId ?? null;
+}
+function kaskadSilmeMi(section, r, eski, yeni, perms) {
+  if (!KASKAD_BOLUMLERI.has(section)) return false;
+  const cid = kaskadMusteriId(section, r);
+  if (cid == null) return false;
+  if (!eylemIzinli(perms, "customerActions", "cust_delete")) return false;
+  const eskiM = (Array.isArray(eski.customers) ? eski.customers : []).find(c => c && c.id === cid);
+  if (!eskiM || eskiM.deletedAt) return false; // müşteri zaten çöpteydi / yoktu → kaskad değil
+  const yeniM = (Array.isArray(yeni.customers) ? yeni.customers : []).find(c => c && c.id === cid);
+  return !yeniM || !!yeniM.deletedAt;
+}
+
 // Gelen blob'daki izinsiz EKLE/SİL'leri yakalar. Dönüş { ok:true } | { ok:false, reddedilenBolum, islem, gerekli }.
 function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
   if (role === "admin") return { ok: true };
@@ -332,6 +358,7 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       if (!aktifMi(r)) continue;
       const y = yeniById.get(r.id);
       if (y && !y.deletedAt) continue; // duruyor ve aktif → silme değil
+      if (kaskadSilmeMi(section, r, eski, yeni, perms)) continue; // müşteri silme kaskadı (cust_delete yeter)
       // yedek parça satışı SİL iki boyuttan gelebilir → herhangi biri yeterli (bkz. yedekParcaSilebilir).
       if (section === "yedekParcaSatislar") {
         if (!yedekParcaSilebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "yedek_parca_delete" };

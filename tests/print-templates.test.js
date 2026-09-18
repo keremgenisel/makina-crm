@@ -226,6 +226,19 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(htmlT).not.toContain("Bakım onarım (1)"); // eski belirsiz etiket artık yok
   });
 
+  it("sahipsiz kayıt varsa raporun altına not düşülür, yoksa not yok", () => {
+    const veriS = {
+      customers: [{ id: 1, name: "Var", currency: "TRY", kalanBorc: 0 }],
+      services: [{ id: 2, customerId: 999, date: "2026-06-11", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const rs = hesaplaAylikRapor(veriS, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlS = buildAylikRaporHtml(rs, { name: "Altuntaş Makina" });
+    expect(htmlS).toContain("<b>1</b> sahipsiz kayıt");
+    expect(htmlS).toContain("Sahipsiz Kayıtlar");
+    expect(html).not.toContain("sahipsiz kayıt"); // ana fixture'da yok
+  });
+
   it("kredi kartı blokajında bekleyenler AÇIK ALACAKLAR altında tablo + satır olarak görünür", () => {
     const veriK = {
       customers: [{ id: 1, name: "BlokeFirma", currency: "TRY", kalanBorc: 0 }],

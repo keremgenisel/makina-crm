@@ -6,6 +6,7 @@ import {
 } from "./lib/constants";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
 import { buildMergePlan } from "./lib/merge";
+import { kayitSirasiOlustur } from "./lib/kayitSirasi";
 import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "./lib/servisAlarm";
 import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
 import { yerelServisMi } from "./lib/yerelServis";
@@ -955,6 +956,13 @@ export default function App() {
   }, []);
 
   const pendingSave = useRef(null);
+  // Kayıtlar sıralı gider ve sürüm numarası gönderim anında okunur (bkz. lib/kayitSirasi.js):
+  // önceki kayıt yoldayken gelen ikinci değişiklik eski sürümle gidip sahte çakışma üretmesin.
+  const kaydetSirali = useMemo(() => kayitSirasiOlustur({
+    save: (d) => window.crmStorage.save(d),
+    getVersion: () => window.crmStorage.getVersion?.(),
+    versionRef: dataVersionRef,
+  }), []);
   useEffect(() => {
     if (!loaded || !window.crmStorage || suppressSaveRef.current) return;
     // Salt okunur mod: sunucuya ulaşılamıyorken hiçbir şey kaydedilmez/kuyruklanmaz
@@ -964,24 +972,18 @@ export default function App() {
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      const saveData = pendingSave.current;
+      const saveData = pendingSave.current || data;
       pendingSave.current = null;
       lastAttemptedSaveRef.current = saveData;
-      let ok = false;
-      // save() reject ederse (örn. yerel modda DB yazması patlarsa) eskiden sessizce yutuluyordu
-      // ve kullanıcı fark etmeden veri kaybediyordu — artık yakalayıp uyarıyoruz.
-      try { ok = await window.crmStorage.save(saveData || data); }
-      catch (err) { console.error("Kayıt hatası:", err); ok = false; }
+      const { ok, veri } = await kaydetSirali(saveData);
+      // Çakışma birleştirmesi (onConflict) son denenen gövdeyi okur — gönderilen sürümle tutarlı olsun
+      if (lastAttemptedSaveRef.current === saveData) lastAttemptedSaveRef.current = veri;
       if (ok) {
         failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
         clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
-        // Kendi kaydımız db versiyonunu artırır; dataVersionRef'i hemen eşitle ki sunucu-PC'nin
-        // 5sn'lik yoklaması bunu "dışarıdan değişiklik" sanıp yeniden yükle+birleştir tetiklemesin
-        // (o birleştirme, henüz kaydı bitmemiş yerel düzenlemeleri geri alıp veri kaybettiriyordu).
-        try { const v = await window.crmStorage.getVersion?.(); if (typeof v === "number") dataVersionRef.current = v; } catch { /* yoksay */ }
       }
       else {
-        if (serverMode === "active") { failedSaveRef.current = saveData || data; }
+        if (serverMode === "active") { failedSaveRef.current = veri; }
         // Başarısız kayıtta sessiz kalma: kullanıcıyı uyar (en fazla 20 sn'de bir, spam olmasın)
         if (Date.now() - kayitHataUyariRef.current > 20000) {
           kayitHataUyariRef.current = Date.now();
@@ -1007,7 +1009,7 @@ export default function App() {
       const toFlush = pendingSave.current || lastAttemptedSaveRef.current;
       if (toFlush && window.crmStorage?.flushSave) {
         clearTimeout(saveTimer.current);
-        window.crmStorage.flushSave(toFlush);
+        window.crmStorage.flushSave({ ...toFlush, __dataVersion: dataVersionRef.current }); // sürüm gönderim anında
         pendingSave.current = null;
         lastAttemptedSaveRef.current = null;
       }

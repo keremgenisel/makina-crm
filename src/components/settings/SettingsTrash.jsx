@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today, parcaAdi } from "../../lib/utils";
 import { yedekParcaDus } from "../../lib/yedekParcaStok";
+import { yedekParcaAlicisiMi } from "../../lib/musteriKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
@@ -21,18 +22,34 @@ export const SettingsTrash = ({
   const [confirmPurge, setConfirmPurge] = useState(null); // kalıcı silme onayı bekleyen trash item
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
 
+  // Yedek parça satışı çöpten dönünce stoğu yeniden düş (silinirken iade edilmişti; eksiye düşmeden).
+  const yedekParcaStokYenidenDus = (s) => {
+    if (s.partId && parseInt(s.miktar) > 0 && setPartStock && setPartStockLog) {
+      const pid = String(s.partId);
+      const dus = Math.min(parseInt(s.miktar), Math.max(0, totalMiktar(partStock, pid)));
+      if (dus > 0) yedekParcaDus(pid, dus, s.id, setPartStock, setPartStockLog);
+    }
+  };
+  // Müşteriyle aynı damgayla çöpe giden çocuk kayıt (kaskad) — bkz. lib/musteriKaskad.js
+  const kaskadCocuk = (c) => (x) => x.customerId === c.id && x.deletedAt === c.deletedAt;
+  const kaskadYedekParca = (c) => (x) => yedekParcaAlicisiMi(x, c.id) && x.deletedAt === c.deletedAt;
   const restoreCustomer = (c) => {
     setCustomers(p => p.map(x => x.id === c.id ? { ...x, deletedAt: undefined } : x));
-    setServices(p => p.map(s => (s.customerId === c.id && s.deletedAt === c.deletedAt) ? { ...s, deletedAt: undefined } : s));
-    setPartSales?.(p => p.map(x => (x.customerId === c.id && x.deletedAt === c.deletedAt) ? { ...x, deletedAt: undefined } : x));
-    setPayments?.(p => p.map(x => (x.customerId === c.id && x.deletedAt === c.deletedAt) ? { ...x, deletedAt: undefined } : x));
+    setServices(p => p.map(s => kaskadCocuk(c)(s) ? { ...s, deletedAt: undefined } : s));
+    setPartSales?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
+    setPayments?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
+    rawYedekParcaSatislar.filter(kaskadYedekParca(c)).forEach(yedekParcaStokYenidenDus);
+    setYedekParcaSatislar?.(p => p.map(x => kaskadYedekParca(c)(x) ? { ...x, deletedAt: undefined } : x));
+    setGorusmeler?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
+    setDosyalar?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
     showToast("Müşteri geri alındı.");
   };
   const purgeCustomer = (c) => {
     setCustomers(p => p.filter(x => x.id !== c.id));
-    setServices(p => p.filter(s => !(s.customerId === c.id && s.deletedAt === c.deletedAt)));
-    setPartSales?.(p => p.filter(x => !(x.customerId === c.id && x.deletedAt === c.deletedAt)));
-    setPayments?.(p => p.filter(x => !(x.customerId === c.id && x.deletedAt === c.deletedAt)));
+    setServices(p => p.filter(s => !kaskadCocuk(c)(s)));
+    setPartSales?.(p => p.filter(x => !kaskadCocuk(c)(x)));
+    setPayments?.(p => p.filter(x => !kaskadCocuk(c)(x)));
+    setYedekParcaSatislar?.(p => p.filter(x => !kaskadYedekParca(c)(x)));
     // Müşteri gidince ona bağlı görüşme/dosyalar da silinmeli — yoksa customerId artık olmayan bir
     // müşteriye işaret eder (yetim FK) ve TÜM save transaction'ı "FOREIGN KEY constraint failed" ile
     // çöker (uygulamada hiçbir alan kaydedilemez). Dosyaların fiziksel kopyalarını da temizle.
@@ -110,11 +127,7 @@ export const SettingsTrash = ({
   const restoreYedekParca = (s) => {
     setYedekParcaSatislar?.(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x));
     // Satış silinince stok geri verilmişti (yedekParcaGeriAl) → geri alınca tekrar düş (eksiye düşmeden).
-    if (s.partId && parseInt(s.miktar) > 0 && setPartStock && setPartStockLog) {
-      const pid = String(s.partId);
-      const dus = Math.min(parseInt(s.miktar), Math.max(0, totalMiktar(partStock, pid)));
-      if (dus > 0) yedekParcaDus(pid, dus, s.id, setPartStock, setPartStockLog);
-    }
+    yedekParcaStokYenidenDus(s);
     showToast("Yedek parça satışı geri alındı.");
   };
   const purgeYedekParca = (s) => { setYedekParcaSatislar?.(p => p.filter(x => x.id !== s.id)); showToast("Yedek parça satışı kalıcı olarak silindi."); };

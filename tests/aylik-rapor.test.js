@@ -371,6 +371,35 @@ describe("hesaplaAylikRapor — tahsilat tarihi: TÜM durumlar", () => {
   });
 });
 
+describe("hesaplaAylikRapor — sahipsiz kayıtlar rapora girmez", () => {
+  it("müşterisi olmayan servis/kalıp/yedek parça/ödeme hiçbir toplam ve listeye girmez; adet raporlanır", () => {
+    const v = {
+      customers: [{ id: 1, name: "Var", currency: "TRY", kalanBorc: 0 }],
+      services: [
+        { id: 1, customerId: 1, date: "2026-07-10", type: "Garanti Dışı", servisUcreti: 1000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true },
+        { id: 2, customerId: 999, date: "2026-07-11", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true },
+      ],
+      partSales: [{ id: 3, customerId: 999, tur: "Kalıp", tarih: "2026-07-05", ucret: 12000, currency: "TRY", odendi: false }],
+      yedekParcaSatislar: [
+        { id: 4, aliciTipi: "musteri", musteriId: 999, partId: "7", miktar: 1, birimFiyat: 2750, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 5, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-07-12", odendi: true, tahsisler: [{ customerId: 999, miktar: 1 }] },
+      ],
+      payments: [{ id: 6, customerId: 999, tarih: "2026-07-13", tutar: 777, currency: "TRY", yontem: "Nakit" }],
+      teklifler: [], dealers: [{ id: 9, name: "Bayi" }],
+    };
+    const r = hesaplaAylikRapor(v, "2026-07", secenekler);
+    expect(r.servisAdet).toBe(1);
+    expect(r.iscilikTutar).toEqual({ TRY: 1000 });
+    expect(r.servisDetay.map(x => x.firma)).toEqual(["Var"]);
+    expect(r.extraKalipAdet).toBe(0);
+    expect(r.acikBorc).toEqual({});                                  // sahipsiz kalıp alacağı yok
+    expect(r.yedekKargoDetay.map(x => x.firma)).toEqual(["Bayi"]);   // bayi alımı kalır, sahipsiz müşteri alımı yok
+    expect(r.tahsilatTutar).toEqual({ TRY: 1320 });                  // (1000 servis + 100 bayi) + %20 KDV; sahipsiz 2750 + 777 yok
+    expect(r.sahipsizAdet).toBe(4);
+    expect(JSON.stringify(r)).not.toContain('"firma":"—"');
+  });
+});
+
 describe("hesaplaAylikRapor — kredi kartı blokajında bekleyenler", () => {
   const mk = (services) => ({ customers: [{ id: 1, name: "K", currency: "TRY", kalanBorc: 0 }], services, partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] });
   const svc = (kk) => ({ id: 1, customerId: 1, date: "2026-07-13", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Kredi Kartı", kartKomisyonu: kk });

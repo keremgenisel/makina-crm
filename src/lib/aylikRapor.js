@@ -10,6 +10,7 @@ import {
 } from "./utils";
 import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
+import { sahipsizHaric } from "./sahipsiz";
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
 // Tek kayıt için tek para birimli tutar nesnesi ({TRY:...} gibi) — detay satırlarında kullanılır
@@ -46,11 +47,21 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
 
   // deletedAt her koleksiyonda burada filtrelenir (prop ön-filtresine güvenilmez)
   const canliMusteriler = customers.filter(c => !c.deletedAt);
-  const canliServisler = services.filter(s => !s.deletedAt);
-  const canliKalipSatislari = partSales.filter(p => !p.deletedAt);
-  const canliOdemeler = payments.filter(p => !p.deletedAt);
+  // Sahipsiz kayıtlar (müşterisi canlı müşteriler arasında olmayan servis/kalıp/yedek parça/ödeme)
+  // rapora HİÇ girmez — kullanıcı kararı ("—" satırı olmasın). Adedi raporun altına not düşülür;
+  // temizlik Ayarlar > Veri Yönetimi > Sahipsiz Kayıtlar'dan. Finans ekranı aynı süzgeci uygular.
+  const sahipsiz = sahipsizHaric(canliMusteriler, {
+    services: services.filter(s => !s.deletedAt),
+    partSales: partSales.filter(p => !p.deletedAt),
+    yedekParcaSatislar: yedekParcaSatislar.filter(s => !s.deletedAt),
+    payments: payments.filter(p => !p.deletedAt),
+  });
+  const canliServisler = sahipsiz.services;
+  const canliKalipSatislari = sahipsiz.partSales;
+  const canliOdemeler = sahipsiz.payments;
   const canliTeklifler = teklifler.filter(t => !t.deletedAt);
-  const canliYedekKargo = yedekParcaSatislar.filter(s => !s.deletedAt);
+  const canliYedekKargo = sahipsiz.yedekParcaSatislar;
+  const sahipsizAdet = sahipsiz.sahipsizAdet;
 
   // Müşteri adı çözümleme (servis/parça/ödeme kayıtları customerId tutar, adı bulundur) —
   // müşteri sonradan silinse bile ham customers dizisinden adı yakalanır, bulunamazsa "—".
@@ -531,7 +542,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     // Kredi kartı ile satış (KDV dahil) + toplam ödenen banka komisyonu (gider)
     krediKartiSatisTutar, bankaKomisyonuTutar,
     // Yönetici özeti + KDV beyanname özeti
-    ozet, toplamKdv, anlasmaliParcaKdv,
+    ozet, toplamKdv, anlasmaliParcaKdv, sahipsizAdet,
     kdvKalemleri: { satis: satisKdv, servis: servisKdv, extraKalip: extraKalipKdv, anlasmaliParca: anlasmaliParcaKdv, yedekKargo: yedekKargoKdv },
   };
 };
