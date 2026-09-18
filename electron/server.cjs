@@ -665,12 +665,16 @@ function buildApp() {
     try {
       // Başlıklar yalnız METİN kabul edilir (CodeQL js/type-confusion-through-parameter-tampering:
       // dizi/nesne gelirse izin denetimi ve depo adı üretimi metin varsayımıyla yanılmasın).
+      // Türetilmiş değerler YALNIZ typeof === "string" ile korunan dalda üretilir (CodeQL bu deseni tanır;
+      // "undefined değilse ve string değilse dön" biçimindeki ön koşulu string kanıtı saymıyordu).
       const adHam = req.get("X-Dosya-Adi"), firmaHam = req.get("X-Dosya-Firma");
-      if (adHam !== undefined && typeof adHam !== "string") return res.status(400).json({ error: "Geçersiz dosya adı" });
-      if (firmaHam !== undefined && typeof firmaHam !== "string") return res.status(400).json({ error: "Geçersiz firma" });
-      const ad = decodeURIComponent(typeof adHam === "string" && adHam ? adHam : "dosya");
+      let ad = "dosya";
+      if (typeof adHam === "string") { if (adHam) ad = decodeURIComponent(adHam); }
+      else if (adHam !== undefined) return res.status(400).json({ error: "Geçersiz dosya adı" });
       // Firma adı: istemci "X-Dosya-Firma" ile yollar → okunur depo adı ("<Firma> - <ad> - <anahtar>").
-      let firma = ""; try { firma = decodeURIComponent(typeof firmaHam === "string" ? firmaHam : ""); } catch { firma = ""; }
+      let firma = "";
+      if (typeof firmaHam === "string") { try { firma = decodeURIComponent(firmaHam); } catch { firma = ""; } }
+      else if (firmaHam !== undefined) return res.status(400).json({ error: "Geçersiz firma" });
       if (!files.izinliMi(ad)) return res.status(400).json({ error: "Bu dosya türü desteklenmiyor" });
       const buf = req.body;
       if (!Buffer.isBuffer(buf) || buf.length === 0) return res.status(400).json({ error: "Boş dosya" });
