@@ -304,13 +304,15 @@ function buildApp() {
   app.use("/api", hizSiniri(600));
   // /auth uçları (giriş, 2FA, parola, çıkış): IP başına 120/dk — kademeli kaba-kuvvet kilidi zaten
   // çok daha sıkı (birkaç yanlıştan sonra dakikalarca), bu üst sınır yalnız toplu istek selini keser.
-  app.use("/auth", hizSiniri(120));
+  // Her uca DOĞRUDAN takılır (app.use("/auth", …) yerine): CodeQL js/missing-rate-limiting yalnız
+  // rota düzeyindeki / global limiter'ı tanıyor, yol-kapsamlı use'u /auth için saymadı.
+  const authHiz = hizSiniri(120);
 
   // /health kimliksiz: istemci hem erişilebilirlik yoklaması hem TLS keşfi/doğrulaması için kullanır.
   app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false, tls: !!certFp, fp: certFp || null }));
 
   // POST /auth/login
-  app.post("/auth/login", async (req, res) => {
+  app.post("/auth/login", authHiz, async (req, res) => {
     try {
       const ip = req.socket?.remoteAddress || req.ip || "?";
       const { username, password, totpCode } = req.body || {};
@@ -326,7 +328,7 @@ function buildApp() {
   });
 
   // GET /auth/me — token yenile
-  app.get("/auth/me", requireAuth, (req, res) => {
+  app.get("/auth/me", authHiz, requireAuth, (req, res) => {
     try {
       const { id, username, role } = req.user;
       const u = db?.getUserByUsername(username);
@@ -340,13 +342,13 @@ function buildApp() {
 
   // POST /auth/logout — istemci oturumu kapatırken çağırır; yalnız güvenlik günlüğü için
   // (jetonu istemci zaten atar; sunucuda oturum durumu tutulmaz).
-  app.post("/auth/logout", requireAuth, writeLimiter(60), (req, res) => {
+  app.post("/auth/logout", authHiz, requireAuth, writeLimiter(60), (req, res) => {
     logSecurity({ actor: req.user.username, action: "cikis", target: req.user.username, ip: reqIp(req) });
     res.json({ ok: true });
   });
 
   // PATCH /auth/me/password — kendi şifresini değiştir
-  app.patch("/auth/me/password", requireAuth, writeLimiter(20), async (req, res) => {
+  app.patch("/auth/me/password", authHiz, requireAuth, writeLimiter(20), async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body || {};
       if (!currentPassword || !newPassword || newPassword.length < 6) return res.status(400).json({ error: "Geçersiz parametre" });
@@ -367,14 +369,14 @@ function buildApp() {
 
   // ── İki adımlı doğrulama (2FA / TOTP) — kullanıcı kendi hesabı için ──────────
   // GET durum
-  app.get("/auth/2fa/status", requireAuth, (req, res) => {
+  app.get("/auth/2fa/status", authHiz, requireAuth, (req, res) => {
     try {
       const u = db.getUserByUsername(req.user.username);
       res.json({ enabled: !!u?.totp_enabled });
     } catch { res.status(500).json({ error: "Sunucu hatası" }); }
   });
   // POST kurulum: yeni secret üret (pending, enabled=0) + QR döndür
-  app.post("/auth/2fa/setup", requireAuth, writeLimiter(20), async (req, res) => {
+  app.post("/auth/2fa/setup", authHiz, requireAuth, writeLimiter(20), async (req, res) => {
     try {
       const u = db.getUserByUsername(req.user.username);
       if (!u) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
@@ -386,7 +388,7 @@ function buildApp() {
     } catch (err) { console.error("[server] 2fa/setup:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
   // POST etkinleştir: pending secret ile kodu doğrula, aç + tek seferlik kurtarma kodları ver
-  app.post("/auth/2fa/enable", requireAuth, writeLimiter(20), (req, res) => {
+  app.post("/auth/2fa/enable", authHiz, requireAuth, writeLimiter(20), (req, res) => {
     try {
       const { code } = req.body || {};
       const u = db.getUserByUsername(req.user.username);
@@ -401,7 +403,7 @@ function buildApp() {
     } catch (err) { console.error("[server] 2fa/enable:", err); res.status(500).json({ error: "Sunucu hatası" }); }
   });
   // POST kapat: mevcut şifre ile doğrula, 2FA'yı tamamen kaldır
-  app.post("/auth/2fa/disable", requireAuth, writeLimiter(20), async (req, res) => {
+  app.post("/auth/2fa/disable", authHiz, requireAuth, writeLimiter(20), async (req, res) => {
     try {
       const { password } = req.body || {};
       const u = db.getUserByUsername(req.user.username);
@@ -663,10 +665,12 @@ function buildApp() {
     try {
       // Başlıklar yalnız METİN kabul edilir (CodeQL js/type-confusion-through-parameter-tampering:
       // dizi/nesne gelirse izin denetimi ve depo adı üretimi metin varsayımıyla yanılmasın).
-      const baslikMetin = (h) => { const v = req.get(h); return typeof v === "string" ? v : ""; };
-      const ad = decodeURIComponent(baslikMetin("X-Dosya-Adi") || "dosya");
+      const adHam = req.get("X-Dosya-Adi"), firmaHam = req.get("X-Dosya-Firma");
+      if (adHam !== undefined && typeof adHam !== "string") return res.status(400).json({ error: "Geçersiz dosya adı" });
+      if (firmaHam !== undefined && typeof firmaHam !== "string") return res.status(400).json({ error: "Geçersiz firma" });
+      const ad = decodeURIComponent(typeof adHam === "string" && adHam ? adHam : "dosya");
       // Firma adı: istemci "X-Dosya-Firma" ile yollar → okunur depo adı ("<Firma> - <ad> - <anahtar>").
-      let firma = ""; try { firma = decodeURIComponent(baslikMetin("X-Dosya-Firma")); } catch { firma = ""; }
+      let firma = ""; try { firma = decodeURIComponent(typeof firmaHam === "string" ? firmaHam : ""); } catch { firma = ""; }
       if (!files.izinliMi(ad)) return res.status(400).json({ error: "Bu dosya türü desteklenmiyor" });
       const buf = req.body;
       if (!Buffer.isBuffer(buf) || buf.length === 0) return res.status(400).json({ error: "Boş dosya" });
