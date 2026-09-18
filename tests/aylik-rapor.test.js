@@ -371,6 +371,26 @@ describe("hesaplaAylikRapor — tahsilat tarihi: TÜM durumlar", () => {
   });
 });
 
+describe("hesaplaAylikRapor — bayisi olmayan yedek parça satışı rapora girmez", () => {
+  it("alıcısı silinmiş/olmayan bayi olan satış toplam ve listelerde yok; canlı bayininki kalır", () => {
+    const v = {
+      customers: [], services: [], partSales: [], payments: [], teklifler: [],
+      dealers: [{ id: 9, name: "Bayi" }, { id: 8, name: "Silinmiş Bayi", deletedAt: "x" }],
+      yedekParcaSatislar: [
+        { id: 1, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 2, aliciTipi: "bayi", dealerId: 999, partId: "7", miktar: 1, birimFiyat: 5000, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 3, aliciTipi: "bayi", dealerId: 8, partId: "7", miktar: 1, birimFiyat: 7000, currency: "TRY", tarih: "2026-07-13", odendi: false },
+      ],
+    };
+    const r = hesaplaAylikRapor(v, "2026-07", secenekler);
+    expect(r.yedekKargoDetay.map(x => x.firma)).toEqual(["Bayi"]);
+    expect(r.yedekKargoAdet).toBe(1);
+    expect(r.acikBorc).toEqual({});
+    expect(r.sahipsizAdet).toBe(2);
+    expect(JSON.stringify(r)).not.toContain('"firma":"—"');
+  });
+});
+
 describe("hesaplaAylikRapor — sahipsiz kayıtlar rapora girmez", () => {
   it("müşterisi olmayan servis/kalıp/yedek parça/ödeme hiçbir toplam ve listeye girmez; adet raporlanır", () => {
     const v = {

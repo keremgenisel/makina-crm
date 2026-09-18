@@ -13,6 +13,21 @@ const partSales = [
   { id: 21, customerId: 999, tur: "Kalıp", tarih: "2026-01-13", ucret: 99999, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", yontem: "Kredi Kartı", odendi: true }, // sahipsiz
 ];
 
+describe("Finance — bayisi olmayan yedek parça satışı", () => {
+  it("bayisi silinmiş/olmayan kredi kartlı satış detayda görünmez; canlı bayininki görünür", () => {
+    const yp = [
+      { id: 40, aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 1, birimFiyat: 1000, currency: "TRY", tarih: "2026-01-12", faturaTipi: "Faturalı Yurtiçi", yontem: "Kredi Kartı", odendi: true },
+      { id: 41, aliciTipi: "bayi", dealerId: 999, partId: "7", miktar: 1, birimFiyat: 77777, currency: "TRY", tarih: "2026-01-13", faturaTipi: "Faturalı Yurtiçi", yontem: "Kredi Kartı", odendi: true },
+    ];
+    render(<Finance customers={customers} services={[]} dealers={[{ id: 5, name: "CanlıBayi" }]} partSales={[]} yedekParcaSatislar={yp}
+      factory={{ name: "Altuntaş Makina" }} rates={{}} payments={[]} teklifler={[]} serverPermissions={null} />);
+    fireEvent.click(screen.getByText("Toplam Kredi Kartı ile Satış").closest("[title='Detay için tıklayın']"));
+    expect(screen.getAllByText("CanlıBayi").length).toBeGreaterThan(0);
+    expect(screen.queryByText("77.777")).toBeNull();
+    expect(screen.queryByText(/^—$/)).toBeNull();
+  });
+});
+
 describe("Finance — sahipsiz kayıtlar", () => {
   it("müşterisi olmayan kalıp satışı kredi kartı detayında görünmez ('—' satırı yok)", () => {
     render(<Finance customers={customers} services={[]} dealers={[]} partSales={partSales} yedekParcaSatislar={[]}

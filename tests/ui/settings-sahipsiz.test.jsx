@@ -23,7 +23,7 @@ function kur() {
   const setter = (k) => vi.fn((u) => { durum[k] = typeof u === "function" ? u(durum[k]) : u; });
   const setters = { setServices: setter("services"), setPartSales: setter("partSales"), setYedekParcaSatislar: setter("yedekParcaSatislar"), setPayments: setter("payments"), setPartStock: setter("partStock"), setPartStockLog: setter("partStockLog") };
   const utils = render(<SettingsSahipsiz
-    rawCustomers={durum.customers} rawServices={durum.services} rawPartSales={durum.partSales} rawYedekParcaSatislar={durum.yedekParcaSatislar}
+    rawCustomers={durum.customers} rawDealers={[{ id: 5, name: "Bayi" }]} rawServices={durum.services} rawPartSales={durum.partSales} rawYedekParcaSatislar={durum.yedekParcaSatislar}
     rawPayments={durum.payments} rawParts={[{ id: 7, ad: "125*1500 mm KONVEYÖR BANTI" }]} {...setters} />);
   return { durum, setters, utils };
 }
@@ -69,6 +69,20 @@ describe("Sahipsiz Kayıtlar aracı", () => {
     expect(durum.services.find(x => x.id === 10).customerId).toBe(1);
     expect(durum.partSales[0].customerId).toBe(1);
     expect(durum.payments[0].customerId).toBe(1);
+  });
+
+  it("bayisi olmayan satış 'Yedek Parça Satışı (bayi)' olarak listelenir ve 'Bayiye Bağla' alıcı bayiyi düzeltir", () => {
+    const durum = { yp: [{ id: 90, aliciTipi: "bayi", dealerId: 999, partId: "7", miktar: 4, birimFiyat: 10, currency: "TRY", tarih: "2026-06-01", tahsisler: [] }] };
+    const setYedekParcaSatislar = vi.fn((u) => { durum.yp = u(durum.yp); });
+    render(<SettingsSahipsiz rawCustomers={[{ id: 1, name: "Müşteri A" }]} rawDealers={[{ id: 5, name: "Ege Servis", city: "İzmir" }, { id: 6, name: "Çöpte Bayi", deletedAt: "x" }]}
+      rawYedekParcaSatislar={durum.yp} rawParts={[{ id: 7, ad: "Dişli" }]} setYedekParcaSatislar={setYedekParcaSatislar} />);
+    expect(screen.getByText("Yedek Parça Satışı (bayi)")).toBeTruthy();
+    fireEvent.click(screen.getByText("Bayiye Bağla"));
+    expect(screen.queryByText("Müşteri A")).toBeNull();   // müşteriler aday değil
+    expect(screen.queryByText("Çöpte Bayi")).toBeNull();  // çöpteki bayi aday değil
+    fireEvent.change(screen.getByPlaceholderText(/Bayi adı/), { target: { value: "izmir" } });
+    fireEvent.click(screen.getByText("Ege Servis"));
+    expect(durum.yp[0]).toMatchObject({ aliciTipi: "bayi", dealerId: 5 });
   });
 
   it("'Sil': yedek parça satışı çöpe taşınır ve parçası stoğa iade edilir", () => {

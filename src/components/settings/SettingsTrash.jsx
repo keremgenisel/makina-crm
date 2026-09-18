@@ -3,6 +3,7 @@ import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today, parcaAdi } from "../../lib/utils";
 import { yedekParcaDus } from "../../lib/yedekParcaStok";
 import { yedekParcaAlicisiMi } from "../../lib/musteriKaskad";
+import { yedekParcaBayininMi, bayiDosyasiMi } from "../../lib/bayiKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Section } from "./Section";
@@ -98,8 +99,24 @@ export const SettingsTrash = ({
     showToast("Ödeme kaydı geri alındı.");
   };
   const purgePayment = (pay) => { setPayments?.(p => p.filter(x => x.id !== pay.id)); showToast("Ödeme kaydı kalıcı olarak silindi."); };
-  const restoreDealer = (d) => { setDealers(p => p.map(x => x.id === d.id ? { ...x, deletedAt: undefined } : x)); showToast("Bayi geri alındı."); };
-  const purgeDealer = (d) => { setDealers(p => p.filter(x => x.id !== d.id)); showToast("Bayi kalıcı olarak silindi."); };
+  // Bayi kaskadı simetrisi (lib/bayiKaskad.js): aynı damgalı satışlar + bayi dosyaları birlikte döner/gider.
+  const kaskadBayiSatis = (d) => (x) => yedekParcaBayininMi(x, d.id) && x.deletedAt === d.deletedAt;
+  const kaskadBayiDosya = (d) => (x) => bayiDosyasiMi(x, d.id) && x.deletedAt === d.deletedAt;
+  const restoreDealer = (d) => {
+    setDealers(p => p.map(x => x.id === d.id ? { ...x, deletedAt: undefined } : x));
+    rawYedekParcaSatislar.filter(kaskadBayiSatis(d)).forEach(yedekParcaStokYenidenDus);
+    setYedekParcaSatislar?.(p => p.map(x => kaskadBayiSatis(d)(x) ? { ...x, deletedAt: undefined } : x));
+    setDosyalar?.(p => p.map(x => kaskadBayiDosya(d)(x) ? { ...x, deletedAt: undefined } : x));
+    showToast("Bayi geri alındı.");
+  };
+  const purgeDealer = (d) => {
+    setDealers(p => p.filter(x => x.id !== d.id));
+    setYedekParcaSatislar?.(p => p.filter(x => !kaskadBayiSatis(d)(x)));
+    // Bayi dosyaları (bu bayiye ait tüm künyeler) fiziksel kopyalarıyla birlikte gider — sahipsiz künye kalmasın
+    rawDosyalar.filter(x => bayiDosyasiMi(x, d.id)).forEach(x => window.appFiles?.remove?.(x.dosyaAdi));
+    setDosyalar?.(p => p.filter(x => !bayiDosyasiMi(x, d.id)));
+    showToast("Bayi kalıcı olarak silindi.");
+  };
   const restoreStockItem = (s) => { setStock?.(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x)); showToast("Stok kaydı geri alındı."); };
   const purgeStockItem = (s) => { setStock?.(p => p.filter(x => x.id !== s.id)); showToast("Stok kaydı kalıcı olarak silindi."); };
   const restoreNote = (n) => { setNotes?.(p => p.map(x => x.id === n.id ? { ...x, deletedAt: undefined } : x)); showToast("Not geri alındı."); };
@@ -135,8 +152,9 @@ export const SettingsTrash = ({
     // Çöpten kalıcı silinecek müşterilerin id'leri — bunlara bağlı görüşme/dosyalar kendileri
     // soft-delete edilmemiş olsa bile silinmeli (yoksa yetim FK → save çöker, bkz. purgeCustomer).
     const silinenMusteriIdler = new Set(rawCustomers.filter(x => x.deletedAt).map(x => x.id));
+    const silinenBayiIdler = new Set(rawDealers.filter(x => x.deletedAt).map(x => x.id));
     const gorusmeSil = (g) => g.deletedAt || silinenMusteriIdler.has(g.customerId);
-    const dosyaSil = (d) => d.deletedAt || silinenMusteriIdler.has(d.customerId);
+    const dosyaSil = (d) => d.deletedAt || silinenMusteriIdler.has(d.customerId) || (d.customerId == null && silinenBayiIdler.has(d.dealerId));
     setCustomers(p => p.filter(x => !x.deletedAt));
     setServices(p => p.filter(x => !x.deletedAt));
     setPartSales?.(p => p.filter(x => !x.deletedAt));

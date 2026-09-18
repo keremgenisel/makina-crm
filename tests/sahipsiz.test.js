@@ -5,6 +5,7 @@ import { sahipsizKayitlar, sahipsizHaric, musteriBagi, sahipsizMi, musteriIdSeti
 const customers = [{ id: 1, name: "Var" }, { id: 2, name: "Çöpte", deletedAt: "2026-09-01" }];
 const veri = {
   customers,
+  dealers: [{ id: 5, name: "Bayi" }],
   services: [{ id: 10, customerId: 1 }, { id: 11, customerId: 999 }, { id: 12, customerId: 999, deletedAt: "x" }, { id: 13, customerId: 2 }, { id: 14 }],
   partSales: [{ id: 20, customerId: 999, tur: "Kalıp" }],
   yedekParcaSatislar: [
@@ -28,6 +29,30 @@ describe("sahipsizKayitlar (araç)", () => {
     expect(musteriBagi("servis", { id: 1 })).toBeNull();
     expect(musteriBagi("yedekParca", { aliciTipi: "bayi", musteriId: 5 })).toBeNull();
     expect(sahipsizMi("servis", { customerId: "1" }, musteriIdSeti([{ id: 1 }]))).toBe(false); // string/number farkı eşleşir
+  });
+});
+
+describe("bayi bağı", () => {
+  const dealers = [{ id: 5, name: "Bayi" }, { id: 6, name: "Çöpte Bayi", deletedAt: "x" }];
+  const yp = [
+    { id: 1, aliciTipi: "bayi", dealerId: 5 },
+    { id: 2, aliciTipi: "bayi", dealerId: 999 },              // bayisi yok
+    { id: 3, dealerId: 999 },                                  // eski kayıt (aliciTipi yok) → bayi
+    { id: 4, aliciTipi: "bayi", dealerId: 6 },                 // çöpteki bayi
+    { id: 5, disFirma: true, dealerId: 999, disFirmaAd: "D" }, // dış firma → bağ yok
+    { id: 6, aliciTipi: "musteri", musteriId: 1, dealerId: 999 },
+  ];
+  it("araç: bayisi hiçbir bayiyle eşleşmeyen bayi satışları 'yedekParcaBayi' türüyle listelenir (çöpteki bayi eşleşme)", () => {
+    const l = sahipsizKayitlar({ customers: [{ id: 1 }], dealers, yedekParcaSatislar: yp });
+    expect(l.map(x => `${x.tur}:${x.kayit.id}`)).toEqual(["yedekParcaBayi:2", "yedekParcaBayi:3"]);
+    expect(l.every(x => x.bayiId === 999)).toBe(true);
+  });
+  it("süzgeç: canlı bayi kümesinde olmayan bayi satışları düşer; dealers verilmezse bayi denetimi yok", () => {
+    const r = sahipsizHaric([{ id: 1 }], { yedekParcaSatislar: yp }, dealers.filter(d => !d.deletedAt));
+    expect(r.yedekParcaSatislar.map(s => s.id)).toEqual([1, 5, 6]); // 4: çöpteki bayi canlı değil → düşer
+    expect(r.sahipsizAdet).toBe(3);
+    const r2 = sahipsizHaric([{ id: 1 }], { yedekParcaSatislar: yp });
+    expect(r2.yedekParcaSatislar).toHaveLength(6);
   });
 });
 

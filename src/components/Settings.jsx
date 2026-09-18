@@ -291,7 +291,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
 
       {settingsTab === "sahipsiz" && (
         <SettingsSahipsiz
-          rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawYedekParcaSatislar={rawYedekParcaSatislar} rawPayments={rawPayments} rawParts={rawParts}
+          rawCustomers={rawCustomers} rawDealers={rawDealers} rawServices={rawServices} rawPartSales={rawPartSales} rawYedekParcaSatislar={rawYedekParcaSatislar} rawPayments={rawPayments} rawParts={rawParts}
           setServices={setServices} setPartSales={setPartSales} setYedekParcaSatislar={setYedekParcaSatislar} setPayments={setPayments}
           setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           serverPermissions={serverPermissions} showToast={showToast} />

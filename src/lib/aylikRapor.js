@@ -55,7 +55,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     partSales: partSales.filter(p => !p.deletedAt),
     yedekParcaSatislar: yedekParcaSatislar.filter(s => !s.deletedAt),
     payments: payments.filter(p => !p.deletedAt),
-  });
+  }, dealers.filter(d => !d.deletedAt));
   const canliServisler = sahipsiz.services;
   const canliKalipSatislari = sahipsiz.partSales;
   const canliOdemeler = sahipsiz.payments;

@@ -17,8 +17,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
   // Sahipsiz kayıtlar (müşterisi artık olmayan servis/kalıp/yedek parça/ödeme) ekran hesaplarına
   // ve aylık rapora girmez — ikisi aynı süzgeci (lib/sahipsiz.js) kullanır ki rakamlar ayrışmasın.
   const { services, partSales, yedekParcaSatislar, payments } = useMemo(
-    () => sahipsizHaric(customers, { services: servicesHam, partSales: partSalesHam, yedekParcaSatislar: yedekParcaHam, payments: paymentsHam }),
-    [customers, servicesHam, partSalesHam, yedekParcaHam, paymentsHam]);
+    () => sahipsizHaric(customers, { services: servicesHam, partSales: partSalesHam, yedekParcaSatislar: yedekParcaHam, payments: paymentsHam }, dealers),
+    [customers, dealers, servicesHam, partSalesHam, yedekParcaHam, paymentsHam]);
   // Tarih aralığı pilleri kullanıcı iznine bağlı — izinli aralık listesi
   const izinliAraliklar = Object.keys(RANGE_LABELS).filter(k => canDoFin("fin_range_" + k));
   const factoryName = factory?.name || "Altuntaş Makina";

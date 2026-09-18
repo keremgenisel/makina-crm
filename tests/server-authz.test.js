@@ -182,6 +182,10 @@ describe("sekme (tabs) düzeyi yazma kısıtı", () => {
     // Stok grubu açıkça kısıtlı (stockActions: []) cust_delete kullanıcısı: bölüm düzeyi yedek parça
     // yazımına izin verilir (kaskad), kayıt düzeyi kaskad-dışı silme yine reddedilir.
     expect(yazmaYetkisiVar(yalnizSil, "user", ["customers", "services", "gorusmeler", "dosyalar", "yedekParcaSatislar"], eski, yeni).ok).toBe(true);
+    // Ebeveyn bölümü (customers) bu yazımda hiç gönderilmemişse dokunulmamıştır → kaskad DEĞİL
+    // (regresyon: gönderilmeyen bölüm "yok" sayılıp kaskad kabul ediliyordu)
+    const yeniEbeveynsiz = { services: yeni.services, yedekParcaSatislar: yeni.yedekParcaSatislar };
+    expect(eylemDenetimi(eski, yeniEbeveynsiz, yalnizSil, "user").ok).toBe(false);
     // Müşteri yenide hiç yoksa (kalıcı/hard silme) da kaskad sayılır
     const yeniHard = { ...yeni, customers: [] };
     expect(eylemDenetimi(eski, yeniHard, yalnizSil, "user").ok).toBe(true);
@@ -191,6 +195,76 @@ describe("sekme (tabs) düzeyi yazma kısıtı", () => {
     const rIki = eylemDenetimi(eskiIki, yeniIki, yalnizSil, "user");
     expect(rIki.ok).toBe(false);
     expect(rIki.reddedilenBolum).toBe("services");
+  });
+
+  it("bayi silme kaskadı: yalnız dealer_delete ile damgalanan bayi satışları + bayi dosyaları 403 almaz; bayi silinmiyorsa aranır", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const eski = {
+      dealers: [{ id: 9, name: "B" }],
+      yedekParcaSatislar: [{ id: 30, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 2 }, { id: 31, dealerId: 9, partId: "7", miktar: 1 }, { id: 32, aliciTipi: "musteri", musteriId: 1, dealerId: 9 }],
+      dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf" }],
+    };
+    const yeni = {
+      dealers: [{ id: 9, name: "B", deletedAt: ts }],
+      yedekParcaSatislar: [{ ...eski.yedekParcaSatislar[0], deletedAt: ts }, { ...eski.yedekParcaSatislar[1], deletedAt: ts }, eski.yedekParcaSatislar[2]],
+      dosyalar: [{ ...eski.dosyalar[0], deletedAt: ts }],
+    };
+    // Olağan bayi kullanıcısı (stok grubu tanımsız): kaskad + stok iadesi + bölüm düzeyi geçer
+    const olagan = JSON.stringify({ tabs: ["dashboard", "dealers"], customerActions: [], dealerActions: ["dealer_delete"] });
+    expect(eylemDenetimi(eski, yeni, olagan, "user").ok).toBe(true);
+    expect(yazmaYetkisiVar(olagan, "user", ["dealers", "yedekParcaSatislar", "dosyalar", "partStock", "partStockLog"], eski, yeni).ok).toBe(true);
+    // Stok grubu açıkça kısıtlı (yedek_parca_delete YOK): yedek parça bölümü kaskad için yine yazılabilir,
+    // kayıt düzeyinde yalnız gerçek kaskad geçer
+    const stoksuz = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
+    expect(yazmaYetkisiVar(stoksuz, "user", ["dealers", "yedekParcaSatislar", "dosyalar"], eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, stoksuz, "user").ok).toBe(true);
+    // bayi silinmiyor → satış silme kaskad değil → 403
+    const yeniKaskadsiz = { ...yeni, dealers: eski.dealers };
+    const r = eylemDenetimi(eski, yeniKaskadsiz, stoksuz, "user");
+    expect(r.ok).toBe(false);
+    expect(r.islem).toBe("sil");
+    // müşteri alımı (id 32) bayi kaskadıyla silinemez
+    const yeniMusteri = { ...yeni, yedekParcaSatislar: yeni.yedekParcaSatislar.map(s => s.id === 32 ? { ...s, deletedAt: ts } : s) };
+    expect(eylemDenetimi(eski, yeniMusteri, stoksuz, "user").ok).toBe(false);
+    // dealers bölümü bu yazımda hiç gönderilmemişse kaskad değil
+    const yeniBayisiz = { yedekParcaSatislar: yeni.yedekParcaSatislar, dosyalar: yeni.dosyalar };
+    expect(eylemDenetimi(eski, yeniBayisiz, stoksuz, "user").ok).toBe(false);
+    // bayi yenide hiç yoksa (hard silme) da kaskad
+    expect(eylemDenetimi(eski, { ...yeni, dealers: [] }, stoksuz, "user").ok).toBe(true);
+    // başka bayinin satışı aynı yazımda damgalanırsa kaskad değil → 403
+    const eskiIki = { ...eski, dealers: [...eski.dealers, { id: 10, name: "C" }], yedekParcaSatislar: [...eski.yedekParcaSatislar, { id: 40, aliciTipi: "bayi", dealerId: 10 }] };
+    const yeniIki = { ...yeni, dealers: [...yeni.dealers, { id: 10, name: "C" }], yedekParcaSatislar: [...yeni.yedekParcaSatislar, { id: 40, aliciTipi: "bayi", dealerId: 10, deletedAt: ts }] };
+    const rIki = eylemDenetimi(eskiIki, yeniIki, stoksuz, "user");
+    expect(rIki.ok).toBe(false);
+    expect(rIki.reddedilenBolum).toBe("yedekParcaSatislar");
+  });
+
+  it("bayi dosyası künyesi bayi grubunun izinleriyle denetlenir (dealer_dosya_add/del), müşteri dosyası müşteri grubuyla", () => {
+    const bayici = JSON.stringify({ tabs: ["dashboard", "dealers"], customerActions: [], dealerActions: ["dealer_dosya_add", "dealer_dosya_del"] });
+    const eski = { dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf" }, { id: 51, customerId: 1, ad: "m.pdf" }] };
+    // bayi dosyası ekle + sil → serbest
+    const yeni = { dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf", deletedAt: "x" }, { id: 51, customerId: 1, ad: "m.pdf" }, { id: 52, dealerId: 9, ad: "yeni.pdf" }] };
+    expect(eylemDenetimi(eski, yeni, bayici, "user").ok).toBe(true);
+    expect(yazmaYetkisiVar(bayici, "user", ["dosyalar"], eski, yeni).ok).toBe(true); // müşteri grubu boş olsa da bölüm yazılabilir
+    // aynı yazımda müşteri dosyası da değişiyorsa (karışık) bölüm düzeyinde reddedilir; blob yoksa da (katı kural)
+    const karisik = { dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf", deletedAt: "x" }, { id: 51, customerId: 1, ad: "m2.pdf" }] };
+    expect(yazmaYetkisiVar(bayici, "user", ["dosyalar"], eski, karisik).ok).toBe(false);
+    expect(yazmaYetkisiVar(bayici, "user", ["dosyalar"], {}, {}).ok).toBe(false);
+    expect(yazmaYetkisiVar(bayici, "user", ["dosyalar"], eski, eski).ok).toBe(false); // değişiklik yok → katı kural
+    // müşteri dosyasını silmek → cust_dosya_del yok → 403
+    const yeniM = { dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf" }, { id: 51, customerId: 1, ad: "m.pdf", deletedAt: "x" }] };
+    const r = eylemDenetimi(eski, yeniM, bayici, "user");
+    expect(r.ok).toBe(false);
+    expect(r.gerekli).toBe("cust_dosya_del");
+    // bayi izni olmayan müşteri kullanıcısı bayi dosyasını silemez / ekleyemez
+    const musterici = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_dosya_del"], dealerActions: [] });
+    const yeniBayiSil = { dosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf", deletedAt: "x" }, { id: 51, customerId: 1, ad: "m.pdf" }] };
+    const r2 = eylemDenetimi(eski, yeniBayiSil, musterici, "user");
+    expect(r2.ok).toBe(false);
+    expect(r2.gerekli).toBe("dealer_dosya_del");
+    const r3 = eylemDenetimi(eski, yeni, musterici, "user"); // yeni bayi dosyası (52) → ekle izni
+    expect(r3.ok).toBe(false);
+    expect(r3.gerekli).toBe("dealer_dosya_add");
   });
 
   it("müşteri silinmeden aynı çocuk silmeler kaskad sayılmaz → kendi izinleri aranır", () => {

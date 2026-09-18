@@ -181,6 +181,75 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(sonuc.some(x => x.id === 31)).toBe(true);
   });
 
+  // Bayi kaskadı simetrisi (lib/bayiKaskad.js)
+  it("bayi 'Geri Al' aynı damgalı yedek parça satışlarını ve bayi dosyasını geri alır, stoğu yeniden düşer", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: ts };
+    const durum = {
+      yp: [
+        { id: 30, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 2, deletedAt: ts, tahsisler: [] },
+        { id: 31, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, deletedAt: "2026-08-01T00:00:00.000Z", tahsisler: [] }, // ayrı silinmiş → kalır
+        { id: 32, aliciTipi: "musteri", musteriId: 1, dealerId: 9, partId: "7", miktar: 1, deletedAt: ts, tahsisler: [] },          // müşteri alımı → bayi kaskadı değil
+      ],
+      dosya: [{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf", deletedAt: ts }, { id: 51, dealerId: 9, customerId: 1, ad: "m.pdf", dosyaAdi: "m.pdf", deletedAt: ts }],
+      stok: [{ partId: "7", miktar: 10 }], log: [],
+    };
+    const setter = (k) => vi.fn((u) => { durum[k] = u(durum[k]); });
+    renderTrash({
+      rawDealers: [bayi], rawYedekParcaSatislar: durum.yp, rawDosyalar: durum.dosya, rawParts: [{ id: 7, ad: "Dişli" }],
+      partStock: durum.stok, partStockLog: durum.log,
+      setDealers: setter("dealers"), setYedekParcaSatislar: setter("yp"), setDosyalar: setter("dosya"), setPartStock: setter("stok"), setPartStockLog: setter("log"),
+    });
+    durum.dealers = [bayi];
+    fireEvent.click(within(screen.getByText("Kaskad Bayi").closest("tr")).getByText("Geri Al"));
+    expect(durum.yp.find(x => x.id === 30).deletedAt).toBeUndefined();
+    expect(durum.yp.find(x => x.id === 31).deletedAt).toBe("2026-08-01T00:00:00.000Z");
+    expect(durum.yp.find(x => x.id === 32).deletedAt).toBe(ts);
+    expect(durum.dosya.find(x => x.id === 50).deletedAt).toBeUndefined();
+    expect(durum.dosya.find(x => x.id === 51).deletedAt).toBe(ts);
+    expect(durum.stok.find(s => s.partId === "7").miktar).toBe(8);
+  });
+
+  it("bayi 'Kalıcı Sil' aynı damgalı satışları ve bayinin tüm dosyalarını (fiziksel dahil) diziden çıkarır", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: ts };
+    let ypSonuc = null, dosyaSonuc = null;
+    const remove = vi.fn();
+    window.appFiles = { remove };
+    const setYedekParcaSatislar = vi.fn((u) => { ypSonuc = u([
+      { id: 30, aliciTipi: "bayi", dealerId: 9, deletedAt: ts, tahsisler: [] },
+      { id: 33, aliciTipi: "bayi", dealerId: 10, tahsisler: [] },
+    ]); });
+    const setDosyalar = vi.fn((u) => { dosyaSonuc = u([{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf" }, { id: 52, dealerId: 10, ad: "b.pdf", dosyaAdi: "b.pdf" }]); });
+    renderTrash({ rawDealers: [bayi], rawDosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf" }], setDealers: noop, setYedekParcaSatislar, setDosyalar });
+    fireEvent.click(within(screen.getByText("Kaskad Bayi").closest("tr")).getByText("Kalıcı Sil"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(ypSonuc.map(x => x.id)).toEqual([33]);
+    expect(dosyaSonuc.map(x => x.id)).toEqual([52]);
+    expect(remove).toHaveBeenCalledWith("a.pdf");
+    delete window.appFiles;
+  });
+
+  it("'Çöp Kutusunu Boşalt': çöpteki bayinin damgasız (eski) dosyaları da fiziksel kopyasıyla gider, başka bayininki kalır", () => {
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: "2026-09-18T10:00:00.000Z" };
+    let dosyaSonuc = null;
+    const remove = vi.fn();
+    window.appFiles = { remove };
+    const dosyalar = [
+      { id: 50, dealerId: 9, ad: "eski.pdf", dosyaAdi: "eski.pdf" },                       // damgasız ama bayi çöpte → gider
+      { id: 51, dealerId: 10, ad: "b.pdf", dosyaAdi: "b.pdf" },                            // başka bayi → kalır
+      { id: 52, customerId: 3, dealerId: 9, ad: "m.pdf", dosyaAdi: "m.pdf" },              // müşteri dosyası (bayi ref'li) → kalır
+    ];
+    const setDosyalar = vi.fn((u) => { dosyaSonuc = u(dosyalar); });
+    renderTrash({ rawDealers: [bayi], rawDosyalar: dosyalar, setDealers: noop, setDosyalar });
+    fireEvent.click(screen.getByText("Çöp Kutusunu Boşalt"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(dosyaSonuc.map(x => x.id)).toEqual([51, 52]);
+    expect(remove).toHaveBeenCalledWith("eski.pdf");
+    expect(remove).not.toHaveBeenCalledWith("b.pdf");
+    delete window.appFiles;
+  });
+
   it("parça tipi 'Kalıcı Sil' sonrası setPartTypeDefs kaydı diziden çıkarır", () => {
     let sonuc = null;
     const setPartTypeDefs = vi.fn((updater) => { sonuc = updater([{ id: "tip_1", ad: "Conta", deletedAt: "2026-07-20T10:00:00.000Z" }]); });

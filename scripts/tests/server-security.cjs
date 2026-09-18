@@ -41,6 +41,9 @@ const STOK_EDIT   = JSON.stringify({ tabs: ["stock"], stockActions: ["yedek_parc
 const SILICI = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_delete"] });
 // Aynısı ama stok grubu açıkça KISITLI (admin daraltmış): kaskad dışı yedek parça silme kayıt düzeyinde reddedilmeli.
 const SILICI_STOKSUZ = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_delete"] });
+// Bayi silici: yalnız bayi silme izni — bayi kaskadı (satış + bayi dosyası) senaryosu.
+// (stok grubu açıkça kısıtlı: aksi hâlde stok grubu tanımsız = yedek_parca_delete serbest sayılır, kaskad-dışı ret doğrulanamaz)
+const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
 let fail = 0;
 const check = (name, ok) => { console.log((ok ? "PASS" : "FAIL") + "  " + name); if (!ok) fail++; };
@@ -63,6 +66,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("stokEdit",    bcrypt.hashSync("stok123", 10), "user", STOK_EDIT);
   dbmod.createUser("silici",      bcrypt.hashSync("sil123", 10), "user", SILICI);
   dbmod.createUser("siliciStoksuz", bcrypt.hashSync("sil123", 10), "user", SILICI_STOKSUZ);
+  dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -250,6 +254,30 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const k2Ts = new Date().toISOString();
   check("stok grubu kısıtlı cust_delete kullanıcısı: müşteri + alıcı-müşteri yedek parça kaskadı → 200",
     (await postData({ ...kaskadBolum(k2), customers: k2.customers.map(c => c.id === 60 ? { ...c, deletedAt: k2Ts } : c), yedekParcaSatislar: k2.yedekParcaSatislar.map(s => s.id === 61 ? { ...s, deletedAt: k2Ts } : s) }, k2.dataVersion, siliciStoksuzTok)).status === 200);
+
+  // ── Bayi silme kaskadı uçtan uca: yalnız dealer_delete ile bayi + alıcısı bayi olan satış + bayi
+  // dosyası aynı yazımda damgalanır; bayi silinmeden satış silmek reddedilir.
+  const bayiSiliciTok = (await login("bayiSilici", "sil123")).body.token;
+  await postData({
+    dealers: [{ id: 2, name: "Bayi" }, { id: 70, name: "Kaskad Bayi" }],
+    yedekParcaSatislar: [...(await (await api("/api/data", {}, adminTok)).json()).yedekParcaSatislar, { id: 71, aliciTipi: "bayi", dealerId: 70, partId: "1", miktar: 1, birimFiyat: 9, currency: "TL", tahsisler: [] }],
+    dosyalar: [...(await (await api("/api/data", {}, adminTok)).json()).dosyalar, { id: 72, dealerId: 70, ad: "b.pdf", dosyaAdi: "b.pdf", refType: "bayi", refId: 70 }],
+  }, await curVer(adminTok), adminTok);
+  const bk = await (await api("/api/data", {}, bayiSiliciTok)).json();
+  const bkTs = new Date().toISOString();
+  const bayiBolum = (b) => ({ dealers: b.dealers, yedekParcaSatislar: b.yedekParcaSatislar, dosyalar: b.dosyalar });
+  check("bayi kaskadsız satış silme (bayi duruyor): dealer_delete tek başına yetmez → 403",
+    (await postData({ ...bayiBolum(bk), yedekParcaSatislar: bk.yedekParcaSatislar.map(s => s.id === 71 ? { ...s, deletedAt: bkTs } : s) }, bk.dataVersion, bayiSiliciTok)).status === 403);
+  const bkYeni = {
+    ...bayiBolum(bk),
+    dealers: bk.dealers.map(d => d.id === 70 ? { ...d, deletedAt: bkTs } : d),
+    yedekParcaSatislar: bk.yedekParcaSatislar.map(s => s.id === 71 ? { ...s, deletedAt: bkTs } : s),
+    dosyalar: bk.dosyalar.map(d => d.id === 72 ? { ...d, deletedAt: bkTs } : d),
+  };
+  check("bayi silme kaskadı: yalnız dealer_delete ile 200", (await postData(bkYeni, await curVer(bayiSiliciTok), bayiSiliciTok)).status === 200);
+  const bkSonra = await (await api("/api/data", {}, adminTok)).json();
+  check("bayi kaskadı kalıcı: bayi/satış/dosya aynı damgayla çöpte",
+    bkSonra.dealers.find(d => d.id === 70)?.deletedAt === bkTs && bkSonra.yedekParcaSatislar.find(s => s.id === 71)?.deletedAt === bkTs && bkSonra.dosyalar.find(d => d.id === 72)?.deletedAt === bkTs);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek

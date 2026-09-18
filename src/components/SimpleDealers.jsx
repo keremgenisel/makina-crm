@@ -7,6 +7,8 @@ import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
 import { yeniYedekParcaSatisCoklu } from "../lib/yedekParcaSatis";
+import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
+import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayininMi, bayiDosyasiMi } from "../lib/bayiKaskad";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
@@ -245,7 +247,17 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   };
   const confirmDel = () => {
     const d = dealers.find(x => x.id === confirmId);
-    setDealers(p => withDeleted(p, x => x.id === confirmId));
+    // Bayi silme kaskadı (lib/bayiKaskad.js): alıcısı bu bayi olan yedek parça satışları (parçalar
+    // stoğa iade, tahsisleri satışla birlikte) ve bayi dosyaları AYNI damgayla çöpe — Çöp Kutusu
+    // "geri al / kalıcı sil" aynı damgayla birlikte işler. Adla bağlı tarihçe (servis işlem firması) kalır.
+    const ts = new Date().toISOString();
+    setDealers(p => withDeleted(p, x => x.id === confirmId, ts));
+    if (setYedekParcaSatislar) {
+      yedekParcaSatislar.filter(s => !s.deletedAt && yedekParcaBayininMi(s, confirmId))
+        .forEach(s => yedekParcaGeriAl(s.id, setPartStock, setPartStockLog));
+      setYedekParcaSatislar(p => yedekParcaBayiKaskad(p, confirmId, ts));
+    }
+    if (setDosyalar) setDosyalar(p => withDeleted(p, x => bayiDosyasiMi(x, confirmId) && !x.deletedAt, ts));
     setConfirmId(null);
     logAction({ serverPermissions, action: "silindi", entity: "bayi", entityId: confirmId, entityName: d?.name });
     showToast("Bayi silindi.");
@@ -768,13 +780,24 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
         />
       )}
 
-      {confirmId && (
-        <ConfirmDialog
-          message={`"${dealers.find(d => d.id === confirmId)?.name || ""}" bayisi Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
-          onConfirm={confirmDel}
-          onCancel={() => setConfirmId(null)}
-        />
-      )}
+      {confirmId && (() => {
+        const silinecek = dealers.find(d => d.id === confirmId);
+        const sayilar = bayiBagliSayilar(confirmId, { yedekParcaSatislar, dosyalar });
+        const ozet = bayiBagliOzeti(sayilar);
+        const alacak = Object.entries(sayilar.acikAlacak).filter(([, v]) => v > 0).map(([c, v]) => fmtCur(v, c)).join(" + ");
+        return (
+          <ConfirmDialog
+            message={
+              `"${silinecek?.name || ""}" bayisi Çöp Kutusu'na taşınacak. ` +
+              (ozet ? `Birlikte taşınacak: ${ozet}. ` : "Bağlı kayıt yok. ") +
+              (sayilar.odenmemis > 0 ? `Dikkat: ${sayilar.odenmemis} ödenmemiş satışın ${alacak} tutarındaki alacağı da listeden düşer. ` : "") +
+              "Ayarlar'dan 30 gün içinde geri alabilirsiniz."
+            }
+            onConfirm={confirmDel}
+            onCancel={() => setConfirmId(null)}
+          />
+        );
+      })()}
 
       {modal && (
         <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}>
