@@ -61,8 +61,11 @@ Her push/PR'da ve haftalık koşar, sonuçlar Security > Code scanning alerts'te
 - `js/missing-rate-limiting` (33): tüm `/api` uçlarına `express-rate-limit` ile genel sınır
   (IP başına 600/dk) eklendi; CodeQL yalnız tanıdığı kütüphaneleri sayar, özel `rateLimit.cjs`
   (giriş kademeli kilidi, `/api/data` 60/dk) tanınmaz ama sürüyor.
-- `js/type-confusion-through-parameter-tampering` (3): dosya yükleme başlıkları `String(...)`
-  ile metne zorlandı.
+- `js/type-confusion-through-parameter-tampering` (3): işaretlenen ifade `req.body` (`buf.length`)
+  — uç `express.raw` ile bağlı, gövde daima Buffer ve `Buffer.isBuffer` denetimi dizi/metin gövdeyi
+  400 ile reddediyor; CodeQL `Buffer.isBuffer`'ı tip koruması saymadığı için **yanlış pozitif**,
+  gerekçeyle kapatıldı (yeniden açılırsa aynı gerekçeyle kapatın). Bu arada dosya yükleme
+  başlıkları da (`X-Dosya-Adi/-Firma`) yalnız `typeof === "string"` kabul eder hale getirildi.
 - `actions/missing-workflow-permissions` (4): iş akışlarına `permissions: contents: read`.
 
 ## 3. Claude Code skill'leri (`.claude/skills/`)
