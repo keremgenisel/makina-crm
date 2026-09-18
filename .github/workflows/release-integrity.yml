@@ -1,0 +1,64 @@
+# Sürüm bütünlüğü — bir GitHub Release yayınlanınca otomatik güncellemenin ihtiyaç duyduğu üç
+# dosyanın (Setup .exe, .blockmap, latest.yml) var olduğunu ve latest.yml'deki sha512 + size'ın
+# yüklenen .exe ile birebir eşleştiğini doğrular. scripts/publish-release.cjs yayın anında aynı
+# kontrolü yapar; bu, GitHub'ın asset yüklemede 500/kesik yükleme verdiği günler için (v3.33.0'da
+# yaşandı) sunucu tarafında ikinci bir göz. Eşleşmezse iş kırmızıya düşer → müşteriye bozuk
+# güncelleme gitmeden fark edilir.
+name: release-integrity
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Doğrulanacak sürüm etiketi (örn. v3.38.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+    steps:
+      - name: Sürüm dosyalarını indir (asset'ler yüklenene kadar bekle)
+        # "published" olayı, yayın betiği asset'leri yüklemeyi bitirmeden gelir (release önce oluşur,
+        # dosyalar ardından yüklenir) → ilk denemede "no assets" olur. 3 dosya görünene kadar 30 sn'de bir,
+        # en çok 10 dk bekle; süre dolarsa gerçekten eksik demektir → başarısız.
+        run: |
+          mkdir -p rel && cd rel
+          for i in $(seq 1 20); do
+            N=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[] | select(.state == "uploaded")] | length' 2>/dev/null || echo 0)
+            echo "deneme $i: yüklenmiş asset sayısı = $N"
+            if [ "$N" -ge 3 ]; then break; fi
+            sleep 30
+          done
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p "*.exe" -p "*.blockmap" -p "latest.yml"
+          ls -la
+      - name: Üç dosya var mı, latest.yml sha512/size .exe ile eşleşiyor mu
+        run: |
+          cd rel
+          EXE=$(ls *.exe | head -1); BM=$(ls *.blockmap | head -1)
+          test -n "$EXE" || { echo "Setup .exe yok"; exit 1; }
+          test -n "$BM" || { echo ".blockmap yok"; exit 1; }
+          test -f latest.yml || { echo "latest.yml yok"; exit 1; }
+          node -e '
+            const fs = require("fs"), crypto = require("crypto");
+            const exe = process.argv[1];
+            const yml = fs.readFileSync("latest.yml", "utf8");
+            const url = (yml.match(/^\s*-\s*url:\s*(.+)$/m) || [])[1]?.trim();
+            const sha = (yml.match(/^sha512:\s*(.+)$/m) || [])[1]?.trim();
+            const size = Number((yml.match(/^\s*size:\s*(\d+)$/m) || [])[1]);
+            const h = crypto.createHash("sha512").update(fs.readFileSync(exe)).digest("base64");
+            const st = fs.statSync(exe);
+            const hata = [];
+            if (url !== exe) hata.push(`latest.yml url (${url}) ile asset adı (${exe}) farklı`);
+            if (sha !== h) hata.push("sha512 eşleşmiyor (bozuk/kesik yükleme)");
+            if (size !== st.size) hata.push(`size eşleşmiyor: latest.yml ${size}, exe ${st.size}`);
+            if (hata.length) { console.error("BÜTÜNLÜK HATASI:\n - " + hata.join("\n - ")); process.exit(1); }
+            console.log(`OK: ${exe} · ${st.size} B · sha512 eşleşti · latest.yml tutarlı`);
+          ' "$EXE"

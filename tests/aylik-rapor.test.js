@@ -96,12 +96,14 @@ describe("hesaplaAylikRapor", () => {
 describe("hesaplaAylikRapor firma firma detay dizileri", () => {
   it("satisDetay: o ay makina satılan her firmayı model/tutar/fatura tipiyle listeler", () => {
     expect(r.satisDetay).toHaveLength(1); // sadece A (B mayıs, C silinmiş, D 2.el)
-    expect(r.satisDetay[0]).toMatchObject({ firma: "A", model: "AK100", faturaTipi: "Faturalı" });
+    expect(r.satisDetay[0]).toMatchObject({ firma: "A", model: "AK100", faturaTipi: "Faturalı Yurtiçi" });
     expect(r.satisDetay[0].tutar).toEqual({ TRY: 800000 });
   });
 
-  it("servisDetay: her servis kaydını firma + işçilik/parça/KDV kırılımıyla verir", () => {
-    expect(r.servisDetay).toHaveLength(3);
+  it("servisDetay: Altuntaş'ın yaptığı her servisi firma + işçilik/parça/KDV kırılımıyla verir; dış firma servisi listede yok", () => {
+    // id12 Ege Servis (bizim yapmadığımız servis) üst tabloda yok — yalnız anlaşmalı parça tablosunda görünür
+    expect(r.servisDetay).toHaveLength(2);
+    expect(r.servisDetay.some(x => x.islemFirma === "Ege Servis")).toBe(false);
     const s10 = r.servisDetay.find(x => x.tip === "Garanti Dışı" && x.islemFirma === "Altuntaş Makina");
     expect(s10).toMatchObject({ firma: "A", odendi: false });
     expect(s10.iscilik).toEqual({ TRY: 5000 });
@@ -111,11 +113,20 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     expect(s11.iscilik).toEqual({ TRY: 0 });
   });
 
-  it("extraKalipDetay/yedekParcaDetay: alan firmaları listeler, başka ay hariç", () => {
+  it("ücretsiz servis: fiyat yoksa ucretsiz=true; ücretli/ücretsiz sayıları", () => {
+    // id10 Garanti Dışı Altuntaş 5000 → ücretli; id11 Garanti İçi → ücretsiz; id12 Ege Servis (Altuntaş değil, parça yok) → ücretsiz
+    expect(r.servisAdet).toBe(3);
+    expect(r.servisUcretliAdet).toBe(1);
+    expect(r.servisUcretsizAdet).toBe(2);
+    expect(r.servisDetay.find(x => x.tip === "Garanti İçi").ucretsiz).toBe(true);
+    expect(r.servisDetay.find(x => x.tip === "Garanti Dışı" && x.islemFirma === "Altuntaş Makina").ucretsiz).toBe(false);
+  });
+
+  it("extraKalipDetay: alan firmaları listeler, başka ay hariç (legacy yedek parça yolu kaldırıldı)", () => {
     expect(r.extraKalipDetay).toHaveLength(1);
-    expect(r.extraKalipDetay[0]).toMatchObject({ firma: "A", adet: 1 });
+    expect(r.extraKalipDetay[0]).toMatchObject({ firma: "A", adet: 1, teslimSekli: "Kargo" });
     expect(r.extraKalipDetay[0].tutar).toEqual({ TRY: 25000 });
-    expect(r.yedekParcaDetay).toHaveLength(0);
+    expect(r.yedekParcaDetay).toBeUndefined(); // legacy alan artık dönmüyor
   });
 
   it("tahsilatDetay: kimden tahsil edildiğini yöntemle listeler, bekleyen çek ayrı dizide", () => {
@@ -123,6 +134,8 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     expect(r.tahsilatDetay).toHaveLength(3);
     expect(r.tahsilatDetay.map(x => x.yontem).sort()).toEqual(["Nakit", "Nakit", "Çek"]);
     expect(r.tahsilatDetay.every(x => x.firma === "A")).toBe(true);
+    // En eskiden en yeniye sıralı: Extra Kalıp 06-05, nakit ödeme 06-08, tahsil edilmiş çek 06-10
+    expect(r.tahsilatDetay.map(x => x.tarih)).toEqual(["2026-06-05", "2026-06-08", "2026-06-10"]);
     expect(r.bekleyenCekDetay).toHaveLength(1);
     expect(r.bekleyenCekDetay[0].tutar).toEqual({ TRY: 150000 });
   });
@@ -144,6 +157,65 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     expect(r.alacakDetay[0].kaynaklar).toEqual(expect.arrayContaining(["Makina bakiyesi", "Servis"]));
   });
 
+  it("tahsilatKaynakKirilimi: giren para kaynağa göre (makina ödemesi / extra kalıp)", () => {
+    const k = Object.fromEntries(r.tahsilatKaynakKirilimi.map(x => [x.kaynak, x]));
+    expect(k["Makina ödemesi"].tutar).toEqual({ TRY: 250000 }); // 200.000 nakit + 50.000 tahsil edilmiş çek
+    expect(k["Makina ödemesi"].adet).toBe(2);
+    expect(k["Extra kalıp"].tutar).toEqual({ TRY: 25000 });
+  });
+
+  it("alacakKaynakKirilimi: açık alacak kaynağa göre (makina bakiyesi / servis)", () => {
+    const k = Object.fromEntries(r.alacakKaynakKirilimi.map(x => [x.kaynak, x.tutar]));
+    expect(k["Makina bakiyesi"]).toEqual({ TRY: 100000 });
+    expect(k["Servis"]).toEqual({ TRY: 6000 });
+  });
+
+  it("bakım onarım (servis) tahsilatı giren paraya girer (KDV dahil); ödenmemiş girmez", () => {
+    const veriS = {
+      customers: [{ id: 1, name: "S", installDate: "2026-06-01", currency: "TRY", kalanBorc: 0 }],
+      services: [
+        { id: 60, customerId: 1, date: "2026-06-10", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true },
+        { id: 61, customerId: 1, date: "2026-06-11", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: false },
+      ],
+      partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [],
+    };
+    const rs = hesaplaAylikRapor(veriS, "2026-06", secenekler);
+    // ödenen 10.000 + %20 KDV = 12.000 giren; ödenmemiş 5.000 hariç (o Açık Alacak'ta)
+    expect(rs.tahsilatTutar).toEqual({ TRY: 12000 });
+    const k = Object.fromEntries(rs.tahsilatKaynakKirilimi.map(x => [x.kaynak, x]));
+    expect(k["Bakım onarım"].tutar).toEqual({ TRY: 12000 });
+    expect(k["Bakım onarım"].adet).toBe(1);
+  });
+
+  it("tahsilat KDV hariç net + içindeki KDV olarak ayrışır (makina ödemesi faturalı)", () => {
+    const veriT = {
+      customers: [{ id: 1, name: "T", installDate: "2026-06-01", currency: "TRY", faturali: "Faturalı Yurtiçi", kalanBorc: 0 }],
+      services: [], partSales: [], teklifler: [], dealers: [], yedekParcaSatislar: [],
+      payments: [{ id: 40, customerId: 1, tarih: "2026-06-10", tutar: 120000, currency: "TRY", yontem: "Nakit" }],
+    };
+    const rt = hesaplaAylikRapor(veriT, "2026-06", secenekler);
+    expect(rt.tahsilatTutar).toEqual({ TRY: 120000 }); // KDV dahil giren para
+    expect(rt.tahsilatNet.TRY).toBeCloseTo(100000, 2); // 120.000 / 1,20
+    expect(rt.tahsilatKdv.TRY).toBeCloseTo(20000, 2);
+    // kaynak kırılımı da net taşır
+    expect(rt.tahsilatKaynakKirilimi[0].net.TRY).toBeCloseTo(100000, 2);
+  });
+
+  it("tutar girilmemiş (bedeli 0) yedek parça satışı da listede görünür (para toplamı 0)", () => {
+    const veriZ = {
+      customers: [{ id: 1, name: "Z", currency: "TRY", kalanBorc: 0 }],
+      services: [], partSales: [], payments: [], teklifler: [], dealers: [{ id: 5, name: "BayiZ" }],
+      yedekParcaSatislar: [
+        { id: 80, aliciTipi: "bayi", dealerId: 5, tarih: "2026-06-10", miktar: 2, birimFiyat: 0, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", kargoDurum: "Hazırlanıyor", odendi: false },
+      ],
+    };
+    const rz = hesaplaAylikRapor(veriZ, "2026-06", secenekler);
+    expect(rz.yedekKargoAdet).toBe(1);            // sayılır
+    expect(rz.yedekKargoDetay).toHaveLength(1);   // detayda görünür
+    expect(rz.yedekKargoDetay[0].firma).toBe("BayiZ");
+    expect(rz.yedekKargoTutar).toEqual({ TRY: 0 }); // para toplamına 0 ekler
+  });
+
   it("teklifDetay: ay içi teklifleri durum etiketiyle listeler", () => {
     expect(r.teklifDetay).toHaveLength(2);
     expect(r.teklifDetay.map(x => x.durum).sort()).toEqual(["Gönderildi", "Onaylandı"]);
@@ -160,9 +232,236 @@ describe("hesaplaAylikRapor firma firma detay dizileri", () => {
     };
     const r2 = hesaplaAylikRapor(veri2, "2026-06", secenekler);
     expect(r2.anlasmaliParcaDetay).toHaveLength(1);
+    expect(r2.servisDetay).toHaveLength(0); // aynı kayıt üst "bakım onarım verilen firmalar" tablosunda tekrar yazılmaz
     expect(r2.anlasmaliParcaDetay[0]).toMatchObject({ firma: "A", servisFirma: "Ege Servis", odendi: false });
     expect(r2.anlasmaliParcaDetay[0].tutar).toEqual({ TRY: 8000 });
     expect(r2.anlasmaliParcaDetay[0].kdv).toEqual({ TRY: 1600 });
+  });
+});
+
+// ── Yeni yapı: fatura tipi / teslim şekli / onarım yeri kırılımları, bölüm toplamları, sıralama ──
+describe("hesaplaAylikRapor — yeni kırılımlar ve bölüm toplamları", () => {
+  const v = {
+    customers: [
+      { id: 1, name: "Mak1", model: "AK", installDate: "2026-06-20", currency: "TRY", fabrikaSatisBedeli: 100000, faturaBedeli: 100000, faturali: "Faturalı Yurtiçi", kalanBorc: 0 },
+      { id: 2, name: "Mak2", model: "AK", installDate: "2026-06-05", currency: "TRY", fabrikaSatisBedeli: 50000, faturali: "Faturasız Yurtiçi", kalanBorc: 0 },
+    ],
+    services: [
+      { id: 10, customerId: 1, date: "2026-06-15", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", repairPlace: "Yerinde Onarım", faturaTipi: "Faturalı Yurtiçi", odendi: true },
+      { id: 11, customerId: 2, date: "2026-06-08", type: "Garanti Dışı", servisUcreti: 0, parcaUcreti: 5000, parcaUcretiAltuntastan: 5000, parcaCurrency: "TRY", currency: "TRY", islemFirma: "Altuntaş Makina", repairPlace: "Fabrikada Onarım", faturaTipi: "Faturalı Yurtiçi", odendi: true },
+    ],
+    partSales: [
+      { id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-06-10", ucret: 30000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: true, odendi: true },
+      { id: 21, customerId: 2, tur: "Kalıp", tarih: "2026-06-03", ucret: 20000, currency: "TRY", faturaTipi: "Faturasız Yurtiçi", odendi: true },
+    ],
+    yedekParcaSatislar: [
+      { id: 30, aliciTipi: "musteri", musteriId: 1, tarih: "2026-06-12", miktar: 2, birimFiyat: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", kargoDurum: "Hazırlanıyor", odendi: true },
+      { id: 31, aliciTipi: "bayi", dealerId: 9, tarih: "2026-06-02", miktar: 1, birimFiyat: 8000, currency: "TRY", faturaTipi: "Faturasız Yurtiçi", fabrikaTeslim: true, odendi: true },
+    ],
+    payments: [], teklifler: [], dealers: [{ id: 9, name: "Bayi9" }],
+  };
+  const rv = hesaplaAylikRapor(v, "2026-06", secenekler);
+  const bul = (arr, ft) => arr.find(x => x.faturaTipi === ft);
+
+  it("makina fatura tipi kırılımı: net/KDV/adet doğru", () => {
+    const fi = bul(rv.makinaFaturaKirilimi, "Faturalı Yurtiçi");
+    expect(fi).toMatchObject({ adet: 1 });
+    expect(fi.net).toEqual({ TRY: 100000 });
+    expect(fi.kdv).toEqual({ TRY: 20000 });
+    expect(bul(rv.makinaFaturaKirilimi, "Faturasız Yurtiçi").net).toEqual({ TRY: 50000 });
+  });
+
+  it("extra kalıp teslim şekli + fatura tipi kırılımı", () => {
+    expect(rv.extraKalipTeslim.fabrikaTeslim.net).toEqual({ TRY: 30000 });
+    expect(rv.extraKalipTeslim.kargo.net).toEqual({ TRY: 20000 });
+    expect(bul(rv.extraKalipFaturaKirilimi, "Faturalı Yurtiçi").net).toEqual({ TRY: 30000 });
+  });
+
+  it("yedek parça (kargo) teslim şekli tutarı + fatura tipi kırılımı", () => {
+    expect(rv.yedekKargoTeslimTutar.kargo.net).toEqual({ TRY: 10000 }); // id30 2×5000
+    expect(rv.yedekKargoTeslimTutar.fabrikaTeslim.net).toEqual({ TRY: 8000 }); // id31
+    expect(bul(rv.yedekKargoFaturaKirilimi, "Faturasız Yurtiçi").net).toEqual({ TRY: 8000 });
+  });
+
+  it("bakım onarım bölüm toplamı (net + KDV) ve onarım yeri kırılımı", () => {
+    expect(rv.servisNet).toEqual({ TRY: 15000 }); // işçilik 10.000 + Altuntaş parça 5.000
+    expect(rv.servisBolumKdv).toEqual({ TRY: 3000 }); // 15.000 × %20
+    const yerler = Object.fromEntries(rv.onarimYeriKirilimi.map(x => [x.yer, x]));
+    expect(yerler["Yerinde Onarım"]).toMatchObject({ adet: 1 });
+    expect(yerler["Yerinde Onarım"].net).toEqual({ TRY: 10000 });
+    expect(yerler["Fabrikada Onarım"].net).toEqual({ TRY: 5000 });
+    // Sabit sıra: Yerinde önce
+    expect(rv.onarimYeriKirilimi[0].yer).toBe("Yerinde Onarım");
+    expect(bul(rv.servisFaturaKirilimi, "Faturalı Yurtiçi")).toMatchObject({ adet: 2 });
+  });
+
+  it("firma firma olay tabloları eskiden yeniye sıralı", () => {
+    expect(rv.satisDetay.map(x => x.tarih)).toEqual(["2026-06-05", "2026-06-20"]);
+    expect(rv.extraKalipDetay.map(x => x.tarih)).toEqual(["2026-06-03", "2026-06-10"]);
+    expect(rv.yedekKargoDetay.map(x => x.tarih)).toEqual(["2026-06-02", "2026-06-12"]);
+  });
+});
+
+describe("hesaplaAylikRapor — tahsilat tarihi: TÜM durumlar", () => {
+  // C: müşteri (borçsuz), Bayi9 kargo alıcısı. Sadece test edilen kayıt gelir.
+  const mk = (services = [], partSales = [], yedekParcaSatislar = []) => ({
+    customers: [{ id: 1, name: "C", installDate: "2026-08-01", currency: "TRY", kalanBorc: 0 }],
+    services, partSales, payments: [], teklifler: [], dealers: [{ id: 9, name: "Bayi9" }], yedekParcaSatislar,
+  });
+  const svc = (over) => ({ id: 1, customerId: 1, date: "2026-08-10", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true, ...over });
+
+  it("1) nakit servis: tahsilatTarihi ayına girer, satış ayına değil", () => {
+    const v = mk([svc({ tahsilatTarihi: "2026-10-05" })]);
+    expect(hesaplaAylikRapor(v, "2026-08", secenekler).tahsilatTutar).toEqual({});
+    expect(hesaplaAylikRapor(v, "2026-10", secenekler).tahsilatTutar).toEqual({ TRY: 12000 }); // 10.000 + %20
+  });
+
+  it("2) tahsilatTarihi yoksa satış/servis ayına düşer (eski davranış korunur)", () => {
+    expect(hesaplaAylikRapor(mk([svc({})]), "2026-08", secenekler).tahsilatTutar).toEqual({ TRY: 12000 });
+    expect(hesaplaAylikRapor(mk([svc({})]), "2026-10", secenekler).tahsilatTutar).toEqual({});
+  });
+
+  it("3) kredi kartı: bloke para hesaba geçtiği aya (hesabaGecis) girer", () => {
+    const s = svc({ date: "2026-07-01", yontem: "Kredi Kartı", kartKomisyonu: { hesabaGecis: "2026-09-10", toplamKesinti: 0 } });
+    expect(hesaplaAylikRapor(mk([s]), "2026-07", secenekler).tahsilatTutar).toEqual({}); // satış ayı değil
+    expect(hesaplaAylikRapor(mk([s]), "2026-09", secenekler).tahsilatTutar).toEqual({ TRY: 12000 }); // hesaba geçiş ayı
+  });
+
+  it("4) kredi kartı blokajı HENÜZ geçmemiş: tahsilata girmez, alacakta kalır", () => {
+    const s = svc({ date: "2026-09-01", yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-01-01", toplamKesinti: 0 } });
+    const r = hesaplaAylikRapor(mk([s]), "2026-09", secenekler);
+    expect(r.tahsilatTutar).toEqual({});
+    expect(r.acikBorc).toEqual({ TRY: 12000 });
+  });
+
+  it("5) çek: tahsil edilince tahsilatTarihi ayına girer; edilmezse alacakta", () => {
+    const base = svc({ date: "2026-08-01", yontem: "Çek", vadeTarihi: "2026-10-01" });
+    const rNo = hesaplaAylikRapor(mk([{ ...base, tahsilEdildi: false }]), "2026-08", secenekler);
+    expect(rNo.tahsilatTutar).toEqual({});
+    expect(rNo.acikBorc).toEqual({ TRY: 12000 });
+    const rYes = hesaplaAylikRapor(mk([{ ...base, tahsilEdildi: true, tahsilatTarihi: "2026-10-03" }]), "2026-10", secenekler);
+    expect(rYes.tahsilatTutar).toEqual({ TRY: 12000 });
+    expect(rYes.acikBorc).toEqual({});
+  });
+
+  it("6) extra kalıp + yedek parça (kargo) da tahsilat tarihine göre gruplanır", () => {
+    const kalip = { id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-08-05", ucret: 30000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-10" };
+    const kargo = { id: 30, aliciTipi: "bayi", dealerId: 9, tarih: "2026-08-06", miktar: 2, birimFiyat: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-11" };
+    expect(hesaplaAylikRapor(mk([], [kalip], [kargo]), "2026-10", secenekler).tahsilatTutar).toEqual({ TRY: 48000 }); // 36.000 + 12.000
+    expect(hesaplaAylikRapor(mk([], [kalip], [kargo]), "2026-08", secenekler).tahsilatTutar).toEqual({});
+  });
+
+  it("7) gelir/ciro bölümü tahsilat tarihinden ETKİLENMEZ (satış ayında sabit)", () => {
+    const kalip = { id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-08-05", ucret: 30000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-10" };
+    expect(hesaplaAylikRapor(mk([], [kalip]), "2026-08", secenekler).extraKalipTutar).toEqual({ TRY: 30000 }); // gelir ağustosta
+    expect(hesaplaAylikRapor(mk([], [kalip]), "2026-10", secenekler).extraKalipTutar).toEqual({});          // ekimde gelir yok
+  });
+
+  it("8) ödenmemiş nakit servis: tahsilata girmez, alacakta kalır", () => {
+    const r = hesaplaAylikRapor(mk([svc({ odendi: false })]), "2026-08", secenekler);
+    expect(r.tahsilatTutar).toEqual({});
+    expect(r.acikBorc).toEqual({ TRY: 12000 });
+  });
+
+  it("9) tahsilat detay 'Tarih' = tahsilat tarihi (satış tarihi değil)", () => {
+    const v = mk([svc({ date: "2026-08-10", tahsilatTarihi: "2026-10-05" })]);
+    const r = hesaplaAylikRapor(v, "2026-10", secenekler);
+    expect(r.tahsilatDetay).toHaveLength(1);
+    expect(r.tahsilatDetay[0].tarih).toBe("2026-10-05");
+  });
+});
+
+describe("hesaplaAylikRapor — bayisi olmayan yedek parça satışı rapora girmez", () => {
+  it("alıcısı silinmiş/olmayan bayi olan satış toplam ve listelerde yok; canlı bayininki kalır", () => {
+    const v = {
+      customers: [], services: [], partSales: [], payments: [], teklifler: [],
+      dealers: [{ id: 9, name: "Bayi" }, { id: 8, name: "Silinmiş Bayi", deletedAt: "x" }],
+      yedekParcaSatislar: [
+        { id: 1, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 2, aliciTipi: "bayi", dealerId: 999, partId: "7", miktar: 1, birimFiyat: 5000, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 3, aliciTipi: "bayi", dealerId: 8, partId: "7", miktar: 1, birimFiyat: 7000, currency: "TRY", tarih: "2026-07-13", odendi: false },
+      ],
+    };
+    const r = hesaplaAylikRapor(v, "2026-07", secenekler);
+    expect(r.yedekKargoDetay.map(x => x.firma)).toEqual(["Bayi"]);
+    expect(r.yedekKargoAdet).toBe(1);
+    expect(r.acikBorc).toEqual({});
+    expect(r.sahipsizAdet).toBe(2);
+    expect(JSON.stringify(r)).not.toContain('"firma":"—"');
+  });
+});
+
+describe("hesaplaAylikRapor — sahipsiz kayıtlar rapora girmez", () => {
+  it("müşterisi olmayan servis/kalıp/yedek parça/ödeme hiçbir toplam ve listeye girmez; adet raporlanır", () => {
+    const v = {
+      customers: [{ id: 1, name: "Var", currency: "TRY", kalanBorc: 0 }],
+      services: [
+        { id: 1, customerId: 1, date: "2026-07-10", type: "Garanti Dışı", servisUcreti: 1000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true },
+        { id: 2, customerId: 999, date: "2026-07-11", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true },
+      ],
+      partSales: [{ id: 3, customerId: 999, tur: "Kalıp", tarih: "2026-07-05", ucret: 12000, currency: "TRY", odendi: false }],
+      yedekParcaSatislar: [
+        { id: 4, aliciTipi: "musteri", musteriId: 999, partId: "7", miktar: 1, birimFiyat: 2750, currency: "TRY", tarih: "2026-07-12", odendi: true },
+        { id: 5, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-07-12", odendi: true, tahsisler: [{ customerId: 999, miktar: 1 }] },
+      ],
+      payments: [{ id: 6, customerId: 999, tarih: "2026-07-13", tutar: 777, currency: "TRY", yontem: "Nakit" }],
+      teklifler: [], dealers: [{ id: 9, name: "Bayi" }],
+    };
+    const r = hesaplaAylikRapor(v, "2026-07", secenekler);
+    expect(r.servisAdet).toBe(1);
+    expect(r.iscilikTutar).toEqual({ TRY: 1000 });
+    expect(r.servisDetay.map(x => x.firma)).toEqual(["Var"]);
+    expect(r.extraKalipAdet).toBe(0);
+    expect(r.acikBorc).toEqual({});                                  // sahipsiz kalıp alacağı yok
+    expect(r.yedekKargoDetay.map(x => x.firma)).toEqual(["Bayi"]);   // bayi alımı kalır, sahipsiz müşteri alımı yok
+    expect(r.tahsilatTutar).toEqual({ TRY: 1320 });                  // (1000 servis + 100 bayi) + %20 KDV; sahipsiz 2750 + 777 yok
+    expect(r.sahipsizAdet).toBe(4);
+    expect(JSON.stringify(r)).not.toContain('"firma":"—"');
+  });
+});
+
+describe("hesaplaAylikRapor — kredi kartı blokajında bekleyenler", () => {
+  const mk = (services) => ({ customers: [{ id: 1, name: "K", currency: "TRY", kalanBorc: 0 }], services, partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] });
+  const svc = (kk) => ({ id: 1, customerId: 1, date: "2026-07-13", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Kredi Kartı", kartKomisyonu: kk });
+  it("blokajı geçmemiş KK servis listelenir (hesaba geçiş + KDV dahil tutar) ve alacakta da yer alır", () => {
+    const r = hesaplaAylikRapor(mk([svc({ blokajGun: 40, hesabaGecis: "2099-09-22", toplamKesinti: 0 })]), "2026-07", secenekler);
+    expect(r.kkBlokajda).toHaveLength(1);
+    expect(r.kkBlokajda[0]).toMatchObject({ firma: "K", kaynak: "Servis", hesabaGecis: "2099-09-22" });
+    expect(r.kkBlokajda[0].tutar).toEqual({ TRY: 12000 });
+    expect(r.kkBlokajdaTutar).toEqual({ TRY: 12000 });
+    expect(r.acikBorc).toEqual({ TRY: 12000 }); // alt küme: açık alacakta da var
+    expect(r.tahsilatTutar).toEqual({});       // henüz giren para değil
+  });
+  it("blokajı geçmiş KK servis listede DEĞİL", () => {
+    const r = hesaplaAylikRapor(mk([svc({ blokajGun: 40, hesabaGecis: "2020-01-01", toplamKesinti: 0 })]), "2026-07", secenekler);
+    expect(r.kkBlokajda).toHaveLength(0);
+  });
+  it("servisDetay satırı ödeme yöntemini ve blokaj durumunu taşır (bakım onarım tablosunda 'Kredi Kartı' belirtilsin)", () => {
+    const bloke = hesaplaAylikRapor(mk([svc({ blokajGun: 40, hesabaGecis: "2099-09-22", toplamKesinti: 0 })]), "2026-07", secenekler);
+    expect(bloke.servisDetay[0]).toMatchObject({ odendi: true, yontem: "Kredi Kartı", kkBlokajda: true, kkHesabaGecis: "2099-09-22" });
+    const gecti = hesaplaAylikRapor(mk([svc({ blokajGun: 40, hesabaGecis: "2020-01-01", toplamKesinti: 0 })]), "2026-07", secenekler);
+    expect(gecti.servisDetay[0]).toMatchObject({ yontem: "Kredi Kartı", kkBlokajda: false });
+    const nakit = hesaplaAylikRapor(mk([{ ...svc(undefined), yontem: "Nakit" }]), "2026-07", secenekler);
+    expect(nakit.servisDetay[0]).toMatchObject({ yontem: "Nakit", kkBlokajda: false, kkHesabaGecis: "" });
+  });
+});
+
+describe("hesaplaAylikRapor — açık alacak yaşlandırması (aging)", () => {
+  const bugun = new Date().toISOString().slice(0, 10);
+  const va = {
+    customers: [
+      { id: 1, name: "Eski", currency: "TRY", kalanBorc: 100000, installDate: "2020-01-01" }, // çok eski → 90+
+      { id: 2, name: "Yeni", currency: "TRY", kalanBorc: 50000, installDate: bugun },          // bugün → 0-30
+    ],
+    services: [], partSales: [], payments: [], teklifler: [], yedekParcaSatislar: [], dealers: [],
+  };
+  const ra = hesaplaAylikRapor(va, "2026-06", secenekler);
+  it("borcu yaşına göre kovalara dağıtır (tutar + firma sayısı)", () => {
+    const yas = Object.fromEntries(ra.alacakYaslandirma.map(x => [x.aralik, x]));
+    expect(yas["90+ gün"].tutar).toEqual({ TRY: 100000 });
+    expect(yas["90+ gün"].firma).toBe(1);
+    expect(yas["0-30 gün"].tutar).toEqual({ TRY: 50000 });
+    expect(yas["0-30 gün"].firma).toBe(1);
   });
 });
 
@@ -250,7 +549,7 @@ describe("hesaplaAylikRapor — yedek parça (kargo) satışları (yeni dizi)", 
     // Borçlular: Müş A (73), Bayi X (71), Harici Ltd (72) = 3 farklı firma
     expect(rk.borcluFirma).toBe(3);
     expect(rk.alacakDetay).toHaveLength(3);
-    expect(rk.alacakDetay.find(x => x.firma === "Bayi X").kaynaklar).toContain("Yedek parça (kargo)");
+    expect(rk.alacakDetay.find(x => x.firma === "Bayi X").kaynaklar).toContain("Yedek parça (kargo ve fabrika teslim)");
   });
 });
 

@@ -214,7 +214,8 @@ export const CustomerDetailModal = ({
   const toggleServisOdendi = (sv) => {
     if (!setServices) return;
     const yeniDurum = !sv.odendi;
-    setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum } : s));
+    const cekKK = sv.yontem === "Çek" || sv.yontem === "Kredi Kartı"; // çek/KK'da tahsilat tarihi çek-tahsil/hesabaGecis'ten gelir
+    setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : s));
     logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
   };
   const deleteService = (id) => {
@@ -326,8 +327,9 @@ export const CustomerDetailModal = ({
   const toggleYedekParcaOdendi = (rec) => {
     if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
     const yeni = !rec.odendi;
+    const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
     const idler = new Set(ypGrupIdleri(rec));
-    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni } : s));
+    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null } : s));
     [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
   };
   // Yedek parça çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır (satisTahsilEdildi).
@@ -335,7 +337,7 @@ export const CustomerDetailModal = ({
     if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
     const yeni = !rec.tahsilEdildi;
     const idler = new Set(ypGrupIdleri(rec));
-    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, tahsilEdildi: yeni } : s));
+    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : s));
     [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "cek_tahsil_edildi" : "cek_tahsil_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
   };
   // ── Extra Kalıp satışları ──
@@ -450,14 +452,15 @@ export const CustomerDetailModal = ({
   const togglePartSaleOdendi = (ps) => {
     if (!setPartSales) return;
     const yeniDurum = !ps.odendi;
-    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum } : x));
+    const cekKK = ps.yontem === "Çek" || ps.yontem === "Kredi Kartı";
+    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : x));
     logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
   };
   // Extra Kalıp çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır.
   const togglePartSaleCekTahsil = (ps) => {
     if (!setPartSales) return;
     const yeni = !ps.tahsilEdildi;
-    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, tahsilEdildi: yeni } : x));
+    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : x));
     logAction({ serverPermissions, action: yeni ? "kalip_cek_tahsil_edildi" : "kalip_cek_tahsil_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
   };
   const deletePartSale = (id) => {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, extractKDV, parseMoney, kalipCount, faturaBedeliOf } from "../../lib/utils";
+import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi } from "../../lib/utils";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
 import { Section } from "./Section";
@@ -46,6 +46,88 @@ export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [
     teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis];
 };
 
+// Finans Özeti (Dışa Aktar) toplamları — saf; Finance.jsx ile AYNI gelir kuralları:
+// servis ücreti yalnız Altuntaş'ın yaptığı ücretli-tip servislerde gelirdir (isServisUcretliMi) ve
+// KDV HARİÇ girilir → KDV üstüne eklenir (calcKDV: yalnız Faturalı Yurtiçi). Eskiden burada ücret KDV
+// dahil varsayılıp içinden ayrıştırılıyordu (extractKDV) ve dış firma servisleri de sayılıyordu; aynı
+// servis için Excel ile aylık rapor farklı KDV gösteriyordu (Derya Yemek: 2.270 vs 1.892).
+export const finansOzetiHesapla = ({ customers = [], services = [], partSales = [], kdvRates = DEFAULT_KDV_RATES, factoryName = "Altuntaş Makina" } = {}) => {
+  // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
+  const real = customers;
+  const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
+  const e3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
+  const gercekCiro = e3(), toplamCiro = e3(), faturaliTutar = e3(), kdv = e3(), komisyon = e3(), extra = e3(), alacak = e3(), servisUc = e3();
+  real.forEach(c => {
+    const k = cur(c.currency);
+    const tip = normalizeSaleType(c.faturali);
+    const kdvTutar = calcKDV(tip, c.faturaBedeli, c.installDate, kdvRates);
+    gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
+    // Komisyon GİDER olarak çıkarılır (eklenmez) — Finance.jsx'teki Toplam Bedel ile tutarlı
+    toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
+    if (isFaturali(tip)) faturaliTutar[k] += faturaBedeliOf(c);
+    kdv[k] += kdvTutar;
+    komisyon[k] += parseMoney(c.komisyon);
+    alacak[k] += parseMoney(c.kalanBorc);
+  });
+  // Servis: işçilik (Altuntaş, ücretli tip) + Altuntaş parçası (kendi servisimizde) + anlaşmalı servise
+  // satılan Altuntaş parçası (dış firma servisinde). Hepsi KDV hariç girilir; KDV üstüne, kaydın kendi
+  // fatura tipine göre (aylık rapor "BAKIM ONARIM GELİRLERİ" bölümüyle birebir).
+  const servisParca = e3(), anlasmaliParca = e3();
+  services.filter(s => !s.deletedAt).forEach(s => {
+    const iscilik = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
+    const parca = isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0;
+    if (iscilik > 0) {
+      const k = cur(s.currency);
+      servisUc[k] += iscilik;
+      kdv[k] += calcKDV(s.faturaTipi, iscilik, s.date, kdvRates);
+    }
+    if (parca > 0) {
+      const k = cur(s.parcaCurrency || s.currency);
+      (isAltuntasServisi(s, factoryName) ? servisParca : anlasmaliParca)[k] += parca;
+      kdv[k] += calcKDV(s.faturaTipi, parca, s.date, kdvRates);
+    }
+  });
+  // Toplam Extra Kalıp Satışı — donmuş extraKalipFiyati yerine canlı Extra Kalıp sekmesi verisi
+  partSales.forEach(p => { extra[cur(p.currency)] += parseMoney(p.ucret); });
+  const net = e3();
+  CURRENCIES.forEach(k => { net[k] = gercekCiro[k] + extra[k] + servisUc[k] + servisParca[k] + anlasmaliParca[k] - komisyon[k]; });
+  const kalipAdet = real.reduce((t, c) => t + (Array.isArray(c.kaliplar) ? c.kaliplar.length : (parseInt(c.kalipSayisi, 10) || 0)), 0);
+  // Satış tipi kırılımı
+  const tipAdet = { "Faturalı Yurtiçi": 0, "Faturalı Yurtdışı": 0, "Faturasız Yurtiçi": 0, "Faturasız Yurtdışı": 0 };
+  real.forEach(c => { const t = normalizeSaleType(c.faturali); if (tipAdet[t] != null) tipAdet[t]++; });
+  return { real, gercekCiro, toplamCiro, faturaliTutar, kdv, komisyon, extra, alacak, servisUc, servisParca, anlasmaliParca, net, kalipAdet, tipAdet };
+};
+
+// Finans Özeti satırları (saf; Excel/CSV'ye bu haliyle yazılır).
+export const finansOzetiSatirlari = (oz, services = [], tarih = new Date().toLocaleDateString("tr-TR")) => {
+  const { real, gercekCiro, toplamCiro, faturaliTutar, kdv, komisyon, extra, alacak, servisUc, servisParca, anlasmaliParca, net, kalipAdet, tipAdet } = oz;
+  const line = (label, obj) => [label, obj.TRY, obj.USD, obj.EUR];
+  return [
+    ["FİNANS ÖZETİ", tarih, "", ""],
+    [],
+    ["Toplam Satılan Makina", real.length],
+    ["Toplam Satılan Kalıp", kalipAdet],
+    ["Faturalı Yurtiçi", tipAdet["Faturalı Yurtiçi"]],
+    ["Faturalı Yurtdışı", tipAdet["Faturalı Yurtdışı"]],
+    ["Faturasız Yurtiçi", tipAdet["Faturasız Yurtiçi"]],
+    ["Faturasız Yurtdışı", tipAdet["Faturasız Yurtdışı"]],
+    ["Garanti Dışı Servis Sayısı", services.filter(s => !s.deletedAt && s.type === "Garanti Dışı").length],
+    [],
+    ["TUTARLAR", "₺ (TL)", "$ (USD)", "€ (EUR)"],
+    line("Gerçek Ciro (fiili satış)", gercekCiro),
+    line("Toplam Bedel (Fabrika Bedeli + KDV - Komisyon)", toplamCiro),
+    line("Faturalı Tutar (resmi)", faturaliTutar),
+    line("Toplam KDV (makina + servis + parça)", kdv),
+    line("Toplam Extra Kalıp Satışı", extra),
+    line("Toplam Servis İşçilik Ücreti (KDV hariç)", servisUc),
+    line("Toplam Servis Parça Ücreti — Altuntaş servisi (KDV hariç)", servisParca),
+    line("Toplam Anlaşmalı Servise Parça Ücreti (KDV hariç)", anlasmaliParca),
+    line("Toplam Ödenen Komisyon", komisyon),
+    line("NET GENEL TOPLAM", net),
+    line("Kalan Alacak / Tahsil Edilecek", alacak),
+  ];
+};
+
 export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], yedekParcaSatislar = [], serverPermissions = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
@@ -81,60 +163,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     if (res?.ok) flash("ok", "E-posta gönderildi.");
   };
   const exportFinance = async (mode = "download") => {
-    // 2. el devir olsa bile orijinal satışın bedeli sayılır (Finance.jsx ile tutarlı)
-    const real = customers;
-    const cur = (x) => (CURRENCIES.includes(x) ? x : "TRY");
-    const e3 = () => ({ TRY: 0, USD: 0, EUR: 0 });
-    const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
-    const gercekCiro = e3(), toplamCiro = e3(), faturaliTutar = e3(), kdv = e3(), komisyon = e3(), extra = e3(), alacak = e3(), servisUc = e3();
-    real.forEach(c => {
-      const k = cur(c.currency);
-      const tip = normalizeSaleType(c.faturali);
-      const kdvTutar = calcKDV(tip, c.faturaBedeli, c.installDate, kdvRates);
-      gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
-      // Komisyon GİDER olarak çıkarılır (eklenmez) — Finance.jsx'teki Toplam Bedel ile tutarlı
-      toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
-      if (isFaturali(tip)) faturaliTutar[k] += faturaBedeliOf(c);
-      kdv[k] += kdvTutar;
-      komisyon[k] += parseMoney(c.komisyon);
-      alacak[k] += parseMoney(c.kalanBorc);
-    });
-    services.filter(s => s.type === "Garanti Dışı" || s.type === "Periyodik Bakım").forEach(s => {
-      const k = cur(s.currency);
-      servisUc[k] += parseMoney(s.servisUcreti);
-      if (k === "TRY") kdv[k] += extractKDV(s.servisUcreti, s.date, kdvRates);
-    });
-    // Toplam Extra Kalıp Satışı — donmuş extraKalipFiyati yerine canlı Extra Kalıp sekmesi verisi
-    partSales.forEach(p => { extra[cur(p.currency)] += parseMoney(p.ucret); });
-    const net = e3();
-    CURRENCIES.forEach(k => { net[k] = gercekCiro[k] + extra[k] + servisUc[k] - komisyon[k]; });
-    const kalipAdet = real.reduce((t, c) => t + (Array.isArray(c.kaliplar) ? c.kaliplar.length : (parseInt(c.kalipSayisi, 10) || 0)), 0);
-    // Satış tipi kırılımı
-    const tipAdet = { "Faturalı Yurtiçi": 0, "Faturalı Yurtdışı": 0, "Faturasız Yurtiçi": 0, "Faturasız Yurtdışı": 0 };
-    real.forEach(c => { const t = normalizeSaleType(c.faturali); if (tipAdet[t] != null) tipAdet[t]++; });
-    const line = (label, obj) => [label, obj.TRY, obj.USD, obj.EUR];
-    const rows = [
-      ["FİNANS ÖZETİ", new Date().toLocaleDateString("tr-TR"), "", ""],
-      [],
-      ["Toplam Satılan Makina", real.length],
-      ["Toplam Satılan Kalıp", kalipAdet],
-      ["Faturalı Yurtiçi", tipAdet["Faturalı Yurtiçi"]],
-      ["Faturalı Yurtdışı", tipAdet["Faturalı Yurtdışı"]],
-      ["Faturasız Yurtiçi", tipAdet["Faturasız Yurtiçi"]],
-      ["Faturasız Yurtdışı", tipAdet["Faturasız Yurtdışı"]],
-      ["Garanti Dışı Servis Sayısı", services.filter(s => s.type === "Garanti Dışı").length],
-      [],
-      ["TUTARLAR", "₺ (TL)", "$ (USD)", "€ (EUR)"],
-      line("Gerçek Ciro (fiili satış)", gercekCiro),
-      line("Toplam Bedel (Fabrika Bedeli + KDV - Komisyon)", toplamCiro),
-      line("Faturalı Tutar (resmi)", faturaliTutar),
-      line("Toplam KDV", kdv),
-      line("Toplam Extra Kalıp Satışı", extra),
-      line("Toplam Servis Ücreti", servisUc),
-      line("Toplam Ödenen Komisyon", komisyon),
-      line("NET GENEL TOPLAM", net),
-      line("Kalan Alacak / Tahsil Edilecek", alacak),
-    ];
+    const oz = finansOzetiHesapla({ customers, services, partSales, kdvRates: appSettings?.kdvRates ?? DEFAULT_KDV_RATES, factoryName: factory?.name });
+    const rows = finansOzetiSatirlari(oz, services);
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Finans"); openExportMailXLSXBase64(b64, "finans-ozeti.xlsx", "Finans Özeti"); return; }
       await downloadXlsx(rows, "finans-ozeti.xlsx", "Finans"); flash("ok", "Finans özeti Excel olarak indirildi.");

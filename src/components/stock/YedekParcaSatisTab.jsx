@@ -190,7 +190,9 @@ export const YedekParcaSatisTab = ({
 
   const odendiToggle = (rec) => {
     if (!canDoStock("yedek_parca_edit")) return;
-    setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: !s.odendi } : s));
+    const yeni = !rec.odendi;
+    const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
+    setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null } : s));
     audit(rec.odendi ? "odeme_iptal" : "odendi", rec.id, rec);
   };
 

@@ -1,7 +1,7 @@
 {
   "name": "makina-crm",
   "productName": "Altunmak CRM",
-  "version": "3.29.0",
+  "version": "3.38.2",
   "description": "Altuntaş Makina müşteri ve servis takip sistemi",
   "main": "electron/main.cjs",
   "private": true,
@@ -31,9 +31,10 @@
     "compression": "^1.8.1",
     "electron-updater": "^6.3.9",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
     "fflate": "^0.8.3",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^9.1.1",
     "otplib": "^12.0.1",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
@@ -72,7 +73,7 @@
   },
   "overrides": {
     "shell-quote": "^1.10.0",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "body-parser": "^1.20.6"
   },
   "build": {

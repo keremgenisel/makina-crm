@@ -20,6 +20,7 @@ import { SettingsExport } from "./settings/SettingsExport";
 import { SettingsTakip } from "./settings/SettingsTakip";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
+import { SettingsSahipsiz } from "./settings/SettingsSahipsiz";
 import { SettingsOptimize } from "./settings/SettingsOptimize";
 import { SettingsKdv } from "./settings/SettingsKdv";
 import { SettingsKKKomisyon } from "./settings/SettingsKKKomisyon";
@@ -44,7 +45,7 @@ const SETTINGS_GROUPS = [
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }] },
   { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "kkkomisyon", label: "Kredi Kartı Komisyonları", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
-  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }] },
+  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
 ];
 
 export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
@@ -288,6 +289,13 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         />
       )}
 
+      {settingsTab === "sahipsiz" && (
+        <SettingsSahipsiz
+          rawCustomers={rawCustomers} rawDealers={rawDealers} rawServices={rawServices} rawPartSales={rawPartSales} rawYedekParcaSatislar={rawYedekParcaSatislar} rawPayments={rawPayments} rawParts={rawParts}
+          setServices={setServices} setPartSales={setPartSales} setYedekParcaSatislar={setYedekParcaSatislar} setPayments={setPayments}
+          setPartStock={setPartStock} setPartStockLog={setPartStockLog}
+          serverPermissions={serverPermissions} showToast={showToast} />
+      )}
       {settingsTab === "trash" && (
         <SettingsTrash
           rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}

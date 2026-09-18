@@ -146,7 +146,7 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
 
   it("her bölümün firma firma detay başlıkları ve firma adı render edilir", () => {
     expect(html).toContain("SATILAN MAKİNALAR");
-    expect(html).toContain("SERVİS VERİLEN FİRMALAR");
+    expect(html).toContain("BAKIM ONARIM VERİLEN FİRMALAR");
     expect(html).toContain("EXTRA KALIP ALAN FİRMALAR");
     expect(html).toContain("KİMDEN TAHSİL EDİLDİ");
     expect(html).toContain("BORÇLU FİRMALAR");
@@ -155,9 +155,9 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).toContain("300.000"); // teklif tutarı
   });
 
-  it("gerçekleşen tahsilat açıklaması (sadece borçlulardan değil) raporda yer alır", () => {
-    expect(html).toContain("Gerçekleşen tahsilat nedir?");
-    expect(html).toContain("Sadece borçlulardan değil");
+  it("tahsilat açıklaması (bu ay giren para) raporda yer alır", () => {
+    expect(html).toContain("giren paradır");
+    expect(html).toContain("çekler ancak tahsil edildiklerinde");
   });
 
   it("boş detay dizileri için tablo başlığı basılmaz", () => {
@@ -165,12 +165,100 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).not.toContain("ANLAŞMALI SERVİSLERE PARÇA"); // anlaşmalı parça yok
   });
 
-  it("yönetici özeti ve KDV beyanname özeti kutuları raporda yer alır", () => {
-    expect(html).toContain("YÖNETİCİ ÖZETİ");
-    expect(html).toContain("Toplam ciro (net, KDV hariç)");
-    expect(html).toContain("Gerçekleşen tahsilat");
-    expect(html).toContain("KDV ÖZETİ (beyanname)");
+  it("özet (Bu Ayın Özeti) + KDV beyanname özeti + bölüm başlıkları render edilir", () => {
+    expect(html).toContain("BU AYIN ÖZETİ");
+    expect(html).toContain("Bu ay giren para (tahsilat)");
+    expect(html).toContain("Açık alacak (tahsil edilecek)");
+    expect(html).toContain("KDV ÖZETİ (beyanname için)");
     expect(html).toContain("BU AY DOĞAN TOPLAM KDV");
+    expect(html).toContain("MAKİNA SATIŞLARI");
+    expect(html).toContain("BAKIM ONARIM GELİRLERİ");
+    expect(html).toContain("YEDEK PARÇA SATIŞLARI");
+    expect(html).toContain("TAHSİLAT — BU AY GİREN PARA");
+    expect(html).toContain("AÇIK ALACAKLAR (tahsil edilecek)");
+    // Özet kutularının içinde kaynak kırılımı (nereden geldi / ne için)
+    expect(html).toContain("nereden geldi");
+    expect(html).toContain("ne için");
+    expect(html).toContain("Makina ödemesi"); // tahsilat kaynağı
+    expect(html).toContain("Makina bakiyesi"); // alacak kaynağı
+    // Üst özet tahsilat kutusu net/KDV/toplam ayrı; detaylı bölümler KDV dahil etiketli
+    expect(html).toContain("Net (KDV hariç)");
+    expect(html).toContain("Toplam (KDV dahil)");
+    expect(html).toContain("Gerçekleşen tahsilat (KDV dahil)");
+    expect(html).toContain("Toplam açık alacak (KDV dahil)");
+    // Seçilen ay rozeti ay adını gösterir
+    expect(html).toContain("Haziran 2026");
+  });
+
+  it("ciro tamamen kaldırıldı; fatura tipi / onarım yeri / yaşlandırma kırılımları var; komisyon yoksa gizli", () => {
+    expect(html).not.toContain("ciro");
+    expect(html).not.toContain("CİRO");
+    expect(html).toContain("FATURA TİPİ KIRILIMI");
+    expect(html).toContain("ONARIM YERİ KIRILIMI");
+    expect(html).toContain("YAŞLANDIRMA (borcun yaşına göre)"); // Acar Metal'in açık borcu var
+    expect(html).not.toContain("ÖDENEN BANKA KOMİSYONU"); // fixture'da kredi kartı yok → gizli
+  });
+
+  it("ücretsiz servis 'Ücretsiz' etiketlenir; servis kaydı satırı ücretli/ücretsiz ayrımı gösterir", () => {
+    expect(html).toContain("1 ücretli · 0 ücretsiz"); // ana fixture: 1 ücretli servis
+    const veriU = {
+      customers: [{ id: 1, name: "U", currency: "TRY", kalanBorc: 0 }],
+      services: [{ id: 90, customerId: 1, date: "2026-06-12", type: "Garanti İçi", servisUcreti: 0, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const ru = hesaplaAylikRapor(veriU, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlU = buildAylikRaporHtml(ru, { name: "Altuntaş Makina" });
+    expect(htmlU).toContain("Ücretsiz");          // Durum kolonu
+    expect(htmlU).toContain("0 ücretli · 1 ücretsiz"); // servis kaydı satırı
+  });
+
+  it("üst kutu: servis kaynağı 'Tahsil edilen bakım onarım (N)' olarak etiketlenir; kırılım başlığı KDV hariç der", () => {
+    expect(html).toContain("nereden geldi (KDV hariç)"); // statik başlık, her raporda
+    // Ödenmiş ücretli bir servis → tahsilat kaynağında "Tahsil edilen bakım onarım (1)" görünür
+    const veriT = {
+      customers: [{ id: 1, name: "T", currency: "TRY", kalanBorc: 0 }],
+      services: [{ id: 95, customerId: 1, date: "2026-06-12", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const rt = hesaplaAylikRapor(veriT, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlT = buildAylikRaporHtml(rt, { name: "Altuntaş Makina" });
+    expect(htmlT).toContain("Tahsil edilen bakım onarım (1)");
+    expect(htmlT).not.toContain("Bakım onarım (1)"); // eski belirsiz etiket artık yok
+  });
+
+  it("sahipsiz kayıt varsa raporun altına not düşülür, yoksa not yok", () => {
+    const veriS = {
+      customers: [{ id: 1, name: "Var", currency: "TRY", kalanBorc: 0 }],
+      services: [{ id: 2, customerId: 999, date: "2026-06-11", type: "Garanti Dışı", servisUcreti: 5000, currency: "TRY", islemFirma: "Altuntaş Makina", odendi: true }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const rs = hesaplaAylikRapor(veriS, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlS = buildAylikRaporHtml(rs, { name: "Altuntaş Makina" });
+    expect(htmlS).toContain("<b>1</b> sahipsiz kayıt");
+    expect(htmlS).toContain("Sahipsiz Kayıtlar");
+    expect(html).not.toContain("sahipsiz kayıt"); // ana fixture'da yok
+  });
+
+  it("kredi kartı blokajında bekleyenler AÇIK ALACAKLAR altında tablo + satır olarak görünür", () => {
+    const veriK = {
+      customers: [{ id: 1, name: "BlokeFirma", currency: "TRY", kalanBorc: 0 }],
+      services: [{ id: 96, customerId: 1, date: "2026-06-13", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-09-22", toplamKesinti: 0 } }],
+      partSales: [], payments: [], teklifler: [],
+    };
+    const rk = hesaplaAylikRapor(veriK, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlK = buildAylikRaporHtml(rk, { name: "Altuntaş Makina" });
+    expect(htmlK).toContain("KREDİ KARTI BLOKAJINDA BEKLEYENLER");
+    expect(htmlK).toContain("Kredi kartı blokajında bekleyen");
+    expect(htmlK).toContain("22.09.2099");                         // hesaba geçiş tarihi
+    expect(htmlK).toContain("bunun KK blokajında");                 // üst alacak kutusu satırı
+    expect(html).not.toContain("KREDİ KARTI BLOKAJINDA BEKLEYENLER"); // ana fixture'da KK yok → gizli
+    // Bakım onarım detay tablosunda Durum: kredi kartıyla ödendiği ve blokajda olduğu belirtilir
+    expect(htmlK).toContain("Ödendi · Kredi Kartı (blokajda, hesaba geçiş 22.09.2099)");
+    // Blokajı geçmiş KK: yöntem yine görünür ama blokaj notu yok
+    const rkG = hesaplaAylikRapor({ ...veriK, services: [{ ...veriK.services[0], kartKomisyonu: { blokajGun: 40, hesabaGecis: "2020-01-01", toplamKesinti: 0 } }] }, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
+    const htmlG = buildAylikRaporHtml(rkG, { name: "Altuntaş Makina" });
+    expect(htmlG).toContain("Ödendi · Kredi Kartı<");
+    expect(htmlG).not.toContain("blokajda, hesaba geçiş");
   });
 
   it("yedek parça (kargo) satışları: satır + firma firma detay tablosu render edilir", () => {
@@ -186,13 +274,13 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     };
     const rk = hesaplaAylikRapor(kargoVeri, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } });
     const htmlK = buildAylikRaporHtml(rk, { name: "Altuntaş Makina" });
-    expect(htmlK).toContain("Yedek parça (kargo) satışı");
-    expect(htmlK).toContain("YEDEK PARÇA (KARGO) ALAN FİRMALAR");
+    expect(htmlK).toContain("YEDEK PARÇA SATIŞLARI");             // bölüm başlığı
+    expect(htmlK).toContain("YEDEK PARÇA ALAN FİRMALAR");         // firma firma detay
     expect(htmlK).toContain("Bayi X");
     expect(htmlK).toContain("Müş A");
     expect(htmlK).toContain("Anlaşmasız Servis");                 // dış firma türü etiketi
     expect(htmlK).toContain("Harici Ltd");
-    expect(htmlK).toContain("Teslim şekli");                       // özet satır
+    expect(htmlK).toContain("TESLİM ŞEKLİ KIRILIMI");             // teslim şekli kırılım tablosu
     expect(htmlK).toContain("Fabrika Teslim");                     // teslim kolonu değeri
   });
 
@@ -212,7 +300,7 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(htmlO).toContain("250.000");
   });
 
-  it("rates verilince özet ≈ TL toplamı gösterir (çok dövizli veri)", () => {
+  it("çok dövizli tutarlar her para biriminde ayrı gösterilir", () => {
     const veriTL = {
       customers: [
         { id: 1, name: "Yerli", model: "AK100", installDate: "2026-06-10", currency: "TRY", fabrikaSatisBedeli: 500000, faturaBedeli: 500000, faturali: "Faturalı Yurtiçi", kalanBorc: 0 },
@@ -222,7 +310,11 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     };
     const raporTL = hesaplaAylikRapor(veriTL, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" }, rates: { usd: 40, eur: 45 } });
     const htmlTL = buildAylikRaporHtml(raporTL, { name: "Altuntaş Makina" });
-    // 500.000 TRY + 10.000 EUR × 45 = 950.000 TL yaklaşık
-    expect(htmlTL).toContain("≈ 950.000 TL");
+    // Makina satışları başlığı her para birimini ayrı gösterir (birleşik ciro/≈ TL kaldırıldı)
+    expect(htmlTL).toContain("500.000 TL"); // TRY raporda TL olarak gösterilir
+    // Rakam ile "TL" aynı satırda kalır: her tutar nowrap span içinde (dar sütunda alt satıra düşmesin)
+    expect(htmlTL).toContain('<span style="white-space:nowrap">500.000 TL</span>');
+    expect(htmlTL).not.toMatch(/\d TL(?!<\/span>)/); // span dışında çıplak "rakam TL" kalmadı
+    expect(htmlTL).toContain("10.000 EUR");
   });
 });

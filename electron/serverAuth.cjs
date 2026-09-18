@@ -215,7 +215,19 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
     // yedek parça satışı birden çok boyuta yayılır (müşteri/bayi/pano/stok EKLE izinleri): stok grubu
     // boş olsa da bu izinlerden biri varsa yazılabilmeli, yoksa müşteri/bayi detayından ekleme 403 alırdı.
     if (section === "yedekParcaSatislar") {
-      if (grupEngelli(perms, "stockActions") && !yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section };
+      // Bölüm düzeyinde EKLE izinleri gibi SİL izinleri (müşteri detayı / müşteri silme kaskadı) da
+      // yeterli; yoksa stok grubu boş bir müşteri kullanıcısı kendi silme iznini kullanamazdı (403).
+      // cust_delete de yeterli: müşteri silme kaskadı alıcı-müşteri satışlarını damgalar (kayıt düzeyi
+      // denetim eylemDenetimi/kaskadSilmeMi'de — kaskad dışı silme yine reddedilir).
+      if (grupEngelli(perms, "stockActions") && !yedekParcaEkleyebilir(perms) && !yedekParcaSilebilir(perms) && !eylemIzinli(perms, "customerActions", "cust_delete") && !eylemIzinli(perms, "dealerActions", "dealer_delete")) return { ok: false, reddedilenBolum: section };
+      if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
+      continue;
+    }
+    // dosyalar iki sahipli (müşteri dosyaları + bayi dosyaları): müşteri grubu tümden kapalı ama bayi
+    // grubu açıksa ve bu yazımda değişen dosyaların HEPSİ bayi dosyasıysa bölüm yazılabilir (bayi
+    // sorumlusu kendi bayi dosyasını künyeden silebilsin, bayi kaskadı geçsin); kayıt düzeyi izinler
+    // eylemDenetimi'nde. Blob yoksa/karışıksa eski katı kural (müşteri grubu) geçerli kalır.
+    if (section === "dosyalar" && grupEngelli(perms, group) && !grupEngelli(perms, "dealerActions") && dosyalarYalnizBayiMi(oldBlob, newBlob)) {
       if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
       continue;
     }
@@ -246,7 +258,9 @@ const EYLEM_IDLERI = {
   partSales:      { ekle: "cust_kalip_add",   sil: "cust_kalip_delete" },
   payments:       { ekle: "cust_payment_add", sil: "cust_payment_edit" }, // ödeme silme "düzenle/sil" altında
   gorusmeler:     { ekle: "cust_gorusme_add", sil: "cust_gorusme_del" },
-  dosyalar:       { ekle: "cust_dosya_add",   sil: "cust_dosya_del" },
+  // Bayi dosyası (dealerId var, customerId yok) bayi grubunun izinleriyle denetlenir — HTTP dosya
+  // ucundaki dosyaSilmeYetkisi ile aynı karar; eskiden künye yolunda hep müşteri izni aranıyordu.
+  dosyalar:       { ekle: "cust_dosya_add",   sil: "cust_dosya_del", bayi: { grup: "dealerActions", ekle: "dealer_dosya_add", sil: "dealer_dosya_del" } },
   dealers:        { ekle: "dealer_add",       sil: "dealer_delete" },
   faturalar:      { ekle: "evrak_fatura_add", sil: "evrak_fatura_delete" },
   stock:          { ekle: "stock_makina_add", sil: "stock_makina_delete" },
@@ -301,6 +315,64 @@ function yedekParcaSilebilir(perms) {
   return YEDEK_PARCA_SIL_IZINLERI.some(([g, id]) => eylemIzinli(perms, g, id));
 }
 
+// dosyalar bölümünde bu yazımda değişen (eklenen/silinen/düzenlenen) her kayıt bayi dosyası mı
+// (dealerId var, customerId yok)? Diziler yoksa ya da hiç değişiklik yoksa false (katı kurala dön).
+function dosyalarYalnizBayiMi(oldBlob, newBlob) {
+  const eski = oldBlob?.dosyalar, yeni = newBlob?.dosyalar;
+  if (!Array.isArray(eski) || !Array.isArray(yeni)) return false;
+  const bayi = (r) => !!r && r.dealerId != null && r.customerId == null;
+  const eskiById = new Map(eski.map(r => [r.id, r]));
+  const yeniById = new Map(yeni.map(r => [r.id, r]));
+  let degisen = 0;
+  for (const r of yeni) {
+    const e = eskiById.get(r.id);
+    if (e && stableStringify(e) === stableStringify(r)) continue;
+    degisen += 1;
+    if (!bayi(r) || (e && !bayi(e))) return false;
+  }
+  for (const r of eski) {
+    if (yeniById.has(r.id)) continue;
+    degisen += 1;
+    if (!bayi(r)) return false;
+  }
+  return degisen > 0;
+}
+
+// ── Müşteri silme kaskadı ────────────────────────────────────────────────────────
+// Müşteri Çöp Kutusu'na taşınınca istemci ona bağlı servis/kalıp/ödeme/görüşme/dosya/yedek parça
+// kayıtlarını da AYNI yazımda damgalar (Customers.jsx confirmDel). Bu çocuk silmeler müşteriyi
+// silme yetkisinin (cust_delete) doğal parçasıdır; her biri için ayrı silme izni aramak, yalnız
+// cust_delete taşıyan meşru kullanıcıyı 403'e düşürürdü. Kural: kaydın müşterisi bu yazımda
+// siliniyorsa (eskide aktif, yenide yok/damgalı) ve kullanıcı cust_delete taşıyorsa serbest.
+const KASKAD_BOLUMLERI = new Set(["services", "partSales", "payments", "gorusmeler", "dosyalar", "yedekParcaSatislar"]);
+function kaskadMusteriId(section, r) {
+  if (section === "yedekParcaSatislar") return r?.aliciTipi === "musteri" ? r.musteriId : null;
+  return r?.customerId ?? null;
+}
+// Bayi kaskadı (SimpleDealers.jsx confirmDel): alıcısı bayi olan yedek parça satışı + bayi dosyası.
+function kaskadBayiId(section, r) {
+  if (!r || r.disFirma) return null;
+  if (section === "yedekParcaSatislar") return (r.aliciTipi === "bayi" || (r.aliciTipi == null && r.musteriId == null)) ? (r.dealerId ?? null) : null;
+  if (section === "dosyalar") return r.customerId == null ? (r.dealerId ?? null) : null;
+  return null;
+}
+// Ebeveyn (müşteri/bayi) bu yazımda siliniyor mu: eskide aktif, yenide yok ya da damgalı.
+function ebeveynSiliniyorMu(eskiArr, yeniArr, id) {
+  if (!Array.isArray(yeniArr)) return false; // ebeveyn bölümü bu yazımda gönderilmedi → dokunulmadı → kaskad değil
+  const e = (Array.isArray(eskiArr) ? eskiArr : []).find(c => c && c.id === id);
+  if (!e || e.deletedAt) return false; // zaten çöpteydi / yoktu → kaskad değil
+  const y = yeniArr.find(c => c && c.id === id);
+  return !y || !!y.deletedAt;
+}
+function kaskadSilmeMi(section, r, eski, yeni, perms) {
+  if (!KASKAD_BOLUMLERI.has(section)) return false;
+  const cid = kaskadMusteriId(section, r);
+  if (cid != null && eylemIzinli(perms, "customerActions", "cust_delete") && ebeveynSiliniyorMu(eski.customers, yeni.customers, cid)) return true;
+  const bid = kaskadBayiId(section, r);
+  if (bid != null && eylemIzinli(perms, "dealerActions", "dealer_delete") && ebeveynSiliniyorMu(eski.dealers, yeni.dealers, bid)) return true;
+  return false;
+}
+
 // Gelen blob'daki izinsiz EKLE/SİL'leri yakalar. Dönüş { ok:true } | { ok:false, reddedilenBolum, islem, gerekli }.
 function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
   if (role === "admin") return { ok: true };
@@ -324,21 +396,24 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
         if (!yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: "yedek_parca_add" };
         continue;
       }
-      const id = idBul(map.ekle, r);
-      if (id && !eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: id };
+      const bayiDosyasi = map.bayi && kaskadBayiId(section, r) != null; // bayi dosyası → bayi grubu izinleri
+      const id = bayiDosyasi ? map.bayi.ekle : idBul(map.ekle, r);
+      if (id && !eylemIzinli(perms, bayiDosyasi ? map.bayi.grup : group, id)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: id };
     }
     // SİL: eskide AKTİF bir kayıt yenide yok VEYA deletedAt set (soft/hard); çöpteki purge muaf
     for (const r of eskiArr) {
       if (!aktifMi(r)) continue;
       const y = yeniById.get(r.id);
       if (y && !y.deletedAt) continue; // duruyor ve aktif → silme değil
+      if (kaskadSilmeMi(section, r, eski, yeni, perms)) continue; // müşteri silme kaskadı (cust_delete yeter)
       // yedek parça satışı SİL iki boyuttan gelebilir → herhangi biri yeterli (bkz. yedekParcaSilebilir).
       if (section === "yedekParcaSatislar") {
         if (!yedekParcaSilebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "yedek_parca_delete" };
         continue;
       }
-      const id = idBul(map.sil, r);
-      if (id && !eylemIzinli(perms, group, id)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: id };
+      const bayiDosyasi = map.bayi && kaskadBayiId(section, r) != null;
+      const id = bayiDosyasi ? map.bayi.sil : idBul(map.sil, r);
+      if (id && !eylemIzinli(perms, bayiDosyasi ? map.bayi.grup : group, id)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: id };
     }
   }
   // DÜZENLEME (alan düzeyi): eskide+yenide aynı id'li kayıtta, izlenen bir alan değiştiyse iznini iste.

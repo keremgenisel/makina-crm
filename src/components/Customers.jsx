@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
+import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
+import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { parsePermissions } from "../lib/permissions";
@@ -341,6 +343,17 @@ export const Customers = ({
     if (setServices) setServices(p => withDeleted(p, s => s.customerId === confirmId, ts));
     if (setPartSales) setPartSales(p => withDeleted(p, x => x.customerId === confirmId, ts));
     if (setPayments) setPayments(p => withDeleted(p, x => x.customerId === confirmId, ts));
+    // Yedek parça satışları (alıcı bu müşteri): aynı damgayla çöpe + parçaları stoğa iade (Stok
+    // sekmesindeki tekil silmeyle aynı; çöpten geri alınca yeniden düşer). Bayinin alıp bu makinaya
+    // tahsis ettiği satış kalır, tahsis serbest metne çevrilir — bkz. lib/musteriKaskad.js.
+    if (setYedekParcaSatislar) {
+      yedekParcaSatislar.filter(s => !s.deletedAt && yedekParcaAlicisiMi(s, confirmId))
+        .forEach(s => yedekParcaGeriAl(s.id, setPartStock, setPartStockLog));
+      setYedekParcaSatislar(p => yedekParcaKaskad(p, confirmId, ts, silinenMakinaEtiketi(c)));
+    }
+    // Görüşme ve dosyalar da müşteriyle birlikte çöpe (eskiden yalnız kalıcı silmede temizleniyordu)
+    if (setGorusmeler) setGorusmeler(p => withDeleted(p, g => g.customerId === confirmId && !g.deletedAt, ts));
+    if (setDosyalar) setDosyalar(p => withDeleted(p, d => d.customerId === confirmId && !d.deletedAt, ts));
 
     // Servislerde kullanılan parçaları stoka geri al
     if (c && setPartStock && setPartStockLog) {
@@ -372,7 +385,7 @@ export const Customers = ({
         kitLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === srcId);
         restoredRefId = srcId;
       } else if (c.model) {
-        const liveIds = new Set(stock.map(s => String(s.id)));
+        const liveIds = new Set((stock || []).map(s => String(s.id)));
         const orphan = partStockLog.filter(l =>
           l.tip === "makina_uretimi" &&
           l.notlar === c.model &&
@@ -635,13 +648,25 @@ export const Customers = ({
         />
       )}
 
-      {confirmId && (
-        <ConfirmDialog
-          message={`"${customers.find(c => c.id === confirmId)?.name || ""}" ${delWord} Çöp Kutusu'na taşınacak. Bu makinaya ait servis kayıtları, Extra Kalıp satışları ve ödeme/kapora kayıtları da birlikte taşınır. Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
-          onConfirm={confirmDel}
-          onCancel={() => setConfirmId(null)}
-        />
-      )}
+      {confirmId && (() => {
+        const silinecek = customers.find(c => c.id === confirmId);
+        const sayilar = musteriBagliSayilar(confirmId, { services, partSales, payments, yedekParcaSatislar, gorusmeler, dosyalar });
+        const ozet = bagliKayitOzeti(sayilar);
+        const makinaVar = !!(silinecek?.model && (silinecek.serialNo || silinecek.seriNoBekliyor));
+        return (
+          <ConfirmDialog
+            message={
+              `"${silinecek?.name || ""}" ${delWord} Çöp Kutusu'na taşınacak. ` +
+              (ozet ? `Birlikte taşınacak: ${ozet}. ` : "Bağlı kayıt yok. ") +
+              (sayilar.tahsis > 0 ? `Bayinin bu makinaya tahsis ettiği ${sayilar.tahsis} yedek parça satışı silinmez, tahsis notu olarak kalır. ` : "") +
+              (makinaVar ? "Makina, Makina Stoğu'na geri döner. " : "") +
+              "Ayarlar'dan 30 gün içinde geri alabilirsiniz."
+            }
+            onConfirm={confirmDel}
+            onCancel={() => setConfirmId(null)}
+          />
+        );
+      })()}
 
       {dupWarn && (
         <ConfirmDialog

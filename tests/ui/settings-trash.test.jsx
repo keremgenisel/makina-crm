@@ -109,6 +109,147 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(gorusmeSonuc.some(x => x.id === 7001)).toBe(true);
   });
 
+  // Müşteri silme kaskadı (lib/musteriKaskad.js) simetrisi: müşteriyle aynı damgayla çöpe giden
+  // yedek parça satışı / görüşme / dosya, müşteri geri alınınca birlikte dönmeli (stok yeniden düşer),
+  // kalıcı silinince birlikte gitmeli. Bayinin aldığı satış ve başka damgalı kayıt dokunulmamalı.
+  it("müşteri 'Geri Al' aynı damgalı yedek parça/görüşme/dosyayı da geri alır ve parça stoğunu yeniden düşer", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const cust = { id: 500, name: "Kaskad Firma", deletedAt: ts };
+    const durum = {
+      yp: [
+        { id: 30, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, deletedAt: ts, tahsisler: [] },
+        { id: 33, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 1, deletedAt: "2026-08-01T00:00:00.000Z", tahsisler: [] }, // ayrı silinmiş → kalır
+        { id: 31, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 5, tahsisler: [] },
+      ],
+      gorusme: [{ id: 40, customerId: 500, not: "x", deletedAt: ts }],
+      dosya: [{ id: 50, customerId: 500, ad: "a.pdf", dosyaAdi: "a.pdf", deletedAt: ts }],
+      stok: [{ partId: "7", miktar: 10 }], log: [],
+    };
+    const setter = (k) => vi.fn((u) => { durum[k] = u(durum[k]); });
+    renderTrash({
+      rawCustomers: [cust], rawYedekParcaSatislar: durum.yp, rawGorusmeler: durum.gorusme, rawDosyalar: durum.dosya, rawParts: [{ id: 7, ad: "Yüzük" }],
+      partStock: durum.stok, partStockLog: durum.log,
+      setCustomers: noop, setYedekParcaSatislar: setter("yp"), setGorusmeler: setter("gorusme"), setDosyalar: setter("dosya"),
+      setPartStock: setter("stok"), setPartStockLog: setter("log"),
+    });
+    const satir = screen.getByText("Kaskad Firma").closest("tr");
+    fireEvent.click(within(satir).getByText("Geri Al"));
+    expect(durum.yp.find(x => x.id === 30).deletedAt).toBeUndefined();
+    expect(durum.yp.find(x => x.id === 33).deletedAt).toBe("2026-08-01T00:00:00.000Z");
+    expect(durum.yp.find(x => x.id === 31).deletedAt).toBeUndefined();
+    expect(durum.gorusme[0].deletedAt).toBeUndefined();
+    expect(durum.dosya[0].deletedAt).toBeUndefined();
+    // stok yeniden düştü (yalnız geri alınan satış: 2 adet)
+    expect(durum.stok.find(s => s.partId === "7").miktar).toBe(8);
+    expect(durum.log.filter(l => l.referansId === 30 && l.tip === "bayi_satis")).toHaveLength(1);
+  });
+
+  it("müşteri 'Geri Al': stok yetersizse yalnız mevcut kadarı düşer (eksiye düşmez), sıfırsa hareket yazılmaz", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const cust = { id: 500, name: "Kaskad Firma", deletedAt: ts };
+    const durum = {
+      yp: [
+        { id: 30, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 5, deletedAt: ts, tahsisler: [] }, // stokta 2 var → 2 düşer
+        { id: 34, aliciTipi: "musteri", musteriId: 500, partId: "9", miktar: 1, deletedAt: ts, tahsisler: [] }, // stokta hiç yok → hareket yok
+      ],
+      stok: [{ partId: "7", miktar: 2 }], log: [],
+    };
+    const setter = (k) => vi.fn((u) => { durum[k] = u(durum[k]); });
+    renderTrash({ rawCustomers: [cust], rawYedekParcaSatislar: durum.yp, partStock: durum.stok, partStockLog: durum.log,
+      setCustomers: noop, setYedekParcaSatislar: setter("yp"), setPartStock: setter("stok"), setPartStockLog: setter("log") });
+    fireEvent.click(within(screen.getByText("Kaskad Firma").closest("tr")).getByText("Geri Al"));
+    expect(durum.yp.every(x => x.deletedAt === undefined)).toBe(true);
+    expect(durum.stok.find(s => s.partId === "7").miktar).toBe(0);
+    expect(durum.log.filter(l => l.referansId === 30)).toHaveLength(1);
+    expect(durum.log.find(l => l.referansId === 30).miktar).toBe(-2);
+    expect(durum.log.some(l => l.referansId === 34)).toBe(false);
+  });
+
+  it("müşteri 'Kalıcı Sil' aynı damgalı yedek parça satışını da diziden çıkarır; bayi satışı kalır", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const cust = { id: 500, name: "Kaskad Firma", deletedAt: ts };
+    let sonuc = null;
+    const setYedekParcaSatislar = vi.fn((u) => { sonuc = u([
+      { id: 30, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, deletedAt: ts, tahsisler: [] },
+      { id: 31, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 5, tahsisler: [] },
+    ]); });
+    renderTrash({ rawCustomers: [cust], setCustomers: noop, setYedekParcaSatislar, setGorusmeler: noop, setDosyalar: noop });
+    const satir = screen.getByText("Kaskad Firma").closest("tr");
+    fireEvent.click(within(satir).getByText("Kalıcı Sil"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(sonuc.some(x => x.id === 30)).toBe(false);
+    expect(sonuc.some(x => x.id === 31)).toBe(true);
+  });
+
+  // Bayi kaskadı simetrisi (lib/bayiKaskad.js)
+  it("bayi 'Geri Al' aynı damgalı yedek parça satışlarını ve bayi dosyasını geri alır, stoğu yeniden düşer", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: ts };
+    const durum = {
+      yp: [
+        { id: 30, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 2, deletedAt: ts, tahsisler: [] },
+        { id: 31, aliciTipi: "bayi", dealerId: 9, partId: "7", miktar: 1, deletedAt: "2026-08-01T00:00:00.000Z", tahsisler: [] }, // ayrı silinmiş → kalır
+        { id: 32, aliciTipi: "musteri", musteriId: 1, dealerId: 9, partId: "7", miktar: 1, deletedAt: ts, tahsisler: [] },          // müşteri alımı → bayi kaskadı değil
+      ],
+      dosya: [{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf", deletedAt: ts }, { id: 51, dealerId: 9, customerId: 1, ad: "m.pdf", dosyaAdi: "m.pdf", deletedAt: ts }],
+      stok: [{ partId: "7", miktar: 10 }], log: [],
+    };
+    const setter = (k) => vi.fn((u) => { durum[k] = u(durum[k]); });
+    renderTrash({
+      rawDealers: [bayi], rawYedekParcaSatislar: durum.yp, rawDosyalar: durum.dosya, rawParts: [{ id: 7, ad: "Dişli" }],
+      partStock: durum.stok, partStockLog: durum.log,
+      setDealers: setter("dealers"), setYedekParcaSatislar: setter("yp"), setDosyalar: setter("dosya"), setPartStock: setter("stok"), setPartStockLog: setter("log"),
+    });
+    durum.dealers = [bayi];
+    fireEvent.click(within(screen.getByText("Kaskad Bayi").closest("tr")).getByText("Geri Al"));
+    expect(durum.yp.find(x => x.id === 30).deletedAt).toBeUndefined();
+    expect(durum.yp.find(x => x.id === 31).deletedAt).toBe("2026-08-01T00:00:00.000Z");
+    expect(durum.yp.find(x => x.id === 32).deletedAt).toBe(ts);
+    expect(durum.dosya.find(x => x.id === 50).deletedAt).toBeUndefined();
+    expect(durum.dosya.find(x => x.id === 51).deletedAt).toBe(ts);
+    expect(durum.stok.find(s => s.partId === "7").miktar).toBe(8);
+  });
+
+  it("bayi 'Kalıcı Sil' aynı damgalı satışları ve bayinin tüm dosyalarını (fiziksel dahil) diziden çıkarır", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: ts };
+    let ypSonuc = null, dosyaSonuc = null;
+    const remove = vi.fn();
+    window.appFiles = { remove };
+    const setYedekParcaSatislar = vi.fn((u) => { ypSonuc = u([
+      { id: 30, aliciTipi: "bayi", dealerId: 9, deletedAt: ts, tahsisler: [] },
+      { id: 33, aliciTipi: "bayi", dealerId: 10, tahsisler: [] },
+    ]); });
+    const setDosyalar = vi.fn((u) => { dosyaSonuc = u([{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf" }, { id: 52, dealerId: 10, ad: "b.pdf", dosyaAdi: "b.pdf" }]); });
+    renderTrash({ rawDealers: [bayi], rawDosyalar: [{ id: 50, dealerId: 9, ad: "a.pdf", dosyaAdi: "a.pdf" }], setDealers: noop, setYedekParcaSatislar, setDosyalar });
+    fireEvent.click(within(screen.getByText("Kaskad Bayi").closest("tr")).getByText("Kalıcı Sil"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(ypSonuc.map(x => x.id)).toEqual([33]);
+    expect(dosyaSonuc.map(x => x.id)).toEqual([52]);
+    expect(remove).toHaveBeenCalledWith("a.pdf");
+    delete window.appFiles;
+  });
+
+  it("'Çöp Kutusunu Boşalt': çöpteki bayinin damgasız (eski) dosyaları da fiziksel kopyasıyla gider, başka bayininki kalır", () => {
+    const bayi = { id: 9, name: "Kaskad Bayi", deletedAt: "2026-09-18T10:00:00.000Z" };
+    let dosyaSonuc = null;
+    const remove = vi.fn();
+    window.appFiles = { remove };
+    const dosyalar = [
+      { id: 50, dealerId: 9, ad: "eski.pdf", dosyaAdi: "eski.pdf" },                       // damgasız ama bayi çöpte → gider
+      { id: 51, dealerId: 10, ad: "b.pdf", dosyaAdi: "b.pdf" },                            // başka bayi → kalır
+      { id: 52, customerId: 3, dealerId: 9, ad: "m.pdf", dosyaAdi: "m.pdf" },              // müşteri dosyası (bayi ref'li) → kalır
+    ];
+    const setDosyalar = vi.fn((u) => { dosyaSonuc = u(dosyalar); });
+    renderTrash({ rawDealers: [bayi], rawDosyalar: dosyalar, setDealers: noop, setDosyalar });
+    fireEvent.click(screen.getByText("Çöp Kutusunu Boşalt"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(dosyaSonuc.map(x => x.id)).toEqual([51, 52]);
+    expect(remove).toHaveBeenCalledWith("eski.pdf");
+    expect(remove).not.toHaveBeenCalledWith("b.pdf");
+    delete window.appFiles;
+  });
+
   it("parça tipi 'Kalıcı Sil' sonrası setPartTypeDefs kaydı diziden çıkarır", () => {
     let sonuc = null;
     const setPartTypeDefs = vi.fn((updater) => { sonuc = updater([{ id: "tip_1", ad: "Conta", deletedAt: "2026-07-20T10:00:00.000Z" }]); });

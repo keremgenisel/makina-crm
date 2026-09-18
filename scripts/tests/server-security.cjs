@@ -37,6 +37,13 @@ const KIOSK_EDIT   = JSON.stringify({ tabs: ["servis"], customerActions: ["cust_
 // Stok kullanıcısı: kargo kutu sürükleme (kargoDurum) izni yok/var senaryoları.
 const STOK_NOEDIT = JSON.stringify({ tabs: ["stock"], stockActions: ["yedek_parca_add"] });   // kargo durum sürükleyemez
 const STOK_EDIT   = JSON.stringify({ tabs: ["stock"], stockActions: ["yedek_parca_edit"] });  // sürükleyebilir
+// Müşteri silici: yalnız müşteri silme izni (çocuk kayıt silme izinleri YOK) — kaskad senaryosu.
+const SILICI = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_delete"] });
+// Aynısı ama stok grubu açıkça KISITLI (admin daraltmış): kaskad dışı yedek parça silme kayıt düzeyinde reddedilmeli.
+const SILICI_STOKSUZ = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_delete"] });
+// Bayi silici: yalnız bayi silme izni — bayi kaskadı (satış + bayi dosyası) senaryosu.
+// (stok grubu açıkça kısıtlı: aksi hâlde stok grubu tanımsız = yedek_parca_delete serbest sayılır, kaskad-dışı ret doğrulanamaz)
+const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
 let fail = 0;
 const check = (name, ok) => { console.log((ok ? "PASS" : "FAIL") + "  " + name); if (!ok) fail++; };
@@ -57,6 +64,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("kioskEdit",   bcrypt.hashSync("kiosk123", 10), "user", KIOSK_EDIT);
   dbmod.createUser("stokNoEdit",  bcrypt.hashSync("stok123", 10), "user", STOK_NOEDIT);
   dbmod.createUser("stokEdit",    bcrypt.hashSync("stok123", 10), "user", STOK_EDIT);
+  dbmod.createUser("silici",      bcrypt.hashSync("sil123", 10), "user", SILICI);
+  dbmod.createUser("siliciStoksuz", bcrypt.hashSync("sil123", 10), "user", SILICI_STOKSUZ);
+  dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -183,6 +193,91 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokNoTok), stokNoTok)).status === 403);
   check("kargo durum sürükleme: yedek_parca_edit VAR → 200",
     (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokYesTok), stokYesTok)).status === 200);
+
+  // ── Müşteri silme kaskadı uçtan uca: yalnız cust_delete taşıyan kullanıcı, müşteriyle birlikte
+  // aynı yazımda damgalanan servis/yedek parça/görüşme/dosyayı da yazabilmeli (çocuk silme izinleri
+  // aranmaz); müşteri silinmeden aynı çocuk silme ise reddedilmeli (kaskad değil).
+  const siliciTok = (await login("silici", "sil123")).body.token;
+  await postData({
+    customers: [{ id: 1, name: "Sekme Yazdı", model: "AK100" }, { id: 50, name: "Kaskad Firma", model: "AK140_DSC", serialNo: "F1" }],
+    services: [{ id: 7, customerId: 1, type: "Bakım", durum: "Yapılıyor" }, { id: 52, customerId: 50, type: "Bakım" }],
+    yedekParcaSatislar: [
+      { id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi", tahsisler: [{ customerId: 50, miktar: 1 }] },
+      { id: 51, aliciTipi: "musteri", musteriId: 50, partId: "1", miktar: 2, birimFiyat: 5, currency: "TL", tahsisler: [{ customerId: 50, miktar: 2 }] },
+    ],
+    gorusmeler: [{ id: 53, customerId: 50, tarih: "2026-09-18", tur: "Telefon", not: "x" }],
+    dosyalar: [{ id: 54, customerId: 50, ad: "a.pdf", dosyaAdi: "a.pdf", refType: "musteri", refId: 50 }],
+  }, await curVer(adminTok), adminTok);
+  const kaskadTs = new Date().toISOString();
+  const kaskadOnce = await (await api("/api/data", {}, siliciTok)).json();
+  // Yalnız müşteri + FK çocukları + yedek parça gönderilir (kısmi blob; customers tek başına yazılırsa
+  // FK-cascade servisleri silerdi). Diğer bölümler dokunulmaz → değişen sayılmaz.
+  const kaskadBolum = (b) => ({ customers: b.customers, services: b.services, partSales: b.partSales, payments: b.payments, gorusmeler: b.gorusmeler, dosyalar: b.dosyalar, yedekParcaSatislar: b.yedekParcaSatislar });
+  // Kaskad değil: müşteri duruyor, yalnız servisi siliniyor → cust_service_delete yok → 403
+  check("kaskadsız çocuk silme (müşteri duruyor): cust_delete tek başına yetmez → 403",
+    (await postData({ ...kaskadBolum(kaskadOnce), services: kaskadOnce.services.map(s => s.id === 52 ? { ...s, deletedAt: kaskadTs } : s) }, kaskadOnce.dataVersion, siliciTok)).status === 403);
+  // Kaskad: müşteri + servis + alıcı-müşteri yedek parça + görüşme + dosya aynı damga; bayi satışının tahsisi serbest metne
+  const kaskadYeni = {
+    ...kaskadBolum(kaskadOnce),
+    customers: kaskadOnce.customers.map(c => c.id === 50 ? { ...c, deletedAt: kaskadTs } : c),
+    services: kaskadOnce.services.map(s => s.customerId === 50 ? { ...s, deletedAt: kaskadTs } : s),
+    yedekParcaSatislar: kaskadOnce.yedekParcaSatislar.map(s => s.id === 51 ? { ...s, deletedAt: kaskadTs }
+      : s.id === 8 ? { ...s, tahsisler: [{ customerId: null, miktar: 1, makinaSerbest: "Kaskad Firma · F1 (silinen müşteri)" }] } : s),
+    gorusmeler: kaskadOnce.gorusmeler.map(g => g.customerId === 50 ? { ...g, deletedAt: kaskadTs } : g),
+    dosyalar: kaskadOnce.dosyalar.map(d => d.customerId === 50 ? { ...d, deletedAt: kaskadTs } : d),
+  };
+  const kaskadRes = await postData(kaskadYeni, await curVer(siliciTok), siliciTok);
+  check("müşteri silme kaskadı: yalnız cust_delete ile 200", kaskadRes.status === 200);
+  const kaskadSonra = await (await api("/api/data", {}, adminTok)).json();
+  check("kaskad kalıcı: müşteri/servis/yedek parça/görüşme/dosya aynı damgayla çöpte",
+    kaskadSonra.customers.find(c => c.id === 50)?.deletedAt === kaskadTs &&
+    kaskadSonra.services.find(s => s.id === 52)?.deletedAt === kaskadTs &&
+    kaskadSonra.yedekParcaSatislar.find(s => s.id === 51)?.deletedAt === kaskadTs &&
+    kaskadSonra.gorusmeler.find(g => g.id === 53)?.deletedAt === kaskadTs &&
+    kaskadSonra.dosyalar.find(d => d.id === 54)?.deletedAt === kaskadTs);
+  const bayiSatis = kaskadSonra.yedekParcaSatislar.find(s => s.id === 8);
+  check("bayi satışı silinmedi, tahsisi serbest metne döndü",
+    bayiSatis && !bayiSatis.deletedAt && bayiSatis.tahsisler?.[0]?.customerId == null && /silinen müşteri/.test(bayiSatis.tahsisler?.[0]?.makinaSerbest || ""));
+  // Müşteri zaten çöpteyken kalan çocuğu silmek kaskad değildir → 403
+  // (stockActions tanımsız kullanıcı stok grubunda tam yetkili sayılır → bayi satışını zaten silebilir;
+  // kaskad-dışı reddi, stok grubu açıkça kısıtlanmış cust_delete kullanıcısıyla doğrulanır.)
+  const siliciStoksuzTok = (await login("siliciStoksuz", "sil123")).body.token;
+  check("stok grubu kısıtlı cust_delete kullanıcısı: bayi satışını silmek kaskad değil → 403",
+    (await postData({ ...kaskadBolum(kaskadSonra), yedekParcaSatislar: kaskadSonra.yedekParcaSatislar.map(s => s.id === 8 ? { ...s, deletedAt: kaskadTs } : s) }, kaskadSonra.dataVersion, siliciStoksuzTok)).status === 403);
+  // Aynı kullanıcı gerçek kaskadı (yeni bir müşteri + alıcı-müşteri satışı) yazabilmeli
+  await postData({
+    customers: [...kaskadSonra.customers, { id: 60, name: "Kaskad İki", model: "AK100" }],
+    services: kaskadSonra.services, partSales: kaskadSonra.partSales, payments: kaskadSonra.payments, gorusmeler: kaskadSonra.gorusmeler, dosyalar: kaskadSonra.dosyalar,
+    yedekParcaSatislar: [...kaskadSonra.yedekParcaSatislar, { id: 61, aliciTipi: "musteri", musteriId: 60, partId: "1", miktar: 1, birimFiyat: 5, currency: "TL", tahsisler: [] }],
+  }, await curVer(adminTok), adminTok);
+  const k2 = await (await api("/api/data", {}, siliciStoksuzTok)).json();
+  const k2Ts = new Date().toISOString();
+  check("stok grubu kısıtlı cust_delete kullanıcısı: müşteri + alıcı-müşteri yedek parça kaskadı → 200",
+    (await postData({ ...kaskadBolum(k2), customers: k2.customers.map(c => c.id === 60 ? { ...c, deletedAt: k2Ts } : c), yedekParcaSatislar: k2.yedekParcaSatislar.map(s => s.id === 61 ? { ...s, deletedAt: k2Ts } : s) }, k2.dataVersion, siliciStoksuzTok)).status === 200);
+
+  // ── Bayi silme kaskadı uçtan uca: yalnız dealer_delete ile bayi + alıcısı bayi olan satış + bayi
+  // dosyası aynı yazımda damgalanır; bayi silinmeden satış silmek reddedilir.
+  const bayiSiliciTok = (await login("bayiSilici", "sil123")).body.token;
+  await postData({
+    dealers: [{ id: 2, name: "Bayi" }, { id: 70, name: "Kaskad Bayi" }],
+    yedekParcaSatislar: [...(await (await api("/api/data", {}, adminTok)).json()).yedekParcaSatislar, { id: 71, aliciTipi: "bayi", dealerId: 70, partId: "1", miktar: 1, birimFiyat: 9, currency: "TL", tahsisler: [] }],
+    dosyalar: [...(await (await api("/api/data", {}, adminTok)).json()).dosyalar, { id: 72, dealerId: 70, ad: "b.pdf", dosyaAdi: "b.pdf", refType: "bayi", refId: 70 }],
+  }, await curVer(adminTok), adminTok);
+  const bk = await (await api("/api/data", {}, bayiSiliciTok)).json();
+  const bkTs = new Date().toISOString();
+  const bayiBolum = (b) => ({ dealers: b.dealers, yedekParcaSatislar: b.yedekParcaSatislar, dosyalar: b.dosyalar });
+  check("bayi kaskadsız satış silme (bayi duruyor): dealer_delete tek başına yetmez → 403",
+    (await postData({ ...bayiBolum(bk), yedekParcaSatislar: bk.yedekParcaSatislar.map(s => s.id === 71 ? { ...s, deletedAt: bkTs } : s) }, bk.dataVersion, bayiSiliciTok)).status === 403);
+  const bkYeni = {
+    ...bayiBolum(bk),
+    dealers: bk.dealers.map(d => d.id === 70 ? { ...d, deletedAt: bkTs } : d),
+    yedekParcaSatislar: bk.yedekParcaSatislar.map(s => s.id === 71 ? { ...s, deletedAt: bkTs } : s),
+    dosyalar: bk.dosyalar.map(d => d.id === 72 ? { ...d, deletedAt: bkTs } : d),
+  };
+  check("bayi silme kaskadı: yalnız dealer_delete ile 200", (await postData(bkYeni, await curVer(bayiSiliciTok), bayiSiliciTok)).status === 200);
+  const bkSonra = await (await api("/api/data", {}, adminTok)).json();
+  check("bayi kaskadı kalıcı: bayi/satış/dosya aynı damgayla çöpte",
+    bkSonra.dealers.find(d => d.id === 70)?.deletedAt === bkTs && bkSonra.yedekParcaSatislar.find(s => s.id === 71)?.deletedAt === bkTs && bkSonra.dosyalar.find(d => d.id === 72)?.deletedAt === bkTs);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek
@@ -484,9 +579,32 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const bucketOnce = dbmod.getRateBucket("user:admin");
   check("kademeli sayaç DB'ye yazıldı (kullanıcı adı başına)", !!bucketOnce && bucketOnce.count >= 3);
   await server.stop();
-  await server.start(0, dbmod);
+  const { port: portSonra } = await server.start(0, dbmod); // yeniden başlatılan sunucunun portu (aşağıdaki hız sınırı kontrolü için)
   const bucketSonra = dbmod.getRateBucket("user:admin");
   check("yeniden başlatmada kademeli sayaç korunur (kalıcı kilit)", !!bucketSonra && bucketSonra.count >= 3);
+
+  // ── Genel /api hız sınırı (IP başına 600/dk, express-rate-limit): 601. istek 429 ─────────────
+  // Sunucu az önce yeniden başladı → sayaç sıfır. EN SONDA koşar: pencere dolunca sonraki tüm /api
+  // istekleri 1 dk boyunca 429 alır, başka kontrol kalmamalı. Yeni admin jetonu (sunucu yeniden başladı).
+  {
+    const b = `http://127.0.0.1:${portSonra}`;
+    // Kaba kuvvet bölümü IP/kullanıcı kilidi bıraktı → yeni giriş yerine baştaki salt-okunur jeton
+    // (JWT gizli anahtarı kalıcı, yeniden başlatmada geçerli kalır).
+    const tok2 = roTok;
+    let ilk429 = -1, sonStatus = 0, digerHata = 0;
+    for (let i = 1; i <= 601; i++) {
+      const r = await fetch(b + "/api/version", { headers: { Authorization: `Bearer ${tok2}` } });
+      sonStatus = r.status;
+      if (r.status === 429) { if (ilk429 === -1) ilk429 = i; }
+      else if (r.status !== 200) digerHata++;
+    }
+    if (!(ilk429 === 601 && sonStatus === 429 && digerHata === 0)) console.log("  DBG hız sınırı: ilk429=", ilk429, "son=", sonStatus, "digerHata=", digerHata);
+    check("genel /api hız sınırı: ilk 600 istek 200, 601. istek 429", ilk429 === 601 && sonStatus === 429 && digerHata === 0);
+    const r429 = await fetch(b + "/api/version", { headers: { Authorization: `Bearer ${tok2}` } });
+    const g429 = await r429.json().catch(() => ({}));
+    check("429 gövdesi Türkçe hata + RateLimit başlığı", r429.status === 429 && /fazla istek/i.test(g429.error || "") && !!r429.headers.get("ratelimit"));
+    check("/health ve /auth sınırın dışında (sınır yalnız /api)", (await fetch(b + "/health")).status === 200);
+  }
 
   await server.stop();
   fs.rmSync(tmpDir, { recursive: true, force: true });
