@@ -19,6 +19,7 @@ const { BrowserWindow, safeStorage, app: electronApp } = require("electron");
 const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
 const { rateAllow, rateHit, rateRetryAfter, escalatingBlockedMs, escalatingNext } = require("./rateLimit.cjs");
+const { rateLimit } = require("express-rate-limit"); // genel /api hız sınırı (bağımlılıksız, CodeQL'in tanıdığı kütüphane)
 const totp = require("./totp.cjs");
 const fsx = require("fs");
 const files = require("./files.cjs");
@@ -292,6 +293,14 @@ function buildApp() {
   // Dosya yükleme binary gövde alır (JSON değil) — json parser'dan ÖNCE ham parser'a bağla.
   app.use("/api/files/upload", express.raw({ type: () => true, limit: "21mb" }));
   app.use(express.json({ limit: "1mb" }));
+  // Genel istek hız sınırı (tüm /api uçları, IP başına 600/dk): DoS/aşırı yoklama koruması ve CodeQL
+  // js/missing-rate-limiting kapsaması. Bir istemci 30 sn'de bir yoklar + kayıt yazar (dakikada < 20);
+  // 600 bol marj. Giriş ucunun kademeli kaba-kuvvet kilidi ve /api/data'nın kullanıcı başına 60/dk
+  // yazma sınırı ayrıca ve daha sıkı olarak sürer. Bellek içi sayaç; süreç yeniden başlayınca sıfırlanır.
+  app.use("/api", rateLimit({
+    windowMs: 60 * 1000, limit: 600, standardHeaders: "draft-8", legacyHeaders: false,
+    handler: (_req, res) => res.status(429).json({ error: "Çok fazla istek; kısa süre sonra tekrar deneyin." }),
+  }));
 
   // /health kimliksiz: istemci hem erişilebilirlik yoklaması hem TLS keşfi/doğrulaması için kullanır.
   app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false, tls: !!certFp, fp: certFp || null }));
@@ -648,9 +657,11 @@ function buildApp() {
   // POST /api/files/upload — binary gövde; başlıkta orijinal ad. Depoya yazar, künye döndürür.
   app.post("/api/files/upload", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
     try {
-      const ad = decodeURIComponent(req.get("X-Dosya-Adi") || "dosya");
+      // Başlıklar metne zorlanır (CodeQL js/type-confusion-through-parameter-tampering: dizi/nesne gelirse
+      // izin denetimi ve depo adı üretimi metin varsayımıyla yanılmasın).
+      const ad = decodeURIComponent(String(req.get("X-Dosya-Adi") || "dosya"));
       // Firma adı: istemci "X-Dosya-Firma" ile yollar → okunur depo adı ("<Firma> - <ad> - <anahtar>").
-      let firma = ""; try { firma = decodeURIComponent(req.get("X-Dosya-Firma") || ""); } catch { firma = ""; }
+      let firma = ""; try { firma = decodeURIComponent(String(req.get("X-Dosya-Firma") || "")); } catch { firma = ""; }
       if (!files.izinliMi(ad)) return res.status(400).json({ error: "Bu dosya türü desteklenmiyor" });
       const buf = req.body;
       if (!Buffer.isBuffer(buf) || buf.length === 0) return res.status(400).json({ error: "Boş dosya" });

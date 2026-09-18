@@ -579,9 +579,32 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const bucketOnce = dbmod.getRateBucket("user:admin");
   check("kademeli sayaç DB'ye yazıldı (kullanıcı adı başına)", !!bucketOnce && bucketOnce.count >= 3);
   await server.stop();
-  await server.start(0, dbmod);
+  const { port: portSonra } = await server.start(0, dbmod); // yeniden başlatılan sunucunun portu (aşağıdaki hız sınırı kontrolü için)
   const bucketSonra = dbmod.getRateBucket("user:admin");
   check("yeniden başlatmada kademeli sayaç korunur (kalıcı kilit)", !!bucketSonra && bucketSonra.count >= 3);
+
+  // ── Genel /api hız sınırı (IP başına 600/dk, express-rate-limit): 601. istek 429 ─────────────
+  // Sunucu az önce yeniden başladı → sayaç sıfır. EN SONDA koşar: pencere dolunca sonraki tüm /api
+  // istekleri 1 dk boyunca 429 alır, başka kontrol kalmamalı. Yeni admin jetonu (sunucu yeniden başladı).
+  {
+    const b = `http://127.0.0.1:${portSonra}`;
+    // Kaba kuvvet bölümü IP/kullanıcı kilidi bıraktı → yeni giriş yerine baştaki salt-okunur jeton
+    // (JWT gizli anahtarı kalıcı, yeniden başlatmada geçerli kalır).
+    const tok2 = roTok;
+    let ilk429 = -1, sonStatus = 0, digerHata = 0;
+    for (let i = 1; i <= 601; i++) {
+      const r = await fetch(b + "/api/version", { headers: { Authorization: `Bearer ${tok2}` } });
+      sonStatus = r.status;
+      if (r.status === 429) { if (ilk429 === -1) ilk429 = i; }
+      else if (r.status !== 200) digerHata++;
+    }
+    if (!(ilk429 === 601 && sonStatus === 429 && digerHata === 0)) console.log("  DBG hız sınırı: ilk429=", ilk429, "son=", sonStatus, "digerHata=", digerHata);
+    check("genel /api hız sınırı: ilk 600 istek 200, 601. istek 429", ilk429 === 601 && sonStatus === 429 && digerHata === 0);
+    const r429 = await fetch(b + "/api/version", { headers: { Authorization: `Bearer ${tok2}` } });
+    const g429 = await r429.json().catch(() => ({}));
+    check("429 gövdesi Türkçe hata + RateLimit başlığı", r429.status === 429 && /fazla istek/i.test(g429.error || "") && !!r429.headers.get("ratelimit"));
+    check("/health ve /auth sınırın dışında (sınır yalnız /api)", (await fetch(b + "/health")).status === 200);
+  }
 
   await server.stop();
   fs.rmSync(tmpDir, { recursive: true, force: true });

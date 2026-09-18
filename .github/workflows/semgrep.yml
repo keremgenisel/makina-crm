@@ -1,0 +1,39 @@
+# Semgrep — statik güvenlik analizi (SAST), CodeQL'in yanında ikinci göz.
+# Yerelde elle koşulan tarama (SECURITY-TOOLING.md §2) ile AYNI kural setleri; bulgular SARIF olarak
+# Security > Code scanning sekmesine yüklenir (kategori: semgrep, CodeQL'inkilerle karışmaz).
+# Bulgu iş akışını kırmaya çevirmez (semgrep varsayılanı çıkış 0); kararlar Security sekmesinde
+# verilir (kapat/düzelt). Kural setleri Semgrep kayıt defterinden çekilir, hesap/anahtar gerekmez.
+name: semgrep
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1" # her Pazartesi 05:00 UTC (kural setleri güncellenince yeni bulgular)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # SARIF yüklemek için
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v7
+      - name: Semgrep taraması (SARIF)
+        run: |
+          semgrep scan --metrics=off \
+            --config p/javascript --config p/nodejs --config p/react \
+            --config p/security-audit --config p/secrets \
+            --exclude node_modules --exclude dist --exclude release --exclude src/lib/map \
+            --sarif --output semgrep.sarif \
+            electron src scripts
+      - name: Bulguları Code scanning'e yükle
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

@@ -41,6 +41,30 @@ semgrep --metrics=off \
 `--metrics=off` telemetriyi kapatır (güvenlik denetimlerinde şart). Yeniden
 kurulum: `python3 -m pip install --user semgrep`.
 
+**CI:** `.github/workflows/semgrep.yml` aynı kural setleriyle her push/PR'da + haftalık koşar
+ve bulguları SARIF olarak Security > Code scanning'e yükler (kategori `semgrep`; CodeQL'inkilerle
+yan yana). Bulgu iş akışını kırmaz, karar Security sekmesinde verilir. 2026-09-18 itibarıyla tek
+bulgu `bypass-tls-verification` (`pinnedFetch.cjs`) — CodeQL'deki ile aynı bilinçli TOFU parmak
+izi soketi, aynı gerekçeyle kapatın.
+
+### 2b. GitHub Code scanning (CodeQL, varsayılan kurulum)
+
+Depoda açık (Security > Code scanning); diller JavaScript/TypeScript + GitHub Actions.
+Her push/PR'da ve haftalık koşar, sonuçlar Security > Code scanning alerts'te.
+İlk tarama (2026-09-18, 41 uyarı) sonrası alınan kararlar:
+
+- `js/disabling-certificate-validation` (`electron/pinnedFetch.cjs`): **yanlış pozitif**,
+  GitHub'da gerekçeyle kapatıldı. İlk bağlantıda sunucunun kendi imzalı sertifikasının parmak
+  izini almak için açılan geçici TLS soketi (TOFU pinleme); sokete veri gönderilmez, sonraki
+  istekler alınan parmak iziyle pinlenmiş gider. Tarama her seferinde yeniden işaretlerse
+  aynı gerekçeyle kapatın; kodu "düzeltmeyin".
+- `js/missing-rate-limiting` (33): tüm `/api` uçlarına `express-rate-limit` ile genel sınır
+  (IP başına 600/dk) eklendi; CodeQL yalnız tanıdığı kütüphaneleri sayar, özel `rateLimit.cjs`
+  (giriş kademeli kilidi, `/api/data` 60/dk) tanınmaz ama sürüyor.
+- `js/type-confusion-through-parameter-tampering` (3): dosya yükleme başlıkları `String(...)`
+  ile metne zorlandı.
+- `actions/missing-workflow-permissions` (4): iş akışlarına `permissions: contents: read`.
+
 ## 3. Claude Code skill'leri (`.claude/skills/`)
 
 Trail of Bits'in üç skill'i eklendi (CC BY-SA 4.0, bkz. `ATTRIBUTION.md`):
@@ -59,7 +83,20 @@ Amaç: kullanılan paketlerde bilinen güvenlik açıklarını yakalamak.
 - **CI:** `.github/workflows/audit.yml` — her push/PR'de + haftalık `npm audit`.
   Haftalık çalışma, kod değişmese de yeni açıklanan CVE'leri yakalar.
 - **Dependabot:** `.github/dependabot.yml` — npm ve GitHub Actions sürümleri için
-  haftalık güncelleme PR'ları açar (küçük sürümler tek PR'da gruplanır).
+  haftalık güncelleme PR'ları açar (küçük sürümler tek PR'da gruplanır). Ayrıca repo
+  ayarında **Dependabot security updates** açık (2026-09-18): yeni bir CVE duyurulunca
+  haftalık takvimi beklemeden yamalı sürüm PR'ı gelir. PR'lar elle onaylanır, otomatik birleşmez.
+
+**Test + lint CI (`.github/workflows/test.yml`):** her push/PR'da ESLint + saf/jsdom vitest
+(`hizli` işi); Electron altında koşan SQLite ve sunucu uçtan uca testleri `xvfb-run` ile
+yalnız main'e push, PR ve haftalık (`electron` işi). Yerelde 1291 testin CI'da da koştuğunu
+garanti eder; sürüm yayınlamadan önce Actions'ın yeşil olmasına bakın.
+
+**Sürüm bütünlüğü (`.github/workflows/release-integrity.yml`):** her yayınlanan Release'te
+Setup .exe + .blockmap + latest.yml'nin var olduğunu ve latest.yml sha512/size/url'inin .exe ile
+eşleştiğini doğrular (electron-updater bunları şart koşar). `scripts/publish-release.cjs`'in yayın
+anındaki kontrolünün sunucu tarafındaki ikinci gözü; elle: Actions > release-integrity > Run
+workflow > etiket.
 
 **xlsx (SheetJS) — otomatik sürüm denetimi:** `xlsx` npm registry'de değil,
 `package.json`'da bir CDN tarball URL'siyle pinlenmiştir (npm'deki paket terk edilmiş

@@ -1,0 +1,56 @@
+# Test + lint — sürüm yayınlanmadan önce kırılma yakalamak için her push/PR'da koşar.
+# İki iş:
+#  - hizli: ESLint + saf/jsdom vitest testleri (Electron binary'si indirilmeden, ~1-2 dk).
+#  - electron: SQLite katmanı (better-sqlite3 Electron ABI'siyle derli) ve gömülü sunucu uçtan uca
+#    testleri gerçek Electron altında (xvfb + electron-rebuild, ~3-5 dk). Yalnız main'e push ve
+#    PR'larda; haftalık koşu yeni Node/Electron kırılmalarını kod değişmeden yakalar.
+name: test
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1" # her Pazartesi 05:00 UTC
+  workflow_dispatch:
+
+# İş akışı token'ı en az yetki: yalnız depo okuma.
+permissions:
+  contents: read
+
+jobs:
+  hizli:
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1" # lint + jsdom testleri için Electron gereksiz
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Bağımlılıkları çöz (script'siz, hızlı)
+        run: npm ci --ignore-scripts
+      - name: ESLint (yalnız hatalar bloklar)
+        run: npm run lint
+      - name: Vitest — saf + jsdom testleri (Electron gerektirenler hariç)
+        run: npx vitest run --exclude tests/db-electron.test.js --exclude tests/server-security.test.js
+
+  electron:
+    # Electron testleri pahalı: yalnız main'e push, PR ve haftalık koşuda.
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: "Bağımlılıkları kur (postinstall: better-sqlite3 Electron ABI'siyle derlenir)"
+        run: npm ci
+      - name: Electron sandbox yardımcısını Linux için hazırla (setuid; yoksa Electron açılmaz)
+        run: |
+          SB=node_modules/electron/dist/chrome-sandbox
+          sudo chown root:root "$SB" && sudo chmod 4755 "$SB"
+      - name: Vitest — Electron altında SQLite roundtrip + sunucu uçtan uca (xvfb)
+        run: xvfb-run -a npx vitest run tests/db-electron.test.js tests/server-security.test.js
