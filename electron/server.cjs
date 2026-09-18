@@ -297,10 +297,14 @@ function buildApp() {
   // js/missing-rate-limiting kapsaması. Bir istemci 30 sn'de bir yoklar + kayıt yazar (dakikada < 20);
   // 600 bol marj. Giriş ucunun kademeli kaba-kuvvet kilidi ve /api/data'nın kullanıcı başına 60/dk
   // yazma sınırı ayrıca ve daha sıkı olarak sürer. Bellek içi sayaç; süreç yeniden başlayınca sıfırlanır.
-  app.use("/api", rateLimit({
-    windowMs: 60 * 1000, limit: 600, standardHeaders: "draft-8", legacyHeaders: false,
+  const hizSiniri = (limit) => rateLimit({
+    windowMs: 60 * 1000, limit, standardHeaders: "draft-8", legacyHeaders: false,
     handler: (_req, res) => res.status(429).json({ error: "Çok fazla istek; kısa süre sonra tekrar deneyin." }),
-  }));
+  });
+  app.use("/api", hizSiniri(600));
+  // /auth uçları (giriş, 2FA, parola, çıkış): IP başına 120/dk — kademeli kaba-kuvvet kilidi zaten
+  // çok daha sıkı (birkaç yanlıştan sonra dakikalarca), bu üst sınır yalnız toplu istek selini keser.
+  app.use("/auth", hizSiniri(120));
 
   // /health kimliksiz: istemci hem erişilebilirlik yoklaması hem TLS keşfi/doğrulaması için kullanır.
   app.get("/health", (_req, res) => res.json({ ok: true, active: db?.isActive?.() ?? false, tls: !!certFp, fp: certFp || null }));
@@ -657,11 +661,12 @@ function buildApp() {
   // POST /api/files/upload — binary gövde; başlıkta orijinal ad. Depoya yazar, künye döndürür.
   app.post("/api/files/upload", requireAuth, requireDosyaYetkisi, writeLimiter(60), (req, res) => {
     try {
-      // Başlıklar metne zorlanır (CodeQL js/type-confusion-through-parameter-tampering: dizi/nesne gelirse
-      // izin denetimi ve depo adı üretimi metin varsayımıyla yanılmasın).
-      const ad = decodeURIComponent(String(req.get("X-Dosya-Adi") || "dosya"));
+      // Başlıklar yalnız METİN kabul edilir (CodeQL js/type-confusion-through-parameter-tampering:
+      // dizi/nesne gelirse izin denetimi ve depo adı üretimi metin varsayımıyla yanılmasın).
+      const baslikMetin = (h) => { const v = req.get(h); return typeof v === "string" ? v : ""; };
+      const ad = decodeURIComponent(baslikMetin("X-Dosya-Adi") || "dosya");
       // Firma adı: istemci "X-Dosya-Firma" ile yollar → okunur depo adı ("<Firma> - <ad> - <anahtar>").
-      let firma = ""; try { firma = decodeURIComponent(String(req.get("X-Dosya-Firma") || "")); } catch { firma = ""; }
+      let firma = ""; try { firma = decodeURIComponent(baslikMetin("X-Dosya-Firma")); } catch { firma = ""; }
       if (!files.izinliMi(ad)) return res.status(400).json({ error: "Bu dosya türü desteklenmiyor" });
       const buf = req.body;
       if (!Buffer.isBuffer(buf) || buf.length === 0) return res.status(400).json({ error: "Boş dosya" });

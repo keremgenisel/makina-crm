@@ -1,9 +1,10 @@
 # Test + lint — sürüm yayınlanmadan önce kırılma yakalamak için her push/PR'da koşar.
 # İki iş:
 #  - hizli: ESLint + saf/jsdom vitest testleri (Electron binary'si indirilmeden, ~1-2 dk).
-#  - electron: SQLite katmanı (better-sqlite3 Electron ABI'siyle derli) ve gömülü sunucu uçtan uca
-#    testleri gerçek Electron altında (xvfb + electron-rebuild, ~3-5 dk). Yalnız main'e push ve
-#    PR'larda; haftalık koşu yeni Node/Electron kırılmalarını kod değişmeden yakalar.
+#  - electron: Electron altında koşan testler (SQLite katmanı — better-sqlite3 Electron ABI'siyle
+#    derli —, gömülü sunucu uçtan uca, resim optimize, güvenlik kuyruğu, kurulum kilidi) gerçek
+#    Electron + xvfb ile (~3-5 dk). Yalnız main'e push, PR ve haftalık koşuda.
+# Node 24: yerel geliştirme sürümüyle aynı; undici 8 (pinned-fetch testi) Node 20'de çalışmıyor.
 name: test
 
 on:
@@ -26,31 +27,41 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
       - name: Bağımlılıkları çöz (script'siz, hızlı)
         run: npm ci --ignore-scripts
       - name: ESLint (yalnız hatalar bloklar)
         run: npm run lint
       - name: Vitest — saf + jsdom testleri (Electron gerektirenler hariç)
-        run: npx vitest run --exclude tests/db-electron.test.js --exclude tests/server-security.test.js
+        # Ayrım vite.config.js'te (VITEST_ELECTRON=skip → Electron spawn eden dosyalar hariç).
+        run: VITEST_ELECTRON=skip npx vitest run
 
   electron:
     # Electron testleri pahalı: yalnız main'e push, PR ve haftalık koşuda.
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
-      - name: "Bağımlılıkları kur (postinstall: better-sqlite3 Electron ABI'siyle derlenir)"
-        run: npm ci
+      - name: Bağımlılıkları kur
+        run: npm ci --ignore-scripts
+      - name: Electron binary'sini indir + better-sqlite3'ü Electron ABI'siyle derle
+        # İlk CI koşusunda `npm ci` sonrası chrome-sandbox yoktu (electron'un indirme script'i
+        # koşmamıştı); belirsizliği kaldırmak için script'siz kurulup ikisi de AÇIKÇA çağrılır
+        # (idempotent; yerelde de aynı: `node node_modules/electron/install.js` + `npm run postinstall`).
+        run: |
+          node node_modules/electron/install.js
+          npx electron-rebuild -f -w better-sqlite3 -w better-sqlite3-multiple-ciphers
       - name: Electron sandbox yardımcısını Linux için hazırla (setuid; yoksa Electron açılmaz)
         run: |
           SB=node_modules/electron/dist/chrome-sandbox
+          test -f "$SB" || { echo "chrome-sandbox yok — Electron indirilmedi"; exit 1; }
           sudo chown root:root "$SB" && sudo chmod 4755 "$SB"
-      - name: Vitest — Electron altında SQLite roundtrip + sunucu uçtan uca (xvfb)
-        run: xvfb-run -a npx vitest run tests/db-electron.test.js tests/server-security.test.js
+      - name: Vitest — Electron altında koşan testler (xvfb)
+        # Ayrım vite.config.js'te (VITEST_ELECTRON=only → yalnız Electron spawn eden dosyalar).
+        run: VITEST_ELECTRON=only xvfb-run -a npx vitest run
