@@ -1684,7 +1684,7 @@ export function buildAylikRaporHtml(rapor, factory) {
       <div style="font-size:10px;color:#64748b;margin-top:2px;">${not}</div>
       ${tileKirilim(kirilim, cizgi)}
     </div>`;
-  // Tahsilat kutusu: net (KDV hariç) + KDV + toplam AYRI AYRI etiketli satırlar; kaynak kırılımı da net.
+  // Üstteki tahsilat kutusu: net (KDV hariç) + KDV + toplam ayrı ayrı (kullanıcı kararı); kaynak kırılımı net.
   const tahsilatKaynakTile = (rapor.tahsilatKaynakKirilimi || []).map(x => ({ ad: `${x.kaynak} (${x.adet})`, tutar: x.net || x.tutar }));
   const alacakKaynakTile = (rapor.alacakKaynakKirilimi || []).map(x => ({ ad: x.kaynak, tutar: x.tutar }));
   const paraRow = (label, tutar, emph) => `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:${emph ? 4 : 2}px;"><span style="font-size:${emph ? 11 : 10.5}px;color:${emph ? "#0f766e" : "#64748b"};font-weight:${emph ? 700 : 400};">${label}</span><span style="font-size:${emph ? 18 : 12}px;font-weight:${emph ? 800 : 600};font-variant-numeric:tabular-nums;white-space:nowrap;">${paraSatir(tutar)}</span></div>`;
@@ -1784,14 +1784,14 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${faturaTablo("FATURA TİPİ KIRILIMI", rapor.yedekKargoFaturaKirilimi)}
     ${yedekKargoDetayTablo}`)}
 
-  ${bolum("TAHSİLAT — BU AY GİREN PARA", paraSatir(rapor.tahsilatTutar), `
+  ${bolum("TAHSİLAT — BU AY GİREN PARA", `${paraSatir(rapor.tahsilatTutar)} · KDV dahil`, `
     ${rozetSatiri(rozet("Tutarlar KDV dahil", "dahil"), rozet(rapor.ayEtiketi, ""))}
     <div style="font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#f8fafc;border-left:3px solid #0d9488;padding:6px 10px;">
       <b>Ne demek?</b> Bu ay fiilen kasaya/hesaba giren paradır: nakit/havale girildiği anda, çekler ancak tahsil edildiklerinde
       sayılır. Bu, "yapılan iş" değil "giren para"dır; vadesi gelmemiş çekler aşağıda ayrı gösterilir.
     </div>
     <table>
-      ${st("Gerçekleşen tahsilat", `${rapor.tahsilatAdet} kayıt · ${paraSatir(rapor.tahsilatTutar)}${ga(paraSatir(o?.tahsilatTutar))}`)}
+      ${st("Gerçekleşen tahsilat (KDV dahil)", `${rapor.tahsilatAdet} kayıt · ${paraSatir(rapor.tahsilatTutar)}${ga(paraSatir(o?.tahsilatTutar))}`)}
       ${st("Ay içinde alınan, vadesi bekleyen çek", `${rapor.bekleyenCekAdet} adet · ${paraSatir(rapor.bekleyenCekTutar)}`)}
       ${st("Ay içinde tahsil edilen çek", rapor.cekTahsilAdet + " adet")}
     </table>
@@ -1809,9 +1809,10 @@ export function buildAylikRaporHtml(rapor, factory) {
       ${st("Ödenen banka komisyonu", paraSatir(rapor.bankaKomisyonuTutar))}
     </table>`) : ""}
 
-  ${bolum("AÇIK ALACAKLAR (tahsil edilecek)", paraSatir(rapor.acikBorc), `
+  ${bolum("AÇIK ALACAKLAR (tahsil edilecek)", `${paraSatir(rapor.acikBorc)} · KDV dahil`, `
     ${rozetSatiri(rozet("Tutarlar KDV dahil", "dahil"), rozet("📌 Rapor anı (seçilen ay değil)", "now"))}
     <table>
+      ${st("Toplam açık alacak (KDV dahil)", paraSatir(rapor.acikBorc))}
       ${st("Borçlu firma", rapor.borcluFirma + " firma")}
       ${st("Vadesi geçmiş çek", rapor.gecikenCek + " adet")}
       ${st("Vadesi geçmiş taksit", rapor.gecikenTaksit + " adet")}

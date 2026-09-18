@@ -290,6 +290,75 @@ describe("hesaplaAylikRapor — yeni kırılımlar ve bölüm toplamları", () =
   });
 });
 
+describe("hesaplaAylikRapor — tahsilat tarihi: TÜM durumlar", () => {
+  // C: müşteri (borçsuz), Bayi9 kargo alıcısı. Sadece test edilen kayıt gelir.
+  const mk = (services = [], partSales = [], yedekParcaSatislar = []) => ({
+    customers: [{ id: 1, name: "C", installDate: "2026-08-01", currency: "TRY", kalanBorc: 0 }],
+    services, partSales, payments: [], teklifler: [], dealers: [{ id: 9, name: "Bayi9" }], yedekParcaSatislar,
+  });
+  const svc = (over) => ({ id: 1, customerId: 1, date: "2026-08-10", type: "Garanti Dışı", servisUcreti: 10000, currency: "TRY", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: true, ...over });
+
+  it("1) nakit servis: tahsilatTarihi ayına girer, satış ayına değil", () => {
+    const v = mk([svc({ tahsilatTarihi: "2026-10-05" })]);
+    expect(hesaplaAylikRapor(v, "2026-08", secenekler).tahsilatTutar).toEqual({});
+    expect(hesaplaAylikRapor(v, "2026-10", secenekler).tahsilatTutar).toEqual({ TRY: 12000 }); // 10.000 + %20
+  });
+
+  it("2) tahsilatTarihi yoksa satış/servis ayına düşer (eski davranış korunur)", () => {
+    expect(hesaplaAylikRapor(mk([svc({})]), "2026-08", secenekler).tahsilatTutar).toEqual({ TRY: 12000 });
+    expect(hesaplaAylikRapor(mk([svc({})]), "2026-10", secenekler).tahsilatTutar).toEqual({});
+  });
+
+  it("3) kredi kartı: bloke para hesaba geçtiği aya (hesabaGecis) girer", () => {
+    const s = svc({ date: "2026-07-01", yontem: "Kredi Kartı", kartKomisyonu: { hesabaGecis: "2026-09-10", toplamKesinti: 0 } });
+    expect(hesaplaAylikRapor(mk([s]), "2026-07", secenekler).tahsilatTutar).toEqual({}); // satış ayı değil
+    expect(hesaplaAylikRapor(mk([s]), "2026-09", secenekler).tahsilatTutar).toEqual({ TRY: 12000 }); // hesaba geçiş ayı
+  });
+
+  it("4) kredi kartı blokajı HENÜZ geçmemiş: tahsilata girmez, alacakta kalır", () => {
+    const s = svc({ date: "2026-09-01", yontem: "Kredi Kartı", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2099-01-01", toplamKesinti: 0 } });
+    const r = hesaplaAylikRapor(mk([s]), "2026-09", secenekler);
+    expect(r.tahsilatTutar).toEqual({});
+    expect(r.acikBorc).toEqual({ TRY: 12000 });
+  });
+
+  it("5) çek: tahsil edilince tahsilatTarihi ayına girer; edilmezse alacakta", () => {
+    const base = svc({ date: "2026-08-01", yontem: "Çek", vadeTarihi: "2026-10-01" });
+    const rNo = hesaplaAylikRapor(mk([{ ...base, tahsilEdildi: false }]), "2026-08", secenekler);
+    expect(rNo.tahsilatTutar).toEqual({});
+    expect(rNo.acikBorc).toEqual({ TRY: 12000 });
+    const rYes = hesaplaAylikRapor(mk([{ ...base, tahsilEdildi: true, tahsilatTarihi: "2026-10-03" }]), "2026-10", secenekler);
+    expect(rYes.tahsilatTutar).toEqual({ TRY: 12000 });
+    expect(rYes.acikBorc).toEqual({});
+  });
+
+  it("6) extra kalıp + yedek parça (kargo) da tahsilat tarihine göre gruplanır", () => {
+    const kalip = { id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-08-05", ucret: 30000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-10" };
+    const kargo = { id: 30, aliciTipi: "bayi", dealerId: 9, tarih: "2026-08-06", miktar: 2, birimFiyat: 5000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-11" };
+    expect(hesaplaAylikRapor(mk([], [kalip], [kargo]), "2026-10", secenekler).tahsilatTutar).toEqual({ TRY: 48000 }); // 36.000 + 12.000
+    expect(hesaplaAylikRapor(mk([], [kalip], [kargo]), "2026-08", secenekler).tahsilatTutar).toEqual({});
+  });
+
+  it("7) gelir/ciro bölümü tahsilat tarihinden ETKİLENMEZ (satış ayında sabit)", () => {
+    const kalip = { id: 20, customerId: 1, tur: "Kalıp", tarih: "2026-08-05", ucret: 30000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-10-10" };
+    expect(hesaplaAylikRapor(mk([], [kalip]), "2026-08", secenekler).extraKalipTutar).toEqual({ TRY: 30000 }); // gelir ağustosta
+    expect(hesaplaAylikRapor(mk([], [kalip]), "2026-10", secenekler).extraKalipTutar).toEqual({});          // ekimde gelir yok
+  });
+
+  it("8) ödenmemiş nakit servis: tahsilata girmez, alacakta kalır", () => {
+    const r = hesaplaAylikRapor(mk([svc({ odendi: false })]), "2026-08", secenekler);
+    expect(r.tahsilatTutar).toEqual({});
+    expect(r.acikBorc).toEqual({ TRY: 12000 });
+  });
+
+  it("9) tahsilat detay 'Tarih' = tahsilat tarihi (satış tarihi değil)", () => {
+    const v = mk([svc({ date: "2026-08-10", tahsilatTarihi: "2026-10-05" })]);
+    const r = hesaplaAylikRapor(v, "2026-10", secenekler);
+    expect(r.tahsilatDetay).toHaveLength(1);
+    expect(r.tahsilatDetay[0].tarih).toBe("2026-10-05");
+  });
+});
+
 describe("hesaplaAylikRapor — açık alacak yaşlandırması (aging)", () => {
   const bugun = new Date().toISOString().slice(0, 10);
   const va = {

@@ -5,7 +5,7 @@ import {
   uid, wasMintedHere, customerToAliciFields, migrateTipSecimleri, stokSecimDiff,
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
   girisNoHaritasi, servisYedekParcaDurumu, servisKanali, parcaGruplari,
-  satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu,
+  satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu, tahsilatTarihiOf,
   stokKirparakDus, stokGeriEklenmis, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
   isPaymentReceived, isServisBorcluMu, calcCiro, calcKalanBorc,
@@ -771,5 +771,17 @@ describe("mergeAppSettings — çakışma/yeniden-yükleme birleştirmesinde yer
     const yeniden = { analizGizliModeller: ["X"] };
     expect(mergeAppSettings(yeniden, null)).toEqual({ analizGizliModeller: ["X"] });
     expect(mergeAppSettings(null, null)).toEqual({});
+  });
+});
+
+describe("tahsilatTarihiOf", () => {
+  it("öncelik: tahsilatTarihi > KK hesabaGecis > satış/servis tarihi", () => {
+    expect(tahsilatTarihiOf({ tahsilatTarihi: "2026-10-05" }, "2026-08-01")).toBe("2026-10-05");
+    expect(tahsilatTarihiOf({ yontem: "Kredi Kartı", kartKomisyonu: { hesabaGecis: "2026-09-20" } }, "2026-08-01")).toBe("2026-09-20");
+    expect(tahsilatTarihiOf({}, "2026-08-01")).toBe("2026-08-01");
+  });
+  it("hiç tarih yoksa kaydın kendi tarih/date alanına düşer", () => {
+    expect(tahsilatTarihiOf({ tarih: "2026-07-07" })).toBe("2026-07-07");
+    expect(tahsilatTarihiOf({ date: "2026-06-06" })).toBe("2026-06-06");
   });
 });

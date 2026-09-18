@@ -607,6 +607,16 @@ export const satisTahsilEdildi = (s, bugun = today()) => {
   if (s?.yontem === "Kredi Kartı") return kartTahsilEdildiMi(s?.kartKomisyonu, bugun);
   return true;
 };
+// Bir tahsil edilmiş kaydın "para hangi gün girdi" tarihi — rapordaki "giren para" bunu aya gruplar:
+//  1) tahsilatTarihi alanı doluysa onu kullan ("ödendi"/çek-tahsil tıklandığı gün yazılır),
+//  2) Kredi Kartı ise bloke paranın hesaba geçtiği gün (kartKomisyonu.hesabaGecis),
+//  3) yoksa kaydın kendi satış/servis tarihine düş (eski kayıtlar geriye dönük bozulmasın).
+// satisTarihi: servis için s.date, kalıp/yedek parça için s.tarih — çağıran verir.
+export const tahsilatTarihiOf = (rec, satisTarihi) => {
+  if (rec?.tahsilatTarihi) return rec.tahsilatTarihi;
+  if (rec?.yontem === "Kredi Kartı" && rec?.kartKomisyonu?.hesabaGecis) return rec.kartKomisyonu.hesabaGecis;
+  return satisTarihi || rec?.tarih || rec?.date || "";
+};
 // Extra Kalıp satışı borçlu mu (ödenmemiş VEYA çek henüz tahsil edilmemiş)
 /** @param {import("../types").PartSale} ps @returns {boolean} */
 export const isPartSaleBorcluMu = (ps) => !satisTahsilEdildi(ps);

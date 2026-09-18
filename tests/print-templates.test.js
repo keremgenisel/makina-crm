@@ -181,9 +181,11 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(html).toContain("ne için");
     expect(html).toContain("Makina ödemesi"); // tahsilat kaynağı
     expect(html).toContain("Makina bakiyesi"); // alacak kaynağı
-    // Tahsilat kutusu net (KDV hariç) + KDV + toplam ayrı ayrı etiketli
+    // Üst özet tahsilat kutusu net/KDV/toplam ayrı; detaylı bölümler KDV dahil etiketli
     expect(html).toContain("Net (KDV hariç)");
     expect(html).toContain("Toplam (KDV dahil)");
+    expect(html).toContain("Gerçekleşen tahsilat (KDV dahil)");
+    expect(html).toContain("Toplam açık alacak (KDV dahil)");
     // Seçilen ay rozeti ay adını gösterir
     expect(html).toContain("Haziran 2026");
   });

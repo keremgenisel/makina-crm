@@ -6,7 +6,7 @@ import {
   parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
   isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf,
-  normalizeSaleType,
+  normalizeSaleType, tahsilatTarihiOf,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon } from "./krediKarti";
@@ -273,30 +273,31 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     const mal = (tutar - kom * oran / 100) / (1 + oran / 100);
     return tutar - mal;
   };
+  // Satış/servis tahsilatları — ay ölçütü TAHSİLAT TARİHİ (tahsilatTarihiOf: tahsilatTarihi / KK hesabaGecis /
+  // yoksa satış-servis tarihi). Bu yüzden yalnız o ayın satışları değil, tahsilat tarihi o ayda olan TÜM
+  // tahsil edilmiş (satisTahsilEdildi) kayıtlar taranır. Böylece ağustos işi ekimde ödenince ekime düşer.
+  // Tutar/KDV yine satış tarihinin KDV oranıyla hesaplanır; yalnız ay grubu tahsilat tarihine göredir.
   const satisTahsilatlari = [
-    // Bakım onarım (servis) tahsilatı — alacak tarafıyla simetrik: ücretli işçilik + Altuntaş parça,
-    // ödendi/tahsil edilmişse (satisTahsilEdildi) bu ay giren para sayılır (KDV dahil). Servis odendi
-    // bayrağıyla izlenir, ayrı tahsilat tarihi yok → ay ölçütü servis tarihidir.
-    ...ayServisler.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && satisTahsilEdildi(s)).map(s => {
+    ...canliServisler.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && satisTahsilEdildi(s) && ayIci(tahsilatTarihiOf(s, s.date))).map(s => {
       const toplam = (isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0) + (isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0);
       const kdv = calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
       return {
         firma: custAdi(s.customerId), currency: s.currency, tutar: toplam + kdv, kdv,
-        yontem: s.yontem || "Nakit", tarih: s.date || "", not: "Bakım onarım", kaynak: "Bakım onarım",
+        yontem: s.yontem || "Nakit", tarih: tahsilatTarihiOf(s, s.date), not: "Bakım onarım", kaynak: "Bakım onarım",
       };
     }),
-    ...ayKalipSatislari.filter(p => !p.ucretsizMi && satisTahsilEdildi(p)).map(p => {
+    ...canliKalipSatislari.filter(p => !p.ucretsizMi && satisTahsilEdildi(p) && ayIci(tahsilatTarihiOf(p, p.tarih))).map(p => {
       const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
       return {
         firma: custAdi(p.customerId), currency: p.currency, tutar: parseMoney(p.ucret) + kdv, kdv,
-        yontem: p.yontem || "Nakit", tarih: p.tarih || "", not: "Extra kalıp", kaynak: "Extra kalıp",
+        yontem: p.yontem || "Nakit", tarih: tahsilatTarihiOf(p, p.tarih), not: "Extra kalıp", kaynak: "Extra kalıp",
       };
     }),
-    ...ayYedekKargo.filter(s => satisTahsilEdildi(s) && kargoBedeli(s) > 0).map(s => {
+    ...canliYedekKargo.filter(s => satisTahsilEdildi(s) && kargoBedeli(s) > 0 && ayIci(tahsilatTarihiOf(s, s.tarih))).map(s => {
       const kdv = calcKDV(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates);
       return {
         firma: kargoAlici(s), currency: s.currency, tutar: kargoBedeli(s) + kdv, kdv,
-        yontem: s.yontem || "Nakit", tarih: s.tarih || "", not: "Yedek parça (kargo ve fabrika teslim)", kaynak: "Yedek parça (kargo ve fabrika teslim)",
+        yontem: s.yontem || "Nakit", tarih: tahsilatTarihiOf(s, s.tarih), not: "Yedek parça (kargo ve fabrika teslim)", kaynak: "Yedek parça (kargo ve fabrika teslim)",
       };
     }),
   ];
