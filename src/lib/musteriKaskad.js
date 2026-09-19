@@ -62,3 +62,9 @@ export const yedekParcaKaskad = (arr, musteriId, ts, etiket) => (arr || []).map(
   }
   return s;
 });
+
+// Müşteri silinirken makinası Makina Stoğu'na bu notla geri döner (Customers.jsx confirmDel).
+export const GERI_DONEN_STOK_NOTU = "Silinen müşteriden geri döndü";
+/** Çöpten geri alınan müşterinin makinasını temsil eden, silinirken stoğa düşmüş satır (yoksa null). */
+export const geriDonenStokBul = (stock, c) => (stock || []).find(s =>
+  s && !s.deletedAt && s.note === GERI_DONEN_STOK_NOTU && s.model === c?.model && (s.serialNo || "") === (c?.serialNo || "")) || null;

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today, parcaAdi } from "../../lib/utils";
 import { yedekParcaDus } from "../../lib/yedekParcaStok";
-import { yedekParcaAlicisiMi } from "../../lib/musteriKaskad";
+import { yedekParcaAlicisiMi, geriDonenStokBul } from "../../lib/musteriKaskad";
 import { yedekParcaBayininMi, bayiDosyasiMi } from "../../lib/bayiKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
@@ -43,6 +43,13 @@ export const SettingsTrash = ({
     setYedekParcaSatislar?.(p => p.map(x => kaskadYedekParca(c)(x) ? { ...x, deletedAt: undefined } : x));
     setGorusmeler?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
     setDosyalar?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
+    // Silinirken Makina Stoğu'na "geri dönen" makina, müşteri geri alınınca stoktan çıkar (yoksa aynı
+    // makina hem müşteride hem stokta görünür, stok sayısı şişer); kit parça logu eski kaynağa bağlanır.
+    const donen = geriDonenStokBul(rawStock, c);
+    if (donen) {
+      setStock?.(p => p.filter(x => x.id !== donen.id));
+      if (c.sourceStockId != null) setPartStockLog?.(lg => lg.map(l => (l.tip === "makina_uretimi" && String(l.referansId) === String(donen.id)) ? { ...l, referansId: c.sourceStockId } : l));
+    }
     showToast("Müşteri geri alındı.");
   };
   const purgeCustomer = (c) => {

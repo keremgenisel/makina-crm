@@ -1,7 +1,7 @@
 // Müşteri silme kaskadı saf yardımcıları (lib/musteriKaskad.js): bağlı kayıt sayımı, onay özeti,
 // yedek parça dizisine kaskad (alıcı = müşteri → çöp; bayi alımı + tahsis → satış kalır, tahsis serbest metin).
 import { describe, it, expect } from "vitest";
-import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, silinenMakinaEtiketi, yedekParcaAlicisiMi, yedekParcaTahsisliMi } from "../src/lib/musteriKaskad";
+import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, silinenMakinaEtiketi, yedekParcaAlicisiMi, yedekParcaTahsisliMi, geriDonenStokBul } from "../src/lib/musteriKaskad";
 
 const M = 500;
 const veri = {
@@ -66,5 +66,20 @@ describe("yedekParcaKaskad", () => {
     expect(silinenMakinaEtiketi({ name: "X" })).toBe("X (silinen müşteri)");
     expect(yedekParcaAlicisiMi({ aliciTipi: "bayi", musteriId: M }, M)).toBe(false);
     expect(yedekParcaTahsisliMi({ aliciTipi: "musteri", musteriId: M, tahsisler: [{ customerId: M }] }, M)).toBe(false); // alıcı zaten kendisi
+  });
+});
+
+describe("geriDonenStokBul", () => {
+  it("model + seri no + 'geri döndü' notu eşleşen canlı stok satırını bulur; seri no'suz makinada boş seri eşleşir", () => {
+    const stock = [
+      { id: 1, model: "AK100", serialNo: "S1", note: "Silinen müşteriden geri döndü" },
+      { id: 2, model: "AK100", serialNo: "S1", note: "Silinen müşteriden geri döndü", deletedAt: "x" },
+      { id: 3, model: "AK100", serialNo: "", note: "Silinen müşteriden geri döndü" },
+      { id: 4, model: "AK100", serialNo: "S2", note: "üretim" },
+    ];
+    expect(geriDonenStokBul(stock, { model: "AK100", serialNo: "S1" }).id).toBe(1);
+    expect(geriDonenStokBul(stock, { model: "AK100" }).id).toBe(3);
+    expect(geriDonenStokBul(stock, { model: "AK100", serialNo: "S2" })).toBeNull();
+    expect(geriDonenStokBul(null, { model: "AK100" })).toBeNull();
   });
 });

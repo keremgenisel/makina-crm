@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Finans ekranı sahipsiz kayıtları (müşterisi olmayan) hesaba katmaz — aylık raporla aynı süzgeç,
 // böylece ekran ve rapor rakamları ayrışmaz. Kredi kartı detay modalı üzerinden gözlemlenir.
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 afterEach(cleanup);
@@ -36,5 +36,22 @@ describe("Finance — sahipsiz kayıtlar", () => {
     expect(screen.getAllByText("SahipliFirma").length).toBeGreaterThan(0);
     expect(screen.queryByText("99.999")).toBeNull();
     expect(screen.queryByText(/^—$/)).toBeNull();
+  });
+});
+
+describe("Finance — Aylık Rapor sahipsiz notu", () => {
+  it("rapor motoru HAM dizilerle çağrılır: sahipsiz kayıt adedi raporun altına düşer, satırı raporda görünmez", () => {
+    // Gerileme: ekran için süzülmüş diziler motora verilince sahipsiz adedi hep 0 kalıyor, not hiç çıkmıyordu.
+    const printHtml = vi.fn();
+    window.appPrint = { printHtml };
+    try {
+      render(<Finance customers={customers} services={[]} dealers={[]} partSales={partSales} yedekParcaSatislar={[]}
+        factory={{ name: "Altuntaş Makina" }} rates={{}} payments={[]} teklifler={[]} serverPermissions={null} />);
+      fireEvent.click(screen.getByText("Aylık Rapor"));
+      expect(printHtml).toHaveBeenCalled();
+      const html = printHtml.mock.calls[0][0];
+      expect(html).toContain("<b>1</b> sahipsiz kayıt");   // id 21 (customerId 999)
+      expect(html).not.toContain("99.999");                 // sahipsiz satır raporda yok
+    } finally { delete window.appPrint; }
   });
 });

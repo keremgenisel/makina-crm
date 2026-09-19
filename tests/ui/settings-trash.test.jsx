@@ -165,6 +165,25 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(durum.log.some(l => l.referansId === 34)).toBe(false);
   });
 
+  it("müşteri 'Geri Al': silinirken stoğa dönen makina stoktan çıkar, kit parça logu kaynak stoğa geri bağlanır; başka stok satırı kalmaz etkilenir", () => {
+    const ts = "2026-09-18T10:00:00.000Z";
+    const cust = { id: 500, name: "Kaskad Firma", model: "AKF3701", serialNo: "F12174265", sourceStockId: 77, deletedAt: ts };
+    const durum = {
+      stock: [
+        { id: 900, model: "AKF3701", serialNo: "F12174265", note: "Silinen müşteriden geri döndü", addedDate: "2026-09-18", parcalar: [] },
+        { id: 901, model: "AKF3701", serialNo: "F0000001", note: "Silinen müşteriden geri döndü", parcalar: [] }, // başka makina → kalır
+        { id: 902, model: "AKF3701", serialNo: "F12174265", note: "üretim", parcalar: [] },                      // notu farklı → kalır
+      ],
+      log: [{ id: 1, tip: "makina_uretimi", referansId: 900, partId: "7", miktar: -1 }, { id: 2, tip: "bayi_satis", referansId: 900, partId: "7", miktar: -1 }],
+    };
+    const setter = (k) => vi.fn((u) => { durum[k] = u(durum[k]); });
+    renderTrash({ rawCustomers: [cust], rawStock: durum.stock, partStockLog: durum.log, setCustomers: noop, setStock: setter("stock"), setPartStockLog: setter("log") });
+    fireEvent.click(within(screen.getByText("Kaskad Firma").closest("tr")).getByText("Geri Al"));
+    expect(durum.stock.map(s => s.id)).toEqual([901, 902]);
+    expect(durum.log.find(l => l.id === 1).referansId).toBe(77);   // kaynak stoğa geri
+    expect(durum.log.find(l => l.id === 2).referansId).toBe(900);  // ilgisiz log dokunulmaz
+  });
+
   it("müşteri 'Kalıcı Sil' aynı damgalı yedek parça satışını da diziden çıkarır; bayi satışı kalır", () => {
     const ts = "2026-09-18T10:00:00.000Z";
     const cust = { id: 500, name: "Kaskad Firma", deletedAt: ts };

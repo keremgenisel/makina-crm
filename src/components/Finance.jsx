@@ -37,7 +37,9 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
   const [raporAy, setRaporAy] = useState(oncekiAy);
   const aylikRapor = () => {
     // Hesap motoru saf ve testli (src/lib/aylikRapor.js); seçilen ay + önceki ay birlikte
-    const veri = { customers, services, partSales, payments, teklifler, dealers, yedekParcaSatislar };
+    // HAM dizilerle çağrılır: motor sahipsizleri kendisi ayıklar (sahipsizHaric) ve adedini
+    // raporun altına not düşer; ekran için süzülmüş dizileri verirsek not hiç görünmez (görüldü).
+    const veri = { customers, services: servicesHam, partSales: partSalesHam, payments: paymentsHam, teklifler, dealers, yedekParcaSatislar: yedekParcaHam };
     const secenekler = { factoryName, kdvRates, factory, rates };
     const rapor = hesaplaAylikRapor(veri, raporAy, secenekler);
     rapor.onceki = hesaplaAylikRapor(veri, oncekiAyStr(raporAy), secenekler);
