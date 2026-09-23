@@ -15,6 +15,10 @@ export const SettingsTrash = ({
   setTeklifler, setFaturalar, setUretimFormlari = null, setGorusmeler = null, setDosyalar = null,
   rawPartTypeDefs = [], setPartTypeDefs = null, rawCalisanlar = [], setCalisanlar = null,
   rawYedekParcaSatislar = [], setYedekParcaSatislar = null,
+  // Gider kaydı (spec 0001 R12, AC-19): gider satırları yalnız gider yetkisiyle görünür ve yazılır (K7).
+  // Yetkisiz kullanıcının "çöpü boşalt"ı giderlere dokunmaz; yoksa göremediği kaydı siler ve sunucu
+  // gider bölümü yazımını reddettiği için tüm kayıt 403 alırdı.
+  rawGiderler = [], setGiderler = null, giderTurleri = [], giderYetki = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -154,6 +158,8 @@ export const SettingsTrash = ({
     yedekParcaStokYenidenDus(s);
     showToast("Yedek parça satışı geri alındı.");
   };
+  const restoreGider = (g) => { setGiderler?.(p => p.map(x => x.id === g.id ? { ...x, deletedAt: undefined } : x)); showToast("Gider kalemi geri alındı; raporlara aynı tutarla döner."); };
+  const purgeGider = (g) => { setGiderler?.(p => p.filter(x => x.id !== g.id)); showToast("Gider kalemi kalıcı olarak silindi."); };
   const purgeYedekParca = (s) => { setYedekParcaSatislar?.(p => p.filter(x => x.id !== s.id)); showToast("Yedek parça satışı kalıcı olarak silindi."); };
   const emptyTrash = () => {
     // Çöpten kalıcı silinecek müşterilerin id'leri — bunlara bağlı görüşme/dosyalar kendileri
@@ -181,6 +187,7 @@ export const SettingsTrash = ({
     setPartTypeDefs?.(p => p.filter(x => !x.deletedAt));
     setCalisanlar?.(p => p.filter(x => !x.deletedAt));
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
+    if (giderYetki && rawGiderler.some(x => x.deletedAt)) setGiderler?.(p => p.filter(x => !x.deletedAt));
     showToast("Çöp kutusu boşaltıldı.");
   };
 
@@ -215,8 +222,17 @@ export const SettingsTrash = ({
       const parcaAd = parcaAdi(rawParts.find(p => String(p.id) === String(s.partId))) || "(parça)";
       items.push({ key: `ypsatis-${s.id}`, type: "Yedek Parça Satışı", label: `${alici} · ${parcaAd} · ${s.miktar || 0} adet`, deletedAt: s.deletedAt, restore: () => restoreYedekParca(s), purge: () => purgeYedekParca(s) });
     });
+    if (giderYetki) {
+      const turAd = new Map(giderTurleri.map(t => [String(t.id), t]));
+      rawGiderler.filter(g => g.deletedAt).forEach(g => {
+        const tur = turAd.get(String(g.turId));
+        // Personel kaleminde tutar listelenmez (R17 gizliliği); tanıma yetecek kadar bilgi gösterilir.
+        const ozet = tur?.davranis === "personel" ? (g.calisanAd || "Personel") : `${g.aciklama || "—"} · ${fmtCur(g.tutar || 0, "TRY")}`;
+        items.push({ key: `gider-${g.id}`, type: "Gider", label: `${tur?.ad || "Gider"} · ${ozet} · ${fmtTR(g.tarih)}`, deletedAt: g.deletedAt, restore: () => restoreGider(g), purge: () => purgeGider(g) });
+      });
+    }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar]);
+  }, [rawGiderler, giderTurleri, giderYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar]);
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

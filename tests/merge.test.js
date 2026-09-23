@@ -160,3 +160,46 @@ describe("buildMergePlan", () => {
     expect(plan.adds.yedekParcaSatislar[0].musteriId).toBe(plan.adds.customers[0].id);
   });
 });
+
+describe("buildMergePlan: gider kaydı (spec 0001)", () => {
+  it("C5: yeni gider kalemi, tanım, tür, tedarikçi ve standart gider birleştirmede korunur", () => {
+    const my = blob({
+      giderTurleri: [{ id: 11, ad: "Hammadde", davranis: "normal" }],
+      tedarikciler: [{ id: 12, ad: "A" }],
+      giderTanimlari: [{ id: 13, turId: 11, ad: "Sarf", baslangicAy: "2026-09", uretilenAylar: [] }],
+      giderler: [{ id: 14, turId: 11, tutar: 1000, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }] }],
+      standartGiderler: [{ id: 15, grupId: 15, ad: "Kira", tutar: 20000, baslangicAy: "2026-01" }],
+    });
+    const plan = buildMergePlan(my, blob({ giderTurleri: [], tedarikciler: [], giderTanimlari: [], giderler: [], standartGiderler: [] }));
+    for (const k of ["giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler"]) expect(plan.adds[k]).toHaveLength(1);
+    expect(plan.adds.giderler[0].modelSatirlari).toHaveLength(1);
+  });
+
+  it("iki PC aynı id'yi üretirse tür/tedarikçi/tanım/müşteri referansları yeni id'yi izler", () => {
+    const turId = uid(), tedId = uid(), tanimId = uid(), cid = uid(), sgId = uid();
+    const my = blob({
+      customers: [{ id: cid, name: "Yerel", kaliplar: [] }],
+      giderTurleri: [{ id: turId, ad: "Yerel tür", davranis: "normal" }],
+      tedarikciler: [{ id: tedId, ad: "Yerel ted" }],
+      giderTanimlari: [{ id: tanimId, turId, tedarikciId: tedId, ad: "T" }],
+      giderler: [{ id: 99001, turId, tedarikciId: tedId, tanimId, atamaTur: "makina", makinaTur: "musteri", makinaId: cid }],
+      standartGiderler: [{ id: sgId, grupId: sgId, ad: "Kira", tutar: 1 }, { id: 99002, grupId: sgId, ad: "Kira", tutar: 2 }],
+    });
+    const sunucu = blob({
+      customers: [{ id: cid, name: "Başkası", kaliplar: [] }],
+      giderTurleri: [{ id: turId, ad: "Başka tür", davranis: "kira" }],
+      tedarikciler: [{ id: tedId, ad: "Başka ted" }],
+      giderTanimlari: [{ id: tanimId, ad: "Başka" }],
+      giderler: [],
+      standartGiderler: [{ id: sgId, grupId: sgId, ad: "Başka", tutar: 9 }],
+    });
+    const plan = buildMergePlan(my, sunucu);
+    const g = plan.adds.giderler[0];
+    expect(g.turId).toBe(plan.maps.giderTurleri.get(turId));
+    expect(g.tedarikciId).toBe(plan.maps.tedarikciler.get(tedId));
+    expect(g.tanimId).toBe(plan.maps.giderTanimlari.get(tanimId));
+    expect(g.makinaId).toBe(plan.maps.customers.get(cid));
+    expect(plan.adds.giderTanimlari[0].turId).toBe(plan.maps.giderTurleri.get(turId));
+    expect(plan.adds.standartGiderler.find(x => x.id === 99002).grupId).toBe(plan.maps.standartGiderler.get(sgId));
+  });
+});

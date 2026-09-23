@@ -284,3 +284,34 @@ describe("Çöp Kutusu — Parça Tipi ve Çalışan", () => {
     expect(sonuc.find(x => x.id === "tip_1")).toBeUndefined();
   });
 });
+
+// ── Gider kaydı (spec 0001 R12, AC-19, plan K7) ─────────────────────────────────
+describe("Çöp Kutusu — gider kalemleri", () => {
+  const turler = [{ id: 4, ad: "Elektrik", davranis: "normal" }, { id: 3, ad: "Personel", davranis: "personel" }];
+  const silinmis = { id: 70, tarih: "2026-09-03", turId: 4, aciklama: "Ağustos faturası", tutar: 14800, kdvOrani: 20, deletedAt: "2026-09-20T10:00:00.000Z" };
+  it("AC-19: gider yetkisiyle görünür; geri alınca deletedAt temizlenir (aynı tutar)", () => {
+    const setGiderler = vi.fn();
+    renderTrash({ rawGiderler: [silinmis], setGiderler, giderTurleri: turler, giderYetki: true });
+    expect(screen.getByText("Gider")).toBeTruthy();
+    const satir = screen.getByText(/Ağustos faturası/).closest("tr");
+    fireEvent.click(within(satir).getByText(/Geri Al/));
+    const sonuc = setGiderler.mock.calls[0][0]([silinmis]);
+    expect(sonuc[0].deletedAt).toBeUndefined();
+    expect(sonuc[0].tutar).toBe(14800);
+  });
+  it("personel kaleminde tutar listelenmez", () => {
+    renderTrash({ rawGiderler: [{ id: 71, tarih: "2026-09-01", turId: 3, calisanAd: "Hasan", resmiTutar: 30000, deletedAt: "x" }], giderTurleri: turler, giderYetki: true, setGiderler: vi.fn() });
+    expect(screen.getByText(/Personel · Hasan/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/30\.000/);
+  });
+  it("K7: gider yetkisi yoksa satır çizilmez ve çöpü boşaltmak giderlere dokunmaz", () => {
+    const setGiderler = vi.fn();
+    renderTrash({ rawGiderler: [silinmis], setGiderler, giderTurleri: turler, giderYetki: false,
+      rawCalisanlar: [{ id: "c1", ad: "Silinen Çalışan", deletedAt: "2026-07-20T11:00:00.000Z" }], setCalisanlar: vi.fn() });
+    expect(screen.queryByText(/Ağustos faturası/)).toBeNull();
+    fireEvent.click(screen.getByText(/Çöp Kutusunu Boşalt|Çöpü Boşalt/));
+    const onay = screen.getAllByRole("button").find(b => /Boşalt|Evet/.test(b.textContent) && b.closest(".modal-backdrop"));
+    fireEvent.click(onay);
+    expect(setGiderler).not.toHaveBeenCalled();
+  });
+});

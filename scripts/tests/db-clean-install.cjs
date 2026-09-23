@@ -43,11 +43,18 @@ try {
     // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
     yedekParcaSatislar: [{ id: 8, dealerId: 2, partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] }],
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
+    // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
+    giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }],
+    tedarikciler: [{ id: 31, ad: "Tedarikçi A" }],
+    giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [] }],
+    giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }] }],
+    standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
     payments: [{ id: 10, customerId: 1, tarih: "2026-07-22", tutar: 5000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
       mailTemplates: { teklifProforma: { konu: "K", metin: "M" } },
       krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] },
-      calismaSaatleri: { baslangic: "08:30", bitis: "19:00", gunler: [1, 2, 3, 4, 5], molalar: [{ baslangic: "12:30", bitis: "13:30" }] } },
+      calismaSaatleri: { baslangic: "08:30", bitis: "19:00", gunler: [1, 2, 3, 4, 5], molalar: [{ baslangic: "12:30", bitis: "13:30" }] },
+      giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-07" } },
   });
 } catch (e) { hata = e; }
 check("ilk oturumda üretim formu / yeni sütunlara yazma çökmüyor", hata === null);
@@ -75,6 +82,7 @@ check("temiz kurulumda yedek parça satışı + tahsis tabloları oluştu", (() 
 check("temiz kurulumda yedek parça ödeme yöntemi sütunu oluştu", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.yontem === "Kredi Kartı"; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (yedek parça)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 54; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (payment, blokaj)", (() => { const p = (blob.payments || []).find(x => x.id === 10); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31"; })());
+check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 1 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 1 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());
 
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli

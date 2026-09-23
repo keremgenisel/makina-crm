@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { trLower, aramaNormalize, withDeleted } from "../lib/utils";
+import { modelAdiTasi, modelKullanim } from "../lib/gider";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload } from "./ui";
 import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
 
-export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], appSettings = {}, setAppSettings = null }) => {
+export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], appSettings = {}, setAppSettings = null, giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null }) => {
   // Analiz > Model Servis Yoğunluğu'nda gösterilecek modeller: appSettings.analizGizliModeller = GİZLENEN
   // model adları. Model adı bu listede YOKSA gösterilir → onay kutusu işaretli = göster (varsayılan: hepsi açık).
   const gizliSet = new Set(appSettings?.analizGizliModeller || []);
@@ -53,6 +54,9 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
         const arr = p?.analizGizliModeller || [];
         return arr.includes(oldName) ? { ...p, analizGizliModeller: arr.map(x => x === oldName ? name : x) } : p;
       });
+      // Gider model satırları modele ADLA bağlıdır (spec 0001 R21, plan K35): ad taşınmazsa atama kopardı.
+      setGiderler?.(p => modelAdiTasi(p, oldName, name));
+      setGiderTanimlari?.(p => modelAdiTasi(p, oldName, name));
       showToast(`Model düzenlendi. "${oldName}" adı geçmiş kayıtlarda da güncellendi.`);
     };
     if (modelModal.mode === "add") {
@@ -140,7 +144,11 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
 
       {confirmDelModel && (
         <ConfirmDialog
-          message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`}
+          message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.${(() => {
+            // AC-84: bağlı gider sayısı. Kalemler silinmez; yalnız bu modelin satır tutarı ortak gidere döner (K35).
+            const k = modelKullanim(confirmDelModel, giderler, giderTanimlari);
+            return k.kalem + k.tanim > 0 ? ` Bu modele atanmış ${k.kalem} gider kalemi${k.tanim ? ` ve ${k.tanim} tekrarlayan tanım` : ""} var: silinmez, bu modelin tutarı ortak gidere döner. Model geri alınırsa atama geri gelir.` : "";
+          })()}`}
           onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setAppSettings?.(p => { const arr = p?.analizGizliModeller || []; return arr.includes(confirmDelModel) ? { ...p, analizGizliModeller: arr.filter(x => x !== confirmDelModel) } : p; }); setConfirmDelModel(null); showToast("Model silindi."); }}
           onCancel={() => setConfirmDelModel(null)}
         />

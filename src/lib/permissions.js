@@ -22,6 +22,25 @@ export function makeCanDo(serverPermissions, groupKey) {
   return (action) => !allowed || allowed.includes(action);
 }
 
+/**
+ * Görünür üst sekmeler. Yerel mod / sunucu PC / admin → tümü; user rolü → izin listesi.
+ * Tek istisna (spec 0001 C6 kural 3): sekme listesi tanımsız user rolü "gider" sekmesini GÖRMEZ;
+ * bu uygulamadaki "tanımsız = serbest" kuralının aksine gider yalnız açıkça verildiğinde görünür.
+ * @param {Array<{id: string}>} tabs
+ * @param {string | null} serverMode
+ * @param {import("../types").ServerPermissions | null | undefined} serverPermissions
+ */
+export function gorunurSekmeler(tabs, serverMode, serverPermissions) {
+  if (serverMode !== "active") return tabs;
+  if (!serverPermissions || serverPermissions.role === "admin") return tabs;
+  const giderHaric = tabs.filter(t => t.id !== "gider");
+  try {
+    const allowed = JSON.parse(serverPermissions.permissions || "null")?.tabs;
+    if (!Array.isArray(allowed)) return giderHaric;
+    return tabs.filter(t => allowed.includes(t.id));
+  } catch { return giderHaric; }
+}
+
 // ── Salt okunur mod izin seti ────────────────────────────────────────────────
 // İstemci sunucuya ulaşamayınca alt bileşenlere gerçek izinler yerine bu set
 // geçilir: her eylem kategorisi boş dizi (= tüm ekle/düzenle/sil butonları
@@ -36,6 +55,7 @@ export const READONLY_SERVER_PERMISSIONS = {
     evrakActions: [],
     stockActions: [],
     notActions: [],
+    giderActions: [],
     settings: ["server"],
   }),
 };

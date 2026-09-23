@@ -9,10 +9,13 @@ import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
+import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu } from "../lib/gider";
+import { hesaplananKdvAylar } from "../lib/giderKdv";
+import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services: servicesHam = [], dealers = [], partSales: partSalesHam = [], yedekParcaSatislar: yedekParcaHam = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments: paymentsHam = [], teklifler = [], serverPermissions = null }) => {
+export const Finance = ({ customers, services: servicesHam = [], dealers = [], partSales: partSalesHam = [], yedekParcaSatislar: yedekParcaHam = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments: paymentsHam = [], teklifler = [], serverPermissions = null, giderYetki = false, giderler = [], giderTurleri = [], giderYururlukAy = null }) => {
   const canDoFin = makeCanDo(serverPermissions, "financeActions");
   // Sahipsiz kayıtlar (müşterisi artık olmayan servis/kalıp/yedek parça/ödeme) ekran hesaplarına
   // ve aylık rapora girmez — ikisi aynı süzgeci (lib/sahipsiz.js) kullanır ki rakamlar ayrışmasın.
@@ -47,6 +50,18 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     if (window.appPrint?.printHtml) window.appPrint.printHtml(html, null, `Aylik-Rapor-${raporAy}.pdf`);
   };
   const M = v => moneyVisible ? v : "———";
+  // KDV Karşılaştırması (spec 0001 R9, AC-14/15/29/30, plan K1/K10): Aylık Rapor seçicisiyle AYNI aya bağlı.
+  // Satış KDV'si aylık rapor motorundan (aylikRapor ile aynı ham diziler), indirilecek KDV gider motorundan.
+  // Yalnız gider yetkisiyle hesaplanır ve çizilir; mevcut "Ödenmesi Muhtemel KDV" kartı değişmez.
+  const kdvKarsilastirma = useMemo(() => {
+    if (!giderYetki || !raporAy) return null;
+    const aralik = { baslangic: `${raporAy}-01`, bitis: ayinSonGunu(raporAy) };
+    if (yururlukKapsami(aralik, giderYururlukAy).durum === "oncesi") return { durum: "oncesi" };
+    const gr = hesaplaGiderRaporu({ giderler, turler: giderTurleri, yururlukAy: giderYururlukAy }, aralik);
+    const veri = { customers, services: servicesHam, partSales: partSalesHam, payments: paymentsHam, teklifler, dealers, yedekParcaSatislar: yedekParcaHam };
+    const hesaplanan = hesaplananKdvAylar(veri, [raporAy], { factoryName, kdvRates, factory, rates });
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, gr.indirilecekKdv) };
+  }, [giderYetki, raporAy, giderler, giderTurleri, giderYururlukAy, customers, servicesHam, partSalesHam, paymentsHam, teklifler, dealers, yedekParcaHam, factoryName, kdvRates, factory, rates]);
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,
   // bir {TRY,USD,EUR} nesnesini TL'ye çevirip toplar. Hesaplama dışında render'da da (MultiCard) kullanılıyor.
@@ -592,6 +607,13 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
         <MultiCard label="Toplam Alacak" obj={alacak} color="var(--red600, #dc2626)" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="var(--teal, #0d9488)" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
+
+      {kdvKarsilastirma && (
+        <div style={{ marginBottom: 28, maxWidth: 520 }}>
+          <KdvKarsilastirmaKarti durum={kdvKarsilastirma.durum} sonuc={kdvKarsilastirma.sonuc} aralikEtiketi={raporAy} gizle={!moneyVisible}
+            kaynak={`Rapor ayı ${raporAy} · Giderler sekmesiyle aynı kaynak`} />
+        </div>
+      )}
 
       {/* ADET KARTLARI */}
       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>Adetler</div>

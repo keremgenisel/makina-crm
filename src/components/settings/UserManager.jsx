@@ -3,9 +3,9 @@ import { Modal, PasswordInput, Btn, ConfirmDialog } from "../ui";
 import {
   ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION,
   CUSTOMER_ACTION_GROUPS, DEALER_ACTION_GROUPS, STOCK_ACTION_GROUPS,
-  EVRAK_ACTION_GROUPS, NOT_ACTION_GROUPS, FINANCE_ACTION_GROUPS,
+  EVRAK_ACTION_GROUPS, NOT_ACTION_GROUPS, FINANCE_ACTION_GROUPS, GIDER_ACTION_GROUPS,
   parseTabPerms, parseSettingsPerms, parseCustomerActionsPerms, parseDealerActionsPerms,
-  parseStockActionsPerms, parseEvrakActionsPerms, parseNotActionsPerms, parseFinanceActionsPerms,
+  parseStockActionsPerms, parseEvrakActionsPerms, parseNotActionsPerms, parseFinanceActionsPerms, parseGiderActionsPerms,
 } from "./serverPermissionDefs";
 
 // Kullanıcı yönetimi paneli (sunucu modunda). SettingsServer.jsx'ten ayrıldı: kullanıcı
@@ -19,6 +19,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
   const allEvrakActionIds  = EVRAK_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
   const allNotActionIds    = NOT_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
   const allFinanceActionIds = FINANCE_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
+  const allGiderActionIds = GIDER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
 
   const [users, setUsers]         = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -41,6 +42,8 @@ export function UserManager({ flash, settingsGroups = [] }) {
   const [editNotActionsOn, setEditNotActionsOn]       = useState(false);
   const [editFinanceActions, setEditFinanceActions]     = useState([]);
   const [editFinanceActionsOn, setEditFinanceActionsOn] = useState(false);
+  const [editGiderActions, setEditGiderActions]         = useState([]);
+  const [editGiderActionsOn, setEditGiderActionsOn]     = useState(false);
   const [changePwId, setChangePwId]                 = useState(null);
   const [newPw, setNewPw]                           = useState("");
   const [changingPw, setChangingPw]                 = useState(false);
@@ -96,6 +99,9 @@ export function UserManager({ flash, settingsGroups = [] }) {
     const financeActions = parseFinanceActionsPerms(u.permissions);
     setEditFinanceActions(financeActions ?? [...allFinanceActionIds]);
     setEditFinanceActionsOn(financeActions !== null);
+    const giderActions = parseGiderActionsPerms(u.permissions);
+    setEditGiderActions(giderActions ?? [...allGiderActionIds]);
+    setEditGiderActionsOn(giderActions !== null);
     setEditPermsId(u.id);
     setChangePwId(null);
     setOpenPerm([]); // her açılışta tüm akordeonlar kapalı başlasın
@@ -108,7 +114,8 @@ export function UserManager({ flash, settingsGroups = [] }) {
     const evrakActionsVal  = editEvrakActionsOn  ? editEvrakActions  : null;
     const notActionsVal    = editNotActionsOn    ? editNotActions    : null;
     const financeActionsVal = editFinanceActionsOn ? editFinanceActions : null;
-    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal, dealerActions: dealerActionsVal, stockActions: stockActionsVal, evrakActions: evrakActionsVal, notActions: notActionsVal, financeActions: financeActionsVal });
+    const giderActionsVal = editGiderActionsOn ? editGiderActions : null;
+    const permissions = u.role === "admin" ? null : JSON.stringify({ tabs: editTabs, settings: settingsVal, customerActions: actionsVal, dealerActions: dealerActionsVal, stockActions: stockActionsVal, evrakActions: evrakActionsVal, notActions: notActionsVal, financeActions: financeActionsVal, giderActions: giderActionsVal });
     const res = await window.appServer.apiRequest({ method: "PATCH", path: `/api/users/${u.id}`, body: { permissions } });
     if (res?.ok) { flash("ok", "İzinler güncellendi."); setEditPermsId(null); load(); }
     else flash("err", "Güncellenemedi");
@@ -178,6 +185,10 @@ export function UserManager({ flash, settingsGroups = [] }) {
       setOn: (v) => { setEditStockActionsOn(v); if (v) setEditStockActions([...allStockActionIds]); }, groups: STOCK_ACTION_GROUPS, ...yesil },
     { key: "finance", title: "Finans işlemleri", on: editFinanceActionsOn, selected: editFinanceActions, setSelected: setEditFinanceActions,
       setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
+    // Gider işlemleri (spec 0001): yalnız "Giderler" sekmesi açıkça verilmiş kullanıcıda etkilidir.
+    { key: "gider", title: "Gider işlemleri", on: editGiderActionsOn, selected: editGiderActions, setSelected: setEditGiderActions,
+      setOn: (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); }, groups: GIDER_ACTION_GROUPS, ...yesil,
+      emptyText: "Varsayılan (Giderler sekmesi açıksa tüm gider işlemleri açık)" },
     { key: "evrak", title: "Evrak işlemleri", on: editEvrakActionsOn, selected: editEvrakActions, setSelected: setEditEvrakActions,
       setOn: (v) => { setEditEvrakActionsOn(v); if (v) setEditEvrakActions([...allEvrakActionIds]); }, groups: EVRAK_ACTION_GROUPS, ...yesil },
     { key: "not", title: "Notlar işlemleri", on: editNotActionsOn, selected: editNotActions, setSelected: setEditNotActions,
@@ -302,7 +313,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                 {ALL_TABS.map(t => (
                   <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: newU.tabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${newU.tabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                     <input type="checkbox" checked={newU.tabs.includes(t.id)} onChange={e => setNewU(p => ({ ...p, tabs: e.target.checked ? [...p.tabs, t.id] : p.tabs.filter(id => id !== t.id) }))} style={{ margin: 0 }} />
-                    {t.label}
+                    {t.label}{t.id === "gider" && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
                   </label>
                 ))}
               </div>
@@ -411,9 +422,12 @@ export function UserManager({ flash, settingsGroups = [] }) {
                               {ALL_TABS.map(t => (
                                 <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${editTabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                                   <input type="checkbox" checked={editTabs.includes(t.id)} onChange={e => setEditTabs(p => e.target.checked ? [...p, t.id] : p.filter(id => id !== t.id))} style={{ margin: 0 }} />
-                                  {t.label}
+                                  {t.label}{t.id === "gider" && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
                                 </label>
                               ))}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--n500, #64748b)", margin: "-4px 0 10px" }}>
+                              Giderler sekmesi yalnız açıkça işaretlendiğinde görünür. Ayarlar açık olsa bile Giderler grubu bu sekme olmadan görünmez.
                             </div>
                             {/* İzin akordeonları */}
                             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 8 }}>İşlem İzinleri</div>

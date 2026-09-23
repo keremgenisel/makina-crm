@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  GIDER_BOLUMLERI, giderAynaEngeli,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -25,6 +26,16 @@ describe("degisenBolumler", () => {
     const eski = { customers: [{ id: 1, name: "A", city: "X" }] };
     const yeni = { customers: [{ city: "X", name: "A", id: 1 }] };
     expect(degisenBolumler(eski, yeni)).toEqual([]);
+  });
+
+  it("REGRESYON: undefined değerli alan, JSON'da hiç olmayan alanla aynı sayılır", () => {
+    // Veritabanından okunan kayıtta satisTamam: undefined (toBoolTriState) var; istemci JSON'la geri
+    // gönderdiğinde anahtar hiç yok. Eskiden bu fark bölümü "değişmiş" gösteriyor, sekmesi kısıtlı
+    // kullanıcı değişiklik yapmadığı teklifler/müşteriler yüzünden her kayıtta 403 alıyordu.
+    const db = { teklifler: [{ id: 1, no: "T-1", satisTamam: undefined }], customers: [{ id: 2, bayiMi: undefined, ad: "A" }] };
+    const istemci = JSON.parse(JSON.stringify(db));
+    expect(degisenBolumler(db, istemci)).toEqual([]);
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"] }), "user", degisenBolumler(db, istemci), db, istemci).ok).toBe(true);
   });
 
   it("istemcinin göndermediği (undefined) bölüm dokunulmamış sayılır", () => {
@@ -681,5 +692,76 @@ describe("sonAdminiDusururMu — son-admin koruması", () => {
     expect(sonAdminiDusururMu(tekAdmin, 2, { is_active: 0 })).toBe(false); // hedef zaten user
     expect(sonAdminiDusururMu(tekAdmin, 1, { permissions: "x" })).toBe(false); // rol/aktiflik değişmiyor
     expect(sonAdminiDusururMu(tekAdmin, 1, { role: "admin", is_active: 1 })).toBe(false); // admin kalıyor
+  });
+});
+
+// ── Gider kaydı (spec 0001) ──────────────────────────────────────────────────────
+describe("gider bölümleri: C6 kural 3 ve sunucu aynası (K6)", () => {
+  const GIDERCI = JSON.stringify({ tabs: [...DEFAULT_USER_TABS, "gider"] });
+  it("AC-18 (sunucu): sekme listesi tanımsız veya izinsiz user gider yazamaz", () => {
+    for (const bolum of GIDER_BOLUMLERI) {
+      expect(giderAynaEngeli(null, "user", [bolum])).toBe(bolum);
+      expect(giderAynaEngeli(JSON.stringify({ customerActions: [] }), "user", [bolum])).toBe(bolum);
+      expect(yazmaYetkisiVar(null, "user", [bolum], {}, {}).ok).toBe(false);
+    }
+  });
+  it("admin ve gider dışı bölümler etkilenmez (tanımsız = serbest kuralı korunur)", () => {
+    expect(giderAynaEngeli(null, "admin", ["giderler"])).toBeNull();
+    expect(giderAynaEngeli(null, "user", ["customers", "notes"])).toBeNull();
+    expect(yazmaYetkisiVar(null, "user", ["customers"], {}, {}).ok).toBe(true);
+  });
+  it("varsayılan yeni kullanıcı (gider sekmesi yok) gider bölümlerini yazamaz", () => {
+    for (const bolum of ["giderler", "tedarikciler", "standartGiderler"]) {
+      expect(yazmaYetkisiVar(YENI_KULLANICI, "user", [bolum], {}, {}).ok).toBe(false);
+    }
+  });
+  it("gider sekmesi açıkça verilen kullanıcı kalem, tanım, tedarikçi ve standart gider yazabilir", () => {
+    for (const bolum of ["giderler", "giderTanimlari", "tedarikciler", "standartGiderler"]) {
+      expect(yazmaYetkisiVar(GIDERCI, "user", [bolum], {}, {}).ok).toBe(true);
+    }
+    expect(giderAynaEngeli(GIDERCI, "user", ["giderler"])).toBeNull();
+  });
+  it("R13 / R22: tedarikçi ve standart gider yalnız gider sekmesinden; settings tek başına yetmez", () => {
+    const ayarci = JSON.stringify({ tabs: ["settings"] });
+    expect(yazmaYetkisiVar(ayarci, "user", ["tedarikciler"], {}, {}).ok).toBe(false);
+    expect(yazmaYetkisiVar(ayarci, "user", ["standartGiderler"], {}, {}).ok).toBe(false);
+    expect(yazmaYetkisiVar(ayarci, "user", ["giderTurleri"], {}, {}).ok).toBe(true);
+    expect(yazmaYetkisiVar(ayarci, "user", ["giderler"], {}, {}).ok).toBe(true); // model zinciri / geri yükleme
+  });
+  it("giderActions: [] tüm gider bölümlerini kapatır", () => {
+    const kapali = JSON.stringify({ tabs: ["gider"], giderActions: [] });
+    expect(yazmaYetkisiVar(kapali, "user", ["giderler"], {}, {}).ok).toBe(false);
+    expect(kisitliMi(kapali, "user")).toBe(true);
+  });
+});
+
+describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
+  const izin = (ids) => JSON.stringify({ tabs: ["gider"], giderActions: ids });
+  it("elle kalem eklemek gider_add ister; tanımdan üretilen kalem gider_tekrar_uret ister", () => {
+    const yeni = { giderler: [{ id: 1, tarih: "2026-09-01" }] };
+    expect(eylemDenetimi({ giderler: [] }, yeni, izin(["gider_tekrar_uret"]), "user").ok).toBe(false);
+    expect(eylemDenetimi({ giderler: [] }, yeni, izin(["gider_add"]), "user").ok).toBe(true);
+    const uretilen = { giderler: [{ id: 2, tanimId: 9, donem: "2026-09" }] };
+    expect(eylemDenetimi({ giderler: [] }, uretilen, izin(["gider_add"]), "user").ok).toBe(false);
+    expect(eylemDenetimi({ giderler: [] }, uretilen, izin(["gider_tekrar_uret"]), "user").ok).toBe(true);
+  });
+  it("kalem silmek gider_delete ister", () => {
+    const eski = { giderler: [{ id: 1 }] };
+    const yeni = { giderler: [{ id: 1, deletedAt: "x" }] };
+    expect(eylemDenetimi(eski, yeni, izin(["gider_add", "gider_edit"]), "user").reddedilenBolum).toBe("giderler");
+    expect(eylemDenetimi(eski, yeni, izin(["gider_delete"]), "user").ok).toBe(true);
+  });
+  it("ödeme durumu (odendi) gider_odeme ister; diğer alan düzenlemesi istemez", () => {
+    const eski = { giderler: [{ id: 1, odendi: false, aciklama: "a" }] };
+    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: true, aciklama: "a" }] }, izin(["gider_edit"]), "user").gerekli).toBe("gider_odeme");
+    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: false, aciklama: "b" }] }, izin(["gider_edit"]), "user").ok).toBe(true);
+  });
+  it("tedarikçi ekle/sil kendi izinleriyle; tanım, tür ve standart gider gider_tanim ile", () => {
+    expect(eylemDenetimi({ tedarikciler: [] }, { tedarikciler: [{ id: 5, ad: "A" }] }, izin(["gider_add"]), "user").gerekli).toBe("tedarikci_add");
+    expect(eylemDenetimi({ tedarikciler: [{ id: 5 }] }, { tedarikciler: [] }, izin(["tedarikci_add"]), "user").gerekli).toBe("tedarikci_delete");
+    for (const b of ["giderTanimlari", "giderTurleri", "standartGiderler"]) {
+      expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_add"]), "user").gerekli).toBe("gider_tanim");
+      expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_tanim"]), "user").ok).toBe(true);
+    }
   });
 });

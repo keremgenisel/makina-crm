@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
+import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
@@ -17,6 +18,8 @@ export const Customers = ({
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
+  // Gider kaydı (spec 0001 R7): yalnız gider yetkisi varsa dolu gelir; silme onayında bağlı gider sayısı.
+  giderler = [],
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -660,6 +663,7 @@ export const Customers = ({
               (ozet ? `Birlikte taşınacak: ${ozet}. ` : "Bağlı kayıt yok. ") +
               (sayilar.tahsis > 0 ? `Bayinin bu makinaya tahsis ettiği ${sayilar.tahsis} yedek parça satışı silinmez, tahsis notu olarak kalır. ` : "") +
               (makinaVar ? "Makina, Makina Stoğu'na geri döner. " : "") +
+              (() => { const n = makinaGiderSayisi(giderler, { musteriId: confirmId, sourceStockId: silinecek?.sourceStockId }); return n > 0 ? `Bu makinaya atanmış ${n} gider kalemi var: silinmez, ortak gidere düşer; müşteri çöpten geri alınırsa atama geri döner. ` : ""; })() +
               "Ayarlar'dan 30 gün içinde geri alabilirsiniz."
             }
             onConfirm={confirmDel}

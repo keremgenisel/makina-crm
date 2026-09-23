@@ -215,6 +215,40 @@ CREATE TABLE IF NOT EXISTS yedek_parca_tahsis (
 );
 CREATE INDEX IF NOT EXISTS idx_ypt_satis ON yedek_parca_tahsis(satis_id);
 
+-- Gider kaydı (spec 0001). Model dağılım satırları kalemin alt kaydıdır (C12, plan K31):
+-- yedek_parca_tahsis deseni, satır kendi id'sini taşımaz, kalemle birlikte silinip yeniden yazılır.
+CREATE TABLE IF NOT EXISTS giderler (
+  id INTEGER PRIMARY KEY,
+  tarih TEXT, turId INTEGER, aciklama TEXT, tedarikciId INTEGER,
+  tutar REAL, kdvOrani REAL, odemeYontemi TEXT, sonOdemeTarihi TEXT, odendi INTEGER, odemeTarihi TEXT,
+  stopajOrani REAL, girisYonu TEXT, netTutar REAL,
+  calisanId INTEGER, calisanAd TEXT, resmiTutar REAL, eldenTutar REAL,
+  tanimId INTEGER, donem TEXT,
+  atamaTur TEXT, makinaTur TEXT, makinaId INTEGER,
+  deletedAt TEXT
+);
+CREATE TABLE IF NOT EXISTS gider_model_satirlari (
+  id INTEGER PRIMARY KEY,
+  gider_id INTEGER NOT NULL REFERENCES giderler(id),
+  modelAd TEXT, birimMaliyet REAL, adet INTEGER, sort_order INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_gms_gider ON gider_model_satirlari(gider_id);
+CREATE TABLE IF NOT EXISTS gider_tanimlari (
+  id INTEGER PRIMARY KEY,
+  turId INTEGER, ad TEXT, tutar REAL, kdvOrani REAL, baslangicAy TEXT, bitisAy TEXT,
+  calisanId INTEGER, girisYonu TEXT, tedarikciId INTEGER, odemeYontemi TEXT,
+  atamaTur TEXT, makinaTur TEXT, makinaId INTEGER, modelSatirlari TEXT,
+  uretilenAylar TEXT, kapatildi INTEGER
+);
+CREATE TABLE IF NOT EXISTS tedarikciler (
+  id INTEGER PRIMARY KEY,
+  ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT
+);
+CREATE TABLE IF NOT EXISTS standart_giderler (
+  id INTEGER PRIMARY KEY,
+  grupId INTEGER, ad TEXT, tutar REAL, baslangicAy TEXT, bitisAy TEXT
+);
+
 CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
@@ -244,7 +278,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -409,6 +443,8 @@ const APP_SETTINGS_SERVIS_ALARM_COLUMN = [["servisAlarm", "TEXT"]];
 const APP_SETTINGS_KK_KOMISYON_COLUMN = [["krediKartiKomisyonlari", "TEXT"]];
 const APP_SETTINGS_MUSTERI_SUTUN_COLUMN = [["musteriSutunlari", "TEXT"]];
 const APP_SETTINGS_ANALIZ_MODEL_COLUMN = [["analizGizliModeller", "TEXT"]];
+// Gider ayarları (spec 0001): {stopajOrani, yururlukAy, varsayilanResmiMaliyet}; JSON dört nokta kuralı.
+const APP_SETTINGS_GIDER_COLUMN = [["giderAyarlari", "TEXT"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -717,6 +753,53 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`INSERT INTO meta (key, value) VALUES ('calisanlar', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(JSON.stringify(data.calisanlar));
   }
 
+  // ── Gider kaydı (spec 0001) ──
+  // Gider türleri: küçük {id, ad, davranis} tanım listesi; calisanlar gibi meta'da tek JSON satırı.
+  if (Array.isArray(data.giderTurleri) && !skip.has("giderTurleri")) {
+    conn.prepare(`INSERT INTO meta (key, value) VALUES ('giderTurleri', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(JSON.stringify(data.giderTurleri));
+  }
+  if (Array.isArray(data.giderler) && !skip.has("giderler")) {
+    conn.prepare(`DELETE FROM gider_model_satirlari`).run();
+    conn.prepare(`DELETE FROM giderler`).run();
+    const stmt = conn.prepare(`
+      INSERT INTO giderler (id, tarih, turId, aciklama, tedarikciId, tutar, kdvOrani, odemeYontemi, sonOdemeTarihi, odendi, odemeTarihi,
+        stopajOrani, girisYonu, netTutar, calisanId, calisanAd, resmiTutar, eldenTutar, tanimId, donem, atamaTur, makinaTur, makinaId, deletedAt)
+      VALUES (@id, @tarih, @turId, @aciklama, @tedarikciId, @tutar, @kdvOrani, @odemeYontemi, @sonOdemeTarihi, @odendi, @odemeTarihi,
+        @stopajOrani, @girisYonu, @netTutar, @calisanId, @calisanAd, @resmiTutar, @eldenTutar, @tanimId, @donem, @atamaTur, @makinaTur, @makinaId, @deletedAt)
+    `);
+    // Alt satıra id verilmez (yedek_parca_tahsis dersi: rowid çakışması tüm kaydı geri alıyordu).
+    const mStmt = conn.prepare(`INSERT INTO gider_model_satirlari (gider_id, modelAd, birimMaliyet, adet, sort_order) VALUES (?, ?, ?, ?, ?)`);
+    for (const g of data.giderler) {
+      stmt.run({
+        id: g.id, tarih: g.tarih ?? null, turId: g.turId ?? null, aciklama: g.aciklama ?? null, tedarikciId: g.tedarikciId ?? null,
+        tutar: g.tutar ?? null, kdvOrani: g.kdvOrani ?? null, odemeYontemi: g.odemeYontemi ?? null, sonOdemeTarihi: g.sonOdemeTarihi ?? null,
+        odendi: toInt(g.odendi), odemeTarihi: g.odemeTarihi ?? null,
+        stopajOrani: g.stopajOrani ?? null, girisYonu: g.girisYonu ?? null, netTutar: g.netTutar ?? null,
+        calisanId: g.calisanId ?? null, calisanAd: g.calisanAd ?? null, resmiTutar: g.resmiTutar ?? null, eldenTutar: g.eldenTutar ?? null,
+        tanimId: g.tanimId ?? null, donem: g.donem ?? null,
+        atamaTur: g.atamaTur ?? null, makinaTur: g.makinaTur ?? null, makinaId: g.makinaId ?? null, deletedAt: g.deletedAt ?? null,
+      });
+      (g.modelSatirlari || []).forEach((m, idx) => mStmt.run(g.id, m.modelAd ?? null, m.birimMaliyet ?? null, m.adet ?? null, idx));
+    }
+  }
+  if (Array.isArray(data.giderTanimlari) && !skip.has("giderTanimlari")) {
+    conn.prepare(`DELETE FROM gider_tanimlari`).run();
+    const stmt = conn.prepare(`INSERT INTO gider_tanimlari (id, turId, ad, tutar, kdvOrani, baslangicAy, bitisAy, calisanId, girisYonu, tedarikciId, odemeYontemi, atamaTur, makinaTur, makinaId, modelSatirlari, uretilenAylar, kapatildi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const t of data.giderTanimlari) {
+      stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi));
+    }
+  }
+  if (Array.isArray(data.tedarikciler) && !skip.has("tedarikciler")) {
+    conn.prepare(`DELETE FROM tedarikciler`).run();
+    const stmt = conn.prepare(`INSERT INTO tedarikciler (id, ad, yetkili, telefon, eposta, vergiDairesi, vergiNo, adres, notField) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const t of data.tedarikciler) stmt.run(t.id, t.ad ?? null, t.yetkili ?? null, t.telefon ?? null, t.eposta ?? null, t.vergiDairesi ?? null, t.vergiNo ?? null, t.adres ?? null, t.not ?? null);
+  }
+  if (Array.isArray(data.standartGiderler) && !skip.has("standartGiderler")) {
+    conn.prepare(`DELETE FROM standart_giderler`).run();
+    const stmt = conn.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy, bitisAy) VALUES (?, ?, ?, ?, ?, ?)`);
+    for (const s of data.standartGiderler) stmt.run(s.id, s.grupId ?? s.id, s.ad ?? null, s.tutar ?? null, s.baslangicAy ?? null, s.bitisAy ?? null);
+  }
+
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
     conn.prepare(`DELETE FROM teklifler`).run();
     const stmt = conn.prepare(`INSERT INTO teklifler (id, type, no, tarih, dil, currency, customer_id, firma, yetkili, tel, vergiNo, vergiDairesi, adres, email, authority, forwarder, satirlar, iskonto, kdvOrani, odemeSekli, teslimSekli, teslimSuresi, teslimTarihi, notField, ek, teklifGecerlilik, kur, kurRate, teslimYeri, gtipNo, durum, createdAt, deletedAt, parentTeklifId, satisTamam, tur, country, city, modelYiliDegeri, customFieldValues, takipKapali) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -738,8 +821,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null));
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -762,7 +845,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -836,6 +919,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "app_settings", APP_SETTINGS_KK_KOMISYON_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_MUSTERI_SUTUN_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_ANALIZ_MODEL_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_GIDER_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
@@ -1121,8 +1205,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
@@ -1133,6 +1217,23 @@ function readBlobFromDb() {
 
   const calisanlarRow = db.prepare(`SELECT value FROM meta WHERE key = 'calisanlar'`).get();
   const calisanlar = calisanlarRow ? parseJsonCol(calisanlarRow.value, []) : [];
+
+  // ── Gider kaydı (spec 0001) ──
+  const giderTurleriRow = db.prepare(`SELECT value FROM meta WHERE key = 'giderTurleri'`).get();
+  const giderTurleri = giderTurleriRow ? parseJsonCol(giderTurleriRow.value, []) : [];
+  const modelSatirByGider = new Map();
+  for (const m of db.prepare(`SELECT * FROM gider_model_satirlari ORDER BY gider_id, sort_order`).all()) {
+    if (!modelSatirByGider.has(m.gider_id)) modelSatirByGider.set(m.gider_id, []);
+    modelSatirByGider.get(m.gider_id).push({ modelAd: m.modelAd, birimMaliyet: m.birimMaliyet, adet: m.adet });
+  }
+  const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, ...rest }) => ({
+    ...rest, odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [],
+  }));
+  const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, ...rest }) => ({
+    ...rest, modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),
+  }));
+  const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
+  const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,
@@ -1154,6 +1255,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler,
   };
 }
 

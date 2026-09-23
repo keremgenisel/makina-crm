@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { makinaGiderSayisi } from "../../lib/gider";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
@@ -6,7 +7,7 @@ import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 
-export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null }) => {
+export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, giderler = [] }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -206,7 +207,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
       {confirmId && (
         <ConfirmDialog
-          message={`"${stock.find(s => s.id === confirmId)?.serialNo || ""}" seri numaralı makina stoktan silinecek (Çöp Kutusu'na taşınır, 30 gün içinde geri alınabilir).`}
+          message={`"${stock.find(s => s.id === confirmId)?.serialNo || ""}" seri numaralı makina stoktan silinecek (Çöp Kutusu'na taşınır, 30 gün içinde geri alınabilir).${(() => {
+            // Gider kaydı (spec 0001 R7, AC-28): bağlı gider sayısı; kalemler silinmez, ortak gidere düşer.
+            const n = makinaGiderSayisi(giderler, { stokId: confirmId });
+            return n > 0 ? ` Bu makinaya atanmış ${n} gider kalemi var: silinmez, ortak gidere düşer.` : "";
+          })()}`}
           onConfirm={confirmDel}
           onCancel={() => setConfirmId(null)}
         />

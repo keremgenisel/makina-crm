@@ -16,7 +16,7 @@ const serverTls = require("./serverTls.cjs");
 // electronApp: Electron uygulama nesnesi. buildApp() içinde express örneği de "app" adını
 // aldığından (const app = express()), karışmasın diye burada electronApp olarak alınır.
 const { BrowserWindow, safeStorage, app: electronApp } = require("electron");
-const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
+const { kisitliMi, degisenBolumler, yazmaYetkisiVar, eylemDenetimi, giderAynaEngeli, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu } = require("./serverAuth.cjs");
 const { planSecret } = require("./jwtSecret.cjs");
 const { rateAllow, rateHit, rateRetryAfter, escalatingBlockedMs, escalatingNext } = require("./rateLimit.cjs");
 const { rateLimit } = require("express-rate-limit"); // genel /api hız sınırı (bağımlılıksız, CodeQL'in tanıdığı kütüphane)
@@ -159,6 +159,11 @@ const BOLUM_ADLARI = {
   factory: "Firma Bilgileri", appSettings: "Uygulama Ayarları", teklifler: "Teklifler", faturalar: "Faturalar",
   uretimFormlari: "Üretim Formları", partTypeDefs: "Parça Tipleri", calisanlar: "Firma Çalışanları",
   yedekParcaSatislar: "Yedek Parça Satışları",
+  giderler: "Giderler",
+  giderTanimlari: "Tekrarlayan Giderler",
+  giderTurleri: "Gider Türleri",
+  tedarikciler: "Tedarikçiler",
+  standartGiderler: "Standart Genel Giderler",
 };
 
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {
@@ -463,6 +468,9 @@ function buildApp() {
       // aşağıdaki sunucu-tarafı işlem geçmişi (herkes için) buradan beslenir.
       const mevcut = db.readBlobFromDb();
       const degisen = degisenBolumler(mevcut, data);
+      // Gider bölümleri (spec 0001 C6 kural 3, plan K6): sekme listesi tanımsız user rolü kisitliMi'den
+      // bağımsız olarak reddedilir; yoksa izinsiz eski kullanıcı gider verisini yazabilirdi.
+      if (giderAynaEngeli(perms, rol, degisen)) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
       if (kisitli) {
         const yetki = yazmaYetkisiVar(perms, rol, degisen, mevcut, data);
         if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });

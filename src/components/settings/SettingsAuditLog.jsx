@@ -8,6 +8,9 @@ const ENTITY_LABELS = {
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
   islem_gecmisi: "İşlem Geçmişi", gorusme: "Görüşme", eposta: "E-posta", dosya: "Dosya", sunucu: "Sunucu Kaydı",
   yedek_parca_satis: "Yedek Parça Satışı",
+  // Gider kaydı (spec 0001)
+  gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
+  standart_gider: "Standart Genel Gider",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
@@ -23,6 +26,9 @@ const ACTION_LABELS = {
   tahsis_edildi: "Makinaya Tahsis Edildi", tahsis_kaldirildi: "Tahsis Kaldırıldı",
   panodan_kaldirildi: "Panodan Kaldırıldı", panoya_alindi: "Panoya Geri Alındı", hemen_dusuruldu: "Hemen Düşürüldü",
   odendi: "Ödendi", odeme_iptal: "Ödeme İptal",
+  // Gider kaydı (spec 0001)
+  tekrar_uretildi: "Tekrarlayan Kalemler Oluşturuldu", tur_tasindi: "Tür Taşındı", tanim_kapatildi: "Tanım Kapatıldı",
+  surum_eklendi: "Yeni Tutar Sürümü", surum_geri_alindi: "Sürüm Geri Alındı", sona_erdirildi: "Sona Erdirildi",
 };
 
 const PER_PAGE = 10;

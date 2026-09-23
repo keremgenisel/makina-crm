@@ -13,6 +13,8 @@ const BLOB_SECTIONS = [
   "parts", "partStock", "partStockLog", "gorusmeler", "dosyalar", "kalipDefs", "standardModels",
   "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari",
   "partTypeDefs", "calisanlar", "yedekParcaSatislar",
+  // Gider kaydı (spec 0001)
+  "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -42,10 +44,21 @@ const SECTION_GROUP = {
   customModels: "settings",
   factory: "settings",
   appSettings: "settings",
+  // Gider kaydı: finans tarafında yazılabilen ilk veri; kendi izin boyutu (C6, plan K22).
+  giderler: "giderActions",
+  giderTanimlari: "giderActions",
+  giderTurleri: "giderActions",
+  tedarikciler: "giderActions",
+  standartGiderler: "giderActions",
 };
 
 // İzin nesnesindeki tüm grup anahtarları — kısıtlı kullanıcı tespiti için.
-const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stockActions", "notActions", "settings"];
+const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stockActions", "notActions", "settings", "giderActions"];
+
+// Gider bölümleri (spec 0001 C6 kural 3 + plan K6): bu uygulamanın "tabs tanımsız = serbest" kuralının
+// TEK istisnası. Sekme listesi tanımsız (veya izin gövdesi hiç olmayan) user rolü gider bölümlerini
+// YAZAMAZ; arayüzde de gider sekmesi yalnız açıkça verildiğinde görünür.
+const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler"]);
 
 // ── Sekme (tabs) düzeyi yazma kısıtı ────────────────────────────────────────────
 // REGRESYON: arayüzün "Kullanıcı Ekle" formu izin gövdesine YALNIZ {tabs:[...]} yazıyordu.
@@ -92,6 +105,15 @@ const BOLUM_SEKMELERI = {
   customModels:   ["settings"],
   factory:        ["settings"],
   appSettings:    ["settings", "stock"],
+  // Gider kaydı (plan K23). giderler: Ayarlar'dan da yazılır (model yeniden adlandırma zinciri, yedek geri
+  // yükleme). giderTanimlari: Gider sekmesindeki üretim uretilenAylar yazar + Ayarlar'daki tanım ekranı ve
+  // çalışan silmede tanım kapatma. tedarikciler/standartGiderler yalnız Giderler sekmesinde yönetilir
+  // (R13, R22): settings izni tek başına gider verisine yazma yolu açmasın.
+  giderler:         ["gider", "settings"],
+  giderTanimlari:   ["gider", "settings"],
+  giderTurleri:     ["settings"],
+  tedarikciler:     ["gider"],
+  standartGiderler: ["gider"],
 };
 
 // appSettings tek bir bölüm ama iki ayrı sahibi var: asıl ayarlar (KDV, otomatik yedek) Ayarlar
@@ -108,6 +130,7 @@ const AYAR_ALAN_SEKMELERI = {
   pinnedPartIds: ["settings", "stock"],
   musteriSutunlari:   ["settings"], // Ayarlar > Uygulama > Müşteri Görünümü (liste fiyat sütunları)
   analizGizliModeller: ["settings"], // Ayarlar > Katalog > Makina Modelleri ("Analiz'de Göster")
+  giderAyarlari:  ["settings"], // Ayarlar > Giderler > Gider Ayarları + Firma Çalışanları varsayılan resmi maliyet
 };
 // Hiçbir sekmeye ait olmayan alanlar: otomatik yedekleme her istemcide App.jsx'te çalışır ve
 // başarılı yedek sonrası lastBackup yazar — sekmesi olmayan bu yazma engellenirse Ayarlar
@@ -122,7 +145,10 @@ const AYAR_VARSAYILAN_SEKMELER = ["settings"];
 function stableStringify(v) {
   if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
   if (Array.isArray(v)) return "[" + v.map(stableStringify).join(",") + "]";
-  const keys = Object.keys(v).sort();
+  // undefined değerli anahtar JSON'da hiç yer almaz; burada da yok sayılmalı. Yoksa veritabanından okunan
+  // blob (ör. teklif satisTamam → undefined) ile istemcinin JSON'la geri gönderdiği aynı veri "değişmiş"
+  // sayılır ve sekmesi kısıtlı kullanıcı hiçbir değişiklik yapmadığı bölümler yüzünden her kayıtta 403 alır.
+  const keys = Object.keys(v).filter(k => v[k] !== undefined).sort();
   return "{" + keys.map(k => JSON.stringify(k) + ":" + stableStringify(v[k])).join(",") + "}";
 }
 
@@ -164,7 +190,7 @@ function grupEngelli(perms, group) {
 // tabs tanımsızsa (dizi değil) tüm sekmeler açık sayılır — mevcut istemci semantiği.
 function sekmeEngelli(perms, section) {
   const tabs = perms?.tabs;
-  if (!Array.isArray(tabs)) return false;
+  if (!Array.isArray(tabs)) return GIDER_BOLUMLERI.has(section); // K6: gider bölümlerinde tanımsız = kapalı
   const yazanSekmeler = BOLUM_SEKMELERI[section];
   if (!yazanSekmeler) return true; // haritada yok → güvenli tarafta reddet
   return !yazanSekmeler.some(t => tabs.includes(t));
@@ -197,6 +223,16 @@ function kisitliMi(permissionsJson, role) {
   return BLOB_SECTIONS.some(s => sekmeEngelli(perms, s));
 }
 
+// K6 aynası: izin gövdesi olmayan veya sekme listesi tanımsız user rolü, değişen bir gider bölümü
+// yazıyorsa o bölümün adını döndürür. kisitliMi izinsiz kullanıcıda pahalı denetimi atladığı için
+// bu kontrol server.cjs'te her yazımda AYRICA çalışır. tabs dizi ise normal sekme denetimi karar verir.
+function giderAynaEngeli(permissionsJson, role, changedSections) {
+  if (role === "admin") return null;
+  const perms = parsePerms(permissionsJson);
+  if (Array.isArray(perms?.tabs)) return null;
+  return (changedSections || []).find(s => GIDER_BOLUMLERI.has(s)) || null;
+}
+
 // changedSections içindeki her bölüm için kullanıcının yazma izni var mı?
 // İki boyut denetlenir: eylem grubu (customerActions vb.) ve sekme görünürlüğü (tabs).
 // Dönüş: { ok: true } veya { ok: false, reddedilenBolum, reddedilenAlan? }.
@@ -208,6 +244,8 @@ function kisitliMi(permissionsJson, role) {
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
   const perms = parsePerms(permissionsJson);
+  const ayna = giderAynaEngeli(permissionsJson, role, changedSections);
+  if (ayna) return { ok: false, reddedilenBolum: ayna };
   if (!perms) return { ok: true }; // izin tanımsız = tam erişim (mevcut istemci semantiği)
   for (const section of changedSections) {
     const group = SECTION_GROUP[section];
@@ -267,6 +305,13 @@ const EYLEM_IDLERI = {
   uretimFormlari: { ekle: "stock_uretim_add", sil: "stock_uretim_delete" },
   yedekParcaSatislar: { ekle: "yedek_parca_add", sil: "yedek_parca_delete" },
   notes:          { ekle: "not_add",          sil: "not_delete" },
+  // Gider kaydı (plan K22): kalem / tanım yönetimi / tedarikçi ayrı yetkilendirilir. Tekrarlayan tanımdan
+  // üretilen kalem (tanimId taşır) gider_add değil gider_tekrar_uret ister.
+  giderler:         { ekle: (r) => (r?.tanimId != null ? "gider_tekrar_uret" : "gider_add"), sil: "gider_delete" },
+  giderTanimlari:   { ekle: "gider_tanim", sil: "gider_tanim" },
+  giderTurleri:     { ekle: "gider_tanim", sil: "gider_tanim" },
+  standartGiderler: { ekle: "gider_tanim", sil: "gider_tanim" },
+  tedarikciler:     { ekle: "tedarikci_add", sil: "tedarikci_delete" },
   teklifler: {
     ekle: (r) => (r?.type === "proforma" ? "evrak_proforma_add" : "evrak_teklif_add"),
     sil:  (r) => (r?.type === "proforma" ? "evrak_proforma_delete" : "evrak_teklif_delete"),
@@ -283,6 +328,8 @@ const ALAN_IZINLERI = {
   services:           [{ alan: "durum",      group: "customerActions", id: "cust_service_edit" }],
   partSales:          [{ alan: "kargoDurum", group: "customerActions", id: "cust_kalip_edit" }],
   yedekParcaSatislar: [{ alan: "kargoDurum", group: "stockActions",    id: "yedek_parca_edit" }],
+  // Gider ödeme durumu kendi iznine bağlı (listedeki ödendi anahtarı ve formdaki ödeme alanı).
+  giderler:           [{ alan: "odendi",     group: "giderActions",    id: "gider_odeme" }],
 };
 
 // Bir eylem id'si kullanıcının grup dizisinde izinli mi? Dizi değilse (tanımsız) tam erişim.
@@ -484,6 +531,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
+  BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

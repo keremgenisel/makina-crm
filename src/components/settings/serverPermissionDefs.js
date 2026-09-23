@@ -10,6 +10,7 @@ export const ALL_TABS = [
   { id: "dealers",   label: "Bayiler" },
   { id: "stock",     label: "Stok" },
   { id: "finance",   label: "Finans" },
+  { id: "gider",     label: "Giderler" },
   { id: "evrak",     label: "Evrak Yönetimi" },
   { id: "notes",     label: "Notlar" },
   { id: "servis",    label: "Servis ve Kargo Panosu" },
@@ -17,6 +18,7 @@ export const ALL_TABS = [
   { id: "analiz",    label: "Analiz" },
   { id: "settings",  label: "Ayarlar" },
 ];
+// "gider" bilinçli olarak YOK: gider sekmesi varsayılan kapalıdır ve yalnız açıkça verilir (spec 0001 C6).
 export const DEFAULT_USER_TABS = ["dashboard", "customers", "dealers", "stock", "evrak", "notes"];
 
 export function parseTabPerms(permissions) {
@@ -45,6 +47,10 @@ export function parseEvrakActionsPerms(permissions) {
 
 export function parseNotActionsPerms(permissions) {
   try { return JSON.parse(permissions || "null")?.notActions ?? null; } catch { return null; }
+}
+
+export function parseGiderActionsPerms(permissions) {
+  try { return JSON.parse(permissions || "null")?.giderActions ?? null; } catch { return null; }
 }
 
 export function parseFinanceActionsPerms(permissions) {
@@ -209,6 +215,27 @@ export const STOCK_ACTION_GROUPS = [
     { id: "yedek_parca_add",    label: "Yedek parça satışı ekle" },
     { id: "yedek_parca_edit",   label: "Satış düzenle / makinaya tahsis et" },
     { id: "yedek_parca_delete", label: "Satış sil" },
+  ]},
+];
+
+// Gider işlemleri (spec 0001 C6, plan K22): kalem işlemleri, tanım yönetimi ve tedarikçi yönetimi ayrı
+// yetkilendirilir. Sunucu boyutu `giderActions`; ekle/sil kayıt düzeyinde (serverAuth EYLEM_IDLERI),
+// ödeme durumu alan düzeyinde (ALAN_IZINLERI) denetlenir.
+export const GIDER_ACTION_GROUPS = [
+  { grup: "Kalem işlemleri", items: [
+    { id: "gider_add",         label: "Gider ekle" },
+    { id: "gider_edit",        label: "Gider düzenle" },
+    { id: "gider_delete",      label: "Gider sil (çöp kutusuna)" },
+    { id: "gider_odeme",       label: "Ödeme durumunu değiştir" },
+    { id: "gider_tekrar_uret", label: "Tekrarlayan kalemleri oluştur" },
+  ]},
+  { grup: "Tanım yönetimi", items: [
+    { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları, standart genel giderler ve çalışan maliyetleri" },
+  ]},
+  { grup: "Tedarikçi yönetimi", items: [
+    { id: "tedarikci_add",    label: "Tedarikçi ekle" },
+    { id: "tedarikci_edit",   label: "Tedarikçi düzenle" },
+    { id: "tedarikci_delete", label: "Tedarikçi sil" },
   ]},
 ];
 

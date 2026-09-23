@@ -100,7 +100,23 @@ dbmod.writeBlobToDb({
       // Değişen parçalar JSON olarak saklanır (miktar/fiyat dahil); parça ücreti = miktar × fiyat = 18000.
       tahsilatTarihi: "2026-10-05",
       degisenParcalar: [{ partId: "7", ad: "aaaaaa", miktar: 2, fiyat: 9000, disTedarik: false }], parcaUcreti: 18000, parcaCurrency: "TRY", parcaGarantiDisi: true }],
-  calisanlar: [{ id: 71, ad: "Ahmet Yılmaz" }, { id: 72, ad: "Mehmet Demir" }],
+  calisanlar: [{ id: 71, ad: "Ahmet Yılmaz", resmiMaliyet: 39223.13, eldenMaliyet: 15000 }, { id: 72, ad: "Mehmet Demir" }],
+  // Gider kaydı (spec 0001): tür (meta JSON), tedarikçi, tekrarlayan tanım (JSON satırlar), kalem (model alt tablosu), standart gider.
+  giderTurleri: [{ id: 41, ad: "Fabrika kirası", davranis: "kira" }, { id: 42, ad: "Personel", davranis: "personel" }, { id: 43, ad: "Hammadde", davranis: "normal" }],
+  tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli" }],
+  giderTanimlari: [
+    { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
+      atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false },
+    { id: 62, turId: 42, ad: "Murat", calisanId: 72, baslangicAy: "2026-06", bitisAy: "2026-08", uretilenAylar: ["2026-06"], kapatildi: true },
+  ],
+  giderler: [
+    { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
+      atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
+    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [] },
+    { id: 83, tarih: "2026-07-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 39223.13, eldenTutar: 15000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [], deletedAt: "2026-07-20T10:00:00.000Z" },
+    { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
+  ],
+  standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
@@ -156,6 +172,7 @@ dbmod.writeBlobToDb({
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
     musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     analizGizliModeller: ["AK-100", "AK-160"],
+    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13 },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -172,6 +189,18 @@ check("service islemFirma* (Diğer dış servis) roundtrip", (() => { const s = 
 check("service durum (Servis Panosu) roundtrip", blob.services.find(x => x.id === 2)?.durum === "Yapılıyor");
 check("service zaman damgaları (giriş/başlangıç/bitiş) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.fabrikaGirisZamani === "2026-07-20T09:15:00" && s?.bakimBaslangicZamani === "2026-07-20T11:30:00" && s?.bitisZamani === "2026-07-20T14:45:00"; })());
 check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.services.find(x => x.id === 2); const b = blob.services.find(x => x.id === 3); return a?.panoGizli === false && b?.panoGizli === true && b?.durum === "Tamamlandı"; })());
+// ── Gider kaydı (spec 0001) ──
+check("gider: çalışan resmi/elden maliyeti (meta JSON) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); return a?.resmiMaliyet === 39223.13 && a?.eldenMaliyet === 15000; })());
+check("gider: giderAyarlari (appSettings JSON) roundtrip", (() => { const g = blob.appSettings?.giderAyarlari; return g?.stopajOrani === 20 && g?.yururlukAy === "2026-06" && g?.varsayilanResmiMaliyet === 39223.13; })());
+check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || []).length === 3 && blob.giderTurleri.find(t => t.id === 41)?.davranis === "kira");
+check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());
+check("gider: kalem alanları + odendi boolean roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 81); const kira = (blob.giderler || []).find(x => x.id === 82); return k?.odendi === false && k.tutar === 140000 && k.odemeYontemi === "Çek" && k.sonOdemeTarihi === "2026-08-15" && k.tedarikciId === 51 && k.atamaTur === "model" && kira?.odendi === true && kira.girisYonu === "net" && kira.netTutar === 16000 && kira.stopajOrani === 20 && kira.tanimId === 61 && kira.donem === "2026-07"; })());
+check("gider: model alt satırları sırasıyla roundtrip ve id taşımıyor", (() => { const m = (blob.giderler || []).find(x => x.id === 81)?.modelSatirlari || []; return m.length === 2 && m[0].modelAd === "AK120_DSC" && m[0].birimMaliyet === 3000 && m[0].adet === 30 && m[1].modelAd === "AK100_DS" && m.every(x => x.id === undefined); })());
+check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
+check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = (blob.giderler || []).find(x => x.id === 83); return p?.resmiTutar === 39223.13 && p.eldenTutar === 15000 && p.calisanAd === "Ahmet Yılmaz" && p.deletedAt === "2026-07-20T10:00:00.000Z"; })());
+check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
+check("gider: tanım modelSatirlari/uretilenAylar (JSON) + kapatildi roundtrip", (() => { const t = (blob.giderTanimlari || []).find(x => x.id === 61); const k = (blob.giderTanimlari || []).find(x => x.id === 62); return t?.modelSatirlari?.[0]?.adet === 20 && t.uretilenAylar.join(",") === "2026-06,2026-07" && t.tedarikciId === 51 && t.kapatildi === false && k?.kapatildi === true && k.bitisAy === "2026-08"; })());
+check("gider: standart genel gider sürümleri roundtrip", (() => { const s2 = blob.standartGiderler || []; return s2.length === 2 && s2.find(x => x.id === 92)?.grupId === 91 && s2.find(x => x.id === 91)?.bitisAy === "2026-06" && s2.find(x => x.id === 92)?.bitisAy == null; })());
 check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());
 check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı Firma" && p?.satisFirmaYetkili === "Mehmet Demir" && p?.satisFirmaTel === "05559876543" && p?.satisFirmaUlke === "Türkiye" && p?.satisFirmaSehir === "İzmir"; })());
 check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.kargoDurum === "Kargoya Verildi" && p?.kargoFirma === "Yurtiçi" && p?.kargoTakipNo === "KL-1" && p?.kargoTarih === "2026-07-20" && p?.kargoSorumlusu === "Ahmet" && p?.panoDusmeZamani === "2026-07-25T08:00" && p?.panoGizli === true; })());
@@ -237,6 +266,7 @@ check("değişen bölüm yazıldı", out.teklifler.find(t => t.id === 102)?.duru
 check("atlanan bölüm korundu (customer)", out.customers[0]?.name === "Müşteri");
 check("atlanan bölüm korundu (dealer)", out.dealers[0]?.name === "Bayi X");
 check("FK zinciri: service korundu", out.services[0]?.type === "Garanti İçi");
+check("atlanan bölüm korundu (gider model satırları)", (out.giderler.find(x => x.id === 81)?.modelSatirlari || []).length === 2);
 
 // ── KAPAT → YENİDEN AÇ (uygulama restart) → veri kalıcı mı? (yedek parça satışı regresyonu) ──
 dbmod.close();
@@ -246,6 +276,8 @@ const reopen = dbmod.readBlobFromDb();
 check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar || []).length === 3);
 check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
 check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
+check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 4 && (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
+check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 3 && (reopen.standartGiderler || []).length === 2);
 check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
 
 // ── REGRESYON: tahsis id çakışması TÜM save'i patlatıyordu ──

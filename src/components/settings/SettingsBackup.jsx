@@ -9,6 +9,9 @@ export const SettingsBackup = ({
   teklifler = [], faturalar = [], partStock = [], partStockLog = [], uretimFormlari = [],
   gorusmeler = [], setGorusmeler = null, rawDosyalar = [], setDosyalar = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
+  // Gider kaydı (spec 0001): ham diziler (çöptekiler dahil); paket yalnız gider yetkisiyle görünür (R11).
+  giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null, giderTurleri = [], setGiderTurleri = null,
+  tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, giderYetki = true,
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setPartTypeDefs, setCalisanlar, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null, setUretimFormlari = null,
   version, appSettings, setAppSettings, flash,
@@ -43,7 +46,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -128,6 +131,7 @@ export const SettingsBackup = ({
     { id: "dosyalar", ad: "Dosyalar", aciklama: "müşteri, makina, servis ve bayi belgeleri (dosya arşivi)" },
     { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
     { id: "not", ad: "Notlar", aciklama: "" },
+    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, standart genel giderler" }] : []),
     { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
   ];
   const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
@@ -185,6 +189,11 @@ export const SettingsBackup = ({
     if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
     if (sec("tanim") && Array.isArray(restoreData?.parts)) setParts?.(restoreData.parts);
     if (sec("not") && Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
+    if (sec("gider") && Array.isArray(restoreData?.giderTurleri) && setGiderTurleri) setGiderTurleri(restoreData.giderTurleri);
+    if (sec("gider") && Array.isArray(restoreData?.tedarikciler) && setTedarikciler) setTedarikciler(restoreData.tedarikciler);
+    if (sec("gider") && Array.isArray(restoreData?.giderTanimlari) && setGiderTanimlari) setGiderTanimlari(restoreData.giderTanimlari);
+    if (sec("gider") && Array.isArray(restoreData?.giderler) && setGiderler) setGiderler(restoreData.giderler);
+    if (sec("gider") && Array.isArray(restoreData?.standartGiderler) && setStandartGiderler) setStandartGiderler(restoreData.standartGiderler);
     if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
@@ -208,7 +217,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
 

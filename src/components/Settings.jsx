@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parsePermissions } from "../lib/permissions";
+import { parsePermissions, makeCanDo } from "../lib/permissions";
 import { Icon } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -31,6 +31,9 @@ import { SettingsDocuments } from "./settings/SettingsDocuments";
 import { SettingsAuditLog } from "./settings/SettingsAuditLog";
 import { SettingsSecurityLog } from "./settings/SettingsSecurityLog";
 import { SettingsSecurityStatus } from "./settings/SettingsSecurityStatus";
+import { GiderTurManager } from "./settings/GiderTurManager";
+import { SettingsGiderTanimlari } from "./settings/SettingsGiderTanimlari";
+import { SettingsGider } from "./settings/SettingsGider";
 
 // Sol menü grupları gen-crm yapısı örnek alınarak düzenlendi: Sunucu artık Güvenlik'ten ayrı kendi
 // grubunda (server + kullanıcı/işlem geçmişi); Güvenlik yalnız şifre + güvenlik durumu; firma
@@ -44,6 +47,9 @@ const SETTINGS_GROUPS = [
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }] },
+  // Gider kaydı (spec 0001): grup yalnız gider yetkisi (Giderler sekmesi görünen kullanıcı) olanlara
+  // görünür (plan K7). Tedarikçi ve standart genel gider Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13, R22).
+  { grup: "Giderler", items: [{ id: "gidertur", label: "Gider Türleri", icon: "gider" }, { id: "gidertanim", label: "Tekrarlayan Giderler", icon: "gider" }, { id: "giderayar", label: "Gider Ayarları", icon: "gider" }] },
   { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "kkkomisyon", label: "Kredi Kartı Komisyonları", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
 ];
@@ -58,6 +64,9 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   rawGorusmeler, setGorusmeler, rawDosyalar = [], setDosyalar = null, rawUretimFormlari = [], setUretimFormlari = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null, rawYedekParcaSatislar = [],
   serverPermissions = null,
+  // Gider kaydı (spec 0001)
+  giderYetki = false, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
+  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
@@ -69,10 +78,12 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   const isAdmin = !_perms;
   const clientVisible = isAdmin ? null : (_perms?.settings ?? null);
 
+  const GIDER_AYAR_IDLERI = new Set(["gidertur", "gidertanim", "giderayar"]);
   const visibleGroups = SETTINGS_GROUPS.map(g => ({
     ...g,
-    items: g.items.filter(item => isAdmin || !clientVisible || clientVisible.includes(item.id)),
+    items: g.items.filter(item => (giderYetki || !GIDER_AYAR_IDLERI.has(item.id)) && (isAdmin || !clientVisible || clientVisible.includes(item.id))),
   })).filter(g => g.items.length > 0);
+  const giderCanDo = makeCanDo(serverPermissions, "giderActions");
   const canSeeDanger = isAdmin || !clientVisible || clientVisible.includes("danger");
 
   // Sol menü grupları açılır-kapanır akordeon: aynı anda tek grup açık; aktif sekmenin grubu başta açık.
@@ -186,6 +197,9 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setCalisanlar={setCalisanlar} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           setUretimFormlari={setUretimFormlari}
+          giderYetki={giderYetki} giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
+          giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
+          standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -209,7 +223,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
             customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts}
-            appSettings={appSettings} setAppSettings={setAppSettings} />
+            appSettings={appSettings} setAppSettings={setAppSettings}
+            giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} />
         </Section>
       )}
 
@@ -246,8 +261,26 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           <div className="section-desc">
             Servis yapan çalışanların ad soyadını girin. Bu liste <b>Servis Panosu</b> kartlarındaki ve servis formundaki <b>teknisyen</b> seçicisini besler.
           </div>
-          <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast} />
+          <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast}
+            giderYetki={giderYetki} maliyetDuzenleyebilir={giderCanDo("gider_tanim")} appSettings={appSettings} setAppSettings={setAppSettings}
+            giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} serverPermissions={serverPermissions} />
         </Section>
+      )}
+
+      {giderYetki && settingsTab === "gidertur" && (
+        <Section title="Gider Türleri" icon="gider">
+          <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır. Tür silme kalıcıdır, çöp kutusuna düşmez.</div>
+          <GiderTurManager giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} giderler={rawGiderler} setGiderler={setGiderler}
+            giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
+        </Section>
+      )}
+      {giderYetki && settingsTab === "gidertanim" && (
+        <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}
+          tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers} modeller={[...standardModels, ...customModels]}
+          showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
+      )}
+      {giderYetki && settingsTab === "giderayar" && (
+        <SettingsGider appSettings={appSettings} setAppSettings={setAppSettings} giderler={rawGiderler} flash={flash} canDo={giderCanDo} />
       )}
 
       {settingsTab === "kdv" && <SettingsKdv appSettings={appSettings} setAppSettings={setAppSettings} />}
@@ -311,7 +344,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
          rawDosyalar={rawDosyalar} setDosyalar={setDosyalar}
          rawPartTypeDefs={rawPartTypeDefs} setPartTypeDefs={setPartTypeDefs}
          rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}
-         rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}/>
+         rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
+         rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}/>
       )}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}

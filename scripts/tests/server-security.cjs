@@ -43,6 +43,10 @@ const SILICI = JSON.stringify({ tabs: ["dashboard", "customers"], customerAction
 const SILICI_STOKSUZ = JSON.stringify({ tabs: ["dashboard", "customers"], stockActions: [], customerActions: ["cust_delete"] });
 // Bayi silici: yalnız bayi silme izni — bayi kaskadı (satış + bayi dosyası) senaryosu.
 // (stok grubu açıkça kısıtlı: aksi hâlde stok grubu tanımsız = yedek_parca_delete serbest sayılır, kaskad-dışı ret doğrulanamaz)
+// Gider kaydı (spec 0001 C6/K6/K22): gider sekmesi açıkça verilmiş kullanıcı (ödeme ve üretim izni yok),
+// yalnız Ayarlar'ı açık kullanıcı (tedarikçi yazamamalı). Sekme listesi tanımsız eski kullanıcı: izin null.
+const GIDERCI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "gider_edit"] });
+const AYARCI = JSON.stringify({ tabs: ["settings"] });
 const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
 let fail = 0;
@@ -67,6 +71,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("silici",      bcrypt.hashSync("sil123", 10), "user", SILICI);
   dbmod.createUser("siliciStoksuz", bcrypt.hashSync("sil123", 10), "user", SILICI_STOKSUZ);
   dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
+  dbmod.createUser("giderci",     bcrypt.hashSync("gider123", 10), "user", GIDERCI);
+  dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
+  dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -278,6 +285,41 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const bkSonra = await (await api("/api/data", {}, adminTok)).json();
   check("bayi kaskadı kalıcı: bayi/satış/dosya aynı damgayla çöpte",
     bkSonra.dealers.find(d => d.id === 70)?.deletedAt === bkTs && bkSonra.yedekParcaSatislar.find(s => s.id === 71)?.deletedAt === bkTs && bkSonra.dosyalar.find(d => d.id === 72)?.deletedAt === bkTs);
+
+  // ── Gider kaydı (spec 0001): K6 aynası, kayıt ve alan düzeyi eylem denetimi ─────────
+  const gUst = async (tok) => (await api("/api/data", {}, tok)).json();
+  const eskiTok = (await login("eskiUser", "eski123")).body.token;
+  const gE = await gUst(eskiTok);
+  check("gider: sekme listesi tanımsız (izin null) user gider yazamaz → 403 (C6 kural 3 / K6)",
+    (await postData({ ...gE, dataVersion: undefined, giderler: [{ id: 9001, tarih: "2026-09-01", turId: 1, tutar: 100, kdvOrani: 20, odendi: false, modelSatirlari: [] }] }, gE.dataVersion, eskiTok)).status === 403);
+  check("gider: aynı eski user gider dışı bölümü yazabilir (istisna yalnız gider)",
+    (await postData({ ...gE, dataVersion: undefined, notes: [...(gE.notes || []), { id: 9002, content: "eski kullanıcı notu" }] }, gE.dataVersion, eskiTok)).status === 200);
+  const gidTok = (await login("giderci", "gider123")).body.token;
+  let gG = await gUst(gidTok);
+  // REGRESYON: değişiklik içermeyen tam blob yazımı, sekmesi kısıtlı kullanıcıda 403 alıyordu
+  // (stableStringify undefined değerli alanları JSON'dan farklı sayıyordu).
+  check("kısıtlı kullanıcı (yalnız gider sekmesi) değişikliksiz tam blob yazar → 200",
+    (await postData({ ...gG, dataVersion: undefined }, gG.dataVersion, gidTok)).status === 200);
+  gG = await gUst(gidTok);
+  check("gider: gider sekmesi verilen kullanıcı elle kalem ekler → 200",
+    (await postData({ ...gG, dataVersion: undefined, giderler: [...(gG.giderler || []), { id: 9003, tarih: "2026-09-01", turId: 1, tutar: 100, kdvOrani: 20, odendi: false, modelSatirlari: [] }] }, gG.dataVersion, gidTok)).status === 200);
+  gG = await gUst(gidTok);
+  check("gider: tanımdan üretilen kalem gider_tekrar_uret ister → 403",
+    (await postData({ ...gG, dataVersion: undefined, giderler: [...gG.giderler, { id: 9004, tarih: "2026-09-01", turId: 1, tutar: 50, tanimId: 77, donem: "2026-09", odendi: false, modelSatirlari: [] }] }, gG.dataVersion, gidTok)).status === 403);
+  check("gider: ödeme durumu (odendi) gider_odeme ister → 403",
+    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 403);
+  check("gider: açıklama düzenlemesi gider_edit ile → 200",
+    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, aciklama: "düzeltildi" } : k) }, gG.dataVersion, gidTok)).status === 200);
+  gG = await gUst(gidTok);
+  check("gider: tedarikçi eklemek tedarikci_add ister → 403",
+    (await postData({ ...gG, dataVersion: undefined, tedarikciler: [{ id: 9005, ad: "T" }] }, gG.dataVersion, gidTok)).status === 403);
+  const ayarTok = (await login("ayarci", "ayar123")).body.token;
+  const gA = await gUst(ayarTok);
+  check("gider: yalnız Ayarlar'ı açık kullanıcı tedarikçi yazamaz (R13) → 403",
+    (await postData({ ...gA, dataVersion: undefined, tedarikciler: [{ id: 9006, ad: "Ayarcı Tedarikçi" }] }, gA.dataVersion, ayarTok)).status === 403);
+  const gSon = await gUst(adminTok);
+  check("gider: yalnız izinli yazımlar kalıcı (9003 var ve düzeltilmiş, 9001/9004/9005/9006 yok)",
+    gSon.giderler.some(k => k.id === 9003 && k.aciklama === "düzeltildi" && k.odendi === false) && !gSon.giderler.some(k => k.id === 9001 || k.id === 9004) && !(gSon.tedarikciler || []).length);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek

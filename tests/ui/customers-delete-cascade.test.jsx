@@ -97,3 +97,31 @@ describe("Müşteri silme kaskadı", () => {
     expect(metin).not.toContain("Makina Stoğu");
   });
 });
+
+describe("Müşteri silme — bağlı gider sayısı (spec 0001 R7, AC-28)", () => {
+  it("makinaya atanmış gider sayısı onayda görünür (müşteri id'si ve kaynak stok id'si üzerinden); kalem silinmez", () => {
+    const setGiderler = vi.fn();
+    const m = { id: 700, name: "GİDERLİ FİRMA", model: "AK120", serialNo: "S-9", sourceStockId: 88 };
+    const giderler = [
+      { id: 1, atamaTur: "makina", makinaTur: "musteri", makinaId: 700 },
+      { id: 2, atamaTur: "makina", makinaTur: "stok", makinaId: 88 },
+      { id: 3, atamaTur: "makina", makinaTur: "musteri", makinaId: 701 },
+      { id: 4, atamaTur: "makina", makinaTur: "musteri", makinaId: 700, deletedAt: "x" },
+    ];
+    render(<Customers customers={[m]} setCustomers={vi.fn()} services={[]} partSales={[]} payments={[]} yedekParcaSatislar={[]} gorusmeler={[]} dosyalar={[]}
+      stock={[]} setStock={vi.fn()} giderler={giderler} setGiderler={setGiderler} />);
+    const satir = screen.getByText("GİDERLİ FİRMA").closest("tr");
+    const dugmeler = within(satir).getAllByRole("button");
+    fireEvent.click(dugmeler[dugmeler.length - 1]);
+    expect(screen.getByText(/Çöp Kutusu'na taşınacak/).textContent).toContain("Bu makinaya atanmış 2 gider kalemi var: silinmez, ortak gidere düşer");
+    expect(setGiderler).not.toHaveBeenCalled();
+  });
+  it("gider yetkisi yoksa (giderler boş gelir) sayı yazılmaz", () => {
+    render(<Customers customers={[{ id: 700, name: "YETKİSİZ", model: "AK120", serialNo: "S" }]} setCustomers={vi.fn()} services={[]} partSales={[]} payments={[]}
+      yedekParcaSatislar={[]} gorusmeler={[]} dosyalar={[]} stock={[]} setStock={vi.fn()} />);
+    const satir = screen.getByText("YETKİSİZ").closest("tr");
+    const dugmeler = within(satir).getAllByRole("button");
+    fireEvent.click(dugmeler[dugmeler.length - 1]);
+    expect(screen.getByText(/Çöp Kutusu'na taşınacak/).textContent).not.toMatch(/gider/);
+  });
+});

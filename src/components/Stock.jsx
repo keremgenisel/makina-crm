@@ -22,6 +22,7 @@ export const Stock = ({
   yedekParcaSatislar = [], setYedekParcaSatislar = () => {},
   dealers = [], kdvRates, calisanlar = [],
   serverPermissions = null,
+  giderler = [], // spec 0001: yalnız gider yetkisiyle dolu; makina silme onayında bağlı gider sayısı
   defaultSubTab = "makina",
   yedekOdakId = null, onYedekOdakConsumed = null,
   geoData = null, loadingGeo = false,
@@ -61,7 +62,7 @@ export const Stock = ({
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} giderler={giderler} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
