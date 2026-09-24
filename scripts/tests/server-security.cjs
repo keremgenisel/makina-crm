@@ -47,6 +47,8 @@ const SILICI_STOKSUZ = JSON.stringify({ tabs: ["dashboard", "customers"], stockA
 // yalnız Ayarlar'ı açık kullanıcı (tedarikçi yazamamalı). Sekme listesi tanımsız eski kullanıcı: izin null.
 const GIDERCI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "gider_edit"] });
 const AYARCI = JSON.stringify({ tabs: ["settings"] });
+// Yalnız tekrarlayan kalem üretme izni (triyaj bulgu 7: tanimId eklemek serbest kalem izni sayılmamalı).
+const URETICI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_tekrar_uret"] });
 const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
 let fail = 0;
@@ -74,6 +76,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("giderci",     bcrypt.hashSync("gider123", 10), "user", GIDERCI);
   dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
+  dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -304,8 +307,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("gider: gider sekmesi verilen kullanıcı elle kalem ekler → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: [...(gG.giderler || []), { id: 9003, tarih: "2026-09-01", turId: 1, tutar: 100, kdvOrani: 20, odendi: false, modelSatirlari: [] }] }, gG.dataVersion, gidTok)).status === 200);
   gG = await gUst(gidTok);
-  check("gider: tanımdan üretilen kalem gider_tekrar_uret ister → 403",
-    (await postData({ ...gG, dataVersion: undefined, giderler: [...gG.giderler, { id: 9004, tarih: "2026-09-01", turId: 1, tutar: 50, tanimId: 77, donem: "2026-09", odendi: false, modelSatirlari: [] }] }, gG.dataVersion, gidTok)).status === 403);
+  const uretTok = (await login("uretici", "uret123")).body.token;
+  let gU = await gUst(uretTok);
+  check("gider (bulgu 7): yalnız üretim izni, olmayan tanıma bağlı sahte kalem ekleyemez → 403",
+    (await postData({ ...gU, dataVersion: undefined, giderler: [...gU.giderler, { id: 9004, tarih: "2026-09-01", turId: 1, tutar: 50, tanimId: 77, donem: "2026-09", odendi: false, modelSatirlari: [] }] }, gU.dataVersion, uretTok)).status === 403);
+  gU = await gUst(uretTok);
+  const gTanim = { id: 9010, turId: 1, ad: "İnternet", tutar: 50, baslangicAy: "2026-01", uretilenAylar: ["2026-09"], modelSatirlari: [] };
+  check("gider (bulgu 7): gerçek tanım + uygun dönem için üretim izni yeterli → 200",
+    (await postData({ ...gU, dataVersion: undefined, giderTanimlari: [...(gU.giderTanimlari || []), gTanim] }, gU.dataVersion, adminTok)).status === 200
+    && (await (async () => { const d = await gUst(uretTok); return postData({ ...d, dataVersion: undefined, giderler: [...d.giderler, { id: 9011, tarih: "2026-09-01", turId: 1, tutar: 50, tanimId: 9010, donem: "2026-09", odendi: false, modelSatirlari: [] }] }, d.dataVersion, uretTok); })()).status === 200);
+  gG = await gUst(gidTok);
   check("gider: ödeme durumu (odendi) gider_odeme ister → 403",
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 403);
   check("gider: açıklama düzenlemesi gider_edit ile → 200",
@@ -317,9 +328,27 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const gA = await gUst(ayarTok);
   check("gider: yalnız Ayarlar'ı açık kullanıcı tedarikçi yazamaz (R13) → 403",
     (await postData({ ...gA, dataVersion: undefined, tedarikciler: [{ id: 9006, ad: "Ayarcı Tedarikçi" }] }, gA.dataVersion, ayarTok)).status === 403);
+  // Triyaj bulgu 1: Ayarlar'ı açık, Giderler sekmesi olmayan kullanıcı gider verisi yazamaz; yalnız zincir geçer.
+  let gA2 = await gUst(ayarTok);
+  check("gider (bulgu 1): yalnız Ayarlar'ı açık kullanıcı kalem ekleyemez → 403",
+    (await postData({ ...gA2, dataVersion: undefined, giderler: [...gA2.giderler, { id: 9020, tarih: "2026-09-01", turId: 1, tutar: 99999, odendi: true, modelSatirlari: [] }] }, gA2.dataVersion, ayarTok)).status === 403);
+  check("gider (bulgu 1): yalnız Ayarlar'ı açık kullanıcı ödendi değiştiremez → 403",
+    (await postData({ ...gA2, dataVersion: undefined, giderler: gA2.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gA2.dataVersion, ayarTok)).status === 403);
+  check("gider (bulgu 1): yalnız Ayarlar'ı açık kullanıcı kalem silemez → 403",
+    (await postData({ ...gA2, dataVersion: undefined, giderler: gA2.giderler.filter(k => k.id !== 9003) }, gA2.dataVersion, ayarTok)).status === 403);
+  // Zincir: model yeniden adlandırma, kalemin yalnız modelSatirlari[].modelAd alanını değiştirir.
+  await postData({ ...(await gUst(adminTok)), dataVersion: undefined, giderler: (await gUst(adminTok)).giderler.map(k => k.id === 9003 ? { ...k, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10, adet: 2 }] } : k) }, await curVer(adminTok), adminTok);
+  gA2 = await gUst(ayarTok);
+  check("gider (bulgu 1): Ayarlar kullanıcısının model adı zinciri geçer → 200",
+    (await postData({ ...gA2, dataVersion: undefined, giderler: gA2.giderler.map(k => k.id === 9003 ? { ...k, modelSatirlari: k.modelSatirlari.map(m => ({ ...m, modelAd: "AK100_YENI" })) } : k) }, gA2.dataVersion, ayarTok)).status === 200);
+  // Triyaj bulgu 2: sekme listesi tanımsız kullanıcıda aynı zincir K6 aynasına takılmaz.
+  const gE2 = await gUst(eskiTok);
+  check("gider (bulgu 2): sekme listesi tanımsız kullanıcının model adı zinciri geçer → 200",
+    (await postData({ ...gE2, dataVersion: undefined, giderler: gE2.giderler.map(k => k.id === 9003 ? { ...k, modelSatirlari: k.modelSatirlari.map(m => ({ ...m, modelAd: "AK100_SON" })) } : k) }, gE2.dataVersion, eskiTok)).status === 200);
   const gSon = await gUst(adminTok);
-  check("gider: yalnız izinli yazımlar kalıcı (9003 var ve düzeltilmiş, 9001/9004/9005/9006 yok)",
-    gSon.giderler.some(k => k.id === 9003 && k.aciklama === "düzeltildi" && k.odendi === false) && !gSon.giderler.some(k => k.id === 9001 || k.id === 9004) && !(gSon.tedarikciler || []).length);
+  check("gider: yalnız izinli yazımlar kalıcı (9003 var, düzeltilmiş, ödenmemiş, model adı taşınmış; 9001/9004/9020 yok)",
+    gSon.giderler.some(k => k.id === 9003 && k.aciklama === "düzeltildi" && k.odendi === false && k.modelSatirlari?.[0]?.modelAd === "AK100_SON")
+    && !gSon.giderler.some(k => k.id === 9001 || k.id === 9004 || k.id === 9020) && gSon.giderler.some(k => k.id === 9011) && !(gSon.tedarikciler || []).length);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek

@@ -163,10 +163,12 @@ export const CalisanManager = ({
 
       {confirmDel && (
         <ConfirmDialog
-          message={`"${confirmDel.ad}" çalışanı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz. (Geçmiş servislerdeki teknisyen adı ve geçmiş gider kalemleri korunur.)${acikTanimlar.length
+          // Gider yetkisi olmayana personel tanımının varlığı sızdırılmaz (triyaj bulgu 6): mesaj ve düğme
+          // genel kalır, tanım yine arka planda kapatılır (silOnayla).
+          message={`"${confirmDel.ad}" çalışanı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz. (Geçmiş servislerdeki teknisyen adı${giderYetki ? " ve geçmiş gider kalemleri" : ""} korunur.)${giderYetki && acikTanimlar.length
             ? ` Bu çalışanın açık bir tekrarlayan personel tanımı var: tanım silinmez, bitiş ayı son üretilen ay yapılarak kapatılır ve sonraki aylar için kalem üretilmez.`
             : ""}`}
-          confirmLabel={acikTanimlar.length ? "Sil ve Tanımı Kapat" : "Evet, Sil"}
+          confirmLabel={giderYetki && acikTanimlar.length ? "Sil ve Tanımı Kapat" : "Evet, Sil"}
           onConfirm={silOnayla}
           onCancel={cancelDelete}
         />

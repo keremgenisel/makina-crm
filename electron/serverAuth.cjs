@@ -223,14 +223,48 @@ function kisitliMi(permissionsJson, role) {
   return BLOB_SECTIONS.some(s => sekmeEngelli(perms, s));
 }
 
+// ── Gider "zincir" değişiklikleri ────────────────────────────────────────────────
+// Gider verisini yalnız Giderler sekmesi olan kullanıcı yazar (C6, K6). İki Ayarlar işlemi ise gider
+// verisine zincirleme dokunur ve Giderler sekmesi olmayan kullanıcıda da geçmelidir:
+//   1) model yeniden adlandırma (ModelsManager.cascadeRename): yalnız modelSatirlari[].modelAd değişir;
+//   2) açık personel tanımı olan çalışanı silme (CalisanManager): tanımın yalnız bitisAy'ı ve kapatildi=true.
+// Bu fonksiyon, bir gider bölümündeki değişikliğin YALNIZ bunlardan ibaret olup olmadığını söyler:
+// ekleme yok, silme yok, kalan tüm alanlar birebir aynı. Aksi her şey (ödendi, tutar, yeni kalem…) gider
+// sekmesi ister.
+const ZINCIR_BOLUMLERI = new Set(["giderler", "giderTanimlari"]);
+function zincirNormal(section, r) {
+  const { modelSatirlari, ...rest } = r || {};
+  const n = { ...rest, modelSatirlari: (modelSatirlari || []).map(({ modelAd: _m, ...x }) => x) };
+  if (section === "giderTanimlari" && r?.kapatildi === true) { delete n.bitisAy; delete n.kapatildi; }
+  return n;
+}
+function giderZincirDegisikligiMi(section, eskiArr, yeniArr) {
+  if (!ZINCIR_BOLUMLERI.has(section) || !Array.isArray(eskiArr) || !Array.isArray(yeniArr)) return false;
+  if (eskiArr.length !== yeniArr.length) return false;
+  const eskiById = new Map(eskiArr.map(r => [r?.id, r]));
+  for (const y of yeniArr) {
+    const e = eskiById.get(y?.id);
+    if (!e) return false; // yeni kayıt → zincir değil
+    if (stableStringify(e) === stableStringify(y)) continue;
+    // Tanım kapatma: kapatildi yalnız false→true yönünde; açılan tanım zincir değildir.
+    if (section === "giderTanimlari" && e.kapatildi === true && y.kapatildi !== true) return false;
+    const eN = zincirNormal(section, { ...e, kapatildi: y.kapatildi === true ? true : e.kapatildi });
+    const yN = zincirNormal(section, y);
+    if (stableStringify(eN) !== stableStringify(yN)) return false;
+  }
+  return true;
+}
+const giderSekmesiVar = (perms) => Array.isArray(perms?.tabs) && perms.tabs.includes("gider");
+
 // K6 aynası: izin gövdesi olmayan veya sekme listesi tanımsız user rolü, değişen bir gider bölümü
-// yazıyorsa o bölümün adını döndürür. kisitliMi izinsiz kullanıcıda pahalı denetimi atladığı için
-// bu kontrol server.cjs'te her yazımda AYRICA çalışır. tabs dizi ise normal sekme denetimi karar verir.
-function giderAynaEngeli(permissionsJson, role, changedSections) {
+// yazıyorsa o bölümün adını döndürür (zincir değişikliği hariç). kisitliMi izinsiz kullanıcıda pahalı
+// denetimi atladığı için bu kontrol server.cjs'te her yazımda AYRICA çalışır. tabs dizi ise
+// yazmaYetkisiVar'daki gider sekmesi kuralı karar verir.
+function giderAynaEngeli(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return null;
   const perms = parsePerms(permissionsJson);
   if (Array.isArray(perms?.tabs)) return null;
-  return (changedSections || []).find(s => GIDER_BOLUMLERI.has(s)) || null;
+  return (changedSections || []).find(s => GIDER_BOLUMLERI.has(s) && !giderZincirDegisikligiMi(s, oldBlob?.[s], newBlob?.[s])) || null;
 }
 
 // changedSections içindeki her bölüm için kullanıcının yazma izni var mı?
@@ -244,12 +278,20 @@ function giderAynaEngeli(permissionsJson, role, changedSections) {
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
   const perms = parsePerms(permissionsJson);
-  const ayna = giderAynaEngeli(permissionsJson, role, changedSections);
+  const ayna = giderAynaEngeli(permissionsJson, role, changedSections, oldBlob, newBlob);
   if (ayna) return { ok: false, reddedilenBolum: ayna };
   if (!perms) return { ok: true }; // izin tanımsız = tam erişim (mevcut istemci semantiği)
   for (const section of changedSections) {
     const group = SECTION_GROUP[section];
     if (!group) return { ok: false, reddedilenBolum: section }; // haritada yok → güvenli tarafta reddet
+    // Gider bölümleri (C6, K6): Giderler sekmesi yoksa yalnız zincir değişikliği geçer (model adı taşıma,
+    // çalışan silmede tanım kapatma), o da yazan Ayarlar sekmesi açıksa. Grup kısıtı (giderActions)
+    // zincire uygulanmaz: zincir bir gider işlemi değil, Ayarlar işleminin yan etkisidir.
+    if (GIDER_BOLUMLERI.has(section) && !giderSekmesiVar(perms)) {
+      if (!giderZincirDegisikligiMi(section, oldBlob?.[section], newBlob?.[section])) return { ok: false, reddedilenBolum: section };
+      if (Array.isArray(perms.tabs) && !perms.tabs.includes("settings")) return { ok: false, reddedilenBolum: section };
+      continue;
+    }
     // yedek parça satışı birden çok boyuta yayılır (müşteri/bayi/pano/stok EKLE izinleri): stok grubu
     // boş olsa da bu izinlerden biri varsa yazılabilmeli, yoksa müşteri/bayi detayından ekleme 403 alırdı.
     if (section === "yedekParcaSatislar") {
@@ -306,8 +348,9 @@ const EYLEM_IDLERI = {
   yedekParcaSatislar: { ekle: "yedek_parca_add", sil: "yedek_parca_delete" },
   notes:          { ekle: "not_add",          sil: "not_delete" },
   // Gider kaydı (plan K22): kalem / tanım yönetimi / tedarikçi ayrı yetkilendirilir. Tekrarlayan tanımdan
-  // üretilen kalem (tanimId taşır) gider_add değil gider_tekrar_uret ister.
-  giderler:         { ekle: (r) => (r?.tanimId != null ? "gider_tekrar_uret" : "gider_add"), sil: "gider_delete" },
+  // üretilen kalem gider_add değil gider_tekrar_uret ister; ama yalnız kalem gerçekten bir tanıma uyuyorsa
+  // (bkz. eylemDenetimi: tanimliUretimMi). Aksi hâlde tanimId eklemek serbest kalem için izin atlatırdı.
+  giderler:         { ekle: "gider_add", sil: "gider_delete" },
   giderTanimlari:   { ekle: "gider_tanim", sil: "gider_tanim" },
   giderTurleri:     { ekle: "gider_tanim", sil: "gider_tanim" },
   standartGiderler: { ekle: "gider_tanim", sil: "gider_tanim" },
@@ -420,6 +463,18 @@ function kaskadSilmeMi(section, r, eski, yeni, perms) {
   return false;
 }
 
+// Yeni gider kalemi gerçekten bir tekrarlayan tanımdan mı üretildi? Tanım var olmalı (yeni blob, yoksa eski),
+// türü kalemle aynı olmalı, dönem (YYYY-MM) tanım aralığına ve kalem tarihinin ayına uymalı.
+function tanimliUretimMi(r, eski, yeni) {
+  if (r?.tanimId == null || !r.donem) return false;
+  const tanimlar = Array.isArray(yeni.giderTanimlari) ? yeni.giderTanimlari : (Array.isArray(eski.giderTanimlari) ? eski.giderTanimlari : []);
+  const t = tanimlar.find(x => String(x?.id) === String(r.tanimId));
+  if (!t || String(t.turId) !== String(r.turId)) return false;
+  const d = String(r.donem);
+  if (String(r.tarih || "").slice(0, 7) !== d) return false;
+  return !!t.baslangicAy && t.baslangicAy <= d && (!t.bitisAy || d <= t.bitisAy);
+}
+
 // Gelen blob'daki izinsiz EKLE/SİL'leri yakalar. Dönüş { ok:true } | { ok:false, reddedilenBolum, islem, gerekli }.
 function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
   if (role === "admin") return { ok: true };
@@ -443,6 +498,8 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
         if (!yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: "yedek_parca_add" };
         continue;
       }
+      // Tanımdan üretilmiş gider kalemi: gider_tekrar_uret yeterli (gider_add gerekmez).
+      if (section === "giderler" && tanimliUretimMi(r, eski, yeni) && eylemIzinli(perms, group, "gider_tekrar_uret")) continue;
       const bayiDosyasi = map.bayi && kaskadBayiId(section, r) != null; // bayi dosyası → bayi grubu izinleri
       const id = bayiDosyasi ? map.bayi.ekle : idBul(map.ekle, r);
       if (id && !eylemIzinli(perms, bayiDosyasi ? map.bayi.grup : group, id)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: id };
@@ -531,6 +588,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli,
+  BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

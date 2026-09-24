@@ -64,6 +64,12 @@ describe("Giderler sekmesi: dönem raporu", () => {
     expect(within(kart("Ödenmemiş gider (KDV hariç)")).getByText("0 ₺")).toBeTruthy();
     expect(within(kart("Tedarikçilere açık borç (KDV dâhil)")).getByText("0 ₺")).toBeTruthy();
   });
+  it("triyaj bulgu 10: 'Tedarikçilere açık borç' kartı tedarikçisi seçilmemiş borcu saymaz", () => {
+    render(<Harness g0={[k({ tedarikciId: 12 }), k({ tutar: 5000 })]} />);
+    const kart = screen.getByText("Tedarikçilere açık borç (KDV dâhil)").parentElement;
+    expect(within(kart).getByText("12.000 ₺")).toBeTruthy();
+    expect(within(kart).queryByText("18.000 ₺")).toBeNull();
+  });
   it("AC-25: kira kaleminde 'Brüt girildi' / 'Net girildi' rozeti", () => {
     render(<Harness g0={[k({ turId: 1, tutar: 20000, stopajOrani: 20, girisYonu: "brut", netTutar: 16000 }), k({ turId: 1, tutar: 15000, netTutar: 12000, stopajOrani: 20, girisYonu: "net", kdvOrani: 0 })]} />);
     expect(screen.getByText("Brüt girildi")).toBeTruthy();

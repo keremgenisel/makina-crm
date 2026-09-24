@@ -54,15 +54,23 @@ export const Giderler = ({
   const borc = useMemo(() => borcOzeti(giderler, { turler: giderTurleri, tedarikciler, yururlukAy }, bugun), [giderler, giderTurleri, tedarikciler, yururlukAy, bugun]);
 
   // KDV karşılaştırması (R9, K1, K15): ay bazlı; kapsam içindeki aralık tam aylardan oluşmalı.
+  // Satış KDV'si aylık rapor motorunu ay başına çalıştırır (pahalı); yalnız satış verisine ve ay listesine
+  // bağlı ayrı memo'da tutulur, gider kalemi düzenlemek onu yeniden hesaplatmaz (triyaj bulgu 8a).
+  const kdvAylar = useMemo(() => {
+    if (!aralikGecerli) return null;
+    const kapsam = yururlukKapsami({ baslangic, bitis }, yururlukAy);
+    if (kapsam.durum === "oncesi") return { durum: "oncesi" };
+    const aylar = tamAylar(kapsam.etkinBaslangic, bitis);
+    return aylar ? { durum: "tamam", aylar } : { durum: "kismi" };
+  }, [aralikGecerli, baslangic, bitis, yururlukAy]);
+  const hesaplananKdv = useMemo(() => (kdvAylar?.durum === "tamam"
+    ? hesaplananKdvAylar(satisVerisi, kdvAylar.aylar, { factoryName: factory?.name || "Altuntaş Makina", kdvRates, factory, rates })
+    : null), [kdvAylar, satisVerisi, factory, kdvRates, rates]);
   const kdv = useMemo(() => {
-    if (!rapor) return null;
-    if (rapor.yururlukOncesi) return { durum: "oncesi" };
-    const etkin = yururlukKapsami({ baslangic, bitis }, yururlukAy).etkinBaslangic;
-    const aylar = tamAylar(etkin, bitis);
-    if (!aylar) return { durum: "kismi" };
-    const hesaplanan = hesaplananKdvAylar(satisVerisi, aylar, { factoryName: factory?.name || "Altuntaş Makina", kdvRates, factory, rates });
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, rapor.indirilecekKdv) };
-  }, [rapor, baslangic, bitis, yururlukAy, satisVerisi, factory, kdvRates, rates]);
+    if (!rapor || !kdvAylar) return null;
+    if (kdvAylar.durum !== "tamam") return { durum: kdvAylar.durum };
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv, rapor.indirilecekKdv) };
+  }, [rapor, kdvAylar, hesaplananKdv]);
 
   const uretimAyi = mod === "ay" ? ay : ayOf(bugun);
   const uret = () => {
@@ -177,7 +185,7 @@ export const Giderler = ({
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <StatKart etiket="Toplam gider (KDV hariç)" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
                   <StatKart etiket="Ödenmemiş gider (KDV hariç)" deger={tl2(rapor.odenmeyen)} alt={`${rapor.odenmeyenAdet} kalem · seçili dönem`} renk="#dc2626" />
-                  <StatKart etiket="Tedarikçilere açık borç (KDV dâhil)" deger={tl2(rapor.tedarikciKirilimi.toplamBorc)} alt="Tüm dönemler, bugüne kadar" renk="#b91c1c" />
+                  <StatKart etiket="Tedarikçilere açık borç (KDV dâhil)" deger={tl2(rapor.tedarikciKirilimi.tedarikciBorcu)} alt="Tüm dönemler, bugüne kadar" renk="#b91c1c" />
                   <StatKart etiket="Kesilen kira stopajı" deger={tl2(rapor.stopajToplam)} alt={`${rapor.stopajSatirlari.length} kira kalemi`} renk="#b45309" />
                   <StatKart etiket="İndirilecek KDV" deger={tl2(rapor.indirilecekKdv)} alt="Ödeme durumundan bağımsız" renk="#16a34a" />
                 </div>

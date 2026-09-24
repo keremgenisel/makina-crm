@@ -4,7 +4,7 @@ import {
   kovaDagilimi, makinaGideriCoz, canliModelSeti, hesaplaGiderRaporu, borcOzeti, kdvKarsilastir, tekrarlayanUret,
   tanimKapat, personelMukerrer, turKullanim, tedarikciKullanim, tedarikciAdHatasi, vadesiGectiMi, yururlukKapsami,
   esikAltiKalemSayisi, tamAylar, standartGiderAyi, standartYeni, standartTutarDegistir, standartSonSurumuGeriAl,
-  standartSonaErdir, modelAdiTasi, modelKullanim, DAVRANIS,
+  standartSonaErdir, modelAdiTasi, modelKullanim, DAVRANIS, makinaCozucuOlustur, standartGruplar,
 } from "../src/lib/gider";
 
 const turler = [
@@ -410,5 +410,46 @@ describe("gider motoru: standart genel gider (R22)", () => {
     const b = hesaplaGiderRaporu({ giderler: g, turler, standartGiderler: [{ tutar: 999999, baslangicAy: "2026-01" }] }, { baslangic: "2026-09-01", bitis: "2026-09-30" });
     expect(b.toplam).toBe(a.toplam);
     expect(b.kovalar).toEqual(a.kovalar);
+  });
+});
+
+describe("triyaj düzeltmeleri", () => {
+  const u = () => ++n;
+  it("bulgu 3: sona erdirilmiş sürüm yeni tutar girilince geriye doğru yeniden açılmaz", () => {
+    const a = standartYeni([], { ad: "Sigorta", tutar: 100, baslangicAy: "2026-01" }, u).liste;
+    const gid = a[0].grupId;
+    const b = standartSonaErdir(a, gid, "2026-03").liste;
+    const c = standartTutarDegistir(b, gid, { tutar: 150, baslangicAy: "2026-06" }, u).liste;
+    expect(c.find(x => x.tutar === 100).bitisAy).toBe("2026-03");
+    expect(standartGiderAyi(c, "2026-04").toplam).toBe(0);
+    expect(standartGiderAyi(c, "2026-05").toplam).toBe(0);
+    expect(standartGiderAyi(c, "2026-06").toplam).toBe(150);
+    expect(standartGiderAyi(c, "2026-02").toplam).toBe(100);
+  });
+  it("bulgu 4: birleştirmede iki açık sürüm kalsa bile bir ay yalnız bir kez sayılır (başlangıcı en geç olan)", () => {
+    const yarim = [
+      { id: 1, grupId: 1, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: null }, // kapatılması kaybolmuş
+      { id: 2, grupId: 1, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null },
+      { id: 3, grupId: 3, ad: "Elektrik", tutar: 5000, baslangicAy: "2026-01", bitisAy: null },
+    ];
+    expect(standartGiderAyi(yarim, "2026-08").toplam).toBe(30000);
+    expect(standartGiderAyi(yarim, "2026-03").toplam).toBe(25000);
+    expect(standartGruplar(yarim, "2026-08").find(g => g.ad === "Kira").gecerli.tutar).toBe(25000);
+  });
+  it("bulgu 8: toplu makina çözücü makinaGideriCoz ile aynı sonucu verir", () => {
+    const stock = [{ id: 1, model: "A", serialNo: "S1" }, { id: 2, model: "B", deletedAt: "x" }];
+    const customers = [{ id: 10, name: "F", model: "C", serialNo: "S3", sourceStockId: 5 }, { id: 11, name: "G", deletedAt: "x" }];
+    const coz = makinaCozucuOlustur({ stock, customers });
+    for (const k of [{ makinaTur: "stok", makinaId: 1 }, { makinaTur: "stok", makinaId: 2 }, { makinaTur: "stok", makinaId: 5 }, { makinaTur: "musteri", makinaId: 10 }, { makinaTur: "musteri", makinaId: 11 }, { makinaTur: "musteri", makinaId: 99 }, {}]) {
+      expect(coz(k)).toEqual(makinaGideriCoz(k, { stock, customers }));
+    }
+  });
+  it("bulgu 10: kovaDagilimi iç alan (_k) sızdırmaz", () => {
+    expect(Object.keys(kovaDagilimi(kalem({}), {})).sort()).toEqual(["dagitma", "makina", "model", "ortak"]);
+  });
+  it("bulgu 10: tedarikçi borcu, tedarikçisi seçilmemiş kalemlerin borcunu içermez", () => {
+    const r = rapor([kalem({ tedarikciId: 10 }), kalem({ tutar: 5000 })]);
+    expect(r.tedarikciKirilimi.tedarikciBorcu).toBe(12000);
+    expect(r.tedarikciKirilimi.toplamBorc).toBe(18000);
   });
 });

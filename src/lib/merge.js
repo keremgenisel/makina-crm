@@ -74,11 +74,13 @@ export function buildMergePlan(myData, serverData) {
     tahsisler: (s.tahsisler || []).map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) })),
   }));
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
-  // Gider kaydı: tür/tedarikçi/tanım/müşteri makinası referansları yeniden atanan id'leri izler.
+  // Gider kaydı: tür/tedarikçi/tanım/çalışan/müşteri makinası referansları yeniden atanan id'leri izler.
   const giderRef = (x) => ({
     ...x,
     turId: remapRef(maps.giderTurleri, x.turId),
     tedarikciId: remapRef(maps.tedarikciler, x.tedarikciId),
+    // Personel kalemi/tanımı çalışana kimlikle bağlı; çalışan yeniden id alırsa bağ kopmasın (triyaj bulgu 5).
+    calisanId: remapRef(maps.calisanlar, x.calisanId),
     ...(x.makinaTur === "musteri" ? { makinaId: remapRef(maps.customers, x.makinaId) } : {}),
   });
   adds.giderTanimlari = adds.giderTanimlari.map(giderRef);

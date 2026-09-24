@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Bağlı spec** | `specs/done/0001-gider-kaydi-ve-donemsel-gider-takibi.md` (R11) |
-| **Durum** | P1 (K1–K15) onaylandı, 2026-09-22. P2 (K16–K30) ve P3 (K31–K38) "planı uygulayalım" talimatıyla onaylandı, 2026-09-23. **Uygulandı** (branch `feat/0001-gider`, commit yok): adım 1–7 kodu ve testleri tamam; görsel kanıt (docs/evidence) ve SCORECARD bekliyor. |
+| **Durum** | P1 (K1–K15) onaylandı, 2026-09-22. P2 (K16–K30) ve P3 (K31–K38) "planı uygulayalım" talimatıyla onaylandı, 2026-09-23. **Uygulandı ve commit edildi** (branch `feat/0001-gider`, commit `565b0ff`, push ve sürüm yok): adım 1–7 kodu ve testleri tamam, SCORECARD dolduruldu; görsel kanıt kullanıcı kararıyla alınmadı. Triyaj düzeltmeleri (2026-09-24) bölüm 9'da. |
 | **Yazan** | Analist |
 | **Uygulayan** | Geliştirme sahibi atanacak. Bu belge kod yazmaz, yolu çizer. |
 | **Revizyon** | P1 (2026-09-22): spec R2/R3 üzerine ilk plan. P2 (2026-09-23): spec R4–R9 (tedarikçi, iki bileşenli personel, ödeme yöntemi ve vade, borç özeti, model ataması, dağıtılmasın işareti, dört kova) plana işlendi; K7/K8/K14 güncellendi, K16–K30 eklendi, mockup'lar bu plana göre revize edildi. P3 (2026-09-23): spec R10/R11 (çok satırlı model dağılımı, tutar bazlı kova bölmesi, aylık standart genel gider listesi) plana işlendi; K25/K26/K27 değişti, K31–K38 eklendi. |
@@ -273,7 +273,7 @@ Test adları `AC-<n>: <metin>` biçiminde yazılır.
 | C10 çapraz | `tests/gider-kdv-capraz.test.js` | aynı ay için Finans kartı ile `hesaplaAylikRapor(...).toplamKdv` eşit |
 | AC-16, AC-17, AC-31, AC-32 | `tests/gider.test.js` + `tests/ui/giderler.test.jsx` | yürürlük öncesi mesaj; boş durum; kapsam dışı yazı; eşik ayı dâhil |
 | AC-18 (arayüz) | `tests/ui/app-gider-sekmesi.test.jsx` | user + tabs tanımsız → sekme yok; tabs gider'li → var; yerel mod → var |
-| AC-18 (sunucu) | `tests/server-authz.test.js` + `scripts/tests/server-security.cjs` | dört bölüm için 403 / izinle 200; tabs'sız user 403 (K6); eylem kimlikleri (K22) |
+| AC-18 (sunucu) | `tests/server-authz.test.js` + `scripts/tests/server-security.cjs` | beş bölüm için 403 / izinle 200; tabs'sız user 403 (K6); eylem kimlikleri (K22); Ayarlar zinciri istisnası (model adı, tanım kapatma) ve tanımdan üretim doğrulaması (bölüm 9) |
 | AC-19 | `tests/ui/settings-trash.test.jsx` | çöpte görünür, geri alınca aynı tutarla raporda; `giderYetki` yoksa satır yok |
 | AC-20, AC-35, AC-36 | `tests/ui/gider-settings.test.jsx` | taşıma listesi yalnız aynı davranış; hedef yokken silme engellenir; kullanımdaki türün davranışı kilitli, adı değişir |
 | AC-25 | `tests/ui/giderler.test.jsx` | "Brüt girildi" / "Net girildi" rozeti |
@@ -288,10 +288,11 @@ Test adları `AC-<n>: <metin>` biçiminde yazılır.
 | AC-44, AC-45 | `tests/ui/tedarikciler.test.jsx` | kullanımdaki (çöp dâhil) silinmez, sayı bildirilir; kullanılmayan silinir |
 | AC-46 | `tests/ui/tedarikciler.test.jsx` | ad değişince kalem listesinde yeni ad |
 | AC-47 | `tests/gider.test.js` | tutar çoktan aza, eşitlikte Türkçe alfabetik |
-| AC-48, AC-55, AC-74 | `tests/ui/app-gider-sekmesi.test.jsx` + `tests/ui/calisan-manager.test.jsx` | yetkisizde tedarikçi, borç özeti, çalışan tutarları ve elden bileşen hiç çizilmez |
+| AC-48, AC-74 | `tests/ui/gider-yetkisiz-gorunum.test.jsx` (+ `tests/ui/app-gider-sekmesi.test.jsx`) | pozitif kontrol (yetkili ekran veriyi çizer); sekme yetkisize kapalı; Ayarlar bölümleri tedarikçi, açık borç ve borç özeti çizmez |
+| AC-55 | `tests/ui/calisan-manager.test.jsx` | yetkisizde çalışan tutarları ve elden bileşen hiç çizilmez |
 | AC-51, AC-72 | `tests/ui/giderler.test.jsx` | personel satırı ve "Çalışanlar" satırı kapalı başlar; açılınca resmi/elden ayrı, toplam eşit |
 | AC-52, AC-53 | `tests/ui/calisan-manager.test.jsx` | yeni çalışanda resmi varsayılandan dolar; varsayılan değişince mevcutlar ve kalemler değişmez |
-| AC-56 | `tests/gider-gizlilik.test.js` | yazdırma şablonları ve dışa aktarma satır üreticileri personel alanlarını hiç okumaz (örnek veriyle çıktı taraması) |
+| AC-56 | `tests/ui/gider-gizlilik-cikti.test.jsx` + `tests/gider-gizlilik.test.js` | çıktı bazlı: ayırt edici personel tutarlarıyla tüm CSV/XLSX dışa aktarmaları, aylık rapor, servis formu ve makina raporu üretilir, çıktıda tutar yok; kaynak taraması ek emniyet |
 | AC-57, AC-58 | `tests/ui/gider-form.test.jsx` | personel türünde kapatılamaz not; ayrı SGK kalemi yine kaydedilir |
 | AC-59 | `tests/gider.test.js` | önceki dönem ödenmemiş kalem bugünkü dönemde açık borçta |
 | AC-60, AC-64 | `tests/ui/gider-form.test.jsx` + `tests/gider.test.js` | personelde tedarikçi ve KDV alanı yok; kırılımda yer almaz; indirilecek KDV'ye 0 |
@@ -303,12 +304,12 @@ Test adları `AC-<n>: <metin>` biçiminde yazılır.
 | AC-75, AC-80, AC-81, AC-82, AC-90 | `tests/gider.test.js` (`kovaDagilimi`) | dört kova tutar bazlı tam bölme (kuruş eşitliği); kısmi dağıtımda kalan ortak kovada; dağıtılmayan ayrı toplam; kira ve personel her zaman ortak |
 | AC-76, AC-77, AC-78 | `tests/ui/gider-form.test.jsx` | seçim değişince diğer atama temizlenir ve bilgi satırı; kira ve personel türünde atama bölümü hiç yok |
 | AC-79, AC-87, AC-88, AC-89, AC-90b, AC-91 | `tests/gider.test.js` (`modelSatirlariDogrula`) + `tests/ui/gider-form.test.jsx` | 4.000 × 35 = 140.000; iki model satırı; aynı model ikinci satır reddi; 5+40+25 adet × 1.000 = 70.000 farksız; aşımda kayıt yok ve aşan tutar; adet 0/boş/negatif ve kesirli reddi (K32) |
-| AC-83, AC-84 | `tests/ui/models-manager-gider.test.jsx` + `tests/gider.test.js` | yeniden adlandırmada kalem ve tanım satırları yeni adla; özel model silme onayında sayı; çöpteki modelin yalnız kendi satır tutarı ortağa düşer, geri alınınca döner (K35) |
+| AC-83, AC-84 | `tests/ui/models-manager-gider.test.jsx` (arayüzden yeniden adlandırma ve silme onayı) + `tests/gider.test.js` | yeniden adlandırmada kalem ve tanım satırları yeni adla; özel model silme onayında sayı; çöpteki modelin yalnız kendi satır tutarı ortağa düşer, geri alınınca döner (K35) |
 | AC-85 | `tests/gider.test.js` | tanımdaki model/dağıtılmasın ve tedarikçi üretilen kaleme kopyalanır |
 | R12 | `tests/ui/gider-settings.test.jsx` + `tests/ui/tedarikciler.test.jsx` + `tests/ui/standart-giderler.test.jsx` | tür, tanım, tedarikçi ve standart genel gider silme çöpe düşmez |
 | AC-92, AC-95, AC-96 | `tests/ui/standart-giderler.test.jsx` + `tests/gider.test.js` (`standartGiderAyi`) | ekle, adı değiştir, sil; kalıcı açıklama satırı; tutar değişince yeni sürüm, eski sürüm kendi ayında geçerli; son sürümü geri al (K37) |
 | AC-93 | `tests/gider.test.js` | `hesaplaGiderRaporu` imzası standart listeyi almaz; aynı veriyle standart liste doluyken ve boşken rapor çıktısı birebir aynı |
-| AC-94 | `tests/ui/app-gider-sekmesi.test.jsx` | yetkisizde Standart Genel Giderler görünümü ve verisi hiç çizilmez |
+| AC-94 | `tests/ui/gider-yetkisiz-gorunum.test.jsx` | yetkisizde Standart Genel Giderler görünümü ve verisi hiç çizilmez (pozitif kontrolle) |
 | C5 kalıcılık | `scripts/tests/db-roundtrip.cjs`, `scripts/tests/db-clean-install.cjs`, `tests/merge.test.js`, `tests/server-authz.test.js`, `tests/server-permission-defs.test.js` | alan roundtrip (odendi bool, uretilenAylar JSON, giderAyarlari JSON, resmi/elden, atama alanları, tedarikçi, **model alt satırları sırası ve kalem silinince satırların silinmesi**, tanımda modelSatirlari JSON, standart gider sürümleri), tablo atlama, MERGE_KEYS, SECTION_GROUP / BOLUM_SEKMELERI kapsamı, yeni boyut |
 | C13 | `tests/ui/giderler.test.jsx` | `logAction` çağrıları; yeni anahtarlar etiket haritasında |
 
@@ -389,5 +390,23 @@ Mockup tuvali P2'ye göre güncellendi (https://claude.ai/artifact/MQgRxtd8X3dhz
   değiştirmediği bölümler (müşteriler, servisler, bayiler, teklifler) yüzünden her kayıtta 403 alıyordu. Yalnız gider sekmesi
   verilmiş bir muhasebe kullanıcısı hiç kayıt yapamazdı. Düzeltildi, regresyon testleri eklendi. Spec'in SCORECARD'ında
   "kaçan hata" değil, "bu işte bulunan önceden var olan hata" olarak geçmeli.
-- **Kalan DoD maddeleri:** `docs/evidence/0001-ac<n>.png` görsel kanıtları (K11: izole veri kopyası ile gerçek uygulama turu),
-  SCORECARD, spec'in `specs/done/`'a taşınması, commit ve sürüm (yalnız açık talimatla).
+- **DoD kapanışı:** SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı, commit `565b0ff` atıldı. Görsel kanıtlar
+  (`docs/evidence`) kullanıcı kararıyla alınmadı. Push ve sürüm yalnız açık talimatla.
+
+## 9. Triyaj düzeltmeleri (2026-09-24)
+
+Commit sonrası triyajdan gelen on bulgu düzeltildi; her biri testle kapatıldı.
+
+| # | Bulgu | Düzeltme | Test |
+|---|---|---|---|
+| 1 | Ayarlar'ı açık, Giderler sekmesi olmayan kullanıcı kalem ekleyip silebiliyor, `odendi` değiştirebiliyordu | `serverAuth.cjs`: gider bölümlerinde gider sekmesi yoksa yalnız **zincir değişikliği** geçer (`giderZincirDegisikligiMi`: kalem/tanım `modelSatirlari[].modelAd` ve tanımın `bitisAy`+`kapatildi:true` ile kapanması; yeni/silinen kayıt yok). Zincir için de settings sekmesi gerekir | `server-authz.test.js`, `server-security.cjs` |
+| 2 | Sekme listesi tanımsız kullanıcı model adı değiştirince ve açık tanımlı çalışanı silince K6 aynasında 403 alıyordu | `giderAynaEngeli` aynı zincir istisnasını uygular | `server-authz.test.js`, `server-security.cjs` |
+| 3 | `standartTutarDegistir` kapalı sürümü geriye doğru yeniden açıyordu | eski sürümün bitişi = min(eski bitiş, yeni başlangıç − 1) | `gider.test.js` |
+| 4 | Birleştirme sonrası aynı grupta iki açık sürüm çift sayılıyordu | `standartGiderAyi`/`standartGruplar` grup başına ayda tek sürüm seçer (en geç başlayan) | `gider.test.js` |
+| 5 | Birleştirmede `calisanId` yeniden atanmıyordu | `merge.js` `giderRef` içinde `calisanId` remap | `merge.test.js` |
+| 6 | Çalışan silme onayı gider yetkisizine personel tanımının varlığını sızdırıyordu | yetkisizde mesaj ve düğme genel; tanım yine arka planda kapanır | `ui/calisan-manager.test.jsx` |
+| 7 | Yalnız `gider_tekrar_uret` izinli kullanıcı `tanimId` ekleyerek serbest kalem yazabiliyordu | `tanimliUretimMi`: tanım var, tür aynı, kalem tarihi dönem ayında, dönem tanımın aralığında | `server-authz.test.js`, `server-security.cjs` |
+| 8a | KDV kartı her rapor değişiminde satış motorunu yeniden çalıştırıyordu | `Giderler.jsx`: ay listesi, satış KDV'si ve karşılaştırma ayrı memo'larda | `ui/giderler-kdv-memo.test.jsx` |
+| 8b | Makina çözümü doğrusal ve iki kez yapılıyordu | `makinaCozucuOlustur` haritaları bir kez kurar, rapor tek çözüm kullanır | `gider.test.js` |
+| 9 | Eksik/yanlış yerde testler | `ui/models-manager-gider`, `ui/calisan-manager`, `ui/standart-giderler`, `ui/gider-yetkisiz-gorunum` (AC-48/74/94), çıktı bazlı AC-56 (`ui/gider-gizlilik-cikti`); §5 tablosu gerçek dosyalarla güncellendi | — |
+| 10 | Bakım: GiderForm ölü ternary, `kovaDagilimi` `_k` sızıntısı, "Tedarikçilere açık borç" kartı seçilmemiş borcu sayıyordu, plan "commit yok" diyordu | ternary kaldırıldı; `_k` dışa verilmiyor; kart `tedarikciKirilimi.tedarikciBorcu` kullanır; durum satırı güncellendi | `ui/gider-form.test.jsx`, `gider.test.js`, `ui/giderler.test.jsx` |

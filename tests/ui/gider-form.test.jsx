@@ -90,6 +90,15 @@ describe("GiderForm: kira (R6)", () => {
     fireEvent.click(screen.getByText("Kaydet"));
     expect(onSave.mock.calls[0][0]).toMatchObject({ girisYonu: "net", tutar: 20000, netTutar: 16000, stopajOrani: 20 });
   });
+  it("triyaj bulgu 10: net girilmiş kira kalemi düzenlemede net ve brüt değerleriyle açılır, değişmeden kaydedilir", () => {
+    const onSave = ac({ kalem: { id: 7, tarih: "2026-09-01", turId: 1, girisYonu: "net", tutar: 20000, netTutar: 16000, stopajOrani: 20, kdvOrani: 0, odendi: false, modelSatirlari: [] } });
+    expect(screen.getByLabelText("Net ödenen kira").value).toBe("16000");
+    fireEvent.click(screen.getByRole("radio", { name: "Brüt kira" }));
+    expect(screen.getByLabelText("Brüt kira").value).toBe("20000");
+    fireEvent.click(screen.getByRole("radio", { name: "Net ödenen kira" }));
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(onSave.mock.calls[0][0]).toMatchObject({ id: 7, girisYonu: "net", tutar: 20000, netTutar: 16000 });
+  });
   it("AC-78: kira ve personelde atama bölümü çizilmez", () => {
     ac();
     tur(1);

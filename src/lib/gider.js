@@ -218,16 +218,38 @@ export const makinaGideriCoz = (k, { stock = [], customers = [] } = {}) => {
   if (c && !c.deletedAt) return { tur: "musteri", id: c.id, model: c.model, seri: c.serialNo || "", ad: c.name || c.firma || "" };
   return null;
 };
+// Rapor gibi çok kalemli hesaplar için: stok ve müşteriler BİR KEZ haritaya alınır, her kalem sabit
+// zamanda çözülür (makinaGideriCoz her çağrıda diziyi doğrusal tarar). Sonuç makinaGideriCoz ile aynıdır.
+export const makinaCozucuOlustur = ({ stock = [], customers = [] } = {}) => {
+  const stokMap = new Map(stock.map(x => [String(x.id), x]));
+  const musteriMap = new Map(customers.map(x => [String(x.id), x]));
+  const kaynakMap = new Map();
+  customers.forEach(x => { if (x.sourceStockId != null && !kaynakMap.has(String(x.sourceStockId))) kaynakMap.set(String(x.sourceStockId), x); });
+  const musteriOzet = (c, ek) => ({ tur: "musteri", id: c.id, model: c.model, seri: c.serialNo || "", ad: c.name || c.firma || "", ...ek });
+  return (k) => {
+    if (!k?.makinaId) return null;
+    const id = String(k.makinaId);
+    if (k.makinaTur === "stok") {
+      const st = stokMap.get(id);
+      if (st && !st.deletedAt) return { tur: "stok", id: st.id, model: st.model, seri: st.serialNo || st.seriNo || "", ad: "Makina Stoğu" };
+      const c = kaynakMap.get(id);
+      return c && !c.deletedAt ? musteriOzet(c, { stoktanTakip: true }) : null;
+    }
+    const c = musteriMap.get(id);
+    return c && !c.deletedAt ? musteriOzet(c) : null;
+  };
+};
 export const canliModelSeti = (standardModels = [], customModels = []) =>
   new Set([...(standardModels || []), ...(customModels || []).filter(m => !m.deletedAt)].map(m => trLower(m.model)));
 
 // Tutar bazlı kova bölmesi (K33, AC-82). Dönen değerler TL; toplamları kalem tutarına kuruşu kuruşuna eşittir.
-export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], customers = [], canliModeller = new Set() } = {}) => {
+// İç hesap: kuruş cinsinden kovalar. makinaCozuldu = kalemin makinası çözülebildi mi (çağıran bir kez çözer).
+const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
   const top = kalemKurus(k, davranis);
   const r = { makina: 0, model: 0, dagitma: 0, ortak: 0 };
   if (davranis !== DAVRANIS.NORMAL) r.ortak = top;
   else if (k.atamaTur === ATAMA.DAGITMA) r.dagitma = top;
-  else if (k.atamaTur === ATAMA.MAKINA && makinaGideriCoz(k, { stock, customers })) r.makina = top;
+  else if (k.atamaTur === ATAMA.MAKINA && makinaCozuldu) r.makina = top;
   else if (k.atamaTur === ATAMA.MODEL) {
     let m = 0;
     (k.modelSatirlari || []).forEach(s => {
@@ -236,7 +258,12 @@ export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], custom
     r.model = Math.min(m, top);
     r.ortak = top - r.model;
   } else r.ortak = top;
-  return { makina: tl(r.makina), model: tl(r.model), dagitma: tl(r.dagitma), ortak: tl(r.ortak), _k: r };
+  return r;
+};
+export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], customers = [], canliModeller = new Set() } = {}) => {
+  const cozuldu = davranis === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && !!makinaGideriCoz(k, { stock, customers });
+  const r = kovaKurus(k, davranis, cozuldu, canliModeller);
+  return { makina: tl(r.makina), model: tl(r.model), dagitma: tl(r.dagitma), ortak: tl(r.ortak) };
 };
 
 // ── Yürürlük ayı (R10) ────────────────────────────────────────────────────────
@@ -359,6 +386,7 @@ export const hesaplaGiderRaporu = (
 ) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
+  const makinaCoz = makinaCozucuOlustur({ stock, customers });
   const kapsam = yururlukKapsami({ baslangic, bitis }, yururlukAy);
   const bos = { yururlukOncesi: kapsam.durum === "oncesi", kapsamDisi: kapsam.kapsamDisi, bos: true };
   if (kapsam.durum === "oncesi") return { ...bos, kalemler: [] };
@@ -403,10 +431,10 @@ export const hesaplaGiderRaporu = (
       c.resmi += kurus(k.resmiTutar); c.elden += kurus(k.eldenTutar); c.toplam += tut;
     }
 
-    const kv = kovaDagilimi(k, { davranis: dav, stock, customers, canliModeller })._k;
+    const cz = dav === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA ? makinaCoz(k) : null;
+    const kv = kovaKurus(k, dav, !!cz, canliModeller);
     for (const key of Object.keys(kova)) { kova[key] += kv[key]; if (kv[key] > 0) kovaKatki[key]++; }
     if (kv.makina > 0) {
-      const cz = makinaGideriCoz(k, { stock, customers });
       const key = `${cz.tur}:${cz.id}`;
       if (!makinaMap.has(key)) makinaMap.set(key, { anahtar: key, makina: cz, toplam: 0, kalemler: [] });
       const m = makinaMap.get(key); m.toplam += kv.makina; m.kalemler.push(k);
@@ -478,6 +506,9 @@ export const hesaplaGiderRaporu = (
       satirlar: tedSatirlari,
       secilmemis: { harcama: tl(secilmemisHarcama), adet: secilmemisAdet, acikBorc: tl(secilmemisBorc) },
       toplamHarcama: tl([...tedHarcama.values()].reduce((a, b) => a + b, 0) + secilmemisHarcama),
+      // tedarikciBorcu: yalnız tedarikçisi seçilmiş kalemler ("Tedarikçilere açık borç" kartı). toplamBorc:
+      // "tedarikçi seçilmemiş" grubu dahil (kırılım tablosunun alt toplamı, satırlarla tutarlı).
+      tedarikciBorcu: tl([...tedBorc.values()].reduce((a, b) => a + b, 0)),
       toplamBorc: tl([...tedBorc.values()].reduce((a, b) => a + b, 0) + secilmemisBorc),
     },
     mukerrerUyari: [...mukerrer.values()].filter(v => v.length > 1).map(v => ({ tanimId: v[0].tanimId, donem: v[0].donem, aciklama: v[0].aciklama, kalemler: v })),
@@ -538,8 +569,19 @@ export const kdvObjTopla = (...objs) => {
 
 // ── Aylık standart genel gider (R22, K37) ─────────────────────────────────────
 // Bütçe/varsayım rakamıdır; dönem gider raporu bu listeyi HİÇ almaz (AC-93). Yalnız 0002 tüketir.
+// Bir grubun o ayda geçerli TEK sürümü: aralığa uyanlardan başlangıcı en geç olan. Çoklu kullanıcı
+// birleştirmesi yalnız eklemeleri taşıdığından (eski sürümün kapatılması bir düzenlemedir, kaybolabilir)
+// bir grupta iki açık sürüm kalabilir; o ay yine yalnız bir kez sayılır.
+const aydaGecerliSurum = (surumler, ay) => surumler
+  .filter(s => s.baslangicAy && s.baslangicAy <= ay && (!s.bitisAy || ay <= s.bitisAy))
+  .reduce((en, s) => (!en || s.baslangicAy > en.baslangicAy ? s : en), null);
+const grupla = (liste) => {
+  const g = new Map();
+  for (const s of liste || []) { const k = String(s.grupId ?? s.id); if (!g.has(k)) g.set(k, []); g.get(k).push(s); }
+  return g;
+};
 export const standartGiderAyi = (liste = [], ay) => {
-  const satirlar = (liste || []).filter(s => s.baslangicAy && s.baslangicAy <= ay && (!s.bitisAy || ay <= s.bitisAy));
+  const satirlar = [...grupla(liste).values()].map(sr => aydaGecerliSurum(sr, ay)).filter(Boolean);
   return { satirlar, toplam: tl(satirlar.reduce((a, s) => a + kurus(s.tutar), 0)) };
 };
 const grupSurumleri = (liste, grupId) => liste.filter(s => String(s.grupId) === String(grupId)).sort((a, b) => a.baslangicAy.localeCompare(b.baslangicAy));
@@ -564,7 +606,11 @@ export const standartTutarDegistir = (liste = [], grupId, { tutar, baslangicAy }
   if (t.bos || t.deger <= 0) return { hata: "Tutar sıfırdan büyük olmalı." };
   if (!baslangicAy || baslangicAy <= acik.baslangicAy) return { hata: `Yeni geçerlilik ayı ${acik.baslangicAy} sonrasında olmalı.` };
   const yeni = { id: uid(), grupId: acik.grupId, ad: acik.ad, tutar: t.deger, baslangicAy, bitisAy: acik.bitisAy && acik.bitisAy >= baslangicAy ? acik.bitisAy : null };
-  return { liste: [...liste.map(s => (s.id === acik.id ? { ...s, bitisAy: ayEkle(baslangicAy, -1) } : s)), yeni] };
+  // Önceki sürüm yeni başlangıçtan bir ay önce kapanır; zaten daha erken sona erdiyse bitişine dokunulmaz
+  // (sona erdirilmiş kalem geriye doğru yeniden açılmasın).
+  const onceki = ayEkle(baslangicAy, -1);
+  const eskiBitis = acik.bitisAy && acik.bitisAy < onceki ? acik.bitisAy : onceki;
+  return { liste: [...liste.map(s => (s.id === acik.id ? { ...s, bitisAy: eskiBitis } : s)), yeni] };
 };
 export const standartSonSurumuGeriAl = (liste = [], grupId) => {
   const surumler = grupSurumleri(liste, grupId);
@@ -591,7 +637,7 @@ export const standartGruplar = (liste = [], buAy) => {
   for (const s of liste) { if (!g.has(String(s.grupId))) g.set(String(s.grupId), []); g.get(String(s.grupId)).push(s); }
   return [...g.values()].map(surumler => {
     surumler.sort((a, b) => a.baslangicAy.localeCompare(b.baslangicAy));
-    const gecerli = buAy ? surumler.find(s => s.baslangicAy <= buAy && (!s.bitisAy || buAy <= s.bitisAy)) : null;
+    const gecerli = buAy ? aydaGecerliSurum(surumler, buAy) : null;
     const son = surumler[surumler.length - 1];
     return { grupId: surumler[0].grupId, ad: son.ad, surumler, gecerli, son, sonaErdi: !!son.bitisAy && (!buAy || son.bitisAy < buAy) };
   }).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));

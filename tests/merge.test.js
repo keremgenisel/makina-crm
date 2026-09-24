@@ -202,4 +202,20 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.giderTanimlari[0].turId).toBe(plan.maps.giderTurleri.get(turId));
     expect(plan.adds.standartGiderler.find(x => x.id === 99002).grupId).toBe(plan.maps.standartGiderler.get(sgId));
   });
+  it("triyaj bulgu 5: personel kalemi ve tanımındaki calisanId yeniden atanan çalışan id'sini izler", () => {
+    const calId = uid(), tanimId = uid();
+    const my = blob({
+      calisanlar: [{ id: calId, ad: "Yerel Usta" }],
+      giderTanimlari: [{ id: tanimId, turId: 1, calisanId: calId, ad: "Maaş" }],
+      giderler: [{ id: 99101, turId: 1, calisanId: calId, tanimId }, { id: 99102, turId: 1, tutar: 5 }],
+    });
+    const sunucu = blob({ calisanlar: [{ id: calId, ad: "Başka Usta" }], giderTanimlari: [], giderler: [] });
+    const plan = buildMergePlan(my, sunucu);
+    const yeniCal = plan.maps.calisanlar.get(calId);
+    expect(yeniCal).toBeDefined();
+    expect(yeniCal).not.toBe(calId);
+    expect(plan.adds.giderler.find(g => g.id === 99101).calisanId).toBe(yeniCal);
+    expect(plan.adds.giderTanimlari[0].calisanId).toBe(yeniCal);
+    expect(plan.adds.giderler.find(g => g.id === 99102).calisanId ?? null).toBeNull();
+  });
 });

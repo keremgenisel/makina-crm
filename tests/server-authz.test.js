@@ -723,10 +723,9 @@ describe("gider bölümleri: C6 kural 3 ve sunucu aynası (K6)", () => {
   });
   it("R13 / R22: tedarikçi ve standart gider yalnız gider sekmesinden; settings tek başına yetmez", () => {
     const ayarci = JSON.stringify({ tabs: ["settings"] });
-    expect(yazmaYetkisiVar(ayarci, "user", ["tedarikciler"], {}, {}).ok).toBe(false);
-    expect(yazmaYetkisiVar(ayarci, "user", ["standartGiderler"], {}, {}).ok).toBe(false);
-    expect(yazmaYetkisiVar(ayarci, "user", ["giderTurleri"], {}, {}).ok).toBe(true);
-    expect(yazmaYetkisiVar(ayarci, "user", ["giderler"], {}, {}).ok).toBe(true); // model zinciri / geri yükleme
+    for (const b of ["tedarikciler", "standartGiderler", "giderTurleri", "giderler", "giderTanimlari"]) {
+      expect(yazmaYetkisiVar(ayarci, "user", [b], {}, {}).ok, b).toBe(false);
+    }
   });
   it("giderActions: [] tüm gider bölümlerini kapatır", () => {
     const kapali = JSON.stringify({ tabs: ["gider"], giderActions: [] });
@@ -741,9 +740,14 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
     const yeni = { giderler: [{ id: 1, tarih: "2026-09-01" }] };
     expect(eylemDenetimi({ giderler: [] }, yeni, izin(["gider_tekrar_uret"]), "user").ok).toBe(false);
     expect(eylemDenetimi({ giderler: [] }, yeni, izin(["gider_add"]), "user").ok).toBe(true);
-    const uretilen = { giderler: [{ id: 2, tanimId: 9, donem: "2026-09" }] };
-    expect(eylemDenetimi({ giderler: [] }, uretilen, izin(["gider_add"]), "user").ok).toBe(false);
-    expect(eylemDenetimi({ giderler: [] }, uretilen, izin(["gider_tekrar_uret"]), "user").ok).toBe(true);
+    // Gerçek bir tanımdan üretilmiş kalem: gider_tekrar_uret yeterli. gider_add sahibi de ekleyebilir
+    // (aynı kalemi elle girebilirdi); ikisi de yoksa reddedilir.
+    const tanimlar = [{ id: 9, turId: 4, baslangicAy: "2026-01" }];
+    const uretilen = { giderler: [{ id: 2, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 4 }], giderTanimlari: tanimlar };
+    const once = { giderler: [], giderTanimlari: tanimlar };
+    expect(eylemDenetimi(once, uretilen, izin(["gider_tekrar_uret"]), "user").ok).toBe(true);
+    expect(eylemDenetimi(once, uretilen, izin(["gider_add"]), "user").ok).toBe(true);
+    expect(eylemDenetimi(once, uretilen, izin(["gider_edit"]), "user").ok).toBe(false);
   });
   it("kalem silmek gider_delete ister", () => {
     const eski = { giderler: [{ id: 1 }] };
@@ -763,5 +767,70 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
       expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_add"]), "user").gerekli).toBe("gider_tanim");
       expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_tanim"]), "user").ok).toBe(true);
     }
+  });
+});
+
+// ── Triyaj bulgusu 1, 2, 7 ──────────────────────────────────────────────────────
+describe("gider: Ayarlar'ı açık ama Giderler sekmesi olmayan kullanıcı (bulgu 1)", () => {
+  const ayarci = JSON.stringify({ tabs: ["settings"] }); // UserManager özelleştirilmemiş: giderActions yok = tam
+  const eski = { giderler: [{ id: 1, tarih: "2026-09-01", turId: 4, tutar: 100, odendi: false, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10, adet: 2 }] }] };
+  const dene = (yeni) => yazmaYetkisiVar(ayarci, "user", degisenBolumler(eski, yeni), eski, yeni);
+  it("kalem ekleyemez, silemez, ödendi değiştiremez", () => {
+    expect(dene({ giderler: [...eski.giderler, { id: 2, tarih: "2026-09-02", turId: 4, tutar: 99999, odendi: true, modelSatirlari: [] }] }).ok).toBe(false);
+    expect(dene({ giderler: [] }).ok).toBe(false);
+    expect(dene({ giderler: [{ ...eski.giderler[0], deletedAt: "x" }] }).ok).toBe(false);
+    expect(dene({ giderler: [{ ...eski.giderler[0], odendi: true }] }).ok).toBe(false);
+    expect(dene({ giderler: [{ ...eski.giderler[0], tutar: 1 }] }).ok).toBe(false);
+  });
+  it("model yeniden adlandırma zinciri (yalnız modelSatirlari[].modelAd) geçer", () => {
+    const yeni = { giderler: [{ ...eski.giderler[0], modelSatirlari: [{ modelAd: "AK100_YENI", birimMaliyet: 10, adet: 2 }] }] };
+    expect(dene(yeni).ok).toBe(true);
+    expect(dene({ giderler: [{ ...eski.giderler[0], modelSatirlari: [{ modelAd: "AK100_YENI", birimMaliyet: 999, adet: 2 }] }] }).ok).toBe(false);
+  });
+  it("çalışan silmede tanım kapatma zinciri (bitisAy + kapatildi) geçer; başka alan değişirse geçmez", () => {
+    const e = { giderTanimlari: [{ id: 7, turId: 3, calisanId: 21, baslangicAy: "2026-01", bitisAy: null, uretilenAylar: ["2026-08"], modelSatirlari: [] }] };
+    const kapat = { giderTanimlari: [{ ...e.giderTanimlari[0], bitisAy: "2026-08", kapatildi: true }] };
+    expect(yazmaYetkisiVar(ayarci, "user", ["giderTanimlari"], e, kapat).ok).toBe(true);
+    const bozuk = { giderTanimlari: [{ ...e.giderTanimlari[0], bitisAy: "2026-08", kapatildi: true, tutar: 5 }] };
+    expect(yazmaYetkisiVar(ayarci, "user", ["giderTanimlari"], e, bozuk).ok).toBe(false);
+    const acmaDeg = { giderTanimlari: [{ ...e.giderTanimlari[0], bitisAy: "2027-12" }] }; // kapatildi yok → zincir değil
+    expect(yazmaYetkisiVar(ayarci, "user", ["giderTanimlari"], e, acmaDeg).ok).toBe(false);
+  });
+  it("zincir de Ayarlar sekmesi ister", () => {
+    const yeni = { giderler: [{ ...eski.giderler[0], modelSatirlari: [{ modelAd: "X", birimMaliyet: 10, adet: 2 }] }] };
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["customers"] }), "user", ["giderler"], eski, yeni).ok).toBe(false);
+  });
+  it("Giderler sekmesi olan kullanıcı normal kurallarla yazar (zincir istisnası ona uygulanmaz)", () => {
+    const gider = JSON.stringify({ tabs: ["gider"] });
+    expect(yazmaYetkisiVar(gider, "user", ["giderler"], eski, { giderler: [{ ...eski.giderler[0], odendi: true }] }).ok).toBe(true);
+  });
+});
+
+describe("gider: sekme listesi tanımsız kullanıcıda Ayarlar zinciri (bulgu 2)", () => {
+  const eski = { giderler: [{ id: 1, turId: 4, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10, adet: 2 }] }], giderTanimlari: [{ id: 7, bitisAy: null, modelSatirlari: [] }] };
+  it("model adı taşıma ve tanım kapatma K6 aynasına takılmaz (izin null ve tabs'sız gövde)", () => {
+    const yeni = { giderler: [{ ...eski.giderler[0], modelSatirlari: [{ modelAd: "AK100_YENI", birimMaliyet: 10, adet: 2 }] }], giderTanimlari: [{ id: 7, bitisAy: "2026-08", kapatildi: true, modelSatirlari: [] }] };
+    for (const p of [null, JSON.stringify({ customerActions: ["cust_add"] })]) {
+      expect(giderAynaEngeli(p, "user", ["giderler", "giderTanimlari"], eski, yeni)).toBeNull();
+      expect(yazmaYetkisiVar(p, "user", ["giderler", "giderTanimlari"], eski, yeni).ok).toBe(true);
+    }
+  });
+  it("zincir olmayan değişiklik yine reddedilir", () => {
+    expect(giderAynaEngeli(null, "user", ["giderler"], eski, { giderler: [{ ...eski.giderler[0], tutar: 5 }] })).toBe("giderler");
+  });
+});
+
+describe("gider: tanımdan üretim izni serbest kalem için atlatılamaz (bulgu 7)", () => {
+  const uretici = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_tekrar_uret"] });
+  const tanimlar = [{ id: 9, turId: 4, baslangicAy: "2026-06", bitisAy: "2026-12", uretilenAylar: ["2026-09"] }];
+  const ekle = (k) => eylemDenetimi({ giderler: [], giderTanimlari: tanimlar }, { giderler: [k], giderTanimlari: tanimlar }, uretici, "user");
+  it("gerçek tanım + uygun dönem → gider_tekrar_uret yeterli", () => {
+    expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 4 }).ok).toBe(true);
+  });
+  it("olmayan tanım, yanlış tür, aralık dışı dönem veya tarihle uyuşmayan dönem → gider_add ister", () => {
+    expect(ekle({ id: 1, tanimId: 999, donem: "2026-09", tarih: "2026-09-01", turId: 4 }).gerekli).toBe("gider_add");
+    expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 5 }).gerekli).toBe("gider_add");
+    expect(ekle({ id: 1, tanimId: 9, donem: "2027-01", tarih: "2027-01-01", turId: 4 }).gerekli).toBe("gider_add");
+    expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-10-15", turId: 4 }).gerekli).toBe("gider_add");
   });
 });

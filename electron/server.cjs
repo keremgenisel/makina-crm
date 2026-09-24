@@ -470,7 +470,7 @@ function buildApp() {
       const degisen = degisenBolumler(mevcut, data);
       // Gider bölümleri (spec 0001 C6 kural 3, plan K6): sekme listesi tanımsız user rolü kisitliMi'den
       // bağımsız olarak reddedilir; yoksa izinsiz eski kullanıcı gider verisini yazabilirdi.
-      if (giderAynaEngeli(perms, rol, degisen)) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
+      if (giderAynaEngeli(perms, rol, degisen, mevcut, data)) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
       if (kisitli) {
         const yetki = yazmaYetkisiVar(perms, rol, degisen, mevcut, data);
         if (!yetki.ok) return res.status(403).json({ error: "Bu veriyi değiştirme yetkiniz yok" });
