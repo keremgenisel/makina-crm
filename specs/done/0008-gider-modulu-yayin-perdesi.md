@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, plan `specs/0008-uygulama-plani.md` K1–K9 ile) |
+| **Durum** | Tamamlandı (2026-09-24; kod commit `ad9c047`, plan `specs/done/0008-uygulama-plani.md` K1–K9) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler sekmesi, Anasayfa, Finans, Ayarlar, Firma Çalışanları, Çöp Kutusu, silme onayları, yedekleme ekranı |
@@ -160,10 +160,15 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R1 plan turunda, onayla eş zamanlı işlendi (R2'ye 0002 türevleri, AC-14 bütünlük zinciri, R4 ölçütü, AC-9 geri yükleme kuralı); onay sonrası değişiklik yok. |
+| **Düzeltme turu sayısı** | 0 | İş geri dönmedi. Kullanıcı perdeli hâli üretim derlemesiyle gerçek uygulamada açıp gördü, bulgu çıkmadı. |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu yok. Plan turunda kodda bulunan gerçek risk (perde tek kapıdan inince gider verisinin yedekten geri yüklenmemesi, AC-9) uygulamadan önce kararla (K3) kapatıldı. |
+| **Regresyon sayısı** | 0 | Mevcut testlerin hiçbiri değişmedi ve hepsi geçti; perde kalkık hâlin perde öncesiyle aynı olduğu aynı adımlarla koşan testlerle gösterildi (AC-13). Son durum: 175 dosya, 1786 test, lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok; görsel kanıt turu plan K9 ile atlandı, yerine kullanıcı perdeli derlemeyi elle inceledi. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Tek kapı" varsayımı görünürlük için doğruydu ama aynı bayrak bir yerde görünürlük değil **veri
+davranışı** taşıyordu (yedekten geri yükleme paketi); spec'in "yedek sessizliği" tuzağı kodda gerçekti ve yalnız bayrağın her
+tüketicisi tek tek okunarak bulundu. Bir bayrağı ikiye bölerken (izin / görünürlük) her tüketicinin hangisine ihtiyaç duyduğu
+ayrıca sorulmalı. Perde test ortamında kendiliğinden kalkık olduğu için perdeli davranış modül taklidiyle (`vi.mock`) gerçek
+uygulama üzerinden, üretim derlemesindeki durumu ise paket çıktısına bakarak kanıtlandı; ikisi birlikte "testte yeşil, kurulu
+sürümde farklı" riskini kapattı.

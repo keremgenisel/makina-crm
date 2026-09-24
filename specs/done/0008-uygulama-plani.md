@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0008-gider-modulu-yayin-perdesi.md` (Taslak) |
-| **Durum** | 2026-09-24: K1–K9 kullanıcı tarafından onaylandı; spec R1 ile güncellendi; uygulanıyor. |
+| **Bağlı spec** | `specs/done/0008-gider-modulu-yayin-perdesi.md` (R1, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-24: K1–K9 kullanıcı tarafından onaylandı; spec R1 ile güncellendi; kod commit `ad9c047` (branch `feat/0001-gider`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0001, 0002, 0003 (gider modülü, `giderYetki` tek kapısı) |
 
 Bu plan, spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
