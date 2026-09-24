@@ -8,8 +8,8 @@ import { trLower, getKdvRateForDate } from "./utils";
 export const DAVRANIS = { NORMAL: "normal", KIRA: "kira", PERSONEL: "personel" };
 export const ATAMA = { ORTAK: "", MAKINA: "makina", MODEL: "model", DAGITMA: "dagitma" };
 
-const kurus = (x) => Math.round((Number(x) || 0) * 100);
-const tl = (k) => k / 100;
+export const kurus = (x) => Math.round((Number(x) || 0) * 100);
+export const tl = (k) => k / 100;
 export const ayOf = (tarih) => String(tarih || "").slice(0, 7);
 
 // ── Ay yardımcıları ───────────────────────────────────────────────────────────
@@ -259,6 +259,12 @@ const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
     r.ortak = top - r.model;
   } else r.ortak = top;
   return r;
+};
+// Makina maliyeti motoru (spec 0002 R2) için kuruş cinsinden aynı kova bölmesi: 0001'in kuralı burada tek
+// kaynaktır, 0002 yeniden türetmez. makinaCoz = makinaCozucuOlustur(...) çıktısı; dönen `makina` çözülen makina.
+export const kalemKovalariKurus = (k, { davranis = DAVRANIS.NORMAL, makinaCoz, canliModeller = new Set() } = {}) => {
+  const makina = davranis === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && makinaCoz ? makinaCoz(k) : null;
+  return { ...kovaKurus(k, davranis, !!makina, canliModeller), makinaCozum: makina };
 };
 export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], customers = [], canliModeller = new Set() } = {}) => {
   const cozuldu = davranis === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && !!makinaGideriCoz(k, { stock, customers });

@@ -11,6 +11,8 @@ export const CustomerAddEditForm = ({
   kdvRates, payments, geoData, loadingGeo,
   addLabel, entity, parts = [], partTypeDefs = [], krediKartiKomisyonlari = null,
   draftBar = null,
+  // Spec 0002 (R15, plan M8): üretim tarihi ve satış kuru satırı yalnız gider yetkisiyle çizilir.
+  giderYetki = false,
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
   const { lockLoading, lockConflict, forceAcquire } = useLock("customer", modal?.edit?.id ?? null);
@@ -346,6 +348,16 @@ export const CustomerAddEditForm = ({
           <Input type="date" value={form.warrantyEnd || ""} onChange={e => setForm(p => ({ ...p, warrantyEnd: e.target.value }))} />
         </Field>
       </div>
+      {giderYetki && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Üretim Tarihi (maliyet için)">
+            <Input type="date" aria-label="Üretim tarihi" value={form.uretimTarihi || ""} onChange={e => setForm(p => ({ ...p, uretimTarihi: e.target.value }))} />
+          </Field>
+          <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", lineHeight: 1.5, alignSelf: "center" }}>
+            Stoktan satışta stoğa giriş tarihi otomatik yazılır. Boşsa stok hareketinden veya satış tarihinden tahmin edilir. Ortak gider payı bu tarihin ayından hesaplanır.
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
         <Icon name="finance" size={15} />
@@ -384,6 +396,15 @@ export const CustomerAddEditForm = ({
             <option value="EUR">€ Euro (EUR)</option>
           </Select>
         </Field>
+        {giderYetki && (form.currency || "TRY") !== "TRY" && (
+          <div data-testid="satis-kuru" style={{ gridColumn: "1 / -1", order: 3, fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px" }}>
+            {modal !== "add" && modal?.edit?.currency === form.currency && Number(form.satisKuru) > 0
+              ? <>Satış kuru: <b>1 {form.currency} = {Number(form.satisKuru).toLocaleString("tr-TR", { maximumFractionDigits: 4 })} TL</b> (satış anında kaydedildi, değişmez)</>
+              : modal === "add" || modal?.edit?.currency !== form.currency
+                ? <>Kaydedilince o günün {form.currency} kuru satış kaydına yazılır. Kur alınamazsa kâr güncel kurla yaklaşık hesaplanır.</>
+                : <>Bu satışın kuru kayıtlı değil; kâr güncel kurla yaklaşık hesaplanır.</>}
+          </div>
+        )}
         <Field label="Satış Tipi">
           <Select value={normalizeSaleType(form.faturali)} onChange={e => setForm(p => ({ ...p, faturali: e.target.value, ...(isFaturali(e.target.value) ? {} : { faturaBedeli: "" }) }))}>
             {SALE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}

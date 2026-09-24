@@ -5,7 +5,7 @@
 import {
   parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
-  isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf,
+  isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
   normalizeSaleType, tahsilatTarihiOf,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
@@ -74,7 +74,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
 
   // ── SATIŞLAR ────────────────────────────────────────────────────────────────
   const satislar = canliMusteriler.filter(c => !c.isResale && ayIci(c.installDate));
-  const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) > 0 ? c.fabrikaSatisBedeli : faturaBedeliOf(c);
+  const gercekBedel = gercekSatisBedeli; // tek kural (utils), Finans ile aynı
   const satisTutar = {}, faturaTutar = {}, satisKdv = {}, komisyonTutar = {}, makinaFatura = {};
   satislar.forEach(c => {
     const kdv = calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates);

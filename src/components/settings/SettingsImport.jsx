@@ -156,6 +156,9 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         // Seri no boşsa "bekliyor" işareti (sonradan girilmesi için hatırlatma)
         ...(serialNo ? { seriNoBekliyor: false } : { seriNoBekliyor: true }),
         ...(mevcut?.isResale ? { isResale: mevcut.isResale, prevOwners: mevcut.prevOwners } : {}),
+        // Spec 0002 R12: satış kuru ve üretim tarihi mevcut kayıttan korunur (birleştirme {...mevcut, ...yeni});
+        // para birimi değiştiyse eski kur yanlış para biriminin kuru olur, temizlenir (içe aktarmada güncel kur yok).
+        ...(mevcut && (mevcut.currency || "TRY") !== currency ? { satisKuru: null } : {}),
         _mevcut: !!mevcut, // güncelleme mi, yeni mi
       });
       [[21, 22], [23, 24], [25, 26]].forEach(([dt, isk]) => {

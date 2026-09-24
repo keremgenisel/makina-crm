@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Icon, Field, Btn } from "../ui";
 import { Section } from "./Section";
 import { esikAltiKalemSayisi, tutarCoz } from "../../lib/gider";
-import { TutarInput, AyInput, HataMetni, Ipucu, tutarMetni } from "../gider/GiderAlanlari";
+import { TutarInput, AyInput, HataMetni, Ipucu, tutarMetni, Segment } from "../gider/GiderAlanlari";
+import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
 
 // Gider ayarları (spec 0001 R6, R10): varsayılan kira stopaj oranı ve gider takibinin yürürlük ayı.
 // appSettings.giderAyarlari sunucu-paylaşımlıdır (disAppSettingsSuz'a girmez). Varsayılan resmi aylık
 // işveren maliyeti de bu nesnede durur ama Firma Çalışanları ekranında düzenlenir (plan K20).
 export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flash = () => {}, canDo = () => true }) => {
   const mevcut = appSettings?.giderAyarlari || {};
-  const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "" });
+  const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
+    ortakGiderKaynagi: mevcut.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK });
   const [hata, setHata] = useState("");
   const yonetebilir = canDo("gider_tanim");
   const esikAlti = esikAltiKalemSayisi(giderler, form.yururlukAy || null);
@@ -18,7 +20,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     const s = tutarCoz(form.stopajOrani);
     if (s.gecersiz || s.deger < 0 || s.deger >= 100) { setHata("Stopaj oranı 0 ile 100 arasında olmalı."); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -36,6 +38,13 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
             <Ipucu>Seçilen ay dahildir. Bu aydan önceki dönemler için rapor rakam üretmez, “gider verisi girilmemiş” gösterir. Boş bırakılırsa eşik uygulanmaz.</Ipucu>
           </Field>
         </div>
+        {/* Spec 0002 R22, C4-3, C8: makina maliyetinde ortak gider payının kaynağı. İki kaynak asla toplanmaz. */}
+        <Field label="Makina maliyetinde ortak gider kaynağı">
+          <Segment ariaLabel="Ortak gider kaynağı" disabled={!yonetebilir}
+            options={[ORTAK_KAYNAK.GERCEK, ORTAK_KAYNAK.STANDART].map(v => ({ value: v, label: ORTAK_KAYNAK_ETIKET[v] }))}
+            value={form.ortakGiderKaynagi} onChange={v => setForm(p => ({ ...p, ortakGiderKaynagi: v }))} />
+          <Ipucu>Yalnız ortak gider payını etkiler; makinaya ve modele atanmış giderler her zaman gerçekleşen kayıtlardan gelir. Bu ayar sunucu üzerinden paylaşılır: değiştirildiğinde bütün kullanıcıların gördüğü maliyet ve kâr rakamı değişir.</Ipucu>
+        </Field>
         {esikAlti > 0 && (
           <div role="alert" style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 14 }}>
             <b style={{ color: "var(--amb700, #b45309)" }}>Eşiğin altında {esikAlti} gider kalemi kaldı.</b>

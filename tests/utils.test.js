@@ -785,3 +785,21 @@ describe("tahsilatTarihiOf", () => {
     expect(tahsilatTarihiOf({ date: "2026-06-06" })).toBe("2026-06-06");
   });
 });
+
+describe("spec 0002 C4-3: ortak gider kaynağı giderAyarlari içinde, sunucu üzerinden paylaşılır", () => {
+  it("disAppSettingsSuz makinaya özgü saymaz; birleştirmede yerel seçim korunur", () => {
+    const uzak = { giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } };
+    expect(disAppSettingsSuz(uzak).giderAyarlari.ortakGiderKaynagi).toBe("standart");
+    const r = mergeAppSettings({ giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "gercek" } }, uzak);
+    expect(r.giderAyarlari.ortakGiderKaynagi).toBe("standart");
+  });
+});
+
+describe("spec 0002 C2: gercekSatisBedeli tek kural", () => {
+  it("fabrika satış bedeli önce; boş/sıfırsa geçerli fatura bedeli; faturasızda fatura bedeli 0", async () => {
+    const { gercekSatisBedeli } = await import("../src/lib/utils");
+    expect(gercekSatisBedeli({ fabrikaSatisBedeli: "500.000", faturali: "Faturalı Yurtiçi", faturaBedeli: 400000 })).toBe(500000);
+    expect(gercekSatisBedeli({ fabrikaSatisBedeli: "", faturali: "Faturalı Yurtiçi", faturaBedeli: 400000 })).toBe(400000);
+    expect(gercekSatisBedeli({ fabrikaSatisBedeli: 0, faturali: "Faturasız Yurtiçi", faturaBedeli: 400000 })).toBe(0);
+  });
+});

@@ -32,7 +32,8 @@ const IZ = /38[.,\s]?765|12[.,\s]?345|51[.,\s]?111|38765|12345|51111/;
 const calisanlar = [{ id: 1, ad: "Murat Usta", resmiMaliyet: RESMI, eldenMaliyet: ELDEN }];
 const giderler = [{ id: 10, tarih: "2026-06-30", turId: 3, calisanId: 1, calisanAd: "Murat Usta", resmiTutar: RESMI, eldenTutar: ELDEN, tutar: TOPLAM, odendi: false, modelSatirlari: [] }];
 const giderTanimlari = [{ id: 20, turId: 3, calisanId: 1, ad: "Murat Usta", baslangicAy: "2026-01", uretilenAylar: ["2026-06"], modelSatirlari: [] }];
-const customers = [{ id: 100, name: "ABC Gıda", model: "AK-100", serialNo: "S1", installDate: "2026-06-01", faturali: "Faturalı Yurtiçi", fabrikaSatisBedeli: 1000, currency: "TRY" }];
+const customers = [{ id: 100, name: "ABC Gıda", model: "AK-100", serialNo: "S1", installDate: "2026-06-01", faturali: "Faturalı Yurtiçi", fabrikaSatisBedeli: 1000, currency: "TRY", satisKuru: 38765.43, uretimTarihi: "2026-05-02" }];
+// Spec 0002: satış kaydındaki maliyet snapshot alanları (kur, üretim tarihi) da çıktıya girmez; kur ayırt edici tutarla IZ'e yakalanır.
 const services = [{ id: 200, customerId: 100, date: "2026-06-10", type: "Arıza", tech: "Murat Usta", islemFirma: "Altuntaş Makina", servisUcreti: 500, durum: "Tamamlandı" }];
 
 describe("AC-56: çıktılarda personel tutarı yok (çıktı bazlı)", () => {
@@ -48,6 +49,7 @@ describe("AC-56: çıktılarda personel tutarı yok (çıktı bazlı)", () => {
     // Çalışan dışa aktarması gerçekten üretildi ve adı taşıyor; tutarı taşımıyor.
     const cal = yakalanan.find(y => /firma-calisanlari/.test(y.ad));
     expect(JSON.stringify(cal.rows)).toContain("Murat Usta");
+    for (const y of yakalanan) expect(JSON.stringify(y.rows), y.ad).not.toMatch(/2026-05-02|02\.05\.2026/);
     for (const y of yakalanan) expect(JSON.stringify(y.rows), y.ad).not.toMatch(IZ);
   });
 

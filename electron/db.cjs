@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS customers (
   fromTeklifId INTEGER,
   odemePlani TEXT,
   brutKg REAL,
-  tipSecimleri TEXT
+  tipSecimleri TEXT,
+  satisKuru REAL, uretimTarihi TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gorusmeler (
@@ -157,7 +158,7 @@ CREATE TABLE IF NOT EXISTS services (
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
 CREATE TABLE IF NOT EXISTS stock (
-  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT
+  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT, uretimTarihi TEXT
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
@@ -425,6 +426,11 @@ const CUSTOMERS_TIP_SECIMLERI_COLUMN = [["tipSecimleri", "TEXT"]];
 // İlçe kırılımı istenen iller için (Harita). Müşteri ve bayide aynı alan adı.
 const ILCE_COLUMN = [["ilce", "TEXT"]];
 const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
+// Makina maliyeti (spec 0002 C4 istisnaları 1–2): satış anındaki kur snapshot'ı ("1 birim = X TL") ve
+// satışta stok satırı silindiği için satış kaydına yazılan üretim tarihi. Stokta: silinen müşteriden
+// geri dönen satırın özgün üretim tarihi (plan M3).
+const CUSTOMERS_MALIYET_COLUMNS = [["satisKuru", "REAL"], ["uretimTarihi", "TEXT"]];
+const STOCK_URETIM_COLUMN = [["uretimTarihi", "TEXT"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
@@ -492,11 +498,11 @@ function populateAll(conn, data, skip = new Set()) {
     INSERT INTO customers (id, name, phone, email, adres, city, ilce, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
-      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri)
+      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri, satisKuru, uretimTarihi)
     VALUES (@id, @name, @phone, @email, @adres, @city, @ilce, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
-      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri)
+      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri, @satisKuru, @uretimTarihi)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order, uretimFormGonder, uretimFormId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -530,6 +536,8 @@ function populateAll(conn, data, skip = new Set()) {
         odemePlani: json(c.odemePlani ?? []),
         brutKg: c.brutKg ?? null,
         tipSecimleri: json(c.tipSecimleri ?? {}),
+        satisKuru: c.satisKuru ?? null,
+        uretimTarihi: c.uretimTarihi ?? null,
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx, toInt(k.uretimFormGonder), k.uretimFormId ?? null);
@@ -695,8 +703,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.stock) && !skip.has("stock")) {
     conn.prepare(`DELETE FROM stock`).run();
-    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt, uretimTarihi) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null, s.uretimTarihi ?? null);
   }
 
   if (Array.isArray(data.notes) && !skip.has("notes")) {
@@ -907,6 +915,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "dealers", ILCE_COLUMN);
   ensureColumns(conn, "factory", ILCE_COLUMN);
   ensureColumns(conn, "customers", CUSTOMERS_SOURCE_STOCK_COLUMN);
+  ensureColumns(conn, "customers", CUSTOMERS_MALIYET_COLUMNS);
   ensureColumns(conn, "parts", PARTS_TIP_RESIM_COLUMNS);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_PINNED_COLUMN);
@@ -922,6 +931,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "app_settings", APP_SETTINGS_GIDER_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
+  ensureColumns(conn, "stock", STOCK_URETIM_COLUMN);
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
   ensureColumns(conn, "users", USERS_PERMISSIONS_COLUMN);
   ensureColumns(conn, "users", USERS_TOKEN_VERSION_COLUMN);

@@ -7,7 +7,7 @@ import { buildAylikRaporHtml } from "../lib/printTemplates";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
-import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf } from "../lib/utils";
+import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf, gercekSatisBedeli } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
@@ -143,7 +143,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     // Faturasız satışlarda fatura bedeli kasıtlı olarak gerçek satış bedelinden daha düşük tutulabiliyor
     // (bkz. müşteri formundaki "Gerçek bedelden farklı olabilir" notu) — bu yüzden "gelir" sayılırken
     // her zaman gerçek bedel (Fabrika Satış Bedeli, yoksa faturaya düş) kullanılmalı, ham faturaBedeli değil.
-    const gercekBedel = (c) => parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
+    const gercekBedel = gercekSatisBedeli; // tek kural (utils), aylık rapor ve makina kârlılığıyla aynı
     // Kredi kartı komisyonu müşteriye yansıtıldıysa (option B) komisyon da KDV matrahında → o makinaya ait
     // yansıtılan komisyonların KDV'si fatura KDV'sine eklenir (üstteki KDV kutusu / Kalan Borç ile aynı).
     const kartKomisyonKdv = (c) => {

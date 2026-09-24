@@ -3,9 +3,11 @@ import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/cons
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { makinaGiderSayisi } from "../lib/gider";
-import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi } from "../lib/musteriKaskad";
+import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
+import { satisKuruUygula, uretimTarihiDamgala } from "../lib/satisKaydi";
+import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -20,6 +22,8 @@ export const Customers = ({
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
   // Gider kaydı (spec 0001 R7): yalnız gider yetkisi varsa dolu gelir; silme onayında bağlı gider sayısı.
   giderler = [],
+  // Makina maliyeti ve kârlılık (spec 0002 R15): yalnız gider yetkisiyle dolu gelir; rates satış kuru içindir.
+  giderYetki = false, makinaMaliyet = null, rates = null,
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -244,11 +248,12 @@ export const Customers = ({
   };
   // Makina stoğu düşümü — ekleme ve "seri no sonradan atandı" düzenlemesi aynı mantığı
   // paylaşır: seçilen (veya serisiz) stok satırını düşer ve kaynağı müşteriye
-  // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar
+  // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar. Stok satırı silindiği için
+  // üretim tarihi de burada satış kaydına yazılır (spec 0002 R1b), yoksa kaybolurdu.
   const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
     if (_stokSerisiz) {
       const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-      if (srcEntry) clean.sourceStockId = srcEntry.id;
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
       setStock(p => {
         const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
         if (idx === -1) return p;
@@ -256,7 +261,7 @@ export const Customers = ({
       });
     } else if (clean.serialNo && !_manualSerial) {
       const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-      if (srcEntry) clean.sourceStockId = srcEntry.id;
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
       setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
     }
   };
@@ -272,6 +277,8 @@ export const Customers = ({
       bumpId(customers, services, partSales, payments);
       const newId = uid();
       if (!clean.serialNo) clean.seriNoBekliyor = true;
+      // Satış kuru snapshot'ı (spec 0002 R12): TL dışı satışta o günün kuru; çevrimdışıysa boş kalır.
+      Object.assign(clean, satisKuruUygula(null, clean, rates, today()));
       const odemeKdvOran = calcKDV(clean.faturali, 100, clean.installDate || today(), kdvRates); // faturalı yurtiçi → oran, değilse 0
       const odemeTarih = clean.installDate || today();
       // Ödeme kayıtlarını (kredi kartında kartKomisyonu snapshot'ı ile) kurup borçtan düşülecek tutarı ONLARDAN
@@ -314,6 +321,8 @@ export const Customers = ({
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;
       if (clean.serialNo && clean.seriNoBekliyor) clean.seriNoBekliyor = false;
+      // Kur para birimine bağlı (spec 0002 R12, plan M2): para birimi değişince yenilenir, TL'de boşalır.
+      Object.assign(clean, satisKuruUygula(modal.edit, clean, rates, today()));
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
       if (wasSerialPending && setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
@@ -419,7 +428,7 @@ export const Customers = ({
         const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: Math.abs(l.miktar) }));
         bumpId(stock);
         const newStockId = uid();
-        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), note: "Silinen müşteriden geri döndü", parcalar: kitParcalar }, ...p]);
+        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
 
         if (kitLog.length > 0 && setPartStockLog) {
           kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
@@ -633,6 +642,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
+          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
@@ -693,6 +703,7 @@ export const Customers = ({
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
+          giderYetki={giderYetki}
         />
       )}
     </div>

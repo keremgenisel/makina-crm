@@ -76,7 +76,7 @@ check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total ===
 
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
-  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850,
+  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14",
     faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
@@ -149,7 +149,7 @@ dbmod.writeBlobToDb({
     { id: 21, customerId: 500, refType: "makina", refId: null, ad: "sozlesme.pdf", dosyaAdi: "k2-sozlesme.pdf", boyut: 999, tur: "PDF", tarih: "2026-07-06", ekleyen: "kerem", deletedAt: "2026-07-07T10:00:00.000Z" },
     { id: 22, dealerId: 3, ad: "bayi-sozlesmesi.pdf", dosyaAdi: "k3-bayi-sozlesmesi.pdf", boyut: 500, tur: "PDF", tarih: "2026-07-08", ekleyen: "kerem" },
   ],
-  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }], parts: [],
+  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }, { id: 5, model: "AK100_DS", serialNo: "S-2", addedDate: "2026-09-20", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-02-11" }], parts: [],
   // Yedek parça stoğu: eski sürümden kalmış NEGATİF satır (miktar -3) okumada/migration'da 0'a çekilmeli.
   partStock: [
     { id: 70, partId: "7", miktar: 12, notlar: "" },
@@ -181,6 +181,16 @@ check("satisTamam undefined korunur", blob.teklifler.find(t => t.id === 102)?.sa
 check("factory.web tam turu", blob.factory?.web === "www.altunmak.com");
 check("factory.faturaFirmaAdi tam turu", blob.factory?.faturaFirmaAdi === "ALTUNMAK MACHINERY LTD.");
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
+// Spec 0002 C4: satış kuru (REAL) ve üretim tarihi (TEXT) satış kaydında; geri dönen stok satırının özgün üretim tarihi.
+check("customer.satisKuru + uretimTarihi tam turu (spec 0002)", (() => {
+  const c = (blob.customers || []).find(x => x.id === 500);
+  return c?.satisKuru === 41.2345 && c?.uretimTarihi === "2026-03-14" && c?.currency === "USD";
+})());
+check("kursuz / üretim tarihsiz eski kayıt boş döner (yaklaşık hesaba ve çözüm zincirine düşer)", (() => {
+  const c = (blob.customers || []).find(x => x.id === 501);
+  return c && c.satisKuru == null && c.uretimTarihi == null;
+})());
+check("stock.uretimTarihi tam turu (spec 0002 plan M3)", (blob.stock || []).find(s => s.id === 5)?.uretimTarihi === "2026-02-11");
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);
 check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales.find(p => p.id === 600); return ps?.teklifId === 101 && ps?.uretimFormGonder === true && ps?.uretimFormId === 88; })());

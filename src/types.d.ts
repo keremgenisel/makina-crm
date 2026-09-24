@@ -78,6 +78,10 @@ export interface Customer {
   bantlar?: unknown;
   odemePlani?: unknown;
   brutKg?: number;
+  /** Spec 0002 R12: satış anındaki kur, "1 birim yabancı para = X TL"; TL satışta boş. */
+  satisKuru?: number | null;
+  /** Spec 0002 R1b: üretim tarihi (stoktan satışta stok giriş tarihi; elle düzeltilebilir). */
+  uretimTarihi?: ISODate | null;
   deletedAt?: ISODate | null;
 }
 
@@ -161,6 +165,8 @@ export interface StockItem {
   model?: string;
   serialNo?: string;
   addedDate?: ISODate;
+  /** Spec 0002 plan M3: silinen müşteriden geri dönen satırın özgün üretim tarihi. */
+  uretimTarihi?: ISODate | null;
   note?: string;
   parcalar?: unknown;
   deletedAt?: ISODate | null;

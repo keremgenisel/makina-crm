@@ -35,6 +35,8 @@ import { servisPlanlandiMi } from "../../lib/servisAlarm";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
+import { MakinaMaliyetDetay } from "../gider/MakinaMaliyetDetay";
+import { makinaKarlilik } from "../../lib/makinaMaliyeti";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -65,6 +67,8 @@ export const CustomerDetailModal = ({
   showToast,
   kalipDefs = [], partTypeDefs = [], yedekParcaSatislar = [], setYedekParcaSatislar = null,
   onGoYedekParca = null,
+  // Spec 0002 (R15, R26): maliyet ve kâr kutusu yalnız gider yetkisiyle; hesap App'te bir kez yapılır.
+  giderYetki = false, makinaMaliyet = null, rates = null,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -1031,6 +1035,12 @@ export const CustomerDetailModal = ({
                 );
               })}
             </div>
+            {giderYetki && makinaMaliyet && isCustomer && (
+              <div data-testid="maliyet-kar-kutusu" style={{ marginBottom: 16, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>MALİYET VE KÂR</div>
+                <MakinaMaliyetDetay detay={makinaKarlilik(makinaMaliyet, `musteri:${detailView.id}`, rates)} />
+              </div>
+            )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>KALIPLAR ({detailView.kaliplar.length})</div>

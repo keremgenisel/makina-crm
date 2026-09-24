@@ -30,8 +30,9 @@ check("temiz kurulumda sqlite aktif", dbmod.isActive());
 let hata = null;
 try {
   dbmod.writeBlobToDb({
-    customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500,
+    customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, satisKuru: 38.5, uretimTarihi: "2026-08-01",
       odemePlani: [{ id: 1, vadeTarihi: "2026-09-01", tutar: 1000, odemeId: null }] }],
+    stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05" }],
     uretimFormlari: [{ id: 7, baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-05", kapali: true, not: "n", satirlar: [] }],
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
@@ -67,6 +68,11 @@ check("uretim formu baslangic/bitis/kapali tam turu", (() => {
 check("customer brutKg + odemePlani tam turu", (() => {
   const c = (blob.customers || []).find(x => x.id === 1);
   return c?.brutKg === 500 && c?.odemePlani?.[0]?.vadeTarihi === "2026-09-01";
+})());
+check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
+check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {
+  const c = (blob.customers || []).find(x => x.id === 1);
+  return c?.satisKuru === 38.5 && c?.uretimTarihi === "2026-08-01";
 })());
 check("appSettings JSON sütunları tam turu", blob.appSettings?.mailTemplates?.teklifProforma?.konu === "K" && blob.appSettings?.teklifTakipGun === 3);
 check("temiz kurulumda calismaSaatleri kolonu oluştu + tam turu", blob.appSettings?.calismaSaatleri?.baslangic === "08:30" && blob.appSettings?.calismaSaatleri?.molalar?.[0]?.baslangic === "12:30");

@@ -6,8 +6,11 @@ import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, st
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
+import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 
-export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, giderler = [] }) => {
+export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, giderler = [],
+  // Spec 0002 M3: çöpteki müşteriler, eski geri dönen satırın özgün üretim tarihini düzenlemede sabitlemek için.
+  copMusteriler = [] }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -83,7 +86,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         });
         setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === sid)));
       }
-      setStock(p => p.map(s => s.id === stockId ? form : s));
+      // Spec 0002 M3: üretim tarihi taşımayan eski "geri dönen" satırın tanınması not metnine bağlı; düzenlemede
+      // not değişebileceği için özgün tarih (çöpteki müşteriden, ESKİ model+seriyle) şimdi satıra yazılır.
+      const eski = stock.find(x => x.id === stockId);
+      const tarihTasi = eski && geriDonenStokMu(eski) && !eski.uretimTarihi ? geriDonenStokTarihi(eski, copMusteriler, partStockLog) : "";
+      const kayit = tarihTasi ? { ...form, uretimTarihi: tarihTasi } : form;
+      setStock(p => p.map(s => s.id === stockId ? kayit : s));
       deductParts(form.parcalar || [], stockId);
       logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model, detail: { onceki: snapshotOnceki(stock.find(x => x.id === stockId)) } });
       showToast("Stok makinası düzenlendi.");
@@ -232,6 +240,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
+          {form.uretimTarihi && (
+            <div data-testid="stok-uretim-tarihi" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginBottom: 12 }}>
+              Makinanın özgün üretim tarihi <b>{fmtTR(form.uretimTarihi)}</b>. Maliyet hesabı stoğa giriş tarihini değil bu tarihi kullanır.
+            </div>
+          )}
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="İsteğe bağlı not..."

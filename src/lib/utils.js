@@ -285,6 +285,11 @@ export const isYurtIci = (saleType) => normalizeSaleType(saleType).endsWith("Yur
 // sızmaz. Kaydetmede alan temizlenir (kaynak); bu da okuma tarafı savunma katmanıdır (legacy kayıtları
 // migration'sız kapsar).
 export const faturaBedeliOf = (c) => isFaturali(c?.faturali) ? parseMoney(c?.faturaBedeli) : 0;
+// Makina satışının GERÇEK bedeli (gelir tarafının tek kuralı): fabrika satış bedeli girilmişse o, yoksa
+// geçerli fatura bedeli. Faturasız satışta fatura bedeli kasıtlı olarak gerçekten düşük tutulabildiği için
+// gelir her zaman bu bedelden okunur. Finans, aylık rapor ve makina kârlılığı (spec 0002 C2) aynı fonksiyonu
+// kullanır; aynı makina için iki ekran farklı bedel gösteremez.
+export const gercekSatisBedeli = (c) => { const f = parseMoney(c?.fabrikaSatisBedeli); return f > 0 ? f : faturaBedeliOf(c); };
 // KDV oranı zaman içinde değiştiği için (bkz. DEFAULT_KDV_RATES) tek bir sayı yerine dönemli bir
 // liste tutulur — bu fonksiyon verilen tarihte geçerli olan oranı bulur. Tarihler bu projenin var
 // olan konvansiyonuyla (Finance.jsx) düz string karşılaştırmasıyla işlenir, Date'e çevrilmez.
