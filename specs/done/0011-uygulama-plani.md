@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0011-uyari-seridi-serbest-icerik.md` (R1, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-24: S1–S10 kullanıcı tarafından onaylandı; spec R1 ile güncellendi; uygulanıyor. |
+| **Bağlı spec** | `specs/done/0011-uyari-seridi-serbest-icerik.md` (R1 plan onayıyla, R2 onay sonrası) |
+| **Durum** | Tamamlandı. 2026-09-24: S1–S10 kullanıcı tarafından onaylandı; spec R1 ve R2 ile güncellendi; kod commit `907a280` (dal `feat/0011-uyari-seridi-serbest`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0009 (commit `6a5b32f` + `5217b19`, dal `feat/0009-tasarim-sozlugu`, `main`'e alınmadı) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla

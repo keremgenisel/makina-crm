@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, plan `specs/0011-uygulama-plani.md` S1–S10 ile) |
+| **Durum** | Tamamlandı (2026-09-24; kod commit `907a280`, dal `feat/0011-uyari-seridi-serbest`; plan `specs/done/0011-uygulama-plani.md` S1–S10) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Paylaşılan tasarım sözlüğü (uyarı şeridi), sözlük belgesi |
@@ -161,10 +161,15 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 (onay sonrası): C3'e tek istisna ile kanıt eşlemesinin veri dosyasına taşınması (AC-11), `beklenen`/`onay` alanları, kalıcı sözlük notu (AC-12); analist incelemesiyle aynı revizyona AC-11b (onay biçimi) ve AC-11c (done'a taşırken `degisti` → `ayni`) eklendi. R1 plan turunda, onayla eş zamanlıydı, sayılmaz. |
+| **Düzeltme turu sayısı** | 1 | İş bir kez geri döndü: uygulama bittikten sonra 0010 taslağıyla karşılaştırmada iki çakışma bulundu (R2) ve analist incelemesi iki kural ekledi; aynı gün kapatıldı. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçekti ve hepsi 0010'u kilitliyordu: 0009'un kanıt testi eşlemeyi test dosyasında tutuyordu (her dönüşüm mevcut bir testi değiştirmek zorunda kalacaktı); ilk düzeltmedeki "her kayıt 0 fark" kuralı 0010'un yeni tasarımını engelleyecekti; sözlük notu 0010'a yasak bir sözlük değişikliği bırakıyordu. |
+| **Regresyon sayısı** | 0 | Bugünkü biçimin HTML'i değişiklik öncesiyle birebir aynı; altı çağrı iki temada önce/sonra 0 piksel fark (96 görüntü); C3 istisnası dışındaki mevcut testler değişmeden geçti. Son durum: 183 dosya, 1985 test, lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Sözlüğü bir tüketici (0010) için hazırlayan bir iş, tüketicinin spec'iyle **plan turunda**
+karşılaştırılmalı. Buradaki üç bulgunun hiçbiri 0011'in kendi kodunda değildi; hepsi 0009'dan kalan yapının sonraki işi
+nasıl kısıtladığındaydı ve ancak uygulama bittikten sonra 0010 taslağına bakınca görüldü. İkinci ders: bir koruma testini
+genişletilebilir yaparken (eşlemeyi veri dosyasına almak) onu kullanacak ilk gerçek durumu da düşünmek gerekiyor; ilk hâli
+"görünüm hep aynı kalır" varsayıyordu, oysa ilk tüketici bir yeniden tasarımdı. Üçüncüsü: "önce" HTML'ini değişiklikten
+önce teste sabitlemek, piksel karşılaştırmasından çok daha ucuz ve her test koşusunda çalışan bir görünüm koruması oldu.
