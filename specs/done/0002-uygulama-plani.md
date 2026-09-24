@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0002-makina-maliyeti-ve-karlilik.md` (R5) |
-| **Durum** | 2026-09-24: M1–M12 önerilerinin tamamı kullanıcı tarafından kabul edildi; uygulama başladı (branch `feat/0001-gider` üzerinde). |
+| **Bağlı spec** | `specs/done/0002-makina-maliyeti-ve-karlilik.md` (R5) |
+| **Durum** | Tamamlandı. 2026-09-24: M1–M12 önerileri kullanıcı tarafından kabul edildi, M13 uygulama sırasında karara bağlandı; kod ve triyaj düzeltmeleri commit `61ac0cf` (branch `feat/0001-gider`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0001 uygulandı ve triyajı kapandı (commit `565b0ff`, `7957a1f`). |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve

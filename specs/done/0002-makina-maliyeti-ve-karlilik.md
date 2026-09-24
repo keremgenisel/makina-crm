@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı |
+| **Durum** | Tamamlandı (2026-09-24, commit `61ac0cf`; plan `specs/done/0002-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Makina kârlılık görünümü, müşteri/makina detayı, Finans dönem raporu, gider verisi (0001) |
@@ -480,9 +480,13 @@ Bilinen tuzaklar:
 | Ölçüt | Değer | Not |
 |---|---|---|
 | **Spec revizyon sayısı** | 5 | R1 kur ve marj turu; R2 toplu malzeme alımı turu; R3 müşterinin gerçek maliyet tablosu (MASRAFLAR.xlsx) turu; R4 geliştirme öncesi QA boşluk analizi (30 boşluk, AC-41…AC-69). R5 ikinci QA turu (16 boşluk, AC-70…AC-76): 0001 uygulandıktan sonra iki spec'in ayrıştığı noktalar. Beşi de kod yazılmadan önce yapıldı. |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu (dört bulgu), hepsi aynı gün düzeltildi. Ayrıca kodlama sırasında spec içi bir çelişki (R17/AC-26 paralel, R17c/AC-49 sıralı havuz tüketimi) kullanıcıya soruldu, paralel seçildi (plan M13). |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dördü de gerçek: ay tablosunun ilk veri ayından başlaması (R11/R25 sessiz sıfır), çapraz testte devredilmiş kaydın yokluğu (ayrışma 0002'den önce de vardı, karar b ile sabitlendi), geri dönen stok satırının not metnine bağlılığı, bakım (yedek hesap, ölü alan, eksik key). |
+| **Regresyon sayısı** | 0 | Mevcut davranış bozulmadı. Bir test beklentisi bilinçli güncellendi (Gider Ayarları kaydı artık kaynak alanını da yazıyor). Son durum: 162 dosya, 1614 test yeşil, lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok; görsel kanıt turu plan M12 ile atlandı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Beş QA turundan geçmiş bir spec'te bile iki gereksinim birbirine ters düşebiliyor (havuz
+tüketimi paralel mi sıralı mı); plan turunda her AC çiftinin aynı algoritmayla sağlanabildiği kontrol edilmeli. Triyajın iki
+gerçek bulgusu kenar verilerden geldi: ilk üretimden önceki aylar ve devredilmiş kayıt. Çapraz testler, ekranların bilinen
+farklı davrandığı veri türlerini (ikinci el, geri dönen stok, yürürlük öncesi) bilinçli olarak içermeli; aksi hâlde "aynı rakam"
+güvencesi eksik okunur. Görsel kanıt maddesi (DoD) kullanıcı kararıyla atlandı.
