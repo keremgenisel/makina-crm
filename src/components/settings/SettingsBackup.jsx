@@ -12,6 +12,9 @@ export const SettingsBackup = ({
   // Gider kaydı (spec 0001): ham diziler (çöptekiler dahil); paket yalnız gider yetkisiyle görünür (R11).
   giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null, giderTurleri = [], setGiderTurleri = null,
   tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, giderYetki = true,
+  // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
+  // (yalnız izin) beslenir. Perde inikken gider paketi listede görünmez ama tam geri yüklemede yüklenir (K3).
+  giderVeriYetki = giderYetki,
   setCustomers, setServices, setDealers, setStock, setCustomModels, setStandardModels, setFactory, setKalipDefs, setPartTypeDefs, setCalisanlar, setNotes, setParts, setPartSales, setPayments,
   setTeklifler = null, setFaturalar = null, setPartStock = null, setPartStockLog = null, setUretimFormlari = null,
   version, appSettings, setAppSettings, flash,
@@ -135,6 +138,9 @@ export const SettingsBackup = ({
     { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
   ];
   const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
+  // Perde inik + izin var: gizli gider paketi yalnız görünen bütün paketler seçiliyken (tam geri yükleme) yüklenir;
+  // kısmi geri yükleme kullanıcının göremediği gider verisine dokunmaz.
+  const giderGizliPaket = giderVeriYetki && !giderYetki;
   const paketToggle = (id) => setRestorePaketler(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -162,7 +168,8 @@ export const SettingsBackup = ({
   };
 
   const applyRestore = async () => {
-    const sec = (id) => restorePaketler.has(id);
+    const tamGeriYukleme = RESTORE_PAKETLERI.every(pk => restorePaketler.has(pk.id));
+    const sec = (id) => (id === "gider" && giderGizliPaket ? tamGeriYukleme : restorePaketler.has(id));
     // KDV oranı tarihe bağlı dönemler hâline gelmeden önce kaydedilmiş eski yedeklerde Kalan Borç
     // kuruş artıkları veya (eski sabit orana göre girilmiş ödemelerden kalma) negatif "fazla ödeme"
     // bakiyeleri taşıyabilir — geri yüklerken bunlar da App.jsx'in normal yükleme akışındaki gibi temizlenir.
