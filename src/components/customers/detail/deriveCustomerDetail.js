@@ -3,7 +3,7 @@
 // böylece bağımsız birim-test edilebilir. Bileşen bunu useMemo içinde tek satırla çağırır.
 import {
   normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, calcCiro, isServisBorcluMu,
-  isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, isPartSaleBorcluMu,
+  isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, partSaleMusteriBorcuMu,
   sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
@@ -192,7 +192,8 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
           ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, s.date, kdvRates));
         }
       });
-      (partSales || []).filter(p => p.customerId === detailView.id && isPartSaleBorcluMu(p)).forEach(p => {
+      // Spec 0007 (K4): bayinin / dış firmanın sattığı kalıp müşterinin borcu değildir (kalipBorcTarafi).
+      (partSales || []).filter(p => p.customerId === detailView.id && partSaleMusteriBorcuMu(p, factoryName)).forEach(p => {
         const tutar = parseMoney(p.ucret);
         ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates));
       });
@@ -249,7 +250,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
     const detailBorcFromPrevOwner = !!(detailView && detailLastTransferDate && (
       detailKalanBorc > 0 ||
       services.some(s => s.customerId === detailView.id && isServisBorcluMu(s, factoryName) && s.date && s.date < detailLastTransferDate) ||
-      (partSales || []).some(p => p.customerId === detailView.id && isPartSaleBorcluMu(p) && p.tarih && p.tarih < detailLastTransferDate)
+      (partSales || []).some(p => p.customerId === detailView.id && partSaleMusteriBorcuMu(p, factoryName) && p.tarih && p.tarih < detailLastTransferDate)
     ));
 
     return {

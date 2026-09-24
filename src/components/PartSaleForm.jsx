@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields, Warn } from "./ui";
+import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
@@ -96,6 +97,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
             )}
           </div>
         )}
+        {/* Spec 0007 R14 (K7): müşterisiz kayıt yapılmaz, neden gösterilir (bayi modalından açıldığında müşteri boş gelir). */}
+        {!selectedCust && <Warn>{KALIP_MUSTERI_SECILMEDI}</Warn>}
       </Field>
 
       {/* Veriliş tarihi ile para birimi yan yana. */}
@@ -113,8 +116,9 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         </Field>
       </div>
 
-      {/* Satış yapan firma ile fatura tipi yan yana. */}
-      {selectedCust && (
+      {/* Satış yapan firma ile fatura tipi yan yana. Bayi modalından açıldığında (spec 0007) aracı bayi müşteri seçilmeden
+          de görünür ki ön seçim belli olsun. */}
+      {(selectedCust || (form.satisFirma && form.satisFirma !== factoryName)) && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Satış Yapan Firma">
             <Select value={form.satisFirma || factoryName} onChange={e => {

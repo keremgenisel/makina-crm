@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isFaturali, isYurtIci, getKdvRateForDate, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, isPartSaleBorcluMu, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isFaturali, isYurtIci, getKdvRateForDate, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, kalipBorcTarafi, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
@@ -309,7 +309,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       const toplam = servisVar + parcaVar;
       alacak[cur(s.currency)] += toplam + calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
     });
-    partSales.filter(isPartSaleBorcluMu).forEach(p => {
+    // Spec 0007 (K2): ücretsiz kalıp hiçbir yerde borç değildir; toplam, borçlu tarafından bağımsız (atıf tutarı değiştirmez).
+    partSales.filter(p => kalipBorcTarafi(p, factoryName)).forEach(p => {
       alacak[cur(p.currency)] += parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     });
     // Ödenmemiş yedek parça (kargo ve fabrika teslim) satışları — bayi + müşteri (alacak anlık bakiye: tarih filtresiz).

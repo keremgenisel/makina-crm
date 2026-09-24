@@ -2,10 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { uid, bumpId, today, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, isPartSaleBorcluMu, parcaAdi, aramaNormalize } from "../lib/utils";
+import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
+import { PartSaleForm } from "./PartSaleForm";
+import { kalipSatisiEkle } from "../lib/kalipSatisi";
 import { yeniYedekParcaSatisCoklu } from "../lib/yedekParcaSatis";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayininMi, bayiDosyasiMi } from "../lib/bayiKaskad";
@@ -16,8 +18,22 @@ import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
-  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null }) => {
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null, kalipDefs = [] }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
+  // Spec 0007 R1/R11: "Bayi Aracılığıyla Kalıp Satışı" mevcut Extra Kalıp ekleme iznine bağlı (yeni izin yok).
+  const canCust = makeCanDo(serverPermissions, "customerActions");
+  const [kalipForm, setKalipForm] = useState(null);
+  // Aynı Extra Kalıp formu; satış yapan firma bu bayi ön seçili, müşteri/makina formda seçilir (bayi alıcı değil, aracı).
+  const openBayiKalipSatisi = (dealer) => setKalipForm({ customerId: "", kaliplar: [], currency: "TRY", tarih: today(), odendi: false,
+    faturaTipi: "Faturalı Yurtiçi", satisFirma: dealer.name, satisFirmaAd: "", satisFirmaYetkili: "", satisFirmaTel: "", satisFirmaUlke: "", satisFirmaSehir: "" });
+  const saveBayiKalipSatisi = () => {
+    // Tek kayıt yolu (spec 0007 C2): müşteri detayındaki formla aynı kalipSatisiEkle.
+    const r = kalipSatisiEkle(kalipForm, { customers, setPartSales, setCustomers, uid, simdi: simdiYerel, bugun: today(), kkAyar: krediKartiKomisyonlari, kdvRates });
+    if (r.hata) { showToast(r.hata, "err"); return; }
+    logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: r.kayitlar[0]?.id, entityName: r.musteri.name, detail: { adet: r.kayitlar.length, satisFirma: kalipForm.satisFirma } });
+    showToast(`${r.kayitlar.length > 1 ? `${r.kayitlar.length} kalıp` : "Kalıp"} ${kalipForm.satisFirma} aracılığıyla ${r.musteri.name} müşterisine kaydedildi.`);
+    setKalipForm(null);
+  };
   const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu bayi alıcı seçili)
   const openAddYedekParca = (dealer) => {
     if (!canDo("dealer_yedek_parca_add")) return;
@@ -83,9 +99,12 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       m.ypRecords.push(s);
     });
     // Bayinin/firmanın sattığı (satisFirma) ödenmemiş Extra Kalıp bedeli de o firmanın borcu.
+    // Spec 0007: tek kaynak kalipBorcTarafi. Yalnız bayi tarafı buraya düşer; "Diğer" dış firma bayi değildir (Anasayfa
+    // Borçlu Bayi/Servis ve aylık raporda görünür), fabrika/boş satış müşterinin borcudur, ücretsiz kalıp borç değildir.
     (partSales || []).forEach(p => {
-      if (p.tur !== "Kalıp" || !isPartSaleBorcluMu(p) || !p.satisFirma || p.satisFirma === factoryName) return;
-      const m = ensure(p.satisFirma);
+      const taraf = kalipBorcTarafi(p, factoryName);
+      if (taraf?.tip !== "bayi") return;
+      const m = ensure(taraf.ad);
       const curK = p.currency || "TRY";
       const tutar = parseMoney(p.ucret);
       const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
@@ -417,7 +436,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       {/* Bayi detay görüntüleme */}
       {detailView && (
         <Modal title={detailView.name || "Bayi"} onClose={() => setDetailView(null)}
-          maxWidth={(!detailView._isFactory && (detailView.anlasmaliServisMi || dealerYedekParca.length > 0 || dealerKaliplar.length > 0)) ? 1040 : 520}>
+          // Spec 0007 R16 (AC-19/20): dar varyant dört eylem butonunu (etiketler kısaltılmadan) tek satırda taşıyacak genişlikte.
+          maxWidth={(!detailView._isFactory && (detailView.anlasmaliServisMi || dealerYedekParca.length > 0 || dealerKaliplar.length > 0)) ? 1040 : 760}>
           {dealerDetailLock ? (
             <LockConflict lockedBy={dealerDetailLock.lockedBy} lockedAt={dealerDetailLock.lockedAt}
               onForce={forceDealerDetailLock} onCancel={() => setDetailView(null)} />
@@ -729,9 +749,13 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               yedekKargolar={dealerYedekKargoDosyaHedefleri}
               odak={dosyaOdak} onOdakChange={setDosyaOdak} />
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+          {/* Pencere modaldan darsa modal da daralır: satır taşıp ilk butonu kırpmak yerine alta kayar, hiza sağda kalır. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             {!detailView._isFactory && canDo("dealer_yedek_parca_add") && setYedekParcaSatislar && (
-              <Btn variant="ghost" onClick={() => openAddYedekParca(detailView)}><Icon name="parts" size={14} /> Yedek Parça Satışı</Btn>
+              <Btn variant="ghost" onClick={() => openAddYedekParca(detailView)} title="Bayi ALICI: yedek parçayı bu bayiye satarsınız"><Icon name="parts" size={14} /> Yedek Parça Satışı</Btn>
+            )}
+            {!detailView._isFactory && canCust("cust_kalip_add") && setPartSales && setCustomers && (
+              <Btn variant="ghost" onClick={() => openBayiKalipSatisi(detailView)} title="Bayi ARACI: kalıp müşterinin makinasına yazılır, fatura ve borç bayide"><Icon name="plus" size={14} /> Bayi Aracılığıyla Kalıp Satışı</Btn>
             )}
             {!detailView._isFactory && (
               <Btn variant="ghost" onClick={() => openMailDealer(detailView)}><Icon name="mail" size={14} /> E-posta Gönder</Btn>
@@ -740,6 +764,12 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           </div>
           </>)}
         </Modal>
+      )}
+
+      {kalipForm && (
+        <PartSaleForm title={`Bayi Aracılığıyla Kalıp Satışı · ${kalipForm.satisFirma}`} form={kalipForm} setForm={setKalipForm} customers={customers}
+          kalipDefs={kalipDefs} kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} dealers={dealers} calisanlar={calisanlar}
+          factory={factory} geoData={geoData} loadingGeo={loadingGeo} onSave={saveBayiKalipSatisi} onCancel={() => setKalipForm(null)} />
       )}
 
       {ypForm && (

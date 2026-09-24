@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 // çoklu kullanımda güvenilmez olduğu için ayrım burada, yapılandırmada yapılır.
 const ELECTRON_TESTLERI = [
   "tests/db-electron.test.js", "tests/server-security.test.js", "tests/image-optimize.test.js",
-  "tests/security-flush.test.js", "tests/setup-admin-lockout.test.js",
+  "tests/security-flush.test.js", "tests/setup-admin-lockout.test.js", "tests/bayi-modal-layout.test.js",
 ];
 const electronModu = process.env.VITEST_ELECTRON || "";
 const testAyari = {

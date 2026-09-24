@@ -5,7 +5,7 @@
 import {
   parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
-  isPartSaleBorcluMu, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
+  kalipBorcTarafi, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
   normalizeSaleType, tahsilatTarihiOf,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
@@ -407,11 +407,18 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     ekleAlacak(s.customerId, s.currency, kdvli, "Servis");
     yasEkle(s.customerId, s.date, s.currency, kdvli);
   });
-  canliKalipSatislari.filter(isPartSaleBorcluMu).forEach(p => {
+  // Spec 0007: borçlu tarafı tek kaynaktan (kalipBorcTarafi). Bayi → yedek parça bayi borcuyla aynı "b:" satırı (adla
+  // bulunursa); "Diğer" veya bulunamayan ad → "x:" satırı (yedek parça dış firma anahtarıyla aynı). Toplam alacak değişmez.
+  canliKalipSatislari.forEach(p => {
+    const taraf = kalipBorcTarafi(p, factoryName);
+    if (!taraf) return;
     const kdvli = parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
     paraEkle(alacak, p.currency, kdvli);
-    ekleAlacak(p.customerId, p.currency, kdvli, "Extra kalıp");
-    yasEkle(p.customerId, p.tarih, p.currency, kdvli);
+    if (taraf.tip === "musteri") { ekleAlacak(p.customerId, p.currency, kdvli, "Extra kalıp"); yasEkle(p.customerId, p.tarih, p.currency, kdvli); return; }
+    const bayi = taraf.tip === "bayi" ? (dealers || []).find(d => !d.deletedAt && d.name === taraf.ad) : null;
+    const key = bayi ? "b:" + bayi.id : "x:" + taraf.ad;
+    ekleAlacakAd(key, bayi ? bayi.name : taraf.ad, p.currency, kdvli, "Extra kalıp");
+    yasEkle(key, p.tarih, p.currency, kdvli);
   });
   // Ödenmemiş yedek parça (kargo) satışları — müşteri alıcı kendi firma satırına birleşir; bayi/dış firma ayrı satır.
   // Çek ile ödenip henüz tahsil edilmemiş olanlar da borç (satisTahsilEdildi false).

@@ -654,6 +654,22 @@ export const tahsilatTarihiOf = (rec, satisTarihi) => {
 // Extra Kalıp satışı borçlu mu (ödenmemiş VEYA çek henüz tahsil edilmemiş)
 /** @param {import("../types").PartSale} ps @returns {boolean} */
 export const isPartSaleBorcluMu = (ps) => !satisTahsilEdildi(ps);
+// ── Extra Kalıp borç atıfı (spec 0007, plan K1–K5) ── TEK KAYNAK: Müşteriler, Anasayfa, Bayiler, aylık rapor ve
+// müşteri detayı bunu kullanır. Servisteki emsal: isParcaBorcluAnlasmaliFirmaya (Seçenek A). Satış yapan firma fabrika
+// değilse ödenmemiş bedelin borçlusu o firmadır, müşteri değil.
+// Fabrika = boş, güncel fabrika adı veya eski varsayılan "Altuntaş Makina" (isAltuntasServisi ile aynı kural, K1).
+export const fabrikaSatisiMi = (ad, factoryName = "Altuntaş Makina") => !ad || ad === factoryName || ad === "Altuntaş Makina";
+// Dönüş: null (borç yok: silinmiş, tahsil edilmiş, ücretsiz) | { tip:"musteri", customerId } | { tip:"bayi", ad }
+// | { tip:"disFirma", ad }. Ücretsiz kalıp hiçbir yerde borç üretmez (K2). Yalnız Kalıp türü atfedilir; diğer türler
+// (eski Evrak "Parça" kayıtları) bugünkü gibi müşteride kalır (K5).
+export const kalipBorcTarafi = (ps, factoryName = "Altuntaş Makina") => {
+  if (!ps || ps.deletedAt || ps.ucretsizMi || !isPartSaleBorcluMu(ps)) return null;
+  if (ps.tur !== "Kalıp" || fabrikaSatisiMi(ps.satisFirma, factoryName)) return { tip: "musteri", customerId: ps.customerId };
+  if (partSaleDisFirmaMi(ps)) return { tip: "disFirma", ad: satisFirmaGoster(ps) };
+  return { tip: "bayi", ad: ps.satisFirma };
+};
+// Müşterinin kendi borcu olan kalıp/partSales kaydı mı (atıftan sonra).
+export const partSaleMusteriBorcuMu = (ps, factoryName = "Altuntaş Makina") => kalipBorcTarafi(ps, factoryName)?.tip === "musteri";
 // Yedek parça (kargo) satışı — parça bedeli (miktar × birim fiyat; KDV hariç) ve borçlu mu
 export const yedekParcaBedeli = (s) => (parseInt(s?.miktar) || 0) * parseMoney(s?.birimFiyat);
 export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && !satisTahsilEdildi(s);
@@ -706,7 +722,7 @@ export const customerHasAnyDebt = (customer, services = [], partSales = [], fact
     : parseMoney(customer.kalanBorc);
   if (kalan > 0) return true;
   if (services.some(s => s.customerId === customer.id && isServisBorcluMu(s, factoryName))) return true;
-  if (partSales.some(p => p.customerId === customer.id && isPartSaleBorcluMu(p))) return true;
+  if (partSales.some(p => p.customerId === customer.id && partSaleMusteriBorcuMu(p, factoryName))) return true; // spec 0007: bayi/dış firma satışı müşteri borcu değil
   // Müşteriye yapılan yedek parça (kargo) satışı ödenmemişse borç sayılır
   if (yedekParcaSatislar.some(s => s.aliciTipi === "musteri" && Number(s.musteriId) === customer.id && isYedekParcaBorcluMu(s))) return true;
   return false;

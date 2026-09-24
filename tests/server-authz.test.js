@@ -487,6 +487,23 @@ describe("spec 0006 C8: Evrak'tan CRM kaydı — yalnız Evrak sekmeli kullanıc
   });
 });
 
+describe("spec 0007 C6: yalnız Bayiler sekmeli kullanıcının bayi aracılığıyla kalıp satışı", () => {
+  const ESKI = { customers: [{ id: 500, name: "K", kaliplar: [] }], partSales: [] };
+  const YENI = { customers: [{ id: 500, name: "K", kaliplar: [{ ad: "H", olcu: "", partSaleId: 71 }], kalipSayisi: 1 }],
+    partSales: [{ id: 71, customerId: 500, tur: "Kalıp", ad: "H", satisFirma: "Ege Bayi" }] };
+  it("'dealers' partSales ve customers bölümlerinde", () => {
+    expect(BOLUM_SEKMELERI.partSales).toContain("dealers");
+    expect(BOLUM_SEKMELERI.customers).toContain("dealers");
+  });
+  it("cust_kalip_add'li Bayiler kullanıcısının yazımı geçer; izni yoksa ekleme reddedilir (gevşetme yok)", () => {
+    const bayici = JSON.stringify({ tabs: ["dealers"], customerActions: ["cust_kalip_add"] });
+    expect(yazmaYetkisiVar(bayici, "user", ["customers", "partSales"], ESKI, YENI).ok).toBe(true);
+    expect(eylemDenetimi(ESKI, YENI, bayici, "user").ok).toBe(true);
+    const izinsiz = JSON.stringify({ tabs: ["dealers"], customerActions: ["cust_edit"] });
+    expect(eylemDenetimi(ESKI, YENI, izinsiz, "user").ok).toBe(false);
+  });
+});
+
 describe("eylemDenetimi — eylem düzeyi (ekle/sil) yetki", () => {
   // "Müşteri ekle+düzenle var, SİLME yok"
   const kismi = JSON.stringify({ customerActions: ["cust_add", "cust_edit"] });

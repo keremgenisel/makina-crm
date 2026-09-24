@@ -35,7 +35,7 @@ import { servisPlanlandiMi } from "../../lib/servisAlarm";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
-import { kalipSatisOrtak, yeniKalipSatislari } from "../../lib/kalipSatisi";
+import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle } from "../../lib/kalipSatisi";
 import { MakinaMaliyetDetay } from "../gider/MakinaMaliyetDetay";
 import { makinaKarlilik } from "../../lib/makinaMaliyeti";
 
@@ -375,45 +375,35 @@ export const CustomerDetailModal = ({
     });
   };
   const savePartSale = () => {
+    if (!setPartSales) return;
+    const kkAyar = appSettings?.krediKartiKomisyonlari;
+    if (!pkForm.id) {
+      // Ekleme ortak yoldan (spec 0006 C3 / 0007 C2): bayi modalındaki "Bayi Aracılığıyla Kalıp Satışı" ile aynı.
+      const r = kalipSatisiEkle(pkForm, { customers, setPartSales, setCustomers, uid, simdi: simdiYerel, bugun: today(), kkAyar, kdvRates });
+      if (r.hata) { showToast(r.hata, "err"); return; }
+      logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: r.kayitlar[0]?.id, entityName: r.musteri.name, detail: { adet: r.kayitlar.length } });
+      showToast(r.kayitlar.length > 1 ? `${r.kayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
+      pkDraft.clearDraft();
+      setPkForm(null);
+      return;
+    }
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
     const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
-    if (!selectedCust || !setPartSales || satirlar.length === 0) return;
+    if (!selectedCust || satirlar.length === 0) return;
     // Ortak alanlar tek kaynaktan (spec 0006 C3): Evrak'tan üretilen Extra Kalıp ile aynı kayıt.
     const ortak = kalipSatisOrtak(pkForm, selectedCust.id, today());
-    // Kredi kartı: kalem fiyatından {ucret, kartKomisyonu} üret. Komisyon müşteriye YANSITILDIYSA (kkYansit)
-    // ucret = KDV matrahı (kalem+komisyon); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
-    // Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
-    const kkAyar = appSettings?.krediKartiKomisyonlari;
-    const kkKdvOran = calcKDV(pkForm.faturaTipi, 100, ortak.tarih, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
-    const kkBazTarih = pkForm.kartTarihi || ortak.tarih; // blokaj kart işlem tarihinden (boşsa satış tarihi); KDV oranı satış tarihinde kalır
-    const kalipKart = (kalemFiyat) => {
-      const kalem = parseMoney(kalemFiyat);
-      if (pkForm.yontem !== "Kredi Kartı" || !pkForm.taksitSayisi) return { ucret: kalem, kartKomisyonu: null };
-      if (pkForm.kkYansit) {
-        const a = kartYansitmaAyrim(kalem, pkForm.taksitSayisi, kkAyar, kkKdvOran, kkBazTarih);
-        if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, pkForm.taksitSayisi, kkAyar, kkBazTarih, true) };
-      }
-      return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(pkForm.faturaTipi, kalem, ortak.tarih, kdvRates), pkForm.taksitSayisi, kkAyar, kkBazTarih, false) };
-    };
-    if (pkForm.id) {
-      const k = satirlar[0];
-      const kk0 = kalipKart(k.fiyat);
-      const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kk0.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kk0.kartKomisyonu };
-      // Panoya sonradan gönderilen (veya eski) kalıpta olusturmaZamani olmayabilir; eksikse şimdi damgala
-      // ki pano sıralamasında "en son eklenen üstte" doğru çalışsın (yoksa T00:00'a düşüp altta kalır).
-      setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() } : x));
-      setCustomers(p => p.map(c => c.id === selectedCust.id
-        ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
-        : c));
-      logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad, onceki: snapshotOnceki(partSales.find(x => x.id === pkForm.id)) } });
-      showToast("Kayıt güncellendi.");
-    } else {
-      // Kayıt + müşterinin kalıp listesine ekleme ortak yoldan (spec 0006 C3).
-      const yeniKayitlar = yeniKalipSatislari(ortak, satirlar.map(k => { const kkX = kalipKart(k.fiyat); return { ad: k.ad, olcu: k.olcu, ucret: kkX.ucret, uretimFormGonder: k.uretimFormGonder, kartKomisyonu: kkX.kartKomisyonu }; }),
-        { setPartSales, setCustomers, uid, simdi: simdiYerel });
-      logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: yeniKayitlar[0]?.id, entityName: selectedCust.name, detail: { adet: yeniKayitlar.length } });
-      showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
-    }
+    const kalipKart = kalipKartHesabi(pkForm, ortak.tarih, kkAyar, kdvRates);
+    const k = satirlar[0];
+    const kk0 = kalipKart(k.fiyat);
+    const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kk0.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kk0.kartKomisyonu };
+    // Panoya sonradan gönderilen (veya eski) kalıpta olusturmaZamani olmayabilir; eksikse şimdi damgala
+    // ki pano sıralamasında "en son eklenen üstte" doğru çalışsın (yoksa T00:00'a düşüp altta kalır).
+    setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() } : x));
+    setCustomers(p => p.map(c => c.id === selectedCust.id
+      ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
+      : c));
+    logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad, onceki: snapshotOnceki(partSales.find(x => x.id === pkForm.id)) } });
+    showToast("Kayıt güncellendi.");
     pkDraft.clearDraft();
     setPkForm(null);
   };

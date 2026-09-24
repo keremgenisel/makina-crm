@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
@@ -85,7 +85,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     const musteriKalan = (c) => Math.max(parseMoney(c.kalanBorc), calcKalanBorc(c, payments, kdvRates));
     const borcluMusteriler = customers.filter(c => musteriKalan(c) > 0);
     const borcluServisler = services.filter(s => isServisBorcluMu(s, factoryName));
-    const borcluKaliplar = partSales.filter(isPartSaleBorcluMu);
+    // Spec 0007: bayinin / dış firmanın sattığı ödenmemiş kalıp müşterinin değil o firmanın borcu (kalipBorcTarafi).
+    const borcluKaliplar = partSales.filter(p => partSaleMusteriBorcuMu(p, factoryName));
     // Müşteriye yapılan yedek parça (kargo VEYA fabrika teslim) satışı ödenmemişse müşteri borcudur
     // (alıcı bayi olanlar Borçlu Bayi/Servis kutusuna gider, burada değil).
     const borcluYedekParcalar = (yedekParcaSatislar || []).filter(s => s.aliciTipi === "musteri" && isYedekParcaBorcluMu(s));
@@ -125,10 +126,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       m.yedekler.push(s);
     });
     partSales.forEach(p => {
-      if (p.tur !== "Kalıp" || !isPartSaleBorcluMu(p)) return;
-      const firma = p.satisFirma === "Diğer" ? (p.satisFirmaAd || "Diğer") : p.satisFirma;
-      if (!firma || firma === factoryName) return; // fabrika satışı → müşteri borcu, bayi borcu değil
-      const m = ensureBayi(firma);
+      const taraf = kalipBorcTarafi(p, factoryName); // spec 0007: tek kaynak (fabrika/boş → müşteri, ücretsiz → borç yok)
+      if (!taraf || taraf.tip === "musteri") return;
+      const m = ensureBayi(taraf.ad);
       const curK = p.currency || "TRY";
       m.byCur[curK] = (m.byCur[curK] || 0) + parseMoney(p.ucret);
       m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(p.faturaTipi, parseMoney(p.ucret), p.tarih, kdvRates);

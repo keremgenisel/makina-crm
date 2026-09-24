@@ -79,6 +79,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
   // Spec 0006 C8: yalnız Evrak sekmeli kullanıcı (CRM'e Kaydet): gereken eylem izinleriyle / kalıp izni olmadan.
   dbmod.createUser("evrakci",     bcrypt.hashSync("evrak123", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: ["yedek_parca_add"] }));
+  // Spec 0007 C6: yalnız Bayiler sekmeli kullanıcı (Bayi Aracılığıyla Kalıp Satışı).
+  dbmod.createUser("bayiKalipci", bcrypt.hashSync("bayi123", 10), "user", JSON.stringify({ tabs: ["dealers"], customerActions: ["cust_kalip_add"] }));
   dbmod.createUser("evrakKalipsiz", bcrypt.hashSync("evrak456", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_edit"], stockActions: ["yedek_parca_add"] }));
 
   // Başlangıç verisi
@@ -373,6 +375,13 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   eA = await gUst(evrakTok);
   check("evrak (spec 0006 AC-33): yalnız Evrak sekmeli, izinli kullanıcının yedek parça + Extra Kalıp + stok yazımı → 200",
     (await postData(evrakYazimi(eA), eA.dataVersion, evrakTok)).status === 200);
+  // Spec 0007 C6: Bayiler sekmeli kullanıcı bayinin aracılığıyla Extra Kalıp yazar (partSales + müşterinin kalıp listesi).
+  const bkTok = (await login("bayiKalipci", "bayi123")).body.token;
+  const bkA = await gUst(bkTok);
+  check("bayi kalıp (spec 0007 C6): yalnız Bayiler sekmeli, cust_kalip_add'li kullanıcının Extra Kalıp yazımı → 200",
+    (await postData({ ...bkA, dataVersion: undefined,
+      customers: bkA.customers.map(c => (c.id === 9500 ? { ...c, kaliplar: [...(c.kaliplar || []), { ad: "Köfte", olcu: "", partSaleId: 9520 }], kalipSayisi: (c.kaliplar || []).length + 1 } : c)),
+      partSales: [...(bkA.partSales || []), { id: 9520, customerId: 9500, tur: "Kalıp", ad: "Köfte", ucret: 500, satisFirma: "Ege Bayi" }] }, bkA.dataVersion, bkTok)).status === 200);
   const eSon = await gUst(adminTok);
   check("evrak (spec 0006): üretilen kayıtlar kalıcı (belge bağlarıyla)",
     eSon.yedekParcaSatislar.some(x => x.id === 9511 && x.teklifId === 9599 && x.teklifKalemId === "p1") && eSon.partSales.some(x => x.id === 9510 && x.teklifKalemId === "k1")

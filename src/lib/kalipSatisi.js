@@ -1,3 +1,5 @@
+import { parseMoney, calcKDV } from "./utils";
+import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 // Extra Kalıp satışı ortak kayıt yolu (spec 0006 C3). Müşteri detayındaki Extra Kalıp formu ve Evrak'tan
 // üretim AYNI alanları üretir; iki yol ayrışmasın diye kayıt kuruluşu burada tek kaynaktır.
 
@@ -49,4 +51,38 @@ export const yeniKalipSatislari = (ortak, kalemler, { setPartSales, setCustomers
     ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
     : c));
   return yeniKayitlar;
+};
+
+// Kredi kartı: kalem fiyatından {ucret, kartKomisyonu} üret. Komisyon müşteriye YANSITILDIYSA (kkYansit)
+// ucret = KDV matrahı (kalem+komisyon); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
+// Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
+export const kalipKartHesabi = (f, tarih, kkAyar, kdvRates) => {
+  const kkKdvOran = calcKDV(f.faturaTipi, 100, tarih, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+  const kkBazTarih = f.kartTarihi || tarih; // blokaj kart işlem tarihinden (boşsa satış tarihi); KDV oranı satış tarihinde kalır
+  return (kalemFiyat) => {
+    const kalem = parseMoney(kalemFiyat);
+    if (f.yontem !== "Kredi Kartı" || !f.taksitSayisi) return { ucret: kalem, kartKomisyonu: null };
+    if (f.kkYansit) {
+      const a = kartYansitmaAyrim(kalem, f.taksitSayisi, kkAyar, kkKdvOran, kkBazTarih);
+      if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, f.taksitSayisi, kkAyar, kkBazTarih, true) };
+    }
+    return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(f.faturaTipi, kalem, tarih, kdvRates), f.taksitSayisi, kkAyar, kkBazTarih, false) };
+  };
+};
+
+export const KALIP_MUSTERI_SECILMEDI = "Kalıbın gideceği müşteriyi ve makinayı seçin.";
+
+// Extra Kalıp EKLEME (spec 0007 C2, plan K6): müşteri detayındaki form ve bayi modalı aynı yolu çağırır.
+// Doğrulama (müşteri, en az bir kalıp) + kredi kartı + ortak alanlar + kayıt ve müşterinin kalıp listesi.
+// Dönüş: { ok, kayitlar, musteri } | { hata }.
+export const kalipSatisiEkle = (f, { customers = [], setPartSales, setCustomers, uid, simdi, bugun, kkAyar = null, kdvRates }) => {
+  const musteri = customers.find(c => c.id === Number(f.customerId));
+  if (!musteri) return { hata: KALIP_MUSTERI_SECILMEDI };
+  const satirlar = (f.kaliplar || []).filter(k => k.ad);
+  if (!satirlar.length) return { hata: "En az bir kalıp ekleyin." };
+  const ortak = kalipSatisOrtak(f, musteri.id, bugun);
+  const kalipKart = kalipKartHesabi(f, ortak.tarih, kkAyar, kdvRates);
+  const kayitlar = yeniKalipSatislari(ortak, satirlar.map(k => { const kk = kalipKart(k.fiyat); return { ad: k.ad, olcu: k.olcu, ucret: kk.ucret, uretimFormGonder: k.uretimFormGonder, kartKomisyonu: kk.kartKomisyonu }; }),
+    { setPartSales, setCustomers, uid, simdi });
+  return { ok: true, kayitlar, musteri };
 };

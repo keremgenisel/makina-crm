@@ -81,7 +81,8 @@ const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "
 const BOLUM_SEKMELERI = {
   customers:      ["customers", "dealers", "stock", "settings", "evrak"],
   services:       ["customers", "dealers", "settings", "servis"],
-  partSales:      ["customers", "stock", "settings", "servis", "evrak"],
+  // "dealers" (spec 0007 C6): bayi modalındaki "Bayi Aracılığıyla Kalıp Satışı" Extra Kalıp yazar; cust_kalip_add aynen aranır.
+  partSales:      ["customers", "stock", "settings", "servis", "evrak", "dealers"],
   payments:       ["customers", "settings"],
   gorusmeler:     ["customers", "dashboard", "settings"],
   dosyalar:       ["customers", "dealers", "settings", "servis"],
