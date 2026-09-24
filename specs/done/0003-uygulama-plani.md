@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0003-odeme-hatirlaticisi.md` (R1, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-24: H1–H12 önerilerinin tamamı kullanıcı tarafından kabul edildi (H11 gereği spec de onaylandı); uygulama başladı (branch `feat/0001-gider`). |
+| **Bağlı spec** | `specs/done/0003-odeme-hatirlaticisi.md` (R1, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-24: H1–H12 önerileri kullanıcı tarafından kabul edildi (H11 gereği spec de onaylandı); kod ve triyaj düzeltmeleri commit `6085b01` (branch `feat/0001-gider`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0001 uygulandı (commit `565b0ff`, `7957a1f`). |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve

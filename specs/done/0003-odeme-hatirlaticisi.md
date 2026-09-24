@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, uygulama planı `specs/0003-uygulama-plani.md` onayıyla, H11) |
+| **Durum** | Tamamlandı (2026-09-24, commit `6085b01`; plan `specs/done/0003-uygulama-plani.md`, onay H11 ile plan onayıyla) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Anasayfa (yeni kart), Giderler ekranı (vurgu ve liste), Ayarlar (eşik gün) |
@@ -203,10 +203,15 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | Onaydan (plan onayıyla, H11) sonra Requirements, Constraints ve AC değişmedi. Onay öncesi R1 QA turu 18 açık noktayı karara bağlamıştı; sayaç onay sonrasını ölçer. |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu (dört bulgu), aynı gün düzeltildi. |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dördü de gerçek: boş ayda Giderler'den hatırlatma süzgecine ulaşılamaması (planda "bilinen sınır" diye geçiştirilmişti), CI'da (UTC) hiçbir şey kanıtlamayan saat dilimi testi, Anasayfa "Ödendi" düğmesinin durumu çevirmesi, bakım (ölü alan, sıra yorumu). |
+| **Regresyon sayısı** | 0 | Mevcut davranış bozulmadı. Bir test beklentisi bilinçli güncellendi (Gider Ayarları kaydı artık eşik alanını da yazıyor). Son durum: 164 dosya, 1662 test yeşil (yerel ve TZ=UTC), lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok; görsel kanıt turu plan H12 ile atlandı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Planda "bilinen sınır" diye yazılan bir kısıt, gereksinimin (R8) açıkça istediği bir şeyi
+engelliyorsa sınır değil hatadır; triyaj onu ilk bulguda yakaladı. Saat dilimine duyarlı testler saat dilimini kendileri
+sabitlemeli ve "yanlış" uygulamayı (burada `today()`) ayırt ettiklerini açıkça doğrulamalı; aksi hâlde geliştiricinin
+makinasında geçen test CI'da hiçbir şey kanıtlamaz. Plan turu, uygulamanın genelinde yıllardır duran bir hatayı (`today()`
+UTC) ortaya çıkardı; bu iş kapsamında yalnız yeni kod düzeltildi, genel düzeltme ayrı iş olarak açık. Görsel kanıt maddesi
+(DoD) kullanıcı kararıyla atlandı.
