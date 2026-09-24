@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DEFAULT_TRANSLATIONS, DEFAULT_FATURA_TRANSLATIONS } from "../../lib/printTemplates";
 import { DEFAULT_SERVIS_TRANSLATIONS, DEFAULT_MAKINA_TRANSLATIONS, DEFAULT_SANDIK_TRANSLATIONS } from "../../lib/printTemplates";
 import { Btn, Icon } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 // Teklif ve Proforma aynı yerleşimi paylaşır ama artık AYRI düzenlenir (gen-crm örneği: "belge
 // belge olsun"). Ortak alanlar tek yerde tanımlanır, her belgenin kendi namespace'i (ns) altında
@@ -360,7 +360,7 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
   const tdStyle = { padding: "6px 8px", verticalAlign: "top", borderBottom: "1px solid var(--n150, #f1f5f9)" };
 
   return (
-    <Section title="Çeviriler" icon="settings">
+    <KartBolum title="Çeviriler" icon="settings">
       <div className="section-desc">
         Teklif, Proforma, Servis Formu ve Makina Raporu baskılarındaki etiketleri özelleştirin. Türkçe (TR) ve İngilizce (EN) ayrı ayrı düzenlenir.
       </div>
@@ -449,6 +449,6 @@ export const SettingsTranslations = ({ appSettings, setAppSettings, flash }) => 
         <Btn variant="ghost" onClick={reset}><Icon name="trash" size={13} /> Varsayılana Sıfırla</Btn>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
-    </Section>
+    </KartBolum>
   );
 };

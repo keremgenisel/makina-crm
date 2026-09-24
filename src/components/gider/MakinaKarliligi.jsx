@@ -3,14 +3,13 @@ import { fmtTR, fmtCur } from "../../lib/utils";
 import { karlilikOzeti, makinaKarlilik, marjBicim, carpanBicim } from "../../lib/makinaMaliyeti";
 import { Modal } from "../ui";
 import { tl2 } from "./GiderAlanlari";
+import { KartBolum } from "../tasarim";
 import { StatKart, Rozet } from "./DonemRaporu";
 import { MakinaMaliyetDetay, MaliyetNotlari } from "./MakinaMaliyetDetay";
 import { FiyatOnerisi } from "./FiyatOnerisi";
 
 // Giderler › Makina Kârlılığı (spec 0002 R7, R26). Salt görünüm: rakamlar karlilikOzeti'nden gelir; ağır
 // hesap (hesaplaMakinaMaliyetleri) App'te bir kez yapılıp buraya iner (C9).
-const kart = { background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: 18 };
-const baslik = (t, alt) => (<div style={{ marginBottom: 10 }}><div style={{ fontSize: 15, fontWeight: 700 }}>{t}</div>{alt && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{alt}</div>}</div>);
 const ozetSatir = (etiket, deger, alt, testId) => (
   <div data-testid={testId} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13 }}>
     <span>{etiket}{alt && <span style={{ display: "block", fontSize: 11.5, color: "var(--n500, #64748b)" }}>{alt}</span>}</span>
@@ -28,10 +27,10 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="makina-karliligi">
       {oz.bos ? (
-        <div style={{ ...kart, textAlign: "center", padding: "28px 18px" }} data-testid="karlilik-bos">
+        <KartBolum varyant="kart" style={{ textAlign: "center", padding: "28px 18px" }} testId="karlilik-bos">
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Bu dönemde satılmış makina yok</div>
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Dönem, makinanın satış (kurulum) tarihine göre seçilir. Fiyat önerisi aşağıda yine kullanılabilir.</div>
-        </div>
+        </KartBolum>
       ) : (
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -39,8 +38,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
             <StatKart etiket="Toplam maliyet" deger={tl2(oz.toplam.toplamMaliyet)} alt="Üretim maliyeti + komisyon" renk="#c2410c" />
             <StatKart etiket={oz.toplam.kar < 0 ? "Dönem zararı" : "Dönem kârı"} deger={tl2(Math.abs(oz.toplam.kar))} alt={`Marj ${marjBicim(oz.toplam.marj)} · Çarpan ${carpanBicim(oz.toplam.carpan)}`} renk={oz.toplam.kar < 0 ? "#b91c1c" : "#16a34a"} />
           </div>
-          <div style={kart}>
-            {baslik("Satılan makinalar", "Satır tıklanınca maliyetin nasıl oluştuğu açılır. Marj = kâr / satış bedeli.")}
+          <KartBolum varyant="kart" baslikStili="baslik" title="Satılan makinalar" altBaslik="Satır tıklanınca maliyetin nasıl oluştuğu açılır. Marj = kâr / satış bedeli." baslikBosluk={10} baslikRengi="inherit">
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }} data-testid="karlilik-tablosu">
                 <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -71,12 +69,11 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
                 </tbody>
               </table>
             </div>
-          </div>
+          </KartBolum>
         </>
       )}
 
-      <div style={kart}>
-        {baslik("Dönem özeti satırları")}
+      <KartBolum varyant="kart" baslikStili="baslik" title="Dönem özeti satırları" baslikBosluk={10} baslikRengi="inherit">
         {ozetSatir(`Stoktaki makinaların taşıdığı maliyet (${fmtTR(oz.stokta.tarih)} itibarıyla)`, tl2(oz.stokta.maliyet), `${oz.stokta.adet} makina üretilmiş ama bu tarihte henüz satılmamış. Bilgi amaçlıdır, stok değerlemesi değildir.`, "ozet-stokta")}
         {ozetSatir("Satış bedeli girilmemiş makinalar", `${oz.bedelsiz.adet} makina · ${tl2(oz.bedelsiz.maliyet)}`, "Kâr ve marj toplamlarına girmez.", "ozet-bedelsiz")}
         {oz.kursuz.adet > 0 && ozetSatir("TL karşılığı hesaplanamayan satışlar", `${oz.kursuz.adet} makina`, "Kur kayıtlı değil ve güncel kur alınamadı; toplamlara girmez.", "ozet-kursuz")}
@@ -98,7 +95,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
           </div>
         )}
         <MaliyetNotlari kaynak={oz.kaynak} yaklasik={oz.yaklasikVar} />
-      </div>
+      </KartBolum>
 
       <FiyatOnerisi sonuc={sonuc} bugun={bugun} modeller={modeller} />
 

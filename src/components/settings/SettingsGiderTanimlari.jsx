@@ -3,8 +3,9 @@ import { uid, today } from "../../lib/utils";
 import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
-import { Section } from "./Section";
-import { TutarInput, AyInput, Segment, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, HataMetni, Ipucu, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { KartBolum } from "../tasarim";
+import { TutarInput, AyInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
@@ -116,7 +117,7 @@ export const SettingsGiderTanimlari = ({
 
   const dav = form ? davOf(form.turId) : null;
   return (
-    <Section title="Tekrarlayan Giderler" icon="gider" wide>
+    <KartBolum title="Tekrarlayan Giderler" icon="gider" wide>
       <div className="section-desc">
         Her ay tekrar eden giderler (kira, maaş, abonelik). Kalemler kendiliğinden oluşmaz; Giderler sekmesinde “tekrarlayan kalemleri oluştur” ile üretilir.
         Personel tutarı tanımda tutulmaz, kalem üretilirken çalışan kaydındaki resmi ve elden tutarlardan okunur.
@@ -233,6 +234,6 @@ export const SettingsGiderTanimlari = ({
         <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı kalıcı olarak silinecek (çöp kutusuna düşmez). Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
           onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
-    </Section>
+    </KartBolum>
   );
 };

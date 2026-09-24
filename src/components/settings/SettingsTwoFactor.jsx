@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, PasswordInput } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 // Kullanıcının kendi hesabı için iki adımlı doğrulama (TOTP / Google Authenticator) yönetimi.
 // Sunucu uçları: /auth/2fa/status | setup | enable | disable. Tümü mevcut oturum token'ıyla apiRequest.
@@ -59,7 +59,7 @@ export function SettingsTwoFactor({ flash }) {
   };
 
   return (
-    <Section title="İki Adımlı Doğrulama (2FA)" icon="lock">
+    <KartBolum title="İki Adımlı Doğrulama (2FA)" icon="lock">
       <div className="section-desc">
         Girişte şifrenize ek olarak telefonunuzdaki authenticator uygulamasından (Google Authenticator, Microsoft Authenticator vb.) 6 haneli kod istenir. Şifreniz ele geçse bile hesabınız korunur.
       </div>
@@ -113,6 +113,6 @@ export function SettingsTwoFactor({ flash }) {
       ) : (
         <Btn onClick={startSetup} disabled={busy}><Icon name="lock" size={14} /> {busy ? "..." : "Etkinleştir"}</Btn>
       )}
-    </Section>
+    </KartBolum>
   );
 }

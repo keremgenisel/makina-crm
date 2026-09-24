@@ -4,7 +4,8 @@ import { tutarCoz, tanimKapat, acikTanimMi, ayOf } from "../lib/gider";
 import { logAction } from "../lib/audit";
 import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
-import { TutarInput, HataMetni, Ipucu, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { TutarInput, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { HataMetni, Ipucu } from "./tasarim";
 
 // Firma çalışanları (ad soyad). Servis Panosu kartlarındaki ve servis formundaki "teknisyen"
 // seçicisini besler. Basit {id, ad} listesi; KalipManager/PartManager ile aynı desen (soft-delete).

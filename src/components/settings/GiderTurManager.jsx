@@ -3,7 +3,8 @@ import { uid, trLower } from "../../lib/utils";
 import { turKullanim } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal } from "../ui";
-import { DavranisRozeti, DAVRANIS_AD, HataMetni, Ipucu } from "../gider/GiderAlanlari";
+import { DavranisRozeti, DAVRANIS_AD } from "../gider/GiderAlanlari";
+import { HataMetni, Ipucu } from "../tasarim";
 
 // Gider türleri (spec 0001 R2, plan K12/K13). Davranış (normal / kira / personel) tür oluşturulurken
 // seçilir; tür kullanıma girince davranışı kilitlenir (ad serbest). Silme kalıcıdır (R12): kullanımdaki

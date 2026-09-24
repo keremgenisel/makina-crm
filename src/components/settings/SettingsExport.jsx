@@ -4,7 +4,7 @@ import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi } from "../../lib/utils";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { useMailSender, MailComposeModal } from "../MailCompose";
@@ -483,7 +483,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
 
   return (
     <>
-      <Section title="Dışa Aktar (Excel / CSV)" icon="download">
+      <KartBolum title="Dışa Aktar (Excel / CSV)" icon="download">
         <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 12, lineHeight: 1.6 }}>
           Verilerinizi Excel'de açılabilen dosya olarak indirin. Türkçe karakterler korunur; dosyayı Excel'de çift tıklayarak açabilirsiniz.
         </div>
@@ -579,7 +579,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
           </div>
           );
         })}
-      </Section>
+      </KartBolum>
 
       {/* Dışa aktarımı e-posta ile gönder — CSV/XLSX içerik otomatik ek olarak eklenir */}
       {exportMailDraft && (

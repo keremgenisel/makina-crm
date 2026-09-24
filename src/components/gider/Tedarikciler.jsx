@@ -3,7 +3,8 @@ import { uid } from "../../lib/utils";
 import { tedarikciAdHatasi, tedarikciKullanim } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
-import { HataMetni, Ipucu, tl2 } from "./GiderAlanlari";
+import { tl2 } from "./GiderAlanlari";
+import { HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
 
 // Giderler › Tedarikçiler (spec 0001 R13, AC-40/44/45/46/62; plan K16). Ayarlar'da DEĞİL, bu sekmede

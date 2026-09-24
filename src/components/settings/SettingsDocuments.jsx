@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Btn, Icon, Modal, Field } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { DEFAULT_TRANSLATIONS } from "../../lib/printTemplates";
 import { uid } from "../../lib/utils";
 export const DEFAULT_EVRAK_FORM_CONFIG = {
@@ -550,7 +550,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
   const cfsBySection = (sec) => (draft[docType]?.customFields || []).filter(f => f.section === sec);
 
   return (
-    <Section title="Teklif / Proforma / Yurt Dışı Fatura" icon="settings">
+    <KartBolum title="Teklif / Proforma / Yurt Dışı Fatura" icon="settings">
       <div className="section-desc">
         Form bölümlerindeki alanları gizleyin, varsayılan değerleri düzenleyin veya özel alanlar ekleyin.
         Gizlenen alanlar yazılı çıktıda da görünmez.
@@ -769,7 +769,7 @@ export const SettingsDocuments = ({ appSettings, setAppSettings, flash }) => {
           </div>
         </Modal>
       )}
-    </Section>
+    </KartBolum>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { SettingsTwoFactor } from "./SettingsTwoFactor";
 import { ConfirmDialog } from "../ui";
 import { isTailscaleIp } from "../../lib/utils";
@@ -228,12 +228,12 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
   const lbl = { display: "block", fontSize: 12, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 4 };
 
   if (!window.appServer) return (
-    <Section title="Çoklu Kullanıcı" icon="settings">
+    <KartBolum title="Çoklu Kullanıcı" icon="settings">
       <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bu özellik yalnızca Electron uygulamasında kullanılabilir.</div>
-    </Section>
+    </KartBolum>
   );
 
-  if (mode === null) return <Section title="Çoklu Kullanıcı" icon="settings"><div style={{ fontSize: 13, color: "var(--n400, #94a3b8)" }}>Yükleniyor...</div></Section>;
+  if (mode === null) return <KartBolum title="Çoklu Kullanıcı" icon="settings"><div style={{ fontSize: 13, color: "var(--n400, #94a3b8)" }}>Yükleniyor...</div></KartBolum>;
 
   // ── Sunucu modu aktif ─────────────────────────────────────────────────────
   if (mode === "server") {
@@ -244,7 +244,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
     const tailscaleIps = ips.filter(isTailscaleIp);
     return (
       <>
-        <Section title="Bu PC Sunucu Olarak Çalışıyor" icon="settings">
+        <KartBolum title="Bu PC Sunucu Olarak Çalışıyor" icon="settings">
           <div style={{ marginBottom: 16, padding: "14px 16px", background: running ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", borderRadius: 10, border: `1px solid ${running ? "var(--grnBr2, #6ee7b7)" : "#fca5a5"}` }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: running ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)", marginBottom: 6 }}>
               {running ? `Sunucu Çalışıyor — Port ${port}` : "Sunucu Durduruldu"}
@@ -343,9 +343,9 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
               Yerel Moda Dön
             </button>
           </div>
-        </Section>
+        </KartBolum>
         {running && <SettingsTwoFactor flash={flash} />}
-        {running && <Section title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></Section>}
+        {running && <KartBolum title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></KartBolum>}
       </>
     );
   }
@@ -354,7 +354,7 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
   if (mode === "client") {
     return (
       <>
-        <Section title="Sunucu Bağlantısı" icon="settings">
+        <KartBolum title="Sunucu Bağlantısı" icon="settings">
           <div style={{ marginBottom: 16, padding: "14px 16px", background: "var(--grnBg3, #d1fae5)", borderRadius: 10, border: "1px solid var(--grnBr2, #6ee7b7)" }}>
             <div style={{ fontWeight: 700, color: "var(--grn800, #065f46)", fontSize: 14, marginBottom: 4 }}>Sunucuya Bağlı</div>
             <div style={{ fontSize: 12, color: "var(--emerald2, #047857)" }}><b>Sunucu:</b> {cfg?.serverUrl}</div>
@@ -375,16 +375,16 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
               Bağlantıyı Kes (Yerel Mod)
             </button>
           </div>
-        </Section>
+        </KartBolum>
         <SettingsTwoFactor flash={flash} />
-        {cfg?.role === "admin" && <Section title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></Section>}
+        {cfg?.role === "admin" && <KartBolum title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></KartBolum>}
       </>
     );
   }
 
   // ── Henüz yapılandırılmamış ───────────────────────────────────────────────
   return (
-    <Section title="Çoklu Kullanıcı Kurulumu" icon="settings">
+    <KartBolum title="Çoklu Kullanıcı Kurulumu" icon="settings">
       <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 20, lineHeight: 1.6 }}>
         Aynı verilere birden fazla bilgisayardan erişmek için bu PC'nin rolünü seçin.
       </div>
@@ -475,6 +475,6 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
           <UzaktanErisimYardim />
         </div>
       )}
-    </Section>
+    </KartBolum>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Field, Input, Select, Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { SERVIS_ALARM_VARSAYILAN } from "../../lib/constants";
 
 // Ayarlar > Uygulama > Servis Panosu — yeni-servis alarmı: aç/kapa + ses/yanıp sönme süreleri.
@@ -37,7 +37,7 @@ export const SettingsServisPanosu = ({ appSettings, setAppSettings, flash }) => 
   );
 
   return (
-    <Section title="Servis ve Kargo Panosu Alarmı" icon="service">
+    <KartBolum title="Servis ve Kargo Panosu Alarmı" icon="service">
       <div className="section-desc">
         Uzaktan (başka bilgisayardan) yeni bir servis eklendiğinde Servis ve Kargo Panosu'nda kart yanıp söner,
         sesli uyarı çalar ve üstte bir bildirim şeridi çıkar. Alarmı buradan açıp kapatabilir, sürelerini
@@ -61,6 +61,6 @@ export const SettingsServisPanosu = ({ appSettings, setAppSettings, flash }) => 
       <div style={{ marginTop: 18 }}>
         <Btn onClick={save}>Kaydet</Btn>
       </div>
-    </Section>
+    </KartBolum>
   );
 };

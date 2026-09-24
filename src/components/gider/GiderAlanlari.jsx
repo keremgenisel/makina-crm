@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon, Select } from "../ui";
+import { Segment, HataMetni, Ipucu } from "../tasarim";
 import { ATAMA, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
 import { fmtCur, trLower } from "../../lib/utils";
 
@@ -19,31 +20,6 @@ export const TutarInput = ({ value, onChange, placeholder = "0,00", sym = "₺",
 );
 // Saklanan sayıyı forma ham metin olarak geri koymak için (düzenleme açılışı).
 export const tutarMetni = (n) => (n == null || n === "" ? "" : String(n).replace(".", ","));
-
-export const HataMetni = ({ children }) => children ? (
-  <div role="alert" style={{ fontSize: 12, color: "var(--red700, #b91c1c)", fontWeight: 600, marginTop: 4 }}>{children}</div>
-) : null;
-export const Ipucu = ({ children }) => children ? (
-  <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4, lineHeight: 1.45 }}>{children}</div>
-) : null;
-
-// Segmentli seçici (brüt/net, ödendi/ödenmedi, ödeme yöntemi, atama türü).
-export const Segment = ({ options, value, onChange, ariaLabel, disabled }) => (
-  <div role="radiogroup" aria-label={ariaLabel} style={{ display: "flex", gap: 2, background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: 3, flexWrap: "wrap" }}>
-    {options.map(o => {
-      const aktif = o.value === value;
-      return (
-        <button key={String(o.value)} type="button" role="radio" aria-checked={aktif} disabled={disabled}
-          onClick={() => onChange(o.value)}
-          style={{ flex: "1 1 0", border: "none", borderRadius: 6, padding: "7px 10px", fontSize: 12.5, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
-            background: aktif ? "var(--surface, #ffffff)" : "transparent", color: aktif ? "var(--orTx, #c2410c)" : "var(--n500, #64748b)",
-            fontWeight: aktif ? 700 : 600, boxShadow: aktif ? "0 1px 2px rgba(15,23,42,.12)" : "none" }}>
-          {o.label}
-        </button>
-      );
-    })}
-  </div>
-);
 
 export const AyInput = ({ value, onChange, id, ariaLabel }) => (
   <input type="month" id={id} aria-label={ariaLabel} className="input" value={value || ""} onChange={e => onChange(e.target.value || null)} />

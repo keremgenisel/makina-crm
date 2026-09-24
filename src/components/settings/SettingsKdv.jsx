@@ -1,7 +1,7 @@
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { today, fmtTR, getKdvRateForDate } from "../../lib/utils";
 import { Icon, Btn, DateInput } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsKdv = ({ appSettings, setAppSettings }) => {
   const kdvRates = appSettings.kdvRates ?? DEFAULT_KDV_RATES;
@@ -15,7 +15,7 @@ export const SettingsKdv = ({ appSettings, setAppSettings }) => {
   const removeRow = (idx) => { if (sorted.length <= 1) return; update(sorted.filter((_, i) => i !== idx)); };
 
   return (
-    <Section title="KDV Oranı" icon="settings">
+    <KartBolum title="KDV Oranı" icon="settings">
       <div className="section-desc">
         KDV oranı zaman içinde değişebildiği için tek bir oran yerine tarihe bağlı dönemler tutulur.
         Her kayıt (müşteri satışı, servis, Extra Kalıp satışı) <b>kendi tarihinde geçerli olan orana</b> göre hesaplanır.
@@ -44,6 +44,6 @@ export const SettingsKdv = ({ appSettings, setAppSettings }) => {
         </div>
       ))}
       <Btn small variant="ghost" onClick={addRow}><Icon name="plus" size={12} /> Dönem Ekle</Btn>
-    </Section>
+    </KartBolum>
   );
 };

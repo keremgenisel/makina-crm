@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Icon, Field, Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { esikAltiKalemSayisi, tutarCoz } from "../../lib/gider";
-import { TutarInput, AyInput, HataMetni, Ipucu, tutarMetni, Segment } from "../gider/GiderAlanlari";
+import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
+import { HataMetni, Ipucu, Segment } from "../tasarim";
 import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
 
@@ -30,7 +31,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
   };
 
   return (
-    <Section title="Gider Ayarları" icon="gider">
+    <KartBolum title="Gider Ayarları" icon="gider">
       <div className="section-desc">Sunucudaki tüm kullanıcılar için ortaktır.</div>
       <div style={{ maxWidth: 520 }}>
         <div style={{ maxWidth: 260 }}>
@@ -68,6 +69,6 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
         <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 12 }}>Varsayılan resmi aylık işveren maliyeti Firma › Firma Çalışanları ekranındadır.</div>
         {yonetebilir && <Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn>}
       </div>
-    </Section>
+    </KartBolum>
   );
 };

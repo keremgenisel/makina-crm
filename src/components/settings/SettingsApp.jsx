@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { applyTheme, getSavedTheme } from "../../lib/theme";
 
 // Güncelleme durumu (appUpd) ve işlemleri (onCheckUpdate/onStartUpdate) App.jsx'te TEK
@@ -39,7 +39,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
   return (
     <>
       {/* ── Uygulama Güncellemesi ── */}
-      <Section title="Uygulama Güncellemesi" icon="refresh">
+      <KartBolum title="Uygulama Güncellemesi" icon="refresh">
         <div className="section-desc">
           Kurulu sürüm: <b style={{ color: "var(--n900, #0f172a)" }}>v{version}</b>. Yeni bir sürüm yayınlandığında buradan
           tek tıkla indirip kurabilirsiniz. Verileriniz korunur.
@@ -91,7 +91,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
             Bu özellik yalnızca kurulu (Setup ile yüklenmiş) uygulamada çalışır — geliştirme modunda ve tarayıcıda devre dışıdır.
           </div>
         )}
-      </Section>
+      </KartBolum>
 
       {/* Güncelleme onayı */}
       {askInstall && (
@@ -111,7 +111,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
       )}
 
       {/* ── Sistem: Otomatik Başlat ── */}
-      <Section title="Sistem" icon="settings">
+      <KartBolum title="Sistem" icon="settings">
         <div className="section-desc">
           Bu bilgisayar açıldığında Altunmak CRM otomatik olarak arka planda başlar ve görev
           çubuğu simge tepsisinde (sistem saati yanında) bekler. Sunucu olarak kullanılan
@@ -141,10 +141,10 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
             Uygulama başladığında pencere gizli açılır — görev çubuğundaki simge tepsisine çift tıklayarak açabilirsiniz.
           </div>
         )}
-      </Section>
+      </KartBolum>
 
       {/* ── Görünüm / Tema ── */}
-      <Section title="Görünüm" icon="settings">
+      <KartBolum title="Görünüm" icon="settings">
         <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 14, lineHeight: 1.6 }}>
           Uygulama temasını seçin. Karanlık tema loş ortamda göz yormaz; bu ayar yalnızca bu bilgisayara özeldir.
         </div>
@@ -158,7 +158,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
             }}>{l}</button>
           ))}
         </div>
-      </Section>
+      </KartBolum>
 
       <HaritaKaynaklari />
     </>

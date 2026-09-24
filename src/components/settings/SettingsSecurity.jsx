@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal, Field, PasswordInput } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () => {} }) => {
   // ── Uygulama Şifresi (açılış kilidi) — isteğe bağlı, sadece bir caydırıcı yerel kilit ──
@@ -69,7 +69,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
 
   return (
     <>
-      <Section title="Uygulama Şifresi" icon="lock">
+      <KartBolum title="Uygulama Şifresi" icon="lock">
         <div className="section-desc">
           Açarsanız, uygulama her açılışta bir şifre soracaktır. Bu, bilgisayara erişebilen herkesin
           müşteri/finans verilerini doğrudan görmesini engellemek için basit bir yerel kilittir.
@@ -120,7 +120,7 @@ export const SettingsSecurity = ({ flash, appSettings = {}, setAppSettings = () 
             )}
           </>
         )}
-      </Section>
+      </KartBolum>
 
       {/* Uygulama şifresi: açma (kurulum) */}
       {lockModal === "setup" && (

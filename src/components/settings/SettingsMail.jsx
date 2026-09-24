@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Field, Input, PasswordInput, Warn, EMAIL_RE, Select, Modal } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsMail = ({ flash }) => {
   // ── E-posta (genel SMTP — sunucu/port elle girilir, sağlayıcıya özel sabit yok) ──
@@ -58,7 +58,7 @@ export const SettingsMail = ({ flash }) => {
 
   return (
     <>
-      <Section title="E-posta Ayarları (SMTP)" icon="mail">
+      <KartBolum title="E-posta Ayarları (SMTP)" icon="mail">
         <div className="section-desc">
           "E-posta Gönder" butonlarının çalışması için e-posta hesabınızı buradan bağlayın.
         </div>
@@ -116,7 +116,7 @@ export const SettingsMail = ({ flash }) => {
             )}
           </>
         )}
-      </Section>
+      </KartBolum>
 
       {/* E-posta bağlantısını kaldırma onayı */}
       {confirmClearMail && (

@@ -11,7 +11,8 @@ import {
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
 import { GiderForm } from "./GiderForm";
-import { Segment, tl2 } from "./gider/GiderAlanlari";
+import { tl2 } from "./gider/GiderAlanlari";
+import { Segment, BosDurum, UyariSeridi } from "./tasarim";
 import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi } from "./gider/DonemRaporu";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
@@ -145,18 +146,6 @@ export const Giderler = ({
     </div>
   );
 
-  const bosDurum = (baslikMetni, metin, eylemler) => (
-    <div style={{ border: "1.5px dashed var(--n300, #cbd5e1)", borderRadius: 12, padding: "32px 20px", textAlign: "center", background: "var(--surface, #ffffff)" }} data-testid="gider-bos-durum">
-      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{baslikMetni}</div>
-      <div style={{ fontSize: 13, color: "var(--n600, #475569)", maxWidth: 460, margin: "0 auto", lineHeight: 1.55 }}>{metin}</div>
-      {eylemler && <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>{eylemler}</div>}
-    </div>
-  );
-  const uyari = (renk, baslikMetni, metin, testId) => {
-    const r = renk === "amber" ? ["var(--amb700, #b45309)", "var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)"] : renk === "yesil" ? ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)"] : ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)"];
-    return <div role="status" data-testid={testId} style={{ background: r[1], border: `1px solid ${r[2]}`, borderRadius: 10, padding: "10px 14px", fontSize: 13 }}><b style={{ color: r[0] }}>{baslikMetni}</b>{metin && <div style={{ marginTop: 2, color: "var(--n700, #334155)" }}>{metin}</div>}</div>;
-  };
-
   const eylemDugmeleri = (
     <>
       {canDo("gider_tekrar_uret") && giderTanimlari.length > 0 && <Btn variant="ghost" onClick={uret}><Icon name="refresh" size={14} /> {ayAdi(uretimAyi)} tekrarlayan kalemlerini oluştur</Btn>}
@@ -191,17 +180,14 @@ export const Giderler = ({
             : donemSecici)}
         </div>
       </div>
-      {giderTurleri.length === 0 && uyari("mavi", "Henüz gider türü tanımlı değil.", "Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir).")}
-      {uretimSonucu && uyari(uretimSonucu.eklenen ? "yesil" : "mavi",
-        `${ayAdi(uretimSonucu.ay)}: ${uretimSonucu.eklenen} kalem eklendi, ${uretimSonucu.zatenVardi} kalem zaten vardı.`,
-        [uretimSonucu.eklenen ? "Oluşturulan kalemler tek tek düzenlenebilir; tanım ve diğer aylar değişmez." : "Bir tanımdan bu ay için üretilip sonradan silinen kalemler yeniden oluşturulmaz.",
-          ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" "), "uretim-sonucu")}
-      {!aralikGecerli && gorunum !== "standart" && uyari("amber", "Başlangıç tarihi bitişten sonra olamaz.")}
+      {giderTurleri.length === 0 && <UyariSeridi aile="bilgi" baslik="Henüz gider türü tanımlı değil." metin="Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir)." />}
+      {uretimSonucu && <UyariSeridi aile={uretimSonucu.eklenen ? "basari" : "bilgi"} baslik={`${ayAdi(uretimSonucu.ay)}: ${uretimSonucu.eklenen} kalem eklendi, ${uretimSonucu.zatenVardi} kalem zaten vardı.`} metin={[uretimSonucu.eklenen ? "Oluşturulan kalemler tek tek düzenlenebilir; tanım ve diğer aylar değişmez." : "Bir tanımdan bu ay için üretilip sonradan silinen kalemler yeniden oluşturulmaz.",
+          ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" ")} testId="uretim-sonucu" />}
+      {!aralikGecerli && gorunum !== "standart" && <UyariSeridi aile="uyari" baslik="Başlangıç tarihi bitişten sonra olamaz." />}
 
       {hatirlatmaModu && (
         <>
-          {uyari("amber", `Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`,
-            `Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`, "hatirlatma-modu")}
+          <UyariSeridi aile="uyari" baslik={`Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`} metin={`Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`} testId="hatirlatma-modu" />
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
             onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
@@ -211,15 +197,14 @@ export const Giderler = ({
       {gorunum === "rapor" && rapor && !hatirlatmaModu && (
         rapor.yururlukOncesi ? (
           <>
-            {bosDurum("Gider verisi girilmemiş", `Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`)}
+            <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`} />
             <BorcOzeti ozet={borc} />
           </>
         ) : (
           <>
-            {rapor.kapsamDisi && uyari("amber", `${fmtTR(rapor.kapsamDisi.baslangic)} – ${fmtTR(rapor.kapsamDisi.bitis)} arası kapsam dışı.`, `Gider takibi ${ayAdi(yururlukAy)} itibaren geçerli. Rapor ${fmtTR(yururlukKapsami({ baslangic, bitis }, yururlukAy).etkinBaslangic)} – ${fmtTR(bitis)} için üretildi.`, "kapsam-disi")}
-            {rapor.mukerrerUyari.length > 0 && uyari("amber", "Aynı tanımdan bu dönemde birden fazla kalem var.",
-              rapor.mukerrerUyari.map(m => `${m.aciklama || "Tanım"} (${m.donem}): ${m.kalemler.length} kalem`).join(", ") + ". İki kullanıcı aynı ayı aynı anda oluşturmuş olabilir; fazla olanı silin.", "mukerrer-uyari")}
-            {rapor.bos ? bosDurum("Bu dönemde gider kaydı yok", "Sıfır tutarlı bir tablo yerine bu mesaj gösterilir.", eylemDugmeleri) : (
+            {rapor.kapsamDisi && <UyariSeridi aile="uyari" baslik={`${fmtTR(rapor.kapsamDisi.baslangic)} – ${fmtTR(rapor.kapsamDisi.bitis)} arası kapsam dışı.`} metin={`Gider takibi ${ayAdi(yururlukAy)} itibaren geçerli. Rapor ${fmtTR(yururlukKapsami({ baslangic, bitis }, yururlukAy).etkinBaslangic)} – ${fmtTR(bitis)} için üretildi.`} testId="kapsam-disi" />}
+            {rapor.mukerrerUyari.length > 0 && <UyariSeridi aile="uyari" baslik="Aynı tanımdan bu dönemde birden fazla kalem var." metin={rapor.mukerrerUyari.map(m => `${m.aciklama || "Tanım"} (${m.donem}): ${m.kalemler.length} kalem`).join(", ") + ". İki kullanıcı aynı ayı aynı anda oluşturmuş olabilir; fazla olanı silin."} testId="mukerrer-uyari" />}
+            {rapor.bos ? <BosDurum testId="gider-bos-durum" baslik="Bu dönemde gider kaydı yok" metin="Sıfır tutarlı bir tablo yerine bu mesaj gösterilir." eylemler={eylemDugmeleri} /> : (
               <>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <StatKart etiket="Toplam gider (KDV hariç)" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
@@ -248,7 +233,7 @@ export const Giderler = ({
         )
       )}
       {gorunum === "makina" && rapor && (rapor.yururlukOncesi
-        ? bosDurum("Gider verisi girilmemiş", `Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`)
+        ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
         : <MakinaModelGorunumu rapor={rapor} turMap={turMap} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}

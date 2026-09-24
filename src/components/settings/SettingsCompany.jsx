@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon, Field, Input, Btn, Select, ImageUpload, ConfirmDialog } from "../ui";
 import { COUNTRIES, staticCities, CALISMA_SAATLERI_VARSAYILAN, HAFTA_GUNLERI } from "../../lib/constants";
 import { ILCELER } from "../../lib/map/ilceler";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 const emptyBank = () => ({
   id: String(Date.now() + Math.random()),
@@ -106,7 +106,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
 
   return (
     <>
-      <Section title="Firma Bilgileri" icon="settings" collapsible>
+      <KartBolum title="Firma Bilgileri" icon="settings" collapsible>
         <div className="section-desc">
           Teklif, proforma ve yurt dışı fatura belgelerinde gönderen / FROM alanında görünecek bilgiler. Fabrika adı için Bayiler sekmesini kullanın.
         </div>
@@ -156,9 +156,9 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="GTIP No (Gümrük Tarife)"><Input {...f("gtipNo")} placeholder="8438 50 00 00 00" /></Field>
         </div>
-      </Section>
+      </KartBolum>
 
-      <Section title="Çalışma Saatleri" icon="service" collapsible>
+      <KartBolum title="Çalışma Saatleri" icon="service" collapsible>
         <div className="section-desc">
           Servis işçilik süresi (bakım başlangıcı → bitiş) yalnız bu mesai saatleri içinde sayılır;
           gece, çalışılmayan günler ve molalar süreden düşülür. Bekleme ve toplam süre bundan etkilenmez.
@@ -206,9 +206,9 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed var(--n400, #94a3b8)", background: "transparent", color: "var(--n600, #475569)", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
           <Icon name="add" size={14} /> Mola Ekle
         </button>
-      </Section>
+      </KartBolum>
 
-      <Section title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>
+      <KartBolum title="Banka ve Ödeme Bilgileri" icon="finance" collapsible>
         <div className="section-desc">
           Teklif, proforma ve yurt dışı fatura belgelerinde ödeme bölümüne otomatik eklenir.
         </div>
@@ -255,9 +255,9 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
           <Icon name="add" size={14} /> Yeni Banka Ekle
         </button>
 
-      </Section>
+      </KartBolum>
 
-      <Section title="Kaşe / İmza" icon="stamp" collapsible>
+      <KartBolum title="Kaşe / İmza" icon="stamp" collapsible>
         <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 12 }}>
           Teklif, proforma ve yurt dışı fatura çıktılarında görünür. Şeffaf arka planlı PNG önerilir.
         </div>
@@ -270,7 +270,7 @@ export const SettingsCompany = ({ factory, setFactory, appSettings, setAppSettin
             preserveFormat
           />
         </Field>
-      </Section>
+      </KartBolum>
 
       <div className="form-footer-bar" style={{ marginTop: 4, gap: 0 }}>
         <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>

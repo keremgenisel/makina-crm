@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 const TARGET_PX = 250;
 const TARGET_PX_KASE = 300;
@@ -103,7 +103,7 @@ export const SettingsOptimize = ({
   const groupColor = { "Makina modeli": "var(--blu500, #3b82f6)", "Kalıp": "#8b5cf6", "Parça/Yedek parça": "#f59e0b", "Kaşe/İmza": "var(--brand, #e85d1a)" };
 
   return (
-    <Section title="Resim Optimizasyonu" icon="settings">
+    <KartBolum title="Resim Optimizasyonu" icon="settings">
       <div className="section-desc">
         Makina modeli, kalıp, parça ve kaşe resimlerini WebP formatına dönüştürür, boyutlarını küçültür.
         Yeni yüklenen resimler zaten optimize edilir; bu araç mevcut eski resimlere de uygular.
@@ -146,6 +146,6 @@ export const SettingsOptimize = ({
           {phase === "optimizing" ? "Optimize ediliyor..." : phase === "done" ? "Tekrar Optimize Et" : "Optimize Et"}
         </Btn>
       </div>
-    </Section>
+    </KartBolum>
   );
 };

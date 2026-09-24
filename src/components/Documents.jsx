@@ -6,6 +6,7 @@ import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
 import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect, DateInput } from "./ui";
+import { Segment, KartBolum } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -1107,23 +1108,15 @@ export const Documents = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Alıcı Bilgileri */}
-        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
+        <KartBolum varyant="kart" title="Alıcı Bilgileri">
 
           {/* Alıcı tipi (spec 0006 R12): müşteri veya bayi. Yalnız teklifte; kayıt üretimi tekliften doğar. */}
           {form.type === "teklif" && (
-            <div role="group" aria-label="Alıcı tipi" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["musteri", "Müşteri"], ["bayi", "Bayi"]].map(([v, l]) => {
-                const secili = (form.aliciTipi === "bayi" ? "bayi" : "musteri") === v;
-                return (
-                  <button key={v} type="button" aria-pressed={secili}
-                    onClick={() => setForm(p => (v === "bayi" ? { ...p, aliciTipi: "bayi", customerId: null } : { ...p, aliciTipi: "musteri", dealerId: null, nihaiMusteriId: null }))}
-                    style={{ flex: 1, padding: "6px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-                      border: `1px solid ${secili ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: secili ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)" }}>
-                    Alıcı: {l}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom: 10 }}>
+              <Segment kip="dugme" gorunum="cerceve" ariaLabel="Alıcı tipi"
+                options={[{ value: "musteri", label: "Alıcı: Müşteri" }, { value: "bayi", label: "Alıcı: Bayi" }]}
+                value={form.aliciTipi === "bayi" ? "bayi" : "musteri"}
+                onChange={v => setForm(p => (v === "bayi" ? { ...p, aliciTipi: "bayi", customerId: null } : { ...p, aliciTipi: "musteri", dealerId: null, nihaiMusteriId: null }))} />
             </div>
           )}
           {form.type === "teklif" && form.aliciTipi === "bayi" ? (
@@ -1232,7 +1225,7 @@ export const Documents = ({
               return null;
             })}
           </div>
-        </div>
+        </KartBolum>
 
         {/* Belge Detayları */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>

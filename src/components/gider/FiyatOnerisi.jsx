@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { fmtTR } from "../../lib/utils";
 import { fiyatOnerisi, sonOnIkiAy, FIYAT_YONTEM, FIYAT_YONTEM_ETIKET, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
 import { Field, Input, Select } from "../ui";
-import { tl2, Segment, HataMetni } from "./GiderAlanlari";
+import { tl2 } from "./GiderAlanlari";
+import { Segment, HataMetni } from "../tasarim";
 
 // Fiyat önerisi (spec 0002 R9, R9b, R24). Model bazlı: seçilen modelin dönemde üretilmiş makinalarının
 // ortalama ÜRETİM maliyeti (komisyon hariç). Varsayılan dönem son 12 ay (plan M11).

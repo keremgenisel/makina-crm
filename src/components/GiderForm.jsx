@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { today, getKdvRateForDate } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
-import { TutarInput, Segment, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, HataMetni, Ipucu, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { Segment, HataMetni, Ipucu } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
 // Tek form: ekle ve düzenle. Tür davranışı alanları açar: kira → brüt/net yön, stopaj, hesap özeti;

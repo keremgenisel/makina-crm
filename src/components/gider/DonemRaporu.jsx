@@ -3,17 +3,11 @@ import { Icon, Btn } from "../ui";
 import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti } from "./GiderAlanlari";
+import { KartBolum } from "../tasarim";
 
 // Giderler sekmesi › Dönem Raporu parçaları (spec 0001 R8, R13–R15, R17, R19, R20; plan K21, K30, K33).
 // Personel ayrıntısı her yerde varsayılan KAPALI başlar ve kalıcı değildir (R17, K21).
 
-const kart = { background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: 18 };
-const baslik = (t, alt) => (
-  <div style={{ marginBottom: 12 }}>
-    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{t}</div>
-    {alt && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{alt}</div>}
-  </div>
-);
 const Rozet = ({ children, renk = "gri", title }) => {
   const r = { gri: ["var(--n600, #475569)", "var(--n150, #f1f5f9)", "var(--n200, #e2e8f0)"], kirmizi: ["var(--red700, #b91c1c)", "var(--redBg, #fef2f2)", "var(--redBr, #fecaca)"],
     yesil: ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)"], mavi: ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)"],
@@ -47,8 +41,7 @@ export const KovaKarti = ({ rapor }) => {
   ];
   const yuzde = (v) => (top ? `%${(v / top * 100).toFixed(1).replace(".", ",")}` : "%0");
   return (
-    <div style={kart} data-testid="kova-karti">
-      {baslik("Makina Maliyeti Kovaları", `Makina maliyeti hesabının (0002) girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`)}
+    <KartBolum varyant="kart" baslikStili="baslik" title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının (0002) girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
       <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", gap: 2, marginBottom: 14, background: "var(--n150, #f1f5f9)", height: 12 }}>
         {dilimler.filter(d => d.v > 0).map(d => <div key={d.ad} style={{ width: `${(d.v / (top || 1)) * 100}%`, background: d.renk }} />)}
       </div>
@@ -62,7 +55,7 @@ export const KovaKarti = ({ rapor }) => {
           </div>
         ))}
       </div>
-    </div>
+    </KartBolum>
   );
 };
 
@@ -71,8 +64,7 @@ export const TurKirilimi = ({ rapor }) => {
   const [acik, setAcik] = useState(false);
   const top = rapor.toplam || 0;
   return (
-    <div style={{ ...kart, flex: "3 1 380px", minWidth: 0 }} data-testid="tur-kirilimi">
-      {baslik("Gider Türü Kırılımı", "Tahakkuk esası: kalemin gider tarihine göre")}
+    <KartBolum varyant="kart" baslikStili="baslik" title="Gider Türü Kırılımı" altBaslik="Tahakkuk esası: kalemin gider tarihine göre" style={{ flex: "3 1 380px", minWidth: 0 }} testId="tur-kirilimi">
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {rapor.turKirilimi.map(t => (
           <div key={String(t.turId)}>
@@ -104,7 +96,7 @@ export const TurKirilimi = ({ rapor }) => {
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--n200, #e2e8f0)", paddingTop: 10, marginTop: 10, fontSize: 13 }}>
         <span style={{ color: "var(--n500, #64748b)" }}>Kırılım toplamı = genel toplam (ödenmemiş dahil, KDV hariç)</span><b>{tl2(top)}</b>
       </div>
-    </div>
+    </KartBolum>
   );
 };
 
@@ -112,8 +104,7 @@ export const TurKirilimi = ({ rapor }) => {
 export const TedarikciKirilimi = ({ rapor }) => {
   const tk = rapor.tedarikciKirilimi;
   return (
-    <div style={{ ...kart, flex: "3 1 380px", minWidth: 0 }} data-testid="tedarikci-kirilimi">
-      {baslik("Tedarikçi Kırılımı", "Harcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez.")}
+    <KartBolum varyant="kart" baslikStili="baslik" title="Tedarikçi Kırılımı" altBaslik="Harcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez." style={{ flex: "3 1 380px", minWidth: 0 }} testId="tedarikci-kirilimi">
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead><tr style={{ fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
           <th style={{ padding: "6px 4px" }}>Tedarikçi</th><th style={{ padding: "6px 4px", textAlign: "right" }}>Harcama (KDV hariç)<div style={{ textTransform: "none", fontWeight: 500 }}>seçili dönem</div></th>
@@ -139,7 +130,7 @@ export const TedarikciKirilimi = ({ rapor }) => {
           <td style={{ padding: "8px 4px", fontWeight: 700 }}>Personel dışı toplam</td><td style={{ padding: "8px 4px", textAlign: "right", fontWeight: 800 }}>{tl2(tk.toplamHarcama)}</td><td style={{ padding: "8px 4px", textAlign: "right", fontWeight: 800 }}>{tl2(tk.toplamBorc)}</td>
         </tr></tfoot>
       </table>
-    </div>
+    </KartBolum>
   );
 };
 
@@ -147,8 +138,7 @@ export const TedarikciKirilimi = ({ rapor }) => {
 export const BorcOzeti = ({ ozet }) => {
   const [acik, setAcik] = useState(false);
   return (
-    <div style={{ ...kart, flex: "2 1 300px", minWidth: 0 }} data-testid="borc-ozeti">
-      {baslik("Kime Ne Kadar Borçluyuz", "Seçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemler")}
+    <KartBolum varyant="kart" baslikStili="baslik" title="Kime Ne Kadar Borçluyuz" altBaslik="Seçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemler" style={{ flex: "2 1 300px", minWidth: 0 }} testId="borc-ozeti">
       {ozet.satirlar.length === 0 && <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Ödenmemiş borç yok.</div>}
       {ozet.satirlar.map(s => (
         <div key={s.tur + (s.tedarikciId ?? "")} style={{ padding: "9px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
@@ -172,7 +162,7 @@ export const BorcOzeti = ({ ozet }) => {
       ))}
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--n200, #e2e8f0)", paddingTop: 10, marginTop: 4 }}><b>Toplam borç</b><b style={{ fontSize: 15 }}>{tl2(ozet.toplam)}</b></div>
       <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 8 }}>“Vadesi geçti” yalnız görsel işarettir; hatırlatma ve bildirim ayrı bir iştir (0003). Borcu sıfırlanan taraf bu listeden düşer.</div>
-    </div>
+    </KartBolum>
   );
 };
 
@@ -270,7 +260,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   };
   const sec = { className: "select", style: { width: "auto", minWidth: 150 } };
   return (
-    <div style={{ ...kart, padding: 0, overflow: "hidden" }} data-testid="kalem-listesi">
+    <KartBolum varyant="kart" style={{ padding: 0, overflow: "hidden" }} testId="kalem-listesi">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", gap: 10, flexWrap: "wrap", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
         <b>Gider Kalemleri <span style={{ color: "var(--n500, #64748b)", fontWeight: 500, fontSize: 13 }}>· {suz.length} kalem</span></b>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -312,6 +302,6 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </tr></tfoot>
         </table>
       </div>
-    </div>
+    </KartBolum>
   );
 };

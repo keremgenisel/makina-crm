@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
 import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, disAppSettingsSuz } from "../../lib/utils";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsBackup = ({
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar = [], notes, parts, partSales, payments,
@@ -238,7 +238,7 @@ export const SettingsBackup = ({
 
   return (
     <>
-      <Section title="Yedekleme" icon="download">
+      <KartBolum title="Yedekleme" icon="download">
         <div className="section-desc">
           Tüm müşteri ve servis kayıtlarınızı tek bir dosya olarak kaydedin. Yedek dosyasını güvenli bir yerde
           (USB bellek, bulut depolama) saklamanızı öneririz. Geri yükleme yaptığınızda mevcut veriler yedekteki verilerle değiştirilir.
@@ -329,7 +329,7 @@ export const SettingsBackup = ({
             </div>
           )}
         </div>
-      </Section>
+      </KartBolum>
 
       {/* Manuel yedek: şifreli/şifresiz seçimi */}
       {backupAsk && (

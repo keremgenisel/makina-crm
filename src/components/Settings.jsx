@@ -6,7 +6,7 @@ import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
 import { CalisanManager } from "./CalisanManager";
 import { PartTypeManager } from "./PartTypeManager";
-import { Section } from "./settings/Section";
+import { KartBolum } from "./tasarim";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsMusteri } from "./settings/SettingsMusteri";
 import { SettingsServisPanosu } from "./settings/SettingsServisPanosu";
@@ -216,7 +216,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       }} />}
 
       {settingsTab === "models" && (
-        <Section title="Makina Modelleri" icon="machine">
+        <KartBolum title="Makina Modelleri" icon="machine">
           <div className="section-desc">
             Buradaki modeller, Yeni Müşteri ve Makina Geçmişi ekranlarındaki model seçiminde görünür.
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
@@ -225,54 +225,54 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
             customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts}
             appSettings={appSettings} setAppSettings={setAppSettings}
             giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} />
-        </Section>
+        </KartBolum>
       )}
 
       {settingsTab === "kaliplar" && (
-        <Section title="Kalıp Modelleri" icon="box">
+        <KartBolum title="Kalıp Modelleri" icon="box">
           <div className="section-desc">
             Buraya eklediğiniz kalıplar, Yeni Müşteri ekranındaki <b>Kalıp</b> seçiminde listelenir. Ölçü, müşteri eklerken elle girilir.
           </div>
           <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
-        </Section>
+        </KartBolum>
       )}
 
       {settingsTab === "yedekparca" && (
-        <Section title="Parça/Yedek Parça Tanımları" icon="parts" wide>
+        <KartBolum title="Parça/Yedek Parça Tanımları" icon="parts" wide>
           <div className="section-desc">
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
             allModels={[...standardModels, ...customModels]} partTypeDefs={partTypeDefs} />
-        </Section>
+        </KartBolum>
       )}
 
       {settingsTab === "parcatipi" && (
-        <Section title="Parça Tipleri" icon="parts" wide>
+        <KartBolum title="Parça Tipleri" icon="parts" wide>
           <div className="section-desc">
             Yedek parçalarınızı gruplamak için tipler tanımlayın. Bir tipe <b>Müşteri formunda seç</b> derseniz, yeni müşteri/makina eklerken o tipteki parça için bir seçici çıkar; <b>Stoktan düş</b> ile seçilen parça makinaya atanınca stoktan otomatik azalır. <b>Konveyör Saç</b> ve <b>Bant</b> sistem tipleridir, kilitlidir.
           </div>
           <PartTypeManager partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} parts={parts} setParts={setParts} showToast={showToast} />
-        </Section>
+        </KartBolum>
       )}
 
       {settingsTab === "calisanlar" && (
-        <Section title="Firma Çalışanları" icon="customers">
+        <KartBolum title="Firma Çalışanları" icon="customers">
           <div className="section-desc">
             Servis yapan çalışanların ad soyadını girin. Bu liste <b>Servis Panosu</b> kartlarındaki ve servis formundaki <b>teknisyen</b> seçicisini besler.
           </div>
           <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast}
             giderYetki={giderYetki} maliyetDuzenleyebilir={giderCanDo("gider_tanim")} appSettings={appSettings} setAppSettings={setAppSettings}
             giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} serverPermissions={serverPermissions} />
-        </Section>
+        </KartBolum>
       )}
 
       {giderYetki && settingsTab === "gidertur" && (
-        <Section title="Gider Türleri" icon="gider">
+        <KartBolum title="Gider Türleri" icon="gider">
           <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır. Tür silme kalıcıdır, çöp kutusuna düşmez.</div>
           <GiderTurManager giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} giderler={rawGiderler} setGiderler={setGiderler}
             giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
-        </Section>
+        </KartBolum>
       )}
       {giderYetki && settingsTab === "gidertanim" && (
         <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}

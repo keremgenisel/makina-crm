@@ -6,7 +6,7 @@ import { yedekParcaAlicisiMi, geriDonenStokBul } from "../../lib/musteriKaskad";
 import { yedekParcaBayininMi, bayiDosyasiMi } from "../../lib/bayiKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -239,7 +239,7 @@ export const SettingsTrash = ({
 
   return (
     <>
-      <Section title="Çöp Kutusu" icon="trash">
+      <KartBolum title="Çöp Kutusu" icon="trash">
         <div className="section-desc">
           Silinen kayıtlar buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
@@ -290,7 +290,7 @@ export const SettingsTrash = ({
             <Pagination total={trashItemsFiltered.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
           </>
         )}
-      </Section>
+      </KartBolum>
 
       {confirmPurge && (
         <ConfirmDialog

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { trLower, bumpId, normalizeSaleType, fmt, fmtTR, isFaturali } from "../../lib/utils";
 import { PART_TYPE_PALETTE_KEYS } from "../../lib/constants";
 import { Icon, Btn, Modal } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
 
 const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
@@ -361,7 +361,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
 
   return (
     <>
-      <Section title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
+      <KartBolum title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
         <div className="section-desc">
           Eski müşteri verilerinizi toplu olarak içe aktarın. <b>1)</b> Excel şablonunu indirin. <b>2)</b> Verilerinizi şablondaki sütun sırasına göre doldurun (Excel'de kaydedin, .xlsx olarak kalabilir). <b>3)</b> Aşağıdan yükleyin, önizlemeyi kontrol edip onaylayın. Hem Excel (.xlsx, .xls) hem CSV dosyaları desteklenir.
         </div>
@@ -373,7 +373,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "var(--amb800, #92400e)", lineHeight: 1.6 }}>
           <b>Şablon sütunları:</b> Kalıp Sayısı · Satış Yapan · Satın Alan Firma · Telefon · Adres · Ülke · Şehir · Model · <b>Makina Kalıp Çapı (çap x arka ölçü x boy)</b> · <b>Para Birimi (TL/USD/EUR)</b> · <b>Satış Tipi (Faturalı Yurtiçi/Yurtdışı/Faturasız Yurtiçi/Yurtdışı)</b> · Aldığı Kalıplar (noktalı virgülle ayırın) · <b>Satış Tarihi / Garanti Başlangıç</b> · Garanti Bitiş · <b>Fabrika Satış Bedeli</b> · Fatura Bedeli · Komisyon · Extra Kalıp Fiyatı · Kalan Borç · Seri No · Açıklama · Servis1 Tarih · Servis1 İş · Servis2... · Servis3...
         </div>
-      </Section>
+      </KartBolum>
 
       {importPreview && (
         <Modal wide title="İçe Aktarma Önizlemesi" onClose={() => setImportPreview(null)}>
@@ -420,7 +420,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         </Modal>
       )}
 
-      <Section title="Yedek Parça İçe Aktar" icon="parts">
+      <KartBolum title="Yedek Parça İçe Aktar" icon="parts">
         <div className="section-desc">
           Yedek parça kataloğunu toplu olarak içe aktarın. Aynı adlı (TR) parçalar güncellenir, yeni olanlar eklenir.
         </div>
@@ -432,7 +432,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
           <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip ({(partTypeDefs.length ? partTypeDefs.map(t => t.ad) : ["Standart"]).join("/")}) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
           <div style={{ marginTop: 4, opacity: .85 }}>Tanımlı olmayan bir tip yazarsanız otomatik olarak yeni parça tipi oluşturulur.</div>
         </div>
-      </Section>
+      </KartBolum>
 
       {partsImportPreview && (
         <Modal wide title="Yedek Parça İçe Aktarma Önizlemesi" onClose={() => setPartsImportPreview(null)}>
