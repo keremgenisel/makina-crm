@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, uygulama planı `specs/0006-uygulama-plani.md` onayıyla, E16) |
+| **Durum** | Tamamlandı (2026-09-24, commit `715c237`; plan `specs/done/0006-uygulama-plani.md`, onay E16 ile plan onayıyla) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Evrak Yönetimi (teklif kaydetme akışı), Extra Kalıp satışları, yedek parça (kargo) satışları, müşteri/makina kaydı, parça stoğu, Bayiler |
@@ -354,10 +354,15 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan turunda (onayla eş zamanlı) E1–E16 kararları işlendi. Onay sonrası tek değişiklik triyajda C8'e eklenen "kabul edilen sınır" notu (yetki genişlemesinin belgelenmesi; gereksinim değişmedi). |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu (altı bulgu), aynı gün düzeltildi. |
+| **Bulgu gerçek/gürültü oranı** | 6 / 0 | Dördü davranış hatası: çökme/taslak sonrası ikinci makina kaydı riski, kalıp miktarının yok sayılması, üretilebilir kalemi olmayan belgenin sonsuza dek beklemesi, iskonto artığının kayıt üretmeyen kaleme yazılıp kaybolması. Biri belgeleme (Evrak sekmesinin düzenleme alanı), biri bakım (kaymış yorum). |
+| **Regresyon sayısı** | 0 | Mevcut davranış bozulmadı. Bilinçli değişiklikler: Anasayfa bekleyen listesi yalnız teklif gösterir, makina bedeli belgenin tamamı yerine makina + makinayla kalıp payıdır, satırsız onaylı teklif artık beklemez (bir Anasayfa testinin fikstürü buna göre güncellendi). Son durum: 168 dosya, 1723 test, lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok; görsel kanıt turu plan E16 ile atlandı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec, arayüzün gerçek veri biçimine bakılmadan yazıldığında (her satırın tek ürün taşıması) en
+temel kural (makinayla verilen kalıp ayrımı) harfiyen uygulanamaz hâle geldi; plan turunda kodun gerçek yapısının doğrulanması
+işin en değerli adımı oldu. Bellekte tutulan "bekleyen iş" gibi geçici durumlar, kalıcı veriden (burada `fromTeklifId` bağı)
+yeniden türetilebilir olmalı; yoksa çökme ya da taslak geri yükleme mükerrer kayıt üretir. Miktar gibi "bir satır = bir kayıt"
+varsayımını bozan alanlar, iki yolun (elle ve otomatik) aynı sayıda kayıt ürettiğini doğrulayan testle sabitlenmeli. Görsel kanıt
+maddesi (DoD) kullanıcı kararıyla atlandı.

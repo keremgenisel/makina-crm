@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0006-evrak-satir-bazli-satis-kaydi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-24: E1–E16 önerilerinin tamamı kullanıcı tarafından kabul edildi; spec R2 ile bu kararlara göre güncellendi ve onaylandı (E16); uygulama başladı (branch `feat/0001-gider`). |
+| **Bağlı spec** | `specs/done/0006-evrak-satir-bazli-satis-kaydi.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-24: E1–E16 önerileri kullanıcı tarafından kabul edildi; spec R2 ile güncellenip onaylandı (E16); kod ve triyaj düzeltmeleri commit `715c237` (branch `feat/0001-gider`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | yok (0001–0003'ten bağımsız) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in
