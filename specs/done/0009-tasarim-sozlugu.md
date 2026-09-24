@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, plan `specs/0009-uygulama-plani.md` T1–T12 ile) |
+| **Durum** | Tamamlandı (2026-09-24; kod commit `6a5b32f`, dal `feat/0009-tasarim-sozlugu`; plan `specs/done/0009-uygulama-plani.md` T1–T12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Paylaşılan arayüz bileşenleri, Giderler ekranları (Finans'taki KDV karşılaştırması kartı dâhil), Evrak alıcı bölümü, Ayarlar bölüm bileşeni |
@@ -257,10 +257,16 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R3 (onay sonrası): AC-8'in metin ölçüsü düzeltildi. Plandaki "karanlık ≥ aydınlığın %95'i" eşiği, uygulamada çok yüksek kontrastlı ve okunaklı çiftleri (başlık 17.9 → 13.9) başarısız saydı; eşik "WCAG AA (4.5) ya da aydınlığın %95'i" oldu. R2 plan turunda, onayla eş zamanlıydı, sayılmaz. Triyajdaki DoD biçim düzeltmesi (PNG → JPEG) R/C/AC değil, sayılmaz. |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu (üç bulgu), aynı gün düzeltildi. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçekti: 1) dokuz Ayarlar sekmesi (ve atlanmış Parça Tipleri) görüntüyle doğrulanmamıştı, plan tersini söylüyordu; 2) kontrast testindeki eşik R3'ten gevşekti (bugün sonucu değiştirmese de); 3) DoD kanıt biçimi depodakiyle uyuşmuyordu. Bulgu 1'in düzeltmesi ayrıca aracın boş çizilen ekranı sessizce "0 fark" saydığını ortaya çıkardı (2FA ekranı); araç artık bunu hata sayıyor. |
+| **Regresyon sayısı** | 0 | 43 ekran × 2 tema = 86 görüntünün hepsinde önce/sonra 0 piksel fark; mevcut test dosyalarının hiçbiri değişmeden geçti. Son durum: 179 dosya, 1943 test, lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Görünüm değişmesin" gibi gözle yargılanan bir şart, önce/sonra piksel karşılaştırmasıyla sayıya
+çevrildiğinde hem çok güçlü hem de ucuz bir kanıt oldu. Ama kanıt düzeneğinin kendisi de test edilmeli. Burada üç ayrı yerden
+yanıldı: sarıcının verdiği metin rengi, iki gider başlığının miras aldığı rengi gizliyordu; boş ya da çöken bir ekran önce ve sonra
+aynı olduğu için "0 fark" veriyordu; kapsanan ekran listesi, değişen dosya listesinden türetilmediği için dokuz sekme dışarıda
+kalmıştı. Üçünün ortak çaresi: kanıtı değişen kodun kendisine bağlamak (her kullanan dosya bir ekrana eşli, testle), boş ekranı
+hata saymak ve aracın kararlılığını değişiklikten önce ölçmek. İkinci ders: plan turunda önerilen ölçülebilir eşikler (burada
+AC-8) veriyle denenmeden yazılmamalı; ilk gerçek hesaplama eşiğin yanlış şeyi ölçtüğünü gösterdi.

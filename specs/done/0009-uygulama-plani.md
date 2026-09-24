@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0009-tasarim-sozlugu.md` (Taslak, R2: bu planın kararları işlendi) |
-| **Durum** | 2026-09-24: T1–T12 kullanıcı tarafından onaylandı; spec R2 ile güncellendi; uygulanıyor. |
+| **Bağlı spec** | `specs/done/0009-tasarim-sozlugu.md` (R2 plan onayıyla, R3 onay sonrası) |
+| **Durum** | Tamamlandı. 2026-09-24: T1–T12 kullanıcı tarafından onaylandı; spec R2 ve R3 ile güncellendi; kod ve triyaj düzeltmeleri commit `6a5b32f` (dal `feat/0009-tasarim-sozlugu`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | yok (0010 ve sonrası buna bağlanacak) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
