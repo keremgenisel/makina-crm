@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0007-bayi-araciligiyla-kalip-satisi.md` (R1, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-24: K1–K12 kullanıcı tarafından onaylandı; spec R1 ile bu kararlara göre güncellendi; uygulama başladı (branch `feat/0001-gider`). |
+| **Bağlı spec** | `specs/done/0007-bayi-araciligiyla-kalip-satisi.md` (R1, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-24: K1–K12 kullanıcı tarafından onaylandı; spec R1 ile güncellendi; kod ve düzeltme turu 1 commit `98e8f8b` (branch `feat/0001-gider`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0006 (Extra Kalıp ortak yolu `lib/kalipSatisi.js`, bayi adı kaskadı) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-24, uygulama planı `specs/0007-uygulama-plani.md` onayıyla, K12) |
+| **Durum** | Tamamlandı (2026-09-24, commit `98e8f8b`; plan `specs/done/0007-uygulama-plani.md`, onay K12 ile plan onayıyla) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Bayi detay modalı, Extra Kalıp satış formu, borç hesabı (Müşteriler, Anasayfa, Bayiler), aylık faaliyet raporu |
@@ -201,10 +201,14 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 (onay sonrası): bayi modalının dar varyantında dördüncü buton eylem satırını taşırıp ilk butonu kırpıyordu; R16, AC-19 ve AC-20 eklendi. R1 onay öncesi plan turuydu, sayılmaz. |
+| **Düzeltme turu sayısı** | 1 | Bayi modalı eylem satırı (R16). Birleşmeden önce gerçek kullanımda yakalandı; analist kararıyla "kaçan hata" değil düzeltme turu olarak sayılır. Dar varyant 760 px, satır dar pencerede alta kayar. |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | Tek bulgu (modal kırpılması) gerçekti. Analistin "yalnız üst sınırı büyütmek dar pencerede yetmeyebilir" uyarısı da doğrulandı: satır kayması olmadan test 700 ve 480 px'de kaldı. |
+| **Regresyon sayısı** | 1 | Dördüncü butonun eklenmesi mevcut "Yedek Parça Satışı" butonunu kırpıp tıklanamaz yaptı; birleşmeden önce yakalanıp düzeltildi. Borç atıfındaki değişiklikler (bazı müşterilerin borçlu listelerinden çıkması, ücretsiz kalıbın alacaktan düşmesi) bilinçli ve C5/R8'de onaylı; regresyon sayılmaz. Son durum: 172 dosya, 1752 test, lint 0 hata. |
+| **Kaçan hata** | 0 | Düzeltme birleşmeden önce yapıldı; görsel kanıt turu K12 ile atlandı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Arayüze buton eklemek, jsdom testlerinin göremediği bir yerleşim riski taşır; bu projede ilk kez gerçek
+tarayıcı motorunda (Electron) yerleşimi ölçen bir test yazıldı ve eski kodu 1280 px'de bile yakaladı. Modal genişliği bir üst sınırdır:
+düzeltme yalnız sınırı büyütmekle kalmamalı, dar pencerede de kırpma olmadığını göstermeli. Borç atıfında dört ekranın dört ayrı kural
+yazdığı plan turunda görüldü; tek fonksiyon + kaynak taraması + aynı veriyle çapraz test, bu sınıf hatanın tekrarını engelleyen üçlü
+oldu. Görsel kanıt maddesi (DoD) kullanıcı kararıyla atlandı.
