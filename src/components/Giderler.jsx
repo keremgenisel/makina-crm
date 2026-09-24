@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
-import { uid, today, fmtTR, withDeleted } from "../lib/utils";
+import { uid, fmtTR, withDeleted } from "../lib/utils";
+import { useBugun } from "../hooks/useBugun";
+import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
-  ayOf, ayEkle, ayinSonGunu,
+  ayOf, ayEkle, ayinSonGunu, odemeDurumuDegistir,
 } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
@@ -30,10 +32,14 @@ export const Giderler = ({
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
   makinaMaliyet = null,
+  // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
+  baslangicOdemeFiltresi = "",
 }) => {
   const canDo = makeCanDo(serverPermissions, "giderActions");
-  const bugun = today();
+  // Canlı yerel gün (spec 0003 C3, H1): hatırlatma kapsamı Anasayfa kartıyla aynı "bugün"e bakmalı (AC-14).
+  const bugun = useBugun();
   const [gorunum, setGorunum] = useState("rapor");
+  const [odemeFiltre, setOdemeFiltre] = useState(baslangicOdemeFiltresi || "");
   const [mod, setMod] = useState("ay");
   const [ay, setAy] = useState(ayOf(bugun));
   const [aralik, setAralik] = useState({ bas: `${ayOf(bugun)}-01`, bit: bugun });
@@ -46,6 +52,11 @@ export const Giderler = ({
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const modeller = useMemo(() => [...standardModels, ...customModels.filter(m => !m.deletedAt)], [standardModels, customModels]);
 
+  // Ödeme hatırlatıcısı (spec 0003 R8, C2): Anasayfa kartıyla AYNI saf hesap, aynı bugün ve eşik.
+  const hatirlatma = useMemo(() => odemeHatirlatmalari(giderler, { turler: giderTurleri, tedarikciler, yururlukAy, esikGun: hatirlatmaEsigi(giderAyarlari) }, bugun),
+    [giderler, giderTurleri, tedarikciler, yururlukAy, giderAyarlari, bugun]);
+  const hatirlatmaModu = gorunum === "rapor" && odemeFiltre === "hatirlatma";
+  const hatirlatmaKalemleri = useMemo(() => giderler.filter(k => hatirlatma.kalemIdleri.has(String(k.id))), [giderler, hatirlatma]);
   const baslangic = mod === "ay" ? `${ay}-01` : aralik.bas;
   const bitis = mod === "ay" ? ayinSonGunu(ay) : aralik.bit;
   const aralikGecerli = !!baslangic && !!bitis && baslangic <= bitis;
@@ -102,7 +113,7 @@ export const Giderler = ({
   };
   const odendiDegistir = (k) => {
     const odendi = !k.odendi;
-    setGiderler(p => p.map(x => (x.id === k.id ? { ...x, odendi, odemeTarihi: odendi ? bugun : null } : x)));
+    setGiderler(p => p.map(x => (x.id === k.id ? odemeDurumuDegistir(x, bugun) : x)));
     logAction({ serverPermissions, action: odendi ? "odendi" : "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
   };
   const sil = () => {
@@ -164,7 +175,21 @@ export const Giderler = ({
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ minWidth: 0, flex: "1 1 460px", maxWidth: 800 }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>
-        {gorunum !== "standart" && donemSecici}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Spec 0003 R8, triyaj bulgu 1: süzgeç listenin DIŞINDA da erişilebilir; seçili ay boşken (her ayın başı)
+              veya yürürlük öncesiyken liste hiç çizilmediği için yalnız liste içindeki seçenek yetmez. */}
+          {gorunum === "rapor" && (
+            <button type="button" aria-pressed={hatirlatmaModu} data-testid="hatirlatma-dugmesi"
+              onClick={() => setOdemeFiltre(hatirlatmaModu ? "" : "hatirlatma")}
+              style={{ border: `1px solid ${hatirlatmaModu ? "var(--amb600, #d97706)" : "var(--n300, #cbd5e1)"}`, background: hatirlatmaModu ? "var(--ambBg, #fffbeb)" : "var(--surface, #ffffff)",
+                color: "var(--n900, #0f172a)", borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {hatirlatmaModu ? "Hatırlatma kapsamını kapat" : "Hatırlatma kapsamı"} ({hatirlatma.kalemIdleri.size})
+            </button>
+          )}
+          {gorunum !== "standart" && (hatirlatmaModu
+            ? <fieldset disabled aria-label="Dönem seçici (hatırlatma kapsamında devre dışı)" style={{ border: 0, padding: 0, margin: 0, opacity: 0.45 }}>{donemSecici}</fieldset>
+            : donemSecici)}
+        </div>
       </div>
       {giderTurleri.length === 0 && uyari("mavi", "Henüz gider türü tanımlı değil.", "Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir).")}
       {uretimSonucu && uyari(uretimSonucu.eklenen ? "yesil" : "mavi",
@@ -173,7 +198,17 @@ export const Giderler = ({
           ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" "), "uretim-sonucu")}
       {!aralikGecerli && gorunum !== "standart" && uyari("amber", "Başlangıç tarihi bitişten sonra olamaz.")}
 
-      {gorunum === "rapor" && rapor && (
+      {hatirlatmaModu && (
+        <>
+          {uyari("amber", `Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`,
+            `Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`, "hatirlatma-modu")}
+          <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
+            standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
+            onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
+            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
+        </>
+      )}
+      {gorunum === "rapor" && rapor && !hatirlatmaModu && (
         rapor.yururlukOncesi ? (
           <>
             {bosDurum("Gider verisi girilmemiş", `Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`)}
@@ -204,7 +239,8 @@ export const Giderler = ({
                 </div>
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir} />
+                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
               </>
             )}
             {rapor.bos && <BorcOzeti ozet={borc} />}

@@ -177,9 +177,20 @@ export const BorcOzeti = ({ ozet }) => {
 };
 
 // Kalem listesi. Personel kalemleri tek kapalı grup satırında (K21).
-export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi }) => {
+// Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
+// seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
+export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
+  odemeFiltre, onOdemeFiltre, hatirlatma = null }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
-  const [filtre, setFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
+  const [yerelFiltre, setYerelFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
+  const filtre = odemeFiltre === undefined ? yerelFiltre : { ...yerelFiltre, odeme: odemeFiltre };
+  const setFiltre = (fn) => {
+    const yeni = fn(filtre);
+    if (odemeFiltre !== undefined && yeni.odeme !== filtre.odeme) onOdemeFiltre?.(yeni.odeme);
+    setYerelFiltre(yeni);
+  };
+  const hatGecmis = useMemo(() => new Set((hatirlatma?.gecmis || []).map(o => String(o.id))), [hatirlatma]);
+  const hatDurum = (k) => (!hatirlatma?.kalemIdleri?.has(String(k.id)) ? null : hatGecmis.has(String(k.id)) ? "gecmis" : "yaklasan");
   const turMap = useMemo(() => new Map(giderTurleri.map(t => [String(t.id), t])), [giderTurleri]);
   const tedMap = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
@@ -190,6 +201,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     if (filtre.odeme === "odenmedi" && k.odendi) return false;
     if (filtre.odeme === "odendi" && !k.odendi) return false;
     if (filtre.odeme === "gecti" && !vadesiGectiMi(k, bugun)) return false;
+    if (filtre.odeme === "hatirlatma" && !hatDurum(k)) return false;
     if (filtre.ara && !trLower(`${k.aciklama || ""} ${k.calisanAd || ""} ${tedMap.get(String(k.tedarikciId))?.ad || ""}`).includes(trLower(filtre.ara))) return false;
     return true;
   }).sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)));
@@ -231,8 +243,10 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const satir = (k) => {
     const d = dav(k), tur = turMap.get(String(k.turId));
     const ted = tedMap.get(String(k.tedarikciId));
+    const hd = hatDurum(k);
     return (
-      <tr key={k.id}>
+      <tr key={k.id} data-hatirlatma={hd || undefined}
+        style={hd ? { background: hd === "gecmis" ? "var(--redBg, #fef2f2)" : "var(--ambBg, #fffbeb)", boxShadow: `inset 3px 0 0 ${hd === "gecmis" ? "var(--red600, #dc2626)" : "var(--amb600, #d97706)"}` } : undefined}>
         <td style={{ ...td, whiteSpace: "nowrap", color: "var(--n600, #475569)" }}>{fmtTR(k.tarih)}</td>
         <td style={td}><div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{tur?.ad || "(türsüz)"} {d !== DAVRANIS.NORMAL && <DavranisRozeti davranis={d} />}</div></td>
         <td style={td}>
@@ -262,7 +276,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <select aria-label="Tür filtresi" {...sec} value={filtre.tur} onChange={e => setFiltre(f => ({ ...f, tur: e.target.value }))}><option value="">Tüm türler</option>{giderTurleri.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}</select>
           <select aria-label="Tedarikçi filtresi" {...sec} value={filtre.ted} onChange={e => setFiltre(f => ({ ...f, ted: e.target.value }))}><option value="">Tüm tedarikçiler</option><option value="_yok">Tedarikçi seçilmemiş</option>{tedarikciler.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}</select>
-          <select aria-label="Ödeme filtresi" {...sec} value={filtre.odeme} onChange={e => setFiltre(f => ({ ...f, odeme: e.target.value }))}><option value="">Tüm ödemeler</option><option value="odenmedi">Ödenmemiş</option><option value="odendi">Ödenmiş</option><option value="gecti">Vadesi geçmiş</option></select>
+          <select aria-label="Ödeme filtresi" {...sec} value={filtre.odeme} onChange={e => setFiltre(f => ({ ...f, odeme: e.target.value }))}><option value="">Tüm ödemeler</option><option value="odenmedi">Ödenmemiş</option><option value="odendi">Ödenmiş</option><option value="gecti">Vadesi geçmiş</option>{hatirlatma && <option value="hatirlatma">Hatırlatma kapsamı</option>}</select>
           <input aria-label="Açıklama ara" className="input" style={{ width: 200 }} placeholder="Açıklama, çalışan, tedarikçi ara" value={filtre.ara} onChange={e => setFiltre(f => ({ ...f, ara: e.target.value }))} />
         </div>
       </div>

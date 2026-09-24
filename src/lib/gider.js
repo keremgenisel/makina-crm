@@ -87,6 +87,12 @@ const odenecekKurus = (k, dav) => kalemKurus(k, dav) - stopajKurus(k, dav) + kdv
 export const odenecekTutar = (k, dav = DAVRANIS.NORMAL) => tl(odenecekKurus(k, dav));
 
 export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && k.sonOdemeTarihi < bugun;
+// Ödeme durumu çevirme (spec 0003 plan H8): Giderler ve Anasayfa hatırlatma penceresi aynı kayıt dönüşümünü kullanır.
+export const odemeDurumuDegistir = (k, bugun) => { const odendi = !k.odendi; return { ...k, odendi, odemeTarihi: odendi ? bugun : null }; };
+// Yalnız "ödendi" yönü (Anasayfa hatırlatma penceresi, spec 0003 triyaj bulgu 3): durum çevrilmez, ayarlanır.
+// Satır ekrandayken kalem başka yoldan (yeniden yükleme/birleştirme) zaten ödenmişse tıklama ödemeyi geri almaz,
+// mevcut ödeme tarihi korunur.
+export const odendiIsaretle = (k, bugun) => ({ ...k, odendi: true, odemeTarihi: k.odemeTarihi || bugun });
 
 // ── Model satırları (R21, K31, K32) ──────────────────────────────────────────
 export const modelSatirlariDogrula = (tutar, satirlar = []) => {

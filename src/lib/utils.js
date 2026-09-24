@@ -20,6 +20,9 @@ export const simdiYerel = () => {
   const p = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
+// Yerel takvim günü "YYYY-MM-DD" (spec 0003 C3, plan H1). today() UTC tarihini verir; Türkiye'de gece
+// 00:00–03:00 arasında dünü döndürür. Gün sınırına duyarlı hesaplar (ödeme hatırlatıcısı) bunu kullanır.
+export const yerelBugun = () => simdiYerel().slice(0, 10);
 // İki damga arası dakika (null-güvenli). Aynı zaman tabanında oldukları için fark doğru.
 export const sureDk = (bas, bit) => {
   if (!bas || !bit) return null;

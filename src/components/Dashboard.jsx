@@ -4,11 +4,30 @@ import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
+import { useBugun } from "../hooks/useBugun";
+import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
+import { odendiIsaretle } from "../lib/gider";
+import { logAction } from "../lib/audit";
+import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null }) => {
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
+  // Ödeme hatırlatıcısı (spec 0003 R10): yalnız gider yetkisiyle; yetkisizde App boş dizi verir.
+  giderYetki = false, giderler = [], setGiderler = null, giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
+  const canGider = makeCanDo(serverPermissions, "giderActions");
+  const [showHatirlatma, setShowHatirlatma] = useState(false);
+  const bugunYerel = useBugun();
+  const hatirlatma = useMemo(() => (giderYetki ? odemeHatirlatmalari(giderler, {
+    turler: giderTurleri, tedarikciler, yururlukAy: giderAyarlari?.yururlukAy || null, esikGun: hatirlatmaEsigi(giderAyarlari),
+  }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
+  // R6, plan H8: Giderler ile aynı işlem geçmişi satırı; pencerede yalnız "ödendi" yönü olduğu için durum
+  // çevrilmez, ayarlanır (triyaj bulgu 3).
+  const hatirlatmaOdendi = (k) => {
+    setGiderler?.(p => p.map(x => (x.id === k.id ? odendiIsaretle(x, bugunYerel) : x)));
+    logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
+  };
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
   const [teklifConflict, setTeklifConflict] = useState({});      // { [id]: "kullanıcı adı" }
@@ -324,6 +343,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <StatCard label="Üretimde Bekleyen Kalıplar" value={pendingKaliplarCount} sub={onGoUretim ? "Forma git" : undefined} color="var(--purTx, #7c3aed)" onClick={onGoUretim || undefined} />
       </div>
 
+      {/* Ödeme hatırlatıcısı (spec 0003, plan H2): 5 × 2 ızgaranın altında kendi satırında, iki ayrı sayı. */}
+      {hatirlatma && <div style={{ marginBottom: 20 }}><OdemeHatirlatmaKarti sonuc={hatirlatma} onClick={() => setShowHatirlatma(true)} /></div>}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Son Satışlar */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: 22, boxShadow: "0 1px 4px rgba(0,0,0,.08)" }}>
@@ -558,6 +580,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
 
       {/* Borçlu Firmalar */}
+      {showHatirlatma && hatirlatma && (
+        <OdemeHatirlatmaPenceresi sonuc={hatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setGiderler} onOdendi={hatirlatmaOdendi}
+          onGiderlereGit={onGoGiderHatirlatma ? () => { setShowHatirlatma(false); onGoGiderHatirlatma(); } : null} onClose={() => setShowHatirlatma(false)} />
+      )}
       {showDebtors && (
         <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>
           <div style={{ maxHeight: 480, overflowY: "auto" }}>

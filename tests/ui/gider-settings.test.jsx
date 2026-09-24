@@ -79,7 +79,38 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek" });
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7 });
+  });
+});
+
+describe("Ödeme hatırlatma eşiği (spec 0003 R5)", () => {
+  function EsikHarness({ onState }) {
+    const [appSettings, setAppSettings] = useState({ giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06" } });
+    onState(appSettings);
+    return <SettingsGider appSettings={appSettings} setAppSettings={setAppSettings} giderler={[]} />;
+  }
+  it("AC-11: eşik 15'e çıkarılıp kaydedilir (varsayılan 7 görünür)", () => {
+    let st;
+    render(<EsikHarness onState={s => { st = s; }} />);
+    const alan = screen.getByLabelText("Ödeme hatırlatma eşiği (gün)");
+    expect(alan.value).toBe("7");
+    fireEvent.change(alan, { target: { value: "15" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st.giderAyarlari).toMatchObject({ hatirlatmaEsikGun: 15, yururlukAy: "2026-06" });
+  });
+  it("AC-23: negatif, 365 üstü veya sayı olmayan değer kaydedilmez, neden yazılır", () => {
+    let st;
+    render(<EsikHarness onState={s => { st = s; }} />);
+    for (const v of ["-1", "366", "abc"]) {
+      fireEvent.change(screen.getByLabelText("Ödeme hatırlatma eşiği (gün)"), { target: { value: v } });
+      fireEvent.click(screen.getByText("Kaydet"));
+      expect(screen.getByText(/^Hatırlatma eşiği .*0 ile 365/)).toBeTruthy();
+      expect(st.giderAyarlari.hatirlatmaEsikGun).toBeUndefined();
+    }
+  });
+  it("R5: gider_tanim izni yoksa alan düzenlenemez", () => {
+    render(<SettingsGider appSettings={{ giderAyarlari: {} }} setAppSettings={vi.fn()} giderler={[]} canDo={() => false} />);
+    expect(screen.getByLabelText("Ödeme hatırlatma eşiği (gün)").disabled).toBe(true);
   });
 });
 

@@ -172,7 +172,7 @@ dbmod.writeBlobToDb({
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
     musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     analizGizliModeller: ["AK-100", "AK-160"],
-    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13 },
+    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15 },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -202,6 +202,8 @@ check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.se
 // ── Gider kaydı (spec 0001) ──
 check("gider: çalışan resmi/elden maliyeti (meta JSON) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); return a?.resmiMaliyet === 39223.13 && a?.eldenMaliyet === 15000; })());
 check("gider: giderAyarlari (appSettings JSON) roundtrip", (() => { const g = blob.appSettings?.giderAyarlari; return g?.stopajOrani === 20 && g?.yururlukAy === "2026-06" && g?.varsayilanResmiMaliyet === 39223.13; })());
+// Spec 0002 C4-3 ve 0003 C1: yeni alanlar yeni sütun açmadan giderAyarlari JSON'unda taşınır.
+check("giderAyarlari.ortakGiderKaynagi + hatirlatmaEsikGun roundtrip (spec 0002/0003)", blob.appSettings?.giderAyarlari?.ortakGiderKaynagi === "standart" && blob.appSettings?.giderAyarlari?.hatirlatmaEsikGun === 15);
 check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || []).length === 3 && blob.giderTurleri.find(t => t.id === 41)?.davranis === "kira");
 check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());
 check("gider: kalem alanları + odendi boolean roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 81); const kira = (blob.giderler || []).find(x => x.id === 82); return k?.odendi === false && k.tutar === 140000 && k.odemeYontemi === "Çek" && k.sonOdemeTarihi === "2026-08-15" && k.tedarikciId === 51 && k.atamaTur === "model" && kira?.odendi === true && kira.girisYonu === "net" && kira.netTutar === 16000 && kira.stopajOrani === 20 && kira.tanimId === 61 && kira.donem === "2026-07"; })());
