@@ -12,6 +12,13 @@ Ortak kurallar:
   değişkeni yok.
 - `data-testid` hiçbir bileşenin içinde sabit yazılmaz; gerekiyorsa çağıran `testId` ile verir.
 - Kullanıcıya görünen metin çağırandan gelir ve Türkçedir.
+- Bir ekran bu bileşenleri kullanmaya başladığında görünümünün değişmediği önce/sonra görüntüsüyle kanıtlanır
+  (`scripts/evidence/0009-calistir.mjs`) ve kaydı `docs/evidence/kanit-eslemesi.json`'a eklenir; kaydı olmayan
+  kullanan dosyayı `tests/tasarim-kaynak.test.js` yakalar. Test dosyasına dokunulmaz (spec 0011 R2). Kayıt varsayılan
+  olarak "görünüm aynı" (0 piksel fark) bekler; ekranın yeni tasarıma dönüşümü gibi bilinçli bir görünüm değişikliğinde
+  kayıt `beklenen: "degisti"` ve `onay` taşır. `onay` biçimi: `Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>`; bu kaydı
+  yalnız Takım Yöneticisi'nin onayı açar. `degisti` kalıcı değildir: spec `specs/done/`'a taşınırken kayıtları `ayni`ye
+  çevrilir ve yeni görünüm taban olur (spec 0011 AC-11b, AC-11c; `tests/kanit-eslemesi.test.js`).
 
 ---
 
@@ -87,6 +94,7 @@ Uyarı şeridi: ekranın üstünde ya da bir bölümün başında, renkli zeminl
 
 - `aile`: `"bilgi"` (mavi), `"uyari"` (amber), `"basari"` (yeşil). **Tanımsız bir değer hata vermez, `bilgi` ailesine düşer.**
 - `baslik` (kalın), isteğe bağlı `metin` (açıklama satırı), `testId`.
+- `children`: serbest içerik (spec 0011, aşağıya bakın).
 - Kırmızı (hata) ailesi yoktur.
 
 **Ne zaman kullanılır:** işlemin sonucunu bildirmek (`basari`), kullanıcının dikkat etmesi gereken ama işi durdurmayan
@@ -98,6 +106,26 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Onay isteyen durum: `ConfirmDialog`.
 
 **Örnek:** `src/components/Giderler.jsx:183`
+
+### Serbest içerik (spec 0011)
+
+**Varsayılan biçim başlık artı açıklamadır.** Şerit ayrıca `children` ile serbest içerik alır:
+`<UyariSeridi aile="bilgi">Firmaya göre gruplu görünüm: <b>{n} firma</b> ({m} makina kaydı). …</UyariSeridi>`.
+
+- Serbest içerik ailenin koyu (800) tonuyla çizilir: `blu800`, `amb800`, `grn800`. Cümle içindeki `<b>` bu rengi miras alır.
+- Kap aynıdır: zemin, kenarlık, köşe, dolgu, `role="status"` ve `testId`. Tanımsız aile burada da `bilgi`'ye düşer.
+- `children` verilince (boş değer değilse: `null`, `undefined`, `false`, `""` dışında) `baslik` ve `metin` **yok sayılır**; iki biçim birleştirilmez.
+
+**Ne zaman kullanılır:** yalnız vurgulanan parça **cümlenin ortasında** duruyorsa ve cümle kalın başlık + açıklama satırı
+olarak yeniden yazılamıyorsa (ör. "… **12 firma** (15 makina kaydı) …"). Kullanıcının bugün gördüğü cümle korunarak
+şerite taşınırken.
+
+**Ne zaman kullanılmaz:**
+- Uyarı bir başlık ve açıklamaya bölünebiliyorsa: varsayılan biçim (`baslik`, `metin`).
+- Şeridin içine kendi düzenini kurmak için (liste, tablo, düğme satırı, ayrı renkli parçalar): serbest içerik bir düzen kapısı değildir. Böyle bir ihtiyaç yeni bir yapı taşı sorusudur ve kendi işinde tartışılır.
+- Renk değiştirmek için: aile dışında renk verilmez.
+
+İlk kullanım: spec 0010 (Müşteriler ekranındaki gruplu görünüm şeridi).
 
 ## HataMetni
 

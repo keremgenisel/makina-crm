@@ -11,6 +11,7 @@ import { Documents } from "../../src/components/Documents";
 import { Settings } from "../../src/components/Settings";
 import { Finance } from "../../src/components/Finance";
 import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
+import * as Tasarim from "../../src/components/tasarim";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -54,9 +55,9 @@ const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, b
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR }) {
   const [giderler, setGiderler] = useState(g0);
-  const [tanimlar, setTanimlar] = useState(TANIMLAR);
+  const [tanimlar, setTanimlar] = useState(t0);
   const [ted, setTed] = useState(TED);
   const [standart, setStandart] = useState(STANDART);
   const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: MUSTERILER, stock: [], partStockLog: [], giderler, giderTurleri: turler, standartGiderler: standart,
@@ -118,6 +119,18 @@ const EKRANLAR = {
     "danger", "eposta", "mailsablon", "sentmail", "optimize", "security", "server", "ceviri", "parcatipi"].map(t => [`ayarlar-${t}`, [ayarlar(t), []]])),
   // 2FA bölümü (SettingsTwoFactor) yalnız sunucuya bağlıyken çizilir: sahte istemci bağlantısıyla.
   "ayarlar-server-istemci": [ayarlar("server"), []],
+  // Spec 0011: uyarı şeridinin altı çağrısının hepsi (tür tanımsız ve mükerrer yukarıdaki ekranlarda).
+  "giderler-uretim-bilgi": [<GiderEkrani />, ["~Eylül 2026 tekrarlayan"]],
+  "giderler-uretim-basari": [<GiderEkrani t0={[{ ...TANIMLAR[0], id: 72, ad: "Depo kirası", uretilenAylar: [] }]} />, ["~Eylül 2026 tekrarlayan"]],
+  "giderler-aralik-gecersiz": [<GiderEkrani />, ["Tarih Aralığı", "doldur:Başlangıç tarihi=2026-09-30", "doldur:Bitiş tarihi=2026-09-01"]],
+  "giderler-hatirlatma": [<GiderEkrani />, ["~Hatırlatma kapsamı ("]],
+  "giderler-kapsam-disi": [<GiderEkrani />, ["Tarih Aralığı", "doldur:Başlangıç tarihi=2026-05-01", "doldur:Bitiş tarihi=2026-09-30"]],
+  // Spec 0011: serbest içerikli şerit örneği (yalnız "sonra"; önceki bileşen children almıyordu). Üç aile.
+  "sozluk-serbest-icerik": [<div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}>
+    {Tasarim.UyariSeridi && ["bilgi", "uyari", "basari"].map(a => (
+      <Tasarim.UyariSeridi key={a} aile={a}>Firmaya göre gruplu görünüm: <b>12 firma</b> (15 makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.</Tasarim.UyariSeridi>
+    ))}
+  </div>, []],
   "ayarlar-company-acik": [ayarlar("company"), ["Firma Bilgileri"]],
 };
 
@@ -131,7 +144,18 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
   const bekle = (ms) => new Promise(r => setTimeout(r, ms));
   await bekle(300);
   for (const metin of adimlar) {
-    const aday = [...document.querySelectorAll("button, td, span, div, a")].filter(e => e.textContent.trim() === metin && e.children.length <= 2);
+    if (metin.startsWith("doldur:")) {
+      // React kontrollü alanı: yerel value ayarlayıcısı + input olayı.
+      const [etiket, deger] = metin.slice(7).split("=");
+      const el = document.querySelector(`input[aria-label="${etiket}"]`);
+      if (el) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("input", { bubbles: true })); }
+      else console.warn("alan yok: " + etiket);
+      await bekle(300);
+      continue;
+    }
+    const bas = metin.startsWith("~");
+    const aranan = bas ? metin.slice(1) : metin;
+    const aday = [...document.querySelectorAll("button, td, span, div, a")].filter(e => (bas ? e.textContent.trim().startsWith(aranan) : e.textContent.trim() === aranan) && e.children.length <= 2);
     const hedef = aday.length ? (aday[aday.length - 1].closest("tr") || aday[aday.length - 1].closest("button") || aday[aday.length - 1]) : null;
     if (hedef) hedef.click(); else console.warn("tıklanamadı: " + metin);
     await bekle(300);

@@ -96,16 +96,23 @@ export const BosDurum = ({ baslik, metin, eylemler, testId }) => (
 // ── Uyarı şeridi ─────────────────────────────────────────────────────────────
 // aile: "bilgi" (mavi) · "uyari" (amber) · "basari" (yeşil). Tanımsız değer bilgi ailesine düşer (R10).
 // Hata (kırmızı) ailesi yoktur; alan hatası için HataMetni.
+// İki biçim (spec 0011): varsayılan kalın başlık + isteğe bağlı açıklama satırı; ya da children ile serbest içerik
+// (cümle içi vurgu için, metin rengi ailenin 800 tonu). children çizilebilir bir değerse serbest içerik çizilir ve
+// baslik/metin yok sayılır. Kap (zemin, kenarlık, dolgu, role, kimlik) iki biçimde aynıdır.
+// [başlık rengi, zemin, kenarlık, serbest içerik metin rengi]
 const AILELER = {
-  bilgi: ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)"],
-  uyari: ["var(--amb700, #b45309)", "var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)"],
-  basari: ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)"],
+  bilgi: ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)", "var(--blu800, #1e40af)"],
+  uyari: ["var(--amb700, #b45309)", "var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)", "var(--amb800, #92400e)"],
+  basari: ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)", "var(--grn800, #065f46)"],
 };
-export const UyariSeridi = ({ aile = "bilgi", baslik, metin, testId }) => {
+const cizilebilir = (c) => c != null && c !== false && c !== "";
+export const UyariSeridi = ({ aile = "bilgi", baslik, metin, testId, children }) => {
   const r = AILELER[aile] || AILELER.bilgi;
+  const serbest = cizilebilir(children);
+  const kap = { background: r[1], border: `1px solid ${r[2]}`, borderRadius: 10, padding: "10px 14px", fontSize: 13 };
   return (
-    <div role="status" data-testid={testId} style={{ background: r[1], border: `1px solid ${r[2]}`, borderRadius: 10, padding: "10px 14px", fontSize: 13 }}>
-      <b style={{ color: r[0] }}>{baslik}</b>{metin && <div style={{ marginTop: 2, color: "var(--n700, #334155)" }}>{metin}</div>}
+    <div role="status" data-testid={testId} style={serbest ? { ...kap, color: r[3] } : kap}>
+      {serbest ? children : <><b style={{ color: r[0] }}>{baslik}</b>{metin && <div style={{ marginTop: 2, color: "var(--n700, #334155)" }}>{metin}</div>}</>}
     </div>
   );
 };

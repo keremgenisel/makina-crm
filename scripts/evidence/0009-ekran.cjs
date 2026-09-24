@@ -36,7 +36,9 @@ app.whenReady().then(async () => {
   let cizimHatasi = 0;
   try {
     await yukle("ekran=giderler-rapor&tema=light");
-    const ekranlar = await win.webContents.executeJavaScript("window.__EKRANLAR");
+    // EKRAN_ATLA="a,b": "önce" çekiminde henüz var olmayan (yalnız sonra) ekranları atlamak için.
+    const atla = new Set((process.env.EKRAN_ATLA || "").split(",").filter(Boolean));
+    const ekranlar = (await win.webContents.executeJavaScript("window.__EKRANLAR")).filter(e => !atla.has(e));
     for (const ekran of ekranlar) {
       for (const tema of ["light", "dark"]) {
         const hash = `ekran=${ekran}&tema=${tema}`;
@@ -45,12 +47,13 @@ app.whenReady().then(async () => {
         const yukseklik = Math.min(Math.max(900, h), 6000);
         if (yukseklik !== 900) await yukle(hash, yukseklik);
         // Boş ya da çökmüş ekran sessizce "0 fark" vermesin: hata ve boş içerik rapora ve çıkış koduna yansır.
-        const durum = await win.webContents.executeJavaScript("({ hata: document.body.getAttribute('data-hata'), metin: (document.getElementById('root').innerText || '').trim().length })");
+        const durum = await win.webContents.executeJavaScript("({ hata: document.body.getAttribute('data-hata'), metin: (document.getElementById('root').innerText || '').trim().length, seritler: [...document.querySelectorAll('[role=status]')].map(e => e.textContent.trim().slice(0, 70)) })");
         const img = await win.webContents.capturePage();
         const ad = `${ekran}-${tema === "dark" ? "karanlik" : "aydinlik"}.png`;
         fs.writeFileSync(path.join(cikis, ad), img.toPNG());
         const satir = { ad, boyut: `${img.getSize().width}x${img.getSize().height}` };
         if (durum.hata || durum.metin < 20) { satir.cizimHatasi = durum.hata || "boş ekran"; cizimHatasi++; }
+        if (durum.seritler.length) satir.seritler = durum.seritler; // hangi uyarı şeritlerinin çizildiği (kapsam kanıtı)
         if (karsi) {
           const eskiYol = path.join(karsi, ad);
           if (!fs.existsSync(eskiYol)) satir.fark = "önce görüntüsü yok";

@@ -120,67 +120,40 @@ describe("sözlük belgesi", () => {
   });
 });
 
-// Triyaj bulgu 1 ve 3 (AC-12): tasarim.jsx'i kullanan her dosya en az bir kanıt ekranına bağlıdır. O ekran piksel
-// raporunda iki temada da çizim hatasız ve 0 farkla durur, yan yana JPEG'i depodadır. Karşılaştırma tam çözünürlüklü PNG'lerle
+// Triyaj bulgu 1 ve 3 (AC-12): tasarim.jsx'i kullanan her dosya en az bir kanıt ekranına bağlıdır. O ekran kendi piksel
+// raporunda iki temada çizim hatasız ve 0 farkla durur, yan yana JPEG'i depodadır. Karşılaştırma tam çözünürlüklü PNG'lerle
 // yapılır (depoya konmaz); doğrulamak için: node scripts/evidence/0009-calistir.mjs <sonra> <once>.
+// Spec 0011 R2 (AC-11): eşleme test dosyasında değil, docs/evidence/kanit-eslemesi.json'da. Sonraki ekran dönüşümleri kendi
+// raporunu üretir ve kaydını oraya ekler; bu test dosyasına dokunmaz. Kural aynıdır.
 describe("AC-12: Dönüşümden etkilenen her ekranın önce/sonra kanıtı", () => {
-  const DOSYA_EKRAN = {
-    "src/components/CalisanManager.jsx": ["ayarlar-calisanlar"],
-    "src/components/Documents.jsx": ["evrak-musteri", "evrak-bayi"],
-    "src/components/GiderForm.jsx": ["gider-formu"],
-    "src/components/Giderler.jsx": ["giderler-rapor", "giderler-bos-tursuz", "giderler-yururluk-oncesi", "giderler-aralik"],
-    "src/components/Settings.jsx": ["ayarlar-models", "ayarlar-kaliplar", "ayarlar-yedekparca", "ayarlar-parcatipi", "ayarlar-calisanlar"],
-    "src/components/gider/DonemRaporu.jsx": ["giderler-rapor"],
-    "src/components/gider/FiyatOnerisi.jsx": ["giderler-karlilik"],
-    "src/components/gider/GiderAlanlari.jsx": ["gider-formu"],
-    "src/components/gider/KdvKarsilastirmaKarti.jsx": ["giderler-rapor", "finans"],
-    "src/components/gider/MakinaKarliligi.jsx": ["giderler-karlilik"],
-    "src/components/gider/MakinaModelGorunumu.jsx": ["giderler-model"],
-    "src/components/gider/StandartGiderler.jsx": ["giderler-standart"],
-    "src/components/gider/Tedarikciler.jsx": ["giderler-tedarikciler"],
-    "src/components/settings/GiderTurManager.jsx": ["ayarlar-gidertur"],
-    "src/components/settings/SettingsApp.jsx": ["ayarlar-app"],
-    "src/components/settings/SettingsBackup.jsx": ["ayarlar-backup"],
-    "src/components/settings/SettingsCompany.jsx": ["ayarlar-company", "ayarlar-company-acik"],
-    "src/components/settings/SettingsDanger.jsx": ["ayarlar-danger"],
-    "src/components/settings/SettingsDocuments.jsx": ["ayarlar-evrak"],
-    "src/components/settings/SettingsExport.jsx": ["ayarlar-export"],
-    "src/components/settings/SettingsGider.jsx": ["ayarlar-giderayar"],
-    "src/components/settings/SettingsGiderTanimlari.jsx": ["ayarlar-gidertanim"],
-    "src/components/settings/SettingsImport.jsx": ["ayarlar-import"],
-    "src/components/settings/SettingsKdv.jsx": ["ayarlar-kdv"],
-    "src/components/settings/SettingsKKKomisyon.jsx": ["ayarlar-kkkomisyon"],
-    "src/components/settings/SettingsMail.jsx": ["ayarlar-eposta"],
-    "src/components/settings/SettingsMailTemplates.jsx": ["ayarlar-mailsablon"],
-    "src/components/settings/SettingsMusteri.jsx": ["ayarlar-musteri"],
-    "src/components/settings/SettingsOptimize.jsx": ["ayarlar-optimize"],
-    "src/components/settings/SettingsSahipsiz.jsx": ["ayarlar-sahipsiz"],
-    "src/components/settings/SettingsSecurity.jsx": ["ayarlar-security"],
-    "src/components/settings/SettingsSentMail.jsx": ["ayarlar-sentmail"],
-    "src/components/settings/SettingsServer.jsx": ["ayarlar-server", "ayarlar-server-istemci"],
-    "src/components/settings/SettingsServisPanosu.jsx": ["ayarlar-servispano"],
-    "src/components/settings/SettingsTakip.jsx": ["ayarlar-takip"],
-    "src/components/settings/SettingsTranslations.jsx": ["ayarlar-ceviri"],
-    "src/components/settings/SettingsTrash.jsx": ["ayarlar-trash"],
-    "src/components/settings/SettingsTwoFactor.jsx": ["ayarlar-server-istemci"],
-  };
-  const rapor = JSON.parse(oku("docs/evidence/0009-piksel-raporu.json"));
-  const kayit = Object.fromEntries(rapor.map(r => [r.ad, r]));
+  const { dosyalar: ESLEME } = JSON.parse(oku("docs/evidence/kanit-eslemesi.json"));
+  const raporlar = {};
+  const rapor = (yol) => (raporlar[yol] ??= Object.fromEntries(JSON.parse(oku(yol)).map(r => [r.ad, r])));
 
-  it("tasarim.jsx'i kullanan her dosya bir kanıt ekranına bağlı (yeni kullanan dosya eşleme olmadan eklenemez)", () => {
+  it("tasarim.jsx'i kullanan her dosyanın kanıt kaydı var (yeni kullanan dosya kayıt olmadan eklenemez)", () => {
     const kullananlar = SRC.filter(f => f !== TASARIM && /from "[./]*tasarim"/.test(oku(f))).sort();
-    expect(kullananlar).toEqual(Object.keys(DOSYA_EKRAN).sort());
+    expect(kullananlar).toEqual(Object.keys(ESLEME).sort());
   });
-  it.each(Object.entries(DOSYA_EKRAN))("%s: ekranları iki temada çizim hatasız, 0 piksel fark, JPEG depoda", (_f, ekranlar) => {
-    for (const e of ekranlar) for (const tema of ["aydinlik", "karanlik"]) {
-      const ad = `${e}-${tema}.png`;
-      expect(kayit[ad], ad).toBeTruthy();
-      expect(kayit[ad].cizimHatasi, ad).toBeUndefined();
-      expect(kayit[ad].piksel, ad).toBe(0);
-      expect(existsSync(path.join(kok, "docs/evidence", `0009-${e}-${tema}.jpg`)), ad).toBe(true);
+  it.each(Object.entries(ESLEME))("%s: ekranları iki temada çizim hatasız, beklenene uygun (aynı → 0 piksel fark; değişti → onaylı), JPEG depoda", (_f, kayitlar) => {
+    expect(kayitlar.length).toBeGreaterThan(0);
+    for (const { rapor: yol, ekran, beklenen = "ayni", onay } of kayitlar) {
+      const onek = path.basename(yol).replace(/-piksel-raporu\.json$/, "");
+      expect(["ayni", "degisti"], `${ekran}: beklenen`).toContain(beklenen);
+      // "degisti": bilinçli görünüm değişikliği (ör. ekranın yeni tasarıma dönüşümü); farkın kimin kararıyla kabul
+      // edildiği kayıtta yazılı olmalı. "ayni" (varsayılan): görünüm değişmemeli, 0 piksel fark.
+      if (beklenen === "degisti") expect(typeof onay === "string" && onay.trim().length > 10, `${ekran}: onay gerekçesi`).toBe(true);
+      for (const tema of ["aydinlik", "karanlik"]) {
+        const ad = `${ekran}-${tema}.png`;
+        const r = rapor(yol)[ad];
+        expect(r, `${yol}: ${ad}`).toBeTruthy();
+        expect(r.cizimHatasi, ad).toBeUndefined();
+        if (beklenen === "ayni") expect(r.piksel, ad).toBe(0);
+        expect(existsSync(path.join(kok, path.dirname(yol), `${onek}-${ekran}-${tema}.jpg`)), ad).toBe(true);
+      }
     }
   });
-  it("piksel raporundaki hiçbir ekranda fark ya da çizim hatası yok", () => {
-    expect(rapor.filter(r => r.piksel !== 0 || r.cizimHatasi)).toEqual([]);
+  it("0009 piksel raporundaki hiçbir ekranda fark ya da çizim hatası yok", () => {
+    const r0009 = JSON.parse(oku("docs/evidence/0009-piksel-raporu.json"));
+    expect(r0009.filter(r => r.piksel !== 0 || r.cizimHatasi)).toEqual([]);
   });
 });
