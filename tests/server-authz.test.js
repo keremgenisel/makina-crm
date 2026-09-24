@@ -453,6 +453,40 @@ describe("BOLUM_SEKMELERI kapsama (regresyon: sekme eşlemesi eksik kalırsa aç
   });
 });
 
+describe("spec 0006 C8: Evrak'tan CRM kaydı — yalnız Evrak sekmeli kullanıcı", () => {
+  const ESKI = { customers: [{ id: 500, name: "K", kaliplar: [] }], partSales: [], yedekParcaSatislar: [], partStock: [{ id: 1, partId: "7", miktar: 10 }], partStockLog: [] };
+  const YENI = {
+    customers: [{ id: 500, name: "K", kaliplar: [{ ad: "Hamburger", olcu: "", partSaleId: 61 }], kalipSayisi: 1 }],
+    partSales: [{ id: 61, customerId: 500, tur: "Kalıp", ad: "Hamburger", teklifId: 900, teklifKalemId: "k1" }],
+    yedekParcaSatislar: [{ id: 62, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, teklifId: 900, teklifKalemId: "p1", tahsisler: [] }],
+    partStock: [{ id: 1, partId: "7", miktar: 8 }], partStockLog: [{ id: 63, partId: "7", miktar: -2, tip: "bayi_satis", referansId: 62 }],
+  };
+  const BOLUMLER = ["customers", "partSales", "yedekParcaSatislar", "partStock", "partStockLog"];
+  it("AC-33: 'evrak' bu beş bölümün sekme listesinde", () => {
+    for (const b of BOLUMLER) expect(BOLUM_SEKMELERI[b], b).toContain("evrak");
+  });
+  it("AC-33: gereken eylem izinleri olan yalnız Evrak sekmeli kullanıcının yazımı geçer", () => {
+    const evrakci = JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: ["yedek_parca_add"], evrakActions: ["evrak_teklif_convert"] });
+    expect(yazmaYetkisiVar(evrakci, "user", BOLUMLER, ESKI, YENI).ok).toBe(true);
+    expect(eylemDenetimi(ESKI, YENI, evrakci, "user").ok).toBe(true);
+  });
+  it("triyaj bulgu 5 (kabul edilen sınır, belgeli): yalnız Evrak sekmeli kullanıcı mevcut kaydı bölüm düzeyinde düzenleyebilir", () => {
+    const evrakci = JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: ["yedek_parca_add"] });
+    const once = { customers: [{ id: 500, name: "K", kalanBorc: 1000 }] };
+    const sonra = { customers: [{ id: 500, name: "K", kalanBorc: 0 }] };
+    expect(yazmaYetkisiVar(evrakci, "user", ["customers"], once, sonra).ok).toBe(true);
+    expect(eylemDenetimi(once, sonra, evrakci, "user").ok).toBe(true);
+    // Ekleme ve silme ise kayıt düzeyinde denetlenmeye devam eder.
+    expect(eylemDenetimi(once, { customers: [...sonra.customers, { id: 501, name: "Yeni" }] }, evrakci, "user").ok).toBe(false);
+  });
+  it("C8: ekleme izinleri aranmaya devam eder (Evrak izni yetmez; gevşetme yok)", () => {
+    const kalipsiz = JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_edit"], stockActions: ["yedek_parca_add"] });
+    expect(eylemDenetimi(ESKI, YENI, kalipsiz, "user").ok).toBe(false);
+    const stoksuz = JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: [] });
+    expect(yazmaYetkisiVar(stoksuz, "user", ["partStock", "partStockLog"], ESKI, YENI).ok).toBe(false);
+  });
+});
+
 describe("eylemDenetimi — eylem düzeyi (ekle/sil) yetki", () => {
   // "Müşteri ekle+düzenle var, SİLME yok"
   const kismi = JSON.stringify({ customerActions: ["cust_add", "cust_edit"] });

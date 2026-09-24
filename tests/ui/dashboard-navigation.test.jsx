@@ -195,8 +195,10 @@ describe("Anasayfa kutuları boş olsa da görünür", () => {
 describe("İşlem Bekleyen Onaylı Teklifler — tıklayınca teklif açılır (highlight)", () => {
   it("satıra tıklayınca onOpenTeklif(id) çağrılır", () => {
     const onOpenTeklif = vi.fn();
-    // Onaylı + dönüştürülmemiş teklif → İşlem Bekleyen kutusunda çıkar
-    const teklifler = [{ id: 7, type: "teklif", durum: "onaylandi", firma: "Onaylı Firma", no: "T-7", tarih: "2026-08-01" }];
+    // Onaylı + dönüştürülmemiş teklif → İşlem Bekleyen kutusunda çıkar. Spec 0006 triyaj bulgu 3: kayıt üreten
+    // kalemi olmayan (satırsız) teklif artık beklemediği için fikstür bir makina kalemi taşır.
+    const teklifler = [{ id: 7, type: "teklif", durum: "onaylandi", firma: "Onaylı Firma", no: "T-7", tarih: "2026-08-01",
+      satirlar: [{ rowId: "r", pickTip: "makina", selectedModel: "AK100", subItems: [{ id: "m", type: "makina", miktar: "1", birimFiyat: "1000" }] }] }];
     render(<Dashboard {...ortak} teklifler={teklifler} customers={[]} services={[]} partSales={[]} yedekParcaSatislar={[]} onGoCustomerDetail={vi.fn()} onOpenTeklif={onOpenTeklif} />);
     fireEvent.click(screen.getByText("Onaylı Firma"));
     expect(onOpenTeklif).toHaveBeenCalledWith(7);

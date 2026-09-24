@@ -202,6 +202,21 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.giderTanimlari[0].turId).toBe(plan.maps.giderTurleri.get(turId));
     expect(plan.adds.standartGiderler.find(x => x.id === 99002).grupId).toBe(plan.maps.standartGiderler.get(sgId));
   });
+  it("spec 0006 AC-35: teklifin nihai müşterisi ve yedek parçanın belge bağı yeniden atanan kimlikleri izler; bayi kimliği değişmez", () => {
+    const cid = uid(), tid = uid();
+    const my = blob({
+      customers: [{ id: cid, name: "Yerel", kaliplar: [] }],
+      teklifler: [{ id: tid, type: "teklif", aliciTipi: "bayi", dealerId: 3, nihaiMusteriId: cid, uretilenKalemler: ["p1"], satirlar: [] }],
+      yedekParcaSatislar: [{ id: 99201, aliciTipi: "bayi", dealerId: 3, partId: "7", miktar: 1, teklifId: tid, teklifKalemId: "p1", tahsisler: [] }],
+    });
+    const sunucu = blob({ customers: [{ id: cid, name: "Başka", kaliplar: [] }], teklifler: [{ id: tid, type: "teklif", satirlar: [] }], yedekParcaSatislar: [] });
+    const plan = buildMergePlan(my, sunucu);
+    const t = plan.adds.teklifler[0];
+    expect(t.nihaiMusteriId).toBe(plan.maps.customers.get(cid));
+    expect(t.dealerId).toBe(3);
+    expect(t.uretilenKalemler).toEqual(["p1"]);
+    expect(plan.adds.yedekParcaSatislar[0].teklifId).toBe(plan.maps.teklifler.get(tid));
+  });
   it("triyaj bulgu 5: personel kalemi ve tanımındaki calisanId yeniden atanan çalışan id'sini izler", () => {
     const calId = uid(), tanimId = uid();
     const my = blob({

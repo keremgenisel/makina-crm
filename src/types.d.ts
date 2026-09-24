@@ -124,6 +124,8 @@ export interface PartSale {
   garantiDisiIslem?: boolean;
   batchId?: ID | string | null;
   teklifId?: ID | null;
+  /** Spec 0006: Evrak'tan üretildiyse kaynak belgenin alt kalem kimliği. */
+  teklifKalemId?: string | null;
   uretimFormGonder?: boolean;
   uretimFormId?: ID | null;
   deletedAt?: ISODate | null;

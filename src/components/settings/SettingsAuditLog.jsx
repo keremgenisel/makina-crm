@@ -14,7 +14,7 @@ const ENTITY_LABELS = {
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
-  veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi",
+  veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi", crm_kaydedildi: "CRM'e Kaydedildi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
   kalip_odendi: "Kalıp Ödendi", kalip_odeme_iptal: "Kalıp Ödeme İptal",
   cek_tahsil_edildi: "Çek Tahsil Edildi", cek_tahsil_iptal: "Çek Tahsil İptal",

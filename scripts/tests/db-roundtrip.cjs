@@ -117,7 +117,7 @@ dbmod.writeBlobToDb({
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, uretimFormGonder: true, uretimFormId: 88,
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
     teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
@@ -129,7 +129,7 @@ dbmod.writeBlobToDb({
   ],
   dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
-    { id: 650, dealerId: 3, aliciTipi: "bayi", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
+    { id: 650, dealerId: 3, aliciTipi: "bayi", teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
       kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30", batchId: 777001,
       teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "03121112233", teslimatAdres: "Başkent OSB 15. Cad No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan",
       yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 60.54, netTutar: 539.46, blokajGun: 0, hesabaGecis: "2026-07-15", yansitildi: false },
@@ -163,6 +163,8 @@ dbmod.writeBlobToDb({
   teklifler: [
     { id: 101, type: "teklif", no: "T-1", firma: "Firma", durum: "onaylandi", customerId: 500, satisTamam: true, tur: "makina", satirlar: [] },
     { id: 102, type: "teklif", no: "T-2", firma: "F2", durum: "taslak", satirlar: [] },
+    // Spec 0006: bayi alıcı, nihai müşteri ve üretilmiş alt kalem listesi.
+    { id: 103, type: "teklif", no: "T-3", firma: "Bayi", durum: "onaylandi", aliciTipi: "bayi", dealerId: 3, nihaiMusteriId: 500, uretilenKalemler: ["k-parca-1", "k-kalip-1"], satirlar: [] },
   ],
   appSettings: { autoBackup: false, teklifTakipGun: 1, tahsilatTakipGun: 14, autoLockMinutes: 5,
     translations: { fatura: { title: "COMMERCIAL INVOICE" } },
@@ -180,6 +182,19 @@ check("satisTamam true korunur", blob.teklifler.find(t => t.id === 101)?.satisTa
 check("satisTamam undefined korunur", blob.teklifler.find(t => t.id === 102)?.satisTamam === undefined);
 check("factory.web tam turu", blob.factory?.web === "www.altunmak.com");
 check("factory.faturaFirmaAdi tam turu", blob.factory?.faturaFirmaAdi === "ALTUNMAK MACHINERY LTD.");
+check("spec 0006: teklif aliciTipi/dealerId/nihaiMusteriId/uretilenKalemler tam turu", (() => {
+  const t = (blob.teklifler || []).find(x => x.id === 103);
+  return t?.aliciTipi === "bayi" && t?.dealerId === 3 && t?.nihaiMusteriId === 500 && JSON.stringify(t?.uretilenKalemler) === JSON.stringify(["k-parca-1", "k-kalip-1"]);
+})());
+check("spec 0006: eski teklifte uretilenKalemler/dealerId alanı yok (liste yoksa eski davranış)", (() => {
+  const t = (blob.teklifler || []).find(x => x.id === 102);
+  return t && !("uretilenKalemler" in t) && !("dealerId" in t);
+})());
+check("spec 0006: yedek parça teklifId/teklifKalemId ve Extra Kalıp teklifKalemId tam turu", (() => {
+  const y = (blob.yedekParcaSatislar || []).find(x => x.id === 650);
+  const k = (blob.partSales || []).find(x => x.id === 600);
+  return y?.teklifId === 103 && y?.teklifKalemId === "k-parca-1" && k?.teklifKalemId === "k-kalip-1";
+})());
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 // Spec 0002 C4: satış kuru (REAL) ve üretim tarihi (TEXT) satış kaydında; geri dönen stok satırının özgün üretim tarihi.
 check("customer.satisKuru + uretimTarihi tam turu (spec 0002)", (() => {

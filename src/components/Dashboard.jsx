@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, teklifKullanildiMi, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, isPartSaleBorcluMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
 import { StatCard, Modal, Btn, Icon } from "./ui";
 import { useBugun } from "../hooks/useBugun";
+import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { odendiIsaretle } from "../lib/gider";
 import { logAction } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
 
-export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onDonusturTeklif = null, onDonusturMakina = null, onKaydetSatis = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
+export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onEvrakKaydet = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
   // Ödeme hatırlatıcısı (spec 0003 R10): yalnız gider yetkisiyle; yetkisizde App boş dizi verir.
   giderYetki = false, giderler = [], setGiderler = null, giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
@@ -143,17 +144,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   }, [customers, services, partSales, yedekParcaSatislar, dealers, parts, payments, kdvRates, todayStr, factoryName]);
 
   const donusturBekleyenlar = useMemo(() => {
-    const bekleyenler = teklifler.filter(t => {
-      if (t.durum !== "onaylandi" || t.deletedAt || teklifKullanildiMi(t, customers, partSales)) return false;
-      if (!t.customerId) return true; // müşteri bağlanmamış → her zaman göster
-      const tur = effectiveTeklifTur(t);
-      return tur === "makina" || tur === "parca" || tur === "kalip"; // bağlı + işlem gerektiren tur
-    });
-    // Teklif + ondan türeyen proforma ikisi birden bekliyorsa yalnız proforma gösterilir
-    // (belge zincirinin son hali); proforma listede yoksa teklif görünmeye devam eder
-    const proformaParentIds = new Set(bekleyenler.filter(t => t.type === "proforma" && t.parentTeklifId).map(t => t.parentTeklifId));
-    return bekleyenler.filter(t => !(t.type !== "proforma" && proformaParentIds.has(t.id)));
-  }, [teklifler, customers, partSales]);
+    // Spec 0006: kayıt onaylanan TEKLİFTEN doğar (X3); tamamen kaydedilmemiş (kısmen dahil) her onaylı teklif bekler.
+    return teklifler.filter(t => t.type !== "proforma" && t.durum === "onaylandi" && !t.deletedAt
+      && !teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts }));
+  }, [teklifler, customers, partSales, yedekParcaSatislar, parts]);
 
   const pendingKaliplarCount = useMemo(() => {
     let count = 0;
@@ -462,6 +456,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   <span style={{ fontSize: 10, marginLeft: 8, padding: "1px 6px", borderRadius: 6, background: "var(--ambBr3, #fed7aa)", color: "var(--amb800, #92400e)", fontWeight: 700 }}>
                     {tur === "makina" ? "Makina" : tur === "parca" ? "Yedek Parça" : tur === "kalip" ? "Kalıp" : "Diğer"}
                   </span>
+                  {teklifUretimDurumu(t, { parts, customers }) === "kismen" && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "var(--ambBg, #fffbeb)", color: "var(--amb700, #b45309)", fontWeight: 700 }}>Kısmen kaydedildi</span>}
                   {t.type === "proforma" && (
                     <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)", fontWeight: 700 }}>Proforma</span>
                   )}
@@ -472,23 +467,11 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-                  {tur === "makina" && !t.customerId && onDonusturTeklif && canCust("cust_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturTeklif(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--brand, #e85d1a)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
-                      {busy ? "..." : "Müşteri Ekle"}
+                  {/* Spec 0006 R9: tek "CRM'e Kaydet"; izin kontrolü ve özet App.evrakKaydet'te (AC-42). */}
+                  {onEvrakKaydet && canEvrak("evrak_teklif_convert") && (
+                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onEvrakKaydet(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--brand, #e85d1a)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
+                      {busy ? "..." : "CRM'e Kaydet"}
                     </Btn>
-                  )}
-                  {tur === "makina" && t.customerId && onDonusturMakina && canCust("cust_detail_add_machine") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onDonusturMakina(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--brand, #e85d1a)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
-                      {busy ? "..." : "Makina Ekle"}
-                    </Btn>
-                  )}
-                  {(tur === "parca" || tur === "kalip") && t.customerId && onKaydetSatis && canCust("cust_kalip_add") && (
-                    <Btn small disabled={busy || !!conflict} onClick={withLock(t.id, () => onKaydetSatis(t))} style={{ background: conflict ? "var(--n200b, #e5e7eb)" : "var(--cyan, #0891b2)", color: conflict ? "#9ca3af" : "var(--surface, #ffffff)", border: "none" }}>
-                      {busy ? "..." : "Satışa Dönüştür"}
-                    </Btn>
-                  )}
-                  {(tur === "parca" || tur === "kalip") && !t.customerId && (
-                    <span style={{ fontSize: 11, color: "var(--amb700, #b45309)", fontWeight: 600 }}>Müşteri bağlayın</span>
                   )}
                 </div>
               </div>

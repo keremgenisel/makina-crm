@@ -16,7 +16,7 @@ import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
-  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], krediKartiKomisyonlari = null }) => {
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
   const [ypForm, setYpForm] = useState(null); // yedek parça satışı formu (bu bayi alıcı seçili)
   const openAddYedekParca = (dealer) => {
@@ -227,6 +227,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
         // arasında bölünür (örn. bayi borçluyken adı düzeltilince borcu kaybolmuş gibi görünür).
         if (oldName && newName && oldName !== newName) {
           setServices?.(p => p.map(s => s.islemFirma === oldName ? { ...s, islemFirma: newName } : s));
+          // Spec 0006 R19: bayiyi satış yapan firma olarak taşıyan Extra Kalıp satışları (bayi alacağı adla eşleşir).
+          setPartSales?.(p => p.map(ps => ps.satisFirma === oldName ? { ...ps, satisFirma: newName } : ps));
           setCustomers?.(p => p.map(c => {
             const satisYapanEsleser = c.satisYapan === oldName;
             const prevOwnerEsleser = c.prevOwners?.some(o => o.satisYapan === oldName);

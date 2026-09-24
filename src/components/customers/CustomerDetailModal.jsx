@@ -35,6 +35,7 @@ import { servisPlanlandiMi } from "../../lib/servisAlarm";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
+import { kalipSatisOrtak, yeniKalipSatislari } from "../../lib/kalipSatisi";
 import { MakinaMaliyetDetay } from "../gider/MakinaMaliyetDetay";
 import { makinaKarlilik } from "../../lib/makinaMaliyeti";
 
@@ -377,38 +378,8 @@ export const CustomerDetailModal = ({
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
     const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
     if (!selectedCust || !setPartSales || satirlar.length === 0) return;
-    const ortak = {
-      customerId: selectedCust.id, tur: "Kalıp", tarih: pkForm.tarih || today(),
-      currency: pkForm.currency || "TRY", ucretsizMi: false,
-      odendi: !!pkForm.odendi, faturaTipi: pkForm.faturaTipi,
-      // Ödeme yöntemi (makina satışıyla aynı). Çek ise vade + tahsil; çek tahsil edilene kadar borçlu.
-      yontem: pkForm.yontem || "Nakit", vadeTarihi: pkForm.yontem === "Çek" ? (pkForm.vadeTarihi || "") : "",
-      tahsilEdildi: pkForm.yontem === "Çek" ? !!pkForm.tahsilEdildi : false,
-      // Kredi kartı: taksit sayısı (batch geneli). kartKomisyonu snapshot'ı her kalem kaydına ayrı yazılır
-      // (komisyon tutar orantılı; toplam = kalemlerin toplamı). Diğer yöntemlerde temizlenir.
-      taksitSayisi: pkForm.yontem === "Kredi Kartı" ? (pkForm.taksitSayisi ?? null) : null,
-      // Satış yapan firma bilgisi YALNIZ partSale kaydına yazılır (aşağıdaki setCustomers'a değil)
-      satisFirma: pkForm.satisFirma ?? null, satisFirmaAd: pkForm.satisFirmaAd ?? "", satisFirmaYetkili: pkForm.satisFirmaYetkili ?? "",
-      satisFirmaTel: pkForm.satisFirmaTel ?? "", satisFirmaUlke: pkForm.satisFirmaUlke ?? "", satisFirmaSehir: pkForm.satisFirmaSehir ?? "",
-      // Servis ve Kargo Panosu (kargo takibi) alanları — form-seviyesi, batch'teki tüm kalıplara uygulanır.
-      kargoDurum: pkForm.kargoDurum || "", kargoFirma: pkForm.kargoFirma ?? "", kargoTakipNo: pkForm.kargoTakipNo ?? "",
-      kargoTarih: pkForm.kargoTarih ?? "", kargoSorumlusu: pkForm.kargoSorumlusu ?? "", panoDusmeZamani: pkForm.panoDusmeZamani ?? "",
-      fabrikaTeslim: !!pkForm.fabrikaTeslim, // panoda kargo yerine "Fabrika Teslim"
-      // Teslim şekli açık işaret: form her zaman bir seçim yapar (Kargo varsayılan). Timeline etiketi
-      // bunu esas alır; eski (teslimSekli boş) düz "Kalıp Verildi" kayıtları sezgiye düşer.
-      teslimSekli: pkForm.fabrikaTeslim ? "fabrika" : "kargo",
-      // Farklı teslimat (sevk) adresi — yalnız Kargo'da (Fabrika Teslim'de anlamsız). teslimatFarkli
-      // false ise diğer alanlar boşlanır (yedek parça formundaki desenle aynı).
-      ...(() => {
-        const farkli = !pkForm.fabrikaTeslim && !!pkForm.teslimatFarkli;
-        return {
-          teslimatFarkli: farkli,
-          teslimatAd: farkli ? (pkForm.teslimatAd ?? "") : "", teslimatTel: farkli ? (pkForm.teslimatTel ?? "") : "",
-          teslimatAdres: farkli ? (pkForm.teslimatAdres ?? "") : "", teslimatUlke: farkli ? (pkForm.teslimatUlke ?? "") : "",
-          teslimatSehir: farkli ? (pkForm.teslimatSehir ?? "") : "", teslimatIlce: farkli ? (pkForm.teslimatIlce ?? "") : "",
-        };
-      })(),
-    };
+    // Ortak alanlar tek kaynaktan (spec 0006 C3): Evrak'tan üretilen Extra Kalıp ile aynı kayıt.
+    const ortak = kalipSatisOrtak(pkForm, selectedCust.id, today());
     // Kredi kartı: kalem fiyatından {ucret, kartKomisyonu} üret. Komisyon müşteriye YANSITILDIYSA (kkYansit)
     // ucret = KDV matrahı (kalem+komisyon); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
     // Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
@@ -437,16 +408,9 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "duzenlendi", entity: "kalip_satisi", entityId: pkForm.id, entityName: selectedCust.name, detail: { ad: k.ad, onceki: snapshotOnceki(partSales.find(x => x.id === pkForm.id)) } });
       showToast("Kayıt güncellendi.");
     } else {
-      const batchId = uid();
-      // olusturmaZamani: panoda "en son eklenen üstte" sıralaması için tam zaman damgası (servis
-      // fabrikaGirisZamani / kargo olusturmaZamani ile aynı rol). Gün-bazlı tarih T00:00'a düşer,
-      // aynı günkü servis/kargo hep üstüne çıkardı — bu yüzden gerçek zaman gerekiyor.
-      const olusturmaZamani = simdiYerel();
-      const yeniKayitlar = satirlar.map(k => { const kkX = kalipKart(k.fiyat); return { id: uid(), batchId, olusturmaZamani, ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kkX.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kkX.kartKomisyonu }; });
-      setPartSales(p => [...p, ...yeniKayitlar]);
-      setCustomers(p => p.map(c => c.id === selectedCust.id
-        ? { ...c, kaliplar: [...(c.kaliplar || []), ...yeniKayitlar.map(r => ({ ad: r.ad, olcu: r.olcu, partSaleId: r.id }))], kalipSayisi: (c.kaliplar || []).length + yeniKayitlar.length }
-        : c));
+      // Kayıt + müşterinin kalıp listesine ekleme ortak yoldan (spec 0006 C3).
+      const yeniKayitlar = yeniKalipSatislari(ortak, satirlar.map(k => { const kkX = kalipKart(k.fiyat); return { ad: k.ad, olcu: k.olcu, ucret: kkX.ucret, uretimFormGonder: k.uretimFormGonder, kartKomisyonu: kkX.kartKomisyonu }; }),
+        { setPartSales, setCustomers, uid, simdi: simdiYerel });
       logAction({ serverPermissions, action: "olusturuldu", entity: "kalip_satisi", entityId: yeniKayitlar[0]?.id, entityName: selectedCust.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} kalıp verildi (ücretli).` : "Kalıp verildi (ücretli).");
     }

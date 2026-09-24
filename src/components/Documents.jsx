@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from "react";
-import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, teklifKullanildiMi, downloadFile, customerToAliciFields } from "../lib/utils";
+import { useState, useMemo, useEffect, useRef, Fragment } from "react";
+import { teklifKaydedildiMi, teklifUretimDurumu, uretilenKayitlar, kalipRolu } from "../lib/evrakUretim";
+import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, downloadFile, customerToAliciFields } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
@@ -166,14 +167,17 @@ export const Documents = ({
   parts = [],
   geoData = null,
   loadingGeo = false,
-  onDonusturTeklif = null,
-  onDonusturMakina = null,
-  onKaydetSatis = null,
+  // Spec 0006: tek "CRM'e Kaydet" eylemi (App.evrakKaydet); bayi alıcı ve üretilen kayıt listesi için veri.
+  onEvrakKaydet = null,
+  dealers = [],
+  yedekParcaSatislar = [],
   serverPermissions = null,
   openDocId = null,
   onDocOpenConsumed = null,
 }) => {
   const effectiveTur = effectiveTeklifTur;
+  const kaydedildiMi = (t) => teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts });
+  const uretimDurumu = (t) => teklifUretimDurumu(t, { parts, customers });
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
 
   const canDoEvrak = makeCanDo(serverPermissions, "evrakActions");
@@ -215,7 +219,9 @@ export const Documents = ({
   const [odakDocId, setOdakDocId] = useState(null); // genel aramadan gelen: listede vurgulanacak belge
   const [form, _setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
-  const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → müşteri çevirme bildirimi
+  const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → "CRM'e Kaydet" bildirimi
+  // Listede "üretilen kayıtlar" satırı açık olan belge (spec 0006 AC-43).
+  const [uretilenAcik, setUretilenAcik] = useState(null);
   const { lockLoading: teklifLockLoading, lockConflict: teklifLock, forceAcquire: forceTeklifLock } = useLock("teklif", form?.id ?? null);
 
   // ── Teklif resimleri: kayıtta ve taslakta SOYULUR, kullanım anında doldurulur ──
@@ -378,6 +384,23 @@ export const Documents = ({
     }
   };
 
+  // ── Bayi alıcı (spec 0006 R12/R13): bayi araması ve bayi belgesinde nihai müşteri ──
+  const [bayiSearch, setBayiSearch] = useState("");
+  const [nihaiSearch, setNihaiSearch] = useState("");
+  const liveDealers = useMemo(() => (dealers || []).filter(d => !d.deletedAt), [dealers]);
+  const bayiResults = useMemo(() => {
+    if (!bayiSearch.trim()) return [];
+    const q = aramaNormalize(bayiSearch.trim());
+    return liveDealers.filter(d => aramaNormalize(d.name || "").includes(q)).slice(0, 6);
+  }, [bayiSearch, liveDealers]);
+  const nihaiResults = useMemo(() => {
+    if (!nihaiSearch.trim()) return [];
+    const q = aramaNormalize(nihaiSearch.trim());
+    return customers.filter(c => !c.deletedAt && (aramaNormalize(c.name || "").includes(q) || aramaNormalize(c.serialNo || "").includes(q))).slice(0, 6);
+  }, [nihaiSearch, customers]);
+  // Bayi seçilince belgenin firma bilgileri bayinin kayıtlı bilgileriyle dolar; alanlar düzenlenebilir kalır.
+  const bayiToAliciFields = (d) => ({ dealerId: d.id, firma: d.name || "", yetkili: d.contact || "", tel: d.phone || "", adres: d.adres || "", email: d.email || "", country: d.country || "", city: d.city || "" });
+
   // ── Müşteri arama (alıcı alanlarını doldurmak için) ──
   const [custSearch, setCustSearch] = useState("");
   const custResults = useMemo(() => {
@@ -398,7 +421,7 @@ export const Documents = ({
   // Açık formdaki teklif daha önce CRM'e aktarılmış mı — form snapshot'ı yerine canlı kayıt
   // üzerinden bakılır ki modal açıkken başka yerden yapılan dönüştürme de anında yansısın
   const formKullanildi = form?.type === "teklif" && form.id
-    ? teklifKullanildiMi(liveTeklifler.find(x => x.id === form.id) || form, customers, partSales)
+    ? kaydedildiMi(liveTeklifler.find(x => x.id === form.id) || form)
     : false;
   const filtered = useMemo(() =>
     liveTeklifler.filter(t => t.type === subTab).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
@@ -613,18 +636,11 @@ export const Documents = ({
     const logEntity = entry.type === "teklif" ? "teklif" : "proforma";
     logAction({ serverPermissions, action: isUpdate ? "duzenlendi" : "olusturuldu", entity: logEntity, entityId: entry.id, entityName: entry.firma, detail: { no: entry.no, durum: entry.durum, ...(isUpdate ? { onceki: snapshotOnceki(liveTeklifler.find(t => t.id === entry.id)) } : {}) } });
     showToast(isUpdate ? (linkedUpdated ? `Belge güncellendi. ${linkedLabel}` : "Belge güncellendi.") : "Belge kaydedildi.");
-    if (entry.type === "teklif" && entry.durum === "onaylandi") {
-      const tur = effectiveTur(entry);
-      // makina + bağlı müşteri: satisTamam'ı explicit false yaparak Dashboard'da görünmesini sağla
-      if (tur === "makina" && entry.customerId && entry.satisTamam === undefined) {
-        entry.satisTamam = false;
-        setTeklifler(p => p.map(t => t.id === entry.id ? entry : t));
-      }
-      if (!teklifKullanildiMi(entry, customers, partSales) && prevEntry?.durum !== "onaylandi") {
-        if (tur === "makina" || ((tur === "parca" || tur === "kalip") && entry.customerId)) {
-          setDonusturBanner(entry);
-        }
-      }
+    // Spec 0006 R9: onaylanan teklif, türünden bağımsız tek "CRM'e Kaydet" önerisi alır.
+    if (entry.type === "teklif" && entry.durum === "onaylandi" && prevEntry?.durum !== "onaylandi") {
+      // Bulgu 3 / AC-27: kayıt üreten kalemi olmayan onaylı belgede hata yok, kullanıcıya söylenir, belge beklemez.
+      if (uretimDurumu(entry) === "gerekmiyor") showToast("Belgede CRM'e kaydedilecek kalem yok (bant / belirsiz / serbest metin); kayıt gerektirmiyor.");
+      else if (!kaydedildiMi(entry)) setDonusturBanner(entry);
     }
     setForm(null);
   };
@@ -803,43 +819,24 @@ export const Documents = ({
       </div>
 
       {/* Dönüştür Banner */}
-      {donusturBanner && (() => {
-        const bTur = effectiveTur(donusturBanner);
-        return (
-          <div style={{ background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 10, padding: "11px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+      {donusturBanner && (
+          <div data-testid="crm-kaydet-banner" style={{ background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 10, padding: "11px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--grn800, #065f46)" }}>Teklif onaylandı:</span>
               <span style={{ fontSize: 13, color: "var(--grn800, #065f46)" }}>{donusturBanner.firma || "—"}</span>
-              <span style={{ fontSize: 12, color: "var(--emerald, #059669)" }}>·
-                {bTur === "makina" && !donusturBanner.customerId && " Müşteri kaydı oluşturulsun mu?"}
-                {bTur === "makina" && donusturBanner.customerId && " Bu firmaya yeni makina eklensin mi?"}
-                {(bTur === "parca" || bTur === "kalip") && " CRM'e satış kaydedilsin mi?"}
-              </span>
+              <span style={{ fontSize: 12, color: "var(--emerald, #059669)" }}>· Belgenin kalemleri CRM'e kaydedilsin mi?</span>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && !donusturBanner.customerId && onDonusturTeklif && (
-                <Btn small onClick={() => { onDonusturTeklif(donusturBanner); setDonusturBanner(null); }}
+              {canDoEvrak("evrak_teklif_convert") && onEvrakKaydet && (
+                <Btn small onClick={() => { onEvrakKaydet(donusturBanner); setDonusturBanner(null); }}
                   style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                  <Icon name="userPlus" size={12} /> Yeni Müşteri Ekle
-                </Btn>
-              )}
-              {canDoEvrak("evrak_teklif_convert") && bTur === "makina" && donusturBanner.customerId && onDonusturMakina && (
-                <Btn small onClick={() => { onDonusturMakina(donusturBanner); setDonusturBanner(null); }}
-                  style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                  <Icon name="userPlus" size={12} /> Bu Firmaya Makina Ekle
-                </Btn>
-              )}
-              {canDoEvrak("evrak_teklif_convert") && (bTur === "parca" || bTur === "kalip") && donusturBanner.customerId && onKaydetSatis && (
-                <Btn small onClick={() => { onKaydetSatis(donusturBanner); setDonusturBanner(null); }}
-                  style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                  Satışa Dönüştür
+                  <Icon name="check" size={12} /> CRM'e Kaydet
                 </Btn>
               )}
               <Btn small variant="ghost" onClick={() => setDonusturBanner(null)}>×</Btn>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* Alt sekme */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
@@ -882,7 +879,8 @@ export const Documents = ({
                 const hasProforma = subTab === "teklif" && liveTeklifler.some(p => p.type === "proforma" && p.parentTeklifId === t.id);
                 const odakli = t.id === odakDocId; // genel aramadan vurgulanan belge
                 return (
-                  <tr key={t.id} ref={odakli ? odakDocRef : null} data-odak-belge={odakli ? "1" : undefined}
+                  <Fragment key={t.id}>
+                  <tr ref={odakli ? odakDocRef : null} data-odak-belge={odakli ? "1" : undefined}
                     onClick={canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? () => openEdit(t) : undefined}
                     style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", cursor: canDoEvrak(subTab === "teklif" ? "evrak_teklif_edit" : "evrak_proforma_edit") ? "pointer" : "default", ...(odakli ? { background: "var(--ambBg3, #fff7ed)", boxShadow: "inset 3px 0 0 var(--brand, #e85d1a)" } : null) }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
@@ -919,23 +917,43 @@ export const Documents = ({
                             <Icon name="arrowRight" size={12} />
                           </Btn>
                         )}
-                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !teklifKullanildiMi(t, customers, partSales) && (() => {
-                          const rTur = effectiveTur(t);
-                          if (rTur === "makina" && !t.customerId && onDonusturTeklif)
-                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturTeklif(t); }} title="Yeni müşteri kaydı oluştur" style={{ color: "var(--grn600, #16a34a)" }}><Icon name="userPlus" size={12} /></Btn>;
-                          if (rTur === "makina" && t.customerId && onDonusturMakina)
-                            return <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onDonusturMakina(t); }} title="Bu firmaya makina ekle" style={{ color: "var(--grn600, #16a34a)" }}><Icon name="userPlus" size={12} /></Btn>;
-                          if ((rTur === "parca" || rTur === "kalip") && t.customerId && onKaydetSatis)
-                            return <Btn small variant="ghost" onClick={() => onKaydetSatis(t)} title="CRM'e satış kaydet" style={{ color: "var(--cyan, #0891b2)" }}><Icon name="check" size={12} /></Btn>;
-                          return null;
-                        })()}
-                        {subTab === "teklif" && (teklifKullanildiMi(t, customers, partSales) || t.customerId) && (
-                          <span title={teklifKullanildiMi(t, customers, partSales) ? "CRM'e kaydedildi" : "Müşteriye bağlandı"} style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", lineHeight: 1.6 }}>✓ {teklifKullanildiMi(t, customers, partSales) ? "Kaydedildi" : "Bağlı"}</span>
+                        {subTab === "teklif" && canDoEvrak("evrak_teklif_convert") && t.durum === "onaylandi" && !kaydedildiMi(t) && onEvrakKaydet && (
+                          <Btn small variant="ghost" onClick={() => { setDonusturBanner(null); onEvrakKaydet(t); }} title="CRM'e Kaydet" style={{ color: "var(--grn600, #16a34a)" }}><Icon name="check" size={12} /></Btn>
                         )}
+                        {subTab === "teklif" && (() => {
+                          const d0 = uretimDurumu(t);
+                          // Bulgu 3: üretilebilir kalemi olmayan belge beklemez, ayrı rozetle görünür.
+                          if (d0 === "gerekmiyor") return <span data-testid="kayit-gerektirmiyor" title="Belgede CRM kaydı üreten kalem yok (bant / belirsiz / serbest metin)" style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "var(--n150, #f1f5f9)", color: "var(--n600, #475569)", lineHeight: 1.6 }}>Kayıt gerektirmiyor</span>;
+                          const d = kaydedildiMi(t) ? "kaydedildi" : d0;
+                          if (d === "kaydedilmedi") return t.customerId ? <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", lineHeight: 1.6 }}>✓ Bağlı</span> : null;
+                          return (
+                            <button type="button" data-testid="uretilen-kayitlar-dugmesi" onClick={() => setUretilenAcik(a => (a === t.id ? null : t.id))} title="Üretilen kayıtlar"
+                              style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, border: "none", cursor: "pointer", lineHeight: 1.6,
+                                background: d === "kismen" ? "var(--ambBg, #fffbeb)" : "var(--grnBg3, #d1fae5)", color: d === "kismen" ? "var(--amb700, #b45309)" : "var(--grn800, #065f46)" }}>
+                              {d === "kismen" ? "◐ Kısmen kaydedildi" : "✓ Kaydedildi"}
+                            </button>
+                          );
+                        })()}
                         {canDoEvrak(subTab === "teklif" ? "evrak_teklif_delete" : "evrak_proforma_delete") && <Btn small variant="danger" onClick={() => setConfirmDel(t.id)}><Icon name="trash" size={12} /></Btn>}
                       </div>
                     </td>
                   </tr>
+                  {uretilenAcik === t.id && (() => {
+                    // Spec 0006 R16 / AC-43: belgeden üretilmiş kayıtlar kalıcı bağlardan (fromTeklifId / teklifId).
+                    const u = uretilenKayitlar(t, { customers, partSales, yedekParcaSatislar });
+                    const parcaAdi = (id) => parts.find(p => String(p.id) === String(id))?.ad || "Yedek parça";
+                    const satirlar = [
+                      ...u.makinalar.map(c => `Makina · ${c.name || ""} ${c.model ? `(${c.model})` : ""}`),
+                      ...u.kaliplar.map(k => `Extra Kalıp · ${k.ad}`),
+                      ...u.yedekParcalar.map(y => `Yedek parça · ${parcaAdi(y.partId)} × ${y.miktar}`),
+                    ];
+                    return (
+                      <tr data-testid="uretilen-kayitlar"><td colSpan={10} style={{ padding: "6px 12px 12px 24px", background: "var(--n100, #f8fafc)", fontSize: 12.5 }}>
+                        <b>Üretilen kayıtlar</b>{satirlar.length ? satirlar.map((x, i) => <div key={i}>{x}</div>) : <div style={{ color: "var(--n500, #64748b)" }}>Bu belgeden üretilmiş kayıt bulunamadı (eski kayıt veya silinmiş).</div>}
+                      </td></tr>
+                    );
+                  })()}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -1059,44 +1077,18 @@ export const Documents = ({
         <DraftRestoreBar draft={teklifDraft.draft} onRestore={teklifDraft.restoreDraft} onDiscard={teklifDraft.discardDraft} />
         {/* Durum + Kaydet */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          {form.type === "teklif" && form.durum === "onaylandi" && form.id && !formKullanildi && (() => {
-            const fTur = effectiveTur(form);
+          {form.type === "teklif" && form.durum === "onaylandi" && form.id && !formKullanildi && canDoEvrak("evrak_teklif_convert") && onEvrakKaydet ? (() => {
             const saved = liveTeklifler.find(x => x.id === form.id);
-            if (fTur === "makina" && !form.customerId && onDonusturTeklif)
-              return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturTeklif(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                    <Icon name="userPlus" size={12} /> Yeni Müşteri Ekle
-                  </Btn>
-                </div>
-              );
-            if (fTur === "makina" && form.customerId && onDonusturMakina)
-              return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onDonusturMakina(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                    <Icon name="userPlus" size={12} /> Bu Firmaya Makina Ekle
-                  </Btn>
-                </div>
-              );
-            if ((fTur === "parca" || fTur === "kalip") && form.customerId && onKaydetSatis)
-              return (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>Teklif onaylandı</span>
-                  <Btn small onClick={() => { if (saved) { setForm(null); onKaydetSatis(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
-                    Satışa Dönüştür
-                  </Btn>
-                </div>
-              );
-            if ((fTur === "parca" || fTur === "kalip") && !form.customerId)
-              return <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--warnBg, #fef9c3)", color: "var(--warnTx, #854d0e)", fontWeight: 600 }}>Kaydetmek için müşteri seçin</span>;
-            return <div />;
-          })()}
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--grnBg3, #d1fae5)", border: "1.5px solid #34d399", borderRadius: 8, padding: "6px 12px" }}>
+                <span style={{ fontSize: 12, color: "var(--grn800, #065f46)", fontWeight: 600 }}>{saved && uretimDurumu(saved) === "kismen" ? "Kısmen kaydedildi" : "Teklif onaylandı"}</span>
+                <Btn small onClick={() => { if (saved) { setForm(null); onEvrakKaydet(saved); } }} style={{ background: "var(--emerald, #059669)", color: "#fff" }}>
+                  <Icon name="check" size={12} /> CRM'e Kaydet
+                </Btn>
+              </div>
+            );
+          })() : <div />}
           {formKullanildi && <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", fontWeight: 700 }}>✓ CRM'e kaydedildi</span>}
-          {!formKullanildi && form.type === "teklif" && form.customerId && effectiveTur(form) === "makina" && (
-            <span style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--grnBg3, #d1fae5)", color: "var(--grn800, #065f46)", fontWeight: 700 }}>✓ Müşteriye Bağlı</span>
-          )}
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
             <select value={form.tur || ""} onChange={e => setForm(p => ({ ...p, tur: e.target.value }))}
               style={{ padding: "9px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)", boxSizing: "border-box" }}>
@@ -1118,7 +1110,58 @@ export const Documents = ({
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
 
-          {/* Müşteri arama */}
+          {/* Alıcı tipi (spec 0006 R12): müşteri veya bayi. Yalnız teklifte; kayıt üretimi tekliften doğar. */}
+          {form.type === "teklif" && (
+            <div role="group" aria-label="Alıcı tipi" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+              {[["musteri", "Müşteri"], ["bayi", "Bayi"]].map(([v, l]) => {
+                const secili = (form.aliciTipi === "bayi" ? "bayi" : "musteri") === v;
+                return (
+                  <button key={v} type="button" aria-pressed={secili}
+                    onClick={() => setForm(p => (v === "bayi" ? { ...p, aliciTipi: "bayi", customerId: null } : { ...p, aliciTipi: "musteri", dealerId: null, nihaiMusteriId: null }))}
+                    style={{ flex: 1, padding: "6px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+                      border: `1px solid ${secili ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: secili ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)" }}>
+                    Alıcı: {l}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {form.type === "teklif" && form.aliciTipi === "bayi" ? (
+            <div data-testid="bayi-alici" style={{ marginBottom: 10 }}>
+              <div style={{ position: "relative", marginBottom: 8 }}>
+                <input aria-label="Bayi ara" value={bayiSearch} onChange={e => setBayiSearch(e.target.value)} placeholder="Bayi ara (firma adı)..." style={{ ...inputStyle, paddingLeft: 32 }} />
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={13} /></span>
+                {bayiResults.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.10)", zIndex: 100, marginTop: 2 }}>
+                    {bayiResults.map(d => (
+                      <div key={d.id} onClick={() => { setForm(p => ({ ...p, ...bayiToAliciFields(d) })); setBayiSearch(""); }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+                        <b>{d.name}</b>{d.city ? ` — ${d.city}` : ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {form.dealerId && <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginBottom: 8 }}>Seçili bayi: <b>{liveDealers.find(d => String(d.id) === String(form.dealerId))?.name || "(bulunamadı)"}</b></div>}
+              {/* R13: kalıp ve makina kalemleri için nihai müşteri (malın gideceği makina). */}
+              <div style={{ position: "relative" }}>
+                <input aria-label="Nihai müşteri ara" value={nihaiSearch} onChange={e => setNihaiSearch(e.target.value)} placeholder="Nihai müşteri (kalıp/makina için, isteğe bağlı)..." style={{ ...inputStyle, paddingLeft: 32 }} />
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={13} /></span>
+                {nihaiResults.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.10)", zIndex: 100, marginTop: 2 }}>
+                    {nihaiResults.map(c => (
+                      <div key={c.id} onClick={() => { setForm(p => ({ ...p, nihaiMusteriId: c.id })); setNihaiSearch(""); }} style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+                        <b>{c.name}</b>{c.model ? ` — ${c.model}${c.serialNo ? ` · ${c.serialNo}` : ""}` : ""}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {form.nihaiMusteriId && (() => {
+                const c = customers.find(x => String(x.id) === String(form.nihaiMusteriId));
+                return <div data-testid="nihai-musteri" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Nihai müşteri: <b>{c ? `${c.name}${c.model ? ` (${c.model})` : ""}` : "(bulunamadı)"}</b> <button type="button" onClick={() => setForm(p => ({ ...p, nihaiMusteriId: null }))} style={{ border: "none", background: "none", color: "var(--red600, #dc2626)", cursor: "pointer", fontSize: 12 }}>Kaldır</button></div>;
+              })()}
+            </div>
+          ) : (
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input value={custSearch} onChange={e => setCustSearch(e.target.value)}
               placeholder="Mevcut müşteriden ara (firma adı)..."
@@ -1140,6 +1183,7 @@ export const Documents = ({
               </div>
             )}
           </div>
+          )}
 
           <Field label="Firma Adı"><input {...f("firma")} style={inputStyle} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -1398,6 +1442,19 @@ export const Documents = ({
                             initialLimit={10}
                           />
                         )}
+                        {type === "kalip" && form.type === "teklif" && (() => {
+                          // Spec 0006 R3/R4 (plan E1): makinayla verilen standart kalıp mı, ayrı satılan Extra Kalıp mı.
+                          const belgedeMakinaVar = (form.satirlar || []).some(r => r.selectedModel && (r.subItems || []).some(i => i.type === "makina"));
+                          const zorunlu = (row.subItems || []).some(i => i.type === "makina");
+                          return (
+                            <select aria-label="Kalıp rolü" value={kalipRolu(row, belgedeMakinaVar)} disabled={zorunlu}
+                              onChange={e => { const v = e.target.value; setForm(p => ({ ...p, satirlar: p.satirlar.map(r => (r.rowId === row.rowId ? { ...r, kalipRolu: v } : r)) })); }}
+                              style={{ ...inputStyle, fontSize: 11.5, marginTop: 4 }}>
+                              <option value="makinayla">Makinayla verilir</option>
+                              <option value="extra">Extra Kalıp (ayrı satış)</option>
+                            </select>
+                          );
+                        })()}
                         {type === "parca" && (
                           <select value={row.selectedPart || ""} onChange={e => pickPart(row.rowId, e.target.value)}
                             style={{ ...inputStyle, fontSize: 12 }}>

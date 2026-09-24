@@ -71,9 +71,13 @@ export function buildMergePlan(myData, serverData) {
   adds.yedekParcaSatislar = adds.yedekParcaSatislar.map(s => ({
     ...s,
     musteriId: remapRef(maps.customers, s.musteriId),
+    // Spec 0006: Evrak'tan üretildiyse kaynak belge de yeniden atanan teklif kimliğini izler.
+    ...(s.teklifId != null ? { teklifId: remapRef(maps.teklifler, s.teklifId) } : {}),
     tahsisler: (s.tahsisler || []).map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) })),
   }));
-  adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) }));
+  // Spec 0006 R12/R13: nihai müşteri de müşteri kimliğidir; bayi kimliği remap EDİLMEZ (bayiler birleştirilmez).
+  adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId),
+    ...(t.nihaiMusteriId != null ? { nihaiMusteriId: remapRef(maps.customers, t.nihaiMusteriId) } : {}) }));
   // Gider kaydı: tür/tedarikçi/tanım/çalışan/müşteri makinası referansları yeniden atanan id'leri izler.
   const giderRef = (x) => ({
     ...x,

@@ -32,6 +32,7 @@ try {
   dbmod.writeBlobToDb({
     customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, satisKuru: 38.5, uretimTarihi: "2026-08-01",
       odemePlani: [{ id: 1, vadeTarihi: "2026-09-01", tutar: 1000, odemeId: null }] }],
+    teklifler: [{ id: 9, type: "teklif", no: "T-9", firma: "B", aliciTipi: "bayi", dealerId: 2, nihaiMusteriId: 1, uretilenKalemler: ["a"], satirlar: [] }],
     stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05" }],
     uretimFormlari: [{ id: 7, baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-05", kapali: true, not: "n", satirlar: [] }],
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
@@ -42,7 +43,7 @@ try {
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
     // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
-    yedekParcaSatislar: [{ id: 8, dealerId: 2, partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] }],
+    yedekParcaSatislar: [{ id: 8, dealerId: 2, teklifId: 9, teklifKalemId: "a", partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] }],
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }],
@@ -68,6 +69,12 @@ check("uretim formu baslangic/bitis/kapali tam turu", (() => {
 check("customer brutKg + odemePlani tam turu", (() => {
   const c = (blob.customers || []).find(x => x.id === 1);
   return c?.brutKg === 500 && c?.odemePlani?.[0]?.vadeTarihi === "2026-09-01";
+})());
+check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, yedek parça belge bağı)", (() => {
+  const t = (blob.teklifler || []).find(x => x.id === 9);
+  const y = (blob.yedekParcaSatislar || []).find(x => x.id === 8);
+  const ok = t?.aliciTipi === "bayi" && t?.dealerId === 2 && t?.nihaiMusteriId === 1 && t?.uretilenKalemler?.[0] === "a" && y?.teklifId === 9 && y?.teklifKalemId === "a";
+  return ok;
 })());
 check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
 check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {

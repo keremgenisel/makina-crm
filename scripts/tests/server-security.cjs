@@ -77,6 +77,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
+  // Spec 0006 C8: yalnız Evrak sekmeli kullanıcı (CRM'e Kaydet): gereken eylem izinleriyle / kalıp izni olmadan.
+  dbmod.createUser("evrakci",     bcrypt.hashSync("evrak123", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: ["yedek_parca_add"] }));
+  dbmod.createUser("evrakKalipsiz", bcrypt.hashSync("evrak456", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_edit"], stockActions: ["yedek_parca_add"] }));
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -349,6 +352,31 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("gider: yalnız izinli yazımlar kalıcı (9003 var, düzeltilmiş, ödenmemiş, model adı taşınmış; 9001/9004/9020 yok)",
     gSon.giderler.some(k => k.id === 9003 && k.aciklama === "düzeltildi" && k.odendi === false && k.modelSatirlari?.[0]?.modelAd === "AK100_SON")
     && !gSon.giderler.some(k => k.id === 9001 || k.id === 9004 || k.id === 9020) && gSon.giderler.some(k => k.id === 9011) && !(gSon.tedarikciler || []).length);
+
+  // ── Spec 0006 AC-33: yalnız Evrak sekmeli kullanıcının "CRM'e Kaydet" yazımı ─────────
+  let eA = await gUst(adminTok);
+  await postData({ ...eA, dataVersion: undefined, customers: [...(eA.customers || []), { id: 9500, name: "Evrak Müşterisi", kaliplar: [] }],
+    partStock: [...(eA.partStock || []), { id: 9501, partId: "95", miktar: 10 }] }, eA.dataVersion, adminTok);
+  const evrakYazimi = (d) => ({
+    ...d, dataVersion: undefined,
+    customers: d.customers.map(c => (c.id === 9500 ? { ...c, kaliplar: [{ ad: "Hamburger", olcu: "", partSaleId: 9510 }], kalipSayisi: 1 } : c)),
+    partSales: [...(d.partSales || []), { id: 9510, customerId: 9500, tur: "Kalıp", ad: "Hamburger", ucret: 10000, teklifId: 9599, teklifKalemId: "k1" }],
+    yedekParcaSatislar: [...(d.yedekParcaSatislar || []), { id: 9511, aliciTipi: "musteri", musteriId: 9500, partId: "95", miktar: 2, birimFiyat: 100, teklifId: 9599, teklifKalemId: "p1", tahsisler: [] }],
+    partStock: d.partStock.map(x => (x.id === 9501 ? { ...x, miktar: 8 } : x)),
+    partStockLog: [...(d.partStockLog || []), { id: 9512, partId: "95", miktar: -2, tip: "bayi_satis", referansId: 9511 }],
+  });
+  const kalipsizTok = (await login("evrakKalipsiz", "evrak456")).body.token;
+  eA = await gUst(kalipsizTok);
+  check("evrak (spec 0006 C8): kalıp ekleme izni olmayan Evrak kullanıcısı Extra Kalıp üretemez → 403 (gevşetme yok)",
+    (await postData(evrakYazimi(eA), eA.dataVersion, kalipsizTok)).status === 403);
+  const evrakTok = (await login("evrakci", "evrak123")).body.token;
+  eA = await gUst(evrakTok);
+  check("evrak (spec 0006 AC-33): yalnız Evrak sekmeli, izinli kullanıcının yedek parça + Extra Kalıp + stok yazımı → 200",
+    (await postData(evrakYazimi(eA), eA.dataVersion, evrakTok)).status === 200);
+  const eSon = await gUst(adminTok);
+  check("evrak (spec 0006): üretilen kayıtlar kalıcı (belge bağlarıyla)",
+    eSon.yedekParcaSatislar.some(x => x.id === 9511 && x.teklifId === 9599 && x.teklifKalemId === "p1") && eSon.partSales.some(x => x.id === 9510 && x.teklifKalemId === "k1")
+    && eSon.partStock.find(x => x.id === 9501)?.miktar === 8);
 
   // ── Sunucu-tarafı işlem geçmişi (safety-net): HER başarılı yazma (admin dâhil), istemci
   //    ayrıca /api/audit çağırmasa/uydursa bile, gerçekten DEĞİŞEN bölümlerden türetilerek

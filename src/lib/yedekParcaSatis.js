@@ -71,6 +71,8 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     kargoSorumlusu: form.kargoSorumlusu || "", panoDusmeZamani: form.panoDusmeZamani || "", notlar: form.notlar || "",
     // batchId: aynı formdan (toplu satış) çıkan satırlar tek grup → panoda tek kart, geçmişte tek olay.
     batchId: form.batchId ?? null,
+    // Evrak'tan üretildiyse kaynak belge ve alt kalem (spec 0006 R10/R15); elle girilen satışta boş.
+    teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
   } };
 }
 
@@ -131,7 +133,7 @@ export function yeniYedekParcaSatisCoklu(form, deps) {
     if (!stokGorunum.has(pid)) stokGorunum.set(pid, totalMiktar(deps.partStock, pid));
     const eldeki = stokGorunum.get(pid);
     const r = yeniYedekParcaSatis(
-      { ...form, partId: pid, miktar: s.miktar, birimFiyat: s.birimFiyat, batchId },
+      { ...form, partId: pid, miktar: s.miktar, birimFiyat: s.birimFiyat, batchId, teklifKalemId: s.teklifKalemId ?? form.teklifKalemId ?? null },
       { ...deps, partStock: [{ id: "_v", partId: pid, miktar: Math.max(0, eldeki) }] }
     );
     if (!r.ok) return r;

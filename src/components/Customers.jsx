@@ -168,7 +168,7 @@ export const Customers = ({
       if (!base) return;
       setForm({
         kalipSayisi: prefill.kaliplar?.length || 0,
-        satisYapan: factory?.name || "Altuntaş Makina",
+        satisYapan: prefill.satisYapan || factory?.name || "Altuntaş Makina", // spec 0006 R14: bayi satışında bayi adı
         name: base.name || "", phone: base.phone || "", email: base.email || "",
         yetkili1Ad: base.yetkili1Ad || "", yetkili1Tel: base.yetkili1Tel || "",
         yetkili2Ad: base.yetkili2Ad || "", yetkili2Tel: base.yetkili2Tel || "",
@@ -188,7 +188,7 @@ export const Customers = ({
     }
     setForm({
       kalipSayisi: prefill.kaliplar?.length || 0,
-      satisYapan: factory?.name || "Altuntaş Makina",
+      satisYapan: prefill.satisYapan || factory?.name || "Altuntaş Makina", // spec 0006 R14: bayi satışında bayi adı
       name: prefill.name || "",
       phone: "",
       email: prefill.email || "",

@@ -75,10 +75,13 @@ const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "
 // "settings" her bölümde var: Ayarlar'daki yedek geri yükleme / içe aktarma / çöp kutusu
 // gerçekten de tüm bölümleri yazar. "dashboard" yalnız gorusmeler'de (Dashboard görüşme yazar).
 // Finans ve Harita sekmeleri hiçbir bölüm yazmaz, o yüzden hiçbir listede yoklar.
+// "evrak" (spec 0006 C8): Evrak'tan "CRM'e Kaydet" yedek parça satışı (+ stok hareketi), Extra Kalıp satışı ve
+// müşterinin kalıp listesini yazar; yalnız Evrak sekmeli kullanıcı bu yüzden 403 almamalı. Kayıt düzeyindeki
+// ekleme izinleri (yedek parça, cust_kalip_add, cust_add) aynen aranır; gevşetme yok.
 const BOLUM_SEKMELERI = {
-  customers:      ["customers", "dealers", "stock", "settings"],
+  customers:      ["customers", "dealers", "stock", "settings", "evrak"],
   services:       ["customers", "dealers", "settings", "servis"],
-  partSales:      ["customers", "stock", "settings", "servis"],
+  partSales:      ["customers", "stock", "settings", "servis", "evrak"],
   payments:       ["customers", "settings"],
   gorusmeler:     ["customers", "dashboard", "settings"],
   dosyalar:       ["customers", "dealers", "settings", "servis"],
@@ -92,11 +95,11 @@ const BOLUM_SEKMELERI = {
   // servis kaynaklı stok hareketini yazabilmeli, yoksa parçalı servis kaydı 403 alır.
   // yedek parça satışı Stok sekmesinin yanı sıra müşteri ve bayi detay modallarından da eklenebilir
   // → stok hareketi (partStock/partStockLog) o sekmelerde de yazılabilmeli, yoksa satış 403 alır.
-  partStock:      ["stock", "customers", "dealers", "settings", "servis"],
-  partStockLog:   ["stock", "customers", "dealers", "settings", "servis"],
+  partStock:      ["stock", "customers", "dealers", "settings", "servis", "evrak"],
+  partStockLog:   ["stock", "customers", "dealers", "settings", "servis", "evrak"],
   uretimFormlari: ["stock", "settings"],
   // yedek parça satışı Stok + müşteri detayı + bayi detayı + Servis Panosu'ndan eklenebilir.
-  yedekParcaSatislar: ["stock", "customers", "dealers", "servis", "settings"],
+  yedekParcaSatislar: ["stock", "customers", "dealers", "servis", "settings", "evrak"],
   notes:          ["notes", "settings"],
   kalipDefs:      ["settings"],
   partTypeDefs:   ["settings"],
