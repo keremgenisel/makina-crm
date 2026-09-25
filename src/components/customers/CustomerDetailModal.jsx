@@ -20,7 +20,7 @@ import {
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
-import { HataMetni } from "../tasarim";
+import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
@@ -806,9 +806,7 @@ export const CustomerDetailModal = ({
         <div style={{ display: "grid", gridTemplateColumns: hasMultiple ? "220px 1fr" : "1fr", gap: 20, alignItems: "start" }}>
           {hasMultiple && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10 }}>
-                BU FİRMANIN MAKİNALARI ({firmMachines.length})
-              </div>
+              <BolumBasligi bosluk={10}>Bu Firmanın Makinaları ({firmMachines.length})</BolumBasligi>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {firmMachines.map(m => {
                   const ok = m.warrantyEnd && m.warrantyEnd >= today();
@@ -854,23 +852,17 @@ export const CustomerDetailModal = ({
 
             {/* Görüşme kayıtları: telefon/ziyaret notları; takip tarihi verilenler Dashboard "Aranacaklar"a düşer */}
             {isCustomer && setGorusmeler && (
-              <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gorusmelerAcik || gorusmeForm ? 8 : 0 }}>
-                  <div onClick={() => setGorusmelerAcik(a => !a)}
-                    style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}>
-                    <span style={{ fontSize: 10 }}>{gorusmelerAcik || gorusmeForm ? "▾" : "▸"}</span>
-                    Görüşmeler ({detailGorusmeler.length})
-                    {detailGorusmeler.some(g => g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr) && (
-                      <span style={{ fontSize: 10, fontWeight: 800, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)", borderRadius: 6, padding: "2px 8px", textTransform: "none", letterSpacing: 0 }}>takip bekliyor</span>
-                    )}
-                  </div>
-                  {canDo("cust_gorusme_add") && !gorusmeForm && (
-                    <SoftBtn onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
-                      <Icon name="plus" size={12} /> Yeni Görüşme
-                    </SoftBtn>
-                  )}
-                </div>
-                {(gorusmelerAcik || gorusmeForm) && <>
+              <KartBolum varyant="kart" baslikStili="baslik" collapsible style={{ marginBottom: 16 }}
+                acik={gorusmelerAcik || !!gorusmeForm} onAcikDegis={() => setGorusmelerAcik(a => !a)}
+                title={<>Görüşmeler ({detailGorusmeler.length})
+                  {detailGorusmeler.some(g => g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr) && (
+                    <> <span style={{ fontSize: 10, fontWeight: 800, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)", borderRadius: 6, padding: "2px 8px" }}>takip bekliyor</span></>
+                  )}</>}
+                eylemler={canDo("cust_gorusme_add") && !gorusmeForm ? (
+                  <SoftBtn onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
+                    <Icon name="plus" size={12} /> Yeni Görüşme
+                  </SoftBtn>
+                ) : undefined}>
                 {gorusmeForm && (
                   <div style={{ background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: 10, marginBottom: 10 }}>
                     <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
@@ -893,7 +885,7 @@ export const CustomerDetailModal = ({
                   </div>
                 )}
                 {detailGorusmeler.length === 0 && !gorusmeForm && (
-                  <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Henüz görüşme kaydı yok.</div>
+                  <BosDurum testId="bos-gorusmeler" baslik="Henüz görüşme kaydı yok." />
                 )}
                 {detailGorusmeler.map(g => {
                   const takipGecikti = g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr;
@@ -923,8 +915,7 @@ export const CustomerDetailModal = ({
                     </div>
                   );
                 })}
-                </>}
-              </div>
+              </KartBolum>
             )}
 
             {/* Dosya arşivi (makina bazlı) — ayrı bileşen (DealerFilesSection deseni). Filtre üstte
@@ -997,8 +988,7 @@ export const CustomerDetailModal = ({
               </div>
             )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>KALIPLAR ({detailView.kaliplar.length})</div>
+              <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {detailView.kaliplar.map((k, i) => {
                     const extraSatistan = k.partSaleId != null || i >= detailView.kaliplar.length - detailKalipSatisAdedi;
@@ -1010,13 +1000,10 @@ export const CustomerDetailModal = ({
                     );
                   })}
                 </div>
-              </div>
+              </KartBolum>
             )}
 
-            <div style={{ marginTop: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-                İşlemler
-              </div>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginTop: 16, marginBottom: 16 }} title="İşlemler">
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {canDo("cust_payment_add") && <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>}
@@ -1039,7 +1026,7 @@ export const CustomerDetailModal = ({
                   {canDo("cust_detail_edit") && <Btn small onClick={() => onOpenEdit(detailView)}><Icon name="edit" size={12} /> Düzenle</Btn>}
                 </div>
               </div>
-            </div>
+            </KartBolum>
 
             <OwnershipSection
               detailView={detailView}
@@ -1091,15 +1078,19 @@ export const CustomerDetailModal = ({
 
       {newOwnerForm && (
         <Modal wide title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--ambBg3, #fff7ed)", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5 }}>
-            Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
-            Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur.
+          <div style={{ marginBottom: 16 }}>
+            <UyariSeridi aile="bilgi" testId="yeni-sahip-bilgi">
+              Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
+              Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur.
+            </UyariSeridi>
           </div>
           {(detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0) && (
-            <div style={{ fontSize: 13, color: "var(--red800, #991b1b)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5, fontWeight: 600 }}>
-              Bu makinenin devredilmeden önce{detailKalanBorcToplam > 0 && <> <b>{fmtCur(detailKalanBorcToplam, detailView.currency)}</b></>} ödenmemiş bakiyesi var.
-              {detailEkBorcDigerPB.length > 0 && <> Ayrıca farklı para biriminden: {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}.</>}
-              {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
+            <div style={{ marginBottom: 16 }}>
+              <UyariSeridi aile="hata" testId="yeni-sahip-borc">
+                Bu makinenin devredilmeden önce{detailKalanBorcToplam > 0 && <> <b>{fmtCur(detailKalanBorcToplam, detailView.currency)}</b></>} ödenmemiş bakiyesi var.
+                {detailEkBorcDigerPB.length > 0 && <> Ayrıca farklı para biriminden: {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}.</>}
+                {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
+              </UyariSeridi>
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

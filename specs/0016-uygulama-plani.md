@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Bağlı spec** | `specs/0016-liste-bos-durum-ve-uyari-birligi.md` (R3, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-25: G1–G14 kullanıcı tarafından onaylandı; spec R3 ve R4 ile güncellendi; **Aşama 1 uygulandı** (bkz. §7), AC-11 (Aşama 1) onaylandı, commit bekliyor. Aşama 2 başlamadı. |
+| **Durum** | 2026-09-25: G1–G14 kullanıcı tarafından onaylandı; spec R3 ve R4 ile güncellendi; Aşama 1 commit `d749f0a`. **Aşama 2 uygulandı** (Ek B, H1–H9; spec R5; notlar §8), AC-11 (Aşama 2) onaylandı, commit bekliyor. |
 | **Önkoşul** | 0009 (sözlük), 0011 (serbest içerik, kanıt eşlemesi), 0014 (taban raporu yöntemi), 0015 (dal tabanı) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
@@ -255,6 +255,33 @@ Test adları `AC-<n>: <metin>`. "Davranış testi" = eski kodda yeşil yazılıp
 - **Son durum:** 205 dosya, 2215 test (tek kırmızı işten bağımsız tarih bombası `makina-odeme`), lint 0 hata, build başarılı.
   `git diff --name-status -- tests`: yeni dosyalar + `form-kaynak.test.js` (R4 istisnası).
 
+## 8. Uygulama notları (Aşama 2, 2026-09-25)
+
+- **Davranış testi önce, eski kodda yeşil:** `ui/musteri-detay-bolumler` (9): başlıklar ve sayılar, olay sırası (olaylar
+  **eskiden yeniye**; test ilk yazımda ters varsayıyordu, eski koda göre düzeltildi), katlanma (tıklama, görüşme odağı),
+  başlık yanı düğmeler, boş metinler, mesaj metinleri. Dönüşümden sonra 3 denetim eklendi (düğmesiz boş kutular, H2 yazımı,
+  mesaj aileleri). Türkçe "İ/ı" yüzünden `/i` bayrağı kullanılamadı; iki yazım alternatifle kabul edildi.
+- **Sözlük eki (B.4):** `KartBolum` `kart` varyantına katlanma (iç ya da denetimli `acik`/`onAcikDegis`) ve `eylemler`.
+  `tasarim-kaynak` bileşenlerdeki `data-testid={testId}` sayısını 4'e sabitlediği için yeni kol ayrı kap değil, mevcut tek
+  kabı kullanıyor; ayar varyantının yerel `acik` değişkeni `ayarAcik` oldu (yeni özellikle çakışıyordu). Yeni özellikler
+  verilmediğinde `baslik` çıktısı değişiklik öncesiyle birebir (birim testi).
+- **Görüşmeler** denetimli: `acik={gorusmelerAcik || !!gorusmeForm}`, tıklama bugünkü gibi `gorusmelerAcik`'i çevirir.
+  "takip bekliyor" rozeti başlığın içinde. **Dosyalar** kendi `acik`'ini verir (süzgeç `useEffect`'i aynen açar); kap `div`'i
+  `ref` için kalır. **Makina Geçmişi** ikonsuz, "n olay" alt başlık. **Sahiplik Geçmişi** beyaz kart.
+- **Mesajlar:** farklı para birimi borcu şeridin başlık biçiminde (vurgu yok); çevrimdışı dosya uyarısı ve Yeni Sahip'in iki
+  mesajı serbest içerik (cümle içi kalın parçalar). Kaynak taramasında React parçası kapanışı `</>` öğe kapanışı sanılıyordu;
+  yardımcı düzeltildi.
+- **Adlandırılmış istisna:** detay penceresindeki "Sandık Etiketi" formunun üç büyük harf başlığı (form; sözlükte borç).
+- **Görüntü aracı:** Aşama 2'nin ilk "önce" çekiminde kaydırma çubuğu durumu yine değişti (bu kez tersine; pencere içi kaydırma
+  çubukları da). Araca Electron'un `hide-scrollbars` anahtarı eklendi (`0009-ekran.cjs`; adı ve öneki değişmedi, C7); çekim
+  artık ortamdan bağımsız: iki ardışık çekim 182/182 ekranda 0 fark. Önceki çekimlerle karşılaştırılmaz; Aşama 2'nin önce/sonra
+  görüntüleri bu anahtarla çekildi.
+- **Kanıt:** `docs/evidence/0016-asama2-piksel-raporu.json` + 14 JPEG. Müşteri detayını gösteren 6 ekran değişti (detayın
+  üstünde açılan servis ve kalıp formları dahil); 176 diğer ekran 0 fark. Kayıtlar `degisti` + TY onayı; `done`'da
+  `0016-taban` raporuyla `ayni`ye çevrilecek (Aşama 1 ve 2 birlikte).
+- **Son durum:** 206 dosya, 2247 test (tek kırmızı işten bağımsız tarih bombası `makina-odeme`), lint 0 hata, build başarılı.
+  `git diff --name-status -- tests` (Aşama 2): yeni dosyalar + bu işin kendi testleri (`liste-kaynak`, `sozluk-0016`, fixture).
+
 ---
 
 ## Ek A. Envanter (2026-09-25, dönüşüm öncesi satır numaraları)
@@ -317,3 +344,116 @@ Parça Stoğu "Dashboard" kutucukları, müşteri ödeme bölümünün üç kart
 `KartBolum` "ne zaman kullanılmaz" maddesi. Yedek Parça Satışı'nın kayıt kartları: liste öğesi. Finans'ın çerçevesiz ara
 başlıkları ("Adetler", "Gelir & Tahsilat"): kart değil, sayfa ara başlığı; bugünkü hâliyle kalır. Maliyet ve Kâr kutusu
 (`CustomerDetailModal.jsx:994`): Giderler'in bileşeni, gider perdesi arkasında, X5 benzeri kapsam dışı.
+
+---
+
+## Ek B. Aşama 2 plan eki: müşteri detay penceresi (2026-09-25, dönüşüm öncesi satır numaraları)
+
+Aşama 1 commit `d749f0a`. Bu ek Aşama 2'nin dosya:satır envanterini, sözlük ekini (G10) ve yeni kararları (H1–H9) içerir.
+Kapsam: `customers/CustomerDetailModal.jsx` okuma bölümleri + "Yeni Sahip" penceresinin iki mesajı, `customers/detail/`
+altındaki dört bileşen. Detay penceresinin diğer formları (ödeme, görüşme formu, sahip düzenleme) Aşama 2'nin konusu değil.
+
+### B.0 Kodda doğrulanan dayanaklar
+
+| Konu | Bulgu |
+|---|---|
+| Katlanan bölümler **dışarıdan açılıyor** | Görüşmeler: `gorusmelerAcik` durumu pencerede (`:443`), Anasayfa odağı (`focusGorusmeId`) açıyor, `gorusme-odak` testi bunu sınıyor. Dosyalar: `acik` bileşende (`CustomerFilesSection.jsx:21`), `dosyaFiltre` gelince `useEffect` açıyor (`:29`). Sözlükteki katlanma ise yalnız iç durumlu (`defaultOpen`). |
+| Başlık yanında düğmeler | Görüşmeler "Yeni Görüşme" (`:868`); Dosyalar bağ seçici + "Dosya Ekle"; Makina Geçmişi "Yazdır" / "E-posta Gönder" (`MachineTimeline.jsx:78-80`). `KartBolum`'da başlık yanı yuvası yok. |
+| Başlık metnini tam arayan test | `customer-files-section.test.jsx:24` `getByText("Dosyalar (2)")`: başlık öğesinin **kendi metin düğümleri** tam olarak bu olmalı; ok simgesi ayrı öğede kalmalı. |
+| Kaynak okuyan testler | Bu beş dosyayı okuyan testler yalnız `kalip-borc-atfi` (fonksiyon adları), `form-kaynak` (yalnız `HataMetni` içe aktarımı), `liste-kaynak` (bu işin). **Borcun var olmasını kilitleyen test yok** (0015/0016 dersi: bu kez işin başında tarandı). |
+| Bileşeni tek başına süren testler | `machine-timeline-odak`, `-kk`, `-files`, `dis-firma-servis-kalip` (`MachineTimeline`), `customer-files-section`; pencereyi süren `gorusme-odak`, `taksit-odeme-odak`, `customer-maliyet-kutusu`, `customers-*`. |
+
+### B.1 Bölümler
+
+| Yer | Bugün | Olacak |
+|---|---|---|
+| `CustomerDetailModal.jsx:808` | "BU FİRMANIN MAKİNALARI (n)" (büyük harfle yazılmış, çerçevesiz; yan gezinme listesi) | `BolumBasligi` (H3), kart yok |
+| `:857` | Görüşmeler (n), katlanır, sağda "Yeni Görüşme", başlıkta "takip gecikti" rozeti | `kart` + `baslik`, katlanır (denetimli, H1), eylem yuvası; rozet başlığın içinde |
+| `:1000` | "KALIPLAR (n)" (büyük harfle yazılmış), kalıp çipleri | `kart` + `baslik` "Kalıplar (n)" (H2) |
+| `:1015` | "İşlemler" (büyük harf, alt çizgili), düğme satırı | `kart` + `baslik` |
+| `detail/OwnershipSection.jsx:15` | Sahiplik Geçmişi (amber zeminli kutu) | `kart` + `baslik`; amber zemin düşer, satır renkleri kalır |
+| `detail/MachineTimeline.jsx:72` | Makina Geçmişi (ikon + "n olay" hapı, gri zemin), sağda Yazdır / E-posta | `kart` + `baslik`, ikon düşer, "n olay" `altBaslik`, düğmeler eylem yuvası |
+| `detail/CustomerFilesSection.jsx:93` | Dosyalar (n), katlanır, sağda bağ seçici + "Dosya Ekle" | `kart` + `baslik`, katlanır (denetimli), eylem yuvası |
+
+**Değil:** ödeme bölümünün üç kartı ve bilgi kutucukları (`StatCard` ailesi), "Maliyet ve Kâr" kutusu (Giderler'in bileşeni,
+gider perdesi arkasında; sözlükte borç olarak kalır), görüşme formu kutusu (form).
+
+### B.2 Boş durumlar
+
+| Yer | Metin | Ayrım |
+|---|---|---|
+| `CustomerDetailModal.jsx:896` | Henüz görüşme kaydı yok. | yok |
+| `detail/MachineTimeline.jsx:84` | Bu makinaya ait kayıt bulunmuyor. | yok |
+| `detail/CustomerFilesSection.jsx:132` | Bu kayda ait dosya yok. / Henüz dosya yok. + "PDF, resim veya Office belgesi ekleyebilirsiniz (dosya başına en fazla 20 MB)." | var (süzgeçli / süzgeçsiz); ikinci cümle açıklama (G1) |
+
+### B.3 Mesajlar
+
+| Yer | Metin (baş) | Aile |
+|---|---|---|
+| `detail/PaymentSection.jsx:57` | Ayrıca farklı para biriminden ödenmemiş … borcu var … | hata |
+| `detail/CustomerFilesSection.jsx:120` | Sunucu bağlantısı yok: … **ekleme, açma ve indirme** … | uyari (serbest içerik; ⚠ simgesi düşer) |
+| `CustomerDetailModal.jsx:1094` | Mevcut sahip **sahiplik geçmişine** taşınacak … | bilgi (serbest içerik; bugün gri metin, amber zemin) |
+| `CustomerDetailModal.jsx:1099` | Bu makinenin devredilmeden önce **…** ödenmemiş bakiyesi var … | hata (serbest içerik) |
+
+### B.4 Sözlük eki (G10)
+
+`KartBolum` `kart` varyantına:
+- `collapsible` + `defaultOpen` (iç durum) **ya da** denetimli `acik` + `onAcikDegis` (verilirse durum dışarıdadır). Başlık
+  tıklanınca açılır/kapanır; ok (▸/▾) başlığın **solunda** ayrı öğe (bugünkü detay alışkanlığı; başlık metni kendi öğesinde
+  kalır, `getByText("Dosyalar (2)")` bozulmaz). Kapalıyken yalnız başlık satırı çizilir.
+- `eylemler`: başlık satırının sağında düğmeler (satır sarar). Tıklaması katlanmayı tetiklemez.
+- Yeni özellikler verilmediğinde `KartBolum`'un bugünkü çıktısı **birebir aynı** (birim testi: `etiket` ve `baslik` HTML'i).
+
+### B.5 Kararlar
+
+**H1. Katlanma denetimli olmalı.** Görüşme odağı ve dosya süzgeci bölümü dışarıdan açıyor.
+*Öneri:* B.4'teki `acik`/`onAcikDegis`; Görüşmeler pencerenin `gorusmelerAcik`'ini, Dosyalar kendi `acik`'ini verir.
+*Gerekçe:* iç durumlu katlanma bu iki akışı kırar (`gorusme-odak` testi).
+
+**H2. Büyük harfle yazılmış başlık metinleri.** "KALIPLAR" ve "BU FİRMANIN MAKİNALARI" kaynakta büyük harfle yazılmış;
+`baslik` biçimi büyük harfe çevirmediği için 15 punto büyük harf olarak kalırlardı.
+*Öneri:* "Kalıplar (n)" ve "Bu Firmanın Makinaları (n)" yazılır. Büyük harf bugün görünüm kararıydı (başka başlıklarda
+`textTransform` ile yapılıyor); kelimeler aynı, R6'nın "metin değişmez" kuralı harf büyüklüğünü kapsamaz sayılır.
+Bu iki metni arayan test yok. *Gerekçe:* aksi hâlde aynı pencerede iki farklı başlık görünümü kalır. Kabul etmezseniz metin
+büyük harf kalır, görünüm bağırır.
+
+**H3. Makinalar kenar çubuğu kart olmaz.** Firma makinaları arasında geçiş yapan dar bir gezinme listesi.
+*Öneri:* başlığı `BolumBasligi`, liste olduğu gibi. *Gerekçe:* 220 piksellik kolonda kart içinde kart kalabalık yapar; R9
+"detay bölümleri" okuma bölümlerini kastediyor.
+
+**H4. Makina Geçmişi ikonu ve "n olay" hapı.** `kart` ikonsuz (sözlük).
+*Öneri:* ikon düşer, "n olay" alt başlık olur (metin aynı). *Gerekçe:* sözlük dışında yerel başlık bırakmamak.
+
+**H5. Sahiplik Geçmişi'nin amber zemini.** *Öneri:* beyaz kart; satırlardaki amber ve kırmızı metin renkleri kalır (içerik R9).
+*Gerekçe:* bölüm çerçevesi tek biçim.
+
+**H6. "Yeni Sahip" penceresindeki bilgi kutusu** bugün gri metin + amber zemin. *Öneri:* `bilgi` ailesi (mavi); metin ve
+kalın kısımlar aynı. *Gerekçe:* amber "uyarı"dır, bu bir bilgilendirme.
+
+**H7. Ekran anahtarları.** DoD'deki `musteri-detay` (Yeni Sahip penceresi açık: iki mesaj) ve `musteri-detay-bos` (olaysız
+makina, Görüşmeler ve Dosyalar açık: boş kutular) + `musteri-detay-bolumler` (iki makinalı firma, servis ve kalıp olayları,
+sahiplik geçmişi, açık görüşmeler ve dosyalar, farklı para birimi borcu, çevrimdışı dosya uyarısı). Önce görüntüleri kod
+değişmeden, aynı oturumda çekilir (Aşama 1'deki kaydırma çubuğu dersi).
+
+**H8. Testler.** Önce eski kodda yeşil:
+`ui/musteri-detay-bolumler.test.jsx` (davranış): bölüm başlıkları ve sayılar; olay sırası; Görüşmeler ve Dosyalar'ın
+açılıp kapanması, odak ve süzgeçle açılması; boş metinler (ayrım dahil); Makina Geçmişi ve İşlemler düğmeleri ve sırası;
+sahiplik satırları; ödeme ve Yeni Sahip mesaj metinleri. Sonra: `ui/sozluk-0016` (B.4 birim testi), `liste-kaynak`
+`ASAMA = 2` (fixture'daki Aşama 2 metinleri + detay başlık kalıpları), `ui/bos-durum`'a detay kutularında düğme yok denetimi.
+Gate (C3): `gorusme-odak`, `taksit-odeme-odak`, `customer-maliyet-kutusu`, `customer-files-section`, `machine-timeline-*`,
+`dis-firma-servis-kalip`, `customers-*`, `kalip-borc-capraz`, `evrak-finans-capraz`, `dealers-kalip-satisi`,
+`gider-yetkisiz-gorunum`, `settings-trash`, `backup-encrypt`, `form-*`.
+
+**H9. Boş kutuların boyutu.** Katlanan bölümlerin içindeki `BosDurum` 32 piksel dolgulu; G13 gibi karar görüntüde (AC-11).
+
+| # | Karar | Öneri |
+|---|---|---|
+| H1 | Katlanma | Denetimli `acik`/`onAcikDegis` (sözlük eki) |
+| H2 | Büyük harfle yazılmış başlıklar | "Kalıplar (n)", "Bu Firmanın Makinaları (n)" |
+| H3 | Makinalar kenar çubuğu | Kart yok, `BolumBasligi` |
+| H4 | Makina Geçmişi ikonu, "n olay" | İkon düşer, alt başlık |
+| H5 | Sahiplik Geçmişi zemini | Beyaz kart, satır renkleri kalır |
+| H6 | Yeni Sahip bilgi kutusu | `bilgi` ailesi |
+| H7 | Ekran anahtarları | `musteri-detay`, `musteri-detay-bos`, `musteri-detay-bolumler` |
+| H8 | Testler | Davranış testi önce eski kodda; `ASAMA = 2` |
+| H9 | Kutu boyutu | Görüntüde karar |

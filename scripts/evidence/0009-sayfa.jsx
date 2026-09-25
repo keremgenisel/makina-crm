@@ -143,6 +143,24 @@ const bayiDetay = (id, o = {}) => <SimpleDealers dealers={BAYI_LISTE} setDealers
 const stokBos = (alt, o = {}) => <Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]}
   dealers={DEALERS} yedekParcaSatislar={[]} defaultSubTab={alt} showToast={bos} {...o} />;
 
+// Spec 0016 Aşama 2: müşteri detay penceresinin bölümleri.
+const DETAY_MAKINA = { id: 601, name: "Detay Gıda", model: "AK100", serialNo: "D-1", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 200000,
+  fabrikaSatisBedeli: 200000, installDate: "2025-01-10", warrantyEnd: "2027-01-10", kalanBorc: 50000, kaliplar: [{ ad: "Hamburger", olcu: "55x125" }],
+  prevOwners: [{ name: "Eski Sahip Ltd", city: "Konya", country: "Türkiye", saleDate: "2024-06-01" }] };
+const DETAY_IKINCI = { id: 602, name: "Detay Gıda", model: "AK120_DSC", serialNo: "D-2", currency: "TRY", installDate: "2025-03-01" };
+const DETAY_BOS = { id: 603, name: "Olaysız Firma", model: "AK100", serialNo: "D-3", currency: "TRY" };
+const DETAY_SERVIS = [
+  { id: 611, customerId: 601, date: "2026-05-10", type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina" },
+  { id: 612, customerId: 601, date: "2025-08-02", type: "Garanti Dışı", repairPlace: "Fabrikada Onarım", islemFirma: "Altuntaş Makina", servisUcreti: "100", currency: "USD", odendi: false, faturaTipi: "Faturasız Yurtiçi" },
+];
+const DETAY_KALIP = [{ id: 621, tur: "Kalıp", customerId: 601, ad: "Köfte Kalıbı", tarih: "2026-03-04", ucret: 500, currency: "TRY", odendi: true, faturaTipi: "Faturasız Yurtiçi" }];
+const DETAY_GORUSME = [{ id: 631, customerId: 601, tarih: "2026-09-01", tur: "Gelen Arama", not: "Yeni kalıp fiyatı sordu", takipTarihi: "2026-09-10", tamamlandi: false }];
+const DETAY_DOSYA = [{ id: 641, customerId: 601, refType: "makina", refId: 601, ad: "fatura.pdf", tur: "PDF", boyut: 120000, tarih: "2026-09-02" }];
+const detay = (id, o = {}) => <Customers customers={[DETAY_MAKINA, DETAY_IKINCI, DETAY_BOS]} setCustomers={bos} services={DETAY_SERVIS} setServices={bos}
+  partSales={DETAY_KALIP} setPartSales={bos} payments={[]} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} factory={{ name: "Altuntaş Makina" }}
+  gorusmeler={DETAY_GORUSME} setGorusmeler={bos} dosyalar={DETAY_DOSYA} setDosyalar={bos} yedekParcaSatislar={[]} setYedekParcaSatislar={bos}
+  calisanlar={CAL} kalipDefs={[{ id: 1, ad: "Hamburger" }]} initialDetailId={id} {...o} />;
+
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -220,6 +238,10 @@ const EKRANLAR = {
   "notlar-bos": [<Notes notes={[]} setNotes={bos} aktifKullanici="kerem" />, []],
   "notlar-bos-arama": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, ["doldur:Notlarda ara...=zzz"]],
   "analiz-bos": [<Analiz customers={[]} services={[]} partSales={[]} yedekParcaSatislar={[]} parts={[]} appSettings={{}} />, []],
+  // Spec 0016 Aşama 2 (plan H7). Görüşmeler ve Dosyalar başlığa tıklanarak açılır.
+  "musteri-detay-bolumler": [detay(601, { dosyaCevrimdisi: true }), ["*Görüşmeler (", "*Dosyalar ("]],
+  "musteri-detay-bos": [detay(603), ["*Görüşmeler (", "*Dosyalar ("]],
+  "musteri-detay-yeni-sahip": [detay(601), ["~Yeni Sahip"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);
@@ -242,9 +264,11 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
       await bekle(300);
       continue;
     }
-    const bas = metin.startsWith("~");
-    const aranan = bas ? metin.slice(1) : metin;
-    const aday = [...document.querySelectorAll("button, td, span, div, a")].filter(e => (bas ? e.textContent.trim().startsWith(aranan) : e.textContent.trim() === aranan) && e.children.length <= 2);
+    // "~metin": metinle başlayan; "*metin": metni içeren (başında simge olan başlıklar için, spec 0016); yoksa birebir.
+    const bas = metin.startsWith("~"), icerir = metin.startsWith("*");
+    const aranan = bas || icerir ? metin.slice(1) : metin;
+    const esles = (t) => (bas ? t.startsWith(aranan) : icerir ? t.includes(aranan) : t === aranan);
+    const aday = [...document.querySelectorAll("button, td, span, div, a")].filter(e => esles(e.textContent.trim()) && e.children.length <= 2);
     const hedef = aday.length ? (aday[aday.length - 1].closest("tr") || aday[aday.length - 1].closest("button") || aday[aday.length - 1]) : null;
     if (hedef) hedef.click(); else console.warn("tıklanamadı: " + metin);
     await bekle(300);

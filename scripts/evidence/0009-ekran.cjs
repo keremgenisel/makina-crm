@@ -29,6 +29,9 @@ function farkSay(a, b) {
   return { piksel: n };
 }
 
+// Spec 0016: kaydırma çubukları macOS ayarına ve bağlı giriş aygıtına göre görünüp kayboluyor ve koddan bağımsız fark
+// üretiyordu; çekim ortamdan bağımsız olsun diye gizlenir. (Bu satırdan önce çekilmiş görüntülerle karşılaştırılmaz.)
+app.commandLine.appendSwitch("hide-scrollbars");
 app.on("window-all-closed", () => {});
 app.whenReady().then(async () => {
   fs.mkdirSync(cikis, { recursive: true });

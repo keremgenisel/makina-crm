@@ -66,6 +66,9 @@ export const Segment = ({ options, value, onChange, ariaLabel, disabled, kip = "
 // başlık, isteğe bağlı katlanabilir. varyant "kart": kenarlıklı, 18 dolgu, ikonsuz; başlık iki biçimde:
 // baslikStili "etiket" (küçük gri büyük harf) ya da "baslik" (15 punto koyu başlık + isteğe bağlı gri alt satır).
 // style yalnız "kart" kabına eklenir (yerleşim: flex, dolgu 0 gibi). Başlıksız "kart" yalnız kaptır.
+// Spec 0016 (G10): "kart" da katlanabilir: collapsible + defaultOpen (iç durum) ya da denetimli acik + onAcikDegis(yeni)
+// (bölümü dışarıdan açan akışlar için: odak, süzgeç). Ok (▸/▾) başlığın solunda ayrı öğededir; başlık metni kendi öğesinde
+// kalır. eylemler: başlık satırının sağındaki düğmeler; tıklamaları katlanmayı tetiklemez. İkisi de verilmezse çıktı aynıdır.
 const kartKabi = { background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: 18 };
 const etiketBaslik = { fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 };
 
@@ -79,11 +82,34 @@ export const BolumBasligi = ({ children, bosluk, ust }) => (
 export const KartBolum = ({
   varyant = "ayar", title, icon, children, collapsible = false, defaultOpen = false, wide = false,
   baslikStili = "etiket", altBaslik, baslikBosluk, baslikRengi = "var(--n900, #0f172a)", style, testId,
+  acik, onAcikDegis, eylemler,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   if (varyant === "kart") {
     let baslik = null;
-    if (title && baslikStili === "baslik") {
+    let govde = children;
+    if (collapsible || eylemler) {
+      const denetimli = acik !== undefined;
+      const acikMi = !collapsible || (denetimli ? !!acik : open);
+      const degis = () => { if (denetimli) onAcikDegis?.(!acikMi); else setOpen(o => !o); };
+      const baslikStil = baslikStili === "baslik"
+        ? { fontSize: 15, fontWeight: 700, ...(baslikRengi === "inherit" ? {} : { color: baslikRengi }) }
+        : etiketBaslik;
+      baslik = (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: acikMi ? (baslikBosluk ?? (baslikStili === "baslik" ? 12 : 14)) : 0 }}>
+          <div onClick={collapsible ? degis : undefined}
+            style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
+            {collapsible && <span aria-hidden="true" style={{ fontSize: 10, color: "var(--n400, #94a3b8)" }}>{acikMi ? "▾" : "▸"}</span>}
+            <div>
+              {title && <div style={baslikStil}>{title}</div>}
+              {altBaslik && baslikStili === "baslik" && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{altBaslik}</div>}
+            </div>
+          </div>
+          {eylemler && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>{eylemler}</div>}
+        </div>
+      );
+      if (!acikMi) govde = null;
+    } else if (title && baslikStili === "baslik") {
       baslik = (
         <div style={{ marginBottom: baslikBosluk ?? 12 }}>
           <div style={{ fontSize: 15, fontWeight: 700, ...(baslikRengi === "inherit" ? {} : { color: baslikRengi }) }}>{title}</div>
@@ -93,20 +119,20 @@ export const KartBolum = ({
     } else if (title) {
       baslik = <BolumBasligi bosluk={baslikBosluk}>{title}</BolumBasligi>;
     }
-    return <div style={style ? { ...kartKabi, ...style } : kartKabi} data-testid={testId}>{baslik}{children}</div>;
+    return <div style={style ? { ...kartKabi, ...style } : kartKabi} data-testid={testId}>{baslik}{govde}</div>;
   }
-  const acik = !collapsible || open;
+  const ayarAcik = !collapsible || open;
   return (
-    <div data-testid={testId} style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: acik ? 24 : "18px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 20, maxWidth: wide ? "100%" : 720 }}>
+    <div data-testid={testId} style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: ayarAcik ? 24 : "18px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 20, maxWidth: wide ? "100%" : 720 }}>
       <div
         onClick={collapsible ? () => setOpen(o => !o) : undefined}
-        style={{ fontWeight: 700, fontSize: 16, color: "var(--n900, #0f172a)", marginBottom: acik ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
+        style={{ fontWeight: 700, fontSize: 16, color: "var(--n900, #0f172a)", marginBottom: ayarAcik ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "var(--brand, #e85d1a)" }}><Icon name={icon} size={18} /></span>{title}
         </span>
         {collapsible && <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{open ? "▾" : "▸"}</span>}
       </div>
-      {acik && children}
+      {ayarAcik && children}
     </div>
   );
 };

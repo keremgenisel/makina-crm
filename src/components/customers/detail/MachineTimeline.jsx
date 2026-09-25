@@ -7,6 +7,7 @@ import {
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { Icon, Btn, AtesRozeti } from "../../ui";
+import { KartBolum, BosDurum } from "../../tasarim";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -69,19 +70,13 @@ export const MachineTimeline = ({
     return () => clearTimeout(t);
   }, [odakServisId, odakKalipId, odakTaksitId, odakOdemeId, odakNonce, detailTimelineEvents]);
   return (
-  <div style={{ background: "var(--n100, #f8fafc)", borderRadius: 12, padding: "16px 18px" }}>
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-      <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-        <Icon name="service" size={15} /> Makina Geçmişi
-        <span style={{ fontSize: 11, background: "var(--surface, #ffffff)", color: "var(--n500, #64748b)", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => onPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
-        {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => onPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
-      </div>
-    </div>
+  <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={14} title="Makina Geçmişi" altBaslik={`${detailTimelineEvents.length} olay`}
+    eylemler={(canDo("cust_detail_print") || canDo("cust_detail_mail")) ? (<>
+      {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => onPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
+      {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => onPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
+    </>) : undefined}>
     {detailTimelineEvents.length === 0 ? (
-      <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13, padding: "8px 0" }}>Bu makinaya ait kayıt bulunmuyor.</div>
+      <BosDurum testId="bos-makina-gecmisi" baslik="Bu makinaya ait kayıt bulunmuyor." />
     ) : (
       detailTimelineEvents.map((ev, i) => {
         const last = i === detailTimelineEvents.length - 1;
@@ -407,6 +402,6 @@ export const MachineTimeline = ({
         );
       })
     )}
-  </div>
+  </KartBolum>
   );
 };

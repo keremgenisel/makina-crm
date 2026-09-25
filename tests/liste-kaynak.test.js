@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const ASAMA = 1;
+const ASAMA = 2;
 const KOK = path.join(__dirname, "..");
 const oku = (d) => readFileSync(path.join(KOK, d), "utf-8");
 const C = "src/components/";
@@ -24,7 +24,7 @@ const ogeIcinde = (s, metin, ad) => {
   const ac = s.lastIndexOf(`<${ad}`, i);
   if (ac < 0) return { bulundu: true, icinde: false };
   const ara = s.slice(ac, i);
-  const kapandi = ara.includes(`</${ad}>`) || /\/>/.test(ara);
+  const kapandi = ara.includes(`</${ad}>`) || /[^<]\/>/.test(ara); // "</>" (React parçası) kapanış sayılmaz
   return { bulundu: true, icinde: !kapandi, etiket: s.slice(ac, s.indexOf(">", ac) + 1) };
 };
 
@@ -39,7 +39,7 @@ describe("AC-1: boş durum metinleri boş durum kutusunda", () => {
     while (j >= 0) {
       const onceki = s.slice(0, j);
       const ac = onceki.lastIndexOf("<BosDurum");
-      expect(ac >= 0 && !/\/>|<\/BosDurum>/.test(s.slice(ac, j)), `${d}: ${metin} (konum ${j})`).toBe(true);
+      expect(ac >= 0 && !/[^<]\/>|<\/BosDurum>/.test(s.slice(ac, j)), `${d}: ${metin} (konum ${j})`).toBe(true);
       j = s.indexOf(metin, j + metin.length);
     }
   });
@@ -81,10 +81,21 @@ describe("AC-6: liste kapları ve bölümler kart bölümde", () => {
     [/\bS\.panel\b|\bS\.h2\b|\bS\.bos\b/, "Analiz yerel kutu stili"],
     [/padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var\(--n600/, "Finans yerel kart başlığı"],
     [/fontSize: 12, fontWeight: 800, color: "var\(--n600, #475569\)", letterSpacing: \.5, textTransform: "uppercase"/, "detay bölümü yerel başlığı"],
+    // Aşama 2 (müşteri detayı, plan Ek B.1).
+    [/fontSize: 12, fontWeight: (700|800), color: "var\(--n600, #475569\)", textTransform: "uppercase"/, "detay bölümü yerel başlığı (büyük harf)"],
+    [/>\s*(BU FİRMANIN MAKİNALARI|KALIPLAR) \(/, "büyük harfle yazılmış bölüm başlığı (H2)"],
+    [/background: "var\(--n100, #f8fafc\)", borderRadius: 12, padding: "16px 18px"/, "Makina Geçmişi yerel kabı"],
+    [/background: "var\(--ambBg3, #fff7ed\)", border: "1px solid var\(--ambBr3, #fed7aa\)", borderRadius: 10, padding: "14px 16px"/, "Sahiplik Geçmişi yerel kabı"],
   ];
+  // Adlandırılmış istisna: müşteri detayındaki "Sandık Etiketi" penceresinin üç başlığı (Gönderen, Alıcı, Makina); form, kapsam dışı.
+  const ISTISNA = { [C + "customers/CustomerDetailModal.jsx"]: { "detay bölümü yerel başlığı (büyük harf)": ["Gönderen", "Alıcı", "Makina"] } };
   it.each(KAPSAM)("%s", (d) => {
     const s = oku(d);
-    for (const [re, ad] of ESKI_KAP) expect(re.test(s), `${d}: ${ad}`).toBe(false);
+    for (const [re, ad] of ESKI_KAP) {
+      const izinli = ISTISNA[d]?.[ad];
+      const kalan = s.split("\n").filter(l => re.test(l)).filter(l => !(izinli || []).some(t => l.includes(`>${t}</div>`)));
+      expect(kalan, `${d}: ${ad}`).toEqual([]);
+    }
   });
   it("Ek A.3: kartla çerçevelenen bölümler KartBolum kullanır, başlık biçimi G8'e göre", () => {
     const say = (d, re) => (oku(C + d).match(re) || []).length;
@@ -95,5 +106,17 @@ describe("AC-6: liste kapları ve bölümler kart bölümde", () => {
     expect(say("Analiz.jsx", /<KartBolum varyant="kart" baslikStili="baslik"/g)).toBe(10);
     expect(say("Analiz.jsx", /<section style=\{\{[^}]*\}\}>\s*<KartBolum/g)).toBe(10); // G9: dış <section> korunur
     expect(say("SimpleDealers.jsx", /<KartBolum varyant="kart" baslikStili="baslik"/g)).toBe(3);
+  });
+  it("Ek B.1 (Aşama 2): müşteri detayının bölümleri KartBolum baslik; katlananlar denetimli; kenar çubuğu yalnız başlık", () => {
+    if (ASAMA < 2) return;
+    const d = "customers/CustomerDetailModal.jsx";
+    const s = oku(C + d);
+    expect((s.match(/<KartBolum varyant="kart" baslikStili="baslik"/g) || []).length, d).toBe(3); // Görüşmeler, Kalıplar, İşlemler
+    expect(s).toMatch(/<KartBolum varyant="kart" baslikStili="baslik" collapsible[\s\S]{0,120}acik=\{gorusmelerAcik \|\| !!gorusmeForm\}/);
+    expect(s).toContain("<BolumBasligi bosluk={10}>Bu Firmanın Makinaları ({firmMachines.length})</BolumBasligi>");
+    expect(s).toContain("title={`Kalıplar (${detailView.kaliplar.length})`}");
+    expect(oku(C + "customers/detail/CustomerFilesSection.jsx")).toMatch(/collapsible acik=\{acik\} onAcikDegis=\{setAcik\}/);
+    expect(oku(C + "customers/detail/MachineTimeline.jsx")).toMatch(/<KartBolum varyant="kart" baslikStili="baslik"[^>]*title="Makina Geçmişi" altBaslik=\{`\$\{detailTimelineEvents\.length\} olay`\}/);
+    expect(oku(C + "customers/detail/OwnershipSection.jsx")).toMatch(/<KartBolum varyant="kart" baslikStili="baslik"[^>]*title="Sahiplik Geçmişi"/);
   });
 });

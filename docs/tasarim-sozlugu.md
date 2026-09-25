@@ -76,6 +76,11 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
   - `baslikRengi`: `"inherit"` rengi miras alır.
   - `style`: yalnız kaba eklenir (flex payı, sıfır dolgu gibi yerleşim ayarları).
   - Başlıksız kullanım yalnız kaptır.
+  - **Katlanma (spec 0016 G10):** `collapsible` + `defaultOpen` (iç durum) ya da denetimli `acik` + `onAcikDegis(yeni)`. Bölümü
+    dışarıdan açan bir akış varsa (odak, süzgeç) denetimli kullanılır. Ok (▸/▾) başlığın solunda ayrı öğededir; başlık metni
+    kendi öğesinde kalır, bu yüzden `getByText("Dosyalar (2)")` gibi sorgular çalışır. Kapalıyken yalnız başlık satırı çizilir.
+  - **`eylemler`** (spec 0016 G10): başlık satırının sağındaki düğmeler (satır sarar); tıklamaları katlanmayı tetiklemez.
+  - Bu iki özellik verilmediğinde çıktı öncekiyle birebir aynıdır.
 
 **Ne zaman kullanılır:** Ayarlar'da her bölüm (`ayar`); bir ekranda içeriği gruplayan her beyaz kart (`kart`).
 Spec 0016 ile:
@@ -97,6 +102,8 @@ Spec 0016 ile:
 **Örnek:** `src/components/gider/DonemRaporu.jsx:67` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
+**Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
+**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:73` (eylem yuvası, alt başlık)
 
 ## BolumBasligi
 
@@ -245,6 +252,9 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
   `S.bos`) ve bayi detayının büyük harfli bölüm başlıkları `KartBolum`'a geçti.
 - Satır içi mesaj kutuları `UyariSeridi`'ye geçti: Müşteriler gruplu görünüm şeridi, Parça Stoğu'nun tükenen/azalan parça
   mesajları, Kalıp Üretim'in "dönem sonlandırılmış" mesajı.
+- Aşama 2 (müşteri detayı): Görüşmeler, Dosyalar, Kalıplar, İşlemler, Sahiplik Geçmişi ve Makina Geçmişi `KartBolum` başlıklı
+  karta; görüşme, dosya ve geçmiş boş durumları `BosDurum`'a; farklı para birimi borcu, çevrimdışı dosya uyarısı ve Yeni Sahip
+  penceresinin iki mesajı `UyariSeridi`'ye geçti.
 
 ### Kapsam dışı ekranlardaki kopyalar
 
@@ -272,7 +282,10 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
   `overflowVisible` (parça listesi pencerenin dışına açılır), alt yuvalı pencere gövdeyi kaydırdığı için listeyi kırpardı
   (spec 0015 R8, F5).
 - `src/components/customers/CustomerDetailModal.jsx` → detayın kendi alt formlarındaki (Yeni Sahip, Ödeme) gövde içi eylem
-  satırları ve büyük harf başlıkları: 0015 bu dosyada yalnız `Warn`'u taşıdı (F8); dönüşümü müşteri detayının işidir.
+  satırları ve "Sandık Etiketi" penceresinin büyük harf başlıkları (Gönderen, Alıcı, Makina): formlar; 0015 bu dosyada yalnız
+  `Warn`'u, 0016 yalnız okuma bölümlerini ve iki mesajı taşıdı.
+- `src/components/customers/CustomerDetailModal.jsx` → "MALİYET VE KÂR" kutusu: Giderler'in bileşeni (gider perdesi arkasında),
+  yerel kart ve büyük harfle yazılmış başlık; spec 0016 kapsam dışı bıraktı.
 
 ### Erişilebilirlik borcu
 
