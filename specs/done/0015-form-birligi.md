@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-25, plan `specs/0015-uygulama-plani.md` F1–F12 ile) |
+| **Durum** | Tamamlandı (2026-09-25; kod commit `44f3911`, dal `feat/0015-form-birligi`; plan `specs/done/0015-uygulama-plani.md` F1–F12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri, bayi, servis, Extra Kalıp, yedek parça, makina stoğu, parça stoğu, üretim formu, not ve e-posta formları |
@@ -206,10 +206,17 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R4 (onay sonrası): C3'e ikinci istisna. 0009'un kaynak testi `ui.jsx`'te `Warn`'un **var olmasını** şart koşuyordu; bu iş bileşeni kaldırdığı için satır sözlüğün "Ödenen borç" bölümünü denetleyecek şekilde değişti (0014 `Chip` emsali). R3 plan turunda, onayla eş zamanlıydı, sayılmaz. |
+| **Düzeltme turu sayısı** | 0 | İş geri dönmedi. Uygulamada netleşen noktalar (alt yuvanın boşluk vermemesi, kilit ekranında koşullu alt yuva, üretim formu ve not düzenleyicisinin pencere olmaması) plan §7'ye yazıldı; kullanıcıya dönülmeden kapandı. |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme turu olmadı. Uygulama içinde kapsam dışı bir bulgu çıktı (`--n050` token temada yok, teslim kutusu karanlıkta beyaz) ve `specs/README.md` açık bulgulara yazıldı. |
+| **Regresyon sayısı** | 0 | 17 davranış testi (`form-dogrulama`, `form-paylasilan`, `form-taslak`) dönüşümden önce eski kodda yeşil yazıldı ve sonra da yeşil; mevcut testler iki onaylı istisna dışında değişmeden geçti; 142 ekranlık çekimde 0015 dışındaki bütün ekranlar iki temada 0 piksel fark. Son durum: 199 dosya, 2131 test (tek kırmızı işten bağımsız tarih bombası `makina-odeme`), lint 0 hata, build başarılı. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir bileşeni kaldıran işte "bu borç hâlâ duruyor" diye doğrulayan test, 0014'teki
+`Chip` dersinden sonra bile bir kez daha çıktı (`Warn`); borç listesini denetleyen testlerin tamamı işin başında taranmalı,
+planda yalnız ilk bulunanı yazmak yetmedi. İkinci ders: "yeni yapı taşı yok" kısıtı ile ortak ilkele dokunmama kısıtı
+yan yana geldiğinde (pencerenin alt yuvası boşluk vermiyor) çözüm uygulamada zaten kullanılan bir deseni seçmek oldu; bu
+seçimin plana yazılması, sonraki dönüşümlerin aynı deseni bulmasını sağlar. Üçüncüsü: eski uyarıların ifadelerini dönüşümden
+önce bir veri dosyasına çıkarmak (`tests/fixtures/0015-warn-ifadeleri.json`), 32 koşulun birebir taşındığını gözle değil
+testle göstermeyi mümkün kıldı. Son olarak paylaşılan formlarda alan kümesini her açılış noktasında önceden kaydetmek, form
+kendi `Modal`'ını çizdiği için tek yerden yapılan değişikliğin dört ekranı birden etkilediğini güvenle doğruladı.

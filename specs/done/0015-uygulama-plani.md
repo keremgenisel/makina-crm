@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0015-form-birligi.md` (R3, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-25: F1–F12 kullanıcı tarafından onaylandı; spec R3 ile güncellendi; uygulandı (bkz. §7), AC-13 onaylandı, spec R4. Commit bekliyor. |
+| **Bağlı spec** | `specs/done/0015-form-birligi.md` (R3, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-25: F1–F12 kullanıcı tarafından onaylandı; spec R3 ve R4 ile güncellendi; kod commit `44f3911` (dal `feat/0015-form-birligi`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0009, 0011, 0014 (sözlük, kanıt eşlemesi, taban raporu yöntemi) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
@@ -246,6 +246,15 @@ Plandan sapmalar ve uygulamada netleşenler:
 - **Açık bulgu (kapsam dışı):** Extra Kalıp ve yedek parça formlarındaki teslim ayrıntı kutusu `var(--n050, #f8fafc)`
   kullanıyor; `n050` temada tanımlı değil, kutu karanlık temada beyaz kalıyor. Dönüşümden önce de böyle; `specs/README.md`
   açık bulgulara yazıldı.
+
+## 8. Done'a taşıma (2026-09-25, AC-11c)
+
+- 11 `degisti` kaydı `ayni`'ye çevrildi, `onay` alanları kaldırıldı.
+- Onaylanan yeni görünümü taban alan **`0015-taban-piksel-raporu.json`** üretildi:
+  - bugünkü kod, onaylı "sonra" görüntüleriyle karşılaştırıldı (142 ekranlık tam çekimde hiçbir ekranda fark yok);
+  - değişen 11 ekran × 2 tema = 22 görüntü raporda, hepsi 0 fark;
+  - yan yana JPEG'ler `docs/evidence/0015-taban-*.jpg`.
+- Kayıtlar bu raporu gösteriyor. Önce/sonra raporu (`0015-*`) kanıt olarak kalıyor.
 
 ---
 

@@ -322,10 +322,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "bayi-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Stock.jsx": [
@@ -370,64 +369,56 @@
     ],
     "src/components/customers/CustomerAddEditForm.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "musteri-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "musteri-formu-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "musteri-detay",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/ServiceForm.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "servis-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartSaleForm.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "kalip-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "makina-stok-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "parca-stok-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MailCompose.jsx": [
@@ -439,10 +430,9 @@
     ],
     "src/components/ModelsManager.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "katalog-model",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/KalipManager.jsx": [
@@ -461,10 +451,9 @@
     ],
     "src/components/PartTypeManager.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "ayarlar-parcatipi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+        "beklenen": "ayni"
       }
     ]
   }
