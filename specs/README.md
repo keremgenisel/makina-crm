@@ -40,7 +40,7 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 | 0012, 0013 | (boş) | Numaralar kullanılmadı; bir sonraki iş bunlardan devam edebilir. |
 | **0014** | Sekme ve süzgeç birliği | **Tamamlandı** (commit 7689c55, 9516134); `specs/done/` altında. |
 | **0015** | Form birliği | **Tamamlandı** (commit 44f3911 ve done commit'i); `specs/done/` altında. |
-| **0016** | Liste, boş durum ve uyarı birliği | **Aşama 1** commit d749f0a; **Aşama 2** (müşteri detayı) uygulandı, commit bekliyor (dal `feat/0016-liste-bos-durum`). |
+| **0016** | Liste, boş durum ve uyarı birliği | **Tamamlandı** (commit d749f0a, 745a028 ve done commit'i); `specs/done/` altında. |
 
 ## Açık bulgular (spec'i yok, karar bekliyor)
 

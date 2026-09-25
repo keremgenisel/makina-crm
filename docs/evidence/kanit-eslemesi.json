@@ -27,22 +27,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "evrak-sekme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "evrak-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "evrak-bos-arama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/GiderForm.jsx": [
@@ -348,28 +345,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteriler-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteriler-bos-arama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteriler-bos-kayit",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteriler-gruplu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/SimpleDealers.jsx": [
@@ -384,28 +377,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "bayiler-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "bayiler-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "bayi-detay",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "bayi-detay-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Stock.jsx": [
@@ -422,10 +411,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos-yedek",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0016-piksel-raporu.json",
@@ -440,16 +428,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "finans-aralik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "finans-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Notes.jsx": [
@@ -464,22 +450,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "notlar-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "notlar-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "notlar-bos-arama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Analiz.jsx": [
@@ -489,16 +472,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "analiz-onayar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "analiz-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerAddEditForm.jsx": [
@@ -520,28 +501,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-yeni-sahip",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -572,16 +549,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-alt-sekme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -591,16 +566,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos-parca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-parca-uyari",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MailCompose.jsx": [
@@ -640,54 +613,47 @@
     ],
     "src/components/stock/UretimFormu.jsx": [
       {
-        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos-uretim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/MachineTimeline.jsx": [
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/OwnershipSection.jsx": [
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/PaymentSection.jsx": [
       {
-        "rapor": "docs/evidence/0016-asama2-piksel-raporu.json",
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0016 AC-11"
+        "beklenen": "ayni"
       }
     ]
   }

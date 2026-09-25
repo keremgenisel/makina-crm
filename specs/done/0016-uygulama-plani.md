@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0016-liste-bos-durum-ve-uyari-birligi.md` (R3, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-25: G1–G14 kullanıcı tarafından onaylandı; spec R3 ve R4 ile güncellendi; Aşama 1 commit `d749f0a`. **Aşama 2 uygulandı** (Ek B, H1–H9; spec R5; notlar §8), AC-11 (Aşama 2) onaylandı, commit bekliyor. |
+| **Bağlı spec** | `specs/done/0016-liste-bos-durum-ve-uyari-birligi.md` (R3, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-25: G1–G14 ve H1–H9 kullanıcı tarafından onaylandı; spec R3, R4, R5 ile güncellendi; Aşama 1 commit `d749f0a`, Aşama 2 commit `745a028` (dal `feat/0016-liste-bos-durum`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§9). |
 | **Önkoşul** | 0009 (sözlük), 0011 (serbest içerik, kanıt eşlemesi), 0014 (taban raporu yöntemi), 0015 (dal tabanı) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
@@ -281,6 +281,16 @@ Test adları `AC-<n>: <metin>`. "Davranış testi" = eski kodda yeşil yazılıp
   `0016-taban` raporuyla `ayni`ye çevrilecek (Aşama 1 ve 2 birlikte).
 - **Son durum:** 206 dosya, 2247 test (tek kırmızı işten bağımsız tarih bombası `makina-odeme`), lint 0 hata, build başarılı.
   `git diff --name-status -- tests` (Aşama 2): yeni dosyalar + bu işin kendi testleri (`liste-kaynak`, `sozluk-0016`, fixture).
+
+## 9. Done'a taşıma (2026-09-25, AC-11c)
+
+- İki aşamanın 34 `degisti` kaydı `ayni`'ye çevrildi, `onay` alanları kaldırıldı.
+- Onaylanan yeni görünümü taban alan **`0016-taban-piksel-raporu.json`** üretildi: bugünkü kod, Aşama 2'nin onaylı "sonra"
+  çekimiyle (`hide-scrollbars`, iki aşamanın kodu) karşılaştırıldı; 182 ekranın hiçbirinde fark yok. Rapor kayıtlı 28 ekranı
+  (× 2 tema) taşıyor; yan yana JPEG'ler `docs/evidence/0016-taban-*.jpg`.
+- Aşama 1'in onaylı görüntüleri (`0016-*`) aracın kaydırma çubuğu anahtarından önce çekildi; taban, aynı kodun anahtarla
+  çekilmiş görüntüsüdür (kod aynı, yalnız çekim ortamı sabitlendi). Önce/sonra raporları (`0016-*`, `0016-asama2-*`) kanıt
+  olarak kalıyor.
 
 ---
 

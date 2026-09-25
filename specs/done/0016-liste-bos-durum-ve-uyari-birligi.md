@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-25, plan `specs/0016-uygulama-plani.md` G1–G14 ile) |
+| **Durum** | Tamamlandı (2026-09-25; Aşama 1 commit `d749f0a`, Aşama 2 commit `745a028`, dal `feat/0016-liste-bos-durum`; plan `specs/done/0016-uygulama-plani.md` G1–G14, H1–H9) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteriler, Bayiler, Stok, Finans, Evrak Yönetimi, Notlar, Analiz ve bu ekranların detay bölümleri |
@@ -212,10 +212,18 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R4: C3'e istisna; 0015'in `form-kaynak` testi bayi detayındaki büyük harf başlık sayısını (5) kilitliyordu, bu iş üçünü karta taşıyınca 2 oldu. R5: Aşama 2 plan eki; katlanan bölümler dışarıdan açıldığı için sözlüğe denetimli katlanma ve eylem yuvası, büyük harfle yazılmış iki başlığın olağan yazıma dönmesi (R6 yorumu), kenar çubuğunun kart olmaması (R9). R3 plan turunda, onayla eş zamanlıydı, sayılmaz. |
+| **Düzeltme turu sayısı** | 0 | İş geri dönmedi. İki aşama da ilk sunulan görüntülerle onaylandı. Uygulamada netleşenler (eksik iki envanter metni, olay sırasının yönü, `data-testid` sayısı kilidi, `</>` tarama hatası) plan §7–§8'e yazıldı. |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme turu olmadı. Kapsam dışı bulgular sözlükte borç: Analiz kutularının `h2` başlık kaybı (erişilebilirlik), Sandık Etiketi formunun başlıkları, Maliyet ve Kâr kutusu. |
+| **Regresyon sayısı** | 0 | 28 davranış testi (`bos-durum`, `bayi-detay-bolumler`, `uyari-seritleri`, `musteri-detay-bolumler`) dönüşümden önce eski kodda yeşil yazıldı, sonra da yeşil; mevcut testler tek onaylı istisna dışında değişmeden geçti; değişmemesi gereken ekranlar (Giderler, Ayarlar, formlar) 0 piksel fark. Son durum: 206 dosya, 2247 test (tek kırmızı işten bağımsız tarih bombası `makina-odeme`), lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Borcun var olmasını kilitleyen test" dersi (0014 `Chip`, 0015 `Warn`) üçüncü kez çıktı; planda
+tarama yalnız bir test dosyasına bakmıştı. Aşama 2'de tarama işin başında bütün kaynak okuyan testlere yapıldı ve istisna
+gerekmedi: bu tarama plan şablonunun sabit bir maddesi olmalı. İkinci ders: piksel karşılaştırmasının ortamı da koddur.
+macOS'un kaydırma çubuğu durumu iki kez koddan bağımsız "fark" üretti; ilk seferde kodu geri alıp yeniden çekerek, ikincide
+aracı ortamdan bağımsız yaparak (`hide-scrollbars`) çözüldü. Kararlılık ölçümü (iki ardışık çekim 0 fark) her "önce" çekiminden
+önce yapılmalı. Üçüncüsü: büyük dosyayı iki aşamaya bölmek (R8) gözden geçirmeyi küçülttü ve Aşama 2'nin kendi plan ekiyle,
+kodu gördükten sonra karar vermesini sağladı (denetimli katlanma ihtiyacı ancak o zaman görüldü). Son olarak metni cümle cümle
+ve desenle sorgulayan davranış testleri, metnin başlık ve açıklama olarak bölünmesine dayanıklı kaldı; Türkçe "İ/ı" ise `/i`
+bayrağıyla eşleşmiyor, iki yazımı açıkça sıralamak gerekiyor.
