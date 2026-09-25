@@ -21,6 +21,7 @@ Bu klasör, Altunmak CRM'de yapılacak işlerin **ne olduğunu ve neden istendi�
 | **Onaylandı** | Takım Yöneticisi onayladı. Geliştirme başlayabilir. |
 | **Geliştiriliyor** | Branch açıldı, iş sürüyor. |
 | **Tamamlandı** | Tüm kabul kriterleri karşılandı, SCORECARD doldu, `done/`e taşındı. |
+| **Kapatıldı** | İş yapılmadan kapandı: kapsamı başka spec'ler devraldı ya da ihtiyaç ortadan kalktı. Dosya `done/`e taşınır, başına kapatma gerekçesi ve devralan spec'ler yazılır, numarası serbest kalmaz. |
 
 ## Sıradaki işler (numara ayrıldı, spec henüz yazılmadı)
 
@@ -30,6 +31,24 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 |---|---|---|
 | **0004** | Kasa ve banka hesapları, ödemenin kalemden ayrılması, kısmi ödeme, çalışan avansı ve mahsubu, tedarikçi/çalışan ekstresi | En büyük ve en riskli iş: bakiyesi olan bir kasa, gider tarafının yanı sıra mevcut müşteri tahsilat verisine de dokunmayı gerektirir. Gider verisi bir iki ay gerçek kullanımda girildikten sonra yazılması, dağıtım ve hesap kararlarını isabetli kılar. |
 | **0005** | Çalışan mesaisi (mesai ve prim ödemesinin personel maliyetine eklenmesi) | 0001'in personel modeli oturmadan eklenmesi anlamsız; saat takibi değil, elle girilen tutar olarak tasarlanacak. |
+| **0006** | Evrak satır bazlı satış kaydı | **Tamamlandı** (commit 715c237, 4f5422f); `specs/done/` altında. |
+| **0007** | Bayi aracılığıyla kalıp satışı ve borç atıfı | **Tamamlandı**, v3.39.0 ile yayınlandı. |
+| **0008** | Gider modülü yayın perdesi | **Tamamlandı**, v3.39.0 ile yayınlandı. Geçici perde; kaldırma talimatı `CLAUDE.md`'de. |
+| **0009** | Tasarım sözlüğü (paylaşılan arayüz bileşenleri) | **Tamamlandı** (commit 6a5b32f, 5217b19); `src/components/tasarim.jsx` + `docs/tasarim-sozlugu.md`. |
+| **0010** | Müşteriler ekranının yeni tasarıma geçmesi | **Kapatıldı**; kapsamı 0014, 0015 ve 0016'ya devredildi (`specs/done/` altında). |
+| **0011** | Uyarı şeridine serbest içerik | **Tamamlandı** (commit 907a280, 7ec2d4c); `specs/done/` altında. |
+| 0012, 0013 | (boş) | Numaralar kullanılmadı; bir sonraki iş bunlardan devam edebilir. |
+| **0014** | Sekme ve süzgeç birliği | **Tamamlandı** (commit 7689c55, 9516134); `specs/done/` altında. |
+| **0015** | Form birliği (yazıldı, Taslak) | Veri girme ve düzenleme formları tek desene: hata, ipucu, bölüm başlığı, eylem satırı. |
+| **0016** | Liste, boş durum ve uyarı birliği (yazıldı, Taslak) | Kırk iki dağınık boş durum metni kutuya, uyarılar şeride, bölümler karta. Servis panosu ve harita bilerek kapsam dışı. |
+
+## Açık bulgular (spec'i yok, karar bekliyor)
+
+İş sırasında bulunan ama o işin kapsamında olmayan sorunlar. Kural 1 gereği düzeltilmeden önce Takım Yöneticisi karar verir.
+
+| Bulgu | Nerede bulundu | Öneri |
+|---|---|---|
+| **`tests/makina-odeme.test.js` tarihe bağlı kalıyor (2 test).** Test sabit bir satış tarihi (2026-08-16) ve 40 günlük kredi kartı blokajı kullanıyor, ama sonucu gerçek bugüne göre hesaplanıyor. 40 gün 2026-09-25'te doldu; o günden beri blokajın hesaba geçtiği sayılıyor ve "borçtan düşülmez" beklentisi tutmuyor. Kodda hata yok, test takvime bağlı. Tam paket bu yüzden kırmızı. | 0014 uygulaması (2026-09-25); 0014'ten önceki kodda da kalıyor. | Testte "bugün"ü sabitlemek (`vi.useFakeTimers` + `vi.setSystemTime("2026-08-20")`, `odeme-hatirlatma.test.js`'teki desen). Kodun davranışı değişmez; spec gerektirmeyen tek dosyalık test düzeltmesi olarak yapılmasını öneriyorum. Aynı desenle başka tarih bombası olup olmadığı `tests/` altında da taranmalı. |
 
 ## Bu projede tek gerçek kaynaklar
 
