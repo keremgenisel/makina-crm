@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Modal, Field, Input, Warn, Btn, Icon, EMAIL_RE } from "./ui";
+import { Modal, Field, Input, Btn, Icon, EMAIL_RE } from "./ui";
+import { HataMetni } from "./tasarim";
 import { sendMailLogged } from "../lib/audit";
 
 // E-posta gönderme durumu + gönderim mantığı. Müşteri/Bayi/Evrak/Üretim/Dışa Aktarma'da birebir
@@ -27,7 +28,13 @@ export function useMailSender(serverPermissions) {
 export function MailComposeModal({ draft, setDraft, sendState, onSend, ekAlani = null }) {
   const kapat = () => setDraft(null);
   return (
-    <Modal title="E-posta Gönder" onClose={kapat}>
+    <Modal title="E-posta Gönder" onClose={kapat}
+      footer={window.appMail ? <div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={kapat}>İptal</Btn>
+        <Btn onClick={onSend} disabled={sendState.state === "sending"}>
+          <Icon name="mail" size={14} /> {sendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
+        </Btn>
+      </div> : undefined}>
       {!window.appMail ? (
         <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--n200, #e2e8f0)" }}>
           Bu özellik yalnızca kurulu uygulamada çalışır.
@@ -36,7 +43,7 @@ export function MailComposeModal({ draft, setDraft, sendState, onSend, ekAlani =
         <>
           <Field label="Kime">
             <Input value={draft.to} onChange={e => setDraft(p => ({ ...p, to: e.target.value }))} placeholder="ornek@firma.com" />
-            <Warn>{draft.to && !EMAIL_RE.test(draft.to) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            <HataMetni>{draft.to && !EMAIL_RE.test(draft.to) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
           </Field>
           <Field label="Konu">
             <Input value={draft.subject} onChange={e => setDraft(p => ({ ...p, subject: e.target.value }))} />
@@ -50,12 +57,6 @@ export function MailComposeModal({ draft, setDraft, sendState, onSend, ekAlani =
           {sendState.state === "error" && (
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--red800, #991b1b)", marginTop: 12, marginBottom: 12 }}>✗ {sendState.error}</div>
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-            <Btn variant="ghost" onClick={kapat}>İptal</Btn>
-            <Btn onClick={onSend} disabled={sendState.state === "sending"}>
-              <Icon name="mail" size={14} /> {sendState.state === "sending" ? "Gönderiliyor..." : "Gönder"}
-            </Btn>
-          </div>
         </>
       )}
     </Modal>

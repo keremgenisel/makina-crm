@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { bumpId, uid } from "../lib/utils";
-import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
+import { HataMetni } from "./tasarim";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -107,11 +108,15 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
       )}
 
       {addOpen && (
-        <Modal wide title="Yeni Kalıp Ekle" onClose={() => setAddOpen(false)}>
+        <Modal wide title="Yeni Kalıp Ekle" onClose={() => setAddOpen(false)}
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
+            <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Kalıp Adı">
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
-            <Warn>{!form.ad.trim() ? "Kalıp adı girilmedi" : ""}</Warn>
+            <HataMetni>{!form.ad.trim() ? "Kalıp adı girilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Kod">
             <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
@@ -136,19 +141,19 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-            <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
-            <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
         </Modal>
       )}
 
       {editId !== null && (
-        <Modal wide title="Kalıbı Düzenle" onClose={cancelEdit}>
+        <Modal wide title="Kalıbı Düzenle" onClose={cancelEdit}
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
+            <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Kalıp Adı">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Adana Köfte" />
-            <Warn>{!(editForm.ad || "").trim() ? "Kalıp adı girilmedi" : ""}</Warn>
+            <HataMetni>{!(editForm.ad || "").trim() ? "Kalıp adı girilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Kod">
             <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KF-ADA-001" />
@@ -173,10 +178,6 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
-            <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
         </Modal>
       )}
     </div>

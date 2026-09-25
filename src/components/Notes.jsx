@@ -203,14 +203,14 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
 
       {/* Kaydedilmemiş değişiklik varken not değiştirme/yeni not onayı */}
       {pendingAction && (
-        <Modal title="Kaydedilmemiş Değişiklikler" onClose={() => setPendingAction(null)}>
-          <div style={{ fontSize: 14, color: "var(--n600, #475569)", marginBottom: 20, lineHeight: 1.6 }}>
-            Bu nottaki değişiklikleri kaydetmediniz. Devam ederseniz kaydedilmemiş değişiklikler kaybolur.
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        <Modal title="Kaydedilmemiş Değişiklikler" onClose={() => setPendingAction(null)}
+          footer={<div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <Btn variant="ghost" onClick={() => setPendingAction(null)}>Vazgeç</Btn>
             <Btn variant="danger" onClick={() => { const action = pendingAction; setPendingAction(null); action(); }}>Kaydetmeden Devam Et</Btn>
             <Btn onClick={() => { const action = pendingAction; setPendingAction(null); kaydet(); action(); }}><Icon name="check" size={14} /> Kaydet ve Devam Et</Btn>
+          </div>}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.6 }}>
+            Bu nottaki değişiklikleri kaydetmediniz. Devam ederseniz kaydedilmemiş değişiklikler kaybolur.
           </div>
         </Modal>
       )}

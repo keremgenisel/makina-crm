@@ -76,7 +76,7 @@ const TOKENS = [
   ["tblHead", "#334155", "#3d3428"],  // sütun başlığı
   ["tblRow", "#e8edf3", "#26221b"],   // veri satırı
   ["inkBg", "#0f172a", "#14100b"],    // koyu kutu (her iki temada koyu; n900'den ayrı)
-  // Sarı uyarı (Warn bileşeni), mor bilgi, teal/yeşil/mavi koyu metinler
+  // Sarı uyarı (taslak şeridi), mor bilgi, teal/yeşil/mavi koyu metinler
   ["warnBg", "#fef9c3", "#322610"], ["warnBr", "#fde047", "#6b551a"], ["warnTx", "#854d0e", "#f6c453"],
   ["purBg", "#f5f3ff", "#241a33"], ["purTx", "#7c3aed", "#b794f6"],
   ["teal", "#0d9488", "#2dd4bf"], ["cyan", "#0891b2", "#38bdf8"], ["emerald", "#059669", "#34d399"],

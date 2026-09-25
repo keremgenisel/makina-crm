@@ -114,7 +114,8 @@ describe("sözlük belgesi", () => {
     }
     // Spec 0014 R4 (C3 istisnası): Analiz'in Chip kopyası 0014'te ödendi; artık sözlüğün "Ödenen borç" bölümünde durur.
     expect(doc).toMatch(/### Ödenen borç[\s\S]*Analiz\.jsx[\s\S]*Chip/);
-    expect(oku("src/components/ui.jsx")).toMatch(/export const Warn = /);
+    // Spec 0015 F2 (C3 istisnası): Warn 0015'te kaldırıldı; artık sözlüğün "Ödenen borç" bölümünde durur.
+    expect(doc).toMatch(/### Ödenen borç[\s\S]*ui\.jsx[\s\S]*Warn/);
   });
   it("CLAUDE.md sözlüğe atıf yapar", () => {
     expect(oku("CLAUDE.md")).toContain("docs/tasarim-sozlugu.md");

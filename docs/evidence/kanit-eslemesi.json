@@ -5,6 +5,11 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-calisanlar"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "katalog-calisan",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Documents.jsx": [
@@ -220,6 +225,11 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-eposta"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-eposta",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsMailTemplates.jsx": [
@@ -310,6 +320,12 @@
         "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "bayiler-liste",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "bayi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
       }
     ],
     "src/components/Stock.jsx": [
@@ -338,6 +354,11 @@
         "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "notlar-suzgec",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "not-formu",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Analiz.jsx": [
@@ -345,6 +366,105 @@
         "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "analiz-onayar",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/CustomerAddEditForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/customers/CustomerDetailModal.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/ServiceForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "servis-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/PartSaleForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "kalip-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/YedekParcaSatisForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/stock/MakinaStokTab.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/stock/PartStokTab.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "parca-stok-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/MailCompose.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "eposta-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/ModelsManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "katalog-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
+      }
+    ],
+    "src/components/KalipManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/PartManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/PartTypeManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-parcatipi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0015 AC-13"
       }
     ]
   }

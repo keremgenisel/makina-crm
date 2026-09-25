@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
+import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
+import { HataMetni } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 
 const PER_PAGE = 15;
@@ -249,7 +250,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                   onChange={val => setForm(p => ({ ...p, partId: val }))}
                   options={parts.map(p => ({ value: String(p.id), label: p.ad }))}
                   placeholder="Parça seçin..." searchPlaceholder="Parça ara..." initialLimit={10} />
-                <Warn>{!form.partId ? "Parça seçilmedi" : ""}</Warn>
+                <HataMetni>{!form.partId ? "Parça seçilmedi" : ""}</HataMetni>
               </Field>
               <Field label="Eklenecek Miktar (adet)">
                 <Input type="number" min="1" value={form.miktar} onChange={e => setForm(p => ({ ...p, miktar: e.target.value }))} placeholder="1" />
@@ -267,7 +268,11 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       )}
 
       {(modal === "duzelt") && (
-        <Modal title="Stok Miktarını Düzelt" onClose={() => setModal(null)} maxWidth={420}>
+        <Modal title="Stok Miktarını Düzelt" onClose={() => setModal(null)} maxWidth={420}
+          footer={partStokLock ? undefined : <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+            <Btn onClick={saveDuzelt}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           {partStokLock ? (
             <LockConflict lockedBy={partStokLock.lockedBy} lockedAt={partStokLock.lockedAt}
               onForce={forcePartStokLock} onCancel={() => setModal(null)} />
@@ -295,10 +300,6 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                   </div>
                 );
               })()}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-                <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-                <Btn onClick={saveDuzelt}><Icon name="check" size={14} /> Kaydet</Btn>
-              </div>
             </>
           )}
         </Modal>

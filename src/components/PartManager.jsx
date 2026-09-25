@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
-import { Icon, Field, Input, Warn, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
+import { Icon, Field, Input, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
+import { HataMetni } from "./tasarim";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -187,11 +188,15 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       )}
 
       {addOpen && (
-        <Modal wide title="Yeni Yedek Parça Ekle" onClose={() => setAddOpen(false)}>
+        <Modal wide title="Yeni Yedek Parça Ekle" onClose={() => setAddOpen(false)}
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
+            <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <Field label="Yedek Parça Adı (TR)">
             <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
-            <Warn>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
+            <HataMetni>{!form.ad.trim() ? "Yedek parça adı girilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Yedek Parça Adı (EN)">
             <Input value={form.adEN || ""} onChange={e => setForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
@@ -227,19 +232,19 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ModelChips selected={form.models || []} allModels={allModels}
               onChange={models => setForm(p => ({ ...p, models }))} />
           </Field>
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-            <Btn variant="ghost" onClick={() => setAddOpen(false)}>İptal</Btn>
-            <Btn onClick={submitAdd}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
         </Modal>
       )}
 
       {editId !== null && (
-        <Modal wide title="Yedek Parçayı Düzenle" onClose={cancelEdit}>
+        <Modal wide title="Yedek Parçayı Düzenle" onClose={cancelEdit}
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
+            <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <Field label="Yedek Parça Adı (TR)">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Örn: Kesme Bıçağı Seti" />
-            <Warn>{!(editForm.ad || "").trim() ? "Yedek parça adı girilmedi" : ""}</Warn>
+            <HataMetni>{!(editForm.ad || "").trim() ? "Yedek parça adı girilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Yedek Parça Adı (EN)">
             <Input value={editForm.adEN || ""} onChange={e => setEditForm(p => ({ ...p, adEN: e.target.value }))} placeholder="Örn: Cutting Blade Set" />
@@ -275,10 +280,6 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ModelChips selected={editForm.models || []} allModels={allModels}
               onChange={models => setEditForm(p => ({ ...p, models }))} />
           </Field>
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
-            <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
         </Modal>
       )}
     </div>

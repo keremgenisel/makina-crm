@@ -15,6 +15,7 @@ import { SimpleDealers } from "../../src/components/SimpleDealers";
 import { Stock } from "../../src/components/Stock";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
+import { MailComposeModal } from "../../src/components/MailCompose";
 import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 import * as Tasarim from "../../src/components/tasarim";
 
@@ -124,6 +125,14 @@ const NOTLAR = [
 const stokEkrani = (alt) => <Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
   dealers={DEALERS} yedekParcaSatislar={YP_SATIS} defaultSubTab={alt} showToast={bos} />;
 
+// Spec 0015: formlar (pencere açılmış hâlde).
+const musteriDetay = () => <Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} dealers={DEALERS}
+  parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} kalipDefs={[{ id: 1, ad: "Hamburger" }]} initialDetailId={500} />;
+function EpostaEkrani() {
+  const [draft, setDraft] = useState({ to: "kutu@gida.com.tr", subject: "Teklif", body: "Merhaba,\n\nTeklifimiz ekte.", ek: null });
+  return <MailComposeModal draft={draft} setDraft={setDraft} sendState={null} onSend={bos} />;
+}
+
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -159,6 +168,22 @@ const EKRANLAR = {
   "finans-aralik": [<FINANS />, []],
   "notlar-suzgec": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, []],
   "analiz-onayar": [<Analiz customers={MUSTERILER} services={[]} partSales={[]} yedekParcaSatislar={YP_SATIS} parts={[{ id: 7, ad: "Rulman" }]} appSettings={{}} />, []],
+  // Spec 0015: formlar.
+  "musteri-formu": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} />, ["~Yeni Müşteri"]],
+  "musteri-formu-hata": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} />,
+    ["~Yeni Müşteri", "doldur:Yetkili 1 - Telefon=abc", "doldur:E-posta=yanlis"]],
+  "bayi-formu": [<SimpleDealers dealers={BAYI_LISTE} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={[]} services={[]} customers={MUSTERILER} showToast={bos} />, ["~Bayi/Servis Ekle"]],
+  "servis-formu": [musteriDetay(), ["~Yeni Servis Talebi"]],
+  "kalip-formu": [musteriDetay(), ["~Extra Kalıp Satışı"]],
+  "yedek-parca-formu": [stokEkrani("yedeksatis"), ["~Yeni Satış"]],
+  "makina-stok-formu": [stokEkrani("makina"), ["~Stoğa Makina Ekle"]],
+  "parca-stok-formu": [stokEkrani("parca"), ["~Stoğa Parça Ekle"]],
+  "uretim-formu": [stokEkrani("uretim"), ["~Yeni Form"]],
+  "not-formu": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, ["~Yeni Not"]],
+  "eposta-formu": [<EpostaEkrani />, []],
+  "katalog-model": [ayarlar("models"), ["~Yeni Model Ekle"]],
+  "katalog-calisan": [ayarlar("calisanlar"), []],
+  "musteri-detay": [musteriDetay(), ["~Yeni Sahip"]],
   // Spec 0011: serbest içerikli şerit örneği (yalnız "sonra"; önceki bileşen children almıyordu). Üç aile.
   "sozluk-serbest-icerik": [<div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}>
     {Tasarim.UyariSeridi && ["bilgi", "uyari", "basari"].map(a => (
@@ -181,7 +206,8 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
     if (metin.startsWith("doldur:")) {
       // React kontrollü alanı: yerel value ayarlayıcısı + input olayı.
       const [etiket, deger] = metin.slice(7).split("=");
-      const el = document.querySelector(`input[aria-label="${etiket}"]`);
+      const etiketOgesi = [...document.querySelectorAll("label")].find(l => l.textContent.trim() === etiket && l.htmlFor);
+      const el = document.querySelector(`input[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor)) || document.querySelector(`input[placeholder="${etiket}"]`);
       if (el) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("input", { bubbles: true })); }
       else console.warn("alan yok: " + etiket);
       await bekle(300);

@@ -1,7 +1,7 @@
 # Tasarım Sözlüğü
 
 Uygulamanın paylaşılan arayüz yapı taşları (spec 0009). Hepsi **`src/components/tasarim.jsx`** dosyasında tanımlıdır.
-Yeni bir ekran ya da bir ekranın yeni tasarıma dönüştürülmesi bu sözlükten yapılır: aşağıdaki altı öğeden birine
+Yeni bir ekran ya da bir ekranın yeni tasarıma dönüştürülmesi bu sözlükten yapılır: aşağıdaki öğelerden birine
 karşılık gelen bir şeyi ekranın içinde yeniden yazmayın, buradakini kullanın. Burada karşılığı olmayan bir öğeye
 ihtiyaç varsa, onu doğuran ekranın işinde tartışın ve karar verilince buraya ekleyin.
 
@@ -30,6 +30,7 @@ Segmentli seçici: birbirini dışlayan 2–6 seçenekten birini seçtirir.
 - `options: [{ value, label, sayi? }]`, `value`, `onChange(value)`, `ariaLabel`, `disabled`
 - `kip`:
   - `"radyo"` (varsayılan): `radiogroup` + `radio` + `aria-checked`. Form içindeki seçimler (brüt/net, atama türü).
+    Form içi bir segmentin düğmelerini mevcut testler rol `button` ile sorguluyorsa `"dugme"` kipi kullanılır (spec 0015 R1: Extra Kalıp ve yedek parça formlarındaki Teslim Şekli).
   - `"dugme"`: `group` + `aria-pressed`, rol `button` kalır. **Liste süzgeç çubukları** (spec 0014) ve ekranın bugünkü erişilebilirlik sözleşmesi bunu gerektiren yerler (Evrak alıcı tipi).
   - `"sekme"` (spec 0014): `tablist` + `tab` + `aria-selected`. **Gezinme alt sekmeleri** (Stok, Evrak). Ok tuşu gezinmesi ve sekme paneli bağlantısı yoktur (bilinen erişilebilirlik borcu).
 - `gorunum`:
@@ -58,6 +59,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Customers.jsx:472` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
+**Örnek:** `src/components/PartSaleForm.jsx:312` (form içi, düğme kipi, eşit genişlik)
 
 ## KartBolum
 
@@ -80,12 +82,33 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
 **Ne zaman kullanılmaz:**
 - Tek bir sayıyı öne çıkaran özet kartı: `StatCard` / `StatKart`.
 - Pencere içeriği: `Modal`.
+- Form içindeki bölümler: kartla çevrelenmez, başlık `BolumBasligi` ile (spec 0015 R4).
 - Tablo satırı ya da liste öğesi.
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:67` (kart, başlık + alt satır)
+
+## BolumBasligi
+
+Kartsız bölüm başlığı (spec 0015 R4): `KartBolum` kart varyantının etiket başlığı (küçük gri büyük harf), kart olmadan.
+Tek tanımdır: `KartBolum`'un etiket başlığı da bununla çizilir.
+
+- `children`: başlık metni (içinde küçük bir açıklama `span`'ı olabilir).
+- `bosluk`: alt boşluk (varsayılan 14). `ust`: üst boşluk (varsayılan yok; ardışık form bölümleri arasında 28).
+
+**Ne zaman kullanılır:** bir form penceresinin içinde alanları bölümlere ayırmak için (Firma Bilgileri, Makina Bilgileri,
+Satış / Finans); bir form bölümünün başında, yanında düğmeler olan başlık satırında.
+
+**Ne zaman kullanılmaz:**
+- İçeriği beyaz kartla gruplayan ekran bölümleri: `KartBolum` (`kart`).
+- Ayarlar bölümü: `KartBolum` (`ayar`).
+- Tablo başlıkları ve alan etiketleri: bölüm başlığı değildir.
+- Kenarlıksız bir `KartBolum` ile taklit edilmez.
+
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:138`
+**Örnek:** `src/components/stock/MakinaStokTab.jsx:261` (düğmeli başlık satırında, alt boşluk 0)
 
 ## BosDurum
 
@@ -149,9 +172,10 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 
 **Ne zaman kullanılmaz:**
 - Ekran düzeyindeki durumlar: `UyariSeridi`.
-- Eski ekranlardaki `Warn` (⚠ önekli) bileşeni bilinen borçtur; yeni ekranda kullanmayın.
+- Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
-**Örnek:** `src/components/CalisanManager.jsx:193`
+**Örnek:** `src/components/CalisanManager.jsx:186`
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:103` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
 
@@ -163,7 +187,8 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uzun açıklama için: bölümün açıklama paragrafı.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
-**Örnek:** `src/components/CalisanManager.jsx:192`
+**Örnek:** `src/components/CalisanManager.jsx:195`
+**Örnek:** `src/components/PartSaleForm.jsx:359` (seçimin sonucunu anlatan cümle)
 
 ---
 
@@ -183,11 +208,18 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
   - Notlar: `src/components/Notes.jsx`.
 - Stok ve Evrak'ın alt çizgili alt sekmeleri `Segment` sekme kipine taşındı.
 
+### Ödenen borç (spec 0015)
+
+- `src/components/ui.jsx` → `Warn` (`warn-msg` sınıfı, ⚠ öneki, amber alan uyarısı): kaldırıldı; 32 kullanımı `HataMetni`'ye
+  (kırmızı, `role="alert"`, önek yok) taşındı. `.warn-msg` CSS sınıfı da kalktı.
+- Form bölüm başlıkları (müşteri formu, makina stoğu formu): yerel ikonlu büyük harf blokları yerine `BolumBasligi`.
+- Extra Kalıp ve yedek parça formlarındaki yerel Teslim Şekli segmentleri: `Segment` (düğme kipi).
+- Kapsamdaki form pencerelerinin gövde içi eylem satırları (`form-footer-bar` dahil): pencerenin `footer` yuvası.
+
 ### Kapsam dışı ekranlardaki kopyalar
 
 - `src/components/Customers.jsx` → "Firmaya Göre Grupla" aç/kapa düğmesi (mavi pil): süzgeç değil, tekil aç/kapa; sözlükte karşılığı yok (spec 0014 R1).
 - `src/components/Finance.jsx` → tutar göster/gizle düğmesi (pil): süzgeç değil, tekil aç/kapa.
-- `src/components/ui.jsx` → `Warn` (`warn-msg` sınıfı, ⚠ öneki, eski ekranlarda alan uyarısı): HataMetni'nin eski karşılığı.
 - `src/components/Documents.jsx` → Belge Detayları, Ürünler ve Teklif Koşulları kartları: aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
 - `src/components/documents/FaturaFormModal.jsx` → beş kart (Alıcı Bilgileri, Fatura Bilgileri, Ürünler, Paketleme, Banka / Hesap Bilgileri): aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
 - `src/components/settings/SettingsDocuments.jsx` → `Accordion`: katlanabilir bölümün ayrı bir biçimi.
@@ -202,6 +234,11 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/gider/MakinaMaliyetDetay.jsx` → "Gider verisi girilmemiş" kesikli bilgi kutusu.
 - `src/components/gider/MakinaKarliligi.jsx` → boş durum kartı (`karlilik-bos`; kesiksiz, KartBolum kabıyla).
 - `src/components/Giderler.jsx` → "Hatırlatma kapsamı" aç/kapa düğmesi (`aria-pressed`).
+- `src/components/stock/PartStokTab.jsx` → "Stoğa Parça Ekle" penceresinin eylem satırı gövde içinde kalır: pencere
+  `overflowVisible` (parça listesi pencerenin dışına açılır), alt yuvalı pencere gövdeyi kaydırdığı için listeyi kırpardı
+  (spec 0015 R8, F5).
+- `src/components/customers/CustomerDetailModal.jsx` → detayın kendi alt formlarındaki (Yeni Sahip, Ödeme) gövde içi eylem
+  satırları ve büyük harf başlıkları: 0015 bu dosyada yalnız `Warn`'u taşıdı (F8); dönüşümü müşteri detayının işidir.
 
 ### Erişilebilirlik borcu
 

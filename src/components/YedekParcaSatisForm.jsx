@@ -1,6 +1,7 @@
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
@@ -50,7 +51,11 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
     : satirlar.reduce((s, r) => s + (parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), 0);
 
   return (
-    <Modal title={title} onClose={onCancel} wide>
+    <Modal title={title} onClose={onCancel} wide
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
+        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
       <Field label="Alıcı">
         {/* Alıcı bayi VEYA müşteri olabilir — yedek parçayı bayiye de son müşteriye de satabiliyoruz. */}
@@ -289,17 +294,9 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           Segment seçici yalnız fabrikaTeslim bayrağını değiştirir (kargoDurum'a dokunmaz). */}
       <div style={{ marginTop: 12 }}>
         <Field label="Teslim Şekli">
-          <div style={{ display: "inline-flex", gap: 4, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 9, padding: 3 }}>
-            {[[true, "🏭 Fabrika Teslim"], [false, "📦 Kargo"]].map(([ft, l]) => {
-              const secili = fabrikaTeslim === ft;
-              return (
-                <button key={l} type="button"
-                  onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "", teslimatFarkli: false } : {}) }))}
-                  style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                    background: secili ? "var(--brand, #e85d1a)" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
-              );
-            })}
-          </div>
+          <Segment kip="dugme" ariaLabel="Teslim Şekli" value={fabrikaTeslim}
+            options={[{ value: true, label: "🏭 Fabrika Teslim" }, { value: false, label: "📦 Kargo" }]}
+            onChange={ft => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "", teslimatFarkli: false } : {}) }))} />
         </Field>
 
         {/* Teslim detayları (teslim şekline göre) — panodan bağımsız, boş bırakılabilir. */}
@@ -344,7 +341,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                     onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
                     onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
                     geoData={geoData} loadingGeo={loadingGeo} />
-                  <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, alıcının kayıtlı adresine gider.</span>
+                  <Ipucu>Boş bırakılırsa kargo, alıcının kayıtlı adresine gider.</Ipucu>
                 </div>
               )}
             </div>
@@ -395,10 +392,6 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         </Field>
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

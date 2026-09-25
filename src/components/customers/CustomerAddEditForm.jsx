@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
+import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
+import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
 
@@ -88,41 +89,42 @@ export const CustomerAddEditForm = ({
   }
 
   return (
-    <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}>
+    <Modal wide maxWidth={1180} maxHeight="88vh" title={modal === "add" ? addLabel : `${entity} Düzenle`} onClose={onClose}
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
+        <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
-        <Icon name="customers" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Firma Bilgileri</span>
-      </div>
+      <BolumBasligi>Firma Bilgileri</BolumBasligi>
 
       <Field label="Satın Alan">
         <div style={{ maxWidth: "50%" }}>
           <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Satın alan firma / kişi" />
-          <Warn>{!form.name?.trim() ? "Satın alan adı girilmedi" : ""}</Warn>
+          <HataMetni>{!form.name?.trim() ? "Satın alan adı girilmedi" : ""}</HataMetni>
         </div>
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Yetkili 1 - Ad Soyad"><Input value={form.yetkili1Ad || ""} onChange={e => setForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
         <Field label="Yetkili 1 - Telefon">
           <Input value={form.yetkili1Tel || ""} onChange={e => setForm(p => ({ ...p, yetkili1Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-          <Warn>{form.yetkili1Tel && !PHONE_RE.test(form.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+          <HataMetni>{form.yetkili1Tel && !PHONE_RE.test(form.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
         </Field>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Yetkili 2 - Ad Soyad"><Input value={form.yetkili2Ad || ""} onChange={e => setForm(p => ({ ...p, yetkili2Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
         <Field label="Yetkili 2 - Telefon">
           <Input value={form.yetkili2Tel || ""} onChange={e => setForm(p => ({ ...p, yetkili2Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-          <Warn>{form.yetkili2Tel && !PHONE_RE.test(form.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+          <HataMetni>{form.yetkili2Tel && !PHONE_RE.test(form.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
         </Field>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Şirket Telefonu">
           <Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="0xxx xxx xx xx" />
-          <Warn>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+          <HataMetni>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</HataMetni>
         </Field>
         <Field label="E-posta">
           <Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-          <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+          <HataMetni>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
         </Field>
       </div>
 
@@ -133,10 +135,7 @@ export const CustomerAddEditForm = ({
         onIlce={v => setForm(p => ({ ...p, ilce: v }))}
         geoData={geoData} loadingGeo={loadingGeo} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
-        <Icon name="machine" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Makina Bilgileri</span>
-      </div>
+      <BolumBasligi ust={28}>Makina Bilgileri</BolumBasligi>
 
       <Field label="Kalıp Sayısı (otomatik)">
         <div style={{ maxWidth: 220, padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n150, #f1f5f9)", color: "var(--n500, #64748b)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -227,9 +226,9 @@ export const CustomerAddEditForm = ({
                 </button>
               )}
               {(modal === "add" || isSerialPendingEdit) && form._manualSerial && (
-                <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 4 }}>
+                <Ipucu>
                   Manuel girilen seri no stoktan düşülmez (eski müşteri kaydı için uygundur).
-                </div>
+                </Ipucu>
               )}
               {(modal === "add" || isSerialPendingEdit) && stock && form.model && stockForModel.length === 0 && (
                 <div style={{ fontSize: 11, color: "var(--red600, #dc2626)", marginTop: 5 }}>
@@ -237,9 +236,9 @@ export const CustomerAddEditForm = ({
                 </div>
               )}
               {(modal === "add" || isSerialPendingEdit) && stock && !form.model && (
-                <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 5 }}>
+                <Ipucu>
                   Stoktan seri no seçebilmek için önce yukarıdan <b>Model</b> seçin.
-                </div>
+                </Ipucu>
               )}
             </>
           );
@@ -353,16 +352,13 @@ export const CustomerAddEditForm = ({
           <Field label="Üretim Tarihi (maliyet için)">
             <Input type="date" aria-label="Üretim tarihi" value={form.uretimTarihi || ""} onChange={e => setForm(p => ({ ...p, uretimTarihi: e.target.value }))} />
           </Field>
-          <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", lineHeight: 1.5, alignSelf: "center" }}>
+          <div style={{ alignSelf: "center" }}><Ipucu>
             Stoktan satışta stoğa giriş tarihi otomatik yazılır. Boşsa stok hareketinden veya satış tarihinden tahmin edilir. Ortak gider payı bu tarihin ayından hesaplanır.
-          </div>
+          </Ipucu></div>
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "28px 0 14px", paddingBottom: 8, borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
-        <Icon name="finance" size={15} />
-        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--n900, #0f172a)", textTransform: "uppercase", letterSpacing: .5 }}>Satış / Finans</span>
-      </div>
+      <BolumBasligi ust={28}>Satış / Finans</BolumBasligi>
 
       <Field label="Satış Yapan">
         <div style={{ maxWidth: "50%" }}>
@@ -415,7 +411,7 @@ export const CustomerAddEditForm = ({
       <div style={{ display: "grid", gridTemplateColumns: isFaturali(form.faturali) ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
         <Field label="Fabrika Satış Bedeli">
           <div style={{ maxWidth: 220 }}><MoneyInput value={form.fabrikaSatisBedeli} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, fabrikaSatisBedeli: v }))} /></div>
-          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</div>
+          <Ipucu>Makinenin fabrikadan satıldığı tutar (Ciro ve Kalan Borç hesaplamasının temelini oluşturur).</Ipucu>
         </Field>
 
         {isFaturali(form.faturali) && (
@@ -433,9 +429,9 @@ export const CustomerAddEditForm = ({
                 {(ilkKom + mevcutKom) > 0 && <span style={{ fontWeight: 400, color: "var(--grn700, #15803d)" }}> · komisyon dahil matrah</span>}
               </div>
             )}
-            <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>
+            <Ipucu>
               Gerçek bedelden farklı olabilir (düşük fatura). KDV bu tutar üzerinden hesaplanır.
-            </div>
+            </Ipucu>
           </Field>
         )}
 
@@ -449,12 +445,12 @@ export const CustomerAddEditForm = ({
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
             krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate} />
-          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</div>
+          <Ipucu>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</Ipucu>
         </Field>
       ) : (
         <Field label="Kapora/Ödeme">
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)", padding: "9px 0" }}>{fmtCur(sumPayments(form.id, payments), form.currency)}</div>
-          <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</div>
+          <Ipucu>Ödemeler detay görünümünden ("Ödeme Ekle") yönetilir.</Ipucu>
         </Field>
       )}
 
@@ -462,7 +458,7 @@ export const CustomerAddEditForm = ({
         <div style={{ fontSize: 16, fontWeight: 800, color: "var(--red600, #dc2626)", padding: "9px 0" }}>
           {fmtCur(kalanBorcGoster, form.currency)}
         </div>
-        <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 4 }}>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</div>
+        <Ipucu>Otomatik hesaplanır, elle değiştirilemez. (Çek satırları tahsil edilene kadar düşülmez.)</Ipucu>
       </Field>
       </div>
 
@@ -502,10 +498,6 @@ export const CustomerAddEditForm = ({
           className="input" style={{ resize: "vertical", minHeight: 60 }} />
       </Field>
 
-      <div className="form-footer-bar" style={{ marginTop: 20 }}>
-        <Btn variant="ghost" onClick={onClose}>İptal</Btn>
-        <Btn onClick={save} disabled={!!serialLock} title={serialLock ? "Seçilen seri no başka kullanıcı tarafından işleniyor" : undefined}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

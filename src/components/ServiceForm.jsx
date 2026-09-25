@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { HataMetni, Ipucu } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -73,7 +74,11 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
     : [];
 
   return (
-    <Modal wide title={title} onClose={onCancel}>
+    <Modal wide title={title} onClose={onCancel}
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
+        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
@@ -149,7 +154,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             )}
           </div>
         )}
-        <Warn>{!form.customerId ? "Müşteri seçilmedi" : ""}</Warn>
+        <HataMetni>{!form.customerId ? "Müşteri seçilmedi" : ""}</HataMetni>
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
@@ -367,7 +372,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
         {parts.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</div>
+          <Ipucu>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</Ipucu>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
@@ -563,10 +568,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-        <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
-        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

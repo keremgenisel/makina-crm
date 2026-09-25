@@ -1,0 +1,65 @@
+{
+  "aciklama": "Spec 0015 (plan F9): dönüşümden ÖNCE ui.jsx Warn'ın 32 kullanımının iç ifadesi (koşul ve metin). Dönüşümden sonra her biri aynı dosyada HataMetni içinde birebir durmalı.",
+  "ifadeler": {
+    "src/components/CalisanManager.jsx": [
+      "{!(editForm.ad || \"\").trim() ? \"Ad girilmedi\" : \"\"}"
+    ],
+    "src/components/KalipManager.jsx": [
+      "{!form.ad.trim() ? \"Kalıp adı girilmedi\" : \"\"}",
+      "{!(editForm.ad || \"\").trim() ? \"Kalıp adı girilmedi\" : \"\"}"
+    ],
+    "src/components/MailCompose.jsx": [
+      "{draft.to && !EMAIL_RE.test(draft.to) ? \"Geçersiz e-posta formatı\" : \"\"}"
+    ],
+    "src/components/ModelsManager.jsx": [
+      "{!(mForm.model || \"\").trim() ? \"Model adı girilmedi\" : \"\"}"
+    ],
+    "src/components/PartManager.jsx": [
+      "{!form.ad.trim() ? \"Yedek parça adı girilmedi\" : \"\"}",
+      "{!(editForm.ad || \"\").trim() ? \"Yedek parça adı girilmedi\" : \"\"}"
+    ],
+    "src/components/PartSaleForm.jsx": [
+      "{KALIP_MUSTERI_SECILMEDI}"
+    ],
+    "src/components/PartTypeManager.jsx": [
+      "{form.ad.trim() && adCakisiyor(form.ad.trim()) ? \"Bu adda bir tip zaten var\" : \"\"}"
+    ],
+    "src/components/ServiceForm.jsx": [
+      "{!form.customerId ? \"Müşteri seçilmedi\" : \"\"}"
+    ],
+    "src/components/SimpleDealers.jsx": [
+      "{!form.name?.trim() ? \"Firma adı girilmedi\" : \"\"}",
+      "{!form.bayiMi && !form.anlasmaliServisMi ? \"En az biri seçili olmalı: Bayi veya Anlaşmalı Servis\" : \"\"}",
+      "{form.phone && !PHONE_RE.test(form.phone) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{form.email && !EMAIL_RE.test(form.email) ? \"Geçersiz e-posta formatı\" : \"\"}"
+    ],
+    "src/components/customers/CustomerAddEditForm.jsx": [
+      "{!form.name?.trim() ? \"Satın alan adı girilmedi\" : \"\"}",
+      "{form.yetkili1Tel && !PHONE_RE.test(form.yetkili1Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{form.yetkili2Tel && !PHONE_RE.test(form.yetkili2Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{form.phone && !PHONE_RE.test(form.phone) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{form.email && !EMAIL_RE.test(form.email) ? \"Geçersiz e-posta formatı\" : \"\"}"
+    ],
+    "src/components/customers/CustomerDetailModal.jsx": [
+      "{!newOwnerForm.name?.trim() ? \"Yeni sahip adı girilmedi\" : \"\"}",
+      "{newOwnerForm.phone && !PHONE_RE.test(newOwnerForm.phone) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{newOwnerForm.email && !EMAIL_RE.test(newOwnerForm.email) ? \"Geçersiz e-posta formatı\" : \"\"}",
+      "{newOwnerForm.yetkili1Tel && !PHONE_RE.test(newOwnerForm.yetkili1Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{newOwnerForm.yetkili2Tel && !PHONE_RE.test(newOwnerForm.yetkili2Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{editPrevOwnerForm.phone && !PHONE_RE.test(editPrevOwnerForm.phone) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{editPrevOwnerForm.email && !EMAIL_RE.test(editPrevOwnerForm.email) ? \"Geçersiz e-posta formatı\" : \"\"}",
+      "{editPrevOwnerForm.yetkili1Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili1Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{editPrevOwnerForm.yetkili2Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili2Tel) ? \"Geçersiz telefon formatı\" : \"\"}",
+      "{parseMoney(paymentForm.tutar) <= 0 ? \"Tutar girilmedi\" : \"\"}"
+    ],
+    "src/components/settings/SettingsMail.jsx": [
+      "{mailForm.email && !EMAIL_RE.test(mailForm.email) ? \"Geçersiz e-posta formatı\" : \"\"}"
+    ],
+    "src/components/stock/MakinaStokTab.jsx": [
+      "{!form.model ? \"Model seçilmedi\" : \"\"}"
+    ],
+    "src/components/stock/PartStokTab.jsx": [
+      "{!form.partId ? \"Parça seçilmedi\" : \"\"}"
+    ]
+  }
+}

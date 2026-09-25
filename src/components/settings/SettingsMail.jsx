@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Icon, Btn, Field, Input, PasswordInput, Warn, EMAIL_RE, Select, Modal } from "../ui";
-import { KartBolum } from "../tasarim";
+import { Icon, Btn, Field, Input, PasswordInput, EMAIL_RE, Select, Modal } from "../ui";
+import { KartBolum, HataMetni } from "../tasarim";
 
 export const SettingsMail = ({ flash }) => {
   // ── E-posta (genel SMTP — sunucu/port elle girilir, sağlayıcıya özel sabit yok) ──
@@ -77,7 +77,7 @@ export const SettingsMail = ({ flash }) => {
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
               <Field label="E-posta">
                 <Input value={mailForm.email} onChange={e => setMailForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-                <Warn>{mailForm.email && !EMAIL_RE.test(mailForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+                <HataMetni>{mailForm.email && !EMAIL_RE.test(mailForm.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
               </Field>
               <div />
             </div>

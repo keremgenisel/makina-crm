@@ -13,8 +13,8 @@ import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayininMi, bayiDosyasiMi } from "../lib/bayiKaskad";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
-import { Segment } from "./tasarim";
+import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
+import { Segment, HataMetni } from "./tasarim";
 import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
@@ -825,14 +825,18 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       })()}
 
       {modal && (
-        <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}>
+        <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}
+          footer={(dealerLock && modal?.edit) ? undefined : <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           {(dealerLock && modal?.edit) ? (
             <LockConflict lockedBy={dealerLock.lockedBy} lockedAt={dealerLock.lockedAt}
               onForce={forceDealerLock} onCancel={() => setModal(null)} />
           ) : (<>
           <Field label="Firma Adı">
             <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Bayi firma adı" />
-            {modal !== "factory" && <Warn>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>}
+            {modal !== "factory" && <HataMetni>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</HataMetni>}
           </Field>
           {modal !== "factory" && (
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -846,17 +850,17 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </label>
             </div>
           )}
-          {modal !== "factory" && <Warn>{!form.bayiMi && !form.anlasmaliServisMi ? "En az biri seçili olmalı: Bayi veya Anlaşmalı Servis" : ""}</Warn>}
+          {modal !== "factory" && <HataMetni>{!form.bayiMi && !form.anlasmaliServisMi ? "En az biri seçili olmalı: Bayi veya Anlaşmalı Servis" : ""}</HataMetni>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="İletişim Kişisi"><Input value={form.contact || ""} onChange={e => setForm(p => ({ ...p, contact: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Telefon">
               <Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-              <Warn>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
           </div>
           <Field label="E-posta">
             <Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-            <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            <HataMetni>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
           </Field>
           <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
           <CountryCityFields country={form.country} city={form.city} ilce={form.ilce}
@@ -869,10 +873,6 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               placeholder="Bayi hakkında notlar..."
               className="input" style={{ resize: "vertical", minHeight: 70 }} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
           </>)}
         </Modal>
       )}

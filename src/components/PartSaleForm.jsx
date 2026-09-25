@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields, Warn } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 
@@ -52,7 +53,11 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
     : [];
 
   return (
-    <Modal title={title} onClose={onCancel} wide>
+    <Modal title={title} onClose={onCancel} wide
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
+        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
@@ -98,7 +103,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
           </div>
         )}
         {/* Spec 0007 R14 (K7): müşterisiz kayıt yapılmaz, neden gösterilir (bayi modalından açıldığında müşteri boş gelir). */}
-        {!selectedCust && <Warn>{KALIP_MUSTERI_SECILMEDI}</Warn>}
+        {!selectedCust && <HataMetni>{KALIP_MUSTERI_SECILMEDI}</HataMetni>}
       </Field>
 
       {/* Veriliş tarihi ile para birimi yan yana. */}
@@ -304,17 +309,9 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {selectedCust && (
         <div style={{ marginTop: 12 }}>
           <Field label="Teslim Şekli">
-            <div style={{ display: "inline-flex", gap: 4, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 9, padding: 3 }}>
-              {[[true, "🏭 Fabrika Teslim"], [false, "📦 Kargo"]].map(([ft, l]) => {
-                const secili = fabrikaTeslim === ft;
-                return (
-                  <button key={l} type="button"
-                    onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "" } : {}) }))}
-                    style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                      background: secili ? "var(--brand, #e85d1a)" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
-                );
-              })}
-            </div>
+            <Segment kip="dugme" ariaLabel="Teslim Şekli" value={fabrikaTeslim}
+              options={[{ value: true, label: "🏭 Fabrika Teslim" }, { value: false, label: "📦 Kargo" }]}
+              onChange={ft => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "" } : {}) }))} />
           </Field>
 
           {/* Teslim detayları (teslim şekline göre) — panodan bağımsız, boş bırakılabilir. */}
@@ -359,7 +356,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                       onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
                       onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
                       geoData={geoData} loadingGeo={loadingGeo} />
-                    <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, müşterinin kayıtlı adresine gider.</span>
+                    <Ipucu>Boş bırakılırsa kargo, müşterinin kayıtlı adresine gider.</Ipucu>
                   </div>
                 )}
               </div>
@@ -403,10 +400,6 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

@@ -63,9 +63,6 @@ body {
 .input::placeholder { color: var(--n400, #94a3b8); }
 .input:disabled, .select:disabled { opacity: .6; cursor: not-allowed; }
 
-/* ── Uyarı satırı (Warn) ── */
-.warn-msg { font-size: 11px; color: var(--amb700, #b45309); margin-top: 4px; }
-
 /* ── İstatistik kartı (StatCard) — hover artık CSS, eski JS onMouseEnter yerine ── */
 .stat-card {
   background: var(--surface, #ffffff);

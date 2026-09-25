@@ -39,7 +39,7 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 | **0011** | Uyarı şeridine serbest içerik | **Tamamlandı** (commit 907a280, 7ec2d4c); `specs/done/` altında. |
 | 0012, 0013 | (boş) | Numaralar kullanılmadı; bir sonraki iş bunlardan devam edebilir. |
 | **0014** | Sekme ve süzgeç birliği | **Tamamlandı** (commit 7689c55, 9516134); `specs/done/` altında. |
-| **0015** | Form birliği (yazıldı, Taslak) | Veri girme ve düzenleme formları tek desene: hata, ipucu, bölüm başlığı, eylem satırı. |
+| **0015** | Form birliği | **Uygulandı, commit bekliyor** (dal `feat/0015-form-birligi`): veri girme ve düzenleme formları tek desene (hata, ipucu, bölüm başlığı, eylem satırı); `Warn` kaldırıldı, sözlüğe `BolumBasligi`. |
 | **0016** | Liste, boş durum ve uyarı birliği (yazıldı, Taslak) | Kırk iki dağınık boş durum metni kutuya, uyarılar şeride, bölümler karta. Servis panosu ve harita bilerek kapsam dışı. |
 
 ## Açık bulgular (spec'i yok, karar bekliyor)
@@ -49,6 +49,7 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 | Bulgu | Nerede bulundu | Öneri |
 |---|---|---|
 | **`tests/makina-odeme.test.js` tarihe bağlı kalıyor (2 test).** Test sabit bir satış tarihi (2026-08-16) ve 40 günlük kredi kartı blokajı kullanıyor, ama sonucu gerçek bugüne göre hesaplanıyor. 40 gün 2026-09-25'te doldu; o günden beri blokajın hesaba geçtiği sayılıyor ve "borçtan düşülmez" beklentisi tutmuyor. Kodda hata yok, test takvime bağlı. Tam paket bu yüzden kırmızı. | 0014 uygulaması (2026-09-25); 0014'ten önceki kodda da kalıyor. | Testte "bugün"ü sabitlemek (`vi.useFakeTimers` + `vi.setSystemTime("2026-08-20")`, `odeme-hatirlatma.test.js`'teki desen). Kodun davranışı değişmez; spec gerektirmeyen tek dosyalık test düzeltmesi olarak yapılmasını öneriyorum. Aynı desenle başka tarih bombası olup olmadığı `tests/` altında da taranmalı. |
+| **Teslim ayrıntı kutusu karanlık temada beyaz.** Extra Kalıp (`PartSaleForm.jsx`) ve yedek parça (`YedekParcaSatisForm.jsx`) formlarında Teslim Şekli'nin altındaki kargo ayrıntı kutusu `var(--n050, #f8fafc)` kullanıyor; `n050` `src/lib/theme.js`'te tanımlı değil, karanlık temada aydınlık yedek renge düşüyor (beyaz kutu içinde koyu alanlar). | 0015 kanıt görüntüleri (2026-09-25); 0015'ten önce de aynı. | Token'ı `n100` (ya da temada tanımlı en yakın nötr zemin) ile değiştirmek; tek satırlık görünüm düzeltmesi, iki ekranın kanıtı yeniden çekilir. Aynı taramayla temada tanımsız başka `var(--…)` adı olup olmadığı bakılmalı. |
 
 ## Bu projede tek gerçek kaynaklar
 

@@ -110,10 +110,6 @@ export const PasswordInput = (props) => {
     </div>
   );
 };
-// Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
-export const Warn = ({ children }) => children ? (
-  <div className="warn-msg">⚠ {children}</div>
-) : null;
 // Elektrik kesintisi/çökme sonrası bulunan form taslağını geri yükleme şeridi (bkz. useFormDraft)
 export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
   if (!draft) return null;

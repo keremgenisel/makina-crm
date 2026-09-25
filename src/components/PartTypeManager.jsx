@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { trLower, withDeleted } from "../lib/utils";
 import { PART_TYPE_PALETTE_KEYS, tipRenk } from "../lib/constants";
-import { Icon, Input, Warn, Btn, ConfirmDialog } from "./ui";
+import { Icon, Input, Btn, ConfirmDialog } from "./ui";
+import { HataMetni, Ipucu } from "./tasarim";
 
 // Parça tipleri yönetimi. Sistem tipleri (sistem:true) kilitlidir: adı değişmez,
 // silinmez, davranış kutucukları seed değerinde sabittir. Kullanıcının eklediği
@@ -115,11 +116,11 @@ export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = []
           </div>
           <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
         </div>
-        <Warn>{form.ad.trim() && adCakisiyor(form.ad.trim()) ? "Bu adda bir tip zaten var" : ""}</Warn>
-        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 8, lineHeight: 1.5 }}>
+        <HataMetni>{form.ad.trim() && adCakisiyor(form.ad.trim()) ? "Bu adda bir tip zaten var" : ""}</HataMetni>
+        <Ipucu>
           <b>Müşteri formunda seç:</b> yeni müşteri/makina eklerken bu tipteki parça için seçici çıkar. <b>Stoktan düş:</b> seçilen parça
           makinaya atanınca stoktan 1 azalır (müşteri formunda seç şart). <b>Raporda göster:</b> makina yazdırma raporunda listelenir.
-        </div>
+        </Ipucu>
       </div>
 
       {/* İkon buton hover stilleri (bir kez) */}

@@ -4,7 +4,8 @@ import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { HataMetni, BolumBasligi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 
@@ -226,7 +227,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       )}
 
       {modal && (
-        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)} maxWidth={760}>
+        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)} maxWidth={760}
+          footer={(stockLock && modal?.edit) ? undefined : <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+            <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           {(stockLock && modal?.edit) ? (
             <LockConflict lockedBy={stockLock.lockedBy} lockedAt={stockLock.lockedAt}
               onForce={forceStockLock} onCancel={() => setModal(null)} />
@@ -236,7 +241,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <option value="">Model seçin...</option>
               {models.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
             </Select>
-            <Warn>{!form.model ? "Model seçilmedi" : ""}</Warn>
+            <HataMetni>{!form.model ? "Model seçilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
@@ -253,9 +258,9 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
           <div style={{ marginTop: 16, borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 }}>
+              <BolumBasligi bosluk={0}>
                 Kullanılan Parçalar <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none" }}>(stoktan düşülür)</span>
-              </span>
+              </BolumBasligi>
               <div style={{ display: "flex", gap: 6 }}>
                 {selectedModelKit.length > 0 && (
                   <Btn small onClick={() => setForm(p => ({
@@ -302,10 +307,6 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
           </>)}
         </Modal>
       )}

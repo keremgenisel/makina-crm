@@ -2,7 +2,7 @@ import { useState } from "react";
 import { uid, today } from "../lib/utils";
 import { tutarCoz, tanimKapat, acikTanimMi, ayOf } from "../lib/gider";
 import { logAction } from "../lib/audit";
-import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { TutarInput, tl2, tutarMetni } from "./gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "./tasarim";
@@ -177,10 +177,13 @@ export const CalisanManager = ({
 
       {editId !== null && (
         <Modal title="Çalışanı Düzenle" onClose={cancelEdit}
-          footer={<><Btn variant="ghost" onClick={cancelEdit}>İptal</Btn><Btn onClick={submitEdit}><Icon name="check" size={14} /> Kaydet</Btn></>}>
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
+            <Btn onClick={submitEdit}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <Field label="Ad Soyad">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Ad Soyad" />
-            <Warn>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</Warn>
+            <HataMetni>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</HataMetni>
           </Field>
           {maliyetAcik && <>
             <Field label="Resmi işveren maliyeti (SGK dahil)">

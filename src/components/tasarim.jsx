@@ -69,6 +69,13 @@ export const Segment = ({ options, value, onChange, ariaLabel, disabled, kip = "
 const kartKabi = { background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: 18 };
 const etiketBaslik = { fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 };
 
+// ── Kartsız bölüm başlığı (spec 0015 R4) ─────────────────────────────────────
+// KartBolum'un etiket başlığı (küçük gri büyük harf), kart olmadan: form içindeki bölümler kartla çevrelenmez.
+// bosluk: alt boşluk (varsayılan 14) · ust: üst boşluk (varsayılan yok; ardışık form bölümleri arasında).
+export const BolumBasligi = ({ children, bosluk, ust }) => (
+  <div style={{ ...etiketBaslik, ...(ust != null ? { marginTop: ust } : {}), marginBottom: bosluk ?? 14 }}>{children}</div>
+);
+
 export const KartBolum = ({
   varyant = "ayar", title, icon, children, collapsible = false, defaultOpen = false, wide = false,
   baslikStili = "etiket", altBaslik, baslikBosluk, baslikRengi = "var(--n900, #0f172a)", style, testId,
@@ -84,7 +91,7 @@ export const KartBolum = ({
         </div>
       );
     } else if (title) {
-      baslik = <div style={{ ...etiketBaslik, marginBottom: baslikBosluk ?? 14 }}>{title}</div>;
+      baslik = <BolumBasligi bosluk={baslikBosluk}>{title}</BolumBasligi>;
     }
     return <div style={style ? { ...kartKabi, ...style } : kartKabi} data-testid={testId}>{baslik}{children}</div>;
   }
