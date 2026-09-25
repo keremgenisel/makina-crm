@@ -18,7 +18,8 @@ Ortak kurallar:
   olarak "görünüm aynı" (0 piksel fark) bekler; ekranın yeni tasarıma dönüşümü gibi bilinçli bir görünüm değişikliğinde
   kayıt `beklenen: "degisti"` ve `onay` taşır. `onay` biçimi: `Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>`; bu kaydı
   yalnız Takım Yöneticisi'nin onayı açar. `degisti` kalıcı değildir: spec `specs/done/`'a taşınırken kayıtları `ayni`ye
-  çevrilir ve yeni görünüm taban olur (spec 0011 AC-11b, AC-11c; `tests/kanit-eslemesi.test.js`).
+  çevrilir ve yeni görünüm taban olur (spec 0011 AC-11b, AC-11c; `tests/kanit-eslemesi.test.js`). Taban raporu, bugünkü kodun onaylı "sonra"
+  görüntüleriyle karşılaştırıldığı `<spec>-taban-piksel-raporu.json`'dur (0 fark); önce/sonra raporu kanıt olarak kalır.
 
 ---
 

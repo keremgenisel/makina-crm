@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0014-sekme-ve-suzgec-birligi.md` (R3, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-25: Z1–Z12 kullanıcı tarafından onaylandı; spec R3 ile güncellendi; uygulanıyor. |
+| **Bağlı spec** | `specs/done/0014-sekme-ve-suzgec-birligi.md` (R3 plan onayıyla, R4 onay sonrası) |
+| **Durum** | Tamamlandı. 2026-09-25: Z1–Z12 kullanıcı tarafından onaylandı; spec R3 ve R4 ile güncellendi; kod commit `7689c55` (dal `feat/0014-sekme-suzgec`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı. |
 | **Önkoşul** | 0009 (sözlük), 0011 (kanıt eşlemesi, `beklenen`/`onay`) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
@@ -245,3 +245,13 @@ Test adları `AC-<n>: <metin>` biçiminde. "Davranış testi" = Z7'ye göre önc
   - Lint 0 hata, `npm run build` başarılı.
   - Mevcut test dosyalarından yalnız `tasarim-kaynak.test.js` değişti (R4 istisnası).
 - **`done`'a taşırken:** bu spec'in 8 `degisti` kaydı `ayni`ye çevrilecek (0011 AC-11c).
+
+## 9. Done'a taşıma (2026-09-25, AC-11c)
+
+- 8 `degisti` kaydı `ayni`'ye çevrildi, `onay` alanları kaldırıldı.
+- `ayni` kaydı gösterdiği raporda 0 fark istediği için onaylanan yeni görünümü taban alan **`0014-taban-piksel-raporu.json`** üretildi:
+  - bugünkü kod, onaylı "sonra" görüntüleriyle karşılaştırıldı;
+  - 8 ekran × 2 tema = 16 görüntü, hepsi 0 fark;
+  - yan yana JPEG'ler `docs/evidence/0014-taban-*.jpg`.
+- Kayıtlar bu raporu gösteriyor. Önce/sonra raporu (`0014-*`) kanıt olarak kalıyor.
+- Kural sözlüğe ve eşleme açıklamasına yazıldı.

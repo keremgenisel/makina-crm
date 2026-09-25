@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-25, plan `specs/0014-uygulama-plani.md` Z1–Z12 ile) |
+| **Durum** | Tamamlandı (2026-09-25; kod commit `7689c55`, dal `feat/0014-sekme-suzgec`; plan `specs/done/0014-uygulama-plani.md` Z1–Z12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteriler, Bayiler, Stok, Finans, Evrak Yönetimi, Notlar, Analiz |
@@ -197,10 +197,16 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R4 (onay sonrası): C3'e ikinci istisna. 0009'un kaynak testi `Analiz.jsx`'te `Chip` kopyasının **var olmasını** şart koşuyordu; bu iş o borcu kapattığı için satır sözlüğün "Ödenen borç" bölümünü denetleyecek şekilde değişti. R3 plan turunda, onayla eş zamanlıydı, sayılmaz. |
+| **Düzeltme turu sayısı** | 0 | İş geri dönmedi. Uygulama sırasında plandaki Z2 yöntemi düzeltildi (erişilebilir ad `aria-label` ile sabitlendi; tam metinli `getByText` rozet yüzünden eşleşmez) ve plana yazıldı; kullanıcıya dönülmeden kapandı. |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme turu olmadı. Uygulama içinde kendiliğinden bulunan iki nokta (Z2'nin iki ayrıntısı) ve ilgisiz bir tarih bombası (`makina-odeme.test.js`) plana yazıldı. |
+| **Regresyon sayısı** | 0 | 25 davranış testi dönüşümden önce eski kodda yeşil yazıldı ve sonra da yeşil; mevcut testler (R4 istisnası dışında) değişmeden geçti; değişmemesi gereken 49 ekran iki temada 0 piksel fark. Son durum: 192 dosya, 2049 test (tek kırmızı işten bağımsız tarih bombası), lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Görünümü bilerek değiştiren bir işte piksel karşılaştırması davranışı kanıtlayamaz; kanıtı
+**önce eski koda yazılıp yeşil geçen** davranış testleri verdi, üstelik rolden bağımsız sorgulandıkları için sekmelerin
+`button`'dan `tab`'a geçişinde de ayakta kaldılar. İkinci ders: bir testin "bu borç hâlâ duruyor" diye doğrulaması (0009'un
+`Chip` satırı) borcu kapatan işi kilitledi; borç listeleri testle **var olduğu** için değil, **yazılı olduğu** için
+denetlenmeli. Üçüncüsü: erişilebilirlik ve metin sorgusu aynı şey değil; `getByText` yalnız öğenin kendi metin düğümlerine
+bakar, sayıyı ayrı öğeye taşıyan her tasarım bunu kırar. Son olarak AC-11c'nin "yeni görünüm taban alınır" kuralının
+somut hâli burada kuruldu: onaylı "sonra" görüntülerini taban alan `<spec>-taban` raporu.

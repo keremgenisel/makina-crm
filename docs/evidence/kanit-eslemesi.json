@@ -1,5 +1,5 @@
 {
-  "aciklama": "Tasarım sözlüğünü (src/components/tasarim.jsx) kullanan her dosyanın görsel kanıtı: dosya → [{ rapor, ekran }]. Rapor, görüntü aracının (scripts/evidence/0009-calistir.mjs) önce/sonra piksel raporudur; aynı klasörde '<önek>-<ekran>-<tema>.jpg' yan yana görüntüsü durur. tests/tasarim-kaynak.test.js bu dosyayı okur: kullanan her dosyanın kaydı olmalı; kaydın ekranı raporda iki temada çizim hatasız olmalı ve JPEG'i depoda durmalı. Kayıt alanları: rapor, ekran, beklenen ('ayni' varsayılan: 0 piksel fark; 'degisti': bilinçli görünüm değişikliği, örn. yeni tasarıma dönüşüm) ve beklenen 'degisti' ise onay, biçimi 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>' (örn. 'Takım Yöneticisi · 2026-09-24 · spec 0010 AC-12'). 'degisti' kalıcı değildir: spec specs/done'a taşınırken kayıtları 'ayni'ye çevrilir (spec 0011 AC-11b, AC-11c; tests/kanit-eslemesi.test.js). Yeni bir ekran dönüşümü kendi raporunu üretir ve kaydını buraya ekler; test dosyasına dokunmaz (spec 0011 R2). onay biçimi: 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>'; onayı yalnız Takım Yöneticisi verir (spec 0011 AC-11b). 'degisti' kalıcı muafiyet değildir: dönüşüm spec'i specs/done'a taşınırken o spec'in açtığı bütün 'degisti' kayıtları 'ayni'ye çevrilir ve yeni görünüm taban alınır (AC-11c).",
+  "aciklama": "Tasarım sözlüğünü (src/components/tasarim.jsx) kullanan her dosyanın görsel kanıtı: dosya → [{ rapor, ekran }]. Rapor, görüntü aracının (scripts/evidence/0009-calistir.mjs) önce/sonra piksel raporudur; aynı klasörde '<önek>-<ekran>-<tema>.jpg' yan yana görüntüsü durur. tests/tasarim-kaynak.test.js bu dosyayı okur: kullanan her dosyanın kaydı olmalı; kaydın ekranı raporda iki temada çizim hatasız olmalı ve JPEG'i depoda durmalı. Kayıt alanları: rapor, ekran, beklenen ('ayni' varsayılan: 0 piksel fark; 'degisti': bilinçli görünüm değişikliği, örn. yeni tasarıma dönüşüm) ve beklenen 'degisti' ise onay, biçimi 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>' (örn. 'Takım Yöneticisi · 2026-09-24 · spec 0010 AC-12'). 'degisti' kalıcı değildir: spec specs/done'a taşınırken kayıtları 'ayni'ye çevrilir (spec 0011 AC-11b, AC-11c; tests/kanit-eslemesi.test.js). Yeni bir ekran dönüşümü kendi raporunu üretir ve kaydını buraya ekler; test dosyasına dokunmaz (spec 0011 R2). onay biçimi: 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>'; onayı yalnız Takım Yöneticisi verir (spec 0011 AC-11b). 'degisti' kalıcı muafiyet değildir: dönüşüm spec'i specs/done'a taşınırken o spec'in açtığı bütün 'degisti' kayıtları 'ayni'ye çevrilir ve yeni görünüm taban alınır (AC-11c). Spec done'a taşınırken 'degisti' kaydı 'ayni'ye çevrilir ve onaylanan yeni görünümü taban alan raporu gösterir: '<spec>-taban-piksel-raporu.json' (bugünkü kod, onaylı 'sonra' görüntüleriyle karşılaştırılır; 0 fark beklenir). Önce/sonra raporu kanıt olarak klasörde kalır.",
   "dosyalar": {
     "src/components/CalisanManager.jsx": [
       {
@@ -17,10 +17,9 @@
         "ekran": "evrak-bayi"
       },
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "evrak-sekme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/GiderForm.jsx": [
@@ -301,58 +300,51 @@
     ],
     "src/components/Customers.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "musteriler-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/SimpleDealers.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "bayiler-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Stock.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "stok-alt-sekme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/YedekParcaSatisTab.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "stok-yedek-parca-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Finance.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "finans-aralik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Notes.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "notlar-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Analiz.jsx": [
       {
-        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "analiz-onayar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+        "beklenen": "ayni"
       }
     ]
   }
