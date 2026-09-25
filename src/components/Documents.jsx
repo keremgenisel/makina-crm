@@ -6,7 +6,7 @@ import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
 import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect, DateInput } from "./ui";
-import { Segment, KartBolum } from "./tasarim";
+import { Segment, KartBolum, BosDurum } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -856,12 +856,12 @@ export const Documents = ({
       </div>
 
       {/* Tablo */}
-      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {searched.length === 0 ? (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-            {filtered.length === 0 ? `Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.` : "Arama sonucu bulunamadı."}
-          </div>
+          filtered.length === 0
+            ? <BosDurum testId="bos-evrak" baslik={`Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.`} />
+            : <BosDurum testId="bos-evrak" baslik="Arama sonucu bulunamadı." />
         ) : (
+          <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -955,8 +955,8 @@ export const Documents = ({
               })}
             </tbody>
           </table>
+          </KartBolum>
         )}
-      </div>
       <Pagination total={searched.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </>) : (<>
         {/* Fatura Arama */}
@@ -966,12 +966,12 @@ export const Documents = ({
             style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         {/* Fatura Listesi */}
-        <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
           {filteredFaturalar.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-              {liveFaturalar.length === 0 ? "Henüz fatura yok." : "Arama sonucu bulunamadı."}
-            </div>
+            liveFaturalar.length === 0
+              ? <BosDurum testId="bos-fatura" baslik="Henüz fatura yok." />
+              : <BosDurum testId="bos-fatura" baslik="Arama sonucu bulunamadı." />
           ) : (
+            <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -1014,8 +1014,8 @@ export const Documents = ({
                 })}
               </tbody>
             </table>
+            </KartBolum>
           )}
-        </div>
       </>)}
 
       {confirmDel && (

@@ -14,7 +14,7 @@ import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayin
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
-import { Segment, HataMetni } from "./tasarim";
+import { Segment, HataMetni, KartBolum, BosDurum } from "./tasarim";
 import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
@@ -362,7 +362,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Bayi ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? <BosDurum testId="bos-bayiler" baslik="Bayi bulunamadı." /> : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -422,9 +423,9 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Bayi bulunamadı.</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {/* Bayi detay görüntüleme */}
       {detailView && (
@@ -548,13 +549,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             </div>
           );
           const servisBlok = isServisli ? (
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Servis Geçmişi ({dealerServices.length})
-              </div>
-              {svcPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" title={`Servis Geçmişi (${dealerServices.length})`}>
+              {svcPaged.length === 0 && <BosDurum testId="bos-bayi-servis" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {svcPaged.map(s => {
                   const cust = customers.find(c => c.id === s.customerId);
@@ -631,16 +627,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           const yedekBlok = (!detailView._isFactory && dealerYedekParca.length > 0) ? (
-            <div style={{ marginTop: isServisli ? 16 : 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Yedek Parça Geçmişi ({dealerYedekParca.length})
-              </div>
-              {ypPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" style={{ marginTop: isServisli ? 16 : 0 }} title={`Yedek Parça Geçmişi (${dealerYedekParca.length})`}>
+              {ypPaged.length === 0 && <BosDurum testId="bos-bayi-yedek" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {ypPaged.map(s => {
                   const part = (parts || []).find(p => String(p.id) === String(s.partId));
@@ -674,16 +665,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerYpFiltered.length} page={ypPage} setPage={setYpPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           const kalipBlok = (!detailView._isFactory && dealerKaliplar.length > 0) ? (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Sattığı Extra Kalıplar ({dealerKaliplar.length})
-              </div>
-              {kalipPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" style={{ marginTop: 16 }} title={`Sattığı Extra Kalıplar (${dealerKaliplar.length})`}>
+              {kalipPaged.length === 0 && <BosDurum testId="bos-bayi-kalip" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {kalipPaged.map(p => {
                   const cust = customers.find(c => c.id === p.customerId);
@@ -714,7 +700,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerKalipFiltered.length} page={kalipPage} setPage={setKalipPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           return saginIcerigi ? (
             <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>

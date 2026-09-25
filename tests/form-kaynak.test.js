@@ -83,7 +83,7 @@ const BASLIK = [
 ];
 // Kapsam dosyalarında kalan büyük harf blokları: hepsi bölüm başlığı değil (plan Ek A "Değil" listesi).
 const BUYUK_HARF_ISTISNA = {
-  [C + "SimpleDealers.jsx"]: 5,        // bayi DETAY penceresinin bölüm ve rozet başlıkları (form değil)
+  [C + "SimpleDealers.jsx"]: 2,        // bayi DETAY penceresinin rozet ve bilgi etiketi başlıkları (form değil; bölüm başlıkları spec 0016'da KartBolum'a geçti, C3 istisnası)
   [C + "stock/PartStokTab.jsx"]: 1,    // parça stoğu panel başlığı (liste ekranı)
   [C + "stock/UretimFormu.jsx"]: 2,    // tablo başlıkları
   [C + "CalisanManager.jsx"]: 1,       // tablo başlığı

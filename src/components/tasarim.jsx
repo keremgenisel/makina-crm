@@ -112,18 +112,19 @@ export const KartBolum = ({
 };
 
 // ── Boş durum kutusu ─────────────────────────────────────────────────────────
-// Listelenecek kayıt yokken sıfır tutarlı tablo yerine; kesikli kenarlık, ortalanmış başlık + açıklama + isteğe bağlı eylemler.
+// Listelenecek kayıt yokken tablonun yerine (spec 0016 R1: kayıt yokken tablo ve başlık satırı çizilmez); kesikli kenarlık,
+// ortalanmış başlık + isteğe bağlı açıklama + isteğe bağlı eylemler. Açıklama boşsa satırı hiç çizilmez (spec 0016 G1).
 export const BosDurum = ({ baslik, metin, eylemler, testId }) => (
   <div style={{ border: "1.5px dashed var(--n300, #cbd5e1)", borderRadius: 12, padding: "32px 20px", textAlign: "center", background: "var(--surface, #ffffff)" }} data-testid={testId}>
-    <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{baslik}</div>
-    <div style={{ fontSize: 13, color: "var(--n600, #475569)", maxWidth: 460, margin: "0 auto", lineHeight: 1.55 }}>{metin}</div>
+    <div style={{ fontSize: 16, fontWeight: 800, marginBottom: metin ? 6 : 0 }}>{baslik}</div>
+    {metin && <div style={{ fontSize: 13, color: "var(--n600, #475569)", maxWidth: 460, margin: "0 auto", lineHeight: 1.55 }}>{metin}</div>}
     {eylemler && <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>{eylemler}</div>}
   </div>
 );
 
 // ── Uyarı şeridi ─────────────────────────────────────────────────────────────
-// aile: "bilgi" (mavi) · "uyari" (amber) · "basari" (yeşil). Tanımsız değer bilgi ailesine düşer (R10).
-// Hata (kırmızı) ailesi yoktur; alan hatası için HataMetni.
+// aile: "bilgi" (mavi) · "uyari" (amber) · "basari" (yeşil) · "hata" (kırmızı, spec 0016 G4: ekran düzeyindeki hata ve
+// tükenme mesajları). Tanımsız değer bilgi ailesine düşer (R10). Alan hatası için yine HataMetni.
 // İki biçim (spec 0011): varsayılan kalın başlık + isteğe bağlı açıklama satırı; ya da children ile serbest içerik
 // (cümle içi vurgu için, metin rengi ailenin 800 tonu). children çizilebilir bir değerse serbest içerik çizilir ve
 // baslik/metin yok sayılır. Kap (zemin, kenarlık, dolgu, role, kimlik) iki biçimde aynıdır.
@@ -132,6 +133,7 @@ const AILELER = {
   bilgi: ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)", "var(--blu800, #1e40af)"],
   uyari: ["var(--amb700, #b45309)", "var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)", "var(--amb800, #92400e)"],
   basari: ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)", "var(--grn800, #065f46)"],
+  hata: ["var(--red700, #b91c1c)", "var(--redBg, #fef2f2)", "var(--redBr, #fecaca)", "var(--red800, #991b1b)"],
 };
 const cizilebilir = (c) => c != null && c !== false && c !== "";
 export const UyariSeridi = ({ aile = "bilgi", baslik, metin, testId, children }) => {

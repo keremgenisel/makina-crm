@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
-import { Segment } from "../tasarim";
+import { Segment, BosDurum } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
@@ -318,9 +318,9 @@ export const YedekParcaSatisTab = ({
       </div>
 
       {toplamAdet === 0 ? (
-        <div style={{ padding: "40px 16px", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13.5 }}>
-          {arama.trim() ? "Aramanıza uyan satış yok." : filtre === "eksik" ? "Tahsisi eksik satış yok." : "Henüz yedek parça satışı yok. \"Yeni Satış\" ile ekleyin."}
-        </div>
+        arama.trim() ? <BosDurum testId="bos-yedek-satis" baslik="Aramanıza uyan satış yok." />
+          : filtre === "eksik" ? <BosDurum testId="bos-yedek-satis" baslik="Tahsisi eksik satış yok." />
+          : <BosDurum testId="bos-yedek-satis" baslik="Henüz yedek parça satışı yok." metin={"\"Yeni Satış\" ile ekleyin."} />
       ) : (
         // Her iki filtre de alıcıya göre gruplu — bayi/müşteri/anlaşmasız servis kartı, tıklayınca satışlar açılır (katlı).
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

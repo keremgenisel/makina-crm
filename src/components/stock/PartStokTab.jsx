@@ -3,7 +3,7 @@ import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
-import { HataMetni } from "../tasarim";
+import { HataMetni, KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 
 const PER_PAGE = 15;
@@ -132,16 +132,8 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
 
       {(kritikSayisi > 0 || dusukSayisi > 0) && (
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-          {kritikSayisi > 0 && (
-            <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--red800, #991b1b)", fontWeight: 600 }}>
-              {kritikSayisi} parça tükendi
-            </div>
-          )}
-          {dusukSayisi > 0 && (
-            <div style={{ background: "var(--ambBg2, #fef3c7)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "10px 16px", fontSize: 13, color: "var(--amb800, #92400e)", fontWeight: 600 }}>
-              {dusukSayisi} parçada stok azaldı (5 veya altı)
-            </div>
-          )}
+          {kritikSayisi > 0 && <UyariSeridi aile="hata" testId="stok-tukendi" baslik={`${kritikSayisi} parça tükendi`} />}
+          {dusukSayisi > 0 && <UyariSeridi aile="uyari" testId="stok-azaldi" baslik={`${dusukSayisi} parçada stok azaldı (5 veya altı)`} />}
         </div>
       )}
 
@@ -155,11 +147,11 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       </div>
 
       {rows.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-          Henüz yedek parça tanımı yok. Ayarlar → Yedek Parça'dan ekleyin.
-        </div>
+        <BosDurum testId="bos-parca-stok" baslik="Henüz yedek parça tanımı yok." metin="Ayarlar → Yedek Parça'dan ekleyin." />
+      ) : filteredRows.length === 0 ? (
+        <BosDurum testId="bos-parca-stok" baslik="Arama sonucu bulunamadı." />
       ) : (
-        <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -230,10 +222,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
               ); })}
             </tbody>
           </table>
-        </div>
-      )}
-      {rows.length > 0 && filteredRows.length === 0 && (
-        <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Arama sonucu bulunamadı.</div>
+        </KartBolum>
       )}
       <Pagination total={filteredRows.length} page={page} setPage={setPage} perPage={PER_PAGE} />
 

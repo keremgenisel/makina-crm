@@ -80,7 +80,7 @@ const T0 = (o = {}) => ({ id: 900, type: "teklif", no: "2026-00001", tarih: "202
   { rowId: "r1", pickTip: "makina", selectedModel: "AK100", selectedKalip: "", selectedPart: "", subItems: [alt("m1", "makina", 60000)] },
 ], ...o });
 function EvrakEkrani({ teklif }) {
-  const [teklifler, setTeklifler] = useState([teklif]);
+  const [teklifler, setTeklifler] = useState(teklif ? [teklif] : []);
   return <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={[]} setFaturalar={bos} customers={MUSTERILER} partSales={[]}
     allModels={[{ model: "AK100" }]} factory={{ name: "Altuntaş" }} appSettings={{}} showToast={bos} kalipDefs={[{ ad: "Hamburger" }]} parts={[]}
     geoData={{}} loadingGeo={false} serverPermissions={null} dealers={DEALERS} yedekParcaSatislar={[]} onEvrakKaydet={bos} />;
@@ -132,6 +132,16 @@ function EpostaEkrani() {
   const [draft, setDraft] = useState({ to: "kutu@gida.com.tr", subject: "Teklif", body: "Merhaba,\n\nTeklifimiz ekte.", ek: null });
   return <MailComposeModal draft={draft} setDraft={setDraft} sendState={null} onSend={bos} />;
 }
+
+// Spec 0016: boş durumlar, uyarılar ve bölümler.
+const BAYI_SERVIS = [
+  { id: 61, customerId: 500, date: "2026-08-12", type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", islemFirma: "Akdeniz Servis" },
+  { id: 62, customerId: 500, date: "2026-07-03", type: "Arıza", repairPlace: "Fabrikada Onarım", islemFirma: "Akdeniz Servis" },
+];
+const bayiDetay = (id, o = {}) => <SimpleDealers dealers={BAYI_LISTE} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={BAYI_KALIP}
+  services={[]} customers={MUSTERILER} showToast={bos} openDetailId={id} yedekParcaSatislar={YP_SATIS} parts={[{ id: 7, ad: "Rulman" }]} {...o} />;
+const stokBos = (alt, o = {}) => <Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]}
+  dealers={DEALERS} yedekParcaSatislar={[]} defaultSubTab={alt} showToast={bos} {...o} />;
 
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
 const EKRANLAR = {
@@ -191,6 +201,25 @@ const EKRANLAR = {
     ))}
   </div>, []],
   "ayarlar-company-acik": [ayarlar("company"), ["Firma Bilgileri"]],
+  // Spec 0016 (DoD + plan G7).
+  "musteriler-bos-arama": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, ["doldur:Müşteri ara...=zzz"]],
+  "musteriler-bos-kayit": [<Customers customers={[]} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, []],
+  "musteriler-gruplu": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, ["Firmaya Göre Grupla"]],
+  "bayiler-bos": [<SimpleDealers dealers={[]} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={[]} services={[]} customers={[]} showToast={bos} />, []],
+  "bayi-detay": [bayiDetay(4, { services: BAYI_SERVIS }), []],
+  "bayi-detay-bos": [bayiDetay(4), []],
+  "stok-bos": [stokBos("makina"), []],
+  "stok-bos-parca": [stokBos("parca"), []],
+  "stok-bos-yedek": [stokBos("yedeksatis"), []],
+  "stok-bos-uretim": [stokBos("uretim"), []],
+  "stok-parca-uyari": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }, { id: 8, ad: "V Kayış" }, { id: 9, ad: "Conta" }], partStock: [{ partId: 8, miktar: 3 }, { partId: 9, miktar: 40 }] }), []],
+  "finans-bos": [<Finance customers={[]} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
+    payments={[]} teklifler={[]} serverPermissions={null} />, []],
+  "evrak-bos": [<EvrakEkrani />, []],
+  "evrak-bos-arama": [<EvrakEkrani teklif={T0()} />, ["doldur:Firma adı veya belge no ara...=zzz"]],
+  "notlar-bos": [<Notes notes={[]} setNotes={bos} aktifKullanici="kerem" />, []],
+  "notlar-bos-arama": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, ["doldur:Notlarda ara...=zzz"]],
+  "analiz-bos": [<Analiz customers={[]} services={[]} partSales={[]} yedekParcaSatislar={[]} parts={[]} appSettings={{}} />, []],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

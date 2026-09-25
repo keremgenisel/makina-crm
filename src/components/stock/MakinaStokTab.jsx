@@ -5,7 +5,7 @@ import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
-import { HataMetni, BolumBasligi } from "../tasarim";
+import { HataMetni, BolumBasligi, KartBolum, BosDurum } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 
@@ -182,7 +182,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         {canDoStock("stock_makina_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>}
       </div>
 
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? (
+        stock.length === 0
+          ? <BosDurum testId="bos-makina-stok" baslik="Stokta makina yok." />
+          : <BosDurum testId="bos-makina-stok" baslik="Aramanıza uyan makina yok." />
+      ) : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -210,9 +215,9 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{stock.length === 0 ? "Stokta makina yok." : "Aramanıza uyan makina yok."}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {confirmId && (
         <ConfirmDialog

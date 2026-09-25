@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../lib/analiz";
 import { today, addMonthsToDateStr, sureBicimSaat, aramaNormalize } from "../lib/utils";
 import { Modal } from "./ui";
-import { Segment } from "./tasarim";
+import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 // ── Analiz sekmesi ────────────────────────────────────────────────────────────
 // Servis değişen parçaları + kargo yedek parça satışları + Extra Kalıp üzerinden ADET bazlı
@@ -18,11 +18,6 @@ const KARGO = "var(--blu500, #3b82f6)";
 const PALET = [SERVIS, KARGO, "var(--teal, #0d9488)", "#f59e0b", "#8b5cf6", "var(--n500, #64748b)"];
 
 const S = {
-  bos: { padding: "26px 16px", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 },
-  panel: { background: "var(--surface, #fff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 14, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,.06)", minWidth: 0 },
-  phead: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 4 },
-  h2: { fontSize: 15.5, fontWeight: 700, color: "var(--n900, #0f172a)", margin: 0 },
-  hint: { fontSize: 11.5, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap" },
   note: { fontSize: 12, color: "var(--n500, #64748b)", margin: "3px 0 14px" },
 };
 
@@ -341,19 +336,16 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
       </div>
 
       {aralikBos && (
-        <div style={{ ...S.panel, textAlign: "center", padding: "40px 20px", color: "var(--n500, #64748b)" }}>
-          <div style={{ fontSize: 30, opacity: .5, marginBottom: 8 }}>📊</div>
-          Seçili tarih aralığında analiz edilecek servis, yedek parça veya kalıp kaydı yok.
-        </div>
+        <BosDurum testId="bos-analiz-aralik" baslik="Seçili tarih aralığında analiz edilecek servis, yedek parça veya kalıp kaydı yok." />
       )}
 
       {!aralikBos && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 16 }}>
           {/* En çok parça */}
-          <section style={{ ...S.panel, gridColumn: "span 7" }}>
-            <div style={S.phead}><h2 style={S.h2}>En Çok Satılan / Değişen Yedek Parçalar</h2><span style={S.hint}>Adet · Servis + Kargo</span></div>
+          <section style={{ gridColumn: "span 7", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="En Çok Satılan / Değişen Yedek Parçalar" altBaslik="Adet · Servis + Kargo" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
             <p style={S.note}>Serviste değişen parçalar ve kargoyla satılan yedek parçalar aynı sıralamada.</p>
-            {veri.parcalar.length === 0 ? <div style={S.bos}>Parça hareketi yok.</div> : (
+            {veri.parcalar.length === 0 ? <BosDurum testId="bos-analiz" baslik="Parça hareketi yok." /> : (
               <>
                 <div style={listeStil}>{ilk(veri.parcalar, "parca").map(parcaRow)}</div>
                 <TumBtn toplam={veri.parcalar.length} limit={LIMIT.parca} onAc={() => setModalKey("parca")} />
@@ -363,17 +355,17 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: SERVIS }} /> Serviste değişen</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: KARGO }} /> Kargo satışı</span>
             </div>
-          </section>
+          </KartBolum></section>
 
           {/* Parça → Model */}
-          <section style={{ ...S.panel, gridColumn: "span 5" }}>
-            <div style={S.phead}><h2 style={S.h2}>Parça → Model Kırılımı</h2></div>
+          <section style={{ gridColumn: "span 5", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Parça → Model Kırılımı" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
             <p style={S.note}>Seçilen parça en çok hangi modele gitti?</p>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
               <span style={{ fontSize: 12.5, color: "var(--n500, #64748b)", flexShrink: 0 }}>Parça:</span>
               <ParcaSecici parcalar={veri.parcalar} secili={secili} onSec={setSeciliKey} />
             </div>
-            {!secili ? <div style={S.bos}>Parça yok.</div> : (
+            {!secili ? <BosDurum testId="bos-analiz" baslik="Parça yok." /> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {secili.modeller.map(m => <ModelCubuk key={m.model} ad={m.model} adet={m.adet} tam={modelToplam} bilinmeyen={m.bilinmeyen} />)}
                 {secili.modeller.some(m => m.bilinmeyen) && (
@@ -381,65 +373,62 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
                 )}
               </div>
             )}
-          </section>
+          </KartBolum></section>
 
           {/* En çok servisli makinalar */}
-          <section style={{ ...S.panel, gridColumn: "span 7" }}>
-            <div style={S.phead}><h2 style={S.h2}>En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar</h2><span style={S.hint}>Seri No Bazında</span></div>
-            {veri.enCokServisliMakinalar.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
+          <section style={{ gridColumn: "span 7", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="En Çok Fabrikada ve Dış Serviste Servis Alan Makinalar" altBaslik="Seri No Bazında" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
+            {veri.enCokServisliMakinalar.length === 0 ? <BosDurum testId="bos-analiz" baslik="Servis kaydı yok." /> : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {makinaTablo(ilk(veri.enCokServisliMakinalar, "makina"))}
                 <TumBtn toplam={veri.enCokServisliMakinalar.length} limit={LIMIT.makina} onAc={() => setModalKey("makina")} />
               </div>
             )}
-          </section>
+          </KartBolum></section>
 
           {/* Model yoğunluğu */}
-          <section style={{ ...S.panel, gridColumn: "span 5" }}>
-            <div style={S.phead}><h2 style={S.h2}>Model Servis Yoğunluğu</h2></div>
+          <section style={{ gridColumn: "span 5", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Model Servis Yoğunluğu" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
             <p style={S.note}>Hesap: o modeldeki toplam servis sayısı, o modelin makina (filo) sayısına bölünür. Filoya normalize edildiği için çok satan model haksız yere “arızalı” görünmez.</p>
-            {modelYogunlugu.length === 0 ? <div style={S.bos}>Veri yok.</div> : (
+            {modelYogunlugu.length === 0 ? <BosDurum testId="bos-analiz" baslik="Veri yok." /> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
                 {ilk(modelYogunlugu, "yogunluk").map(yogunlukRow)}
                 <TumBtn toplam={modelYogunlugu.length} limit={LIMIT.yogunluk} onAc={() => setModalKey("yogunluk")} />
               </div>
             )}
-          </section>
+          </KartBolum></section>
 
           {/* Servis tipi + onarım yeri */}
-          <section style={{ ...S.panel, gridColumn: "span 7", display: "flex", flexDirection: "column" }}>
-            <div style={S.phead}><h2 style={S.h2}>Servis Tipi &amp; Onarım Yeri</h2></div>
+          <section style={{ gridColumn: "span 7", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Servis Tipi & Onarım Yeri" style={{ height: "100%", boxSizing: "border-box", minWidth: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 12, flex: 1, justifyContent: "center" }}>
               <div>
                 <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--n400, #94a3b8)", fontWeight: 600, marginBottom: 12 }}>Servis Tipi</div>
-                {veri.servisTipleri.length === 0 ? <div style={S.bos}>Veri yok.</div> : <Donut dilimler={veri.servisTipleri} />}
+                {veri.servisTipleri.length === 0 ? <BosDurum testId="bos-analiz" baslik="Veri yok." /> : <Donut dilimler={veri.servisTipleri} />}
               </div>
               <div style={{ paddingTop: 20, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                 <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--n400, #94a3b8)", fontWeight: 600, marginBottom: 12 }}>Onarım Yeri</div>
-                {veri.onarimYerleri.length === 0 ? <div style={S.bos}>Veri yok.</div> : <Donut dilimler={veri.onarimYerleri} />}
+                {veri.onarimYerleri.length === 0 ? <BosDurum testId="bos-analiz" baslik="Veri yok." /> : <Donut dilimler={veri.onarimYerleri} />}
               </div>
             </div>
-          </section>
+          </KartBolum></section>
 
           {/* Teknisyen */}
-          <section style={{ ...S.panel, gridColumn: "span 5" }}>
-            <div style={S.phead}><h2 style={S.h2}>Teknisyen Dökümü</h2><span style={S.hint}>Servis · Ort. İşçilik</span></div>
+          <section style={{ gridColumn: "span 5", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Teknisyen Dökümü" altBaslik="Servis · Ort. İşçilik" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
             <p style={S.note}>İşçilik süresi çalışma saatlerine göre (gece/hafta sonu sayılmaz).</p>
-            {veri.teknisyenler.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
+            {veri.teknisyenler.length === 0 ? <BosDurum testId="bos-analiz" baslik="Servis kaydı yok." /> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {ilk(veri.teknisyenler, "teknisyen").map(teknisyenRow)}
                 <TumBtn toplam={veri.teknisyenler.length} limit={LIMIT.teknisyen} onAc={() => setModalKey("teknisyen")} />
               </div>
             )}
-          </section>
+          </KartBolum></section>
 
           {/* Servis trendi: aralık > 12 ay ise yıllık, değilse aylık */}
-          <section style={{ ...S.panel, gridColumn: "span 12" }}>
-            <div style={S.phead}>
-              <h2 style={S.h2}>{trendYillik ? "Yıllık Servis Adedi" : "Aylık Servis Adedi"}</h2>
-              <span style={S.hint}>{trendYillik ? (veri.trend.length ? `${veri.trend[0].donem}–${veri.trend[veri.trend.length - 1].donem}` : "Yıl bazında") : "12 Ay"}</span>
-            </div>
-            {veri.trend.length === 0 ? <div style={S.bos}>Servis kaydı yok.</div> : (
+          <section style={{ gridColumn: "span 12", minWidth: 0 }}>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title={trendYillik ? "Yıllık Servis Adedi" : "Aylık Servis Adedi"} altBaslik={trendYillik ? (veri.trend.length ? `${veri.trend[0].donem}–${veri.trend[veri.trend.length - 1].donem}` : "Yıl bazında") : "12 Ay"} style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
+            {veri.trend.length === 0 ? <BosDurum testId="bos-analiz" baslik="Servis kaydı yok." /> : (
               <div style={{ display: "grid", gridTemplateColumns: `repeat(${veri.trend.length}, 1fr)`, gap: 8, alignItems: "end", height: 150, marginTop: 10 }}>
                 {veri.trend.map(a => {
                   const et = trendYillik ? null : ayEtiket(a.donem);
@@ -455,7 +444,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
                 })}
               </div>
             )}
-          </section>
+          </KartBolum></section>
         </div>
       )}
 
@@ -470,33 +459,33 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: K_STD }} /> Standart</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <section style={{ ...S.panel, borderColor: "var(--blu200, #bfdbfe)" }}>
-          <div style={S.phead}><h2 style={S.h2}>En Çok Kullanılan Kalıp</h2><span style={S.hint}>Kalıp Adı · Adet</span></div>
-          {veri.kalipAd.length === 0 ? <div style={S.bos}>Bu aralıkta kalıp yok.</div> : (
+        <section style={{ minWidth: 0 }}>
+          <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="En Çok Kullanılan Kalıp" altBaslik="Kalıp Adı · Adet" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
+          {veri.kalipAd.length === 0 ? <BosDurum testId="bos-analiz" baslik="Bu aralıkta kalıp yok." /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 4 }}>
               {ilk(veri.kalipAd, "kalipAd").map(k => kalipRow(k, kalipAdMax))}
               <TumBtn toplam={veri.kalipAd.length} limit={LIMIT.kalipAd} onAc={() => setModalKey("kalipAd")} />
             </div>
           )}
-        </section>
-        <section style={{ ...S.panel, borderColor: "var(--blu200, #bfdbfe)" }}>
-          <div style={S.phead}><h2 style={S.h2}>Kalıp Ölçüleri</h2><span style={S.hint}>Adet</span></div>
-          {veri.kalipOlcu.length === 0 ? <div style={S.bos}>Bu aralıkta kalıp yok.</div> : (
+        </KartBolum></section>
+        <section style={{ minWidth: 0 }}>
+          <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Kalıp Ölçüleri" altBaslik="Adet" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
+          {veri.kalipOlcu.length === 0 ? <BosDurum testId="bos-analiz" baslik="Bu aralıkta kalıp yok." /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 4 }}>
               {ilk(veri.kalipOlcu, "kalipOlcu").map(k => kalipRow(k, kalipOlcuMax))}
               <TumBtn toplam={veri.kalipOlcu.length} limit={LIMIT.kalipOlcu} onAc={() => setModalKey("kalipOlcu")} />
             </div>
           )}
-        </section>
-        <section style={{ ...S.panel, borderColor: "var(--blu200, #bfdbfe)" }}>
-          <div style={S.phead}><h2 style={S.h2}>Modele Göre Kalıp</h2><span style={S.hint}>Adet</span></div>
-          {veri.kalipModel.length === 0 ? <div style={S.bos}>Bu aralıkta kalıp yok.</div> : (
+        </KartBolum></section>
+        <section style={{ minWidth: 0 }}>
+          <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Modele Göre Kalıp" altBaslik="Adet" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
+          {veri.kalipModel.length === 0 ? <BosDurum testId="bos-analiz" baslik="Bu aralıkta kalıp yok." /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 4 }}>
               {ilk(veri.kalipModel, "kalipModel").map(k => kalipRow(k, kalipModelMax))}
               <TumBtn toplam={veri.kalipModel.length} limit={LIMIT.kalipModel} onAc={() => setModalKey("kalipModel")} />
             </div>
           )}
-        </section>
+        </KartBolum></section>
       </div>
 
       {/* "Tümünü göster" penceresi (tüm liste) */}

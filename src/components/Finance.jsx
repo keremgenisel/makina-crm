@@ -12,7 +12,7 @@ import { makeCanDo } from "../lib/permissions";
 import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
-import { Segment } from "./tasarim";
+import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -641,8 +641,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       </div>
 
       {/* AYLIK TREND */}
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 24 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 16 }}>Son 12 Ay Satış Geliri Trendi <span style={{ fontWeight: 400, color: "var(--n400, #94a3b8)" }}>(≈ TL karşılığı)</span></div>
+      <KartBolum varyant="kart" style={{ marginBottom: 24 }} title={<>Son 12 Ay Satış Geliri Trendi <span style={{ fontWeight: 400, textTransform: "none" }}>(≈ TL karşılığı)</span></>}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
           {monthly.map((mo, i) => (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -652,12 +651,12 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
             </div>
           ))}
         </div>
-      </div>
+      </KartBolum>
 
       {/* MODEL & BAYİ KIRILIMI */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
-          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>Model Bazlı Satış <span style={{ fontWeight: 400, color: "var(--n400, #94a3b8)" }}>(gelir ≈ TL)</span></div>
+        <KartBolum varyant="kart" style={{ overflow: "auto" }} title={<>Model Bazlı Satış <span style={{ fontWeight: 400, textTransform: "none" }}>(gelir ≈ TL)</span></>}>
+          {modelRows.length === 0 ? <BosDurum testId="bos-finans-model" baslik="Veri yok" /> : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Model", "Adet", "Gelir"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Model" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
@@ -670,16 +669,16 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600, color: moneyVisible ? "var(--grn600, #16a34a)" : "var(--n400, #94a3b8)" }}>{M(fmt(v.gelir))}</td>
                 </tr>
               ))}
-              {modelRows.length === 0 && <tr><td colSpan={3} style={{ padding: 20, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Veri yok</td></tr>}
             </tbody>
           </table>
+          )}
           <Pagination total={modelRows.length} page={modelPage} setPage={setModelPage} perPage={MODEL_PER_PAGE} />
-        </div>
-        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
-          <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>Satış Yapan Bazlı</div>
+        </KartBolum>
+        <KartBolum varyant="kart" style={{ overflow: "auto" }} title="Satış Yapan Bazlı">
           {/* Gelir kolonu BİLEREK yok (kullanıcı kararı): satıcı bazında ciro gösterilmek
               istenmiyor, yalnızca adet. Satırlar adet bazlı sıralanır (bySeller.gelir yalnız
               adet eşitliğinde tie-break olarak kullanılır) — gelir kolonunu geri ekleme. */}
+          {sellerRows.length === 0 ? <BosDurum testId="bos-finans-satici" baslik="Veri yok" /> : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
               {["Satış Yapan", "Adet"].map(h => <th key={h} style={{ padding: "8px 16px", textAlign: h === "Satış Yapan" ? "left" : "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>{h}</th>)}
@@ -691,11 +690,11 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
                   <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.adet}</td>
                 </tr>
               ))}
-              {sellerRows.length === 0 && <tr><td colSpan={2} style={{ padding: 20, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Veri yok</td></tr>}
             </tbody>
           </table>
+          )}
           <Pagination total={sellerRows.length} page={sellerPage} setPage={setSellerPage} perPage={SELLER_PER_PAGE} />
-        </div>
+        </KartBolum>
       </div>
 
       {showAnlasmaliModal && (
@@ -709,6 +708,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
               style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
             />
           </div>
+          {anlasmaliFiltered.length === 0 ? <BosDurum testId="bos-anlasmali" baslik="Kayıt bulunamadı" /> : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -732,11 +732,9 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
                   </td>
                 </tr>
               ))}
-              {anlasmaliFiltered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Kayıt bulunamadı</td></tr>
-              )}
             </tbody>
           </table>
+          )}
           <Pagination total={anlasmaliFiltered.length} page={anlasmaliPage} setPage={setAnlasmaliPage} perPage={ANLASMALI_PER_PAGE} />
         </Modal>
       )}
@@ -752,6 +750,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
               style={{ width: "100%", padding: "8px 12px 8px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}
             />
           </div>
+          {kartFiltered.length === 0 ? <BosDurum testId="bos-kredi-karti" baslik="Kayıt bulunamadı" /> : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -770,11 +769,9 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
                   <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "var(--teal, #0d9488)" : "var(--n400, #94a3b8)" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
                 </tr>
               ))}
-              {kartFiltered.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Kayıt bulunamadı</td></tr>
-              )}
             </tbody>
           </table>
+          )}
           <Pagination total={kartFiltered.length} page={kartPage} setPage={setKartPage} perPage={KART_PER_PAGE} />
         </Modal>
       )}

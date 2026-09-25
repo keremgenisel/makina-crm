@@ -6,6 +6,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 import { fmtKalipCapi } from "../../lib/utils";
 import { Btn, Icon, Modal, LockConflict, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
+import { KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { buildPrintHtml, groupByMusteri, fmtDate } from "./uretimFormPrint";
 import { emptyRow } from "./uretimFormModel";
 import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
@@ -338,8 +339,8 @@ export function UretimFormu({
           {canDoStock("stock_uretim_mail") && <Btn small variant="ghost" onClick={() => form && openMailForm(form)}><Icon name="mail" size={13} /> E-posta</Btn>}
         </div>
         {form.kapali && (
-          <div style={{ background: "var(--ambBg2, #fef3c7)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, padding: "8px 14px", marginBottom: 14, fontSize: 13, color: "var(--amb800, #92400e)", fontWeight: 600 }}>
-            Bu dönem sonlandırılmış. Düzenleyebilir ama yeni kalıp ekleyemezsiniz.
+          <div style={{ marginBottom: 14 }}>
+            <UyariSeridi aile="uyari" testId="uretim-kapali" baslik="Bu dönem sonlandırılmış. Düzenleyebilir ama yeni kalıp ekleyemezsiniz." />
           </div>
         )}
 
@@ -492,12 +493,9 @@ export function UretimFormu({
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "52px 0", color: "var(--n400, #94a3b8)" }}>
-          <Icon name="parts" size={40} />
-          <div style={{ fontSize: 14, marginTop: 12 }}>Henüz üretim formu oluşturulmadı.</div>
-          <div style={{ fontSize: 12, marginTop: 4 }}>"Yeni Form" ile başlayın.</div>
-        </div>
+        <BosDurum testId="bos-uretim" baslik="Henüz üretim formu oluşturulmadı." metin={'"Yeni Form" ile başlayın.'} />
       ) : (
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--n150, #f1f5f9)" }}>
@@ -542,6 +540,7 @@ export function UretimFormu({
             })}
           </tbody>
         </table>
+        </KartBolum>
       )}
 
       {mailModal}

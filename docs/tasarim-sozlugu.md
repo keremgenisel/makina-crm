@@ -78,6 +78,12 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
   - Başlıksız kullanım yalnız kaptır.
 
 **Ne zaman kullanılır:** Ayarlar'da her bölüm (`ayar`); bir ekranda içeriği gruplayan her beyaz kart (`kart`).
+Spec 0016 ile:
+- **Liste kabı:** tabloyu ya da liste satırlarını saran kap başlıksız `kart`tır, `style={{ padding: 0, overflow: "auto" }}`
+  (Müşteriler, Bayiler, Stok, Evrak, Notlar). Liste boşsa kap çizilmez, yerine `BosDurum`.
+- **Başlık biçimi ekran türüne göre (R9):** liste ekranlarının başlıklı kartları `etiket` (Finans); rapor kutuları (Analiz) ve
+  detay pencerelerinin bölümleri `baslik`. Bölüm başına yeniden karar verilmez.
+- Kutu bir ızgara hücresiyse ızgara konumu dış öğede kalır, kart `style={{ height: "100%" }}` ile hücreyi doldurur (Analiz).
 
 **Ne zaman kullanılmaz:**
 - Tek bir sayıyı öne çıkaran özet kartı: `StatCard` / `StatKart`.
@@ -89,6 +95,8 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:67` (kart, başlık + alt satır)
+**Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
+**Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
 
 ## BolumBasligi
 
@@ -114,25 +122,37 @@ Satış / Finans); bir form bölümünün başında, yanında düğmeler olan ba
 
 Boş durum kutusu: listelenecek kayıt yokken gösterilen, kesikli kenarlıklı, ortalanmış kutu.
 
-- `baslik`, `metin`, isteğe bağlı `eylemler` (düğmeler), `testId`
+- `baslik`, isteğe bağlı `metin` (açıklama satırı; boşsa hiç çizilmez, spec 0016 G1), isteğe bağlı `eylemler` (düğmeler), `testId`
+  (uygulamadaki liste kutuları `bos-<ekran>` kimliğini taşır).
+- **Tablonun yerine geçer, altına değil** (spec 0016 R1): kayıt yokken tablo, başlık satırı ve sayfalama hiç çizilmez. Liste bir
+  kartın içindeyse kart başlığı kalır, tablonun yeri kutuya verilir (Finans kartları, bayi detay bölümleri, Analiz kutuları).
 
 **Ne zaman kullanılır:** bir rapor, liste ya da görünüm hiç satır üretmiyorsa (sıfır tutarlı tablo yerine); veri
-girilmemiş bir dönem seçildiyse. Mümkünse eylem (ör. "Yeni Gider") verin.
+girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (spec 0016 R1).
+- "Hiç kayıt yok" ile "aramaya ya da süzgece uyan kayıt yok" ayrı durumlardır. Ekran bu ayrımı yapıyorsa iki ayrı başlık
+  kullanılır ("Henüz teklif yok." / "Arama sonucu bulunamadı."); yapmıyorsa tek metin başlık olur ve ayrım yeni metin yazarak
+  kazandırılmaz (spec 0016 R2). Süzgeç sonucu boşken "henüz kayıt yok" yazmak kullanıcıya verisinin silindiğini düşündürür.
+- Metin ekranın bugünkü metnidir; iki cümleyse ilk cümle başlık, kalanı açıklama olur. Geliştirici açıklama metni yazmaz.
 
 **Ne zaman kullanılmaz:**
-- Arama ya da süzgeç sonucu boşsa, tablonun içindeki kısa bir satır yeterlidir.
 - Hata için: `UyariSeridi` ya da `HataMetni`.
+- Eylem düğmesi: uygulamanın liste kutularında düğme yoktur (spec 0016 C6, X7). Eklenirse izin kurallarına uyar, izinsiz
+  kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
+- Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:207`
+**Örnek:** `src/components/Customers.jsx:506` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
 
 Uyarı şeridi: ekranın üstünde ya da bir bölümün başında, renkli zeminli bilgi satırı. `role="status"`.
 
-- `aile`: `"bilgi"` (mavi), `"uyari"` (amber), `"basari"` (yeşil). **Tanımsız bir değer hata vermez, `bilgi` ailesine düşer.**
+- `aile`: `"bilgi"` (mavi), `"uyari"` (amber), `"basari"` (yeşil), `"hata"` (kırmızı, spec 0016 G4). **Tanımsız bir değer hata
+  vermez, `bilgi` ailesine düşer.**
 - `baslik` (kalın), isteğe bağlı `metin` (açıklama satırı), `testId`.
 - `children`: serbest içerik (spec 0011, aşağıya bakın).
-- Kırmızı (hata) ailesi yoktur.
+- `hata` ailesi ekran düzeyindeki hata ve tükenme mesajları içindir (ör. "3 parça tükendi"); bir alanın hatası yine `HataMetni`.
 
 **Ne zaman kullanılır:** işlemin sonucunu bildirmek (`basari`), kullanıcının dikkat etmesi gereken ama işi durdurmayan
 bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
@@ -143,6 +163,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Onay isteyen durum: `ConfirmDialog`.
 
 **Örnek:** `src/components/Giderler.jsx:183`
+**Örnek:** `src/components/stock/PartStokTab.jsx:135` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 
@@ -216,6 +237,15 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - Extra Kalıp ve yedek parça formlarındaki yerel Teslim Şekli segmentleri: `Segment` (düğme kipi).
 - Kapsamdaki form pencerelerinin gövde içi eylem satırları (`form-footer-bar` dahil): pencerenin `footer` yuvası.
 
+### Ödenen borç (spec 0016)
+
+- Liste ekranlarının boş satırları (tablonun altına düşen gri cümleler) `BosDurum`'a geçti; kayıt yokken tablo çizilmiyor:
+  Müşteriler, Bayiler (liste ve detay), Stok'un dört alt sekmesi, Finans, Evrak, Notlar, Analiz.
+- Gölgeli ve kenarlıklı yerel liste kapları, Finans'ın yerel kart başlıkları, Analiz'in yerel kutu stili (`S.panel`, `S.h2`,
+  `S.bos`) ve bayi detayının büyük harfli bölüm başlıkları `KartBolum`'a geçti.
+- Satır içi mesaj kutuları `UyariSeridi`'ye geçti: Müşteriler gruplu görünüm şeridi, Parça Stoğu'nun tükenen/azalan parça
+  mesajları, Kalıp Üretim'in "dönem sonlandırılmış" mesajı.
+
 ### Kapsam dışı ekranlardaki kopyalar
 
 - `src/components/Customers.jsx` → "Firmaya Göre Grupla" aç/kapa düğmesi (mavi pil): süzgeç değil, tekil aç/kapa; sözlükte karşılığı yok (spec 0014 R1).
@@ -225,6 +255,10 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/settings/SettingsDocuments.jsx` → `Accordion`: katlanabilir bölümün ayrı bir biçimi.
 
 ### Kapsam içindeki yakın kopyalar (görünüşü farklı, taşınmadı)
+
+- `src/components/SimpleDealers.jsx` → bayi detayındaki "🏭 FABRİKA — Ana üretici" ve "ANLAŞMALI SERVİS" şeritleri (kayıt türü
+  etiketi, mesaj değil) ve kırmızı "Ödenmemiş Parça Borcu" paneli (tutar ve kayıt listesi taşıyan özet). Spec 0016 G5.
+- `src/components/Documents.jsx` → yeşil "CRM'e Kaydet" bandı: düğme taşıyor; serbest içerik düzen kapısı değildir (spec 0016 G5).
 
 - `src/components/GiderForm.jsx` → mükerrer personel uyarısı (amber, 12.5 punto, başlık satır içi) ve kırmızı
   "Kayıt yapılmadı" kutusu (`role="alert"`; kırmızı aile yok).
@@ -241,6 +275,9 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
   satırları ve büyük harf başlıkları: 0015 bu dosyada yalnız `Warn`'u taşıdı (F8); dönüşümü müşteri detayının işidir.
 
 ### Erişilebilirlik borcu
+
+- `KartBolum` başlığı bir başlık öğesi (`h2`/`h3`) değil, `div`. Analiz kutuları spec 0016'ya kadar `h2` taşıyordu; ekran okuyucunun
+  başlıklar arası gezinmesi bu kutularda kalktı. Başlık düzeyi seçeneği ayrı iştir.
 
 - `Segment` `kip="sekme"`: ok tuşuyla sekmeler arası gezinme (roving tabindex) ve `tabpanel` bağlantısı yok; yalnız nitelikler var (spec 0014 Z4).
 

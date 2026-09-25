@@ -12,7 +12,7 @@ import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { Icon, Btn, ConfirmDialog, Pagination, DraftRestoreBar } from "./ui";
-import { Segment } from "./tasarim";
+import { Segment, KartBolum, BosDurum, UyariSeridi } from "./tasarim";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 
@@ -490,8 +490,10 @@ export const Customers = ({
         )}
       </div>
       {groupByFirm && (
-        <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "var(--blu800, #1e40af)" }}>
-          Firmaya göre gruplu görünüm: <b>{filtered.length} firma</b> ({customers.length} makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.
+        <div style={{ marginBottom: 12 }}>
+          <UyariSeridi aile="bilgi" testId="gruplu-gorunum">
+            Firmaya göre gruplu görünüm: <b>{filtered.length} firma</b> ({customers.length} makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.
+          </UyariSeridi>
         </div>
       )}
       <div style={{ position: "relative", marginBottom: 16 }}>
@@ -499,7 +501,12 @@ export const Customers = ({
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
           style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)" }} />
       </div>
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? (
+        customers.length === 0
+          ? <BosDurum testId="bos-musteriler" baslik="Henüz müşteri kaydı yok" metin="Yeni müşteri eklemek için “Yeni Müşteri” düğmesini kullanın." />
+          : <BosDurum testId="bos-musteriler" baslik={emptyLabel} metin="Arama ölçütünü değiştirmeyi deneyin." />
+      ) : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -616,9 +623,9 @@ export const Customers = ({
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{emptyLabel}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {detailView && (
         <CustomerDetailModal
