@@ -10,6 +10,11 @@ import { Giderler } from "../../src/components/Giderler";
 import { Documents } from "../../src/components/Documents";
 import { Settings } from "../../src/components/Settings";
 import { Finance } from "../../src/components/Finance";
+import { Customers } from "../../src/components/Customers";
+import { SimpleDealers } from "../../src/components/SimpleDealers";
+import { Stock } from "../../src/components/Stock";
+import { Notes } from "../../src/components/Notes";
+import { Analiz } from "../../src/components/Analiz";
 import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 import * as Tasarim from "../../src/components/tasarim";
 
@@ -99,6 +104,26 @@ const FINANS = () => (
     payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={GIDERLER} giderTurleri={TURLER} giderYururlukAy="2026-06" />
 );
 
+// Spec 0014: sekme ve süzgeç çubuklarının yedi ekranı. Müşteriler süzgeçlerin sayılarını göstersin diye çeşitli durumlar.
+const MUSTERI_LISTE = [
+  ...MUSTERILER,
+  { id: 502, name: "Garantili Gıda", model: "AK100", serialNo: "S-3", currency: "TRY", installDate: "2025-11-02", warrantyEnd: "2027-11-02" },
+  { id: 503, name: "Eski Fırın", model: "AK120_DSC", serialNo: "S-4", currency: "TRY", installDate: "2020-04-01", warrantyEnd: "2022-04-01" },
+  { id: 504, name: "Seri Bekleyen", model: "AK100", serialNo: "", seriNoBekliyor: true, currency: "TRY", installDate: "2026-09-01" },
+];
+const BAYI_LISTE = [...DEALERS, { id: 4, name: "Akdeniz Servis", bayiMi: false, anlasmaliServisMi: true, city: "Antalya", country: "Türkiye" }];
+const BAYI_KALIP = [{ id: 9, customerId: 500, tur: "Kalıp", ad: "Hamburger", ucret: 1000, currency: "TRY", tarih: "2026-07-10", faturaTipi: "Faturasız Yurtiçi", odendi: false, satisFirma: "Ege Bayi" }];
+const YP_SATIS = [
+  { id: 31, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-01", faturaTipi: "Faturasız Yurtiçi", odendi: false, tahsisler: [] },
+  { id: 32, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 1, birimFiyat: 350, currency: "TRY", tarih: "2026-09-02", faturaTipi: "Faturasız Yurtiçi", odendi: true, tahsisler: [{ miktar: 1, makinaSerbest: "AK100 · S-9", tarih: "2026-09-03" }] },
+];
+const NOTLAR = [
+  { id: 41, content: "Ege Bayi ile fiyat görüşmesi", updatedAt: 3, olusturan: "kerem" },
+  { id: 42, content: "Servis ekibi toplantısı", updatedAt: 2, olusturan: "admin" },
+];
+const stokEkrani = (alt) => <Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
+  dealers={DEALERS} yedekParcaSatislar={YP_SATIS} defaultSubTab={alt} showToast={bos} />;
+
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -125,6 +150,15 @@ const EKRANLAR = {
   "giderler-aralik-gecersiz": [<GiderEkrani />, ["Tarih Aralığı", "doldur:Başlangıç tarihi=2026-09-30", "doldur:Bitiş tarihi=2026-09-01"]],
   "giderler-hatirlatma": [<GiderEkrani />, ["~Hatırlatma kapsamı ("]],
   "giderler-kapsam-disi": [<GiderEkrani />, ["Tarih Aralığı", "doldur:Başlangıç tarihi=2026-05-01", "doldur:Bitiş tarihi=2026-09-30"]],
+  // Spec 0014: sekme ve süzgeç çubukları.
+  "musteriler-liste": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, []],
+  "bayiler-liste": [<SimpleDealers dealers={BAYI_LISTE} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={BAYI_KALIP} services={[]} customers={MUSTERILER} showToast={bos} />, []],
+  "stok-alt-sekme": [stokEkrani("makina"), []],
+  "stok-yedek-parca-suzgec": [stokEkrani("yedeksatis"), []],
+  "evrak-sekme": [<EvrakEkrani teklif={T0()} />, []],
+  "finans-aralik": [<FINANS />, []],
+  "notlar-suzgec": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, []],
+  "analiz-onayar": [<Analiz customers={MUSTERILER} services={[]} partSales={[]} yedekParcaSatislar={YP_SATIS} parts={[{ id: 7, ad: "Rulman" }]} appSettings={{}} />, []],
   // Spec 0011: serbest içerikli şerit örneği (yalnız "sonra"; önceki bileşen children almıyordu). Üç aile.
   "sozluk-serbest-icerik": [<div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 900 }}>
     {Tasarim.UyariSeridi && ["bilgi", "uyari", "basari"].map(a => (

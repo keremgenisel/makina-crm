@@ -15,6 +15,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "evrak-bayi"
+      },
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "evrak-sekme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
       }
     ],
     "src/components/GiderForm.jsx": [
@@ -291,6 +297,62 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-server-istemci"
+      }
+    ],
+    "src/components/Customers.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "musteriler-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/SimpleDealers.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "bayiler-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/Stock.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/stock/YedekParcaSatisTab.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/Finance.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "finans-aralik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/Notes.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "notlar-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
+      }
+    ],
+    "src/components/Analiz.jsx": [
+      {
+        "rapor": "docs/evidence/0014-piksel-raporu.json",
+        "ekran": "analiz-onayar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-25 · spec 0014 AC-13"
       }
     ]
   }

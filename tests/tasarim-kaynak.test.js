@@ -112,7 +112,8 @@ describe("sözlük belgesi", () => {
       "GiderForm.jsx", "SettingsGider.jsx", "GiderAlanlari.jsx", "KdvKarsilastirmaKarti.jsx", "MakinaMaliyetDetay.jsx", "MakinaKarliligi.jsx", "Hatırlatma kapsamı", "2.56"]) {
       expect(borc, ad).toContain(ad);
     }
-    expect(oku("src/components/Analiz.jsx")).toMatch(/const Chip = /);
+    // Spec 0014 R4 (C3 istisnası): Analiz'in Chip kopyası 0014'te ödendi; artık sözlüğün "Ödenen borç" bölümünde durur.
+    expect(doc).toMatch(/### Ödenen borç[\s\S]*Analiz\.jsx[\s\S]*Chip/);
     expect(oku("src/components/ui.jsx")).toMatch(/export const Warn = /);
   });
   it("CLAUDE.md sözlüğe atıf yapar", () => {

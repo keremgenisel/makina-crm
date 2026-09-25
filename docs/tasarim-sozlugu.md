@@ -26,24 +26,37 @@ Ortak kurallar:
 
 Segmentli seçici: birbirini dışlayan 2–6 seçenekten birini seçtirir.
 
-- `options: [{ value, label }]`, `value`, `onChange(value)`, `ariaLabel`, `disabled`
+- `options: [{ value, label, sayi? }]`, `value`, `onChange(value)`, `ariaLabel`, `disabled`
 - `kip`:
-  - `"radyo"` (varsayılan): `radiogroup` + `radio` + `aria-checked`.
-  - `"dugme"`: `group` + `aria-pressed`. Yalnız ekranın bugünkü erişilebilirlik sözleşmesi bunu gerektiriyorsa kullanın; yeni ekranda `radyo`.
+  - `"radyo"` (varsayılan): `radiogroup` + `radio` + `aria-checked`. Form içindeki seçimler (brüt/net, atama türü).
+  - `"dugme"`: `group` + `aria-pressed`, rol `button` kalır. **Liste süzgeç çubukları** (spec 0014) ve ekranın bugünkü erişilebilirlik sözleşmesi bunu gerektiren yerler (Evrak alıcı tipi).
+  - `"sekme"` (spec 0014): `tablist` + `tab` + `aria-selected`. **Gezinme alt sekmeleri** (Stok, Evrak). Ok tuşu gezinmesi ve sekme paneli bağlantısı yoktur (bilinen erişilebilirlik borcu).
 - `gorunum`:
   - `"hap"` (varsayılan): gri zemin üstünde beyaz aktif hap, satır sarar.
-  - `"cerceve"`: çerçeveli düğmeler; seçili olan marka kenarlıklı ve açık turuncu zeminli.
+  - `"cerceve"`: çerçeveli düğmeler; seçili olan marka kenarlıklı ve açık turuncu zeminli. Yalnız form içi iki-üç seçenek.
+- `genislik` (spec 0014):
+  - `"esit"` (varsayılan): düğmeler kabı eşit paylaşır (Giderler görünümleri, Notlar süzgeci).
+  - `"icerik"`: kap ve düğmeler içerik kadar, dar pencerede satır sarar. Dört ve daha fazla seçenekli ya da uzun etiketli çubuklar (Müşteriler, Bayiler, Finans, Analiz, Stok ve Evrak sekmeleri).
+- `sayi` (spec 0014): seçeneğin yanında sayı rozeti. Düğmenin erişilebilir adı ve metin içeriği `Etiket (n)` olarak kalır (parantezler görsel olarak gizli). **Uygulamadaki tek sayaç çözümü budur**; sayıyı etiket metnine gömmeyin.
 
 **Ne zaman kullanılır:** görünüm değiştirme (sekme benzeri alt görünümler), iki-üç değerli form seçimleri (brüt/net,
-ödendi/ödenmedi, alıcı tipi), dönem türü gibi tek seçimli filtreler.
+ödendi/ödenmedi, alıcı tipi), dönem türü gibi tek seçimli filtreler, listelerin süzgeç çubukları (sayılı ya da sayısız),
+ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığın tarih alanları segmentin **dışında**, altında durur).
 
 **Ne zaman kullanılmaz:**
 - Seçenek çoksa (yediden fazla) ya da uzun metinliyse: `Select`.
 - Birden fazla seçim yapılabiliyorsa: onay kutuları.
-- Bir eylemi tetikleyen tek düğme için (aç/kapa dahil): `Btn`.
+- Bir eylemi tetikleyen tek düğme için (aç/kapa dahil): `Btn`. Bağımsız bir aç/kapa (Müşteriler'deki "Firmaya Göre
+  Grupla") tek seçimli gruba seçenek olarak sıkıştırılmaz.
+- İzin süzmesi bileşene verilmez: yetkisiz seçenekleri ve "yasaklı aktif seçim → izinli ilk seçenek" kuralını ekran uygular,
+  bileşene yalnız görünür seçenekler gider.
+- `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
 **Örnek:** `src/components/Giderler.jsx:166`
-**Örnek:** `src/components/Documents.jsx:1116`
+**Örnek:** `src/components/Documents.jsx:1112`
+**Örnek:** `src/components/Customers.jsx:472` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
+**Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 
 ## KartBolum
 
@@ -70,7 +83,7 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
-**Örnek:** `src/components/Documents.jsx:1111` (kart, etiket başlık)
+**Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:67` (kart, başlık + alt satır)
 
 ## BosDurum
@@ -158,13 +171,21 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 Aşağıdakiler aynı fikrin **kapsam dışı** ya da **görünüşü farklı** kopyalarıdır. Spec 0009 bunlara bilerek dokunmadı;
 her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 
+### Ödenen borç (spec 0014)
+
+- `src/components/Analiz.jsx` → `Chip` (`aria-pressed`'li dolu turuncu pil düğmesi): kaldırıldı, tarih ön ayarları `Segment` (düğme kipi).
+- Filtre pilleri `Segment`'e taşındı:
+  - Finans: `src/components/Finance.jsx`, tarih aralığı düğmeleri.
+  - Müşteriler: `src/components/Customers.jsx`, süzgeç pilleri (sayı rozetiyle).
+  - Bayiler: `src/components/SimpleDealers.jsx`, süzgeç pilleri (sayı rozetiyle).
+  - Stok: `src/components/stock/YedekParcaSatisTab.jsx`, süzgeç pilleri (sayı rozetiyle).
+  - Notlar: `src/components/Notes.jsx`.
+- Stok ve Evrak'ın alt çizgili alt sekmeleri `Segment` sekme kipine taşındı.
+
 ### Kapsam dışı ekranlardaki kopyalar
 
-- `src/components/Analiz.jsx` → `Chip` (`aria-pressed`'li dolu turuncu pil düğmesi): Segment'in üçüncü kopyası.
-- Filtre pilleri:
-  - Finans: `src/components/Finance.jsx`, tarih aralığı düğmeleri.
-  - Müşteriler: `src/components/Customers.jsx`, süzgeç pilleri.
-  - Stok: `src/components/stock/YedekParcaSatisTab.jsx`, süzgeç pilleri.
+- `src/components/Customers.jsx` → "Firmaya Göre Grupla" aç/kapa düğmesi (mavi pil): süzgeç değil, tekil aç/kapa; sözlükte karşılığı yok (spec 0014 R1).
+- `src/components/Finance.jsx` → tutar göster/gizle düğmesi (pil): süzgeç değil, tekil aç/kapa.
 - `src/components/ui.jsx` → `Warn` (`warn-msg` sınıfı, ⚠ öneki, eski ekranlarda alan uyarısı): HataMetni'nin eski karşılığı.
 - `src/components/Documents.jsx` → Belge Detayları, Ürünler ve Teklif Koşulları kartları: aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
 - `src/components/documents/FaturaFormModal.jsx` → beş kart (Alıcı Bilgileri, Fatura Bilgileri, Ürünler, Paketleme, Banka / Hesap Bilgileri): aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
@@ -182,6 +203,8 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/Giderler.jsx` → "Hatırlatma kapsamı" aç/kapa düğmesi (`aria-pressed`).
 
 ### Erişilebilirlik borcu
+
+- `Segment` `kip="sekme"`: ok tuşuyla sekmeler arası gezinme (roving tabindex) ve `tabpanel` bağlantısı yok; yalnız nitelikler var (spec 0014 Z4).
 
 - `KartBolum` `kart` varyantının **etiket başlığının** kontrastı düşük: aydınlıkta 2.56, karanlıkta 2.98. WCAG AA 4.5 ister.
 - Segment'in pasif seçenek metni sınırda: aydınlıkta 4.34, karanlıkta 4.32.

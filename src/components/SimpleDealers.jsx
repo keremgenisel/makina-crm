@@ -14,6 +14,7 @@ import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayin
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
+import { Segment } from "./tasarim";
 import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
@@ -346,23 +347,15 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Bayiler</h2>
         {canDo("dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Bayi/Servis Ekle</Btn>}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        {[
-          { v: "all", l: "Tümü", count: dealers.length },
-          { v: "bayi", l: "Bayiler", count: dealers.filter(d => d.bayiMi !== false).length },
-          { v: "anlasmali", l: "Anlaşmalı Servisler", count: dealers.filter(d => d.anlasmaliServisMi).length },
-          { v: "borclu", l: "Borçlu", count: dealers.filter(dealerHasDebt).length },
-        ].map(f => (
-          <button key={f.v} onClick={() => { setDealerFilter(f.v); setPage(1); }}
-            style={{
-              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: dealerFilter === f.v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
-              background: dealerFilter === f.v ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
-              color: dealerFilter === f.v ? "#fff" : "var(--n500, #64748b)",
-            }}>
-            {f.l} ({f.count})
-          </button>
-        ))}
+      <div style={{ marginBottom: 12 }}>
+        {/* Spec 0014: sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Bayi süzgeci" value={dealerFilter} onChange={v => { setDealerFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "Tümü", sayi: dealers.length },
+            { value: "bayi", label: "Bayiler", sayi: dealers.filter(d => d.bayiMi !== false).length },
+            { value: "anlasmali", label: "Anlaşmalı Servisler", sayi: dealers.filter(d => d.anlasmaliServisMi).length },
+            { value: "borclu", label: "Borçlu", sayi: dealers.filter(dealerHasDebt).length },
+          ]} />
       </div>
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>

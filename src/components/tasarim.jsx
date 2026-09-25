@@ -7,10 +7,17 @@ import { Icon } from "./ui";
 // Kimlik (data-testid) her zaman çağırandan gelir (R9).
 
 // ── Segmentli seçici ─────────────────────────────────────────────────────────
-// kip: "radyo" → radiogroup + radio + aria-checked (varsayılan) · "dugme" → group + aria-pressed.
+// kip: "radyo" → radiogroup + radio + aria-checked (varsayılan) · "dugme" → group + aria-pressed (süzgeç çubukları; rol
+// button kalır) · "sekme" → tablist + tab + aria-selected (gezinme alt sekmeleri; ok tuşu gezinmesi yok, spec 0014 Z4).
 // gorunum: "hap" → gri zemin üstünde beyaz aktif hap, satır sarar (varsayılan) · "cerceve" → çerçeveli düğmeler,
 // seçili olan marka kenarlıklı ve açık turuncu zeminli.
+// genislik: "esit" → düğmeler kabı eşit paylaşır (varsayılan) · "icerik" → kap ve düğmeler içerik kadar, dar pencerede
+// satır sarar (çok seçenekli süzgeç çubukları, spec 0014 R9).
+// options[].sayi: isteğe bağlı sayı rozeti. Metin içeriği ve erişilebilir ad bugünkü "Etiket (n)" biçiminde kalır:
+// parantezler görsel olarak gizli, sayı rozette; ad, tarayıcıların blok öğe boşluk kuralından etkilenmesin diye
+// aria-label ile sabitlenir (spec 0014 R3).
 const hapKabi = { display: "flex", gap: 2, background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: 3, flexWrap: "wrap" };
+const hapKabiIcerik = { ...hapKabi, display: "inline-flex", maxWidth: "100%", boxSizing: "border-box" };
 const cerceveKabi = { display: "flex", gap: 6 };
 const hapDugme = (aktif, disabled) => ({
   flex: "1 1 0", border: "none", borderRadius: 6, padding: "7px 10px", fontSize: 12.5, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
@@ -21,18 +28,32 @@ const cerceveDugme = (aktif, disabled) => ({
   flex: 1, padding: "6px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer",
   border: `1px solid ${aktif ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: aktif ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)",
 });
-export const Segment = ({ options, value, onChange, ariaLabel, disabled, kip = "radyo", gorunum = "hap" }) => {
-  const radyo = kip !== "dugme";
+const gizli = { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 };
+const rozet = (aktif) => ({
+  display: "inline-block", marginLeft: 6, padding: "1px 7px", borderRadius: 999, fontSize: 11, fontWeight: 700, lineHeight: "16px",
+  background: aktif ? "var(--ambBg3, #fff7ed)" : "var(--n200, #e2e8f0)", color: aktif ? "var(--orTx, #c2410c)" : "var(--n600, #475569)",
+});
+const KIP = {
+  radyo: { kap: "radiogroup", dugme: (aktif) => ({ role: "radio", "aria-checked": aktif }) },
+  dugme: { kap: "group", dugme: (aktif) => ({ "aria-pressed": aktif }) },
+  sekme: { kap: "tablist", dugme: (aktif) => ({ role: "tab", "aria-selected": aktif }) },
+};
+export const Segment = ({ options, value, onChange, ariaLabel, disabled, kip = "radyo", gorunum = "hap", genislik = "esit" }) => {
+  const k = KIP[kip] || KIP.radyo;
   const cerceve = gorunum === "cerceve";
+  const icerik = genislik === "icerik";
+  const kap = cerceve ? cerceveKabi : icerik ? hapKabiIcerik : hapKabi;
   return (
-    <div role={radyo ? "radiogroup" : "group"} aria-label={ariaLabel} style={cerceve ? cerceveKabi : hapKabi}>
+    <div role={k.kap} aria-label={ariaLabel} style={kap}>
       {options.map(o => {
         const aktif = o.value === value;
+        const stil = cerceve ? cerceveDugme(aktif, disabled) : hapDugme(aktif, disabled);
         return (
-          <button key={String(o.value)} type="button" disabled={disabled}
-            {...(radyo ? { role: "radio", "aria-checked": aktif } : { "aria-pressed": aktif })}
-            onClick={() => onChange(o.value)} style={cerceve ? cerceveDugme(aktif, disabled) : hapDugme(aktif, disabled)}>
+          <button key={String(o.value)} type="button" disabled={disabled} {...k.dugme(aktif)}
+            {...(o.sayi != null ? { "aria-label": `${o.label} (${o.sayi})` } : {})}
+            onClick={() => onChange(o.value)} style={icerik ? { ...stil, flex: "0 0 auto" } : stil}>
             {o.label}
+            {o.sayi != null && <><span style={gizli}> (</span><span style={rozet(aktif)}>{o.sayi}</span><span style={gizli}>)</span></>}
           </button>
         );
       })}

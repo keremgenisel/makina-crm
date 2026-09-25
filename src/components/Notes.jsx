@@ -4,6 +4,7 @@ import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui"
 import { useLock } from "../hooks/useLock";
 import { withDeleted, tsToDate } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
+import { Segment } from "./tasarim";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
@@ -120,16 +121,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
             </button>
           )}
           {coklu && (filtreBenimIzin || filtreTumuIzin) && (
-            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["benim", "Benim Notlarım", filtreBenimIzin], ["tumu", "Tümü", filtreTumuIzin]].filter(([, , izin]) => izin).map(([k, label]) => {
-                const aktif = filtreBenim === (k === "benim");
-                return (
-                  <button key={k} onClick={() => { setFiltreBenim(k === "benim"); setPage(1); }}
-                    style={{ flex: 1, padding: "6px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${aktif ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: aktif ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: aktif ? "#fff" : "var(--n500, #64748b)" }}>
-                    {label}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom: 10 }}>
+              {/* Spec 0014: sözlükteki segmentli seçici, düğme kipi, eşit genişlik (bugünkü gibi). İzin ve mod kuralı burada. */}
+              <Segment kip="dugme" ariaLabel="Not süzgeci"
+                options={[{ value: "benim", label: "Benim Notlarım", izin: filtreBenimIzin }, { value: "tumu", label: "Tümü", izin: filtreTumuIzin }].filter(o => o.izin)}
+                value={filtreBenim ? "benim" : "tumu"} onChange={v => { setFiltreBenim(v === "benim"); setPage(1); }} />
             </div>
           )}
           <div style={{ position: "relative", marginBottom: 10 }}>

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
+import { Segment } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
@@ -305,13 +306,9 @@ export const YedekParcaSatisTab = ({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        {[["hepsi", `Tümü (${yedekParcaSatislar.length})`], ["eksik", `Tahsisi eksik (${eksikSayi})`]].map(([v, l]) => (
-          <button key={v} onClick={() => setFiltre(v)} style={{
-            padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-            border: `1px solid ${filtre === v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`,
-            background: filtre === v ? "var(--brand, #e85d1a)" : "transparent", color: filtre === v ? "#fff" : "var(--n500, #64748b)",
-          }}>{l}</button>
-        ))}
+        {/* Spec 0014 (Z5): sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Yedek parça satış süzgeci" value={filtre} onChange={setFiltre}
+          options={[{ value: "hepsi", label: "Tümü", sayi: yedekParcaSatislar.length }, { value: "eksik", label: "Tahsisi eksik", sayi: eksikSayi }]} />
         <div style={{ position: "relative", flex: "1 1 220px", minWidth: 180, maxWidth: 340 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", pointerEvents: "none" }}><Icon name="search" size={14} /></span>
           <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Alıcı, parça, kargo no ile ara..."

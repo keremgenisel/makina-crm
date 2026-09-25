@@ -12,6 +12,7 @@ import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { Icon, Btn, ConfirmDialog, Pagination, DraftRestoreBar } from "./ui";
+import { Segment } from "./tasarim";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 
@@ -465,24 +466,17 @@ export const Customers = ({
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{title}</h2>
         {canDo(isCustomer ? "cust_add" : "dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> {addLabel}</Btn>}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        {[
-          { v: "all", l: "Hepsi", count: customers.length },
-          { v: "warranty-active", l: "Garantisi Devam Eden", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
-          { v: "warranty", l: "Garantisi Bitenler", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
-          ...(isCustomer ? [{ v: "debt", l: "Borçlu Firmalar", count: debtorIds.size }] : []),
-          ...(isCustomer ? [{ v: "serial-pending", l: "Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
-        ].map(f => (
-          <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
-            style={{
-              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
-              background: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
-              color: listFilter === f.v ? "#fff" : "var(--n500, #64748b)",
-            }}>
-            {f.l} ({f.count})
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+        {/* Spec 0014: sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). "Firmaya Göre Grupla" süzgeç
+            değil, bağımsız aç/kapa: segmentin dışında kendi düğmesi (R1; sözlükte bilinen borç). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Müşteri süzgeci" value={listFilter} onChange={v => { setListFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "Hepsi", sayi: customers.length },
+            { value: "warranty-active", label: "Garantisi Devam Eden", sayi: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
+            { value: "warranty", label: "Garantisi Bitenler", sayi: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
+            ...(isCustomer ? [{ value: "debt", label: "Borçlu Firmalar", sayi: debtorIds.size }] : []),
+            ...(isCustomer ? [{ value: "serial-pending", label: "Seri No Bekleyen", sayi: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
+          ]} />
         {isCustomer && (
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
             style={{

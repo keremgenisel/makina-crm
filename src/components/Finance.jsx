@@ -12,6 +12,7 @@ import { makeCanDo } from "../lib/permissions";
 import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
+import { Segment } from "./tasarim";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
@@ -570,15 +571,10 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       </div>
 
       {/* Tarih aralığı filtresi */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
-        {Object.entries(RANGE_LABELS).filter(([k]) => izinliAraliklar.includes(k)).map(([k, l]) => (
-          <button key={k} onClick={() => setRange(k)}
-            style={{ padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: range === k ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
-              background: range === k ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: range === k ? "#fff" : "var(--n500, #64748b)" }}>
-            {l}
-          </button>
-        ))}
+      <div style={{ marginBottom: 8 }}>
+        {/* Spec 0014: sözlükteki segmentli seçici (düğme kipi, içerik genişliği); izin süzmesi ve düşme kuralı yukarıda. */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Tarih aralığı" value={range} onChange={setRange}
+          options={Object.entries(RANGE_LABELS).filter(([k]) => izinliAraliklar.includes(k)).map(([k, l]) => ({ value: k, label: l }))} />
       </div>
       {range === "custom" && (
         <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>

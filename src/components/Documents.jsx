@@ -840,15 +840,11 @@ export const Documents = ({
       )}
 
       {/* Alt sekme */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
-        {[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => (
-          <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }} style={{
-            padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
-            borderBottom: subTab === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
-            color: subTab === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
-            background: "transparent", marginBottom: -2,
-          }}>{label}</button>
-        ))}
+      <div style={{ marginBottom: 16 }}>
+        {/* Spec 0014: gezinme alt sekmeleri, sözlükteki segmentli seçicinin sekme kipi. Yan etkiler (sayfa, arama, odak) burada. */}
+        <Segment kip="sekme" genislik="icerik" ariaLabel="Evrak türleri" value={subTab}
+          onChange={id => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }}
+          options={[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => ({ value: id, label }))} />
       </div>
 
       {subTab !== "fatura" ? (<>

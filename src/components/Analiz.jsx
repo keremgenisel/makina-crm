@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../lib/analiz";
 import { today, addMonthsToDateStr, sureBicimSaat, aramaNormalize } from "../lib/utils";
 import { Modal } from "./ui";
+import { Segment } from "./tasarim";
 
 // ── Analiz sekmesi ────────────────────────────────────────────────────────────
 // Servis değişen parçaları + kargo yedek parça satışları + Extra Kalıp üzerinden ADET bazlı
@@ -99,13 +100,8 @@ const Tile = ({ cap, big, sub, metin }) => (
   </div>
 );
 
-// Finans sekmesindeki tarih aralığı butonlarıyla aynı stil (tasarım tutarlılığı): aktif = dolu turuncu zemin + beyaz yazı.
-const Chip = ({ on, onClick, children }) => (
-  <button onClick={onClick} aria-pressed={on}
-    style={{ fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "7px 16px", borderRadius: 20, border: "1px solid", borderColor: on ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: on ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: on ? "#fff" : "var(--n500, #64748b)" }}>
-    {children}
-  </button>
-);
+// Tarih ön ayarları (spec 0014): sözlükteki segmentli seçici, düğme kipinde (aria-pressed), içerik genişliğinde.
+const ON_AYARLAR = [{ value: "yil", label: "Bu yıl" }, { value: "son12", label: "Son 12 ay" }, { value: "tum", label: "Tüm zamanlar" }, { value: "ozel", label: "Özel…" }];
 
 // "Tümünü göster (N) ↗" — liste limitten uzunsa görünür; tıklayınca tüm liste ayrı pencerede (modal) açılır.
 const TumBtn = ({ toplam, limit, onAc }) => {
@@ -321,12 +317,9 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
             Servis değişen parçaları ve kargo yedek parça satışları tek yerde. Hangi parça en çok tükeniyor, hangi model en çok arızalanıyor, hangi makina en çok serviste.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }} role="group" aria-label="Tarih aralığı">
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--n400, #94a3b8)", fontWeight: 600 }}>Aralık</span>
-          <Chip on={preset === "yil"} onClick={() => setPreset("yil")}>Bu yıl</Chip>
-          <Chip on={preset === "son12"} onClick={() => setPreset("son12")}>Son 12 ay</Chip>
-          <Chip on={preset === "tum"} onClick={() => setPreset("tum")}>Tüm zamanlar</Chip>
-          <Chip on={preset === "ozel"} onClick={() => setPreset("ozel")}>Özel…</Chip>
+          <Segment kip="dugme" genislik="icerik" ariaLabel="Tarih aralığı" options={ON_AYARLAR} value={preset} onChange={setPreset} />
         </div>
       </div>
 
