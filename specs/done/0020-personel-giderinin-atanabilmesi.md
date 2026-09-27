@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-27, plan onayıyla; plan `specs/0020-uygulama-plani.md` P1–P9) |
+| **Durum** | Tamamlandı (2026-09-27; commit `8ca7fbe`, dal `feat/0020-personel-atama`; plan `specs/done/0020-uygulama-plani.md` P1–P9) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu, gider kova dağılımı, dönem raporu, makina maliyeti |
@@ -173,24 +173,24 @@ Bilinen tuzaklar:
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kova kuralı yalnız 0001'in motorunda değişti; ikinci bir dağıtım yolu yazılmadı (C1).
-- [ ] Dört kova toplamının bozulmadığı testle gösterildi (AC-7); `gider.test.js`'teki kova eşitliği bloğuna
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kova kuralı yalnız 0001'in motorunda değişti; ikinci bir dağıtım yolu yazılmadı (C1).
+- [x] Dört kova toplamının bozulmadığı testle gösterildi (AC-7); `gider.test.js`'teki kova eşitliği bloğuna
       **personel atamalı** bir senaryo eklendi (makinaya atanmış personel + kısmi model dağılımı +
       dağıtılmayan personel aynı dönemde).
-- [ ] Gizlilik testi genişletildi: atanmış personel kaleminin çıktılara sızmadığı sabitlendi (AC-10).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe.
-- [ ] Görsel kanıt eklendi (`docs/evidence/0020-*.jpg`): uyarı metniyle personel kalem formu, makina
+- [x] Gizlilik testi genişletildi: atanmış personel kaleminin çıktılara sızmadığı sabitlendi (AC-10).
+- [x] Kullanıcıya görünen tüm metinler Türkçe.
+- [x] Görsel kanıt eklendi (`docs/evidence/0020-*.jpg`): uyarı metniyle personel kalem formu, makina
       kırılımında personel satırı, maliyet detayında personel satırı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'deki "kira/personel her zaman ortak" ifadesi güncellendi.
-- [ ] Tamamlanmış spec'lerdeki artık geçersiz ifadelere tarihli güncelleme notu düşüldü (R2: `specs/done/0001`'de analistin
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'deki "kira/personel her zaman ortak" ifadesi güncellendi.
+- [x] Tamamlanmış spec'lerdeki artık geçersiz ifadelere tarihli güncelleme notu düşüldü (R2: `specs/done/0001`'de analistin
       commit edilmemiş değişikliği olduğu için commit'e yalnız bu not alınır):
       `specs/done/0002` R21 ve `specs/done/0001` R21 ("kira ve personel atanamaz"); ikisi de bu spec'e
       atıf yapar.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -198,10 +198,18 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 onay anında işlendi (plan kararları P1–P9); onaydan sonra Requirements, Constraints ve AC değişmedi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç düşük önemli bulgu (kanıt, atıf, yorum), kod davranışı değişmedi. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçek ama düşük: eksik kanıt ekranı, done'a taşınmadan önce kırık görünen atıflar, gerekçesiz bilinçli kapı. | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam koşu yeşil; 208 ekranın değişmeyen 198'i 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Kod taraması spec'in saymadığı dört yeri buldu (dönem raporunun atama sütunu, "Ortak gider" alt yazısı, maliyet detayının
+  "Malzeme payları" etiketi, açıklamada çalışan adı). Kural değişikliği yapan spec'lerde kuralın **metin olarak** yansıdığı
+  yerler de aranmalı; kodu değiştirmek yetmez.
+- Kanıt ekranı eklerken çekimin istenen durumu gerçekten gösterdiğine bakılmalı: ilk çekimde araç satır içindeki düğmeye
+  değil satıra tıkladığı için personel grubu kapalı kaldı ve fark yanlış yerden geldi. Araca `dugme:` adımı eklendi.
+- Kalem tarihi ile üretim tarihi ilişkisi (model havuzu yalnız sonraki üretime pay verir) test verisinde ilk seferde
+  gözden kaçtı; motorun zaman kuralları test verisi kurulurken plan dayanaklarında yazılı olmalı.

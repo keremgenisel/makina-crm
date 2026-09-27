@@ -1,0 +1,74 @@
+[
+  {
+    "ad": "giderler-model-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-model-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-makina-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-makina-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-model-personel-aydinlik.png",
+    "boyut": "2880x1982",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-model-personel-karanlik.png",
+    "boyut": "2880x1982",
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-detay-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-detay-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-personel-acik-aydinlik.png",
+    "boyut": "2880x3626",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-personel-acik-karanlik.png",
+    "boyut": "2880x3626",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  }
+]

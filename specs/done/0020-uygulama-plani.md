@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0020-personel-giderinin-atanabilmesi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | Uygulandı, commit bekliyor. 2026-09-27: P1–P9 kullanıcı tarafından onaylandı; spec R2 ile güncellendi; görünüm Takım Yöneticisi tarafından onaylandı. Dal `feat/0020-personel-atama`. |
+| **Bağlı spec** | `specs/done/0020-personel-giderinin-atanabilmesi.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-27: P1–P9 onaylandı; spec R2; görünüm TY onaylı; commit `8ca7fbe` (dal `feat/0020-personel-atama`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§6). |
 | **Önkoşul** | 0001 (gider motoru), 0002 (makina maliyeti), 0030 (dal tabanı) |
 
 ---
@@ -81,3 +81,8 @@
 - **Bulgu 1 (kanıt):** yeni ekran `giderler-rapor-personel-acik` (personel grubu açık, atamalı kalemler); görüntü aracına tablo satırı içindeki düğmeye tıklayan `dugme:` adımı eklendi. Önce/sonra `0020-piksel-raporu.json`'a eklendi, `DonemRaporu.jsx` için `degisti` + TY onayı (spec 0020 R10).
 - **Bulgu 2 (atıflar):** `tests/spec-atiflari.test.js` belgelerdeki `specs/done/*.md` atıflarının dosyaya çıktığını denetler; done'a taşınmayı bekleyen 0020 dosyaları `TASINACAK` listesinde. **Done'a taşırken bu listeden 0020 satırlarını çıkarın**; unutulursa test kırılır.
 - **Bulgu 3 (yorum):** `SettingsGiderTanimlari.jsx` iki `DAVRANIS.NORMAL` kapısına "spec 0020 X5" gerekçe yorumu; `personel-atama.test.js` kapıların ve yorumun yerinde durduğunu, `atanabilirMi` çağrılmadığını denetler.
+
+## 6. Kapanış (2026-09-27)
+
+- Taban raporu **`0020-taban-piksel-raporu.json`**: bugünkü kod, onaylı "sonra" çekimleriyle karşılaştırıldı; 6 ekran × 2 tema = 12 çekim, hepsi 0 piksel (yan yana JPEG'ler `0020-taban-*`). Kanıt eşlemesindeki 7 `degisti` kaydı bu rapora `ayni` olarak çevrildi; `0020-piksel-raporu.json` önce/sonra kanıtı olarak kalır.
+- `tests/spec-atiflari.test.js` `TASINACAK` listesinden 0020 dosyaları çıkarıldı (atıflar artık done'daki dosyalara çıkıyor).
