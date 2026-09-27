@@ -41,6 +41,8 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 | **0014** | Sekme ve süzgeç birliği | **Tamamlandı** (commit 7689c55, 9516134); `specs/done/` altında. |
 | **0015** | Form birliği | **Tamamlandı** (commit 44f3911 ve done commit'i); `specs/done/` altında. |
 | **0016** | Liste, boş durum ve uyarı birliği | **Tamamlandı** (commit d749f0a, 745a028 ve done commit'i); `specs/done/` altında. |
+| **0030** | Bakım paketi: karanlık tema renkleri, bayi yedek parça etiketi, tekrarlayan giderler tablosu, tarih bombası | **Tamamlandı** (commit 3234f65, 3bfc6b7); `specs/done/` altında. Tanımsız tema değişkeni koruma testi (`tests/tema-degisken.test.js`) kalıcı. |
+| **0031** | Çıplak sabit renklerin temizliği (ekran bileşenleri) | 0030'u yazarken ölçüldü: kaynakta 270 satırda tema değişkenine bağlı olmayan sabit renk var. 190'ı **meşru** (`printTemplates.js` 109 ve `uretimFormPrint.js` 5 yazdırma çıktısı beyaz kâğıt içindir, `theme.js` 81 paletin kendi tanımıdır). Geriye **15 dosyada 75 satır** kalıyor: `ServerLogin` 17, `Finance` 9, `Harita` 6 (veri görselleştirme, kısmen meşru olabilir), `DonemRaporu` 6, `Dashboard` 6, `ServisPanosu` 5, `Giderler` 5 ve diğerleri. Karanlık temada yanlış görünen her kutunun kaynağı bu; 0030 yalnız bildirilen üç yeri düzeltiyor. **Neden ayrı iş:** 0030 bir bakım paketi, repo genelinde çıplak renk yasağı koymak onu büyük bir temizliğe çevirir ve gözden geçirilemez hale getirir. Ayrıca her satır tek tek bakmayı gerektirir: bir kısmı bilinçli (giriş ekranı tema yüklenmeden çiziliyor olabilir, harita renk skalası veri anlamı taşıyor). 0030'un koruma testi tanımsız **değişkenleri** yakalar, çıplak rengi yakalamaz; bu iş yapılırsa koruma oraya genişletilir. |
 
 ## Açık bulgular (spec'i yok, karar bekliyor)
 
@@ -48,8 +50,10 @@ Spec, sırası gelince yazılır; numara burada ayrılmıştır ki atıf yapıla
 
 | Bulgu | Nerede bulundu | Öneri |
 |---|---|---|
-| **`tests/makina-odeme.test.js` tarihe bağlı kalıyor (2 test).** Test sabit bir satış tarihi (2026-08-16) ve 40 günlük kredi kartı blokajı kullanıyor, ama sonucu gerçek bugüne göre hesaplanıyor. 40 gün 2026-09-25'te doldu; o günden beri blokajın hesaba geçtiği sayılıyor ve "borçtan düşülmez" beklentisi tutmuyor. Kodda hata yok, test takvime bağlı. Tam paket bu yüzden kırmızı. | 0014 uygulaması (2026-09-25); 0014'ten önceki kodda da kalıyor. | Testte "bugün"ü sabitlemek (`vi.useFakeTimers` + `vi.setSystemTime("2026-08-20")`, `odeme-hatirlatma.test.js`'teki desen). Kodun davranışı değişmez; spec gerektirmeyen tek dosyalık test düzeltmesi olarak yapılmasını öneriyorum. Aynı desenle başka tarih bombası olup olmadığı `tests/` altında da taranmalı. |
-| **Teslim ayrıntı kutusu karanlık temada beyaz.** Extra Kalıp (`PartSaleForm.jsx`) ve yedek parça (`YedekParcaSatisForm.jsx`) formlarında Teslim Şekli'nin altındaki kargo ayrıntı kutusu `var(--n050, #f8fafc)` kullanıyor; `n050` `src/lib/theme.js`'te tanımlı değil, karanlık temada aydınlık yedek renge düşüyor (beyaz kutu içinde koyu alanlar). | 0015 kanıt görüntüleri (2026-09-25); 0015'ten önce de aynı. | Token'ı `n100` (ya da temada tanımlı en yakın nötr zemin) ile değiştirmek; tek satırlık görünüm düzeltmesi, iki ekranın kanıtı yeniden çekilir. Aynı taramayla temada tanımsız başka `var(--…)` adı olup olmadığı bakılmalı. |
+
+Şu an açık bulgu yok. **Kapatılanlar:** `makina-odeme.test.js` tarih bombası ve karanlık temada beyaz kalan teslim ayrıntı
+kutusu (`n050`), ikisi de 0030 ile (2026-09-27). 0030'un saat kaydırma taraması iki tarih bombası daha buldu
+(`gider-perdesi-yedek`, `musteri-detay-bolumler`), onlar da aynı işte sabitlendi; yöntem `specs/done/0030-uygulama-plani.md` §7'de.
 
 ## Bu projede tek gerçek kaynaklar
 
