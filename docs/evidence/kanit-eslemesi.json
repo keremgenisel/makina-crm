@@ -56,6 +56,18 @@
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 AC-1"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "gider-formu-personel-makina",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 AC-3"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -137,6 +149,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "giderler-rapor"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "giderler-rapor-personel-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 R10"
       }
     ],
     "src/components/gider/FiyatOnerisi.jsx": [
@@ -159,6 +177,18 @@
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 AC-1"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "gider-formu-personel-makina",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 AC-3"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -181,6 +211,18 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "giderler-model"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "giderler-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 R10"
+      },
+      {
+        "rapor": "docs/evidence/0020-piksel-raporu.json",
+        "ekran": "giderler-model-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0020 AC-15"
       }
     ],
     "src/components/gider/StandartGiderler.jsx": [

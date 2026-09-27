@@ -811,6 +811,13 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
     expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: true, aciklama: "a" }] }, izin(["gider_edit"]), "user").gerekli).toBe("gider_odeme");
     expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: false, aciklama: "b" }] }, izin(["gider_edit"]), "user").ok).toBe(true);
   });
+  it("spec 0020 P4: tanımdan üretilmiş personel kalemine sonradan makina atamak düzenlemedir, gider_edit yeter", () => {
+    const tanimlar = [{ id: 9, turId: 3, calisanId: 7, baslangicAy: "2026-01" }];
+    const kalem = { id: 2, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 3, calisanId: 7, resmiTutar: 30000, atamaTur: "" };
+    const eski = { giderler: [kalem], giderTanimlari: tanimlar };
+    const yeni = { giderler: [{ ...kalem, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 }], giderTanimlari: tanimlar };
+    expect(eylemDenetimi(eski, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
+  });
   it("tedarikçi ekle/sil kendi izinleriyle; tanım, tür ve standart gider gider_tanim ile", () => {
     expect(eylemDenetimi({ tedarikciler: [] }, { tedarikciler: [{ id: 5, ad: "A" }] }, izin(["gider_add"]), "user").gerekli).toBe("tedarikci_add");
     expect(eylemDenetimi({ tedarikciler: [{ id: 5 }] }, { tedarikciler: [] }, izin(["tedarikci_add"]), "user").gerekli).toBe("tedarikci_delete");

@@ -9,7 +9,7 @@
 // karlilikOzeti / makinaKarlilik / fiyatOnerisi onun üstünde ucuz türetimlerdir.
 import {
   ayOf, ayEkle, ayinSonGunu, tamAylar, turHaritasi, davranisOf, makinaCozucuOlustur,
-  canliModelSeti, kalemKovalariKurus, kurus, tl, standartGiderAyi,
+  canliModelSeti, kalemKovalariKurus, kalemGorunenAd, kurus, tl, standartGiderAyi,
 } from "./gider";
 import { trLower, parseMoney, gercekSatisBedeli } from "./utils";
 import { CURRENCIES } from "./constants";
@@ -157,7 +157,7 @@ export const hesaplaMakinaMaliyetleri = ({
       // R19: doğrudan atama kalem tarihinden bağımsız olarak makinanın üretim maliyetine girer.
       const m = makinaMap.get(`${kv.makinaCozum.tur}:${kv.makinaCozum.id}`);
       // Çözücü yalnız canlı makinayı döndürür ve makina listesi aynı canlı kayıtlardan kurulur; eşleşme hep var.
-      if (m) { m.dogrudan += kv.makina; m.dogrudanKalemler.push({ kalemId: k.id, tarih: k.tarih, aciklama: k.aciklama || "", tutar: tl(kv.makina) }); }
+      if (m) { m.dogrudan += kv.makina; m.dogrudanKalemler.push({ kalemId: k.id, tarih: k.tarih, aciklama: kalemGorunenAd(k, dav), tutar: tl(kv.makina) }); }
     }
     if (kv.model > 0) {
       // R16: yalnız canlı modellerin satırları havuz kurar; toplam 0001'in model kovasını aşamaz.
@@ -168,7 +168,7 @@ export const hesaplaMakinaMaliyetleri = ({
         const birim = kurus(s.birimMaliyet), kapasite = Math.max(0, Math.floor(Number(s.adet) || 0));
         const boyut = Math.min(birim * kapasite, kalan);
         kalan -= boyut;
-        if (boyut > 0 && birim > 0) havuzlar.push({ kalemId: k.id, tarih: k.tarih, aciklama: k.aciklama || "", modelKey, modelAd: s.modelAd, birim, kapasite, boyut, kalan: boyut, sira, paylar: [] });
+        if (boyut > 0 && birim > 0) havuzlar.push({ kalemId: k.id, tarih: k.tarih, aciklama: kalemGorunenAd(k, dav), modelKey, modelAd: s.modelAd, birim, kapasite, boyut, kalan: boyut, sira, paylar: [] });
       });
     }
   }

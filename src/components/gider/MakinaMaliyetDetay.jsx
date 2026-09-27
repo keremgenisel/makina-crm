@@ -8,6 +8,8 @@ import { Rozet } from "./DonemRaporu";
 
 // Tek makinanın maliyet ve kâr kırılımı (spec 0002 R6, AC-8). Giderler › Makina Kârlılığı satır detayı ve
 // müşteri detayındaki "Maliyet ve Kâr" kutusu AYNI bileşeni kullanır. Rakamlar makinaKarlilik'ten gelir.
+// Kalem adları motordan etiketli gelir: personel kalemi "Personel gideri" (spec 0020 R8); model havuzu satırı
+// personelin model dağılımını da taşır, etiketi bu yüzden işçiliği kapsar (spec 0020 R11).
 const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };
 
 export const MaliyetNotlari = ({ kaynak, yaklasik = false }) => (
@@ -52,7 +54,7 @@ export const MakinaMaliyetDetay = ({ detay }) => {
     <div data-testid="maliyet-detay">
       {ust}
       <Satir etiket="Doğrudan giderler" alt={d.dogrudanKalemler.length ? d.dogrudanKalemler.map(k => `${fmtTR(k.tarih)} ${k.aciklama || "gider"}`).join(", ") : "Bu makinaya atanmış gider yok"} deger={tl2(d.dogrudan)} />
-      <Satir etiket="Malzeme payları (model havuzları)" alt={d.malzemePayiAlamadi ? "Bu makina malzeme payı alamadı: modelin havuz adedi yetmedi." : d.malzemePaylari.length ? `${d.malzemePaylari.length} havuzdan` : "Modeline atanmış malzeme yok"} deger={tl2(d.malzeme)} />
+      <Satir etiket="Model havuzu payları (malzeme ve işçilik)" alt={d.malzemePayiAlamadi ? "Bu makina malzeme payı alamadı: modelin havuz adedi yetmedi." : d.malzemePaylari.length ? `${d.malzemePaylari.length} havuzdan` : "Modeline atanmış malzeme yok"} deger={tl2(d.malzeme)} />
       <Satir etiket="Ortak gider payı" alt={`${ayAdi(ayOf(d.uretimTarihi))} üretim ayının payı`} deger={tl2(d.ortakPay)} />
       <Satir etiket="Üretim maliyeti" deger={tl2(d.uretimMaliyeti)} kalin />
       {d.satildi && <>

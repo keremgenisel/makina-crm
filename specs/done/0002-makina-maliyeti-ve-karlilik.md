@@ -154,6 +154,10 @@ görebiliyor. Rakamın neyi kapsamadığı (stoktan çekilen parçaların maliye
   modele atanamazlar (0001 R21 bu alanları yalnız normal davranışlı kalemlerde gösterir ve 0001 motoru
   davranış normal değilse atamayı yok sayıp tutarın tamamını ortağa yazar). Maliyet hesabı bu kuralı
   yeniden yorumlamaz.
+  **Güncelleme (2026-09-27, spec 0020):** personel davranışlı kalem artık makinaya ve modele atanabilir; kural
+  yalnız **kira** için geçerlidir. Makinaya atanan personel kaleminin tamamı o makinanın doğrudan gideri olur, model
+  dağılımı normal kalemdeki gibi havuz kurar. Kural yine 0001 motorunda tek yerde değişti; bu motor onu tüketir.
+  Bkz. `specs/done/0020-personel-giderinin-atanabilmesi.md`.
 - **R22.** **Ortak gider kaynağı seçilebilir.** Maliyet hesabı, ortak giderleri iki kaynaktan birinden alır:
   **gerçekleşen** gider kayıtları veya 0001 R22'deki **aylık standart tutarlar**. Seçim uygulama genelindedir
   ve maliyetin gösterildiği her ekranda hangi kaynağın kullanıldığı yazar. İki kaynak **asla toplanmaz**.

@@ -53,6 +53,12 @@ export const tutarCoz = (raw) => {
 // ── Kalem hesapları ───────────────────────────────────────────────────────────
 export const turHaritasi = (turler = []) => new Map((turler || []).map(t => [String(t.id), t]));
 export const davranisOf = (kalem, turMap) => turMap?.get(String(kalem?.turId))?.davranis || DAVRANIS.NORMAL;
+// Atama kuralı (spec 0020 R1, R5): yalnız kira ortağa zorlanır; personel normal kalemle aynı atamaları alır.
+export const atanabilirMi = (davranis) => davranis !== DAVRANIS.KIRA;
+// Makina bazlı çıktılarda kalemin görünen adı (spec 0020 R8): personel kaleminin açıklaması çoğunlukla çalışanın
+// adıdır (tekrarlayan üretim `t.ad || c.ad`), bu yüzden her zaman sabit etiket basılır.
+export const PERSONEL_ETIKETI = "Personel gideri";
+export const kalemGorunenAd = (k, davranis) => (davranis === DAVRANIS.PERSONEL ? PERSONEL_ETIKETI : (k?.aciklama || ""));
 
 // Kira (R6): stopaj ve KDV her zaman KDV hariç BRÜT üzerinden; nakit = brüt − stopaj + KDV.
 export const kiraHesapla = ({ girisYonu = "brut", tutar, netTutar, stopajOrani = 0, kdvOrani = 0 }) => {
@@ -186,8 +192,8 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [] } = {}) => {
   kayit.odendi = !!form.odendi;
   if (!kayit.odendi) kayit.odemeTarihi = null;
 
-  // Atama (K25, K38): yalnız normal davranışta; kira ve personel her zaman ortak.
-  if (dav !== DAVRANIS.NORMAL) {
+  // Atama (K25, K38; spec 0020 R1, R5): kira her zaman ortak; personel normal kalemle aynı atamaları alır.
+  if (!atanabilirMi(dav)) {
     kayit.atamaTur = ""; kayit.makinaTur = null; kayit.makinaId = null; kayit.modelSatirlari = [];
   } else {
     const at = form.atamaTur || "";
@@ -198,7 +204,8 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [] } = {}) => {
     if (at === ATAMA.MODEL) {
       const satirlar = form.modelSatirlari || [];
       if (!satirlar.length) hata("modelSatirlari", "En az bir model satırı girin.");
-      const d = modelSatirlariDogrula(kayit.tutar ?? 0, satirlar);
+      // Dağıtım tabanı kalem tutarıdır; personelde resmi + elden (spec 0020 R2).
+      const d = modelSatirlariDogrula(dav === DAVRANIS.PERSONEL ? tl(kalemKurus(kayit, dav)) : (kayit.tutar ?? 0), satirlar);
       d.hatalar.forEach(h => hatalar.push({ alan: "modelSatirlari", satir: h.satir, mesaj: h.mesaj }));
       if (!d.hatalar.length && d.fark > 0) uyarilar.push({ alan: "modelSatirlari", mesaj: `Dağıtılmayan ${d.fark.toLocaleString("tr-TR")} ₺ ortak gidere yazılacak.` });
       kayit.modelSatirlari = satirlar.map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
@@ -253,7 +260,7 @@ export const canliModelSeti = (standardModels = [], customModels = []) =>
 const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
   const top = kalemKurus(k, davranis);
   const r = { makina: 0, model: 0, dagitma: 0, ortak: 0 };
-  if (davranis !== DAVRANIS.NORMAL) r.ortak = top;
+  if (!atanabilirMi(davranis)) r.ortak = top;
   else if (k.atamaTur === ATAMA.DAGITMA) r.dagitma = top;
   else if (k.atamaTur === ATAMA.MAKINA && makinaCozuldu) r.makina = top;
   else if (k.atamaTur === ATAMA.MODEL) {
@@ -269,11 +276,11 @@ const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
 // Makina maliyeti motoru (spec 0002 R2) için kuruş cinsinden aynı kova bölmesi: 0001'in kuralı burada tek
 // kaynaktır, 0002 yeniden türetmez. makinaCoz = makinaCozucuOlustur(...) çıktısı; dönen `makina` çözülen makina.
 export const kalemKovalariKurus = (k, { davranis = DAVRANIS.NORMAL, makinaCoz, canliModeller = new Set() } = {}) => {
-  const makina = davranis === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && makinaCoz ? makinaCoz(k) : null;
+  const makina = atanabilirMi(davranis) && k.atamaTur === ATAMA.MAKINA && makinaCoz ? makinaCoz(k) : null;
   return { ...kovaKurus(k, davranis, !!makina, canliModeller), makinaCozum: makina };
 };
 export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], customers = [], canliModeller = new Set() } = {}) => {
-  const cozuldu = davranis === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && !!makinaGideriCoz(k, { stock, customers });
+  const cozuldu = atanabilirMi(davranis) && k.atamaTur === ATAMA.MAKINA && !!makinaGideriCoz(k, { stock, customers });
   const r = kovaKurus(k, davranis, cozuldu, canliModeller);
   return { makina: tl(r.makina), model: tl(r.model), dagitma: tl(r.dagitma), ortak: tl(r.ortak) };
 };
@@ -443,7 +450,7 @@ export const hesaplaGiderRaporu = (
       c.resmi += kurus(k.resmiTutar); c.elden += kurus(k.eldenTutar); c.toplam += tut;
     }
 
-    const cz = dav === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA ? makinaCoz(k) : null;
+    const cz = atanabilirMi(dav) && k.atamaTur === ATAMA.MAKINA ? makinaCoz(k) : null;
     const kv = kovaKurus(k, dav, !!cz, canliModeller);
     for (const key of Object.keys(kova)) { kova[key] += kv[key]; if (kv[key] > 0) kovaKatki[key]++; }
     if (kv.makina > 0) {
@@ -451,8 +458,8 @@ export const hesaplaGiderRaporu = (
       if (!makinaMap.has(key)) makinaMap.set(key, { anahtar: key, makina: cz, toplam: 0, kalemler: [] });
       const m = makinaMap.get(key); m.toplam += kv.makina; m.kalemler.push(k);
     }
-    if (dav === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MAKINA && kv.makina === 0) dusenAtamalar.push({ kalem: k, neden: "makina" });
-    if (dav === DAVRANIS.NORMAL && k.atamaTur === ATAMA.MODEL) {
+    if (atanabilirMi(dav) && k.atamaTur === ATAMA.MAKINA && kv.makina === 0) dusenAtamalar.push({ kalem: k, neden: "makina" });
+    if (atanabilirMi(dav) && k.atamaTur === ATAMA.MODEL) {
       (k.modelSatirlari || []).forEach(s => {
         const st = kurus(s.birimMaliyet) * (Number(s.adet) || 0);
         if (!canliModeller.has(trLower(s.modelAd))) { dusenAtamalar.push({ kalem: k, neden: "model", modelAd: s.modelAd, tutar: tl(st) }); return; }
@@ -460,7 +467,7 @@ export const hesaplaGiderRaporu = (
         if (!modelMap.has(mk)) modelMap.set(mk, { model: s.modelAd, toplam: 0, satirlar: [] });
         const mm = modelMap.get(mk);
         mm.toplam += st;
-        mm.satirlar.push({ kalemId: k.id, tarih: k.tarih, aciklama: k.aciklama, birimMaliyet: Number(s.birimMaliyet) || 0, adet: Number(s.adet) || 0, tutar: tl(st) });
+        mm.satirlar.push({ kalemId: k.id, tarih: k.tarih, aciklama: kalemGorunenAd(k, dav), birimMaliyet: Number(s.birimMaliyet) || 0, adet: Number(s.adet) || 0, tutar: tl(st) });
       });
       if (kv.ortak > 0) kismiOrtak.push({ kalem: k, tutar: tl(kv.ortak) });
     }

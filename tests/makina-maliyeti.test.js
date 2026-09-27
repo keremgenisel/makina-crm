@@ -67,14 +67,15 @@ describe("ortak gider payı (R2, R11, R1c)", () => {
     expect(s.aylar.get("2026-03").ortakGercek).toBe(0);
     expect(kar(s, 1).ortakPay).toBe(0);
   });
-  it("AC-70: kira veya personel kalemi atama taşısa bile doğrudan gider sayılmaz, tamamı ortağa girer", () => {
+  // Spec 0020 (C6 istisnası, plan P7): personel artık atanabilir; kira yarısı aynen kalır, personel yarısı ters çevrildi.
+  it("AC-70: kira kalemi atama taşısa bile doğrudan gider sayılmaz, tamamı ortağa girer; personel kalemi atanabilir (spec 0020)", () => {
     const s = hesapla({
       customers: [mus(1)],
       giderler: [gid(1, { turId: 2, tutar: 30000, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 }),
         gid(2, { turId: 3, resmiTutar: 20000, eldenTutar: 5000, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 })],
     });
-    expect(kar(s, 1).dogrudan).toBe(0);
-    expect(kar(s, 1).ortakPay).toBe(55000);
+    expect(kar(s, 1).dogrudan).toBe(25000);
+    expect(kar(s, 1).ortakPay).toBe(30000);
   });
   it("AC-71: silinmiş modele ait satır havuza girmez, ortak havuza eklenip payı yükseltir", () => {
     const s = hesapla({

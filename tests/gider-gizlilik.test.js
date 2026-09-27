@@ -25,3 +25,19 @@ describe("AC-56: personel tutarı yazdırma ve dışa aktarmaya girmez", () => {
     for (const f of dosyalar) expect(oku(f), f).not.toMatch(/appPrint|printHtml|downloadCSV|XLSX|writeFile/);
   });
 });
+
+// Spec 0020 AC-10 / R6: personel kalemi artık makinaya ve modele atanabilir; atama ve makina maliyeti çıktısı da
+// hiçbir yazdırma, e-posta veya dışa aktarma üreticisine girmez. Maliyet yalnız ekranda (MakinaMaliyetDetay) çizilir.
+describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktılara girmez", () => {
+  const MALIYET = /makinaMaliyet|hesaplaMakinaMaliyetleri|makinaKarlilik|karlilikOzeti|dogrudanKalemler|malzemePaylari|kalemGorunenAd|PERSONEL_ETIKETI|Personel gideri|atamaTur|modelSatirlari|kovaDagilimi|kalemKovalariKurus/;
+  it.each(["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/lib/mailTemplates.js", "src/components/settings/SettingsExport.jsx",
+    "src/components/settings/csvUtils.js", "src/components/Finance.jsx", "src/components/Documents.jsx", "src/components/stock/UretimFormu.jsx"])(
+    "%s atama ve makina maliyeti alanlarını okumaz", (f) => {
+      expect(oku(f)).not.toMatch(MALIYET);
+    });
+  it("müşteri detayında makina maliyeti yalnız ekrandaki maliyet kutusuna verilir, yazdırma yollarına girmez", () => {
+    const satirlar = oku("src/components/customers/CustomerDetailModal.jsx").split("\n").filter(l => /makinaKarlilik\(/.test(l));
+    expect(satirlar).toHaveLength(1);
+    expect(satirlar[0]).toContain("<MakinaMaliyetDetay detay={makinaKarlilik(");
+  });
+});

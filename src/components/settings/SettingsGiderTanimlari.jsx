@@ -52,6 +52,8 @@ export const SettingsGiderTanimlari = ({
     }
     const k = tutarCoz(form.kdvOrani);
     if (dav !== DAVRANIS.PERSONEL && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
+    // Bilinçli: tanımda atama yalnız normal davranışta (spec 0020 X5). Personel tanımına atama açılırsa her ayın maaşı
+    // aynı makinaya yüklenirdi; kalem formundaki atanabilirMi kapısı buraya taşınmaz (AC-16).
     const atamaVar = dav === DAVRANIS.NORMAL;
     if (atamaVar && form.atamaTur === ATAMA.MAKINA && form.makinaId == null) h.atama = "Makina seçilmedi.";
     if (atamaVar && form.atamaTur === ATAMA.MODEL) {
@@ -221,6 +223,7 @@ export const SettingsGiderTanimlari = ({
             <div style={{ flex: 1 }}><Field label="Başlangıç ayı *"><AyInput ariaLabel="Başlangıç ayı" value={form.baslangicAy} onChange={v => set({ baslangicAy: v })} /><HataMetni>{hatalar.baslangicAy}</HataMetni></Field></div>
             <div style={{ flex: 1 }}><Field label="Bitiş ayı"><AyInput ariaLabel="Bitiş ayı" value={form.bitisAy} onChange={v => set({ bitisAy: v })} /><HataMetni>{hatalar.bitisAy}</HataMetni><Ipucu>Opsiyonel, boşsa süresiz.</Ipucu></Field></div>
           </div>
+          {/* spec 0020 X5: tanımda atama yalnız normal davranışta, personelde kapalı (bkz. yukarıdaki doğrulama notu). */}
           {dav === DAVRANIS.NORMAL && (
             <Field label="Makina maliyeti ataması">
               <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller} tutar={form.tutar} />

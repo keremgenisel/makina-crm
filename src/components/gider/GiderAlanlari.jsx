@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icon, Select } from "../ui";
-import { Segment, HataMetni, Ipucu } from "../tasarim";
-import { ATAMA, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
+import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
+import { ATAMA, DAVRANIS, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
 import { fmtCur, trLower } from "../../lib/utils";
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
@@ -49,7 +49,7 @@ export const MakinaSecici = ({ makinaTur, makinaId, onChange, stock = [], custom
 };
 
 // Çok satırlı model dağılımı (R21, K31, K32): model + birim maliyet + adet; satır toplamı gösterimdir.
-export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar }) => {
+export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar, personel = false }) => {
   const d = modelSatirlariDogrula(tutarCoz(tutar).deger, satirlar);
   const set = (i, patch) => onChange(satirlar.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const hataOf = (i, alan) => d.hatalar.find(h => h.satir === i && h.alan === alan)?.mesaj;
@@ -90,6 +90,7 @@ export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar }
         <div><div style={{ color: "var(--n500, #64748b)" }}>{d.asim > 0 ? "Aşım" : "Fark → ortak gider"}</div>
           <b style={{ color: d.asim > 0 ? "var(--red700, #b91c1c)" : d.fark > 0 ? "var(--amb700, #b45309)" : "inherit" }}>{tl2(d.asim > 0 ? d.asim : d.fark)}</b></div>
       </div>
+      {personel && <Ipucu>Personel kaleminde birim maliyet, o modelin bir makinasına düşen işçiliktir; adet, kaç makina.</Ipucu>}
       {d.asim > 0 && <HataMetni>Satır toplamı kalem tutarını {tl2(d.asim)} aşıyor. Kayıt yapılamaz.</HataMetni>}
       {d.asim === 0 && d.fark > 0 && satirlar.length > 0 && <Ipucu>Dağıtılmayan {tl2(d.fark)} ortak gidere yazılır. Bu bir uyarıdır, kaydı engellemez.</Ipucu>}
     </div>
@@ -105,8 +106,9 @@ const ATAMA_SECENEKLERI = [
 const ATAMA_AD = { makina: "Makina", model: "Model", dagitma: "Dağıtılmasın" };
 
 // Atama seçici (R7, R20, R21, K25): üç seçenek birbirini dışlar. Seçim değişince önceki atama
-// temizlenir ve tek satırlık bilgi gösterilir (AC-76, AC-77). Yalnız normal davranışta çizilir (K38).
-export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar }) => {
+// temizlenir ve tek satırlık bilgi gösterilir (AC-76, AC-77). Kira kaleminde çizilmez (K38; spec 0020 R5).
+// Personelde makina seçilince kalemin tamamının o makinaya yükleneceği söylenir, kayıt engellenmez (spec 0020 R3).
+export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar, davranis = DAVRANIS.NORMAL }) => {
   const [bilgi, setBilgi] = useState("");
   const at = value.atamaTur || "";
   const degistir = (yeni) => {
@@ -123,6 +125,7 @@ export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar 
       {at === ATAMA.DAGITMA && <Ipucu>Makina maliyetine hiç girmez (ör. satılmak üzere yedek parça stoğuna alınan mal). Gider toplamında ve borç özetinde normal görünür.</Ipucu>}
       {at === ATAMA.MAKINA && (
         <div style={{ marginTop: 10 }}>
+          {davranis === DAVRANIS.PERSONEL && <div style={{ marginBottom: 10 }}><UyariSeridi aile="uyari" baslik="Bu kalemin tamamı seçilen makinaya yüklenecek." testId="personel-makina-uyari" /></div>}
           <MakinaSecici makinaTur={value.makinaTur} makinaId={value.makinaId} stock={stock} customers={customers}
             onChange={p => onChange({ ...p })} />
           <Ipucu>Stoktaki makinaya yapılan atama, makina stoktan seçilerek satıldığında o satışa takip edilir.</Ipucu>
@@ -130,7 +133,7 @@ export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar 
       )}
       {at === ATAMA.MODEL && (
         <div style={{ marginTop: 10 }}>
-          <ModelSatirlari satirlar={value.modelSatirlari || []} onChange={m => onChange({ modelSatirlari: m })} modeller={modeller} tutar={tutar} />
+          <ModelSatirlari satirlar={value.modelSatirlari || []} onChange={m => onChange({ modelSatirlari: m })} modeller={modeller} tutar={tutar} personel={davranis === DAVRANIS.PERSONEL} />
         </div>
       )}
     </div>

@@ -157,6 +157,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   dağıtılmayan kısım tanım gereği ortak giderdir. Bu üç alan yalnız **normal davranışlı** kalemlerde
   gösterilir; kira ve personel kalemleri her zaman ortak giderdir. Dağıtım kuralı 0002'nin konusudur; 0001
   yalnız model, birim maliyet ve adet bilgisini toplar.
+  **Güncelleme (2026-09-27, spec 0020):** personel davranışlı kalem de bu üç alanı taşır ve normal kalemle aynı
+  kurala uyar (personelde model dağılımının tabanı resmi + elden); yalnız kira her zaman ortak giderdir. Tekrarlayan
+  personel tanımında atama kapalı kalır (0020 X5). Bkz. `specs/done/0020-personel-giderinin-atanabilmesi.md`.
   **Toplam kontrolü:** satırların toplamı kalemin KDV hariç tutarına eşit değilse kullanıcıya fark gösterilir.
   **Eksik kalması serbesttir** ve uyarıdır, engel değildir: bir faturanın bir kısmı modellere dağıtılıp kalanı
   boş bırakılabilir, dağıtılmayan kısım ortak gider sayılır. **Aşım ise engellenir**: satır toplamı kalemin

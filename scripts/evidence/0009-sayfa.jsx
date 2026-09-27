@@ -24,7 +24,8 @@ import { PartSaleForm } from "../../src/components/PartSaleForm";
 import { YedekParcaSatisForm } from "../../src/components/YedekParcaSatisForm";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { TANIM_UZUN, TANIM_TURLERI, TANIM_TEDARIKCI, TANIM_CALISAN } from "../tests/layout/gider-tanim-veri.js";
-import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
+import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
+import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
 import * as Tasarim from "../../src/components/tasarim";
 
 const q = new URLSearchParams(location.hash.slice(1));
@@ -180,6 +181,22 @@ const TAHSIS_YP = [
   { id: 742, batchId: 740, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 1, birimFiyat: 350, currency: "TRY", tarih: "2026-09-05", faturaTipi: "Faturasız Yurtiçi", odendi: true, tahsisler: [] },
 ];
 
+// Spec 0020: makinaya ve modele atanmış personel kalemleri. Açıklamalar çalışan adı ya da boş: ekranda
+// "Personel gideri" görünmeli, ad görünmemeli.
+const per = (id, o) => k(id, { turId: 3, tutar: null, kdvOrani: 0, ...o });
+const PERSONEL_ATAMALI = [
+  per(8, { calisanId: 22, calisanAd: "Zeynep Arslan", aciklama: "Zeynep Arslan", resmiTutar: 28000, eldenTutar: 12000, atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }),
+  per(9, { calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "", resmiTutar: 20000, eldenTutar: 10000, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10000, adet: 2 }] }),
+];
+const maliyetDetayi = () => {
+  // Model havuzu kalem tarihinden sonra üretilen makinaya pay verir; 501 Ağustos'ta üretildi.
+  const giderler = [...GIDERLER, ...PERSONEL_ATAMALI.map(x => ({ ...x, tarih: "2026-08-01" }))];
+  const s = hesaplaMakinaMaliyetleri({ customers: MUSTERILER, stock: [], partStockLog: [], giderler, giderTurleri: TURLER, standartGiderler: STANDART,
+    standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari }, { bugun: "2026-09-23" });
+  return <div style={{ maxWidth: 620, margin: 24, padding: 18, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
+    <MakinaMaliyetDetay detay={makinaKarlilik(s, "musteri:501")} /></div>;
+};
+
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
@@ -271,6 +288,14 @@ const EKRANLAR = {
   // Spec 0030 (plan B10). "kaydir:metin" o metni içeren öğeyi görünür alana kaydırır (pencere içi kutular için).
   "gider-formu-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10" }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL}
     giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  // Spec 0020: personel kaleminin makina ataması (uyarı), Makina ve Model kırılımı, maliyet detayı.
+  "gider-formu-personel-makina": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10", resmiTutar: "30000", eldenTutar: "20000", atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} modeller={MODELLER} stock={[]} customers={MUSTERILER} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Makina maliyeti ataması"]],
+  "giderler-model-personel": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["Makina ve Model"]],
+  "maliyet-detay-personel": [maliyetDetayi(), []],
+  // Triyaj bulgu 1: dönem raporu kalem listesi, personel grubu açık; atanmış personel kaleminin atama sütunu makinayı,
+  // model dağılımı modeli gösterir (eskiden ikisi de "Ortak gider").
+  "giderler-rapor-personel-acik": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["dugme:Çalışanları göster", "kaydir:Zeynep Arslan"]],
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
@@ -313,6 +338,14 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
       const aranan = metin.slice(7);
       const hedef = [...document.querySelectorAll("label, div, span, h2, h3")].filter(e => e.textContent.trim().startsWith(aranan) && e.children.length <= 3).pop();
       if (hedef) hedef.scrollIntoView({ block: "center" }); else console.warn("kaydırılamadı: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("dugme:")) {
+      // Tablo satırı içindeki düğme: satıra değil düğmenin kendisine tıklanır (metni içeren son düğme).
+      const aranan = metin.slice(6);
+      const hedef = [...document.querySelectorAll("button")].filter(e => e.textContent.includes(aranan)).pop();
+      if (hedef) hedef.click(); else console.warn("düğme yok: " + metin);
       await bekle(300);
       continue;
     }

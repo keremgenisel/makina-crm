@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
 import { today, getKdvRateForDate } from "../lib/utils";
-import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf } from "../lib/gider";
+import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
 // Tek form: ekle ve düzenle. Tür davranışı alanları açar: kira → brüt/net yön, stopaj, hesap özeti;
-// personel → çalışan, resmi + elden (KDV ve tedarikçi yok, C19 notu, mükerrer uyarısı). Atama yalnız
-// normal davranışta. Doğrulama ve normalleştirme saf motordadır (giderKalemDogrula).
+// personel → çalışan, resmi + elden (KDV ve tedarikçi yok, C19 notu, mükerrer uyarısı). Atama kira dışında
+// açıktır (spec 0020); personelde dağıtım tabanı resmi + elden. Doğrulama ve normalleştirme saf motordadır (giderKalemDogrula).
 const numId = (v) => (v === "" || v == null ? null : (/^\d+$/.test(String(v)) ? Number(v) : v));
 const idMetni = (v) => (v == null ? "" : String(v));
 
@@ -39,7 +39,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
 
   const turDegis = (turId) => {
     const yeniDav = turMap.get(String(turId))?.davranis || DAVRANIS.NORMAL;
-    set({ turId, ...(yeniDav !== DAVRANIS.NORMAL ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) });
+    set({ turId, ...(!atanabilirMi(yeniDav) ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) });
   };
   const tarihDegis = (tarih) => set({ tarih, ...(form._kdvElle ? {} : { kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)) }) });
   // AC-37 / AC-54 (K14): çalışan seçilince bileşenler YALNIZ boş alana ön doldurulur; tanımsızsa boş kalır.
@@ -223,9 +223,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         )}
       </div>
 
-      {dav === DAVRANIS.NORMAL && (
+      {atanabilirMi(dav) && (
         <Field label="Makina maliyeti ataması">
-          <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller} tutar={form.tutar} />
+          <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller}
+            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : form.tutar} davranis={dav} />
           <HataMetni>{hatalar.filter(h => h.alan === "modelSatirlari" || h.alan === "makinaId").map(h => h.mesaj).find(Boolean)}</HataMetni>
         </Field>
       )}

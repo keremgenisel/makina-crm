@@ -154,4 +154,12 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     expect(screen.getByText("Bitiş ayı başlangıçtan önce olamaz.")).toBeTruthy();
     expect(st).toEqual([]);
   });
+  it("AC-16 (spec 0020 X5): tekrarlayan personel tanımında atama seçenekleri görünmez; normal tanımda görünür", () => {
+    render(<TanimHarness calisanlar={[{ id: 7, ad: "Ali" }]} />);
+    fireEvent.click(screen.getByText("Yeni Tanım"));
+    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "3" } });
+    expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
+    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
+    expect(screen.getByText("Makina maliyeti ataması")).toBeTruthy();
+  });
 });

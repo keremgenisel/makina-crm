@@ -161,6 +161,20 @@ describe("gider motoru: dört kova ve rapor (R8, R20, R21)", () => {
     expect(Math.round((makina + model + dagitma + ortak) * 100)).toBe(Math.round(r.toplam * 100));
     expect(r.kovalar).toEqual({ makina: 18200, model: 120000, dagitma: 60000, ortak: 14800 + 50000 + 20000 + 20000 });
   });
+  it("AC-7 (spec 0020): personel atamalı dönemde de dört kovanın toplamı dönem toplamına eşit", () => {
+    const per = (o) => kalem({ turId: 3, calisanId: 7, calisanAd: "Hasan", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, ...o });
+    const g2 = [
+      ...giderler,
+      per({ atamaTur: "makina", makinaTur: "stok", makinaId: 501 }),                                   // makinaya atanmış
+      per({ atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 15000, adet: 2 }] }), // kısmi model
+      per({ atamaTur: "dagitma" }),                                                                     // dağıtılmayan
+    ];
+    const r2 = hesaplaGiderRaporu({ giderler: g2, turler, tedarikciler, stock, customers, canliModeller: modeller, yururlukAy: "2026-06" }, { baslangic: "2026-09-01", bitis: "2026-09-30" }, { bugun: "2026-09-23" });
+    const { makina, model, dagitma, ortak } = r2.kovalar;
+    expect(Math.round((makina + model + dagitma + ortak) * 100)).toBe(Math.round(r2.toplam * 100));
+    expect(r2.toplam).toBe(r.toplam + 150000);
+    expect(r2.kovalar).toEqual({ makina: 18200 + 50000, model: 120000 + 30000, dagitma: 60000 + 50000, ortak: r.kovalar.ortak + 20000 });
+  });
   it("AC-80: kısmi dağıtımda yalnız kalan kısım ortak kovaya girer", () => {
     expect(r.kismiOrtak).toHaveLength(1);
     expect(r.kismiOrtak[0].tutar).toBe(20000);

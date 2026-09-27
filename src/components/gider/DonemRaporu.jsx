@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA } from "../../lib/gider";
+import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
@@ -201,7 +201,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const kdvTop = suz.reduce((a, k) => a + kalemKdv(k, dav(k)), 0);
 
   const atamaHucre = (k) => {
-    if (dav(k) !== DAVRANIS.NORMAL || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
+    if (!atanabilirMi(dav(k)) || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
     if (k.atamaTur === ATAMA.DAGITMA) return <Rozet renk="camgobegi">Dağıtılmasın</Rozet>;
     if (k.atamaTur === ATAMA.MODEL) {
       const satirlar = k.modelSatirlari || [];
