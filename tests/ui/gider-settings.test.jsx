@@ -137,7 +137,8 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
   it("K28: kapatılmış tanım 'Kapatıldı' ile listelenir; üretilen aylar salt görünür", () => {
     render(<TanimHarness t0={[{ id: 92, turId: 3, ad: "Murat", calisanId: 9, baslangicAy: "2026-06", bitisAy: "2026-08", kapatildi: true, uretilenAylar: ["2026-06", "2026-07", "2026-08"] }]} />);
     expect(screen.getByText(/Kapatıldı · çalışan silindi/)).toBeTruthy();
-    expect(screen.getByText("2026-06, 2026-07, 2026-08")).toBeTruthy();
+    // Spec 0030 R10 (C4 istisnası, B6): sütun sayıya indi; tam liste ipucunda, aynı sıkılıkla.
+    expect(screen.getByText("3 ay").getAttribute("title")).toBe("2026-06, 2026-07, 2026-08");
   });
   it("tanım formu: tutar sıfır ve bitiş < başlangıç reddedilir", () => {
     let st;

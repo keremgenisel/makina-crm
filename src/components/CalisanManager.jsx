@@ -93,7 +93,7 @@ export const CalisanManager = ({
   return (
     <div>
       {maliyetAcik && (
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", background: "#faf7ff", border: "1px solid #ede9fe", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", background: "var(--purBg3, #faf7ff)", border: "1px solid var(--purBg2, #ede9fe)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
           <div style={{ width: 240 }}>
             <Field label="Varsayılan resmi aylık işveren maliyeti">
               <TutarInput ariaLabel="Varsayılan resmi aylık işveren maliyeti" value={varsayilanMetin} onChange={setVarsayilanMetin} />

@@ -228,7 +228,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
             </span>
           </label>
           {form.odendi && (
-            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
                 <Field label="Ödeme Yöntemi">
                   <Select value={form.yontem || "Nakit"} onChange={e => {
@@ -300,7 +300,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
         </Field>
 
         {/* Teslim detayları (teslim şekline göre) — panodan bağımsız, boş bırakılabilir. */}
-        <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+        <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
           <div style={{ display: "grid", gridTemplateColumns: fabrikaTeslim ? "1fr" : "1.4fr 1.4fr 1fr", gap: 8 }}>
             {!fabrikaTeslim && <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />}
             {!fabrikaTeslim && <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />}

@@ -10,6 +10,12 @@
         "rapor": "docs/evidence/0015-piksel-raporu.json",
         "ekran": "katalog-calisan",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "katalog-calisan",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/Documents.jsx": [
@@ -46,6 +52,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "gider-formu"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -139,6 +151,18 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "gider-formu"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -231,6 +255,18 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "gider-tanim-tablo",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/settings/SettingsImport.jsx": [
@@ -519,6 +555,12 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-yeni-sahip",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "musteri-detay-tahsis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -526,6 +568,12 @@
         "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "servis-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "servis-formu-odendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/PartSaleForm.jsx": [
@@ -533,6 +581,12 @@
         "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "kalip-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "kalip-formu-odendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -540,6 +594,18 @@
         "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-odendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-kargo",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -628,6 +694,12 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "ekran": "musteri-detay-tahsis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [

@@ -51,6 +51,7 @@ export const MachineTimeline = ({
   onTogglePartSaleCekTahsil = null,   // Extra Kalıp çeki tahsil edildi/beklemede toggle
   onGoYedekParca = null, // bayiden tahsis edilen (salt-okunur) satıra tıklayınca Stok'taki satışa git
   onPrintYedekParcaEtiket = null, // müşterinin kendi yedek parça satışı için kargo etiketi yazdır
+  onPrintTahsisEtiket = null, // spec 0030: bayi/dış firma alımından bu makinaya tahsis edilen parçanın kargo etiketi (satış kimliğiyle)
   onEditPayment,
   onToggleCekTahsil,
   onDeletePayment,
@@ -172,9 +173,18 @@ export const MachineTimeline = ({
                 })() : ev.kind === "part" && ev.ypTahsisId ? (
                   // Bayi/dış firma alımından bu makinaya TAHSİS edilen parça (salt-okunur). Tıklayınca
                   // Stok > Yedek Parça Satışı'nda o satışa gidilir (burada düzenlenmez; borçlusu bayi).
+                  // Etiket düğmesi (spec 0030): satış kimliğiyle; parti pencerede çözülür, etiket partinin tamamı.
+                  <>
                   <span onClick={onGoYedekParca ? () => onGoYedekParca(ev.ypTahsisId) : undefined}
                     title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
                     style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: onGoYedekParca ? "pointer" : "default", textDecoration: onGoYedekParca ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                  {onPrintTahsisEtiket && (
+                    <button onClick={() => onPrintTahsisEtiket(ev.ypTahsisId)} style={YAZDIR_BTN}
+                      title="Kargo Etiketi Yazdır: alıcı parçayı satın alan bayi/firmadır; etiket bu kargonun bütün kalemlerini kapsar.">
+                      <Icon name="print" size={11} /> Etiket
+                    </button>
+                  )}
+                  </>
                 ) : ev.kind === "payment" && payment ? (
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}

@@ -142,3 +142,12 @@ export function yeniYedekParcaSatisCoklu(form, deps) {
   }
   return { ok: true, ids, n: satirlar.length };
 }
+
+// Spec 0030 R5/R6: bir satış kimliğinden kargo partisini çözer (etiket partinin tamamını kapsar). batchId varsa silinmemiş
+// bütün kardeşler, yoksa yalnız o satış; satış yoksa ya da silinmişse boş dizi (düğme çizilmez).
+export function satisPartisi(satislar, satisId) {
+  const liste = (satislar || []).filter(s => s && !s.deletedAt);
+  const s = liste.find(x => String(x.id) === String(satisId));
+  if (!s) return [];
+  return s.batchId != null ? liste.filter(x => x.batchId === s.batchId) : [s];
+}

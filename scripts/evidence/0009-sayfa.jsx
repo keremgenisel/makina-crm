@@ -16,6 +16,14 @@ import { Stock } from "../../src/components/Stock";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
 import { MailComposeModal } from "../../src/components/MailCompose";
+import { GiderForm } from "../../src/components/GiderForm";
+import { Dashboard } from "../../src/components/Dashboard";
+import { ServisPanosu } from "../../src/components/ServisPanosu";
+import { ServiceForm } from "../../src/components/ServiceForm";
+import { PartSaleForm } from "../../src/components/PartSaleForm";
+import { YedekParcaSatisForm } from "../../src/components/YedekParcaSatisForm";
+import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
+import { TANIM_UZUN, TANIM_TURLERI, TANIM_TEDARIKCI, TANIM_CALISAN } from "../tests/layout/gider-tanim-veri.js";
 import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 import * as Tasarim from "../../src/components/tasarim";
 
@@ -161,6 +169,24 @@ const detay = (id, o = {}) => <Customers customers={[DETAY_MAKINA, DETAY_IKINCI,
   gorusmeler={DETAY_GORUSME} setGorusmeler={bos} dosyalar={DETAY_DOSYA} setDosyalar={bos} yedekParcaSatislar={[]} setYedekParcaSatislar={bos}
   calisanlar={CAL} kalipDefs={[{ id: 1, ad: "Hamburger" }]} initialDetailId={id} {...o} />;
 
+// Spec 0030: karanlık tema renk borcu ve tahsis satırının etiket düğmesi.
+const KK_ODEME = [{ id: 701, customerId: 500, tarih: "2026-09-20", tutar: "50000", yontem: "Kredi Kartı", currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2030-01-01" } }];
+const DIS_FIRMA_YP = [{ id: 711, aliciTipi: "bayi", disFirma: true, disFirmaAd: "Usta Servis", partId: 7, miktar: 3, birimFiyat: 350, currency: "TRY", tarih: "2026-09-10", faturaTipi: "Faturasız Yurtiçi", odendi: false, tahsisler: [] }];
+const PANO_KALIP = [{ id: 721, tur: "Kalıp", customerId: 500, ad: "Köfte Kalıbı", tarih: "2026-09-18", ucret: 500, currency: "TRY", odendi: false, faturaTipi: "Faturasız Yurtiçi", kargoDurum: "Hazırlanıyor", olusturmaZamani: "2026-09-18T09:00:00" }];
+const PANO_YP = [{ id: 731, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-19", faturaTipi: "Faturasız Yurtiçi", odendi: false, tahsisler: [],
+  kargoDurum: "Hazırlanıyor", teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatSehir: "İzmir", teslimatIlce: "Bornova" }];
+const TAHSIS_YP = [
+  { id: 741, batchId: 740, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-05", faturaTipi: "Faturasız Yurtiçi", odendi: true, tahsisler: [{ miktar: 2, customerId: 601, serialNo: "D-1", tarih: "2026-09-06" }] },
+  { id: 742, batchId: 740, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 1, birimFiyat: 350, currency: "TRY", tarih: "2026-09-05", faturaTipi: "Faturasız Yurtiçi", odendi: true, tahsisler: [] },
+];
+
+// Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
+function FormEkrani({ Bilesen, ilk, ...props }) {
+  const [form, setForm] = useState(ilk);
+  return <Bilesen form={form} setForm={setForm} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    factory={{ name: "Altuntaş Makina" }} kalipDefs={[{ id: 1, ad: "Hamburger" }]} onSave={bos} onCancel={bos} {...props} />;
+}
+
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -242,6 +268,25 @@ const EKRANLAR = {
   "musteri-detay-bolumler": [detay(601, { dosyaCevrimdisi: true }), ["*Görüşmeler (", "*Dosyalar ("]],
   "musteri-detay-bos": [detay(603), ["*Görüşmeler (", "*Dosyalar ("]],
   "musteri-detay-yeni-sahip": [detay(601), ["~Yeni Sahip"]],
+  // Spec 0030 (plan B10). "kaydir:metin" o metni içeren öğeyi görünür alana kaydırır (pencere içi kutular için).
+  "gider-formu-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10" }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL}
+    giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
+  "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
+  "stok-tahsis-modali": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
+    dealers={DEALERS} yedekParcaSatislar={DIS_FIRMA_YP} setYedekParcaSatislar={bos} defaultSubTab="yedeksatis" showToast={bos} />, ["*Makinaya tahsis et"]],
+  "servis-formu-odendi": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle"
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", degisenParcalar: [] }} />, ["kaydir:Ödeme Yöntemi"]],
+  "kalip-formu-odendi": [<FormEkrani Bilesen={PartSaleForm} title="Kaydı Düzenle"
+    ilk={{ id: 751, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturasız Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "500", odendi: true, yontem: "Nakit", fabrikaTeslim: false, kaliplar: [] }} />, ["kaydir:Ödeme Yöntemi"]],
+  "yedek-parca-formu-odendi": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yedek Parça Satışını Düzenle"
+    ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Ödeme Yöntemi"]],
+  "yedek-parca-formu-kargo": [stokEkrani("yedeksatis"), ["~Yeni Satış", "kaydir:Kargoyu Veren Kişi"]],
+  "musteri-detay-tahsis": [detay(601, { yedekParcaSatislar: TAHSIS_YP }), ["kaydir:Yedek Parça (Bayi)"]],
+  // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
+  "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
+    calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);
@@ -261,6 +306,13 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
       const el = document.querySelector(`input[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor)) || document.querySelector(`input[placeholder="${etiket}"]`);
       if (el) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("input", { bubbles: true })); }
       else console.warn("alan yok: " + etiket);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("kaydir:")) {
+      const aranan = metin.slice(7);
+      const hedef = [...document.querySelectorAll("label, div, span, h2, h3")].filter(e => e.textContent.trim().startsWith(aranan) && e.children.length <= 3).pop();
+      if (hedef) hedef.scrollIntoView({ block: "center" }); else console.warn("kaydırılamadı: " + metin);
       await bekle(300);
       continue;
     }

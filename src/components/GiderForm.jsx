@@ -122,7 +122,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
       {dav === DAVRANIS.PERSONEL && (
         <>
           {/* C19: form açık olduğu sürece görünen, kapatılamayan not (AC-57, AC-58: engel değil) */}
-          <div style={{ display: "flex", gap: 10, background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12.5, lineHeight: 1.5, color: "#3b0764" }}>
+          <div style={{ display: "flex", gap: 10, background: "var(--purBg, #f5f3ff)", border: "1px solid var(--purBr, #ddd6fe)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12.5, lineHeight: 1.5, color: "var(--pur900, #3b0764)" }}>
             <Icon name="warning" size={16} />
             <div><b>Girilen tutar SGK ve işsizlik primlerini içerir.</b> SGK prim ödemesini ve maaş transferini ayrıca gider olarak girmeyin; aynı para iki kez sayılır.</div>
           </div>
@@ -143,7 +143,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             <div style={{ flex: 1 }}><Field label="Resmi işveren maliyeti"><TutarInput ariaLabel="Resmi işveren maliyeti" value={form.resmiTutar} onChange={v => set({ resmiTutar: v })} invalid={!!hata("resmiTutar")} /><HataMetni>{hata("resmiTutar")}</HataMetni></Field></div>
             <div style={{ flex: 1 }}><Field label="Elden ödenen"><TutarInput ariaLabel="Elden ödenen" value={form.eldenTutar} onChange={v => set({ eldenTutar: v })} invalid={!!hata("eldenTutar")} /><HataMetni>{hata("eldenTutar")}</HataMetni></Field></div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", background: "#faf7ff", border: "1px solid #ede9fe", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", background: "var(--purBg3, #faf7ff)", border: "1px solid var(--purBg2, #ede9fe)", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
             <span style={{ fontSize: 13, color: "var(--n600, #475569)", fontWeight: 600 }}>Kalem tutarı (resmi + elden)</span><b style={{ fontSize: 16 }}>{tl2(personelToplam)}</b>
           </div>
           <Ipucu>Personel kaleminde KDV oranı ve tedarikçi alanı yoktur. Boş bileşen sıfır sayılır.</Ipucu>

@@ -10,6 +10,10 @@ Ortak kurallar:
 - Stil satır içidir (CSS framework, CSS module, styled-components yok).
 - Renkler tema değişkenlerinden gelir: `var(--token, #yedek)`. Tek istisna gölgelerdir (`rgba(...)`); temada gölge
   değişkeni yok.
+- **Her `var(--ad)` `src/lib/theme.js`'te tanımlı olmalıdır** (spec 0030). Tanımsız ad hata vermez, sessizce yedek açık renge
+  düşer ve karanlık temada kutuyu beyaz bırakır. Yeni bir renk gerekiyorsa temaya eklenir: aydınlık değeri bugünkü yedek
+  renk (görünüm değişmesin), karanlık değeri aynı ailenin karanlık tonlarına oturur. `tests/tema-degisken.test.js` bunu her
+  koşuda denetler; çalışma anında kurulan adlar (`var(--hk${n})`) o testte adıyla listelenir.
 - `data-testid` hiçbir bileşenin içinde sabit yazılmaz; gerekiyorsa çağıran `testId` ile verir.
 - Kullanıcıya görünen metin çağırandan gelir ve Türkçedir.
 - Bir ekran bu bileşenleri kullanmaya başladığında görünümünün değişmediği önce/sonra görüntüsüyle kanıtlanır
@@ -103,7 +107,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
-**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:73` (eylem yuvası, alt başlık)
+**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:74` (eylem yuvası, alt başlık)
 
 ## BolumBasligi
 

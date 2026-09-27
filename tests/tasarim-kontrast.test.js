@@ -65,3 +65,38 @@ describe("AC-8: Karanlık temada altı bileşenin de metni okunabilir ve kenarl�
     for (const t of new Set([...METIN.flatMap(([, , a, b]) => [a, b]), ...KENAR.flatMap(([, a, b]) => [a, b])])) expect(kaynak, t).toContain(`var(--${t},`);
   });
 });
+
+// Spec 0030 R2 (plan B5): sözlük dışı ekran renkleri. Bu blok yalnız eklendi, yukarıdaki tablolar değişmedi. Renkler
+// sözlükte olmadığı için "kaynakta kullanılıyor" denetimi tasarim.jsx'e değil ilgili ekran dosyalarına bakar.
+// Metin eşiği yukarıdakiyle aynı; kenarlıkta karanlık oran aydınlıktakinden düşük olmaz (aydınlık görünüm değişmediği için
+// bugünkü değer taban: çalışan kutusunun kenarlığı aydınlıkta 1.12).
+describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => {
+  // [yer, ön plan, zemin, kullanıldığı dosya]
+  const METIN_0030 = [
+    ["Anasayfa kredi kartı rozeti", "purTx", "purBg2", "src/components/Dashboard.jsx"],
+    ["Tahsis/Stok 'anlaşmasız servis' rozeti", "pur700", "purBg2", "src/components/stock/TahsisModal.jsx"],
+    ["Pano KALIP rozeti", "purTx", "purBg", "src/components/KargoPanosu.jsx"],
+    ["Gider personel rozeti", "pur700", "purBg", "src/components/gider/GiderAlanlari.jsx"],
+    ["Gider formu personel notu", "pur900", "purBg", "src/components/GiderForm.jsx"],
+    ["Gider formu kalem tutarı kutusu", "n600", "purBg3", "src/components/GiderForm.jsx"],
+    ["Farklı teslimat adresi vurgusu", "brand", "ambBg3", "src/components/KargoPanosu.jsx"],
+  ];
+  const KENAR_0030 = [
+    ["Pano KALIP / personel rozeti", "purBr", "purBg", "src/components/gider/GiderAlanlari.jsx"],
+    ["Çalışan ve gider formu kutusu", "purBg2", "purBg3", "src/components/CalisanManager.jsx"],
+  ];
+  it.each(METIN_0030)("%s: karanlıkta WCAG AA ya da aydınlıktakinin en az yüzde 95'i", (_y, on, zemin) => {
+    expect(T[on], on).toBeTruthy();
+    expect(T[zemin], zemin).toBeTruthy();
+    expect(oran(T[on].koyu, T[zemin].koyu)).toBeGreaterThanOrEqual(esik(oran(T[on].acik, T[zemin].acik)));
+  });
+  it.each(KENAR_0030)("%s kenarlığı: karanlıkta aydınlıktakinden az ayırt edilir değil", (_y, kenar, zemin) => {
+    expect(oran(T[kenar].koyu, T[zemin].koyu)).toBeGreaterThanOrEqual(oran(T[kenar].acik, T[zemin].acik));
+  });
+  it("ölçülen çiftler ilgili ekran dosyasında gerçekten kullanılıyor", () => {
+    for (const [y, a, b, f] of [...METIN_0030, ...KENAR_0030]) {
+      const s = readFileSync(path.join(__dirname, "..", f), "utf-8");
+      for (const t of [a, b]) expect(s, `${y}: ${t}`).toContain(`var(--${t},`);
+    }
+  });
+});

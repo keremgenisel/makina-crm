@@ -3,12 +3,16 @@
 // dönüşümden sonra da aynı kalmalı: başlıklar ve sayılar, olay sırası, katlanma (tıklama, odak, dosya süzgeci), boş durum
 // metinleri, düğmeler ve mesaj metinleri. H2 gereği büyük harfle yazılmış iki başlık olağan yazıma döner; iki yazım da kabul
 // edilir (Türkçe İ/ı yüzünden /i bayrağı kullanılamaz).
-import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Customers } from "../../src/components/Customers";
 
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
+// Spec 0030 R12 (saat kaydırma taraması): garanti bitişi (2027-01-10) geçince olay başlığı "Garanti Süresi Doldu" olur;
+// "bugün" sabitlenir, iddialar aynı kalır.
+beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-25T12:00:00Z")); });
+afterEach(() => { vi.useRealTimers(); });
 
 const var_ = (re) => screen.queryAllByText(re).length > 0;
 const once = (a, b) => !!(screen.getAllByText(a)[0].compareDocumentPosition(screen.getAllByText(b)[0]) & Node.DOCUMENT_POSITION_FOLLOWING);

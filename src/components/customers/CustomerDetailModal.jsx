@@ -26,7 +26,7 @@ import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
-import { yeniYedekParcaSatisCoklu, yedekParcaRec } from "../../lib/yedekParcaSatis";
+import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi } from "../../lib/yedekParcaSatis";
 import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
@@ -1061,6 +1061,7 @@ export const CustomerDetailModal = ({
               onTogglePartSaleCekTahsil={setPartSales ? togglePartSaleCekTahsil : null}
               onGoYedekParca={onGoYedekParca}
               onPrintYedekParcaEtiket={(grup) => yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory })}
+              onPrintTahsisEtiket={(satisId) => { const grup = satisPartisi(yedekParcaSatislar, satisId); if (grup.length) yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory }); }}
               onEditPayment={openEditPayment}
               onToggleCekTahsil={toggleCekTahsil}
               onDeletePayment={setConfirmDeletePaymentId}

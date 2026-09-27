@@ -503,7 +503,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             </span>
           </label>
           {form.odendi && (
-            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
                 <Field label="Ödeme Yöntemi">
                   <Select value={form.yontem || "Nakit"} onChange={e => {

@@ -1,0 +1,160 @@
+[
+  {
+    "ad": "gider-formu-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 236421
+  },
+  {
+    "ad": "gider-formu-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 4352
+  },
+  {
+    "ad": "giderler-rapor-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 4352
+  },
+  {
+    "ad": "katalog-calisan-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-calisan-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 220330
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 3049
+  },
+  {
+    "ad": "servis-pano-kalip-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-pano-kalip-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 3834
+  },
+  {
+    "ad": "stok-tahsis-modali-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-tahsis-modali-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 6922
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 194618
+  },
+  {
+    "ad": "kalip-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 415220
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 374027
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 415319
+  },
+  {
+    "ad": "ayarlar-gidertanim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 795224
+  },
+  {
+    "ad": "ayarlar-gidertanim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 781865
+  },
+  {
+    "ad": "gider-tanim-tablo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 418923
+  },
+  {
+    "ad": "gider-tanim-tablo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 404870
+  },
+  {
+    "ad": "musteri-detay-tahsis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 139290
+  },
+  {
+    "ad": "musteri-detay-tahsis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 141694
+  }
+]

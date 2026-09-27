@@ -79,6 +79,10 @@ const TOKENS = [
   // Sarı uyarı (taslak şeridi), mor bilgi, teal/yeşil/mavi koyu metinler
   ["warnBg", "#fef9c3", "#322610"], ["warnBr", "#fde047", "#6b551a"], ["warnTx", "#854d0e", "#f6c453"],
   ["purBg", "#f5f3ff", "#241a33"], ["purTx", "#7c3aed", "#b794f6"],
+  // Spec 0030 R1/R2: kaynakta kullanılıp temada tanımsız kalan mor adlar (karanlıkta açık yedeğe düşüyordu). Aydınlık
+  // değerleri bugünkü yedek/sabit renklerdir (görünüm değişmez); karanlık değerler purBg/purTx ailesine oturur.
+  ["purBg2", "#ede9fe", "#2d2140"], ["purBg3", "#faf7ff", "#1f1729"], ["purBr", "#ddd6fe", "#4c3a6b"],
+  ["pur700", "#6d28d9", "#c9a9ff"], ["pur900", "#3b0764", "#e4d6fc"],
   ["teal", "#0d9488", "#2dd4bf"], ["cyan", "#0891b2", "#38bdf8"], ["emerald", "#059669", "#34d399"],
   ["tealBg", "#f0fdfa", "#12241f"], ["tealBr", "#99f6e4", "#2f5a4f"], ["cyanBg", "#ecfeff", "#10262e"], // teal/cyan tint zeminleri (rozet arka planı)
   ["emerald2", "#047857", "#34d399"], ["teal2", "#0f766e", "#2dd4bf"], ["blue2", "#0369a1", "#60a5fa"],

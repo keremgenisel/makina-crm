@@ -105,7 +105,7 @@ export const SettingsGiderTanimlari = ({
   const tutarHucre = (t) => {
     const dav = davOf(t.turId);
     if (dav === DAVRANIS.PERSONEL) return <span style={{ color: "var(--n500, #64748b)" }}>çalışan kaydından<br /><span style={{ fontSize: 11 }}>resmi + elden</span></span>;
-    return <><b>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div></>;
+    return <><b style={{ whiteSpace: "nowrap" }}>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div></>;
   };
   const atamaHucre = (t) => {
     if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
@@ -134,7 +134,8 @@ export const SettingsGiderTanimlari = ({
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)", textAlign: "left", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
-              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç", "Bitiş", "Atama", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{h}</th>)}
+              {/* Spec 0030 R8/R10: başlıklar sarar; başlangıç ile bitiş tek sütun; "üretilen aylar" sayıya iner (tam liste ipucunda). */}
+              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Atama", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 6px", verticalAlign: "bottom" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {sirali.map(t => {
@@ -143,18 +144,17 @@ export const SettingsGiderTanimlari = ({
                 const bitti = t.bitisAy && t.bitisAy < buAy;
                 return (
                   <tr key={t.id} style={{ borderTop: "1px solid var(--n150, #f1f5f9)", opacity: bitti ? 0.7 : 1 }}>
-                    <td style={{ padding: "10px 12px" }}><div style={{ fontWeight: 600 }}>{t.ad}</div>
+                    <td style={{ padding: "10px 6px" }}><div style={{ fontWeight: 600 }}>{t.ad}</div>
                       {t.kapatildi && <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>{u.length ? "Kapatıldı · çalışan silindi" : "Üretilmeden kapatıldı"}</div>}
                       {!t.kapatildi && t.baslangicAy > buAy && <div style={{ fontSize: 11, color: "var(--blu600, #2563eb)", marginTop: 3 }}>{t.baslangicAy} ayında başlar</div>}
                     </td>
-                    <td style={{ padding: "10px 12px" }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{turMap.get(String(t.turId))?.ad || "(türsüz)"}<DavranisRozeti davranis={d} /></div></td>
-                    <td style={{ padding: "10px 12px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap" }}>{tutarHucre(t)}</td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{t.baslangicAy}</td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{t.bitisAy || "—"}</td>
-                    <td style={{ padding: "10px 12px" }}>{atamaHucre(t)}</td>
-                    <td style={{ padding: "10px 12px", fontSize: 12 }}>{u.length ? <>{u.slice(-3).join(", ")}{u.length > 3 ? ` +${u.length - 3}` : ""}</> : <span style={{ color: "var(--n500, #64748b)" }}>Henüz üretilmedi</span>}</td>
-                    <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "10px 6px" }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{turMap.get(String(t.turId))?.ad || "(türsüz)"}<DavranisRozeti davranis={d} /></div></td>
+                    <td style={{ padding: "10px 6px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
+                    <td style={{ padding: "10px 6px", textAlign: "right" }}>{tutarHucre(t)}</td>
+                    <td style={{ padding: "10px 6px", whiteSpace: "nowrap" }}>{t.baslangicAy}<div style={{ color: "var(--n500, #64748b)" }}>– {t.bitisAy || "—"}</div></td>
+                    <td style={{ padding: "10px 6px" }}>{atamaHucre(t)}</td>
+                    <td style={{ padding: "10px 6px", fontSize: 12 }}>{u.length ? <span title={u.join(", ")} style={{ whiteSpace: "nowrap", cursor: "help", borderBottom: "1px dotted var(--n400, #94a3b8)" }}>{u.length} ay</span> : <span style={{ color: "var(--n500, #64748b)" }}>Henüz üretilmedi</span>}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", whiteSpace: "nowrap" }}>
                       {yonetebilir && <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                         <Btn small variant="ghost" onClick={() => ac(t)} title="Düzenle"><Icon name="edit" size={12} /></Btn>
                         <Btn small variant="danger" onClick={() => setSilinecek(t)} title="Sil"><Icon name="trash" size={12} /></Btn>

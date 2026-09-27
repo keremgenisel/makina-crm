@@ -172,7 +172,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </div>
 
         {/* SAĞ İÇERİK — İşlem Geçmişi ve Parça/Yedek Parça tabloları geniş, tam görünsün */}
-        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca") ? 1200 : 760 }}>
+        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca" || settingsTab === "gidertanim") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: msg.type === "ok" ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", color: msg.type === "ok" ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)" }}>
