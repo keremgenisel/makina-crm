@@ -33,7 +33,7 @@ try {
     customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, satisKuru: 38.5, uretimTarihi: "2026-08-01",
       odemePlani: [{ id: 1, vadeTarihi: "2026-09-01", tutar: 1000, odemeId: null }] }],
     teklifler: [{ id: 9, type: "teklif", no: "T-9", firma: "B", aliciTipi: "bayi", dealerId: 2, nihaiMusteriId: 1, uretilenKalemler: ["a"], satirlar: [] }],
-    stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05" }],
+    stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05", partiId: 35 }],
     uretimFormlari: [{ id: 7, baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-05", kapali: true, not: "n", satirlar: [] }],
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
@@ -52,6 +52,7 @@ try {
     giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
       taksitler: [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-07-15", tutar: 600, odendi: true, odemeTarihi: "2026-07-15" }, { id: 7002, hedef: "ana", sira: 2, vade: "2026-08-15", tutar: 600, odendi: false, odemeTarihi: null }] }],
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
+    uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }],
     payments: [{ id: 10, customerId: 1, tarih: "2026-07-22", tutar: 5000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
       mailTemplates: { teklifProforma: { konu: "K", metin: "M" } },
@@ -77,6 +78,7 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
   const ok = t?.aliciTipi === "bayi" && t?.dealerId === 2 && t?.nihaiMusteriId === 1 && t?.uretilenKalemler?.[0] === "a" && y?.teklifId === 9 && y?.teklifKalemId === "a";
   return ok;
 })());
+check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 1 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
 check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
 check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {
   const c = (blob.customers || []).find(x => x.id === 1);

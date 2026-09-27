@@ -70,17 +70,19 @@ const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, b
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [] }) {
   const [giderler, setGiderler] = useState(g0);
+  const [partiler, setPartiler] = useState(p0);
   const [tanimlar, setTanimlar] = useState(t0);
   const [ted, setTed] = useState(TED);
   const [standart, setStandart] = useState(STANDART);
-  const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: MUSTERILER, stock: [], partStockLog: [], giderler, giderTurleri: turler, standartGiderler: standart,
-    standardModels: MODELLER, customModels: [], giderAyarlari: ayar.giderAyarlari }, { bugun: "2026-09-23" });
+  const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: musteriler, stock: stok, partStockLog: [], giderler, giderTurleri: turler, standartGiderler: standart,
+    standardModels: MODELLER, customModels: [], giderAyarlari: ayar.giderAyarlari, uretimPartileri: partiler }, { bugun: "2026-09-23" });
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed} standartGiderler={standart} setStandartGiderler={setStandart}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={MUSTERILER} stock={[]} factory={{ name: "Altuntaş Makina" }} rates={{}} />;
+    satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
+    uretimPartileri={partiler} setUretimPartileri={setPartiler} />;
 }
 
 const DEALERS = [{ id: 3, name: "Ege Bayi", contact: "Veli Usta", phone: "0232 111", email: "ege@bayi.com", adres: "Bornova", country: "Türkiye", city: "İzmir", bayiMi: true }];
@@ -207,6 +209,22 @@ const KIRA_K = k(32, { turId: 1, tutar: 20000, netTutar: 16000, girisYonu: "brut
     tks(3204, "stopaj", 3, "2026-10-26", 1000), tks(3205, "stopaj", 4, "2026-11-26", 1000)] });
 const TAKSIT_GIDERLER = [...GIDERLER, TAKSITLI_K, KIRA_K];
 
+// Spec 0022: üretim partileri. Kapalı parti (Haz–Ağu, iki satılmış makina; Ağustos anlık görüntüsü bugünkünden
+// küçük: kapanıştan sonra gider eklenmiş) ve açık parti (Eylül, stokta iki makina).
+const P_KAPALI = { id: 901, ad: "2026-1", baslangicAy: "2026-06", bitisAy: "2026-08", aciklama: "Yaz üretimi", kapanmaZamani: "2026-09-01T10:00:00",
+  kapanisOrtaklari: { "2026-06": 0, "2026-07": 0, "2026-08": 1500000 } };
+const P_ACIK = { id: 902, ad: "2026-2", baslangicAy: "2026-09", bitisAy: null, aciklama: "Sonbahar üretimi" };
+const PARTI_MUSTERI = MUSTERILER.map(c => ({ ...c, partiId: 901 }));
+const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "2026-09-10", partiId: 902 }, { id: 9202, model: "AK120_DSC", serialNo: "S-4", addedDate: "2026-09-15", partiId: 902 },
+  { id: 9203, model: "AK100", serialNo: "S-5", addedDate: "2026-09-18" }];
+const partiEkrani = (adimlar) => [<GiderEkrani p0={[P_KAPALI, P_ACIK]} musteriler={PARTI_MUSTERI} stok={PARTI_STOK} />, adimlar];
+const partiMaliyetDetayi = (anahtar) => {
+  const s = hesaplaMakinaMaliyetleri({ customers: PARTI_MUSTERI, stock: PARTI_STOK, partStockLog: [], giderler: GIDERLER, giderTurleri: TURLER, standartGiderler: STANDART,
+    standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri: [P_KAPALI, P_ACIK] }, { bugun: "2026-09-23" });
+  return <div style={{ maxWidth: 620, margin: 24, padding: 18, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
+    <MakinaMaliyetDetay detay={makinaKarlilik(s, anahtar)} /></div>;
+};
+
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
@@ -314,6 +332,15 @@ const EKRANLAR = {
   "giderler-odeme-plani": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["dugme:Ödeme planı"]],
   "anasayfa-hatirlatma-taksit": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
     giderYetki giderler={TAKSIT_GIDERLER} setGiderler={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri"]],
+  // Spec 0022: üretim partisi.
+  "giderler-uretim-partileri": partiEkrani(["Üretim Partileri"]),
+  "giderler-uretim-partisi-formu": partiEkrani(["Üretim Partileri", "~Yeni Üretim Partisi"]),
+  "giderler-karlilik-parti": partiEkrani(["Makina Kârlılığı"]),
+  "giderler-model-parti-degisim": partiEkrani(["Makina ve Model", "kaydir:Kapanmış partilerin aylarında"]),
+  "maliyet-detay-parti-acik": [partiMaliyetDetayi("stok:9201"), []],
+  "maliyet-detay-parti-kapali": [partiMaliyetDetayi("musteri:500"), []],
+  "stok-makina-parti": [<Stock factory={{ name: "Altuntaş Makina" }} stock={PARTI_STOK} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]} dealers={DEALERS}
+    yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],

@@ -339,6 +339,21 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, taksitler: tks({ odendi: true, odemeTarihi: "2026-10-15" }) } : k) }, gG.dataVersion, gidTok)).status === 403);
   check("spec 0021: tutar değişip ödenmemiş taksitler yeniden bölünürse gider_edit yeter → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, tutar: 1500, taksitler: tks({ tutar: 900 }, { tutar: 900 }) } : k) }, gG.dataVersion, gidTok)).status === 200);
+  // Spec 0022 C5: parti tanımı gider_tanim ister; makinayı partiye bağlamak stok yazımıdır (yalnız stok sekmeli kullanıcı).
+  gG = await gUst(gidTok);
+  check("spec 0022: gider_tanim olmadan üretim partisi eklemek → 403",
+    (await postData({ ...gG, dataVersion: undefined, uretimPartileri: [{ id: 9101, ad: "Yetkisiz", baslangicAy: "2026-01" }] }, gG.dataVersion, gidTok)).status === 403);
+  let gAd = await gUst(adminTok);
+  check("spec 0022: admin parti ve stok makinası ekler → 200",
+    (await postData({ ...gAd, dataVersion: undefined, uretimPartileri: [{ id: 9100, ad: "2026-1", baslangicAy: "2026-01", bitisAy: null }], stock: [...(gAd.stock || []), { id: 9102, model: "AK100", serialNo: "P-1", addedDate: "2026-03-01" }] }, gAd.dataVersion, adminTok)).status === 200);
+  const stokTok = (await login("stokEdit", "stok123")).body.token;
+  let gSt = await gUst(stokTok);
+  check("spec 0022: yalnız stok sekmeli kullanıcı makinayı partiye bağlar (stok yazımı) → 200",
+    (await postData({ ...gSt, dataVersion: undefined, stock: gSt.stock.map(x => x.id === 9102 ? { ...x, partiId: 9100 } : x) }, gSt.dataVersion, stokTok)).status === 200);
+  gSt = await gUst(stokTok);
+  check("spec 0022: bağ kayıttan partiId ile okunur", gSt.stock.find(x => x.id === 9102)?.partiId === 9100);
+  check("spec 0022: stok kullanıcısı parti tanımını değiştiremez (gider bölümü) → 403",
+    (await postData({ ...gSt, dataVersion: undefined, uretimPartileri: gSt.uretimPartileri.map(p => ({ ...p, bitisAy: "2026-02" })) }, gSt.dataVersion, stokTok)).status === 403);
   gG = await gUst(gidTok);
   check("gider: tedarikçi eklemek tedarikci_add ister → 403",
     (await postData({ ...gG, dataVersion: undefined, tedarikciler: [{ id: 9005, ad: "T" }] }, gG.dataVersion, gidTok)).status === 403);

@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS customers (
   odemePlani TEXT,
   brutKg REAL,
   tipSecimleri TEXT,
-  satisKuru REAL, uretimTarihi TEXT
+  satisKuru REAL, uretimTarihi TEXT, partiId INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS gorusmeler (
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS services (
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
 CREATE TABLE IF NOT EXISTS stock (
-  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT, uretimTarihi TEXT
+  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT, uretimTarihi TEXT, partiId INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
@@ -249,6 +249,12 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
   calisanId INTEGER, girisYonu TEXT, tedarikciId INTEGER, odemeYontemi TEXT,
   atamaTur TEXT, makinaTur TEXT, makinaId INTEGER, modelSatirlari TEXT,
   uretilenAylar TEXT, kapatildi INTEGER
+);
+-- Üretim partileri (spec 0022): maliyet dağıtımının tabanı; kalıcı silme (tedarikçi deseni). Makina bağı
+-- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
+CREATE TABLE IF NOT EXISTS uretim_partileri (
+  id INTEGER PRIMARY KEY,
+  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT
 );
 CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
@@ -444,8 +450,8 @@ const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 // Makina maliyeti (spec 0002 C4 istisnaları 1–2): satış anındaki kur snapshot'ı ("1 birim = X TL") ve
 // satışta stok satırı silindiği için satış kaydına yazılan üretim tarihi. Stokta: silinen müşteriden
 // geri dönen satırın özgün üretim tarihi (plan M3).
-const CUSTOMERS_MALIYET_COLUMNS = [["satisKuru", "REAL"], ["uretimTarihi", "TEXT"]];
-const STOCK_URETIM_COLUMN = [["uretimTarihi", "TEXT"]];
+const CUSTOMERS_MALIYET_COLUMNS = [["satisKuru", "REAL"], ["uretimTarihi", "TEXT"], ["partiId", "INTEGER"]];
+const STOCK_URETIM_COLUMN = [["uretimTarihi", "TEXT"], ["partiId", "INTEGER"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
@@ -513,11 +519,11 @@ function populateAll(conn, data, skip = new Set()) {
     INSERT INTO customers (id, name, phone, email, adres, city, ilce, country, yetkili1Ad, yetkili1Tel, yetkili2Ad, yetkili2Tel,
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
-      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri, satisKuru, uretimTarihi)
+      konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri, satisKuru, uretimTarihi, partiId)
     VALUES (@id, @name, @phone, @email, @adres, @city, @ilce, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
-      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri, @satisKuru, @uretimTarihi)
+      @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri, @satisKuru, @uretimTarihi, @partiId)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order, uretimFormGonder, uretimFormId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -553,6 +559,7 @@ function populateAll(conn, data, skip = new Set()) {
         tipSecimleri: json(c.tipSecimleri ?? {}),
         satisKuru: c.satisKuru ?? null,
         uretimTarihi: c.uretimTarihi ?? null,
+        partiId: c.partiId ?? null,
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx, toInt(k.uretimFormGonder), k.uretimFormId ?? null);
@@ -718,8 +725,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.stock) && !skip.has("stock")) {
     conn.prepare(`DELETE FROM stock`).run();
-    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt, uretimTarihi) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null, s.uretimTarihi ?? null);
+    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt, uretimTarihi, partiId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null, s.uretimTarihi ?? null, s.partiId ?? null);
   }
 
   if (Array.isArray(data.notes) && !skip.has("notes")) {
@@ -815,6 +822,11 @@ function populateAll(conn, data, skip = new Set()) {
       stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi));
     }
   }
+  if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
+    conn.prepare(`DELETE FROM uretim_partileri`).run();
+    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null);
+  }
   if (Array.isArray(data.tedarikciler) && !skip.has("tedarikciler")) {
     conn.prepare(`DELETE FROM tedarikciler`).run();
     const stmt = conn.prepare(`INSERT INTO tedarikciler (id, ad, yetkili, telefon, eposta, vergiDairesi, vergiNo, adres, notField) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -871,7 +883,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -1273,6 +1285,7 @@ function readBlobFromDb() {
   }));
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
+  const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,
@@ -1294,7 +1307,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
-    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri,
   };
 }
 

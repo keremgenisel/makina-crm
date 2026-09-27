@@ -45,7 +45,9 @@ export const MakinaMaliyetDetay = ({ detay }) => {
   if (d.veriYok) return (
     <div data-testid="maliyet-detay">{ust}
       <div style={{ fontSize: 13, background: "var(--n100, #f8fafc)", border: "1px dashed var(--n300, #cbd5e1)", borderRadius: 8, padding: "10px 12px" }}>
-        <b>Gider verisi girilmemiş.</b> Makina gider takibinin yürürlük ayından önce üretildi ({ayAdi(ayOf(d.uretimTarihi))}); maliyet ve kâr gösterilmez.
+        <b>Gider verisi girilmemiş.</b> {d.parti
+          ? <>Makinanın partisi ({d.parti.ad}) gider takibinin yürürlük ayından önce üretildi; maliyet ve kâr gösterilmez.</>
+          : <>Makina gider takibinin yürürlük ayından önce üretildi ({ayAdi(ayOf(d.uretimTarihi))}); maliyet ve kâr gösterilmez.</>}
       </div>
     </div>
   );
@@ -55,7 +57,12 @@ export const MakinaMaliyetDetay = ({ detay }) => {
       {ust}
       <Satir etiket="Doğrudan giderler" alt={d.dogrudanKalemler.length ? d.dogrudanKalemler.map(k => `${fmtTR(k.tarih)} ${k.aciklama || "gider"}`).join(", ") : "Bu makinaya atanmış gider yok"} deger={tl2(d.dogrudan)} />
       <Satir etiket="Model havuzu payları (malzeme ve işçilik)" alt={d.malzemePayiAlamadi ? "Bu makina malzeme payı alamadı: modelin havuz adedi yetmedi." : d.malzemePaylari.length ? `${d.malzemePaylari.length} havuzdan` : "Modeline atanmış malzeme yok"} deger={tl2(d.malzeme)} />
-      <Satir etiket="Ortak gider payı" alt={`${ayAdi(ayOf(d.uretimTarihi))} üretim ayının payı`} deger={tl2(d.ortakPay)} />
+      {/* Spec 0022 R3, R7, R10: partili makinanın payı partinin aylarından gelir; açık partide maliyet geçicidir. */}
+      <Satir etiket="Ortak gider payı" alt={d.parti
+        ? `Parti ${d.parti.ad}: ${ayAdi(d.parti.baslangicAy)} – ${d.parti.acik ? "sürüyor" : ayAdi(d.parti.bitisAy)}, ${d.parti.adet} makina`
+        : `${ayAdi(ayOf(d.uretimTarihi))} üretim ayının payı`} deger={tl2(d.ortakPay)} />
+      {d.partiBaslamadi && <div data-testid="parti-baslamadi" style={{ fontSize: 12.5, color: "var(--n600, #475569)", padding: "4px 0" }}><b>Parti henüz başlamadı</b> ({ayAdi(d.parti?.baslangicAy)}): ortak gider payı partinin başladığı aydan itibaren hesaplanır.</div>}
+      {d.gecici && <div data-testid="maliyet-gecici" style={{ fontSize: 12.5, color: "var(--orTx, #c2410c)", padding: "4px 0" }}><b>Geçici:</b> parti kapanınca bu ibare kalkar. Rakam dondurulmaz; ayların gideri değişirse yeniden hesaplanır.</div>}
       <Satir etiket="Üretim maliyeti" deger={tl2(d.uretimMaliyeti)} kalin />
       {d.satildi && <>
         <Satir etiket="Komisyon" alt={kur && d.komisyonOrijinal ? fmtCur(d.komisyonOrijinal, d.para) : null} deger={d.komisyon != null ? tl2(d.komisyon) : "—"} isaret="+ " />

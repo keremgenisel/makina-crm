@@ -15,6 +15,8 @@ const BLOB_SECTIONS = [
   "partTypeDefs", "calisanlar", "yedekParcaSatislar",
   // Gider kaydı (spec 0001)
   "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler",
+  // Üretim partisi (spec 0022)
+  "uretimPartileri",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -50,6 +52,7 @@ const SECTION_GROUP = {
   giderTurleri: "giderActions",
   tedarikciler: "giderActions",
   standartGiderler: "giderActions",
+  uretimPartileri: "giderActions",
 };
 
 // İzin nesnesindeki tüm grup anahtarları — kısıtlı kullanıcı tespiti için.
@@ -58,7 +61,7 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 // Gider bölümleri (spec 0001 C6 kural 3 + plan K6): bu uygulamanın "tabs tanımsız = serbest" kuralının
 // TEK istisnası. Sekme listesi tanımsız (veya izin gövdesi hiç olmayan) user rolü gider bölümlerini
 // YAZAMAZ; arayüzde de gider sekmesi yalnız açıkça verildiğinde görünür.
-const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler"]);
+const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri"]);
 
 // ── Sekme (tabs) düzeyi yazma kısıtı ────────────────────────────────────────────
 // REGRESYON: arayüzün "Kullanıcı Ekle" formu izin gövdesine YALNIZ {tabs:[...]} yazıyordu.
@@ -118,6 +121,10 @@ const BOLUM_SEKMELERI = {
   giderTurleri:     ["settings"],
   tedarikciler:     ["gider"],
   standartGiderler: ["gider"],
+  // Spec 0022 C5 (triyaj bulgu 3): parti tanımları yalnız Giderler sekmesinde yazılır. Makinayı partiye bağlamak
+  // `stock` bölümündeki partiId alanıdır, bu bölüme dokunmaz; bu yüzden "stock" burada YOKTUR (eklenseydi etkisiz
+  // kalırdı: gider bölümü olduğu için gider sekmesi olmayan kullanıcıyı K6 aynası zaten reddeder).
+  uretimPartileri:  ["gider"],
 };
 
 // appSettings tek bir bölüm ama iki ayrı sahibi var: asıl ayarlar (KDV, otomatik yedek) Ayarlar
@@ -358,6 +365,7 @@ const EYLEM_IDLERI = {
   giderTanimlari:   { ekle: "gider_tanim", sil: "gider_tanim" },
   giderTurleri:     { ekle: "gider_tanim", sil: "gider_tanim" },
   standartGiderler: { ekle: "gider_tanim", sil: "gider_tanim" },
+  uretimPartileri:  { ekle: "gider_tanim", sil: "gider_tanim" },
   tedarikciler:     { ekle: "tedarikci_add", sil: "tedarikci_delete" },
   teklifler: {
     ekle: (r) => (r?.type === "proforma" ? "evrak_proforma_add" : "evrak_teklif_add"),

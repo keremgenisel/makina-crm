@@ -17,7 +17,7 @@ export const Stock = ({
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
   customers = [], setCustomers = null,
-  copMusteriler = [],
+  copMusteriler = [], uretimPartileri = [], giderYetki = false,
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
   partSales = [], setPartSales = null,
@@ -59,7 +59,7 @@ export const Stock = ({
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} giderler={giderler} copMusteriler={copMusteriler} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} giderler={giderler} copMusteriler={copMusteriler} uretimPartileri={uretimPartileri} giderYetki={giderYetki} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}

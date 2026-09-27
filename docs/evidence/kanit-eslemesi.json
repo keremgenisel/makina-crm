@@ -149,6 +149,18 @@
         "rapor": "docs/evidence/0021-taban-piksel-raporu.json",
         "ekran": "giderler-uretim-basari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-uretim-partileri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-1"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-aralik-gecersiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 C5 kaydırma kabulü"
       }
     ],
     "src/components/Settings.jsx": [
@@ -250,6 +262,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "giderler-karlilik"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-karlilik-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-13"
       }
     ],
     "src/components/gider/MakinaModelGorunumu.jsx": [
@@ -266,6 +284,12 @@
         "rapor": "docs/evidence/0020-taban-piksel-raporu.json",
         "ekran": "giderler-model-personel",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-model-parti-degisim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-11"
       }
     ],
     "src/components/gider/StandartGiderler.jsx": [
@@ -697,6 +721,12 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-2"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -806,6 +836,20 @@
         "rapor": "docs/evidence/0021-taban-piksel-raporu.json",
         "ekran": "giderler-odeme-plani",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/UretimPartileri.jsx": [
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-uretim-partileri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-1"
+      },
+      {
+        "rapor": "docs/evidence/0022-piksel-raporu.json",
+        "ekran": "giderler-uretim-partisi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0022 AC-23"
       }
     ]
   }

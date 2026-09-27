@@ -6,7 +6,7 @@ import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
-import { satisKuruUygula, uretimTarihiDamgala } from "../lib/satisKaydi";
+import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
@@ -250,11 +250,11 @@ export const Customers = ({
   // Makina stoğu düşümü — ekleme ve "seri no sonradan atandı" düzenlemesi aynı mantığı
   // paylaşır: seçilen (veya serisiz) stok satırını düşer ve kaynağı müşteriye
   // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar. Stok satırı silindiği için
-  // üretim tarihi de burada satış kaydına yazılır (spec 0002 R1b), yoksa kaybolurdu.
+  // üretim tarihi ve üretim partisi de burada satış kaydına yazılır (spec 0002 R1b, spec 0022 R2), yoksa kaybolurdu.
   const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
     if (_stokSerisiz) {
       const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
       setStock(p => {
         const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
         if (idx === -1) return p;
@@ -262,7 +262,7 @@ export const Customers = ({
       });
     } else if (clean.serialNo && !_manualSerial) {
       const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
       setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
     }
   };
@@ -429,7 +429,7 @@ export const Customers = ({
         const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: Math.abs(l.miktar) }));
         bumpId(stock);
         const newStockId = uid();
-        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
+        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), ...(c.partiId != null ? { partiId: c.partiId } : {}), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
 
         if (kitLog.length > 0 && setPartStockLog) {
           kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));

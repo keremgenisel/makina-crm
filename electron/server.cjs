@@ -164,6 +164,7 @@ const BOLUM_ADLARI = {
   giderTurleri: "Gider Türleri",
   tedarikciler: "Tedarikçiler",
   standartGiderler: "Standart Genel Giderler",
+  uretimPartileri: "Üretim Partileri",
 };
 
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {

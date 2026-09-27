@@ -25,7 +25,7 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // Gider kaydı (spec 0001): kalem, tekrarlayan tanım, tür, tedarikçi ve standart genel gider listeleri.
 // Model dağılım satırları kalemin içinde taşınır (tahsis deseni), ayrı anahtar değildir.
 export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar", "yedekParcaSatislar",
-  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler"];
+  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler", "uretimPartileri"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -90,8 +90,11 @@ export function buildMergePlan(myData, serverData) {
   adds.giderTanimlari = adds.giderTanimlari.map(giderRef);
   adds.giderler = adds.giderler.map(g => ({ ...giderRef(g), tanimId: remapRef(maps.giderTanimlari, g.tanimId) }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
+  // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
+  // (Stok satırları birleştirilmediği için stok bağı burada ele alınmaz; stock MERGE_KEYS'te değil.)
   adds.customers = adds.customers.map(c => ({
     ...c,
+    ...(c.partiId != null ? { partiId: remapRef(maps.uretimPartileri, c.partiId) } : {}),
     kaliplar: (c.kaliplar || []).map(k => k.partSaleId ? { ...k, partSaleId: remapRef(maps.partSales, k.partSaleId) } : k),
   }));
 

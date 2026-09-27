@@ -11,7 +11,7 @@ export const SettingsBackup = ({
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
   // Gider kaydı (spec 0001): ham diziler (çöptekiler dahil); paket yalnız gider yetkisiyle görünür (R11).
   giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null, giderTurleri = [], setGiderTurleri = null,
-  tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, giderYetki = true,
+  tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, giderYetki = true,
   // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
   // (yalnız izin) beslenir. Perde inikken gider paketi listede görünmez ama tam geri yüklemede yüklenir (K3).
   giderVeriYetki = giderYetki,
@@ -49,7 +49,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -201,6 +201,7 @@ export const SettingsBackup = ({
     if (sec("gider") && Array.isArray(restoreData?.giderTanimlari) && setGiderTanimlari) setGiderTanimlari(restoreData.giderTanimlari);
     if (sec("gider") && Array.isArray(restoreData?.giderler) && setGiderler) setGiderler(restoreData.giderler);
     if (sec("gider") && Array.isArray(restoreData?.standartGiderler) && setStandartGiderler) setStandartGiderler(restoreData.standartGiderler);
+    if (sec("gider") && Array.isArray(restoreData?.uretimPartileri) && setUretimPartileri) setUretimPartileri(restoreData.uretimPartileri);
     if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
@@ -224,7 +225,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
 

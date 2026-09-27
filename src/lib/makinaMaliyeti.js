@@ -14,6 +14,7 @@ import {
 import { trLower, parseMoney, gercekSatisBedeli } from "./utils";
 import { CURRENCIES } from "./constants";
 import { GERI_DONEN_STOK_NOTU } from "./musteriKaskad";
+import { partiAylari, canliPartiler } from "./uretimPartisi";
 
 export const ORTAK_KAYNAK = { GERCEK: "gercek", STANDART: "standart" };
 export const ORTAK_KAYNAK_ETIKET = { gercek: "Gerçekleşen gider kayıtları", standart: "Aylık standart genel giderler" };
@@ -123,7 +124,7 @@ const bosSinif = () => ({ makina: 0, model: 0, dagitma: 0, ortak: 0 });
 // ── Ağır hesap (dönemden bağımsız) ────────────────────────────────────────────
 export const hesaplaMakinaMaliyetleri = ({
   customers = [], stock = [], partStockLog = [], giderler = [], giderTurleri = [], standartGiderler = [],
-  standardModels = [], customModels = [], giderAyarlari = {},
+  standardModels = [], customModels = [], giderAyarlari = {}, uretimPartileri = [],
 } = {}, { bugun } = {}) => {
   const yurAy = giderAyarlari?.yururlukAy || null;
   const kaynak = giderAyarlari?.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK;
@@ -138,6 +139,27 @@ export const hesaplaMakinaMaliyetleri = ({
   }));
   const makinaMap = new Map(makinalar.map(m => [m.anahtar, m]));
   const tarihli = makinalar.filter(m => m.uretimTarihi).sort(makinaSirasi);
+
+  // Üretim partileri (spec 0022). Bağ okuma anında çözülür (R11): parti bulunamazsa makina aylık kurala düşer.
+  const buAy = ayOf(bugun || new Date().toISOString().slice(0, 10));
+  const partiMap = new Map(canliPartiler(uretimPartileri).map(p => [String(p.id), p]));
+  const partiUyeleri = new Map();
+  const tarihsizSona = (a, b) => (!!a.uretimTarihi !== !!b.uretimTarihi ? (a.uretimTarihi ? -1 : 1) : makinaSirasi(a, b));
+  for (const m of [...makinalar].sort(tarihsizSona)) {
+    const p = m.kayit?.partiId != null ? partiMap.get(String(m.kayit.partiId)) : null;
+    if (!p) continue;
+    m.parti = p;
+    if (!partiUyeleri.has(String(p.id))) partiUyeleri.set(String(p.id), []);
+    partiUyeleri.get(String(p.id)).push(m);
+  }
+  // R12, P2: partili makinanın ortak payı üretim tarihine bakmaz; partinin yürürlük sonrası ayı yoksa "veri yok".
+  const partiAylariYururluk = new Map([...partiMap.values()].map(p => [String(p.id), partiAylari(p, buAy).filter(a => !yurAy || a >= yurAy)]));
+  // Başlangıcı gelecek aydaki parti "veri yok" değildir, henüz başlamamıştır (triyaj bulgu 2): payı 0, ayrı durum.
+  for (const m of makinalar) {
+    if (!m.parti) continue;
+    m.partiBaslamadi = m.parti.baslangicAy > buAy;
+    m.veriYok = !m.partiBaslamadi && partiAylariYururluk.get(String(m.parti.id)).length === 0;
+  }
 
   // Gider kalemleri: canlı ve yürürlük ayından sonra (plan M6; 0001 raporuyla aynı kapsam).
   const esik = yurAy ? `${yurAy}-01` : "";
@@ -205,16 +227,23 @@ export const hesaplaMakinaMaliyetleri = ({
   // Ay tablosu ve ortak gider payı (R2, R11, R22). Pay eşittir, kuruş aşağı yuvarlanır, artık ilk makinaya.
   const uretilenAy = new Map();
   for (const m of tarihli) {
-    if (m.veriYok) continue;
+    if (m.veriYok || m.parti) continue; // R12: partili makina ayın üretim sayısına girmez
     if (!uretilenAy.has(m.uretimAy)) uretilenAy.set(m.uretimAy, []);
     uretilenAy.get(m.uretimAy).push(m);
   }
   // Ay tablosu yürürlük ayından başlar; tanımsızsa en erken veri ayından (standart kaynakta en erken standart
   // sürümün başlangıcı dahil). Aksi hâlde ilk gider/üretimden önceki aylar tablodan düşer ve o ayların
   // dağıtılmamış ortak gideri (R11) ile standart farkı (R25) sessizce sıfır görünürdü.
-  const buAy = ayOf(bugun || new Date().toISOString().slice(0, 10));
   const stdAylari = kaynak === ORTAK_KAYNAK.STANDART ? standartGiderler.map(s => s.baslangicAy).filter(Boolean) : [];
-  const tumAylar = [...uretilenAy.keys(), ...ortakGercek.keys(), ...stdAylari, buAy].filter(Boolean).sort();
+  const partiAyListesi = [...partiAylariYururluk.values()].flat();
+  const tumAylar = [...uretilenAy.keys(), ...ortakGercek.keys(), ...stdAylari, ...partiAyListesi, buAy].filter(Boolean).sort();
+  // Ayda açık partiler (adedi olanlar, R14) → ay listesi.
+  const ayPartileri = new Map();
+  for (const [pid, aylarP] of partiAylariYururluk) {
+    if (!(partiUyeleri.get(pid) || []).length) continue;
+    for (const ay of aylarP) { if (!ayPartileri.has(ay)) ayPartileri.set(ay, []); ayPartileri.get(ay).push(pid); }
+  }
+  const partiHavuz = new Map();
   const aylar = new Map();
   if (tumAylar.length) {
     const ilk = yurAy || tumAylar[0];
@@ -230,17 +259,53 @@ export const hesaplaMakinaMaliyetleri = ({
       const standart = kurus(std.toplam);
       const ortak = kaynak === ORTAK_KAYNAK.STANDART ? standart : gercek;
       const uretilen = uretilenAy.get(ay) || [];
+      // R4, R13 (spec 0022): hak sahipleri = ayda açık partiler (ağırlık = güncel adet) + partisiz makinalar (1).
+      // Ağırlık oranında kuruşla, aşağı yuvarlanarak bölünür; artık en önce üretilmiş makinası olan hak sahibine.
+      // Parti yoksa bu, 0002'nin "ayın gideri / üretilen makina" kuralının kendisidir (R5).
+      const sahipler = [
+        ...uretilen.map(m => ({ tur: "makina", m, ilk: m, agirlik: 1 })),
+        ...(ayPartileri.get(ay) || []).map(pid => ({ tur: "parti", pid, ilk: partiUyeleri.get(pid)[0], agirlik: partiUyeleri.get(pid).length })),
+      ].sort((a, b) => tarihsizSona(a.ilk, b.ilk));
+      const agirlik = sahipler.reduce((t, x) => t + x.agirlik, 0);
       let pay = 0, dagitilmamis = 0;
-      if (uretilen.length) {
-        pay = Math.floor(ortak / uretilen.length);
-        const artik = ortak - pay * uretilen.length;
-        uretilen.forEach((m, i) => { m.ortakPay = pay + (i === 0 ? artik : 0); });
+      const partiPaylari = [];
+      if (agirlik > 0) {
+        pay = Math.floor(ortak / agirlik);
+        const paylar = sahipler.map(x => Math.floor(ortak * x.agirlik / agirlik));
+        paylar[0] += ortak - paylar.reduce((t, v) => t + v, 0);
+        sahipler.forEach((x, i) => {
+          if (x.tur === "makina") x.m.ortakPay = paylar[i];
+          else {
+            partiHavuz.set(x.pid, (partiHavuz.get(x.pid) || 0) + paylar[i]);
+            partiPaylari.push({ partiId: x.pid, adet: x.agirlik, pay: paylar[i] });
+          }
+        });
       } else dagitilmamis = ortak;
-      aylar.set(ay, { ay, uretimAdedi: uretilen.length, ortakGercek: gercek, ortakStandart: standart, ortak, pay, dagitilmamis, standartEksik, siniflar: sinifAy.get(ay) || bosSinif() });
+      aylar.set(ay, { ay, uretimAdedi: uretilen.length, ortakGercek: gercek, ortakStandart: standart, ortak, pay, dagitilmamis, standartEksik, siniflar: sinifAy.get(ay) || bosSinif(), partiPaylari });
     }
   }
+  // R3: parti havuzu makinalarına eşit bölünür; kuruş artığı ilk üretilen makinaya.
+  const partiler = [];
+  for (const [pid, p] of partiMap) {
+    const uyeler = partiUyeleri.get(pid) || [];
+    const havuz = partiHavuz.get(pid) || 0;
+    if (uyeler.length) {
+      const taban = Math.floor(havuz / uyeler.length);
+      uyeler.forEach((m, i) => { m.ortakPay = taban + (i === 0 ? havuz - taban * uyeler.length : 0); });
+    }
+    // R15 (P3): kapanıştaki ay ortakları ile bugünkü farkı.
+    const degisimler = !p.bitisAy || !p.kapanisOrtaklari ? [] : Object.entries(p.kapanisOrtaklari)
+      .map(([ay, kapanista]) => ({ ay, kapanista: Number(kapanista) || 0, bugun: aylar.get(ay)?.ortak ?? 0 }))
+      .filter(d => d.kapanista !== d.bugun).sort((a, b) => (a.ay < b.ay ? -1 : 1));
+    partiler.push({
+      id: p.id, ad: p.ad, baslangicAy: p.baslangicAy, bitisAy: p.bitisAy || null, acik: !p.bitisAy, aciklama: p.aciklama || "",
+      adet: uyeler.length, havuz: tl(havuz), makinaBasi: uyeler.length ? tl(Math.floor(havuz / uyeler.length)) : null,
+      aylar: partiAylariYururluk.get(pid), degisimler: degisimler.map(d => ({ ...d, kapanista: tl(d.kapanista), bugun: tl(d.bugun) })),
+    });
+  }
+  partiler.sort((a, b) => (a.baslangicAy !== b.baslangicAy ? (a.baslangicAy < b.baslangicAy ? -1 : 1) : String(a.ad).localeCompare(String(b.ad), "tr")));
   for (const m of makinalar) m.uretimMaliyeti = m.dogrudan + m.malzeme + m.ortakPay;
-  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy };
+  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy, partiler };
 };
 
 // ── Satış tarafı ──────────────────────────────────────────────────────────────
@@ -256,6 +321,11 @@ export const satisKurBilgisi = (c, rates) => {
   return { para, kur: null, durum: "yok" };
 };
 
+// Özetlerde makinanın "üretilmiş" sayıldığı tarih. Partili makinanın ortak payı üretim tarihine bakmaz (R12); tarihi
+// boşsa partinin başlangıç ayının ilk günü kullanılır, yoksa payı hesaplanan makina hiçbir özet satırında görünmezdi
+// (triyaj bulgu 1). Model havuzu payı ayrıca üretim tarihine bakmaya devam eder.
+const ozetTarihi = (m) => m.uretimTarihi || (m.parti?.baslangicAy ? `${m.parti.baslangicAy}-01` : "");
+const partiOzeti = (sonuc, id) => (sonuc.partiler || []).find(p => String(p.id) === String(id)) || null;
 // Tek makinanın maliyet ve kâr kırılımı (R6, AC-8). Tutarlar TL; iç toplamlar için kuruş değerleri ayrı
 // döner, dışarı açılmaz.
 const karlilikIc = (sonuc, anahtar, rates) => {
@@ -263,9 +333,11 @@ const karlilikIc = (sonuc, anahtar, rates) => {
   if (!m) return { detay: null, k: null };
   const temel = {
     anahtar, makina: m, uretimTarihi: m.uretimTarihi, uretimKaynak: m.uretimKaynak, veriYok: m.veriYok,
-    bilinmiyor: !m.uretimTarihi, kaynak: sonuc.kaynak,
+    bilinmiyor: !ozetTarihi(m), kaynak: sonuc.kaynak, partiBaslamadi: !!m.partiBaslamadi,
     dogrudan: tl(m.dogrudan), malzeme: tl(m.malzeme), ortakPay: tl(m.ortakPay), uretimMaliyeti: tl(m.uretimMaliyeti),
     dogrudanKalemler: m.dogrudanKalemler, malzemePaylari: m.malzemePaylari, malzemePayiAlamadi: !!m.malzemePayiAlamadi,
+    // Spec 0022 R7, R10: makinanın partisi; açık partide maliyet geçicidir (etiket, rakam dondurulmaz).
+    parti: m.parti ? partiOzeti(sonuc, m.parti.id) : null, gecici: !!m.parti && !m.parti.bitisAy,
   };
   if (!m.satildi) return { detay: { ...temel, satildi: false }, k: { uretim: m.uretimMaliyeti } };
   const c = m.kayit;
@@ -274,7 +346,7 @@ const karlilikIc = (sonuc, anahtar, rates) => {
   const bedelYok = !(bedel > 0);
   const cevir = (v) => (kur.kur ? Math.round(kurus(v) * kur.kur) : null);
   const bedelK = cevir(bedel), komisyonK = cevir(komisyon);
-  const hesaplanabilir = !bedelYok && bedelK != null && !m.veriYok && !!m.uretimTarihi;
+  const hesaplanabilir = !bedelYok && bedelK != null && !m.veriYok && !!ozetTarihi(m);
   const toplamK = komisyonK != null ? m.uretimMaliyeti + komisyonK : null;
   const karK = hesaplanabilir ? bedelK - toplamK : null;
   const detay = {
@@ -301,7 +373,7 @@ export const karlilikOzeti = (sonuc, { baslangic, bitis, rates } = {}) => {
   for (const m of sonuc.liste) {
     if (!m.satildi || !icinde(m.satisTarihi)) continue;
     const { detay: d, k } = karlilikIc(sonuc, m.anahtar, rates);
-    if (!m.uretimTarihi) { bilinmiyor.push(d); continue; }
+    if (!ozetTarihi(m)) { bilinmiyor.push(d); continue; }
     if (m.veriYok) { veriYok.push(d); continue; }
     if (d.bedelYok) { bedelsiz.push(d); bedelsizMaliyet += k.uretim + (k.komisyon || 0); continue; }
     if (d.kar == null) { kursuz.push(d); continue; }
@@ -317,11 +389,17 @@ export const karlilikOzeti = (sonuc, { baslangic, bitis, rates } = {}) => {
 
   // Aralık bitişi itibarıyla hâlâ satılmamış, maliyeti bilinen makinalar (R19, AC-74, plan M5).
   let stokT = 0, stokAdet = 0;
+  const stokParti = new Map();
   for (const m of sonuc.liste) {
-    if (!m.uretimTarihi || m.uretimTarihi > bitis || m.veriYok) continue;
+    const t = ozetTarihi(m);
+    if (!t || t > bitis || m.veriYok) continue;
     if (m.satildi && m.satisTarihi && m.satisTarihi <= bitis) continue;
     stokT += m.uretimMaliyeti; stokAdet++;
+    if (m.parti) { const k = String(m.parti.id); const x = stokParti.get(k) || { adet: 0, maliyet: 0 }; x.adet++; x.maliyet += m.uretimMaliyeti; stokParti.set(k, x); }
   }
+  // Spec 0022 AC-16: aynı satır parti kırılımıyla genişler; açık partiler stokta makinası olmasa da görünür.
+  const stokPartileri = (sonuc.partiler || []).filter(p => p.acik || stokParti.has(String(p.id)))
+    .map(p => ({ id: p.id, ad: p.ad, acik: p.acik, adet: stokParti.get(String(p.id))?.adet || 0, maliyet: tl(stokParti.get(String(p.id))?.maliyet || 0) }));
 
   // Ay bazlı iki satır yalnız aralığa tam giren aylarda (R7, AC-66).
   const aylar = tamAylar(baslangic, bitis);
@@ -356,7 +434,7 @@ export const karlilikOzeti = (sonuc, { baslangic, bitis, rates } = {}) => {
     bilinmiyor: { adet: bilinmiyor.length, makinalar: bilinmiyor },
     bedelsiz: { adet: bedelsiz.length, maliyet: tl(bedelsizMaliyet), makinalar: bedelsiz },
     kursuz: { adet: kursuz.length, makinalar: kursuz },
-    stokta: { adet: stokAdet, maliyet: tl(stokT), tarih: bitis },
+    stokta: { adet: stokAdet, maliyet: tl(stokT), tarih: bitis, partiler: stokPartileri },
     dagitilmamis, standartFark, standartEksik, modeller, tamAy: !!aylar,
   };
 };

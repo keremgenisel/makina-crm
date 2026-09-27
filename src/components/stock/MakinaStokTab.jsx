@@ -5,13 +5,13 @@ import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
-import { HataMetni, BolumBasligi, KartBolum, BosDurum } from "../tasarim";
+import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 
 export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, giderler = [],
   // Spec 0002 M3: çöpteki müşteriler, eski geri dönen satırın özgün üretim tarihini düzenlemede sabitlemek için.
-  copMusteriler = [] }) => {
+  copMusteriler = [], uretimPartileri = [], giderYetki = false }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -63,6 +63,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
     }))]);
   };
 
+  const partiAdi = useMemo(() => new Map(uretimPartileri.map(p => [String(p.id), p.ad])), [uretimPartileri]);
   const save = () => {
     if (!form.model) { showToast("Model seçilmeden kaydedilemez."); return; }
     if (modal === "add") {
@@ -201,7 +202,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <tr key={s.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span></td>
+                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span>
+                  {giderYetki && s.partiId != null && partiAdi.get(String(s.partiId)) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 5 }}>Parti: {partiAdi.get(String(s.partiId))}</div>}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(s.addedDate)}</td>
                 <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
@@ -254,6 +256,19 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             <div data-testid="stok-uretim-tarihi" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginBottom: 12 }}>
               Makinanın özgün üretim tarihi <b>{fmtTR(form.uretimTarihi)}</b>. Maliyet hesabı stoğa giriş tarihini değil bu tarihi kullanır.
             </div>
+          )}
+          {/* Spec 0022 R2, C5 (P7): makinayı üretim partisine bağlama. Yalnız gider yetkisiyle çizilir (üretim tarihi
+              alanıyla aynı kural); yazma stok izniyle. Perde inikken mevcut bağ korunur, seçici gizlenir. */}
+          {giderYetki && (
+            <Field label="Üretim partisi">
+              <Select aria-label="Üretim partisi" value={form.partiId != null ? String(form.partiId) : ""}
+                onChange={e => { const v = e.target.value; setForm(p => ({ ...p, partiId: v === "" ? null : uretimPartileri.find(x => String(x.id) === v)?.id ?? null })); }}>
+                <option value="">Partisiz (ortak gider üretim ayından)</option>
+                {uretimPartileri.map(x => <option key={x.id} value={String(x.id)}>{x.ad}{x.bitisAy ? "" : " (açık)"}</option>)}
+                {form.partiId != null && !uretimPartileri.some(x => String(x.id) === String(form.partiId)) && <option value={String(form.partiId)}>Silinmiş parti</option>}
+              </Select>
+              <Ipucu>Parti parti üretimde, partinin sürdüğü ayların ortak gideri partinin makinalarına dağılır. Satışta bağ korunur.</Ipucu>
+            </Field>
           )}
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}

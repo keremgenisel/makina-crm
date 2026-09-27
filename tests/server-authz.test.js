@@ -938,3 +938,27 @@ describe("gider: tanımdan üretim izni serbest kalem için atlatılamaz (bulgu 
     expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-10-15", turId: 4 }).gerekli).toBe("gider_add");
   });
 });
+
+// Spec 0022 C5: üretim partileri gider bölümüdür (gider_tanim); makinayı partiye bağlamak stok yazımıdır.
+describe("spec 0022: üretim partileri bölümü", () => {
+  it("bölüm eşlemesi: giderActions, BOLUM_SEKMELERI yalnız gider (triyaj bulgu 3: stok bağı stock bölümünde), gider bölümleri listesinde", () => {
+    expect(SECTION_GROUP.uretimPartileri).toBe("giderActions");
+    expect(BOLUM_SEKMELERI.uretimPartileri).toEqual(["gider"]);
+    expect(GIDER_BOLUMLERI.has("uretimPartileri")).toBe(true);
+  });
+  it("parti eklemek/silmek gider_tanim ister", () => {
+    const izin = (ids) => JSON.stringify({ tabs: ["gider"], giderActions: ids });
+    const p = { id: 1, ad: "P", baslangicAy: "2026-01" };
+    expect(eylemDenetimi({ uretimPartileri: [] }, { uretimPartileri: [p] }, izin(["gider_add"]), "user")).toMatchObject({ ok: false, gerekli: "gider_tanim" });
+    expect(eylemDenetimi({ uretimPartileri: [] }, { uretimPartileri: [p] }, izin(["gider_tanim"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ uretimPartileri: [p] }, { uretimPartileri: [] }, izin(["gider_add"]), "user").ok).toBe(false);
+  });
+  it("sekme listesi tanımsız kullanıcı parti yazamaz (K6); yalnız stok sekmeli kullanıcı partileri değiştiremez ama makinayı bağlar", () => {
+    expect(yazmaYetkisiVar(JSON.stringify({ customerActions: ["cust_add"] }), "user", ["uretimPartileri"], {}, {}).ok).toBe(false);
+    const stokcu = JSON.stringify({ tabs: ["stock"], stockActions: ["stock_makina_add", "stock_makina_edit"] });
+    expect(yazmaYetkisiVar(stokcu, "user", ["uretimPartileri"], {}, {}).ok).toBe(false);
+    const eski = { stock: [{ id: 4, model: "AK100" }], uretimPartileri: [{ id: 1, ad: "P", baslangicAy: "2026-01" }] };
+    const yeni = { ...eski, stock: [{ id: 4, model: "AK100", partiId: 1 }] };
+    expect(yazmaYetkisiVar(stokcu, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+  });
+});

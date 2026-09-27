@@ -54,6 +54,9 @@ görebiliyor. Rakamın neyi kapsamadığı (stoktan çekilen parçaların maliye
   göre ağırlıklandırılmaz (X2).
   Hesap **kuruş tamsayısıyla** yapılır (0001 ile aynı), pay aşağı yuvarlanır ve bölmeden artan kuruşlar o
   ayın **ilk üretilen** makinasına yazılır; böylece payların toplamı ayın ortak giderine tam eşit kalır.
+  **Güncelleme (2026-09-27, spec 0022):** ayın ortak gideri artık bütün hak sahipleri arasında adet oranında bölünür:
+  o ay açık her parti güncel makina adediyle, her partisiz makina birer adetle (0022 R4). Parti yoksa bu kural bu
+  maddenin kendisidir. Partili makina ayın üretim sayısına girmez; payını partisinden alır (0022 R3, R12).
 - **R3.** Maliyet rakamı, **gider olarak girilmiş** malzeme alımlarını (model satırları, R16) içerir; ancak
   **parça stoğundan çekilen parçaların alış maliyetini içermez**, çünkü parça alış fiyatı uygulamada
   tutulmuyor (0001 X2). Maliyetin gösterildiği her yerde bu sınır kullanıcıya yazıyla belirtilir:
@@ -105,6 +108,8 @@ görebiliyor. Rakamın neyi kapsamadığı (stoktan çekilen parçaların maliye
   gider kalemi bulunmayan bir ay gerçek sıfırdır; o ayın payı sıfır olarak hesaplanır ve maliyet gösterilir.
 - **R11.** Bir ayda hiç makina **üretilmemişse** o ayın ortak giderleri hiçbir makinaya dağıtılmaz; tutar
   dönem özetinde "dağıtılmamış ortak gider" olarak gösterilir ve sonraki aylara devredilmez.
+  **Güncelleme (2026-09-27, spec 0022):** o ay açık ve makinası olan bir üretim partisi varsa gider partiye düşer;
+  dağıtılmadan kalma yalnız ne partisiz üretim ne makinalı açık parti olan aylar içindir (0022 R4, R5, R14).
 - **R12.** Bir makina satışı kaydedilirken, satış TL dışı bir para birimindeyse o günkü kur satışın
   kaydına yazılır ve sonradan değişmez. Kaydedilen değer **"1 birim yabancı para = X TL"** biçimindedir.
   Kâr hesabı bu sabit kurla yapılır. **Kur o anda alınamıyorsa** (uygulama çevrimdışı) kayıt engellenmez;
@@ -250,6 +255,8 @@ görebiliyor. Rakamın neyi kapsamadığı (stoktan çekilen parçaların maliye
   planlamasını baştan kurmak demek. Ay bazlı üretim adedi yeterince iyi bir tabandır. Sonucu bilerek kabul
   ediliyor: bir partinin başında alınıp sonunda kullanılan malzemenin maliyeti aylara yayılır ve
   "bu partinin maliyeti" tek rakamda görünmez.
+  **Güncelleme (2026-09-27, spec 0022):** bu karar geri açıldı. Parti yalnız maliyet dağıtımının tabanı olarak
+  eklendi (planlama aracı değil, 0022 C7). Bkz. `specs/done/0022-uretim-partisi.md`.
 
 ---
 

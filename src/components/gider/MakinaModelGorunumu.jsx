@@ -10,7 +10,7 @@ import { StatKart, Rozet } from "./DonemRaporu";
 // (spec 0020 R8, AC-9, AC-15).
 const satirStil = { display: "grid", gridTemplateColumns: "100px minmax(0, 1fr) 120px", gap: 12, padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13, alignItems: "center" };
 
-export const MakinaModelGorunumu = ({ rapor, turMap }) => {
+export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [] }) => {
   const k = rapor.kovalar;
   const dav = (x) => turMap.get(String(x.turId))?.davranis;
   const tutar = (x) => kalemTutari(x, dav(x));
@@ -82,6 +82,18 @@ export const MakinaModelGorunumu = ({ rapor, turMap }) => {
           Makina veya özel model çöpten geri alınırsa atama kendiliğinden döner; kalıcı silinirse bağ kopar. Seri numarası elle girilerek satılan makinaya stoktayken atanan gider satışa takip edilemez ve burada görünür.
         </div>
       </KartBolum>
+      {/* Spec 0022 R8, R15, AC-11: kapanmış partinin ayında ortak gider kapanıştan sonra değişti (anlık görüntü farkı). */}
+      {partiDegisimleri.length > 0 && (
+        <KartBolum varyant="kart" baslikStili="baslik" title="Kapanmış partilerin aylarında değişen ortak gider" altBaslik="Parti kapandıktan sonra bu aylara gider eklendi, değişti ya da silindi. Paylar bugünkü veriyle yeniden hesaplandı." baslikBosluk={10} baslikRengi="inherit" testId="parti-degisimleri">
+          {partiDegisimleri.flatMap(p => p.degisimler.map(d => (
+            <div key={`${p.id}-${d.ay}`} style={satirStil}>
+              <span style={{ color: "var(--n600, #475569)" }}>{d.ay}</span>
+              <span><b>{p.ad}</b> <span style={{ color: "var(--amb700, #b45309)", fontSize: 12 }}>· kapanışta {tl2(d.kapanista)}, bugün {tl2(d.bugun)}</span></span>
+              <b style={{ textAlign: "right" }}>{d.bugun >= d.kapanista ? "+ " : "− "}{tl2(Math.abs(d.bugun - d.kapanista))}</b>
+            </div>
+          )))}
+        </KartBolum>
+      )}
     </div>
   );
 };

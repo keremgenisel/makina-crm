@@ -20,16 +20,20 @@ import { Tedarikciler } from "./gider/Tedarikciler";
 import { StandartGiderler } from "./gider/StandartGiderler";
 import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
+import { UretimPartileri } from "./gider/UretimPartileri";
 
 // Giderler üst sekmesi (spec 0001, C14). Yalnız gider yetkisi olan kullanıcıya görünür (C6 kural 3).
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikçiler" }, { value: "standart", label: "Standart Genel Giderler" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikçiler" }, { value: "standart", label: "Standart Genel Giderler" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+
+// Dönem seçicisi olmayan görünümler: standart gider bütçesi ve üretim partileri (spec 0022) dönemden bağımsızdır.
+const DONEMSIZ = new Set(["standart", "partiler"]);
 
 export const Giderler = ({
   giderler = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
-  standartGiderler = [], setStandartGiderler, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
+  standartGiderler = [], setStandartGiderler, uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
@@ -188,7 +192,7 @@ export const Giderler = ({
               {hatirlatmaModu ? "Hatırlatma kapsamını kapat" : "Hatırlatma kapsamı"} ({hatirlatma.kalemIdleri.size})
             </button>
           )}
-          {gorunum !== "standart" && (hatirlatmaModu
+          {!DONEMSIZ.has(gorunum) && (hatirlatmaModu
             ? <fieldset disabled aria-label="Dönem seçici (hatırlatma kapsamında devre dışı)" style={{ border: 0, padding: 0, margin: 0, opacity: 0.45 }}>{donemSecici}</fieldset>
             : donemSecici)}
         </div>
@@ -196,7 +200,7 @@ export const Giderler = ({
       {giderTurleri.length === 0 && <UyariSeridi aile="bilgi" baslik="Henüz gider türü tanımlı değil." metin="Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir)." />}
       {uretimSonucu && <UyariSeridi aile={uretimSonucu.eklenen ? "basari" : "bilgi"} baslik={`${ayAdi(uretimSonucu.ay)}: ${uretimSonucu.eklenen} kalem eklendi, ${uretimSonucu.zatenVardi} kalem zaten vardı.`} metin={[uretimSonucu.eklenen ? "Oluşturulan kalemler tek tek düzenlenebilir; tanım ve diğer aylar değişmez." : "Bir tanımdan bu ay için üretilip sonradan silinen kalemler yeniden oluşturulmaz.",
           ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" ")} testId="uretim-sonucu" />}
-      {!aralikGecerli && gorunum !== "standart" && <UyariSeridi aile="uyari" baslik="Başlangıç tarihi bitişten sonra olamaz." />}
+      {!aralikGecerli && !DONEMSIZ.has(gorunum) && <UyariSeridi aile="uyari" baslik="Başlangıç tarihi bitişten sonra olamaz." />}
 
       {hatirlatmaModu && (
         <>
@@ -247,13 +251,17 @@ export const Giderler = ({
       )}
       {gorunum === "makina" && rapor && (rapor.yururlukOncesi
         ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
-        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} />)}
+        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
       {gorunum === "karlilik" && aralikGecerli && makinaMaliyet && (
         <MakinaKarliligi sonuc={makinaMaliyet} baslangic={baslangic} bitis={bitis} rates={rates} bugun={bugun} modeller={modeller} />
+      )}
+      {gorunum === "partiler" && (
+        <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
+          makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
       {gorunum === "standart" && (
         <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />

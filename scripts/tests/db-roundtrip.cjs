@@ -76,7 +76,7 @@ check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total ===
 
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
-  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14",
+  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14", partiId: 95,
     faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
@@ -120,6 +120,9 @@ dbmod.writeBlobToDb({
     { id: 83, tarih: "2026-07-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 39223.13, eldenTutar: 15000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [], deletedAt: "2026-07-20T10:00:00.000Z" },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
+  // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
+  uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
+    { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
@@ -153,7 +156,7 @@ dbmod.writeBlobToDb({
     { id: 21, customerId: 500, refType: "makina", refId: null, ad: "sozlesme.pdf", dosyaAdi: "k2-sozlesme.pdf", boyut: 999, tur: "PDF", tarih: "2026-07-06", ekleyen: "kerem", deletedAt: "2026-07-07T10:00:00.000Z" },
     { id: 22, dealerId: 3, ad: "bayi-sozlesmesi.pdf", dosyaAdi: "k3-bayi-sozlesmesi.pdf", boyut: 500, tur: "PDF", tarih: "2026-07-08", ekleyen: "kerem" },
   ],
-  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }, { id: 5, model: "AK100_DS", serialNo: "S-2", addedDate: "2026-09-20", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-02-11" }], parts: [],
+  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }, { id: 5, model: "AK100_DS", serialNo: "S-2", addedDate: "2026-09-20", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-02-11", partiId: 95 }], parts: [],
   // Yedek parça stoğu: eski sürümden kalmış NEGATİF satır (miktar -3) okumada/migration'da 0'a çekilmeli.
   partStock: [
     { id: 70, partId: "7", miktar: 12, notlar: "" },
@@ -201,6 +204,13 @@ check("spec 0006: yedek parça teklifId/teklifKalemId ve Extra Kalıp teklifKale
 })());
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 // Spec 0002 C4: satış kuru (REAL) ve üretim tarihi (TEXT) satış kaydında; geri dönen stok satırının özgün üretim tarihi.
+check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSON, açık partide null)", (() => {
+  const p = (blob.uretimPartileri || []);
+  const k = p.find(x => x.id === 95), a = p.find(x => x.id === 96);
+  return p.length === 2 && k?.ad === "2026-1" && k.baslangicAy === "2026-01" && k.bitisAy === "2026-03" && k.aciklama === "70 makina"
+    && k.kapanmaZamani === "2026-04-01T10:00:00" && k.kapanisOrtaklari?.["2026-02"] === 150050 && a?.bitisAy == null && a.kapanisOrtaklari == null;
+})());
+check("spec 0022: stock.partiId ve customers.partiId tam turu", (blob.stock || []).find(x => x.id === 5)?.partiId === 95 && (blob.customers || []).find(x => x.id === 500)?.partiId === 95);
 check("customer.satisKuru + uretimTarihi tam turu (spec 0002)", (() => {
   const c = (blob.customers || []).find(x => x.id === 500);
   return c?.satisKuru === 41.2345 && c?.uretimTarihi === "2026-03-14" && c?.currency === "USD";

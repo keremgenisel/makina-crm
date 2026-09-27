@@ -175,6 +175,16 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.giderler[0].modelSatirlari).toHaveLength(1);
   });
 
+  it("spec 0022: iki PC aynı parti id'sini üretirse yeni parti eklenir ve satılmış makinanın damgalı bağı yeni id'yi izler", () => {
+    const pid = uid(), cid = uid();
+    const my = blob({ uretimPartileri: [{ id: pid, ad: "Benim partim", baslangicAy: "2026-01" }], customers: [{ id: cid, name: "F", model: "AK100", partiId: pid }] });
+    const server = blob({ uretimPartileri: [{ id: pid, ad: "Onun partisi", baslangicAy: "2026-02" }], customers: [] });
+    const plan = buildMergePlan(my, server);
+    const yeniId = plan.adds.uretimPartileri[0].id;
+    expect(yeniId).toBe(plan.maps.uretimPartileri.get(pid));
+    expect(yeniId).not.toBe(pid);
+    expect(plan.adds.customers[0].partiId).toBe(yeniId);
+  });
   it("spec 0021 C8: gider ödeme satırları kalemle birlikte taşınır, kimlikleri ve durumları korunur", () => {
     const taksitler = [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-10-15", tutar: 500, odendi: true, odemeTarihi: "2026-10-15" },
       { id: 7002, hedef: "ana", sira: 2, vade: "2026-11-15", tutar: 500, odendi: false, odemeTarihi: null }];

@@ -31,3 +31,10 @@ export const uretimTarihiDamgala = (kayit, stokSatiri) => {
   const t = stokSatiri.uretimTarihi || stokSatiri.addedDate || "";
   return t ? { ...kayit, uretimTarihi: t } : kayit;
 };
+
+// Spec 0022 R2: satışta stok satırı fiziken silindiği için parti bağı da aynı anda satış kaydına damgalanır.
+// Formda elle seçilmiş parti (varsa) önceliklidir.
+export const partiDamgala = (kayit, stokSatiri) => {
+  if (!kayit || kayit.partiId != null || stokSatiri?.partiId == null) return kayit;
+  return { ...kayit, partiId: stokSatiri.partiId };
+};

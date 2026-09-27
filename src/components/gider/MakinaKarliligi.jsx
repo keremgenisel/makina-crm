@@ -50,6 +50,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
                       <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}>
                         <b>{d.makina.ad || "—"}</b>
                         <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{[d.makina.model, d.makina.seri && `Seri ${d.makina.seri}`].filter(Boolean).join(" · ")}</div>
+                        {d.parti && <div style={{ marginTop: 3 }}><Rozet renk={d.gecici ? "turuncu" : "gri"} title={d.gecici ? "Parti açık: maliyet geçici, parti kapanınca bu ibare kalkar" : undefined}>Parti {d.parti.ad}{d.gecici ? " · geçici" : ""}</Rozet></div>}
                         {d.kurDurum === "yaklasik" && <Rozet renk="turuncu">Yaklaşık</Rozet>}
                       </td>
                       <td style={td}>{fmtTR(d.satisTarihi)}</td>
@@ -75,6 +76,17 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
 
       <KartBolum varyant="kart" baslikStili="baslik" title="Dönem özeti satırları" baslikBosluk={10} baslikRengi="inherit">
         {ozetSatir(`Stoktaki makinaların taşıdığı maliyet (${fmtTR(oz.stokta.tarih)} itibarıyla)`, tl2(oz.stokta.maliyet), `${oz.stokta.adet} makina üretilmiş ama bu tarihte henüz satılmamış. Bilgi amaçlıdır, stok değerlemesi değildir.`, "ozet-stokta")}
+        {/* Spec 0022 AC-16: aynı satırın parti kırılımı; açık partiler stokta makinası olmasa da görünür. */}
+        {oz.stokta.partiler?.length > 0 && (
+          <div data-testid="ozet-stokta-partiler" style={{ fontSize: 12.5, padding: "0 0 8px 12px" }}>
+            {oz.stokta.partiler.map(p => (
+              <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "3px 0" }}>
+                <span>Parti {p.ad} {p.acik ? <Rozet renk="turuncu">Açık · geçici</Rozet> : <Rozet>Kapalı</Rozet>} <span style={{ color: "var(--n500, #64748b)" }}>· {p.adet} makina stokta</span></span>
+                <b style={{ fontVariantNumeric: "tabular-nums" }}>{tl2(p.maliyet)}</b>
+              </div>
+            ))}
+          </div>
+        )}
         {ozetSatir("Satış bedeli girilmemiş makinalar", `${oz.bedelsiz.adet} makina · ${tl2(oz.bedelsiz.maliyet)}`, "Kâr ve marj toplamlarına girmez.", "ozet-bedelsiz")}
         {oz.kursuz.adet > 0 && ozetSatir("TL karşılığı hesaplanamayan satışlar", `${oz.kursuz.adet} makina`, "Kur kayıtlı değil ve güncel kur alınamadı; toplamlara girmez.", "ozet-kursuz")}
         {oz.veriYok.adet > 0 && ozetSatir("Gider verisi girilmemiş (yürürlük öncesi üretim)", `${oz.veriYok.adet} makina`, "Maliyet ve kâr gösterilmez.", "ozet-veriyok")}
