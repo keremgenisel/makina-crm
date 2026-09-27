@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0021-gider-taksitlendirme.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | Uygulandı, commit bekliyor. 2026-09-27: T1–T12 onaylandı; spec R2; görünüm Takım Yöneticisi tarafından onaylandı. Dal `feat/0021-gider-taksit`. |
+| **Bağlı spec** | `specs/done/0021-gider-taksitlendirme.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-27: T1–T12 onaylandı; spec R2; görünüm TY onaylı; commit `51690d4` (dal `feat/0021-gider-taksit`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§6). |
 | **Önkoşul** | 0001 (gider motoru), 0003 (ödeme hatırlatıcısı), 0020 (dal tabanı) |
 
 ---
@@ -80,3 +80,9 @@
 - **Bulgu 3:** taksit sayısı 1–60 tam sayı (`taksitSayisiCoz`); önizleme ve kayıt aynı kuraldan. Testler `gider-taksit` + `ui/gider-taksit`.
 - **Bulgu 4:** sunucu yeni kalem ödenmiş doğarsa (`odendi` ya da ödenmiş satır) `gider_odeme` ister. Test `server-authz`.
 - **Bulgu 5:** `anaGerekli` sadeleşti; "ödenmiş taksit sayısının altına" mesajı tek yerde (`planYenidenBol`), kaynak taraması testi.
+
+## 6. Kapanış (2026-09-27)
+
+- Taban raporu **`0021-taban-piksel-raporu.json`**: triyaj düzeltmelerinden sonraki kod, onaylı "sonra" çekimleriyle karşılaştırıldı; 10 ekran × 2 tema = 20 çekim, hepsi 0 piksel (yan yana JPEG'ler `0021-taban-*`). Kanıt eşlemesindeki 11 `degisti` kaydı bu rapora `ayni` olarak çevrildi; `0021-piksel-raporu.json` önce/sonra kanıtı olarak kalır.
+- `tests/spec-atiflari.test.js` `TASINACAK` listesinden 0021 dosyaları çıkarıldı.
+- Spec 0020 bu işten önce kapanmıştı (`8ca7fbe`, `1b74c01`, `specs/done/`); bu dal onun üzerindedir.

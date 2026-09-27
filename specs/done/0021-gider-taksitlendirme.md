@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-27, plan onayıyla; plan `specs/0021-uygulama-plani.md` T1–T12) |
+| **Durum** | Tamamlandı (2026-09-27; commit `51690d4`, dal `feat/0021-gider-taksit`; plan `specs/done/0021-uygulama-plani.md` T1–T12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu, gider dönem raporu, borç özeti, ödeme hatırlatıcısı, kira kalemi stopaj bölümü |
@@ -254,28 +254,28 @@ Bilinen tuzaklar:
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Taksit hesabı saf motorda (`gider.js` ile aynı desen), kuruş tamsayısıyla; toplamın tutarı tam
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Taksit hesabı saf motorda (`gider.js` ile aynı desen), kuruş tamsayısıyla; toplamın tutarı tam
       karşıladığı testle gösterildi (C1).
-- [ ] Borç özeti ve ödeme hatırlatıcısı **aynı** taksit hesabını kullanıyor; iki yerde ayrı kural
+- [x] Borç özeti ve ödeme hatırlatıcısı **aynı** taksit hesabını kullanıyor; iki yerde ayrı kural
       yazılmadı.
-- [ ] Maliyet ve kârlılığın değişmediği çapraz testle gösterildi (AC-11).
-- [ ] Yeni kalıcı alanlar **beşli kural** ile eklendi (şema, göç, yazma, okuma, birleştirme) ve
+- [x] Maliyet ve kârlılığın değişmediği çapraz testle gösterildi (AC-11).
+- [x] Yeni kalıcı alanlar **beşli kural** ile eklendi (şema, göç, yazma, okuma, birleştirme) ve
       `db-roundtrip` ile `db-clean-install` testlerine girdi; taksitler **kimlikli alt tablo** olarak
       kuruldu (C8).
-- [ ] Taksit alanları `ALAN_IZINLERI`'ne eklendi ve `gider_odeme` izni olmayan kullanıcının taksit
+- [x] Taksit alanları `ALAN_IZINLERI`'ne eklendi ve `gider_odeme` izni olmayan kullanıcının taksit
       yazımının reddedildiği uçtan uca testle gösterildi (C5, AC-20).
-- [ ] Vergi dairesi satırının genel borç toplamına girdiği, tedarikçi kartına girmediği testle sabitlendi
+- [x] Vergi dairesi satırının genel borç toplamına girdiği, tedarikçi kartına girmediği testle sabitlendi
       (R8, AC-21).
-- [ ] Çöp kutusu geri alma simetrisi kuruldu (AC-18).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe.
-- [ ] Görsel kanıt eklendi (`docs/evidence/0021-*.jpg`), aydınlık ve karanlık tema; kısmen ödenmiş kalem
+- [x] Çöp kutusu geri alma simetrisi kuruldu (AC-18).
+- [x] Kullanıcıya görünen tüm metinler Türkçe.
+- [x] Görsel kanıt eklendi (`docs/evidence/0021-*.jpg`), aydınlık ve karanlık tema; kısmen ödenmiş kalem
       ve kira kaleminin iki hedefi dâhil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` taksit modeli ve stopajın iki hedefli ödemesiyle güncellendi; çift sayım yasağı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` taksit modeli ve stopajın iki hedefli ödemesiyle güncellendi; çift sayım yasağı yazıldı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -283,10 +283,18 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 onay anında işlendi (T1–T12); onaydan sonra Requirements, Constraints ve AC değişmedi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: beş bulgu (iki orta, üç düşük); kod davranışı değişti, görünüm değişmedi (taban 0 piksel). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Orta: ödenmiş eski kiranın ödeme izni olmayan kullanıcıca düzenlenememesi (R13 dönüşümü C5'e takılıyordu) ve stopaj sıfırlanınca kiraya verene ödemenin kaybı. Düşük: taksit üst sınırı, yeni kalemde ödeme izni (önceden var olan açık, kapatıldı), okunaklılık. | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Mevcut testlerin hiçbiri kırılmadı (T8 istisnası gerekmedi); 222 çekimde değişen yalnız gider ekranları. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
 **Bu spec'ten çıkarılan ders:**
+
+- İki kural ayrı ayrı doğru olup birlikte çelişebilir: R13'ün "eski kalem ilk düzenlemede satıra çevrilir" dönüşümü C5'in
+  satır bazlı ödeme denetimine takıldı. Veri dönüşümü yapan her kural, yetki denetiminin gözünden de test edilmeli
+  (motorun ürettiği kayıt `eylemDenetimi`'nden geçirilerek; `server-authz` bulgu 1 testi bu çapraz deseni kurar).
+- "Satır gerekli mi" koşulu yalnız planın bugünkü parametrelerine bakıyordu; geçmiş ödeme satırlarının varlığı da bir
+  gerekçedir. Ödeme verisi taşıyan yapıyı kaldıran her dal, kaldırmadan önce ödenmiş veriyi aramalı.
+- Görüntü karşılaştırmasında tek seferlik fark çıkabilir (evrak, 83 piksel): "sonra" görüntüsünü bir önceki onaylı
+  çekimle bayt bayt karşılaştırmak, farkın koddan mı çekimden mi geldiğini hızlıca ayırır.
