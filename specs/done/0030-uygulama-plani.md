@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0030-bakim-paketi-tema-etiket-tablo.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | 2026-09-27: B1–B11 kullanıcı tarafından onaylandı; spec R2 ile güncellendi; **uygulandı** (bkz. §7); görünüm (AC-7 ve ekranlar) onaylandı; commit bekliyor. |
+| **Bağlı spec** | `specs/done/0030-bakim-paketi-tema-etiket-tablo.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-27: B1–B11 kullanıcı tarafından onaylandı; spec R2 ve R3 ile güncellendi; commit `3234f65` (dal `feat/0030-bakim-paketi`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§8). |
 | **Önkoşul** | 0009 (sözlük, kanıt aracı), 0016 (araçta `hide-scrollbars`, dal tabanı) |
 
 Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını, kodda doğrulanan dayanakları ve spec'in kodla
@@ -233,3 +233,12 @@ dinamik ad testi kırar (sessiz atlama yok, R3).
   diğer bütün ekranlar 0 fark. Görüntü aracına iki eklenti: "kaydir:metin" adımı ve formu hazır durumla çizen sarmalayıcı.
 - **Mevcut test dosyalarında değişiklik** (C4 ve istisnaları): `makina-odeme` (R11), `ui/gider-perdesi-yedek` ve
   `ui/musteri-detay-bolumler` (R12, yalnız zaman), `tasarim-kontrast` (B5, yalnız ek blok), `ui/gider-settings` (B6, tek iddia).
+
+## 8. Done'a taşıma (2026-09-27, AC-11c)
+
+- 12 `degisti` kaydı `ayni`'ye çevrildi, `onay` alanları kaldırıldı.
+- Onaylanan görünümü taban alan **`0030-taban-piksel-raporu.json`**: bugünkü kod, onaylı "sonra" çekimiyle (tablo ekranları
+  kullanıcı düzeltmesinden sonra yeniden çekilenlerle) karşılaştırıldı; 202 ekranın hiçbirinde fark yok. Rapor kayıtlı 9 ekranı
+  (× 2 tema) taşıyor; yan yana JPEG'ler `docs/evidence/0030-taban-*.jpg`.
+- `tests/tema-0030-kanit.test.js` önce/sonra raporunu (`0030-piksel-raporu.json`) okumaya devam eder; o rapor kanıt olarak kalır.
+- `specs/README.md`'deki 0030/0031 satırları analistin commit edilmemiş değişikliği olduğu için bu commit'e katılmadı.

@@ -1,0 +1,98 @@
+[
+  {
+    "ad": "katalog-calisan-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-calisan-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-gidertanim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-gidertanim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-tanim-tablo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-tanim-tablo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-tahsis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-tahsis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

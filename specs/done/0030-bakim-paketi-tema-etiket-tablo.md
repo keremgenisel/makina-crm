@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-27, plan `specs/0030-uygulama-plani.md` B1–B11 ile) |
+| **Durum** | Tamamlandı (2026-09-27; commit `3234f65`, dal `feat/0030-bakim-paketi`; plan `specs/done/0030-uygulama-plani.md` B1–B11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Tema değişkenleri, gider ekranları, servis/Extra Kalıp/yedek parça formları, Anasayfa ve pano rozetleri, müşteri detayı zaman çizelgesi, Ayarlar > Tekrarlayan Giderler, test paketi |
 | **Bağımlı spec'ler** | yok (0009'un sözlüğünü ve 0007'nin etiket altyapısını tüketir) |
-| **Revizyon** | R1 (2026-09-27): onay öncesi QA boşluk analizi; 14 açık nokta karara bağlandı — eksik renk adı sayısı beşe çıktı (`acc`) ve koruma testinin iki tarama istisnası yazıldı (R1, R3), eşleme kararı yedek değere göre kurala bağlandı (R1: aynı değerse eşle, değilse temaya ekle; yoksa aydınlık tema sessizce değişirdi), etiket grubunun modalda çözüleceği ve etiketin partinin tamamını kapsadığı yazıldı (R5, R6, AC-10/AC-11), tablo ölçütünün pencere genişliği olduğu ve "üretilen aylar" sütununun sayıya ineceği kararlaştırıldı (R8, R10, AC-13/AC-22), sahte saatin tek yol olduğu gerekçelendirildi ve iki testin adı yazıldı (R11), tarama yöntemi tanımlandı (R12, AC-18), C4'ün istisnası R12'yi kapsayacak biçimde genişletildi; AC-7/AC-15 ölçülebilir hâle getirildi, AC-20…AC-22 eklendi. R2 (2026-09-27, plan onayı): kodda doğrulanan noktalar işlendi: `#faf7ff` için temada karşılık olmadığından `purBg3` eklenir (R2/B2); gider formundaki ikinci mor kutu (`GiderForm.jsx:125`) kapsama alınır, metni için `pur900` (R2/B3); `tasarim-kontrast`'a yalnız ek blok (C4/B5); `gider-settings` K28 iddiası R10 ile çeliştiği için C4 istisnası (C4/B6); R12 taraması grep'e ek olarak saat kaydırma koşusuyla yapılır, çünkü grep bilinen bombayı yakalamıyor (R12/B9); AC-7 kanıt raporunu okuyan testle ölçülür (B10). |
+| **Revizyon** | R1 (2026-09-27): onay öncesi QA boşluk analizi; 14 açık nokta karara bağlandı — eksik renk adı sayısı beşe çıktı (`acc`) ve koruma testinin iki tarama istisnası yazıldı (R1, R3), eşleme kararı yedek değere göre kurala bağlandı (R1: aynı değerse eşle, değilse temaya ekle; yoksa aydınlık tema sessizce değişirdi), etiket grubunun modalda çözüleceği ve etiketin partinin tamamını kapsadığı yazıldı (R5, R6, AC-10/AC-11), tablo ölçütünün pencere genişliği olduğu ve "üretilen aylar" sütununun sayıya ineceği kararlaştırıldı (R8, R10, AC-13/AC-22), sahte saatin tek yol olduğu gerekçelendirildi ve iki testin adı yazıldı (R11), tarama yöntemi tanımlandı (R12, AC-18), C4'ün istisnası R12'yi kapsayacak biçimde genişletildi; AC-7/AC-15 ölçülebilir hâle getirildi, AC-20…AC-22 eklendi. R2 (2026-09-27, plan onayı): kodda doğrulanan noktalar işlendi: `#faf7ff` için temada karşılık olmadığından `purBg3` eklenir (R2/B2); gider formundaki ikinci mor kutu (`GiderForm.jsx:125`) kapsama alınır, metni için `pur900` (R2/B3); `tasarim-kontrast`'a yalnız ek blok (C4/B5); `gider-settings` K28 iddiası R10 ile çeliştiği için C4 istisnası (C4/B6); R12 taraması grep'e ek olarak saat kaydırma koşusuyla yapılır, çünkü grep bilinen bombayı yakalamıyor (R12/B9); AC-7 kanıt raporunu okuyan testle ölçülür (B10). R3 (2026-09-27, uygulama sırasında kullanıcı kararı): tekrarlayan giderler tablosunda düzenle/sil düğmeleri her zaman yan yana durur ve kart geniş pencerede sağa büyür (Ayarlar içerik sütunu bu sekmede 760 değil 1200 px); R8'e yazıldı. |
 
 ---
 
@@ -87,6 +87,8 @@ takvimden bağımsız olarak yeşil.
   biniyor, yani tabloya kalan yer 800 pikselin altındadır). Ölçüm mevcut Electron yerleşim testi deseniyle
   yapılır. Sığdırma yolları: başlık sarmasına izin verilir (bugün bütün başlıklar sarmıyor),
   "Başlangıç" ile "Bitiş" tek sütunda birleştirilir, "Üretilen aylar" sayıya iner (R10).
+  (R3) Düzenle/sil düğmeleri her genişlikte yan yana durur; kart geniş pencerede sağdaki boşluğa büyür (Ayarlar içerik
+  sütununun bu sekmedeki 760 px sınırı 1200'e çıkar). Yerleşim testi ikisini de denetler.
 - **R9.** Daha dar pencerede yatay kaydırma kalabilir; bu kabul edilen davranıştır, tablo bozulmaz.
 - **R10.** Hiçbir sütunun taşıdığı bilgi kaybolmaz. Sütun birleştirilir, kısaltılır veya sarılır; bilgi
   silinmez. **"Üretilen aylar" sütunu sayıya iner** ("14 ay") ve tam liste ipucunda ya da satır açılınca
@@ -294,10 +296,16 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R3: kullanıcı, uygulanmış tabloyu gördükten sonra düğmelerin yan yana durmasını ve kartın sağa büyümesini istedi; R8'e yazıldı. R2 plan turunda, onayla eş zamanlıydı, sayılmaz. |
+| **Düzeltme turu sayısı** | 1 | Tablo: ilk sürümde düğmeler yer darsa alt alta diziliyordu (1280'de payı korumak için) ve kart 760 px'te kalıyordu. Kullanıcı ekran görüntüsüyle geri çevirdi; kök neden Ayarlar içerik sütununun sınırıydı, pay hücre dolgusundan geri kazanıldı. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 5 | Saat kaydırma taraması beş düşen test verdi: üçü gerçek tarih bombası (`makina-odeme`, `gider-perdesi-yedek`, `musteri-detay-bolumler`), ikisi yöntemin yapaylığı (`pinned-fetch` TLS saati, `servis-panosu` yalnız saat geri gidince). |
+| **Regresyon sayısı** | 0 | Aydınlık tema renk ekranlarında 0 piksel fark (testle), 202 ekranlık çekimde diğer bütün ekranlar 0 fark; mevcut testler yalnız onaylı istisnalarla değişti. Son durum: tam paket yeşil (Electron dahil), lint 0 hata. |
+| **Kaçan hata** | 0 | Henüz gerçek kullanımda bulunan yok. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Tarih bağımlılığını testte grep ile aramak yetmez: bağımlılık çoğu zaman test edilen kodun
+`today()` çağrısındadır. Paketi saati ileri ve geri kaydırarak koşmak, spec'in yönteminin göremediği bilinen bombayı ve iki
+yenisini buldu (biri üç hafta sonra patlayacaktı); bu koşu periyodik bir hijyen adımı olmalı. İkinci ders: "sığdır" isteğinde
+yalnız dar pencereyi ölçmek yetmedi; geniş pencerede kartın neden büyümediğine (üst kabın genişlik sınırı) bakılmadı ve pay
+uğruna düğmelerin görünümü feda edildi. Yerleşim işinde önce kapsayıcı sınırları okunmalı, görünümü etkileyen ödünler ise
+uygulamadan önce kullanıcıya sorulmalı. Üçüncüsü: koruma testi önce kırmızı görülünce (tam beş ad) testin gerçekten koruduğu
+kanıtlandı; tek tek düzeltmelerden kalıcı olanı bu test.

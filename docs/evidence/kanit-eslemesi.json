@@ -12,10 +12,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "katalog-calisan",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Documents.jsx": [
@@ -54,10 +53,9 @@
         "ekran": "gider-formu"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -153,16 +151,14 @@
         "ekran": "gider-formu"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -257,16 +253,14 @@
         "ekran": "ayarlar-gidertanim"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "gider-tanim-tablo",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsImport.jsx": [
@@ -557,10 +551,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "musteri-detay-tahsis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -570,10 +563,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "servis-formu-odendi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartSaleForm.jsx": [
@@ -583,10 +575,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "kalip-formu-odendi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -596,16 +587,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-odendi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-kargo",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -696,10 +685,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0030-piksel-raporu.json",
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "musteri-detay-tahsis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-27 · spec 0030 AC-7"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [
