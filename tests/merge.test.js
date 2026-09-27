@@ -175,6 +175,14 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.giderler[0].modelSatirlari).toHaveLength(1);
   });
 
+  it("spec 0021 C8: gider ödeme satırları kalemle birlikte taşınır, kimlikleri ve durumları korunur", () => {
+    const taksitler = [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-10-15", tutar: 500, odendi: true, odemeTarihi: "2026-10-15" },
+      { id: 7002, hedef: "ana", sira: 2, vade: "2026-11-15", tutar: 500, odendi: false, odemeTarihi: null }];
+    const my = blob({ giderTurleri: [{ id: 11, ad: "Hammadde", davranis: "normal" }], giderler: [{ id: 14, turId: 11, tutar: 1000, modelSatirlari: [], taksitler }] });
+    const plan = buildMergePlan(my, blob({ giderTurleri: [{ id: 11, ad: "Hammadde", davranis: "normal" }], giderler: [] }));
+    expect(plan.adds.giderler[0].taksitler).toEqual(taksitler);
+  });
+
   it("iki PC aynı id'yi üretirse tür/tedarikçi/tanım/müşteri referansları yeni id'yi izler", () => {
     const turId = uid(), tedId = uid(), tanimId = uid(), cid = uid(), sgId = uid();
     const my = blob({

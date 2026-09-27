@@ -166,3 +166,34 @@ describe("ödendi dönüşümü (R6, plan H8)", () => {
     expect(odemeDurumuDegistir(sonra[0], BUGUN)).toMatchObject({ odendi: false, odemeTarihi: null });
   });
 });
+
+// Spec 0021 R4, R14: hedef başına satır; taksitli hedefte vade en yakın ödenmemiş taksit; kart kalem sayar.
+describe("Spec 0021: taksitli kalem ve kiranın iki hedefi", () => {
+  const sat = (id, hedef, sira, vade, tutar, odendi = false) => ({ id, hedef, sira, vade, tutar, odendi, odemeTarihi: odendi ? "2026-09-01" : null });
+  // 12.000 ödenecek, 6 taksit, ilk ikisi ödenmiş; kalem düzeyinde son ödeme tarihi YOK.
+  const taksitli = k(1, { sonOdemeTarihi: "", taksitler: [
+    sat(101, "ana", 1, "2026-08-15", 2000, true), sat(102, "ana", 2, "2026-09-15", 2000, true), sat(103, "ana", 3, "2026-09-26", 2000),
+    sat(104, "ana", 4, "2026-10-26", 2000), sat(105, "ana", 5, "2026-11-26", 2000), sat(106, "ana", 6, "2026-12-26", 2000)] });
+  it("AC-24: kalem vadesi boş olsa da taksitli kalem kapsamda; vade en yakın ödenmemiş taksitin vadesi", () => {
+    const r = hesap([taksitli]);
+    expect(r.sayilar).toEqual({ gecmis: 0, yaklasan: 1 });
+    expect(r.yaklasan[0]).toMatchObject({ vade: "2026-09-26", vadeEtiketi: "Taksit vadesi", taksit: { odenen: 2, toplam: 6 } });
+  });
+  it("AC-8: tutar kalan taksitlerin toplamı (8.000), vade en yakın ödenmemiş taksit", () => {
+    expect(hesap([taksitli]).yaklasan[0]).toMatchObject({ odenecek: 8000, gunFarki: 2 });
+  });
+  it("AC-9: altı taksitli kalem tek satır; iki hedefli kira en çok iki satır, kart kalem sayar", () => {
+    expect(hesap([taksitli]).yaklasanSatirlar).toHaveLength(1);
+    const kira = k(2, { turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 0, sonOdemeTarihi: gunEkle(BUGUN, -2), taksitler: [
+      sat(201, "ana", 1, gunEkle(BUGUN, -2), 16000), sat(202, "stopaj", 1, gunEkle(BUGUN, 2), 4000)] });
+    const r = hesap([kira]);
+    expect([...r.gecmis, ...r.yaklasan].map(o => [o.hedef, o.taraf, o.odenecek])).toEqual([["ana", "Demir Bant", 16000], ["stopaj", "Vergi dairesi", 4000]]);
+    expect(r.sayilar).toEqual({ gecmis: 1, yaklasan: 0 }); // kalem en acil kovada, bir kez
+    expect(r.kalemIdleri.size).toBe(r.sayilar.gecmis + r.sayilar.yaklasan);
+  });
+  it("R13: vadesi girilmemiş stopaj hedefi hatırlatıcıya girmez", () => {
+    const kira = k(3, { turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 0, sonOdemeTarihi: BUGUN, taksitler: [
+      sat(301, "ana", 1, BUGUN, 16000), sat(302, "stopaj", 1, null, 4000)] });
+    expect([...hesap([kira]).yaklasan].map(o => o.hedef)).toEqual(["ana"]);
+  });
+});

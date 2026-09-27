@@ -112,7 +112,11 @@ dbmod.writeBlobToDb({
   giderler: [
     { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
-    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [] },
+    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
+      // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
+      taksitler: [{ id: 9001, hedef: "ana", sira: 1, vade: "2026-07-05", tutar: 20000, odendi: true, odemeTarihi: "2026-07-05" },
+        { id: 9002, hedef: "stopaj", sira: 1, vade: "2026-08-26", tutar: 2000, odendi: true, odemeTarihi: "2026-08-20" },
+        { id: 9003, hedef: "stopaj", sira: 2, vade: "2026-09-26", tutar: 2000, odendi: false, odemeTarihi: null }] },
     { id: 83, tarih: "2026-07-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 39223.13, eldenTutar: 15000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [], deletedAt: "2026-07-20T10:00:00.000Z" },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
@@ -223,6 +227,8 @@ check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || 
 check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());
 check("gider: kalem alanları + odendi boolean roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 81); const kira = (blob.giderler || []).find(x => x.id === 82); return k?.odendi === false && k.tutar === 140000 && k.odemeYontemi === "Çek" && k.sonOdemeTarihi === "2026-08-15" && k.tedarikciId === 51 && k.atamaTur === "model" && kira?.odendi === true && kira.girisYonu === "net" && kira.netTutar === 16000 && kira.stopajOrani === 20 && kira.tanimId === 61 && kira.donem === "2026-07"; })());
 check("gider: model alt satırları sırasıyla roundtrip ve id taşımıyor", (() => { const m = (blob.giderler || []).find(x => x.id === 81)?.modelSatirlari || []; return m.length === 2 && m[0].modelAd === "AK120_DSC" && m[0].birimMaliyet === 3000 && m[0].adet === 30 && m[1].modelAd === "AK100_DS" && m.every(x => x.id === undefined); })());
+check("spec 0021: gider ödeme satırları kimlik, hedef, sıra, vade, tutar ve durumlarıyla roundtrip (C8)", (() => { const t = (blob.giderler || []).find(x => x.id === 82)?.taksitler || []; return t.length === 3 && t.map(x => x.id).join() === "9001,9002,9003" && t[1].hedef === "stopaj" && t[1].sira === 1 && t[1].vade === "2026-08-26" && t[1].tutar === 2000 && t[1].odendi === true && t[1].odemeTarihi === "2026-08-20" && t[2].odendi === false && t[2].odemeTarihi === null; })());
+check("spec 0021: satırsız gider kalemi boş taksit dizisi döner", ((blob.giderler || []).find(x => x.id === 81)?.taksitler || null)?.length === 0);
 check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
 check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = (blob.giderler || []).find(x => x.id === 83); return p?.resmiTutar === 39223.13 && p.eldenTutar === 15000 && p.calisanAd === "Ahmet Yılmaz" && p.deletedAt === "2026-07-20T10:00:00.000Z"; })());
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
@@ -294,6 +300,7 @@ check("atlanan bölüm korundu (customer)", out.customers[0]?.name === "Müşter
 check("atlanan bölüm korundu (dealer)", out.dealers[0]?.name === "Bayi X");
 check("FK zinciri: service korundu", out.services[0]?.type === "Garanti İçi");
 check("atlanan bölüm korundu (gider model satırları)", (out.giderler.find(x => x.id === 81)?.modelSatirlari || []).length === 2);
+check("atlanan bölüm korundu (gider ödeme satırları, spec 0021)", (out.giderler.find(x => x.id === 82)?.taksitler || []).length === 3);
 
 // ── KAPAT → YENİDEN AÇ (uygulama restart) → veri kalıcı mı? (yedek parça satışı regresyonu) ──
 dbmod.close();
@@ -304,6 +311,7 @@ check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar
 check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
 check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
 check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 4 && (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
+check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
 check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 3 && (reopen.standartGiderler || []).length === 2);
 check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
 

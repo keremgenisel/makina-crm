@@ -189,3 +189,39 @@ describe("AC-14: Giderler süzgeci ile Anasayfa kartı aynı sayıyı verir", ()
     expect(screen.getByLabelText("Dönem ayı").closest("fieldset")).toBeNull();
   });
 });
+
+// Spec 0021 R4, R14, AC-8/9/24: satır ödeme hedefi başına; "Ödendi" o hedefin en yakın taksitini işaretler.
+describe("Spec 0021: taksitli kalem ve kiranın iki hedefi (Anasayfa)", () => {
+  const TUR_KIRA = [...TUR, { id: 2, ad: "Kira", davranis: "kira" }];
+  const sat = (id, hedef, sira, vade, tutar, odendi = false) => ({ id, hedef, sira, vade, tutar, odendi, odemeTarihi: odendi ? "2026-09-01" : null });
+  function KiraHarness({ g0, onState }) {
+    const [giderler, setGiderler] = useState(g0);
+    onState?.(giderler);
+    return <Dashboard {...ortak} serverPermissions={null} giderYetki giderler={giderler} setGiderler={setGiderler}
+      giderTurleri={TUR_KIRA} tedarikciler={TED} giderAyarlari={AYAR} onGoGiderHatirlatma={vi.fn()} />;
+  }
+  const taksitli = k(1, { sonOdemeTarihi: "", taksitler: [sat(101, "ana", 1, "2026-08-26", 4000, true), sat(102, "ana", 2, "2026-09-26", 4000), sat(103, "ana", 3, "2026-10-26", 4000)] });
+  const kira = k(2, { turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 0, sonOdemeTarihi: "2026-09-20",
+    taksitler: [sat(201, "ana", 1, "2026-09-20", 16000), sat(202, "stopaj", 1, "2026-09-26", 4000)] });
+  it("AC-9 / AC-24: taksitli kalem tek satır (Taksit 2/3), kira iki satır; kart kalem sayar", () => {
+    render(<KiraHarness g0={[taksitli, kira]} />);
+    expect(sayilar()).toEqual([1, 1]); // kira geçmişte (kiraya veren), taksitli yaklaşanda
+    ac();
+    const satirlar = screen.getAllByTestId("hatirlatma-satiri");
+    expect(satirlar).toHaveLength(3);
+    expect(satirlar.map(s => s.textContent).join("|")).toMatch(/Vergi dairesi/);
+    expect(within(screen.getByTestId("hatirlatma-bolum-yaklasan")).getByText(/Taksit 2\/3/)).toBeTruthy();
+  });
+  it("AC-8: Ödendi yalnız o hedefin en yakın taksitini işaretler", () => {
+    let st;
+    render(<KiraHarness g0={[taksitli, kira]} onState={s => { st = s; }} />);
+    ac();
+    const vergi = screen.getAllByTestId("hatirlatma-satiri").find(s => /Vergi dairesi/.test(s.textContent));
+    fireEvent.click(within(vergi).getByText(/Ödendi/));
+    const k2 = st.find(x => x.id === 2);
+    expect(k2.taksitler.map(r => [r.hedef, r.odendi])).toEqual([["ana", false], ["stopaj", true]]);
+    const tak = screen.getAllByTestId("hatirlatma-satiri").find(s => /Taksit 2\/3/.test(s.textContent));
+    fireEvent.click(within(tak).getByText(/Ödendi/));
+    expect(st.find(x => x.id === 1).taksitler.map(r => r.odendi)).toEqual([true, true, false]);
+  });
+});

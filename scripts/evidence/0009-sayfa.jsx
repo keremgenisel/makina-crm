@@ -197,6 +197,16 @@ const maliyetDetayi = () => {
     <MakinaMaliyetDetay detay={makinaKarlilik(s, "musteri:501")} /></div>;
 };
 
+// Spec 0021: taksitli kalem (6 taksit, 2'si ödenmiş) ve iki hedefli kira (stopaj 4 taksit, biri ödenmiş).
+const tks = (id, hedef, sira, vade, tutar, odendi = false) => ({ id, hedef, sira, vade, tutar, odendi, odemeTarihi: odendi ? vade : null });
+const TAKSITLI_K = k(31, { turId: 5, tutar: 10000, kdvOrani: 20, tedarikciId: 12, aciklama: "Kompresör", tarih: "2026-09-12", sonOdemeTarihi: "2026-10-12",
+  taksitler: [tks(3101, "ana", 1, "2026-08-12", 2000, true), tks(3102, "ana", 2, "2026-09-12", 2000, true), tks(3103, "ana", 3, "2026-10-12", 2000),
+    tks(3104, "ana", 4, "2026-11-12", 2000), tks(3105, "ana", 5, "2026-12-12", 2000), tks(3106, "ana", 6, "2027-01-12", 2000)] });
+const KIRA_K = k(32, { turId: 1, tutar: 20000, netTutar: 16000, girisYonu: "brut", stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Eylül depo kirası", tarih: "2026-09-01", sonOdemeTarihi: "2026-09-25",
+  taksitler: [tks(3201, "ana", 1, "2026-09-25", 16000), tks(3202, "stopaj", 1, "2026-08-26", 1000, true), tks(3203, "stopaj", 2, "2026-09-26", 1000),
+    tks(3204, "stopaj", 3, "2026-10-26", 1000), tks(3205, "stopaj", 4, "2026-11-26", 1000)] });
+const TAKSIT_GIDERLER = [...GIDERLER, TAKSITLI_K, KIRA_K];
+
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
@@ -296,6 +306,14 @@ const EKRANLAR = {
   // Triyaj bulgu 1: dönem raporu kalem listesi, personel grubu açık; atanmış personel kaleminin atama sütunu makinayı,
   // model dağılımı modeli gösterir (eskiden ikisi de "Ortak gider").
   "giderler-rapor-personel-acik": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["dugme:Çalışanları göster", "kaydir:Zeynep Arslan"]],
+  // Spec 0021: taksit ve vergi dairesi (stopaj) ödemesi.
+  "gider-formu-taksit": [<GiderForm kalem={TAKSITLI_K} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ödeme planı"]],
+  "gider-formu-kira-stopaj": [<GiderForm kalem={{ ...KIRA_K, kdvOrani: 20 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Vergi dairesi (stopaj)"]],
+  "giderler-taksit-liste": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["kaydir:Gider Kalemleri"]],
+  "giderler-taksit-borc": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
+  "giderler-odeme-plani": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["dugme:Ödeme planı"]],
+  "anasayfa-hatirlatma-taksit": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+    giderYetki giderler={TAKSIT_GIDERLER} setGiderler={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri"]],
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],

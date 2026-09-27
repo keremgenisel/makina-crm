@@ -33,12 +33,13 @@ const KalemSatiri = ({ o, bolum, odendiYetkisi, onOdendi, girinti = false }) => 
   <div data-testid="hatirlatma-satiri" style={{ ...izgara, padding: "8px 12px", paddingLeft: girinti ? 28 : 12, fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
     <div style={{ minWidth: 0 }}>
       <b>{o.taraf}</b>
-      {!o.personel && o.kalem.aciklama && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.kalem.aciklama}</div>}
+      {!o.personel && (o.kalem.aciklama || o.taksit) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {[o.kalem.aciklama, o.taksit && `Taksit ${o.taksit.odenen + 1}/${o.taksit.toplam}`].filter(Boolean).join(" · ")}</div>}
     </div>
     <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(o.odenecek)}</b>
     <span><span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{o.vadeEtiketi}</span><br />{fmtTR(o.vade)}</span>
     <span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(o.gunFarki)}</span>
-    <span style={{ textAlign: "right" }}>{odendiYetkisi && <Btn small variant="ghost" onClick={() => onOdendi(o.kalem)} title="Ödendi olarak işaretle"><Icon name="check" size={12} /> Ödendi</Btn>}</span>
+    <span style={{ textAlign: "right" }}>{odendiYetkisi && <Btn small variant="ghost" onClick={() => onOdendi(o.kalem, o.hedef)} title={o.taksit ? "Bu taksiti ödendi olarak işaretle" : "Ödendi olarak işaretle"}><Icon name="check" size={12} /> Ödendi</Btn>}</span>
   </div>
 );
 
@@ -64,9 +65,9 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
               <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(s.odenecek)}</b>
               <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.kalemler[0].gunFarki)}</span><span />
             </div>
-            {acik.personel && s.kalemler.map(o => <KalemSatiri key={o.id} o={o} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} girinti />)}
+            {acik.personel && s.kalemler.map(o => <KalemSatiri key={o.anahtar || o.id} o={o} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} girinti />)}
           </div>
-        ) : <KalemSatiri key={s.id} o={s} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} />)}
+        ) : <KalemSatiri key={s.anahtar || s.id} o={s} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} />)}
       </div>
     </div>
   );

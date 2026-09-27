@@ -538,7 +538,42 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       }
     }
   }
+  // Gider ödeme satırları (spec 0021 C5, plan T3): denetim SATIR bazında. Mevcut kalemde bir satırın ödeme durumu
+  // veya ödeme tarihi değişirse ya da kaleme ödenmiş yeni satır eklenirse `gider_odeme` istenir. Planın ve tutarın
+  // değişmesi (R10 yeniden bölme) yalnız ödenmemiş satırları etkiler ve bölüm düzeyinde (`gider_edit`) kalır;
+  // diziyi bütün olarak izlemek tutar düzenleyen kullanıcıyı da reddederdi.
+  // Yeni kalem (triyaj bulgu 4): ödenmiş doğan kalem ya da ödenmiş satır da ödeme kaydıdır; ekleme izni yetmez.
+  if (Array.isArray(yeni.giderler) && !eylemIzinli(perms, "giderActions", "gider_odeme")) {
+    const eskiById = new Map((Array.isArray(eski.giderler) ? eski.giderler : []).map(r => [r.id, r]));
+    for (const r of yeni.giderler) {
+      const e = eskiById.get(r.id);
+      const degisti = e ? taksitOdemesiDegistiMi(e.taksitler, r.taksitler, e)
+        : !r.deletedAt && (!!r.odendi || (Array.isArray(r.taksitler) && r.taksitler.some(t => t.odendi)));
+      if (degisti) return { ok: false, reddedilenBolum: "giderler", islem: e ? "duzenle" : "ekle", gerekli: "gider_odeme" };
+    }
+  }
   return { ok: true };
+}
+
+// Satırlar kalıcı kimlikle eşlenir (spec 0021 C8). Ödeme alanları: odendi (boolean) ve odemeTarihi.
+// Satırsız eski kalem (R13) ilk düzenlemede satıra çevrilir; satırlar kalemin eski durumuyla (odendi, odemeTarihi)
+// aynı doğuyorsa bu bir ödeme değişikliği değildir (triyaj bulgu 1).
+function taksitOdemesiDegistiMi(eskiSatirlar, yeniSatirlar, eskiKalem = null) {
+  const eskiVar = Array.isArray(eskiSatirlar) && eskiSatirlar.length > 0;
+  if (!eskiVar && eskiKalem) {
+    const odendi = !!eskiKalem.odendi, tarih = odendi ? (eskiKalem.odemeTarihi || null) : null;
+    return (Array.isArray(yeniSatirlar) ? yeniSatirlar : []).some(t => !!t.odendi !== odendi || (t.odemeTarihi || null) !== tarih);
+  }
+  const eskiById = new Map((Array.isArray(eskiSatirlar) ? eskiSatirlar : []).map(t => [String(t.id), t]));
+  for (const t of (Array.isArray(yeniSatirlar) ? yeniSatirlar : [])) {
+    const e = eskiById.get(String(t.id));
+    if (!e) { if (t.odendi) return true; continue; }
+    if (!!e.odendi !== !!t.odendi || (e.odemeTarihi || null) !== (t.odemeTarihi || null)) return true;
+  }
+  // Ödenmiş bir satırın silinmesi de ödeme kaydının değişmesidir.
+  const yeniIdler = new Set((Array.isArray(yeniSatirlar) ? yeniSatirlar : []).map(t => String(t.id)));
+  for (const [id, e] of eskiById) if (e.odendi && !yeniIdler.has(id)) return true;
+  return false;
 }
 
 // Fiziksel dosya uçları (/api/files upload & delete) yetkisi. Künye zaten /api/data'da
@@ -593,5 +628,5 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 
 module.exports = {
   BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
-  stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  taksitOdemesiDegistiMi, stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

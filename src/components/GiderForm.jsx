@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { today, getKdvRateForDate } from "../lib/utils";
-import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi } from "../lib/gider";
+import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, odemeDurumu, HEDEF } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
-import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "./gider/GiderAlanlari";
-import { Segment, HataMetni, Ipucu } from "./tasarim";
+import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU } from "./gider/GiderAlanlari";
+import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
 // Tek form: ekle ve düzenle. Tür davranışı alanları açar: kira → brüt/net yön, stopaj, hesap özeti;
@@ -18,13 +18,18 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     return { id: null, tarih, turId: "", aciklama: "", tedarikciId: "", tutar: "", netTutar: "", girisYonu: "brut",
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
-      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false };
+      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false,
+      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", taksitler: [] };
   }
+  // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
+  const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
+  const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ);
   return { ...k, turId: idMetni(k.turId), tedarikciId: idMetni(k.tedarikciId), calisanId: idMetni(k.calisanId),
     tutar: tutarMetni(k.tutar), netTutar: tutarMetni(k.netTutar), kdvOrani: tutarMetni(k.kdvOrani),
     stopajOrani: tutarMetni(k.stopajOrani ?? giderAyarlari?.stopajOrani ?? 20), resmiTutar: tutarMetni(k.resmiTutar), eldenTutar: tutarMetni(k.eldenTutar),
-    sonOdemeTarihi: k.sonOdemeTarihi || "", odemeTarihi: k.odemeTarihi || "", odemeYontemi: k.odemeYontemi || "", girisYonu: k.girisYonu || "brut",
-    modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true };
+    sonOdemeTarihi: (ana.length ? ana[0].vade : k.sonOdemeTarihi) || "", odemeTarihi: k.odemeTarihi || "", odemeYontemi: k.odemeYontemi || "", girisYonu: k.girisYonu || "brut",
+    modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
+    taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "" };
 };
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
@@ -66,6 +71,21 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const normalKdv = Math.round(normalTutar * (tutarCoz(form.kdvOrani).deger || 0)) / 100;
   const personelToplam = tutarCoz(form.resmiTutar).deger + tutarCoz(form.eldenTutar).deger;
 
+  // Ödeme planı önizlemesi (spec 0021): kayıttakiyle AYNI motor (odemeSatirlariKur); geçici kimliklerle çizilir.
+  const onizleme = useMemo(() => {
+    const kalemBenzeri = {
+      tutar: dav === DAVRANIS.KIRA ? kira?.brut : normalTutar, kdvOrani: tutarCoz(form.kdvOrani).deger, stopajOrani: tutarCoz(form.stopajOrani).deger,
+      resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger,
+    };
+    let n = 0;
+    const eski = form.taksitler || [];
+    return odemeSatirlariKur(kalemBenzeri, dav, { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null },
+      { uid: () => `onizleme-${++n}`, eskiSatirlar: eski, eskiOdendi: !eski.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
+  }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.taksitler, form.odendi, form.odemeTarihi]);
+  const planli = !!onizleme.hata || (onizleme.satirlar || []).length > 0;
+  const planDurumu = planli && onizleme.satirlar ? odemeDurumu({ taksitler: onizleme.satirlar }) : null;
+  const stopajVar = dav === DAVRANIS.KIRA && (kira?.stopaj || 0) > 0;
+
   const kaydet = () => {
     const ham = {
       ...form,
@@ -82,7 +102,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   };
 
   const cekMi = form.odemeYontemi === "Çek";
-  const vadeEtiket = cekMi ? "Çek vade tarihi" : "Son ödeme tarihi";
+  const taksitli = Number(form.taksitSayisi) >= 2;
+  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? "Kiraya verene son ödeme" : cekMi ? "Çek vade tarihi" : "Son ödeme tarihi";
   const sayac = new Set(hatalar.map(h => h.alan)).size;
   return (
     <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} maxWidth={dav === DAVRANIS.KIRA ? 900 : 640}
@@ -205,23 +226,65 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         <Ipucu>Opsiyonel. Ödeme durumundan bağımsızdır, kalem ödenmeden önce de seçilebilir.</Ipucu>
       </Field>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ width: 130 }}>
+          <Field label="Taksit sayısı">
+            <Input aria-label="Taksit sayısı" type="number" min="1" max="60" value={form.taksitSayisi} onChange={e => set({ taksitSayisi: e.target.value, ...(Number(e.target.value) >= 2 && !satirliMi(form) ? { odendi: false, odemeTarihi: "" } : {}) })} />
+            <HataMetni>{hata("taksitSayisi")}</HataMetni>
+          </Field>
+        </div>
         <div style={{ flex: "1 1 170px" }}>
           <Field label={vadeEtiket}>
-            <Input type="date" value={form.sonOdemeTarihi} onChange={e => set({ sonOdemeTarihi: e.target.value })} />
+            <Input aria-label={vadeEtiket} type="date" value={form.sonOdemeTarihi} onChange={e => set({ sonOdemeTarihi: e.target.value })} />
             <HataMetni>{hata("sonOdemeTarihi")}</HataMetni>
-            <Ipucu>Gider tarihinden önce olamaz.</Ipucu>
+            <Ipucu>{taksitli ? "Sonraki taksitler birer ay arayla oluşur." : "Gider tarihinden önce olamaz."}</Ipucu>
           </Field>
         </div>
-        <div style={{ flex: "1 1 200px" }}>
-          <Field label="Ödeme durumu">
-            <Segment ariaLabel="Ödeme durumu" disabled={!odemeDegistirebilir} options={[{ value: true, label: "Ödendi" }, { value: false, label: "Ödenmedi" }]} value={!!form.odendi} onChange={odendiDegis} />
-            {!odemeDegistirebilir && <Ipucu>Ödeme durumunu değiştirme yetkiniz yok.</Ipucu>}
-          </Field>
-        </div>
-        {form.odendi && (
-          <div style={{ flex: "1 1 150px" }}><Field label="Ödeme tarihi"><Input type="date" value={form.odemeTarihi} disabled={!odemeDegistirebilir} onChange={e => set({ odemeTarihi: e.target.value })} /></Field></div>
+        {!planli ? (
+          <>
+            <div style={{ flex: "1 1 200px" }}>
+              <Field label="Ödeme durumu">
+                <Segment ariaLabel="Ödeme durumu" disabled={!odemeDegistirebilir} options={[{ value: true, label: "Ödendi" }, { value: false, label: "Ödenmedi" }]} value={!!form.odendi} onChange={odendiDegis} />
+                {!odemeDegistirebilir && <Ipucu>Ödeme durumunu değiştirme yetkiniz yok.</Ipucu>}
+              </Field>
+            </div>
+            {form.odendi && (
+              <div style={{ flex: "1 1 150px" }}><Field label="Ödeme tarihi"><Input type="date" value={form.odemeTarihi} disabled={!odemeDegistirebilir} onChange={e => set({ odemeTarihi: e.target.value })} /></Field></div>
+            )}
+          </>
+        ) : (
+          <div style={{ flex: "1 1 200px" }}>
+            {/* AC-6, AC-25: satırı olan kalemin durumu satırlardan türetilir, burada çevrilmez. */}
+            <Field label="Ödeme durumu">
+              <div data-testid="odeme-durumu-turetilen" style={{ fontSize: 13, fontWeight: 700, padding: "7px 0" }}>{planDurumu === "odendi" ? "Ödendi" : planDurumu === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</div>
+              <Ipucu>Ödeme durumu ödeme satırlarından gelir; satırları gider listesindeki “Ödeme planı” penceresinden işaretleyin.</Ipucu>
+            </Field>
+          </div>
         )}
       </div>
+      {stopajVar && (
+        <KartBolum varyant="kart" baslikStili="baslik" title="Vergi dairesi (stopaj)" altBaslik={`Kesilen stopaj ${tl2(kira.stopaj)} kiraya verene değil vergi dairesine ödenir; ayrı izlenir.`} testId="stopaj-bolumu" style={{ marginBottom: 12, padding: 14 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ width: 130 }}>
+              <Field label="Stopaj taksit sayısı"><Input aria-label="Stopaj taksit sayısı" type="number" min="1" max="60" value={form.stopajTaksitSayisi} onChange={e => set({ stopajTaksitSayisi: e.target.value })} /><HataMetni>{hata("stopajTaksitSayisi")}</HataMetni></Field>
+            </div>
+            <div style={{ flex: "1 1 170px" }}>
+              <Field label={Number(form.stopajTaksitSayisi) >= 2 ? "İlk stopaj taksitinin vadesi" : "Stopaj vadesi"}>
+                <Input aria-label="Stopaj vadesi" type="date" value={form.stopajVade} onChange={e => set({ stopajVade: e.target.value })} />
+                <HataMetni>{hata("stopajVade")}</HataMetni>
+                <Ipucu>Opsiyonel. Girilmezse stopaj borç özetinde görünür, hatırlatıcıya girmez.</Ipucu>
+              </Field>
+            </div>
+          </div>
+          <Ipucu>{STOPAJ_AYRI_KALEM_NOTU}</Ipucu>
+        </KartBolum>
+      )}
+      {stopajVar && tutarCoz(form.kdvOrani).deger > 0 && <div style={{ marginBottom: 12 }}><UyariSeridi aile="bilgi" testId="stopaj-kdv-notu">{STOPAJ_KDV_NOTU}</UyariSeridi></div>}
+      {dav === DAVRANIS.NORMAL && <Ipucu>{STOPAJ_AYRI_KALEM_NOTU}</Ipucu>}
+      {planli && (
+        <Field label="Ödeme planı">
+          {onizleme.hata ? <HataMetni>{onizleme.hata}</HataMetni> : <OdemeSatirlari satirlar={onizleme.satirlar} davranis={dav} testId="odeme-plani-onizleme" />}
+        </Field>
+      )}
 
       {atanabilirMi(dav) && (
         <Field label="Makina maliyeti ataması">

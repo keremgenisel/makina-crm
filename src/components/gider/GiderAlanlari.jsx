@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
-import { fmtCur, trLower } from "../../lib/utils";
+import { ATAMA, DAVRANIS, HEDEF, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
+import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
 // atama/tutar bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.
@@ -150,3 +150,46 @@ export const DavranisRozeti = ({ davranis }) => {
   return <span style={{ display: "inline-flex", fontSize: 11, fontWeight: 700, color: r[0], background: r[1], border: `1px solid ${r[2]}`, borderRadius: 999, padding: "1px 8px", whiteSpace: "nowrap" }}>{DAVRANIS_AD[davranis] || "Normal"}</span>;
 };
 export const fmtTL = (n) => fmtCur(n, "TRY");
+
+// ── Ödeme planı (spec 0021) ───────────────────────────────────────────────────
+// R11: kiraya veren şahıssa stopaj olur KDV olmaz, şirketse tersi; ikisi birlikte istisnadır (engel değil).
+export const STOPAJ_KDV_NOTU = "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV olmaz; şirketse KDV olur, stopaj olmaz. İkisi birlikte istisnai bir durumdur; doğruysa kaydedebilirsiniz.";
+// AC-14, R15: kalıcı bilgi satırı; sistem tespit yapmaz.
+export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olarak girmeyin: brüt kira zaten gider toplamındadır, vergi dairesine ödenen stopaj kira kaleminin vergi dairesi bölümünde izlenir.";
+export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
+export const hedefAdi = (hedef, davranis) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene" : hedef === HEDEF.ANA && davranis === DAVRANIS.PERSONEL ? "Çalışana" : HEDEF_AD[hedef]);
+
+// Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
+// satırın durum hücresi düğmedir (gider_odeme).
+export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) => {
+  const hedefler = [HEDEF.ANA, HEDEF.STOPAJ].filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
+  const izgara = { display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) minmax(0, 1fr) 130px", gap: 10, alignItems: "center" };
+  return (
+    <div data-testid={testId}>
+      {hedefler.map(h => {
+        const sat = satirlar.filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
+        const odenen = sat.filter(r => r.odendi).length;
+        return (
+          <div key={h} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--n700, #334155)", marginBottom: 4 }}>
+              {hedefAdi(h, davranis)} <span style={{ fontWeight: 500, color: "var(--n500, #64748b)" }}>· {sat.length > 1 ? `${sat.length} taksit, ${odenen} ödendi` : odenen ? "ödendi" : "ödenmedi"}</span>
+            </div>
+            <div style={{ ...izgara, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", padding: "0 0 4px" }}><span>#</span><span>Vade</span><span style={{ textAlign: "right" }}>Tutar</span><span>Durum</span></div>
+            {sat.map(r => (
+              <div key={r.id} data-testid="odeme-satiri" style={{ ...izgara, fontSize: 13, padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                <span style={{ color: "var(--n500, #64748b)" }}>{r.sira}</span>
+                <span>{r.vade ? fmtTR(r.vade) : <span style={{ color: "var(--n500, #64748b)" }}>Vade girilmemiş</span>}</span>
+                <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(r.tutar)}</b>
+                <span>{onIsaretle
+                  ? <button type="button" onClick={() => onIsaretle(r)} title={r.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"}
+                    style={{ border: "1px solid var(--n200, #e2e8f0)", background: r.odendi ? "var(--grnBg, #f0fdf4)" : "var(--surface, #ffffff)", color: r.odendi ? "var(--grn700, #15803d)" : "var(--n700, #334155)", borderRadius: 7, padding: "3px 9px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {r.odendi ? `Ödendi${r.odemeTarihi ? ` ${fmtTR(r.odemeTarihi).slice(0, 5)}` : ""}` : "Ödendi işaretle"}</button>
+                  : <span style={{ fontSize: 12, fontWeight: 700, color: r.odendi ? "var(--grn700, #15803d)" : "var(--n600, #475569)" }}>{r.odendi ? "Ödendi" : "Ödenmedi"}</span>}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+};

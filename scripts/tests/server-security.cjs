@@ -326,6 +326,19 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 403);
   check("gider: açıklama düzenlemesi gider_edit ile → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, aciklama: "düzeltildi" } : k) }, gG.dataVersion, gidTok)).status === 200);
+  // Spec 0021 C5 / AC-20: taksit satırı ödemesi satır bazında gider_odeme ister (kalemin odendi'si değişmese bile).
+  gG = await gUst(gidTok);
+  const tks = (o1 = {}, o2 = {}) => [{ id: 90301, hedef: "ana", sira: 1, vade: "2026-10-15", tutar: 600, odendi: false, odemeTarihi: null, ...o1 },
+    { id: 90302, hedef: "ana", sira: 2, vade: "2026-11-15", tutar: 600, odendi: false, odemeTarihi: null, ...o2 }];
+  check("spec 0021: gider_edit kullanıcısı taksitli kalem ekler → 200",
+    (await postData({ ...gG, dataVersion: undefined, giderler: [...gG.giderler, { id: 9030, tarih: "2026-09-01", turId: 1, tutar: 1000, kdvOrani: 20, odendi: false, sonOdemeTarihi: "2026-10-15", modelSatirlari: [], taksitler: tks() }] }, gG.dataVersion, gidTok)).status === 200);
+  gG = await gUst(gidTok);
+  check("spec 0021: kayıttan okunan kalem taksit satırlarını kimlikleriyle taşır",
+    (gG.giderler.find(k => k.id === 9030)?.taksitler || []).map(t => t.id).join() === "90301,90302");
+  check("spec 0021: gider_odeme olmadan taksiti ödendi işaretlemek → 403",
+    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, taksitler: tks({ odendi: true, odemeTarihi: "2026-10-15" }) } : k) }, gG.dataVersion, gidTok)).status === 403);
+  check("spec 0021: tutar değişip ödenmemiş taksitler yeniden bölünürse gider_edit yeter → 200",
+    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, tutar: 1500, taksitler: tks({ tutar: 900 }, { tutar: 900 }) } : k) }, gG.dataVersion, gidTok)).status === 200);
   gG = await gUst(gidTok);
   check("gider: tedarikçi eklemek tedarikci_add ister → 403",
     (await postData({ ...gG, dataVersion: undefined, tedarikciler: [{ id: 9005, ad: "T" }] }, gG.dataVersion, gidTok)).status === 403);

@@ -5,7 +5,7 @@
 // "Vadesi geçmiş" kuralı YENİDEN YAZILMAZ: 0001'in vadesiGectiMi'si çağrılır (C2). Bu dosya yalnız "yaklaşan"
 // (bugün ≤ vade ≤ bugün + eşik) kavramını ekler. Anasayfa kartı, liste penceresi ve Giderler süzgeci aynı
 // fonksiyonu aynı `bugun` ve eşikle kullanır, sayılar bu yüzden ayrışamaz (AC-14).
-import { turHaritasi, davranisOf, odenecekTutar, vadesiGectiMi, kurus, DAVRANIS } from "./gider";
+import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
 
 export const HATIRLATMA_ESIK_VARSAYILAN = 7;
 export const HATIRLATMA_ESIK_MAX = 365;
@@ -38,7 +38,8 @@ export const gunFarkiMetni = (fark) => (fark === 0 ? "bugün" : fark > 0 ? `${fa
 
 const sirala = (a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1)
   : a.odenecekK !== b.odenecekK ? b.odenecekK - a.odenecekK
-    : (Number(a.kalem.id) - Number(b.kalem.id)) || String(a.kalem.id).localeCompare(String(b.kalem.id)));
+    : (Number(a.kalem.id) - Number(b.kalem.id)) || String(a.kalem.id).localeCompare(String(b.kalem.id))
+      || String(a.hedef || "").localeCompare(String(b.hedef || ""))); // aynı kalemin iki hedefi: ana, sonra stopaj
 
 // Bölüm satırları: personel kalemleri bölüm başına tek toplu satır (R3, AC-17, H5); satır, bölümdeki en eski
 // personel vadesinin yerinde durur.
@@ -58,32 +59,45 @@ const bolumSatirlari = (ogeler) => {
   return satirlar.sort((a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1) : a.tur === b.tur ? 0 : a.tur === "personel" ? 1 : -1));
 };
 
+const kalemSayilari = (gecmis, yaklasan) => {
+  const g = new Set(gecmis.map(o => String(o.id)));
+  const y = new Set(yaklasan.map(o => String(o.id)).filter(id => !g.has(id)));
+  return { gecmis: g.size, yaklasan: y.size };
+};
+
 export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler = [], yururlukAy = null, esikGun = HATIRLATMA_ESIK_VARSAYILAN } = {}, bugun) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
   const esik = yururlukAy ? `${yururlukAy}-01` : "";
   const sinir = gunEkle(bugun, esikGun);
   const gecmis = [], yaklasan = [];
+  // Spec 0021 R4, AC-9: satır ÖDEME HEDEFİ başınadır (taksit başına değil). Taksitli hedefte tutar kalan taksitlerin
+  // toplamı, vade en yakın ödenmemiş taksitin vadesidir; kalem düzeyinde vade aranmaz (AC-24). Vadesi bilinmeyen
+  // hedef (eski kiranın stopajı, R13) girmez. Kartın iki sayısı KALEM sayar (R14, T6): kalem en acil kovaya girer.
   for (const k of giderler) {
-    if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || k.tarih > bugun || !k.sonOdemeTarihi) continue;
+    if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || k.tarih > bugun) continue;
     const dav = davranisOf(k, turMap);
-    const odenecekK = kurus(odenecekTutar(k, dav));
-    if (odenecekK <= 0) continue;
-    const gecti = vadesiGectiMi(k, bugun);
-    if (!gecti && k.sonOdemeTarihi > sinir) continue;
     const personel = dav === DAVRANIS.PERSONEL;
-    const taraf = personel ? (k.calisanAd || "Çalışan")
-      : (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";
-    const oge = {
-      kalem: k, id: k.id, vade: k.sonOdemeTarihi, vadeEtiketi: vadeEtiketi(k), gunFarki: gunFarki(bugun, k.sonOdemeTarihi),
-      odenecekK, odenecek: odenecekK / 100, taraf, personel, gecti,
-    };
-    (gecti ? gecmis : yaklasan).push(oge);
+    for (const h of odemeHedefleri(k, dav)) {
+      if (h.odendi || h.kalanK <= 0 || !h.vade) continue;
+      const gecti = hedefGecti(h, bugun);
+      if (!gecti && h.vade > sinir) continue;
+      const stopaj = h.hedef === HEDEF.STOPAJ;
+      const taraf = stopaj ? VERGI_DAIRESI : personel ? (k.calisanAd || "Çalışan")
+        : (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";
+      const oge = {
+        kalem: k, id: k.id, hedef: h.hedef, anahtar: `${k.id}:${h.hedef}`, vade: h.vade,
+        vadeEtiketi: h.taksitli ? "Taksit vadesi" : stopaj ? "Stopaj vadesi" : vadeEtiketi(k), gunFarki: gunFarki(bugun, h.vade),
+        odenecekK: h.kalanK, odenecek: h.kalanK / 100, taraf, personel: personel && !stopaj, gecti,
+        taksit: satirliMi(k) && h.taksitli ? { odenen: h.odenenAdet, toplam: h.toplamAdet } : null,
+      };
+      (gecti ? gecmis : yaklasan).push(oge);
+    }
   }
   gecmis.sort(sirala);
   yaklasan.sort(sirala);
   return {
-    sayilar: { gecmis: gecmis.length, yaklasan: yaklasan.length },
+    sayilar: kalemSayilari(gecmis, yaklasan),
     gecmis, yaklasan,
     gecmisSatirlar: bolumSatirlari(gecmis), yaklasanSatirlar: bolumSatirlari(yaklasan),
     kalemIdleri: new Set([...gecmis, ...yaklasan].map(o => String(o.id))),

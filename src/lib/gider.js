@@ -3,7 +3,7 @@
 // konvansiyonuyla düz string ("YYYY-MM-DD", ay "YYYY-MM") karşılaştırılır, Date'e çevrilmez.
 // Para hesabı kuruş tamsayısıyla yapılır (K32): kayan noktada 3 × 33.333,33 gibi toplamlar sahte
 // "aşım" üretirdi. Dışarı TL (kuruş / 100) döner.
-import { trLower, getKdvRateForDate } from "./utils";
+import { trLower, getKdvRateForDate, uid as varsayilanUid } from "./utils";
 
 export const DAVRANIS = { NORMAL: "normal", KIRA: "kira", PERSONEL: "personel" };
 export const ATAMA = { ORTAK: "", MAKINA: "makina", MODEL: "model", DAGITMA: "dagitma" };
@@ -94,11 +94,179 @@ export const odenecekTutar = (k, dav = DAVRANIS.NORMAL) => tl(odenecekKurus(k, d
 
 export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && k.sonOdemeTarihi < bugun;
 // Ödeme durumu çevirme (spec 0003 plan H8): Giderler ve Anasayfa hatırlatma penceresi aynı kayıt dönüşümünü kullanır.
-export const odemeDurumuDegistir = (k, bugun) => { const odendi = !k.odendi; return { ...k, odendi, odemeTarihi: odendi ? bugun : null }; };
+// Ödeme satırı olan kalemde (spec 0021) kalemin durumu doğrudan çevrilmez (AC-6); kalem aynen döner.
+export const odemeDurumuDegistir = (k, bugun) => {
+  if (satirliMi(k)) return k;
+  const odendi = !k.odendi; return { ...k, odendi, odemeTarihi: odendi ? bugun : null };
+};
 // Yalnız "ödendi" yönü (Anasayfa hatırlatma penceresi, spec 0003 triyaj bulgu 3): durum çevrilmez, ayarlanır.
 // Satır ekrandayken kalem başka yoldan (yeniden yükleme/birleştirme) zaten ödenmişse tıklama ödemeyi geri almaz,
-// mevcut ödeme tarihi korunur.
-export const odendiIsaretle = (k, bugun) => ({ ...k, odendi: true, odemeTarihi: k.odemeTarihi || bugun });
+// mevcut ödeme tarihi korunur. Ödeme satırı olan kalemde verilen hedefin en yakın ödenmemiş taksiti işaretlenir.
+export const odendiIsaretle = (k, bugun, hedef = HEDEF.ANA) => (satirliMi(k) ? hedefIsaretle(k, hedef, bugun)
+  : { ...k, odendi: true, odemeTarihi: k.odemeTarihi || bugun });
+
+// ── Taksit ve ödeme hedefleri (spec 0021, plan T1–T12) ────────────────────────
+// Taksit bir ÖDEME kavramıdır (R5): gider tarihi, dönem raporu, KDV, kova ve makina maliyeti taksitten etkilenmez.
+// Ödeme satırları `taksitler` dizisinde durur: {id, hedef, sira, vade, tutar, odendi, odemeTarihi}. Satır yalnız
+// taksitli kalemde (ana hedefte ≥ 2) ve stopajı olan kira kaleminde (iki hedef, taksitsiz hedef tek satır) vardır.
+// Satırı olan kalemde `odendi`, `odemeTarihi`, `sonOdemeTarihi` satırlardan türetilip yazılır (R3): vadesiGectiMi,
+// sunucunun `odendi` alan denetimi ve dönem raporu süzgeci değişmeden çalışır.
+export const HEDEF = { ANA: "ana", STOPAJ: "stopaj" };
+export const VERGI_DAIRESI = "Vergi dairesi";
+export const satirliMi = (k) => Array.isArray(k?.taksitler) && k.taksitler.length > 0;
+const gunSayisi = (y, m) => new Date(y, m, 0).getDate();
+// R12 (T4): ilk vadenin gününden n ay sonrası; ay o güne yetmiyorsa ay sonuna kırpılır. Zincirleme eklenmez.
+export const ayEkleGun = (tarih, n) => {
+  if (!tarih) return null;
+  const [y, m, d] = String(tarih).split("-").map(Number);
+  const t = y * 12 + (m - 1) + n;
+  const yy = Math.floor(t / 12), mm = (t % 12) + 1;
+  return `${yy}-${String(mm).padStart(2, "0")}-${String(Math.min(d, gunSayisi(yy, mm))).padStart(2, "0")}`;
+};
+// Eşit bölüm, kuruş artığı SON taksite (R1, AC-2). Toplam kuruşu kuruşuna korunur (C1).
+export const esitBol = (toplamKurus, adet) => {
+  if (adet <= 0) return [];
+  const taban = Math.floor(toplamKurus / adet);
+  return Array.from({ length: adet }, (_, i) => (i === adet - 1 ? toplamKurus - taban * (adet - 1) : taban));
+};
+export const taksitPlaniOlustur = (toplamKurus, sayi, ilkVade, { hedef = HEDEF.ANA, uid = varsayilanUid } = {}) =>
+  esitBol(toplamKurus, sayi).map((t, i) => ({ id: uid(), hedef, sira: i + 1, vade: ayEkleGun(ilkVade, i), tutar: tl(t), odendi: false, odemeTarihi: null }));
+
+const hedefToplamKurus = (k, dav, hedef) => (hedef === HEDEF.STOPAJ ? stopajKurus(k, dav) : odenecekKurus(k, dav));
+const siraliSatirlar = (satirlar) => [...satirlar].sort((a, b) => (Number(a.sira) || 0) - (Number(b.sira) || 0));
+
+// R10 (T11): planı yeniden kurar. Ödenmiş satırlar olduğu gibi kalır; ödenmemişler kalan tutara yeniden bölünür.
+// Dönen: { satirlar } ya da { hata }. eski: aynı hedefin mevcut satırları.
+export const planYenidenBol = (eski = [], toplamKurus, sayi, ilkVade, { hedef = HEDEF.ANA, uid = varsayilanUid } = {}) => {
+  const sirali = siraliSatirlar(eski);
+  const odenmis = sirali.filter(r => r.odendi);
+  const odenmemisEski = sirali.filter(r => !r.odendi);
+  const n = Math.max(1, Math.floor(Number(sayi) || 1));
+  if (n < odenmis.length) return { hata: `Taksit sayısı ödenmiş taksit sayısının (${odenmis.length}) altına indirilemez.` };
+  const odenmisK = odenmis.reduce((a, r) => a + kurus(r.tutar), 0);
+  const kalanK = toplamKurus - odenmisK;
+  if (kalanK < 0) return { hata: `Ödenmiş taksitlerin toplamı (${tl(odenmisK).toLocaleString("tr-TR")} ₺) yeni ödenecek tutarı aşıyor.` };
+  let u = n - odenmis.length;
+  if (kalanK > 0 && u === 0) u = 1; // kalan var, ödenmemiş taksit yok: bir taksit eklenir
+  if (kalanK === 0) u = 0;          // kalan yok: ödenmemiş taksitler düşer
+  const tutarlar = esitBol(kalanK, u);
+  const yeni = tutarlar.map((t, j) => {
+    const idx = odenmis.length + j;
+    const vade = ilkVade ? ayEkleGun(ilkVade, idx)
+      : (odenmemisEski[j]?.vade ?? (odenmis.length ? ayEkleGun(odenmis[odenmis.length - 1].vade, j + 1) : null));
+    return { id: odenmemisEski[j]?.id ?? uid(), hedef, sira: idx + 1, vade, tutar: tl(t), odendi: false, odemeTarihi: null };
+  });
+  return { satirlar: [...odenmis.map((r, i) => ({ ...r, hedef, sira: i + 1 })), ...yeni] };
+};
+
+// Tek saf hedef hesabı (DoD): borç özeti, tedarikçi borcu, hatırlatıcı ve liste aynı fonksiyonu kullanır.
+// Her hedef: { hedef, toplamK, kalanK, vade (en yakın ödenmemiş), odendi, odenenAdet, toplamAdet, taksitli, eski }.
+// Satırsız eski kira kaleminde stopaj hedefi okuma anında kalemi izler (R13, T5); vadesi bilinmez.
+export const odemeHedefleri = (k, dav = DAVRANIS.NORMAL) => {
+  if (satirliMi(k)) {
+    const hedefler = [];
+    for (const h of [HEDEF.ANA, HEDEF.STOPAJ]) {
+      const sat = siraliSatirlar(k.taksitler.filter(r => (r.hedef || HEDEF.ANA) === h));
+      if (!sat.length) continue;
+      const acik = sat.filter(r => !r.odendi);
+      hedefler.push({
+        hedef: h, toplamK: sat.reduce((a, r) => a + kurus(r.tutar), 0), kalanK: acik.reduce((a, r) => a + kurus(r.tutar), 0),
+        vade: acik.map(r => r.vade).filter(Boolean).sort()[0] || null, odendi: acik.length === 0,
+        odenenAdet: sat.length - acik.length, toplamAdet: sat.length, taksitli: sat.length > 1, eski: false,
+      });
+    }
+    return hedefler;
+  }
+  const anaK = odenecekKurus(k, dav);
+  const hedefler = [{ hedef: HEDEF.ANA, toplamK: anaK, kalanK: k.odendi ? 0 : anaK, vade: k.sonOdemeTarihi || null, odendi: !!k.odendi,
+    odenenAdet: k.odendi ? 1 : 0, toplamAdet: 1, taksitli: false, eski: false }];
+  const stK = stopajKurus(k, dav);
+  if (stK > 0) hedefler.push({ hedef: HEDEF.STOPAJ, toplamK: stK, kalanK: k.odendi ? 0 : stK, vade: null, odendi: !!k.odendi,
+    odenenAdet: k.odendi ? 1 : 0, toplamAdet: 1, taksitli: false, eski: true });
+  return hedefler;
+};
+export const hedefGecti = (h, bugun) => !h.odendi && !!h.vade && !!bugun && h.vade < bugun;
+// R3: "odendi" | "kismen" | "odenmedi". Satırsız kalemde ikili.
+export const odemeDurumu = (k) => {
+  if (!satirliMi(k)) return k?.odendi ? "odendi" : "odenmedi";
+  const odenen = k.taksitler.filter(r => r.odendi).length;
+  return odenen === k.taksitler.length ? "odendi" : odenen > 0 ? "kismen" : "odenmedi";
+};
+// R3, AC-25: kalem alanları satırlardan tek yönlü türetilir.
+export const taksitDurumuTuret = (k) => {
+  if (!satirliMi(k)) return k;
+  const sat = k.taksitler;
+  const odendi = sat.every(r => r.odendi);
+  const acikVadeler = sat.filter(r => !r.odendi).map(r => r.vade).filter(Boolean).sort();
+  const tumVadeler = sat.map(r => r.vade).filter(Boolean).sort();
+  const odemeTarihleri = sat.map(r => r.odemeTarihi).filter(Boolean).sort();
+  return { ...k, odendi, odemeTarihi: odendi ? (odemeTarihleri[odemeTarihleri.length - 1] || null) : null,
+    sonOdemeTarihi: acikVadeler[0] || (odendi ? tumVadeler[tumVadeler.length - 1] || null : null) };
+};
+// R2: tek taksit işaretleme; ödeme tarihi işaretlenen gün (mevcut tarih korunur), kaldırınca silinir.
+export const taksitIsaretle = (k, satirId, odendi, bugun) => {
+  if (!satirliMi(k)) return k;
+  return taksitDurumuTuret({ ...k, taksitler: k.taksitler.map(r => (String(r.id) !== String(satirId) ? r
+    : { ...r, odendi: !!odendi, odemeTarihi: odendi ? (r.odemeTarihi || bugun) : null })) });
+};
+// Hedefin en yakın ödenmemiş taksiti (Anasayfa hatırlatma düğmesi, kira anahtarı).
+export const hedefIsaretle = (k, hedef, bugun) => {
+  if (!satirliMi(k)) return k;
+  const acik = siraliSatirlar(k.taksitler.filter(r => (r.hedef || HEDEF.ANA) === hedef && !r.odendi));
+  return acik.length ? taksitIsaretle(k, acik[0].id, true, bugun) : k;
+};
+// Taksitsiz (tek satırlı) hedefin durumunu çevirir (listedeki kira anahtarları).
+export const hedefDurumuDegistir = (k, hedef, bugun) => {
+  if (!satirliMi(k)) return k;
+  const sat = k.taksitler.filter(r => (r.hedef || HEDEF.ANA) === hedef);
+  if (sat.length !== 1) return k;
+  return taksitIsaretle(k, sat[0].id, !sat[0].odendi, bugun);
+};
+// Kalemin ödeme satırlarını kurar (kayıt anı ve tekrarlayan üretim). plan: { taksitSayisi, ilkVade, stopajTaksitSayisi,
+// stopajVade }. Satırsız eski kalemde ödenmiş durum yeni satırlara taşınır (R13). Dönen: { satirlar } | { hata, alan }.
+// Taksit sayısı 1–60 arası tam sayıdır (triyaj bulgu 3): boş = 1 (taksitsiz). Formdaki üst sınır yalnız ipucudur;
+// kural burada, önizleme ve kayıt aynı yerden geçer.
+export const TAKSIT_SAYISI_MAX = 60;
+export const taksitSayisiCoz = (v) => {
+  const t = String(v ?? "").trim();
+  if (t === "") return { deger: 1 };
+  const n = Number(t);
+  if (!Number.isInteger(n) || n < 1 || n > TAKSIT_SAYISI_MAX) return { hata: `Taksit sayısı 1 ile ${TAKSIT_SAYISI_MAX} arasında tam sayı olmalı.` };
+  return { deger: n };
+};
+export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, eskiSatirlar = null, eskiOdendi = false, eskiOdemeTarihi = null } = {}) => {
+  const anaCoz = taksitSayisiCoz(plan.taksitSayisi);
+  if (anaCoz.hata) return { hata: anaCoz.hata, alan: "taksitSayisi" };
+  const anaSayi = anaCoz.deger;
+  const stK = stopajKurus(kayit, dav);
+  const kiraIkiHedef = dav === DAVRANIS.KIRA && stK > 0;
+  const eski = Array.isArray(eskiSatirlar) ? eskiSatirlar : [];
+  const vadeOf = (h) => (h === HEDEF.STOPAJ ? plan.stopajVade : plan.ilkVade) || null;
+  const eskiHedef = (h) => {
+    // Satırsız eski kalem ödenmişse (R13) yeni hedef satırları ödenmiş doğar; vade kalemin eski vadesidir
+    // (triyaj bulgu 1: silinmesin).
+    if (!eski.length && eskiOdendi) return [{ id: uid(), hedef: h, sira: 1, vade: vadeOf(h), tutar: tl(hedefToplamKurus(kayit, dav, h)), odendi: true, odemeTarihi: eskiOdemeTarihi }];
+    return eski.filter(x => (x.hedef || HEDEF.ANA) === h);
+  };
+  // Ana hedefte satır gerekir: kira iki hedefliyse, taksit istenmişse ya da daha önce ödenmiş bir ana satırı varsa
+  // (triyaj bulgu 2: stopaj sıfıra çekilince kiraya verene yapılmış ödeme kaybolmasın).
+  const anaOdenmisVar = eski.some(x => (x.hedef || HEDEF.ANA) === HEDEF.ANA && x.odendi);
+  const anaGerekli = kiraIkiHedef || anaSayi >= 2 || anaOdenmisVar;
+  const satirlar = [];
+  if (anaGerekli) {
+    const r = planYenidenBol(eskiHedef(HEDEF.ANA), hedefToplamKurus(kayit, dav, HEDEF.ANA), anaSayi, vadeOf(HEDEF.ANA), { hedef: HEDEF.ANA, uid });
+    if (r.hata) return { hata: r.hata, alan: "taksitSayisi" };
+    satirlar.push(...r.satirlar);
+  }
+  if (kiraIkiHedef) {
+    const stCoz = taksitSayisiCoz(plan.stopajTaksitSayisi);
+    if (stCoz.hata) return { hata: stCoz.hata, alan: "stopajTaksitSayisi" };
+    const r = planYenidenBol(eskiHedef(HEDEF.STOPAJ), stK, stCoz.deger, vadeOf(HEDEF.STOPAJ), { hedef: HEDEF.STOPAJ, uid });
+    if (r.hata) return { hata: r.hata, alan: "stopajTaksitSayisi" };
+    satirlar.push(...r.satirlar);
+  }
+  return { satirlar };
+};
 
 // ── Model satırları (R21, K31, K32) ──────────────────────────────────────────
 export const modelSatirlariDogrula = (tutar, satirlar = []) => {
@@ -129,7 +297,7 @@ export const modelSatirTutari = (s) => tl(kurus(tutarCoz(s?.birimMaliyet).deger)
 
 // ── Kalem doğrulama ve normalleştirme ─────────────────────────────────────────
 // form: formdaki ham değerler (tutarlar metin olabilir). Dönen `kayit` saklanacak biçimdir; hata varsa null.
-export const giderKalemDogrula = (form, { turMap, tedarikciler = [] } = {}) => {
+export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsayilanUid } = {}) => {
   const hatalar = [];
   const uyarilar = [];
   const hata = (alan, mesaj) => hatalar.push({ alan, mesaj });
@@ -191,6 +359,23 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [] } = {}) => {
   }
   kayit.odendi = !!form.odendi;
   if (!kayit.odendi) kayit.odemeTarihi = null;
+
+  // Ödeme planı (spec 0021 R1, R6, R10): form alanları kayda yazılmaz, satırlara çevrilir. Satırı olan kalemde
+  // ödeme durumu satırlardan türetilir (R3); formdaki durum yalnız satırsız eski kalemin satırlarını tohumlar (R13).
+  const plan = { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null };
+  delete kayit.taksitSayisi; delete kayit.stopajTaksitSayisi; delete kayit.stopajVade;
+  if (Number(form.taksitSayisi) >= 2 && !form.sonOdemeTarihi) hata("sonOdemeTarihi", "İlk taksitin vadesi girilmedi.");
+  if (dav === DAVRANIS.KIRA && Number(form.stopajTaksitSayisi) >= 2 && !form.stopajVade) hata("stopajVade", "İlk stopaj taksitinin vadesi girilmedi.");
+  if (dav === DAVRANIS.KIRA && form.stopajVade && form.tarih && form.stopajVade < form.tarih) hata("stopajVade", "Stopaj vadesi gider tarihinden önce olamaz.");
+  if (!hatalar.length) {
+    const eskiSatirlar = Array.isArray(form.taksitler) ? form.taksitler : [];
+    const r = odemeSatirlariKur(kayit, dav, plan, { uid, eskiSatirlar, eskiOdendi: !eskiSatirlar.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
+    if (r.hata) hata(r.alan, r.hata);
+    else {
+      kayit.taksitler = r.satirlar;
+      if (r.satirlar.length) Object.assign(kayit, taksitDurumuTuret(kayit));
+    }
+  }
 
   // Atama (K25, K38; spec 0020 R1, R5): kira her zaman ortak; personel normal kalemle aynı atamaları alır.
   if (!atanabilirMi(dav)) {
@@ -343,6 +528,10 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       else if (t.atamaTur === ATAMA.DAGITMA) kalem.atamaTur = t.atamaTur;
       else if (t.atamaTur === ATAMA.MODEL) Object.assign(kalem, { atamaTur: t.atamaTur, modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s })) });
     }
+    // Stopajlı kira iki ödeme hedefiyle doğar (spec 0021 R6); satırlar kalemle birlikte kurulur.
+    const odeme = odemeSatirlariKur(kalem, dav, {}, uid ? { uid } : {});
+    kalem.taksitler = odeme.satirlar || [];
+    if (kalem.taksitler.length) Object.assign(kalem, taksitDurumuTuret(kalem));
     yeniKalemler.push(kalem);
     guncelTanimlar.push({ ...t, uretilenAylar: [...uretilen, ay].sort() });
     eklenen++;
@@ -492,10 +681,12 @@ export const hesaplaGiderRaporu = (
   for (const k of borcKalemleri) {
     const dav = davranisOf(k, turMap);
     if (dav === DAVRANIS.PERSONEL) continue;
-    const o = odenecekKurus(k, dav);
+    // Spec 0021 R4: yalnız ana hedefin kalanı (stopaj vergi dairesine gider, tedarikçi borcu değildir).
+    const ana = odemeHedefleri(k, dav).find(h => h.hedef === HEDEF.ANA);
+    const o = ana ? ana.kalanK : 0;
     if (k.tedarikciId && tedMap.has(String(k.tedarikciId))) {
       tedBorc.set(String(k.tedarikciId), (tedBorc.get(String(k.tedarikciId)) || 0) + o);
-      if (bugun && vadesiGectiMi(k, bugun)) tedVade.add(String(k.tedarikciId));
+      if (bugun && ana && hedefGecti(ana, bugun)) tedVade.add(String(k.tedarikciId));
     } else secilmemisBorc += o;
   }
   const tedIds = new Set([...tedHarcama.keys(), ...tedBorc.keys()]);
@@ -542,24 +733,31 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
   const ted = new Map();
   const cal = new Map();
   const secilmemis = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
+  const vergi = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
   for (const k of giderler) {
     if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || (bugun && k.tarih > bugun)) continue;
     const dav = davranisOf(k, turMap);
-    const o = odenecekKurus(k, dav);
-    if (o <= 0) continue;
-    const gecti = bugun ? vadesiGectiMi(k, bugun) : false;
-    if (dav === DAVRANIS.PERSONEL) {
-      const ck = String(k.calisanId);
-      if (!cal.has(ck)) cal.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", tutar: 0, vadesiGecti: false, kalemler: [] });
-      const c = cal.get(ck); c.tutar += o; c.vadesiGecti = c.vadesiGecti || gecti; c.kalemler.push(k);
-    } else if (k.tedarikciId && tedMap.has(String(k.tedarikciId))) {
-      const tk = String(k.tedarikciId);
-      if (!ted.has(tk)) ted.set(tk, { tedarikciId: k.tedarikciId, ad: tedMap.get(tk).ad, tutar: 0, vadesiGecti: false, kalemler: [] });
-      const t = ted.get(tk); t.tutar += o; t.vadesiGecti = t.vadesiGecti || gecti; t.kalemler.push(k);
-    } else { secilmemis.tutar += o; secilmemis.adet++; secilmemis.vadesiGecti = secilmemis.vadesiGecti || gecti; secilmemis.kalemler.push(k); }
+    // Spec 0021 R4, R8: ödeme hedefi başına kalan tutar; stopaj vergi dairesi satırına gider.
+    for (const h of odemeHedefleri(k, dav)) {
+      const o = h.kalanK;
+      if (o <= 0) continue;
+      const gecti = bugun ? hedefGecti(h, bugun) : false;
+      if (h.hedef === HEDEF.STOPAJ) { vergi.tutar += o; vergi.adet++; vergi.vadesiGecti = vergi.vadesiGecti || gecti; vergi.kalemler.push(k); continue; }
+      if (dav === DAVRANIS.PERSONEL) {
+        const ck = String(k.calisanId);
+        if (!cal.has(ck)) cal.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", tutar: 0, vadesiGecti: false, kalemler: [] });
+        const c = cal.get(ck); c.tutar += o; c.vadesiGecti = c.vadesiGecti || gecti; c.kalemler.push(k);
+      } else if (k.tedarikciId && tedMap.has(String(k.tedarikciId))) {
+        const tk = String(k.tedarikciId);
+        if (!ted.has(tk)) ted.set(tk, { tedarikciId: k.tedarikciId, ad: tedMap.get(tk).ad, tutar: 0, vadesiGecti: false, kalemler: [] });
+        const t = ted.get(tk); t.tutar += o; t.vadesiGecti = t.vadesiGecti || gecti; t.kalemler.push(k);
+      } else { secilmemis.tutar += o; secilmemis.adet++; secilmemis.vadesiGecti = secilmemis.vadesiGecti || gecti; secilmemis.kalemler.push(k); }
+    }
   }
   const satirlar = [...ted.values()].map(t => ({ tur: "tedarikci", ...t, tutar: tl(t.tutar) }));
   if (secilmemis.tutar > 0) satirlar.push({ tur: "secilmemis", ad: "Tedarikçi seçilmemiş", ...secilmemis, tutar: tl(secilmemis.tutar) });
+  // Sentetik satır (R8): tedarikçi kaydı açtırmaz; genel toplama girer, tedarikçi kartına girmez.
+  if (vergi.tutar > 0) satirlar.push({ tur: "vergiDairesi", ad: VERGI_DAIRESI, ...vergi, tutar: tl(vergi.tutar) });
   if (cal.size) {
     const ayrinti = [...cal.values()].map(c => ({ ...c, tutar: tl(c.tutar) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
     satirlar.push({ tur: "calisanlar", ad: `Çalışanlar · ${cal.size} kişi`, kisi: cal.size, tutar: tl([...cal.values()].reduce((a, c) => a + c.tutar, 0)), vadesiGecti: ayrinti.some(c => c.vadesiGecti), ayrinti });

@@ -6,7 +6,7 @@ import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
-  ayOf, ayEkle, ayinSonGunu, odemeDurumuDegistir,
+  ayOf, ayEkle, ayinSonGunu, odemeDurumuDegistir, taksitIsaretle, hedefDurumuDegistir, HEDEF, DAVRANIS,
 } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
@@ -19,6 +19,7 @@ import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
 import { Tedarikciler } from "./gider/Tedarikciler";
 import { StandartGiderler } from "./gider/StandartGiderler";
 import { MakinaKarliligi } from "./gider/MakinaKarliligi";
+import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 
 // Giderler üst sekmesi (spec 0001, C14). Yalnız gider yetkisi olan kullanıcıya görünür (C6 kural 3).
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
@@ -117,6 +118,18 @@ export const Giderler = ({
     setGiderler(p => p.map(x => (x.id === k.id ? odemeDurumuDegistir(x, bugun) : x)));
     logAction({ serverPermissions, action: odendi ? "odendi" : "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
   };
+  // Spec 0021: ödeme satırları. Kalemin durumu satırlardan türetilir (motor), işlem geçmişi kalem düzeyinde yazılır.
+  const [planKalemId, setPlanKalemId] = useState(null);
+  const planKalemi = planKalemId == null ? null : giderler.find(k => k.id === planKalemId) || null;
+  const satirIsaretle = (k, r) => {
+    setGiderler(p => p.map(x => (x.id === k.id ? taksitIsaretle(x, r.id, !r.odendi, bugun) : x)));
+    logAction({ serverPermissions, action: !r.odendi ? "odendi" : "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { taksit: r.sira, hedef: r.hedef } });
+  };
+  const hedefDegistir = (k, hedef) => {
+    const r = (k.taksitler || []).find(x => (x.hedef || HEDEF.ANA) === hedef);
+    setGiderler(p => p.map(x => (x.id === k.id ? hedefDurumuDegistir(x, hedef, bugun) : x)));
+    logAction({ serverPermissions, action: r && !r.odendi ? "odendi" : "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { hedef } });
+  };
   const sil = () => {
     const k = silinecek;
     setGiderler(p => withDeleted(p, x => x.id === k.id));
@@ -190,7 +203,7 @@ export const Giderler = ({
           <UyariSeridi aile="uyari" baslik={`Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`} metin={`Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`} testId="hatirlatma-modu" />
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-            onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
+            onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={hedefDegistir}
             odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
         </>
       )}
@@ -224,7 +237,7 @@ export const Giderler = ({
                 </div>
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
+                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={hedefDegistir}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
               </>
             )}
@@ -246,6 +259,10 @@ export const Giderler = ({
         <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
 
+      {planKalemi && (
+        <OdemePlaniPenceresi kalem={planKalemi} davranis={turMap.get(String(planKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(planKalemi.turId))?.ad || "Gider"}
+          odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
+      )}
       {form && (
         <GiderForm kalem={form.kalem} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
           modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme")}

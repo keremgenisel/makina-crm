@@ -299,6 +299,18 @@ describe("Çöp Kutusu — gider kalemleri", () => {
     expect(sonuc[0].deletedAt).toBeUndefined();
     expect(sonuc[0].tutar).toBe(14800);
   });
+  it("AC-18 (spec 0021): taksitli kalem çöpten geri alınınca taksitleri ve ödeme durumları aynen döner", () => {
+    const taksitler = [{ id: 7101, hedef: "ana", sira: 1, vade: "2026-09-15", tutar: 8880, odendi: true, odemeTarihi: "2026-09-15" },
+      { id: 7102, hedef: "ana", sira: 2, vade: "2026-10-15", tutar: 8880, odendi: false, odemeTarihi: null }];
+    const k = { ...silinmis, taksitler, odendi: false, sonOdemeTarihi: "2026-10-15" };
+    const setGiderler = vi.fn();
+    renderTrash({ rawGiderler: [k], setGiderler, giderTurleri: turler, giderYetki: true });
+    fireEvent.click(within(screen.getByText(/Ağustos faturası/).closest("tr")).getByText(/Geri Al/));
+    const sonuc = setGiderler.mock.calls[0][0]([k]);
+    expect(sonuc[0].deletedAt).toBeUndefined();
+    expect(sonuc[0].taksitler).toEqual(taksitler);
+    expect(sonuc[0]).toMatchObject({ odendi: false, sonOdemeTarihi: "2026-10-15" });
+  });
   it("personel kaleminde tutar listelenmez", () => {
     renderTrash({ rawGiderler: [{ id: 71, tarih: "2026-09-01", turId: 3, calisanAd: "Hasan", resmiTutar: 30000, deletedAt: "x" }], giderTurleri: turler, giderYetki: true, setGiderler: vi.fn() });
     expect(screen.getByText(/Personel · Hasan/)).toBeTruthy();

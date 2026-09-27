@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi } from "../../lib/gider";
+import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
@@ -145,7 +145,7 @@ export const BorcOzeti = ({ ozet }) => {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : "Tedarikçi"}</Rozet>
+                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : s.tur === "vergiDairesi" ? "mavi" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : s.tur === "vergiDairesi" ? "Kira stopajı" : "Tedarikçi"}</Rozet>
                 {s.vadesiGecti && <Rozet renk="kirmizi">Vadesi geçti</Rozet>}
               </div>
               {s.tur === "calisanlar" && <div style={{ marginTop: 3 }}><AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Adları gizle" : "Adları göster"}</AcKapa></div>}
@@ -170,7 +170,7 @@ export const BorcOzeti = ({ ozet }) => {
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
 export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
-  odemeFiltre, onOdemeFiltre, hatirlatma = null }) => {
+  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
   const [yerelFiltre, setYerelFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
   const filtre = odemeFiltre === undefined ? yerelFiltre : { ...yerelFiltre, odeme: odemeFiltre };
@@ -213,7 +213,36 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     if (!cz) return <div><span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span><div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Atandığı makina silinmiş veya takip edilemiyor</div></div>;
     return <div><div style={{ fontWeight: 600 }}>{[cz.model, cz.seri].filter(Boolean).join(" · ")}</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{cz.tur === "stok" ? "Makina Stoğu" : `${cz.ad}${cz.stoktanTakip ? " (stoktan satıldı)" : ""}`}</div></div>;
   };
-  const odemeHucre = (k) => (
+  // Spec 0021: ödeme satırı olan kalemde durum satırlardan gelir (AC-6). Taksitsiz kira iki anahtarla (kiraya veren,
+  // vergi dairesi) işaretlenir; taksitli hedef "Ödeme planı" penceresinden.
+  const planliHucre = (k) => {
+    const d = dav(k), durum = odemeDurumu(k);
+    const hedefler = odemeHedefleri(k, d);
+    const tekSatirliKira = d === DAVRANIS.KIRA && hedefler.every(h => h.toplamAdet === 1);
+    const yetki = canDo("gider_odeme");
+    const hedefRozeti = (h) => {
+      const ad = h.hedef === HEDEF.STOPAJ ? "Vergi dairesi" : "Kiraya veren";
+      const r = <Rozet renk={h.odendi ? "yesil" : "kirmizi"}>{ad}: {h.odendi ? "Ödendi" : "Ödenmedi"}</Rozet>;
+      return yetki && onHedefDegistir
+        ? <button key={h.hedef} type="button" onClick={() => onHedefDegistir(k, h.hedef)} title={h.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{r}</button>
+        : <span key={h.hedef}>{r}</span>;
+    };
+    const acikAna = hedefler.find(h => h.hedef === HEDEF.ANA && !h.odendi);
+    return (
+      <div data-testid="odeme-hucre-planli">
+        {tekSatirliKira
+          ? <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>{hedefler.map(hedefRozeti)}</div>
+          : <Rozet renk={durum === "odendi" ? "yesil" : durum === "kismen" ? "turuncu" : "kirmizi"}>
+            {durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"} {k.taksitler.filter(r => r.odendi).length}/{k.taksitler.length}</Rozet>}
+        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>
+          {k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi && !k.odendi ? ` · ${acikAna?.toplamAdet > 1 ? "sonraki taksit" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}
+        </div>
+        {onOdemePlani && <button type="button" onClick={() => onOdemePlani(k)} style={{ background: "none", border: "none", padding: 0, marginTop: 4, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ödeme planı</button>}
+        {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
+      </div>
+    );
+  };
+  const odemeHucre = (k) => satirliMi(k) ? planliHucre(k) : (
     <div>
       {canDo("gider_odeme")
         ? <button type="button" onClick={() => onOdendi(k)} title={k.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{k.odendi ? <Rozet renk="yesil">Ödendi{k.odemeTarihi ? ` ${fmtTR(k.odemeTarihi).slice(0, 5)}` : ""}</Rozet> : <Rozet renk="kirmizi">Ödenmedi</Rozet>}</button>

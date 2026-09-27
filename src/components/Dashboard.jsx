@@ -25,8 +25,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
   // R6, plan H8: Giderler ile aynı işlem geçmişi satırı; pencerede yalnız "ödendi" yönü olduğu için durum
   // çevrilmez, ayarlanır (triyaj bulgu 3).
-  const hatirlatmaOdendi = (k) => {
-    setGiderler?.(p => p.map(x => (x.id === k.id ? odendiIsaretle(x, bugunYerel) : x)));
+  // Spec 0021: satır ödeme hedefi başınadır; ödeme satırı olan kalemde o hedefin en yakın taksiti işaretlenir.
+  const hatirlatmaOdendi = (k, hedef) => {
+    setGiderler?.(p => p.map(x => (x.id === k.id ? odendiIsaretle(x, bugunYerel, hedef) : x)));
     logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
   };
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);

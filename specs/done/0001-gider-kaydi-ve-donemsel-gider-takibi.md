@@ -279,6 +279,10 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
 - **X10.** Kısmi ödeme — *neden:* ödeme durumu v1'de ikili (ödendi / ödenmedi). Kısmi ödeme cari hesap ister,
   X4 ile aynı sebeple dışarıda. **Sonucu bilerek kabul ediliyor:** yarısı ödenmiş bir fatura açık borçta
   tam tutarıyla görünür (R14).
+  **Güncelleme (2026-09-27, spec 0021):** taksit planlı kalem bu kuralın bilinçli istisnasıdır: taksitler tek tek
+  ödendi işaretlenir, borç ve hatırlatma kalan taksitleri sayar, kalemin durumu taksitlerden türetilir. Kira
+  kaleminde vergi dairesine ödenen stopaj ayrı ödeme hedefidir. Serbest kısmi ödeme kapsam dışı kalır. Bkz.
+  `specs/done/0021-gider-taksitlendirme.md`.
 - **X11.** Negatif gider kalemi, gider iadesi ve alacak notu — *neden:* v1'de düzeltme, kalemin kendisi
   düzenlenerek yapılır; iade akışı ayrı bir muhasebe kavramıdır.
 - **X12.** Ay ortasında işe giriş veya çıkışta kıst personel maliyeti — *neden:* kullanıcı o ayın kalemini elle
