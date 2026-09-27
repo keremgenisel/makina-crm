@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0022-uretim-partisi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | Uygulandı, commit bekliyor. 2026-09-27: P1–P10 onaylandı; spec R2; görünüm TY onaylı. Dal `feat/0022-uretim-partisi`. |
+| **Bağlı spec** | `specs/done/0022-uretim-partisi.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-27: P1–P10 onaylandı; spec R2; görünüm TY onaylı; commit `90d68d8` (dal `feat/0022-uretim-partisi`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§6). |
 | **Önkoşul** | 0001 (gider), 0002 (makina maliyeti), 0008 (yayın perdesi), 0021 (dal tabanı) |
 
 ---
@@ -72,3 +72,8 @@
 - **Bulgu 1:** tarihsiz partili makina parti havuzundan pay alıyor ama özetler üretim tarihi istediği için hiçbir satırda görünmüyordu. Özetlerde tarih `ozetTarihi` (üretim tarihi, yoksa partinin başlangıç ayının ilk günü); "bilinmiyor" ve kâr hesaplanabilirliği de buna bakar. Model havuzu tarihe bakmaya devam eder. Test `uretim-partisi` (stokta 2 makina / 1.000 ₺, satış özeti).
 - **Bulgu 2:** başlangıcı gelecek aydaki açık parti "yürürlük öncesi / veri yok" sayılıyordu. Motor `partiBaslamadi` ayrı durumu (pay 0, veri yok değil); maliyet detayı "Parti henüz başlamadı (ay)" der. Testler `uretim-partisi` + `ui/uretim-partisi`.
 - **Bulgu 3:** `BOLUM_SEKMELERI.uretimPartileri` yalnız `["gider"]`; `stock` etkisizdi (stok bağı `stock` bölümünde; gider bölümü K6 aynasıyla zaten korunuyor). Yorum ve spec C5'e tarihli not. Test `server-authz`; `server-security.cjs`'deki stok kullanıcısı senaryosu değişmeden geçer.
+
+## 6. Kapanış (2026-09-27)
+
+- Taban raporu **`0022-taban-piksel-raporu.json`**: triyaj sonrası kod, onaylı "sonra" çekimleriyle karşılaştırıldı; 26 ekran × 2 tema = 52 çekim, hepsi 0 piksel (yan yana JPEG'ler `0022-taban-*`). Kanıt eşlemesindeki 7 `degisti` kaydı bu rapora `ayni` olarak çevrildi; `0022-piksel-raporu.json` önce/sonra kanıtı olarak kalır.
+- `tests/spec-atiflari.test.js` `TASINACAK` listesinden 0022 dosyaları çıkarıldı.

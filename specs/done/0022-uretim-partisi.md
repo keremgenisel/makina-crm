@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-27, plan onayıyla; plan `specs/0022-uygulama-plani.md` P1–P10) |
+| **Durum** | Tamamlandı (2026-09-27; commit `90d68d8`, dal `feat/0022-uretim-partisi`; plan `specs/done/0022-uygulama-plani.md` P1–P10) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Makina stoğu, makina maliyeti ve kârlılık, gider dönem raporu, Giderler sekmesi |
@@ -219,23 +219,23 @@ Bilinen tuzaklar:
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Parti dağıtımı 0002'nin maliyet motoruna **tek kaynak** olarak eklendi; ikinci motor yazılmadı (C1).
-- [ ] Ayın ortak giderinin iki yoldan birden dağıtılmadığı testle gösterildi (AC-15).
-- [ ] Yeni kalıcı alanlar beşli kuralla eklendi ve `db-roundtrip` ile `db-clean-install` testlerine girdi.
-- [ ] Birleştirme haritasında parti kimliği yeniden eşleniyor.
-- [ ] Parti bağının satışta müşteri kaydına damgalandığı ve dönen stok satırında korunduğu testle
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Parti dağıtımı 0002'nin maliyet motoruna **tek kaynak** olarak eklendi; ikinci motor yazılmadı (C1).
+- [x] Ayın ortak giderinin iki yoldan birden dağıtılmadığı testle gösterildi (AC-15).
+- [x] Yeni kalıcı alanlar beşli kuralla eklendi ve `db-roundtrip` ile `db-clean-install` testlerine girdi.
+- [x] Birleştirme haritasında parti kimliği yeniden eşleniyor.
+- [x] Parti bağının satışta müşteri kaydına damgalandığı ve dönen stok satırında korunduğu testle
       gösterildi (R2, AC-20, AC-21).
-- [ ] Sunucu bölüm-sekme eşlemesi parti bölümü için **gider ve stok** sekmelerini içeriyor; kısıtlı
+- [x] Sunucu bölüm-sekme eşlemesi parti bölümü için **gider ve stok** sekmelerini içeriyor; kısıtlı
       kullanıcının yazımının 403 almadığı uçtan uca testle gösterildi (C5).
-- [ ] Bir ayın gideri tek yoldan bölündü: parti ve partisiz hak sahiplerinin toplamı ayın ortak giderine
+- [x] Bir ayın gideri tek yoldan bölündü: parti ve partisiz hak sahiplerinin toplamı ayın ortak giderine
       eşit (AC-15, AC-17).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0022-*.jpg`), açık parti ve kapanmış parti durumları dâhil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` parti tabanıyla güncellendi; 0002'deki X9 kararının bu spec ile geri açıldığı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Görsel kanıt eklendi (`docs/evidence/0022-*.jpg`), açık parti ve kapanmış parti durumları dâhil.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` parti tabanıyla güncellendi; 0002'deki X9 kararının bu spec ile geri açıldığı yazıldı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -243,10 +243,19 @@ Bilinen tuzaklar:
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 onay anında işlendi (P1–P10). Onaydan sonra bir kez değişti: C5'e triyaj notu (sunucu eşlemesinden `stock` çıktı). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç düşük önemli bulgu; görünüm değişmedi (taban 0 piksel). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Tarihsiz partili makinanın özetlerden kaybolması, başlamamış partinin "veri yok" sayılması, etkisiz sunucu eşlemesi. | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Parti yokken motor çıktısı 0002 ile aynı; mevcut testlerin hiçbiri kırılmadı. Bilinçli görünüm değişikliği: Tarih Aralığı kipinde sekme çubuğu iki satır (TY kabulü). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Bir kural bir tarihi "gereksiz" yaptığında (R12: partili makinanın payı üretim tarihine bakmaz), o tarihi şart koşan
+  bütün tüketiciler de taranmalı; motor payı hesapladı ama özetler hâlâ tarih istedi (triyaj bulgu 1).
+- "Boş aralık" iki farklı nedenden doğabilir (yürürlük öncesi ya da henüz başlamamış); ikisini tek duruma indirmek
+  kullanıcıya yanlış açıklama gösterir (triyaj bulgu 2).
+- Sunucu eşlemesi yazılırken bölümün gerçekten hangi ekrandan yazıldığı doğrulanmalı; spec'in gerekçesi (C5) bir
+  varsayıma dayanıyordu ve eşleme okuyana yanlış bir izlenim verdi (triyaj bulgu 3).
+- Yeni sekme eklemek dar kiplerde yerleşimi bozabilir; görüntü aracının tüm kipleri çekmesi bunu kanıt aşamasında
+  yakaladı.
