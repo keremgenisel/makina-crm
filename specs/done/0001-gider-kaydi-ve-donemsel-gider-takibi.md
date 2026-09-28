@@ -288,7 +288,7 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   `specs/done/0021-gider-taksitlendirme.md`.
   **Güncelleme (2026-09-28, spec 0024 A):** kısmi ödeme artık kapsamda. Ödeme kalemden ayrı bir hareket kaydıdır
   (`hesapHareketleri`); kalemin ve taksidin durumu hareketlerden okuma anında türer, borç ve hatırlatıcı kalanı sayar.
-  Bkz. `specs/0024-kasa-ve-odeme-ayrimi.md`.
+  Bkz. `specs/done/0024-kasa-ve-odeme-ayrimi.md`.
 - **X11.** Negatif gider kalemi, gider iadesi ve alacak notu — *neden:* v1'de düzeltme, kalemin kendisi
   düzenlenerek yapılır; iade akışı ayrı bir muhasebe kavramıdır.
 - **X12.** Ay ortasında işe giriş veya çıkışta kıst personel maliyeti — *neden:* kullanıcı o ayın kalemini elle

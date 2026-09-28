@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-28, plan onayıyla; plan `specs/0024-uygulama-plani.md` Q1–Q10). A parçası tamamlandı (commit `4298f67`); B parçası 2026-09-28'de B1–B11 ile onaylandı ve uygulanıyor (C11). |
+| **Durum** | Tamamlandı (2026-09-28; A commit `4298f67`, dal `feat/0024-kasa-a`; B commit `3033714`, dal `feat/0024-kasa-b`; plan `specs/done/0024-uygulama-plani.md` Q1–Q10, B1–B11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler (ödeme, borç özeti, hatırlatıcı), Finans (müşteri tahsilatı), çalışan tanımı, yeni Kasa ekranı |
@@ -264,25 +264,25 @@ onun ödeme kaydına dayanır.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap, ödeme, avans ve virman hesapları saf motorda (React'sız, testli), 0001 ve 0002 deseniyle.
-- [ ] Göç testle kapsandı: bir kez çalışır, tekrarı ikinci kayıt üretmez (AC-21, AC-22); yalnız sunucu
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap, ödeme, avans ve virman hesapları saf motorda (React'sız, testli), 0001 ve 0002 deseniyle.
+- [x] Göç testle kapsandı: bir kez çalışır, tekrarı ikinci kayıt üretmez (AC-21, AC-22); yalnız sunucu
       PC'sinin yerel veritabanı katmanında çalıştığı, istemcide çalışmadığı gösterildi (R4).
-- [ ] Göç öncesi otomatik yedek alındı ya da kullanıcıya yedek alması gerektiği ekranda açıkça söylendi.
-- [ ] İş A ve B parçası olarak iki PR hâlinde teslim edildi; A önce birleşti ve spec ikisi bitmeden
-      `done`'a taşınmadı (C11).
-- [ ] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
-- [ ] Sunucu yetki eşlemesi yapıldı ve `server-authz` ile uçtan uca testte sabitlendi (AC-27).
-- [ ] Borç özeti ve ödeme hatırlatıcısı kalan tutarla çalışıyor (AC-18, AC-19).
-- [ ] Çift sayım yasağı testle sabitlendi: ödeme, avans ve virman gider üretmiyor (C3, AC-13, AC-23).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0024-*.jpg`): hesap listesi, hareket ekranı, kısmen ödenmiş
+- [x] Göç öncesi otomatik yedek alındı ya da kullanıcıya yedek alması gerektiği ekranda açıkça söylendi.
+- [x] İş A ve B parçası olarak iki PR hâlinde teslim edildi; A önce birleşti ve spec ikisi bitmeden
+      `done`'a taşınmadı (C11). *(Push yok: iki ayrı dal ve commit, A `4298f67` önce, B `3033714` onun üstünde.)*
+- [x] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
+- [x] Sunucu yetki eşlemesi yapıldı ve `server-authz` ile uçtan uca testte sabitlendi (AC-27).
+- [x] Borç özeti ve ödeme hatırlatıcısı kalan tutarla çalışıyor (AC-18, AC-19).
+- [x] Çift sayım yasağı testle sabitlendi: ödeme, avans ve virman gider üretmiyor (C3, AC-13, AC-23).
+- [x] Görsel kanıt eklendi (`docs/evidence/0024-*.jpg`): hesap listesi, hareket ekranı, kısmen ödenmiş
       kalem, ekstre; aydınlık ve karanlık tema.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: ödeme modelinin ikiliden hareket kaydına geçişi, R8'in sınırı ve C6'nın
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: ödeme modelinin ikiliden hareket kaydına geçişi, R8'in sınırı ve C6'nın
       çift yetki kuralı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -290,10 +290,10 @@ onun ödeme kaydına dayanır.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 (A planı) ve R3 (B planı) onay anında işlendi; ikisi de Requirements'a uygulama notu ekledi, AC değişmedi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 2 | A ve B için birer triyaj turu. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | A: eski yedeğin geri yüklenmesi, güncellenmemiş sunucu, kullanılmayan yardımcılar; B: mahsup edilmiş avansın silinmesi, kapsam dışı maaşa mahsup. Hepsi gerçek. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 2 | A triyajında yakalandı, yayına çıkmadı: 0024 öncesi yedeğin geri yüklenmesi ve güncellenmemiş sunucuya bağlanan istemci ödenmiş kalemleri ödenmemiş gösterirdi. Q1'in onaylı test istisnaları bilinçli davranış değişikliğidir, sayılmadı. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Doğruluk kaynağını değiştiren bir işte (kalemdeki bayraktan ayrı harekete) eski veriye giden bütün girişler tek listede ele alınmalı: veritabanı göçü, yedekten geri yükleme ve eski sürümle konuşan sunucu/istemci. Göç yalnız veritabanında düşünüldüğü için diğer iki yol triyajda yakalandı. İkinci ders: iki ayrı fonksiyon aynı rakamı farklı kapsamla hesaplıyorsa (açık avans ile ekstre) aralarına çapraz test konmalı; B'nin iki bulgusu da böyle bir eksikten çıktı.

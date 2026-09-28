@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0024-kasa-ve-odeme-ayrimi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | A parçası tamamlandı (commit `4298f67`, dal `feat/0024-kasa-a`). B parçası 2026-09-28'de B1–B11 ile onaylandı, spec R3; dal `feat/0024-kasa-b`. Önceki durum: A parçası uygulanıyor. 2026-09-28: Q1–Q10 kullanıcı tarafından onaylandı; spec R2 ile güncellendi. Dal `feat/0024-kasa-a`. B parçası A kapanınca ayrıca planlanır (C11). |
+| **Bağlı spec** | `specs/done/0024-kasa-ve-odeme-ayrimi.md` (R2, R3; plan onaylarıyla onaylandı) |
+| **Durum** | Tamamlandı (2026-09-28). A: Q1–Q10, commit `4298f67` (dal `feat/0024-kasa-a`); B: B1–B11, commit `3033714` (dal `feat/0024-kasa-b`); görünüm TY onaylı, iki triyaj turu; push ve sürüm yok. SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§6). |
 | **Önkoşul** | 0001, 0003, 0008 (perde), 0021 (ödeme hedefleri, taksit), 0023 (dal tabanı) |
 
 ---
@@ -139,3 +139,11 @@
 |---|---|---|
 | 1. Mahsup edilmiş avans silinebiliyor | `kasa.avansSilinebilirMi`: kalan avans mahsupların altına inerse silme engellenir; "Avans silinemez" penceresi eksik tutarı ve engelleyen mahsupları listeler | `kasa.test.js` (üç rakamın tutarlılığı), `ui/kasa-avans` |
 | 2. Kapsam dışı maaşa mahsup açık avans ile ekstreyi ayırıyor | `mahsupDogrula` ve ödeme penceresi yalnız kapsamdaki (bugün veya öncesi, yürürlük ayı veya sonrası) kaleme mahsup kabul eder (`mahsupKapsamda`) | `kasa.test.js` (açık avans ↔ ekstre çaprazı), `ui/kasa-avans` |
+
+## 6. Kapanış (2026-09-28)
+
+- Taban raporu **`0024-taban-piksel-raporu.json`**: bugünkü kod, onaylı B çekimlerine karşı 272 çekim, hepsi 0 piksel; A ve B'nin
+  19 ekranı (38 çekim) raporda ve yan yana JPEG'lerde (`0024-taban-*`). Kanıt eşlemesindeki bütün 0024 `degisti` kayıtları bu rapora
+  `ayni` olarak çevrildi (aynı ekrana iki kayıt düşen tek dosyada yinelenen kayıt birleştirildi); `0024-piksel-raporu.json` ve
+  `0024b-piksel-raporu.json` önce/sonra kanıtı olarak kalır.
+- Spec ve plan `specs/done/`'a taşındı; CLAUDE.md, `specs/done/0001` ve `specs/done/0021` atıfları yeni yola çevrildi.
