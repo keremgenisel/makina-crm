@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
+import { ATAMA, DAVRANIS, HEDEF, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
@@ -190,6 +190,45 @@ export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) 
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// ── Personel ek ödemeleri (spec 0023) ──────────────────────────────────────────
+// Satır: tür (Fazla mesai / Prim / İkramiye), açıklama, resmi, elden. Doğrulama motorda (giderKalemDogrula); burada
+// satırın hatası motorun satır numarasıyla gösterilir. Aynı türden iki satır serbesttir (R9).
+export const BOS_EK_ODEME = { tur: "prim", aciklama: "", resmiTutar: "", eldenTutar: "" };
+export const EkOdemeSatirlari = ({ satirlar = [], onChange, hatalar = [] }) => {
+  const set = (i, patch) => onChange(satirlar.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const izgara = { display: "grid", gridTemplateColumns: "130px minmax(0, 1fr) 130px 130px 34px", gap: 8, alignItems: "center" };
+  return (
+    <div data-testid="ek-odemeler">
+      {satirlar.length > 0 && (
+        <div style={{ ...izgara, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
+          <span>Tür</span><span>Açıklama</span><span>Resmi</span><span>Elden</span><span />
+        </div>
+      )}
+      {satirlar.map((x, i) => (
+        <div key={i} style={{ marginBottom: 8 }} data-testid="ek-odeme-satiri">
+          <div style={izgara}>
+            <Select aria-label={`Ek ödeme türü ${i + 1}`} value={x.tur || "prim"} onChange={e => set(i, { tur: e.target.value })}>
+              {EK_ODEME_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </Select>
+            <input aria-label={`Ek ödeme açıklaması ${i + 1}`} className="input" value={x.aciklama || ""} placeholder="Opsiyonel" onChange={e => set(i, { aciklama: e.target.value })} />
+            <TutarInput ariaLabel={`Ek ödeme resmi ${i + 1}`} value={x.resmiTutar} onChange={v => set(i, { resmiTutar: v })} invalid={hatalar.some(h => h.satir === i)} />
+            <TutarInput ariaLabel={`Ek ödeme elden ${i + 1}`} value={x.eldenTutar} onChange={v => set(i, { eldenTutar: v })} invalid={hatalar.some(h => h.satir === i)} />
+            <button type="button" aria-label={`Ek ödeme ${i + 1} sil`} onClick={() => onChange(satirlar.filter((_, j) => j !== i))}
+              style={{ border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", borderRadius: 7, height: 32, cursor: "pointer", color: "var(--red600, #dc2626)" }}>
+              <Icon name="trash" size={13} />
+            </button>
+          </div>
+          <HataMetni>{hatalar.find(h => h.satir === i)?.mesaj}</HataMetni>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...satirlar, { ...BOS_EK_ODEME }])}
+        style={{ border: "1px dashed var(--n300, #cbd5e1)", background: "transparent", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", color: "var(--n600, #475569)", display: "inline-flex", gap: 6, alignItems: "center" }}>
+        <Icon name="plus" size={13} /> Ek ödeme ekle
+      </button>
     </div>
   );
 };

@@ -103,7 +103,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:67` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:68` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)

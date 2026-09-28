@@ -86,6 +86,18 @@
         "rapor": "docs/evidence/0021-taban-piksel-raporu.json",
         "ekran": "gider-formu-kira-stopaj",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0023-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0023 R1"
+      },
+      {
+        "rapor": "docs/evidence/0023-piksel-raporu.json",
+        "ekran": "gider-formu-ek-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0023 AC-1"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -202,6 +214,18 @@
         "rapor": "docs/evidence/0021-taban-piksel-raporu.json",
         "ekran": "giderler-taksit-borc",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0023-piksel-raporu.json",
+        "ekran": "giderler-personel-ayrinti-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0023 AC-11"
+      },
+      {
+        "rapor": "docs/evidence/0023-piksel-raporu.json",
+        "ekran": "giderler-personel-ayrinti-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0023 AC-19"
       }
     ],
     "src/components/gider/FiyatOnerisi.jsx": [
@@ -244,6 +268,12 @@
         "rapor": "docs/evidence/0021-taban-piksel-raporu.json",
         "ekran": "gider-formu-kira-stopaj",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0023-piksel-raporu.json",
+        "ekran": "gider-formu-ek-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0023 AC-17"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [

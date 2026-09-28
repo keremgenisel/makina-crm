@@ -185,6 +185,12 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(yeniId).not.toBe(pid);
     expect(plan.adds.customers[0].partiId).toBe(yeniId);
   });
+  it("spec 0023 C7: ek ödeme satırları kimliksiz, kalemle birlikte taşınır", () => {
+    const ekOdemeler = [{ tur: "prim", aciklama: "A", resmiTutar: 100, eldenTutar: null }, { tur: "prim", aciklama: "B", resmiTutar: null, eldenTutar: 50 }];
+    const my = blob({ giderTurleri: [{ id: 11, ad: "Personel", davranis: "personel" }], giderler: [{ id: 15, turId: 11, resmiTutar: 1000, ekOdemeler }] });
+    const plan = buildMergePlan(my, blob({ giderTurleri: [{ id: 11, ad: "Personel", davranis: "personel" }], giderler: [] }));
+    expect(plan.adds.giderler[0].ekOdemeler).toEqual(ekOdemeler);
+  });
   it("spec 0021 C8: gider ödeme satırları kalemle birlikte taşınır, kimlikleri ve durumları korunur", () => {
     const taksitler = [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-10-15", tutar: 500, odendi: true, odemeTarihi: "2026-10-15" },
       { id: 7002, hedef: "ana", sira: 2, vade: "2026-11-15", tutar: 500, odendi: false, odemeTarihi: null }];

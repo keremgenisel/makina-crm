@@ -234,6 +234,14 @@ CREATE TABLE IF NOT EXISTS gider_model_satirlari (
   modelAd TEXT, birimMaliyet REAL, adet INTEGER, sort_order INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_gms_gider ON gider_model_satirlari(gider_id);
+-- Personel ek ödemeleri (spec 0023 C7): fazla mesai, prim, ikramiye. Kimliksiz alt satır (model satırları deseni),
+-- kalemle birlikte silinip yeniden yazılır. Ad bilinçli: "mesai" sözcüğü servis işçilik süresine ayrılmış (R10).
+CREATE TABLE IF NOT EXISTS gider_ek_odemeleri (
+  id INTEGER PRIMARY KEY,
+  gider_id INTEGER NOT NULL REFERENCES giderler(id),
+  tur TEXT, aciklama TEXT, resmiTutar REAL, eldenTutar REAL, sort_order INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_geo_gider ON gider_ek_odemeleri(gider_id);
 -- Gider ödeme satırları (spec 0021 C8, plan T1/T2): taksitler ve kiranın iki ödeme hedefi. Satır tek tek
 -- işaretlendiği için KALICI kimlik taşır, ama kimlik birincil anahtar DEĞİLDİR (taksit_id sütunu): birincil anahtar
 -- SQLite'ın rowid'i, satırlar kalemle birlikte silinip yeniden yazılır (yedek_parca_tahsis rowid çakışması dersi).
@@ -791,6 +799,7 @@ function populateAll(conn, data, skip = new Set()) {
   if (Array.isArray(data.giderler) && !skip.has("giderler")) {
     conn.prepare(`DELETE FROM gider_model_satirlari`).run();
     conn.prepare(`DELETE FROM gider_taksitleri`).run();
+    conn.prepare(`DELETE FROM gider_ek_odemeleri`).run();
     conn.prepare(`DELETE FROM giderler`).run();
     const stmt = conn.prepare(`
       INSERT INTO giderler (id, tarih, turId, aciklama, tedarikciId, tutar, kdvOrani, odemeYontemi, sonOdemeTarihi, odendi, odemeTarihi,
@@ -800,6 +809,7 @@ function populateAll(conn, data, skip = new Set()) {
     `);
     // Alt satıra id verilmez (yedek_parca_tahsis dersi: rowid çakışması tüm kaydı geri alıyordu).
     const mStmt = conn.prepare(`INSERT INTO gider_model_satirlari (gider_id, modelAd, birimMaliyet, adet, sort_order) VALUES (?, ?, ?, ?, ?)`);
+    const ekStmt = conn.prepare(`INSERT INTO gider_ek_odemeleri (gider_id, tur, aciklama, resmiTutar, eldenTutar, sort_order) VALUES (?, ?, ?, ?, ?, ?)`);
     const tkStmt = conn.prepare(`INSERT INTO gider_taksitleri (gider_id, taksit_id, hedef, sira, vade, tutar, odendi, odemeTarihi, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const g of data.giderler) {
       stmt.run({
@@ -812,6 +822,7 @@ function populateAll(conn, data, skip = new Set()) {
         atamaTur: g.atamaTur ?? null, makinaTur: g.makinaTur ?? null, makinaId: g.makinaId ?? null, deletedAt: g.deletedAt ?? null,
       });
       (g.modelSatirlari || []).forEach((m, idx) => mStmt.run(g.id, m.modelAd ?? null, m.birimMaliyet ?? null, m.adet ?? null, idx));
+      (g.ekOdemeler || []).forEach((e, idx) => ekStmt.run(g.id, e.tur ?? null, e.aciklama ?? null, e.resmiTutar ?? null, e.eldenTutar ?? null, idx));
       (g.taksitler || []).forEach((t, idx) => tkStmt.run(g.id, t.id ?? null, t.hedef ?? null, t.sira ?? null, t.vade ?? null, t.tutar ?? null, toInt(t.odendi), t.odemeTarihi ?? null, idx));
     }
   }
@@ -1277,8 +1288,14 @@ function readBlobFromDb() {
     if (!taksitByGider.has(t.gider_id)) taksitByGider.set(t.gider_id, []);
     taksitByGider.get(t.gider_id).push({ id: t.taksit_id, hedef: t.hedef, sira: t.sira, vade: t.vade, tutar: t.tutar, odendi: toBool(t.odendi), odemeTarihi: t.odemeTarihi });
   }
+  const ekByGider = new Map();
+  for (const e of db.prepare(`SELECT * FROM gider_ek_odemeleri ORDER BY gider_id, sort_order`).all()) {
+    if (!ekByGider.has(e.gider_id)) ekByGider.set(e.gider_id, []);
+    ekByGider.get(e.gider_id).push({ tur: e.tur, aciklama: e.aciklama || "", resmiTutar: e.resmiTutar, eldenTutar: e.eldenTutar });
+  }
   const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, ...rest }) => ({
     ...rest, odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
+    ekOdemeler: ekByGider.get(rest.id) || [],
   }));
   const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, ...rest }) => ({
     ...rest, modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),

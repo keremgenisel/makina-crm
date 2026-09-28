@@ -66,6 +66,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   değildir (C17'nin dar istisnası). Bir çalışan listeden çıkarılırken ona bağlı açık tekrarlayan tanım varsa
   kullanıcıya bildirilir ve tanım **silinmez, bitiş ayı son üretilen ay yapılarak kapatılır**; böylece
   üretim izi korunur ve çalışan geri eklenirse geçmiş aylar ikinci kez üretilmez.
+  **Güncelleme (2026-09-28, spec 0023):** personel kaleminin tutarı artık maaş (resmi + elden) artı o ayın ek
+  ödemeleridir (fazla mesai, prim, ikramiye; her biri resmi + elden). Tek toplam korunur: ödenecek tutar, borç, hatırlatıcı
+  ve makina maliyeti aynı rakamı okur. Bkz. `specs/done/0023-calisan-mesaisi-ve-primi.md`.
 - **R6.** Kira giderinde stopaj takip edilir: brüt kira, stopaj oranı ve net ödenen tutar birlikte tutulur.
   Kullanıcı brüt veya net tutarlardan birini girer, sistem diğerini hesaplar; **hangisinin girildiği kayıtta
   saklanır ve kullanıcıya gösterilir.** Stopaj oranı kalem bazında girilir, varsayılanı tek bir firma ayarından

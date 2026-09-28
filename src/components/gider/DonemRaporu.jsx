@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF } from "../../lib/gider";
+import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, EK_ODEME_TUR_AD, ekOdemeKurus } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
@@ -60,6 +60,7 @@ export const KovaKarti = ({ rapor }) => {
 };
 
 // Tür kırılımı (R8, AC-12). Personel satırı kapalı; açılınca çalışan başına resmi/elden (AC-51).
+const PERSONEL_IZGARA = "minmax(0, 1fr) 90px 90px 90px 100px";
 export const TurKirilimi = ({ rapor }) => {
   const [acik, setAcik] = useState(false);
   const top = rapor.toplam || 0;
@@ -80,12 +81,22 @@ export const TurKirilimi = ({ rapor }) => {
             </div>
             {t.calisanlar && acik && (
               <div style={{ margin: "8px 0 4px 12px", fontSize: 12.5 }} data-testid="personel-ayrinti">
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 100px 100px 100px", gap: 8, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
-                  <span>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Toplam</span>
+                {/* Spec 0023 R7 (P2): Resmi ve Elden yalnız maaş; ek ödemeler ayrı sütun ve çalışanın altında satır satır. */}
+                <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
+                  <span>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Ek ödeme</span><span style={{ textAlign: "right" }}>Toplam</span>
                 </div>
                 {t.calisanlar.map(c => (
-                  <div key={String(c.calisanId)} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 100px 100px 100px", gap: 8, padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
-                    <span style={{ fontWeight: 600 }}>{c.ad}</span><span style={{ textAlign: "right" }}>{tl2(c.resmi)}</span><span style={{ textAlign: "right" }}>{tl2(c.elden)}</span><b style={{ textAlign: "right" }}>{tl2(c.toplam)}</b>
+                  <div key={String(c.calisanId)} style={{ padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }} data-testid="personel-ayrinti-calisan">
+                    <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8 }}>
+                      <span style={{ fontWeight: 600 }}>{c.ad}</span><span style={{ textAlign: "right" }}>{tl2(c.resmi)}</span><span style={{ textAlign: "right" }}>{tl2(c.elden)}</span>
+                      <span style={{ textAlign: "right" }}>{c.ek ? tl2(c.ek) : "—"}</span><b style={{ textAlign: "right" }}>{tl2(c.toplam)}</b>
+                    </div>
+                    {(c.ekSatirlari || []).map((e, i) => (
+                      <div key={i} data-testid="personel-ek-odeme" style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 12, color: "var(--n600, #475569)", paddingTop: 3 }}>
+                        <span style={{ paddingLeft: 12 }}>{EK_ODEME_TUR_AD[e.tur] || e.tur}{e.aciklama ? ` · ${e.aciklama}` : ""}</span><span /><span />
+                        <span style={{ textAlign: "right" }}>{tl2(e.tutar)}</span><span />
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -271,7 +282,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <td style={td}>
           <div style={{ fontWeight: 600 }}>{d === DAVRANIS.PERSONEL ? k.calisanAd : (k.aciklama || <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}>Açıklama yok</span>)}</div>
           {d !== DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: ted ? "var(--n700, #334155)" : "var(--n500, #64748b)", marginTop: 2 }}>{ted ? ted.ad : "Tedarikçi seçilmemiş"}</div>}
-          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)} · Elden {tl2(k.eldenTutar)}</div>}
+          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)} · Elden {tl2(k.eldenTutar)}{ekOdemeKurus(k) > 0 ? ` · Ek ödeme ${tl2(ekOdemeKurus(k) / 100)}` : ""}</div>}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
             {d === DAVRANIS.KIRA && <Rozet renk={k.girisYonu === "net" ? "mavi" : "turuncu"}>{k.girisYonu === "net" ? "Net girildi" : "Brüt girildi"}</Rozet>}
             {d === DAVRANIS.KIRA && <span style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Stopaj %{k.stopajOrani ?? 0}: {tl2(kalemStopaj(k, d))} · Net {tl2(k.netTutar ?? (kalemTutari(k, d) - kalemStopaj(k, d)))}</span>}

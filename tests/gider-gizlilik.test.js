@@ -7,7 +7,8 @@ import path from "node:path";
 
 const root = path.join(__dirname, "..");
 const oku = (p) => readFileSync(path.join(root, p), "utf-8");
-const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler/;
+// Spec 0023: çalışan ek ödemeleri (alan, tablo ve tür kodu) de listede; listeye eklenmeyen ad testi yeşil bırakıp sızabilirdi.
+const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma/;
 
 describe("AC-56: personel tutarı yazdırma ve dışa aktarmaya girmez", () => {
   it("yazdırma şablonları (printTemplates.js) gider/personel alanlarını okumaz", () => {

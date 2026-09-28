@@ -225,6 +225,11 @@ const partiMaliyetDetayi = (anahtar) => {
     <MakinaMaliyetDetay detay={makinaKarlilik(s, anahtar)} /></div>;
 };
 
+// Spec 0023: çalışan ek ödemeleri (aynı türden iki prim ve bir fazla mesai).
+const EK_ODEMELI = k(41, { turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, tarih: "2026-09-05",
+  ekOdemeler: [{ tur: "fazlaCalisma", aciklama: "Eylül yoğunluğu", resmiTutar: 4000, eldenTutar: 1000 }, { tur: "prim", aciklama: "Teslim primi", resmiTutar: 2500, eldenTutar: null },
+    { tur: "prim", aciklama: "Kalite primi", resmiTutar: null, eldenTutar: 1500 }] });
+
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
@@ -341,6 +346,10 @@ const EKRANLAR = {
   "maliyet-detay-parti-kapali": [partiMaliyetDetayi("musteri:500"), []],
   "stok-makina-parti": [<Stock factory={{ name: "Altuntaş Makina" }} stock={PARTI_STOK} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]} dealers={DEALERS}
     yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
+  // Spec 0023: ek ödemeler.
+  "gider-formu-ek-odeme": [<GiderForm kalem={EK_ODEMELI} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ek ödemeler (bu ay)"]],
+  "giderler-personel-ayrinti-kapali": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["kaydir:Gider Türü Kırılımı"]],
+  "giderler-personel-ayrinti-acik": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["dugme:▸ Aç", "kaydir:Gider Türü Kırılımı"]],
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],

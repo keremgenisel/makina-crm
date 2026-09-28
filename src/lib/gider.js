@@ -76,8 +76,20 @@ export const kiraHesapla = ({ girisYonu = "brut", tutar, netTutar, stopajOrani =
   return { brut: tl(brut), stopaj: tl(stopaj), net: tl(net), kdv: tl(kdv), nakit: tl(net + kdv) };
 };
 
+// Personel ek ödemeleri (spec 0023): fazla mesai, prim, ikramiye; her satır resmi + elden. Kimliksiz alt satır (C7).
+// Adlandırma bilinçli: "mesai" sözcüğü kodda servis işçilik süresi içindir (utils.mesaiDk, calismaSaatleri); bordro
+// fazla mesaisi `fazlaCalisma` koduyla tutulur, iki kavram hiçbir alanı paylaşmaz (R10).
+export const EK_ODEME_TURLERI = [
+  { value: "fazlaCalisma", label: "Fazla mesai" }, { value: "prim", label: "Prim" }, { value: "ikramiye", label: "İkramiye" },
+];
+export const EK_ODEME_TUR_AD = Object.fromEntries(EK_ODEME_TURLERI.map(t => [t.value, t.label]));
+const ekSatirKurus = (e) => kurus(e?.resmiTutar) + kurus(e?.eldenTutar);
+export const maasKurus = (k) => kurus(k?.resmiTutar) + kurus(k?.eldenTutar);
+export const ekOdemeKurus = (k) => (Array.isArray(k?.ekOdemeler) ? k.ekOdemeler : []).reduce((a, e) => a + ekSatirKurus(e), 0);
+// Tek toplam (C5): personel kalemi = maaş + ek ödemeler. Ödenecek tutar, borç, hatırlatıcı, ödeme hedefleri ve makina
+// maliyeti bu fonksiyondan okur; ikinci bir toplama yazılmaz.
 const kalemKurus = (k, dav) => {
-  if (dav === DAVRANIS.PERSONEL) return kurus(k.resmiTutar) + kurus(k.eldenTutar);
+  if (dav === DAVRANIS.PERSONEL) return maasKurus(k) + ekOdemeKurus(k);
   return kurus(k.tutar);
 };
 const kdvKurus = (k, dav) => (dav === DAVRANIS.PERSONEL ? 0 : Math.round(kurus(k.tutar) * (Number(k.kdvOrani) || 0) / 100));
@@ -315,9 +327,26 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
     if (e.gecersiz) hata("eldenTutar", "Tutar sayıya çevrilemedi. Örnek: 15.000,00");
     if (!r.gecersiz && r.deger < 0) hata("resmiTutar", "Tutar negatif olamaz.");
     if (!e.gecersiz && e.deger < 0) hata("eldenTutar", "Tutar negatif olamaz.");
-    if (!r.gecersiz && !e.gecersiz && r.deger >= 0 && e.deger >= 0 && kurus(r.deger) + kurus(e.deger) <= 0) hata("resmiTutar", "Tutar sıfırdan büyük olmalı.");
+    // Ek ödeme satırları (spec 0023 R9, P3): tamamen boş satır (iki tutar ve açıklama boş) atılır; negatif, sayıya
+    // çevrilemeyen ya da toplamı sıfır olan satır hata verir. Hata satır numarasını taşır.
+    const ekler = [];
+    let ekHata = false;
+    (Array.isArray(form.ekOdemeler) ? form.ekOdemeler : []).forEach((x, i) => {
+      const er = tutarCoz(x?.resmiTutar), ee = tutarCoz(x?.eldenTutar);
+      const aciklama = String(x?.aciklama || "").trim();
+      if (er.bos && ee.bos && !aciklama) return;
+      const sat = (mesaj) => { hatalar.push({ alan: "ekOdemeler", satir: i, mesaj }); ekHata = true; };
+      if (er.gecersiz || ee.gecersiz) return sat(`Ek ödeme satırında tutar sayıya çevrilemedi (${i + 1}. satır).`);
+      if (er.deger < 0 || ee.deger < 0) return sat(`Ek ödeme satırında tutar negatif olamaz (${i + 1}. satır).`);
+      if (kurus(er.deger) + kurus(ee.deger) <= 0) return sat(`Ek ödeme satırında tutar sıfırdan büyük olmalı (${i + 1}. satır).`);
+      const tur = EK_ODEME_TUR_AD[x?.tur] ? x.tur : "prim";
+      ekler.push({ tur, aciklama, resmiTutar: er.bos ? null : er.deger, eldenTutar: ee.bos ? null : ee.deger });
+    });
+    // R11: "sıfırdan büyük" şartı kalemin genel toplamına (maaş + ek ödemeler) uygulanır; hata maaş alanında (P4).
+    if (!r.gecersiz && !e.gecersiz && r.deger >= 0 && e.deger >= 0 && !ekHata && kurus(r.deger) + kurus(e.deger) + ekler.reduce((a, x) => a + ekSatirKurus(x), 0) <= 0) hata("resmiTutar", "Tutar sıfırdan büyük olmalı.");
     kayit.resmiTutar = r.bos ? null : r.deger;
     kayit.eldenTutar = e.bos ? null : e.deger;
+    kayit.ekOdemeler = ekler;
     kayit.tutar = null;
     kayit.kdvOrani = 0;
     kayit.tedarikciId = null;
@@ -336,14 +365,14 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
     }
     kayit.girisYonu = yon;
     kayit.stopajOrani = s.gecersiz ? form.stopajOrani : s.deger;
-    kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.calisanId = null; kayit.calisanAd = null;
+    kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.calisanId = null; kayit.calisanAd = null; kayit.ekOdemeler = [];
   } else {
     const t = tutarCoz(form.tutar);
     if (t.gecersiz) hata("tutar", "Tutar sayıya çevrilemedi. Örnek: 14.800,00");
     else if (t.bos || t.deger <= 0) hata("tutar", "Tutar sıfırdan büyük olmalı.");
     else kayit.tutar = t.deger;
     kayit.stopajOrani = null; kayit.girisYonu = null; kayit.netTutar = null;
-    kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.calisanId = null; kayit.calisanAd = null;
+    kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.calisanId = null; kayit.calisanAd = null; kayit.ekOdemeler = [];
   }
 
   if (dav !== DAVRANIS.PERSONEL) {
@@ -516,7 +545,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       const r = tutarCoz(c?.resmiMaliyet), e = tutarCoz(c?.eldenMaliyet);
       if (!c) { atlanan.push({ tanim: t, neden: "Çalışan bulunamadı." }); guncelTanimlar.push(t); continue; }
       if (kurus(r.deger) + kurus(e.deger) <= 0) { atlanan.push({ tanim: t, neden: `${c.ad} için aylık maliyet girilmemiş.` }); guncelTanimlar.push(t); continue; }
-      Object.assign(kalem, { calisanId: c.id, calisanAd: c.ad, aciklama: t.ad || c.ad, resmiTutar: r.bos ? null : r.deger, eldenTutar: e.bos ? null : e.deger, tutar: null, kdvOrani: 0 });
+      // Spec 0023 R4: ek ödemeler her ay elle girilir; üretim boş başlatır, önceki ayın tutarı taşınmaz.
+      Object.assign(kalem, { calisanId: c.id, calisanAd: c.ad, aciklama: t.ad || c.ad, resmiTutar: r.bos ? null : r.deger, eldenTutar: e.bos ? null : e.deger, tutar: null, kdvOrani: 0, ekOdemeler: [] });
     } else if (dav === DAVRANIS.KIRA) {
       const stopaj = Number(giderAyarlari?.stopajOrani) || 0;
       const yon = t.girisYonu === "net" ? "net" : "brut";
@@ -634,9 +664,11 @@ export const hesaplaGiderRaporu = (
     tr.toplam += tut; tr.adet++;
     if (tr.calisanlar) {
       const ck = String(k.calisanId);
-      if (!tr.calisanlar.has(ck)) tr.calisanlar.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", resmi: 0, elden: 0, toplam: 0 });
+      if (!tr.calisanlar.has(ck)) tr.calisanlar.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", resmi: 0, elden: 0, ek: 0, toplam: 0, ekSatirlari: [] });
       const c = tr.calisanlar.get(ck);
-      c.resmi += kurus(k.resmiTutar); c.elden += kurus(k.eldenTutar); c.toplam += tut;
+      // Spec 0023 R7 (P2): resmi ve elden yalnız maaş; ek ödemeler ayrı sütun ve satır satır.
+      c.resmi += kurus(k.resmiTutar); c.elden += kurus(k.eldenTutar); c.ek += ekOdemeKurus(k); c.toplam += tut;
+      for (const e of (k.ekOdemeler || [])) c.ekSatirlari.push({ kalemId: k.id, tarih: k.tarih, tur: e.tur, aciklama: e.aciklama || "", tutar: tl(ekSatirKurus(e)) });
     }
 
     const cz = atanabilirMi(dav) && k.atamaTur === ATAMA.MAKINA ? makinaCoz(k) : null;
@@ -696,7 +728,7 @@ export const hesaplaGiderRaporu = (
 
   const turKirilimi = [...turKir.values()].map(t => ({
     ...t, toplam: tl(t.toplam),
-    calisanlar: t.calisanlar ? [...t.calisanlar.values()].map(c => ({ ...c, resmi: tl(c.resmi), elden: tl(c.elden), toplam: tl(c.toplam) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr")) : null,
+    calisanlar: t.calisanlar ? [...t.calisanlar.values()].map(c => ({ ...c, resmi: tl(c.resmi), elden: tl(c.elden), ek: tl(c.ek), toplam: tl(c.toplam) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr")) : null,
   })).sort((a, b) => b.toplam - a.toplam);
 
   return {

@@ -68,3 +68,21 @@ describe("AC-56: çıktılarda personel tutarı yok (çıktı bazlı)", () => {
     expect(makina).not.toMatch(IZ);
   });
 });
+
+// Spec 0023 AC-12: çalışan ek ödemeleri (ayırt edici tutar ve açıklama) hiçbir dışa aktarma ve yazdırma çıktısına girmez.
+describe("Spec 0023 AC-12: ek ödeme tutarları çıktılarda yok", () => {
+  const IZ2 = /7[.,\s]?654|2[.,\s]?468|7654|2468|Gizli prim/;
+  const ekGiderler = [{ ...giderler[0], ekOdemeler: [{ tur: "prim", aciklama: "Gizli prim açıklaması", resmiTutar: 7654.32, eldenTutar: 2468.13 }] }];
+  it("CSV/XLSX dışa aktarmaları ve aylık rapor ek ödeme içermez", async () => {
+    render(<SettingsExport customers={customers} services={services} dealers={[]} stock={[]} partSales={[]} payments={[]} notes={[]} parts={[]}
+      appSettings={{}} flash={vi.fn()} calisanlar={calisanlar} giderler={ekGiderler} giderTanimlari={giderTanimlari} />);
+    for (const g of ["Müşteri & Servis", "Finans", "Diğer"]) fireEvent.click(screen.getByText(new RegExp(`^${g} \\(`)));
+    const indir = screen.getAllByTitle("İndir");
+    indir.forEach(b => fireEvent.click(b));
+    fireEvent.click(screen.getByText("Tümünü İndir"));
+    await waitFor(() => expect(yakalanan.length).toBe(indir.length + 1));
+    for (const y of yakalanan) expect(JSON.stringify(y.rows), y.ad).not.toMatch(IZ2);
+    const veri = { customers, services, partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [], giderler: ekGiderler, giderTanimlari, calisanlar };
+    expect(buildAylikRaporHtml(hesaplaAylikRapor(veri, "2026-06", {}), { name: "Altuntaş Makina" })).not.toMatch(IZ2);
+  });
+});
