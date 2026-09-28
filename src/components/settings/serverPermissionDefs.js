@@ -241,6 +241,7 @@ export const GIDER_ACTION_GROUPS = [
   { grup: "Kasa ve hesaplar", items: [
     { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil" },
     { id: "virman",     label: "Hesaplar arası virman" },
+    { id: "avans",      label: "Çalışana avans ver ve sil" },
   ]},
 ];
 

@@ -6,14 +6,21 @@ import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
 import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
+import { EkstrePenceresi } from "./EkstrePenceresi";
+import { tedarikciEkstresi } from "../../lib/kasa";
 
 // Giderler › Tedarikçiler (spec 0001 R13, AC-40/44/45/46/62; plan K16). Ayarlar'da DEĞİL, bu sekmede
 // yönetilir: settings izni olan ama gider yetkisi olmayan kullanıcı listeyi görmesin (AC-48).
 // Silme kalıcıdır (R12); kullanımdaki tedarikçi (çöpteki kalemler ve tanımlar dahil) silinemez.
 const BOS = { id: null, ad: "", yetkili: "", telefon: "", eposta: "", vergiDairesi: "", vergiNo: "", adres: "", not: "" };
 
-export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions }) => {
+export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
+  // Spec 0024 B (R12, B6, B10, B11): tedarikçi ekstresi ve silme uyarısındaki kalan borç. giderler hareketlerden türetilmiş olabilir.
+  hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [] }) => {
   const [form, setForm] = useState(null);
+  const [ekstre, setEkstre] = useState(null);
+  const ekstreHesapla = (t, aralik = null) => tedarikciEkstresi(t.id, { giderler, hareketler: hesapHareketleri || [], turler: giderTurleri, yururlukAy, bugun, aralik });
+  const hesapAdi = (id) => { const h = kasaHesaplari.find(x => String(x.id) === String(id)); return h ? h.ad : id == null ? "Hesap belirtilmedi" : "Silinmiş hesap"; };
   const [hata, setHata] = useState("");
   const [sil, setSil] = useState(null);
   const harcama = new Map((rapor?.tedarikciKirilimi?.satirlar || []).map(s => [String(s.tedarikciId), s]));
@@ -67,6 +74,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
                     <td style={{ padding: "10px 12px", textAlign: "right" }}>{h?.harcama ? <b>{tl2(h.harcama)}</b> : "—"}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right" }}>{h?.acikBorc ? <><b>{tl2(h.acikBorc)}</b>{h.vadesiGecti && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}</> : "—"}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {Array.isArray(hesapHareketleri) && <><Btn small variant="ghost" onClick={() => setEkstre(t)}>Ekstre</Btn>{" "}</>}
                       {canDo("tedarikci_edit") && <Btn small variant="ghost" onClick={() => ac(t)} title="Düzenle"><Icon name="edit" size={12} /></Btn>}{" "}
                       {canDo("tedarikci_delete") && <Btn small variant="danger" onClick={() => silAc(t)} title="Sil"><Icon name="trash" size={12} /></Btn>}
                     </td>
@@ -95,11 +103,13 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
           <div style={{ fontSize: 13, lineHeight: 1.6 }}>
             Bu tedarikçi <b>{sil.k.kalem} gider kaleminde</b>{sil.k.cop ? <> kullanılıyor, <b>{sil.k.cop}’i çöp kutusunda</b></> : " kullanılıyor"}{sil.k.tanim ? <> ve <b>{sil.k.tanim} tekrarlayan tanımda</b> geçiyor</> : null}.
             Çöpteki kalem geri alınırsa tedarikçi bağı kopmasın diye o da sayılır. Silmek için önce kalemlerde başka tedarikçi seçin.
+            {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div> : null; })()}
           </div>
         </Modal>
       ) : (
         <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” kalıcı olarak silinecek (çöp kutusuna düşmez).`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
       ))}
+      {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)} onClose={() => setEkstre(null)} />}
     </div>
   );
 };

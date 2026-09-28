@@ -98,6 +98,8 @@ export function buildMergePlan(myData, serverData) {
     ...(h.giderId != null ? { giderId: remapRef(maps.giderler, h.giderId) } : {}),
     ...(h.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, h.hesapId) } : {}),
     ...(h.karsiHesapId != null ? { karsiHesapId: remapRef(maps.kasaHesaplari, h.karsiHesapId) } : {}),
+    // Spec 0024 B: avans ve mahsup çalışana kimlikle bağlı.
+    ...(h.calisanId != null ? { calisanId: remapRef(maps.calisanlar, h.calisanId) } : {}),
   }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
   // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.

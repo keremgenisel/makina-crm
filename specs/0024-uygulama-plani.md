@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Bağlı spec** | `specs/0024-kasa-ve-odeme-ayrimi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | A parçası uygulanıyor. 2026-09-28: Q1–Q10 kullanıcı tarafından onaylandı; spec R2 ile güncellendi. Dal `feat/0024-kasa-a`. B parçası A kapanınca ayrıca planlanır (C11). |
+| **Durum** | A parçası tamamlandı (commit `4298f67`, dal `feat/0024-kasa-a`). B parçası 2026-09-28'de B1–B11 ile onaylandı, spec R3; dal `feat/0024-kasa-b`. Önceki durum: A parçası uygulanıyor. 2026-09-28: Q1–Q10 kullanıcı tarafından onaylandı; spec R2 ile güncellendi. Dal `feat/0024-kasa-a`. B parçası A kapanınca ayrıca planlanır (C11). |
 | **Önkoşul** | 0001, 0003, 0008 (perde), 0021 (ödeme hedefleri, taksit), 0023 (dal tabanı) |
 
 ---
@@ -90,3 +90,52 @@
 | 1. Eski yedekten geri yüklemede ödeme bilgisi kayboluyor | Göç çekirdeği `electron/kasaGocuSaf.mjs`'e çıktı (db.cjs ve geri yükleme ortak); hareket bölümü olmayan yedekte göç uygulanır; `BACKUP_SCHEMA_VERSION` 3 | `ui/kasa-yedek-goc`, `kasa-goc.cjs` (db yolu aynı çekirdekle) |
 | 2. Güncellenmemiş sunucuda ödenmiş kalem ödenmemiş görünüyor | `hesapHareketleri` başlangıcı null, bölüm gelmezse null kalır; eski işaret okunur, ödeme girişi kapalı ve uyarılı, bölüm kayda eklenmez | `ui/kasa-app` (eski sunucu / yeni sunucu) |
 | 3. Kullanılmayan eski işaretleyiciler ve `setGiderler` prop'u | Beş yardımcı ve prop kaldırıldı; testleri hareketle yeniden yazıldı | `kasa.test.js` kaynak taraması, `gider-taksit`, `odeme-hatirlatma` |
+
+## 5. B parçası: avans, mahsup, ekstre (2026-09-28, B1–B11 onaylı, spec R3)
+
+| No | Karar |
+|---|---|
+| B1 | Mahsup çalışan düzeyinde: kayıt `calisanId` + `giderId` (+ `taksitId`); avans borcu = avanslar − mahsuplar. |
+| B2 | Mahsup sınırı: kalem/taksit kalanı ile açık avans borcunun küçüğü; yalnız aynı çalışanın personel kalemi. |
+| B3 | İzin: avans yeni `avans`, mahsup `gider_odeme`. |
+| B4 | Avansta hesap zorunlu değil; hesapsız avans bakiyeye girmez, R8 sayımına eklenir. |
+| B5 | Çöpteki maaş kaleminin mahsubu avans borcunda sayılmaz; kayıt silinmez. |
+| B6 | Ekstre borç özetiyle aynı kapsam; son bakiye borç özeti satırıyla aynı (çapraz test). |
+| B7 | Tutarsız göç hareketi ekstrede o anki kalanla, "eski kayıttan aktarıldı" etiketiyle. |
+| B8 | Çalışan ekstresi tek net sütun (+ borcumuz, − alacağımız); maaş kırılımı resmi/elden/ek. |
+| B9 | Ekstre yazdırılmaz, dışa aktarılmaz; gizlilik taraması kapsar. |
+| B10 | Tedarikçi silme kalıcı kalır, onayda kalan borç uyarısı; çalışan çöpte "silinmiş" rozeti. |
+| B11 | Tedarikçi ekstresi Tedarikçiler satırından; avans ve çalışan ekstresi Kasa'daki "Çalışan avansları"ndan. |
+
+**Dosyalar:** `kasa.js` (avans/mahsup doğrulama, avans borcu, ekstreler, bakiyede avans), `gider.js` (`odemeleriUygula` mahsubu düşer),
+`db.cjs` (`hesap_hareketleri.calisanId`), `serverAuth.cjs` (tur → izin), `serverPermissionDefs.js` (`avans`), `merge.js` (`calisanId` remap),
+`Kasa.jsx` + `kasa/CalisanAvanslari.jsx`, `gider/EkstrePenceresi.jsx`, `gider/OdemeKayitPenceresi.jsx` (mahsup), `gider/Tedarikciler.jsx`
+(ekstre, silme uyarısı), `CalisanManager.jsx` (avans uyarısı), `App.jsx` (props), kanıt sayfası, belgeler.
+
+**Adımlar:** motor + test → DB/sunucu/merge + test → arayüz + UI test → tam koşu, lint → kanıt, TY → belgeler.
+
+| AC | Test |
+|---|---|
+| AC-13 | `kasa.test.js` + `ui/kasa-avans` |
+| AC-14 | `kasa.test.js` + `ui/kasa-avans` (mahsup penceresi) |
+| AC-15 | `kasa.test.js` |
+| AC-16 | `kasa.test.js` (borç özeti çaprazı) + `ui/ekstre` |
+| AC-17 | `kasa.test.js` + `ui/ekstre` |
+| AC-7 (mahsup) | `kasa.test.js` |
+| AC-23 (avans) | `kasa.test.js` (makina maliyeti değişmez) |
+| AC-27 (avans) | `server-authz` + `server-security.cjs` |
+| AC-34 | `ui/kasa-avans` (Çalışan silme onayı) |
+
+### B parçası uygulama notları (2026-09-28)
+
+- Motor, DB, sunucu, birleştirme ve arayüz plana uygun uygulandı. Tedarikçi silme: kalemi olan tedarikçi 0001'den beri hiç silinemediği
+  için kalan borç uyarısı "silinemez" penceresine yazıldı (onay penceresine ulaşılamıyor). Ekstre düğmesi hareket bölümü yokken (eski sunucu) gizli.
+- İstisna yok: A testlerinden yalnız `hesapsizOdemeler` beklentisine `avansAdet: 0` eklendi (yeni alan).
+- Kanıt: 272 çekim, 252'si 0 piksel; değişen Kasa ekranları (yeni bölüm) ve 10 yeni çekim (`0024b-piksel-raporu.json`). TY onayı 2026-09-28.
+
+### B triyaj düzeltmeleri (2026-09-28)
+
+| Bulgu | Düzeltme | Test |
+|---|---|---|
+| 1. Mahsup edilmiş avans silinebiliyor | `kasa.avansSilinebilirMi`: kalan avans mahsupların altına inerse silme engellenir; "Avans silinemez" penceresi eksik tutarı ve engelleyen mahsupları listeler | `kasa.test.js` (üç rakamın tutarlılığı), `ui/kasa-avans` |
+| 2. Kapsam dışı maaşa mahsup açık avans ile ekstreyi ayırıyor | `mahsupDogrula` ve ödeme penceresi yalnız kapsamdaki (bugün veya öncesi, yürürlük ayı veya sonrası) kaleme mahsup kabul eder (`mahsupKapsamda`) | `kasa.test.js` (açık avans ↔ ekstre çaprazı), `ui/kasa-avans` |

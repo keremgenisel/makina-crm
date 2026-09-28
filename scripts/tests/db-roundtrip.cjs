@@ -127,7 +127,9 @@ dbmod.writeBlobToDb({
     { id: 98, ad: "Kart", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -2000, acilisTarihi: null, kapali: true }],
   hesapHareketleri: [{ id: 971, tur: "odeme", tarih: "2026-07-05", tutar: 1234.56, yontem: "Havale", hesapId: 97, karsiHesapId: null, giderId: 81, taksitId: null, tamKapatir: false, kaynak: null, gocKaynak: null, aciklama: "kısmi" },
     { id: 972, tur: "virman", tarih: "2026-07-06", tutar: 500, hesapId: 97, karsiHesapId: 98, aciklama: "" },
-    { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" }],
+    { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" },
+    { id: 974, tur: "avans", tarih: "2026-07-08", tutar: 3000, calisanId: 55, hesapId: null },
+    { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null }],
   // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
@@ -221,6 +223,8 @@ check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSO
 check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boolean) tam turu", (() => {
   const h = blob.kasaHesaplari || [], m = blob.hesapHareketleri || [];
   const z = h.find(x => x.id === 97), k = h.find(x => x.id === 98), o = m.find(x => x.id === 971), v = m.find(x => x.id === 972), g = m.find(x => x.id === 973);
+  check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
+    && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);
   return h.length === 2 && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000
     && o?.tutar === 1234.56 && o.hesapId === 97 && o.giderId === 81 && o.tamKapatir === false && o.aciklama === "kısmi"
     && v?.tur === "virman" && v.karsiHesapId === 98 && g?.tamKapatir === true && g.tutar == null && g.gocKaynak === "taksit:82:9002";

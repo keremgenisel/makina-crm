@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { fmtTR } from "../../lib/utils";
-import { satirliMi, odemeHedefKalaniK, hedefOdemeleri, odemeDurumu, kurus, tl, HEDEF } from "../../lib/gider";
-import { odemeDogrula, secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD } from "../../lib/kasa";
+import { satirliMi, odemeHedefKalaniK, hedefOdemeleri, odemeDurumu, kurus, tl, HEDEF, DAVRANIS } from "../../lib/gider";
+import { odemeDogrula, mahsupDogrula, mahsupKapsamda, avansBorcuK, secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD } from "../../lib/kasa";
 import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
-import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
+import { HataMetni, Ipucu, BolumBasligi, Segment } from "../tasarim";
 import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi } from "./GiderAlanlari";
 
 // Ödeme kayıt penceresi (spec 0024 R2, R17, R18; AC-3–AC-7, AC-20, AC-28, AC-36). Listedeki ödeme anahtarı, kira
@@ -25,10 +25,18 @@ const para = (k) => tl2(tl(k));
 export const OdemeKayitPenceresi = ({
   kalem, davranis, turAd, turMap, hedef = null, hareketler = [], hesaplar = [], hesapSecimi = false, odemeYetkisi = false, bugun,
   onKaydet, onSil, onClose,
+  // Spec 0024 B (R10, B1, B2): personel kaleminde çalışanın açık avansı varsa "Avanstan mahsup" kipi. giderler: avans
+  // borcunun hesabı için (çöpteki kalemin mahsubu sayılmaz, B5). Mahsup para hareketi değildir; hesap ve yöntem sorulmaz.
+  giderler = [], yururlukAy = null,
 }) => {
   const satirli = satirliMi(kalem);
   const [taksitId, setTaksitId] = useState(() => (satirli ? baslangicTaksiti(kalem, hedef) : null));
   const kalanK = odemeHedefKalaniK(kalem, davranis, satirli ? taksitId : null);
+  const avansK = davranis === DAVRANIS.PERSONEL && kalem.calisanId != null ? avansBorcuK(kalem.calisanId, hareketler, giderler) : 0;
+  // Triyaj bulgu 2: kapsam dışı (gelecek tarihli / yürürlük öncesi) maaş kalemine mahsup kipi açılmaz.
+  const mahsupVar = odemeYetkisi && avansK > 0 && kalanK > 0 && mahsupKapsamda(kalem, { bugun, yururlukAy });
+  const [kip, setKip] = useState("odeme");
+  const mahsupKipi = mahsupVar && kip === "mahsup";
   const uygunHesaplar = useMemo(() => secilebilirHesaplar(hesaplar, "TRY"), [hesaplar]);
   const [form, setForm] = useState(() => ({
     tarih: bugun, tutar: tutarMetni(tl(kalanK)), yontem: kalem.odemeYontemi || "",
@@ -39,7 +47,8 @@ export const OdemeKayitPenceresi = ({
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   const taksitSec = (id) => {
     setTaksitId(id);
-    set({ tutar: tutarMetni(tl(odemeHedefKalaniK(kalem, davranis, id))) });
+    const k = odemeHedefKalaniK(kalem, davranis, id);
+    set({ tutar: tutarMetni(tl(mahsupKipi ? Math.min(k, avansK) : k)) });
   };
   const odemeler = hedefOdemeleri(hareketler, kalem.id);
   const satirAdi = (id) => {
@@ -52,8 +61,14 @@ export const OdemeKayitPenceresi = ({
     const h = hesaplar.find(x => String(x.id) === String(id));
     return h ? `${h.ad} (${HESAP_TUR_AD[h.tur] || h.tur})` : "Hesap belirtilmedi";
   };
+  const kipSec = (k) => {
+    setKip(k); setHatalar({});
+    set({ tutar: tutarMetni(tl(k === "mahsup" ? Math.min(kalanK, avansK) : kalanK)) });
+  };
   const kaydet = () => {
-    const r = odemeDogrula({ ...form, taksitId }, { kalem, turMap, hesaplar });
+    const r = mahsupKipi
+      ? mahsupDogrula({ ...form, taksitId }, { kalem, turMap, hareketler, giderler, bugun, yururlukAy })
+      : odemeDogrula({ ...form, taksitId }, { kalem, turMap, hesaplar });
     if (!r.kayit) { setHatalar(r.hatalar); return; }
     onKaydet(r.kayit);
   };
@@ -65,7 +80,7 @@ export const OdemeKayitPenceresi = ({
     <Modal title="Ödeme Kaydet" onClose={onClose} maxWidth={620}
       footer={<div style={{ display: "flex", gap: 8 }}>
         <Btn variant="ghost" onClick={onClose}>{formVar ? "Vazgeç" : "Kapat"}</Btn>
-        {formVar && <Btn onClick={kaydet}><Icon name="check" size={14} /> Ödemeyi Kaydet</Btn>}
+        {formVar && <Btn onClick={kaydet}><Icon name="check" size={14} /> {mahsupKipi ? "Mahsubu Kaydet" : "Ödemeyi Kaydet"}</Btn>}
       </div>}>
       <div data-testid="odeme-kayit-penceresi">
         <div style={{ fontSize: 13, color: "var(--n600, #475569)", marginBottom: 12 }}>
@@ -74,7 +89,13 @@ export const OdemeKayitPenceresi = ({
             Durum: <b>{durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</b>
             {formVar && <> · Bu hedefin kalanı: <b>{para(kalanK)}</b></>}
           </div>
+          {avansK > 0 && <div style={{ marginTop: 4 }} data-testid="acik-avans">{kalem.calisanAd || "Çalışan"} açık avansı: <b>{para(avansK)}</b></div>}
         </div>
+        {mahsupVar && (
+          <div style={{ marginBottom: 12, maxWidth: 360 }}>
+            <Segment ariaLabel="Kayıt türü" kip="dugme" options={[{ value: "odeme", label: "Ödeme" }, { value: "mahsup", label: "Avanstan mahsup" }]} value={kip} onChange={kipSec} />
+          </div>
+        )}
         {formVar ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
             {satirli && (
@@ -89,21 +110,21 @@ export const OdemeKayitPenceresi = ({
             )}
             {!satirli && hatalar.hedef && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{hatalar.hedef}</HataMetni></div>}
             <div>
-              <Field label="Ödeme tarihi"><Input type="date" value={form.tarih || ""} onChange={e => set({ tarih: e.target.value })} /></Field>
+              <Field label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"}><Input type="date" value={form.tarih || ""} onChange={e => set({ tarih: e.target.value })} /></Field>
               {hatalar.tarih && <HataMetni>{hatalar.tarih}</HataMetni>}
             </div>
             <div>
               <Field label="Tutar"><TutarInput ariaLabel="Ödeme tutarı" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /></Field>
-              {hatalar.tutar ? <HataMetni>{hatalar.tutar}</HataMetni> : <Ipucu>Kalandan az girilirse kalem kısmen ödenmiş olur.</Ipucu>}
+              {hatalar.tutar ? <HataMetni>{hatalar.tutar}</HataMetni> : <Ipucu>{mahsupKipi ? "Kalan ile açık avansın küçüğünü aşamaz. Mahsup para hareketi değildir, hiçbir hesaba girmez." : "Kalandan az girilirse kalem kısmen ödenmiş olur."}</Ipucu>}
             </div>
-            <div>
+            {!mahsupKipi && <div>
               <Field label="Ödeme yöntemi">
                 <Select value={form.yontem} onChange={e => set({ yontem: e.target.value })}>
                   {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </Select>
               </Field>
-            </div>
-            {hesapSecimi && (
+            </div>}
+            {hesapSecimi && !mahsupKipi && (
               <div>
                 <Field label="Hesap">
                   <Select value={form.hesapId ?? ""} onChange={e => set({ hesapId: e.target.value === "" ? "" : uygunHesaplar.find(h => String(h.id) === e.target.value)?.id ?? "" })}>
@@ -133,13 +154,13 @@ export const OdemeKayitPenceresi = ({
                 <div key={h.id} data-testid="odeme-kaydi" style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr) 120px 40px", gap: 10, alignItems: "center", fontSize: 13, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{fmtTR(h.tarih)}</span>
                   <span style={{ minWidth: 0 }}>
-                    {satirAdi(h.taksitId) || "Kalem"}
+                    {h.tur === "mahsup" ? "Avanstan mahsup · " : ""}{satirAdi(h.taksitId) || "Kalem"}
                     <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>
-                      {[h.yontem || null, hesapAdi(h.hesapId), h.kaynak === "goc" ? "Eski kayıttan aktarıldı" : null, h.aciklama || null].filter(Boolean).join(" · ")}
+                      {[h.yontem || null, h.tur === "mahsup" ? null : hesapAdi(h.hesapId), h.kaynak === "goc" ? "Eski kayıttan aktarıldı" : null, h.aciklama || null].filter(Boolean).join(" · ")}
                     </div>
                   </span>
                   <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? "Tamamı" : tl2(h.tutar)}</b>
-                  <span style={{ textAlign: "right" }}>{odemeYetkisi && onSil && <Btn small variant="danger" onClick={() => setSilinecek(h)} title="Ödemeyi sil"><Icon name="trash" size={12} /></Btn>}</span>
+                  <span style={{ textAlign: "right" }}>{odemeYetkisi && onSil && <Btn small variant="danger" onClick={() => setSilinecek(h)} title={h.tur === "mahsup" ? "Mahsubu sil" : "Ödemeyi sil"}><Icon name="trash" size={12} /></Btn>}</span>
                 </div>
               ))}
             </div>

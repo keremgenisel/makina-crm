@@ -7,6 +7,7 @@ import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyele
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni } from "./gider/GiderAlanlari";
+import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
 
 // Kasa üst sekmesi (spec 0024 A; R1, R7, R8, R15, R16; C1, C5, C6). Hesaplar (kasa, banka, kredi kartı), yürüyen
 // bakiyeli hareket listesi ve virman. Bakiye saklanmaz, hareketlerden türer (lib/kasa.js). Yalnız gider yetkisi +
@@ -118,6 +119,8 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose }) => {
 export const Kasa = ({
   kasaHesaplari = [], setKasaHesaplari, hesapHareketleri = [], setHesapHareketleri, payments = [], customers = [],
   giderler = [], giderTurleri = [], tedarikciler = [], serverPermissions = null, showToast = () => {},
+  // Spec 0024 B: çalışan avansları (silinmişler dahil, C8) ve ekstre kapsamı için yürürlük ayı.
+  calisanlar = [], yururlukAy = null,
 }) => {
   const canDo = makeCanDo(serverPermissions, "giderActions");
   const [secili, setSecili] = useState(null);
@@ -141,6 +144,10 @@ export const Kasa = ({
       return { tur: "Tahsilat", metin: [c?.name || "Silinmiş müşteri", s.tahsilat.yontem].filter(Boolean).join(" · ") };
     }
     const m = s.hareket;
+    if (s.tur === "avans") {
+      const c = calisanlar.find(x => String(x.id) === String(m.calisanId));
+      return { tur: "Avans", metin: [c ? `${c.ad}${c.deletedAt ? " (silinmiş)" : ""}` : "Silinmiş çalışan", m.aciklama].filter(Boolean).join(" · ") };
+    }
     if (s.tur === "virman") {
       const karsi = hesapById.get(String(s.girenK > 0 ? m.hesapId : m.karsiHesapId));
       return { tur: "Virman", metin: [`${s.girenK > 0 ? "Gelen" : "Giden"}: ${karsi?.ad || "Silinmiş hesap"}`, m.aciklama].filter(Boolean).join(" · ") };
@@ -214,6 +221,7 @@ export const Kasa = ({
       </div>
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
         {HESAPSIZ_NOTU}{hesapsiz.adet > 0 && <> <b>{hesapsiz.adet}</b> gider ödemesi hesapsız{hesapsiz.gocAdet > 0 ? `; ${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı` : ""}.</>}
+        {hesapsiz.avansAdet > 0 && <> <b>{hesapsiz.avansAdet}</b> avans hesapsız.</>}
       </UyariSeridi>
 
       {kasaHesaplari.length === 0 ? (
@@ -280,6 +288,9 @@ export const Kasa = ({
           )}
         </>
       )}
+
+      <CalisanAvanslari calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
+        giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
 
       {hesapFormu && (
         <HesapFormu hesap={hesapFormu.hesap} hesaplar={kasaHesaplari} hareketVar={!!hesapFormu.hesap && hesapKullanimi(hesapFormu.hesap.id, hesapHareketleri, payments) > 0}

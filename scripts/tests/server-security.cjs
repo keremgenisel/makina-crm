@@ -337,11 +337,14 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   gG = await gUst(gidTok);
   const odemeTok = (await login("odemeci", "odeme123")).body.token;
   const gO = await gUst(odemeTok);
+  const gO2 = (d) => ({ ...d, dataVersion: undefined });
   check("spec 0024: gider_odeme + kasa_hesap kullanıcısı hesap açar ve ödeme kaydeder → 200; kayıttan okunur",
     (await postData({ ...gO, dataVersion: undefined, kasaHesaplari: [{ id: 9043, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }],
       hesapHareketleri: [{ id: 9044, tur: "odeme", tarih: "2026-09-05", tutar: 50, giderId: 9003, taksitId: null, hesapId: 9043 }] }, gO.dataVersion, odemeTok)).status === 200
     && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9044 && h.hesapId === 9043 && h.giderId === 9003));
   gG = await gUst(gidTok);
+  check("spec 0024 B: avans izni olmadan (gider_odeme + kasa_hesap) avans vermek → 403",
+    (await postData({ ...gO2(await gUst(odemeTok)), hesapHareketleri: [...(await gUst(odemeTok)).hesapHareketleri, { id: 9046, tur: "avans", tarih: "2026-09-05", tutar: 50, calisanId: 1, hesapId: null }] }, await curVer(odemeTok), odemeTok)).status === 403);
   check("spec 0024: gider_odeme olmadan ödemeyi silmek → 403",
     (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: gG.hesapHareketleri.filter(h => h.id !== 9044) }, gG.dataVersion, gidTok)).status === 403);
   check("spec 0024: Ayarlar kullanıcısı (Giderler sekmesi yok) hareket yazamaz → 403",

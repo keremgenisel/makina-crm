@@ -145,8 +145,9 @@ export const Giderler = ({
     const k = odemeKalemi;
     setHesapHareketleri?.(p => [...p, { ...kayit, id: uid() }]);
     const r = kayit.taksitId != null ? (k.taksitler || []).find(x => String(x.id) === String(kayit.taksitId)) : null;
-    logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, ...(r ? { taksit: r.sira, hedef: r.hedef } : {}) } });
-    showToast("Ödeme kaydedildi.");
+    const mahsup = kayit.tur === "mahsup";
+    logAction({ serverPermissions, action: mahsup ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, ...(r ? { taksit: r.sira, hedef: r.hedef } : {}) } });
+    showToast(mahsup ? "Avans mahsup edildi." : "Ödeme kaydedildi.");
     setOdemeHedefi(null);
   };
   const odemeSil = (h) => {
@@ -277,6 +278,7 @@ export const Giderler = ({
         : <MakinaModelGorunumu rapor={rapor} turMap={turMap} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
+          hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
           rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
       {gorunum === "karlilik" && aralikGecerli && makinaMaliyet && (
@@ -297,7 +299,7 @@ export const Giderler = ({
       {odemeKalemi && (
         <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
-          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} />
+          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy} />
       )}
       {form && (
         <GiderForm kalem={form.kalem} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}

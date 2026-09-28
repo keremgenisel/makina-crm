@@ -264,7 +264,8 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           </div>
           <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast}
             giderYetki={giderYetki} maliyetDuzenleyebilir={giderCanDo("gider_tanim")} appSettings={appSettings} setAppSettings={setAppSettings}
-            giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} serverPermissions={serverPermissions} />
+            giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} serverPermissions={serverPermissions}
+            hesapHareketleri={hesapHareketleri} giderler={rawGiderler} />
         </KartBolum>
       )}
 

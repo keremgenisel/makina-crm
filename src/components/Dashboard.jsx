@@ -35,7 +35,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const hatOdemeKaydet = (kayit) => {
     const k = hatOdemeKalemi;
     setHesapHareketleri?.(p => [...p, { ...kayit, id: uid() }]);
-    logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar } });
+    logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar } });
     setHatOdeme(null);
   };
   const hatOdemeSil = (h) => {
@@ -585,7 +585,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <OdemeKayitPenceresi kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
           turAd={giderTurMap.get(String(hatOdemeKalemi.turId))?.ad || "Gider"} turMap={giderTurMap} hedef={{ hedef: hatOdeme.hedef }}
           hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}
-          bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onClose={() => setHatOdeme(null)} />
+          bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null} />
       )}
       {showDebtors && (
         <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>

@@ -831,6 +831,16 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
       expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman"]), "user").ok).toBe(false);
       expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman", "gider_odeme"]), "user").ok).toBe(true);
     });
+    it("spec 0024 B (B3): avans `avans` ister, gider_odeme yetmez; mahsup gider_odeme ister, avans yetmez", () => {
+      const avans = { id: 70, tur: "avans", tarih: "2026-10-05", tutar: 500, calisanId: 7, hesapId: 97 };
+      const mahsup = { id: 71, tur: "mahsup", tarih: "2026-10-05", tutar: 500, calisanId: 7, giderId: 1 };
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [avans] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [avans] }, izin(["avans"]), "user").ok).toBe(true);
+      expect(eylemDenetimi({ hesapHareketleri: [avans] }, { hesapHareketleri: [] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [avans] }, { hesapHareketleri: [{ ...avans, tutar: 1 }] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mahsup] }, izin(["avans"]), "user")).toMatchObject({ ok: false, gerekli: "gider_odeme" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mahsup] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+    });
     it("hesap ekle, düzenle, sil kasa_hesap ister", () => {
       const h = { id: 97, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false };
       expect(eylemDenetimi({ kasaHesaplari: [] }, { kasaHesaplari: [h] }, izin(["gider_add"]), "user").gerekli).toBe("kasa_hesap");

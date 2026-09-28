@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:204`
+**Örnek:** `src/components/Giderler.jsx:205`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:474` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
@@ -151,7 +151,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:247`
+**Örnek:** `src/components/Giderler.jsx:248`
 **Örnek:** `src/components/Customers.jsx:508` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -173,7 +173,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:223`
+**Örnek:** `src/components/Giderler.jsx:224`
 **Örnek:** `src/components/stock/PartStokTab.jsx:135` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -206,7 +206,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Ekran düzeyindeki durumlar: `UyariSeridi`.
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
-**Örnek:** `src/components/CalisanManager.jsx:186`
+**Örnek:** `src/components/CalisanManager.jsx:191`
 **Örnek:** `src/components/customers/CustomerAddEditForm.jsx:103` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
@@ -219,7 +219,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uzun açıklama için: bölümün açıklama paragrafı.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
-**Örnek:** `src/components/CalisanManager.jsx:195`
+**Örnek:** `src/components/CalisanManager.jsx:200`
 **Örnek:** `src/components/PartSaleForm.jsx:359` (seçimin sonucunu anlatan cümle)
 
 ---

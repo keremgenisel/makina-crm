@@ -879,11 +879,13 @@ export const standartGruplar = (liste = [], buAy) => {
 // tutar, tarih, tamKapatir?}. Taksitli/kira kalemde ödeme taksite bağlıdır; kaleme bağlı eski (göç) hareket satırlı
 // kalemde taksitlere vadesi en yakından başlayarak dağılır, `tamKapatir` hepsini kapatır.
 const satirSirasi = (a, b) => ((a.vade || "9999") < (b.vade || "9999") ? -1 : (a.vade || "9999") > (b.vade || "9999") ? 1 : (a.sira || 0) - (b.sira || 0));
+export const KALEM_KAPATAN_TURLER = new Set(["odeme", "mahsup"]);
 export const odemeleriUygula = (giderler = [], hareketler = null, turMap = new Map()) => {
   if (!Array.isArray(hareketler)) return giderler;
   const byGider = new Map();
   for (const h of hareketler) {
-    if (!h || h.tur !== "odeme" || h.giderId == null) continue;
+    // Spec 0024 B (R10): mahsup da kalemin kalanını düşer (kalan = ödenecek − ödemeler − mahsuplar); para hareketi değildir.
+    if (!h || !KALEM_KAPATAN_TURLER.has(h.tur) || h.giderId == null) continue;
     const key = String(h.giderId);
     if (!byGider.has(key)) byGider.set(key, []);
     byGider.get(key).push(h);
@@ -942,5 +944,5 @@ export const odemeHedefKalaniK = (k, dav, taksitId = null) => {
 };
 // Bir hedefin kayıtlı ödemeleri (pencere listesi): taksitte o taksite bağlı olanlar, kalemde kaleme bağlı hepsi.
 export const hedefOdemeleri = (hareketler = [], giderId, taksitId = null) => (hareketler || [])
-  .filter(h => h && h.tur === "odeme" && String(h.giderId) === String(giderId) && (taksitId == null || String(h.taksitId) === String(taksitId)))
+  .filter(h => h && KALEM_KAPATAN_TURLER.has(h.tur) && String(h.giderId) === String(giderId) && (taksitId == null || String(h.taksitId) === String(taksitId)))
   .sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));

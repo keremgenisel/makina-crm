@@ -400,7 +400,8 @@ const ALAN_IZINLERI = {
 // gider_edit kullanıcısı bayrak temizlendiği için 403 alırdı.
 
 // Spec 0024: bir hareketin izni türüne bağlı. Var olan hareketi düzenlemek de (tutar, hesap, hedef) aynı izni ister.
-function hareketIzni(r) { return r?.tur === "virman" ? "virman" : "gider_odeme"; }
+// Spec 0024 B (B3): avans kendi iznine (`avans`) bağlı; mahsup bir gider borcunu kapattığı için `gider_odeme`.
+function hareketIzni(r) { return r?.tur === "virman" ? "virman" : r?.tur === "avans" ? "avans" : "gider_odeme"; }
 const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni };
 
 // Bir eylem id'si kullanıcının grup dizisinde izinli mi? Dizi değilse (tanımsız) tam erişim.

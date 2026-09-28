@@ -202,6 +202,14 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.hesapHareketleri[1]).toMatchObject({ hesapId: yeniH, karsiHesapId: 5 });
     expect(plan.adds.payments[0].hesapId).toBe(yeniH);
   });
+  it("spec 0024 B: avans ve mahsubun çalışan bağı yeniden atanan çalışan kimliğini izler", () => {
+    const cid = uid(), aid = uid();
+    const my = blob({ calisanlar: [{ id: cid, ad: "Benim çalışanım" }], hesapHareketleri: [{ id: aid, tur: "avans", tarih: "2026-09-02", tutar: 100, calisanId: cid, hesapId: null }] });
+    const server = blob({ calisanlar: [{ id: cid, ad: "Onun çalışanı" }], hesapHareketleri: [] });
+    const plan = buildMergePlan(my, server);
+    expect(plan.adds.hesapHareketleri[0].calisanId).toBe(plan.maps.calisanlar.get(cid));
+    expect(plan.adds.hesapHareketleri[0].calisanId).not.toBe(cid);
+  });
   it("spec 0023 C7: ek ödeme satırları kimliksiz, kalemle birlikte taşınır", () => {
     const ekOdemeler = [{ tur: "prim", aciklama: "A", resmiTutar: 100, eldenTutar: null }, { tur: "prim", aciklama: "B", resmiTutar: null, eldenTutar: 50 }];
     const my = blob({ giderTurleri: [{ id: 11, ad: "Personel", davranis: "personel" }], giderler: [{ id: 15, turId: 11, resmiTutar: 1000, ekOdemeler }] });

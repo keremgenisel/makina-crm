@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS kasa_hesaplari (
 CREATE TABLE IF NOT EXISTS hesap_hareketleri (
   id INTEGER PRIMARY KEY,
   tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
-  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT
+  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER
 );
 CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
@@ -399,6 +399,8 @@ const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahs
 const KART_KOMISYON_COLUMNS = [["taksitSayisi", "INTEGER"], ["kartKomisyonu", "TEXT"]];
 // Spec 0024 R6: tahsilatın girdiği kasa/banka hesabı.
 const PAYMENTS_HESAP_COLUMN = [["hesapId", "INTEGER"]];
+// Spec 0024 B: avans ve mahsup çalışana bağlıdır.
+const HAREKET_CALISAN_COLUMN = [["calisanId", "INTEGER"]];
 // Tahsilat tarihi: "ödendi" işaretlendiği gün (nakit/havale), çek tahsil günü veya KK hesaba geçiş günü.
 // Rapordaki "giren para" bu tarihe göre aya gruplanır (yoksa satış/servis tarihine düşer). Düz TEXT →
 // ...rest ile otomatik okunur; yalnız CREATE + ensureColumns + INSERT gerekir. services/part_sales/yedek_parca_satis.
@@ -854,10 +856,10 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
     conn.prepare(`DELETE FROM hesap_hareketleri`).run();
-    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
-      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null);
+      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null);
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
@@ -974,6 +976,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "part_sales", TAHSILAT_TARIHI_COLUMN);
   ensureColumns(conn, "payments", KART_KOMISYON_COLUMNS);
   ensureColumns(conn, "payments", PAYMENTS_HESAP_COLUMN);
+  ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", KART_KOMISYON_COLUMNS);

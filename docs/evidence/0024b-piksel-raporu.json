@@ -1,0 +1,150 @@
+[
+  {
+    "ad": "kasa-hesaplar-aydinlik.png",
+    "boyut": "2880x1800 ≠ 2880x1924",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesaplar-karanlik.png",
+    "boyut": "2880x1800 ≠ 2880x1924",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1088116
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1088116
+  },
+  {
+    "ad": "kasa-hesap-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 881240
+  },
+  {
+    "ad": "kasa-hesap-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 881280
+  },
+  {
+    "ad": "kasa-virman-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 932765
+  },
+  {
+    "ad": "kasa-virman-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 932805
+  },
+  {
+    "ad": "kasa-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1088116
+  },
+  {
+    "ad": "kasa-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1088116
+  },
+  {
+    "ad": "kasa-calisan-avanslari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-calisan-avanslari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-mahsup-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-mahsup-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  }
+]

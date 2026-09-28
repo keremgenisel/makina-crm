@@ -371,6 +371,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "giderler-tedarikciler"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-ekstresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-16"
       }
     ],
     "src/components/settings/GiderTurManager.jsx": [
@@ -960,6 +966,18 @@
         "ekran": "kasa-bos",
         "beklenen": "degisti",
         "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-1"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "kasa-calisan-avanslari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-13"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "kasa-hesaplar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 B11"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -974,6 +992,40 @@
         "ekran": "giderler-odeme-kayit-taksit",
         "beklenen": "degisti",
         "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 R18"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "giderler-mahsup",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-14"
+      }
+    ],
+    "src/components/kasa/CalisanAvanslari.jsx": [
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "kasa-calisan-avanslari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-13"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "kasa-avans-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 R9"
+      }
+    ],
+    "src/components/gider/EkstrePenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "kasa-calisan-ekstresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-17"
+      },
+      {
+        "rapor": "docs/evidence/0024b-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-ekstresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-28 · spec 0024 AC-16"
       }
     ]
   }

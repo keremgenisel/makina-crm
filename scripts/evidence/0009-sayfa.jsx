@@ -28,6 +28,8 @@ import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMa
 import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
 import * as Tasarim from "../../src/components/tasarim";
 import { Kasa } from "../../src/components/Kasa";
+import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
+import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -237,6 +239,20 @@ const KASA_TAHSILAT = [{ id: 4101, customerId: 500, tarih: "2026-09-18", tutar: 
   { id: 4102, customerId: 501, tarih: "2026-09-25", tutar: 15000, currency: "TRY", yontem: "Çek", tahsilEdildi: false, hesapId: 401 }];
 const kasaEkrani = (o = {}) => <Kasa kasaHesaplari={KASA_HESAPLAR} setKasaHesaplari={bos} hesapHareketleri={KASA_HAREKETLER} setHesapHareketleri={bos}
   payments={KASA_TAHSILAT} customers={MUSTERILER} giderler={TAKSIT_GIDERLER} giderTurleri={TURLER} tedarikciler={TED} serverPermissions={null} showToast={bos} {...o} />;
+// Spec 0024 B: avans (hesaplı ve hesapsız, silinmiş çalışan dahil) ve maaştan mahsup.
+const KASA_B = [...KASA_HAREKETLER,
+  { id: 4010, tur: "avans", tarih: "2026-09-05", tutar: 8000, calisanId: 21, hesapId: 402, yontem: "Nakit", aciklama: "Bayram öncesi" },
+  { id: 4011, tur: "avans", tarih: "2026-09-08", tutar: 1500, calisanId: 24, hesapId: null },
+  { id: 4012, tur: "mahsup", tarih: "2026-09-26", tutar: 5000, calisanId: 21, giderId: 5, hesapId: null }];
+const CAL_B = [CAL[0], { id: 24, ad: "Veli Kaya", deletedAt: "2026-09-20T10:00:00Z" }];
+const kasaB = (o = {}) => kasaEkrani({ hesapHareketleri: KASA_B, calisanlar: CAL_B, yururlukAy: "2026-06", ...o });
+const TUR_MAP = turHaritasi(TURLER);
+const KASA_B_ONCE = KASA_B.filter(h => h.id !== 4012); // mahsup girilmeden önceki hâl
+const mahsupPenceresi = () => (
+  <OdemeKayitPenceresi kalem={odemeleriUygula([GIDERLER.find(x => x.id === 5)], KASA_B_ONCE, TUR_MAP)[0]} davranis="personel" turAd="Personel" turMap={TUR_MAP}
+    hareketler={KASA_B_ONCE} hesaplar={KASA_HESAPLAR} hesapSecimi odemeYetkisi bugun="2026-09-28" giderler={GIDERLER}
+    onKaydet={bos} onSil={bos} onClose={bos} />
+);
 
 // Spec 0022: üretim partileri. Kapalı parti (Haz–Ağu, iki satılmış makina; Ağustos anlık görüntüsü bugünkünden
 // küçük: kapanıştan sonra gider eklenmiş) ve açık parti (Eylül, stokta iki makina).
@@ -402,6 +418,11 @@ const EKRANLAR = {
   "giderler-odeme-kayit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Kısmen ödendi"]],
   "giderler-odeme-kayit-taksit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı", "dugme:Ödeme gir"]],
   "giderler-odeme-plani-hareket": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı"]],
+  "kasa-calisan-avanslari": [kasaB(), ["kaydir:Çalışan avansları"]],
+  "kasa-avans-formu": [kasaB(), ["dugme:Avans Ver"]],
+  "kasa-calisan-ekstresi": [kasaB({ calisanlar: [CAL[0]] }), ["dugme:Ekstre"]],
+  "giderler-mahsup": [mahsupPenceresi(), ["dugme:Avanstan mahsup"]],
+  "giderler-tedarikci-ekstresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_B} />, ["Tedarikçiler", "dugme:Ekstre"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}

@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-28, plan onayıyla; plan `specs/0024-uygulama-plani.md` Q1–Q10). A parçası uygulanıyor, B bekliyor (C11). |
+| **Durum** | Onaylandı (2026-09-28, plan onayıyla; plan `specs/0024-uygulama-plani.md` Q1–Q10). A parçası tamamlandı (commit `4298f67`); B parçası 2026-09-28'de B1–B11 ile onaylandı ve uygulanıyor (C11). |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler (ödeme, borç özeti, hatırlatıcı), Finans (müşteri tahsilatı), çalışan tanımı, yeni Kasa ekranı |
 | **Bağımlı spec'ler** | 0001 (gider kaydı) · 0003 (ödeme hatırlatıcısı) · 0021 (taksit) · 0023 (mesai ve prim) |
-| **Revizyon** | R1 (2026-09-28): onay öncesi QA boşluk analizi; 15 açık nokta karara bağlandı — 0001 X4'ün bu spec'e devrettiği toplu ödeme kararı cevaplandı (R2, X9), ödeme durumunun tek zinciri yazıldı (R3; taksit ve kalem ödeme hareketinden türer), mahsubun kendi kaydı olduğu ve kalan formülü tanımlandı (R10), ödeme üst sınırı kalana bağlandı (AC-7), para birimi sınırları ile kart hesabının borç yönü (C5), hesapsız ödemenin bakiyeye girmediği (R8), hesap kapatmanın kuralları (R16), silinen tedarikçi ve çalışanın hareketlerinin durduğu (C8), hesap seçmekle ekranı görmenin farklı yetkiler olduğu (C6), perde inikken tahsilat hesap alanının da gizlendiği (C7), göçün yalnız sunucu PC'sinde bir kez çalıştığı (R4) ve işin A ile B parçasına bölündüğü (C11) yazıldı; AC-28…AC-36 eklendi. R2 (2026-09-28, plan onayı): 0021'in taksit bayrağı doğruluk kaynağı olmaktan çıkar, taksidin ve kalemin ödeme durumu hareketten okuma anında türetilir (R3/Q1, Q2); göç tutarı motor gerektirdiği için göç hareketi "hedefi tam kapatır" işaretiyle yazılır ve göçten önce otomatik yedek alınır (R4/Q3, Q4); hızlı ödeme tutarı ve hesabı dolu bir pencereyle yapılır (R17/Q5); tahsilat hesap seçicisi müşteri detayındaki ödeme formundadır (C6/Q6); sunucu eşlemesi ve eylem kimlikleri yazıldı (C6/Q7); taksidin kısmi ödenmesi ve taksitli kalemde ödemenin taksite bağlanması (R18/Q8); Kasa üst sekmesinin görünürlüğü (C6/Q9); A parçasından sonraki ara hâl (C11/Q10). |
+| **Revizyon** | R1 (2026-09-28): onay öncesi QA boşluk analizi; 15 açık nokta karara bağlandı — 0001 X4'ün bu spec'e devrettiği toplu ödeme kararı cevaplandı (R2, X9), ödeme durumunun tek zinciri yazıldı (R3; taksit ve kalem ödeme hareketinden türer), mahsubun kendi kaydı olduğu ve kalan formülü tanımlandı (R10), ödeme üst sınırı kalana bağlandı (AC-7), para birimi sınırları ile kart hesabının borç yönü (C5), hesapsız ödemenin bakiyeye girmediği (R8), hesap kapatmanın kuralları (R16), silinen tedarikçi ve çalışanın hareketlerinin durduğu (C8), hesap seçmekle ekranı görmenin farklı yetkiler olduğu (C6), perde inikken tahsilat hesap alanının da gizlendiği (C7), göçün yalnız sunucu PC'sinde bir kez çalıştığı (R4) ve işin A ile B parçasına bölündüğü (C11) yazıldı; AC-28…AC-36 eklendi. R2 (2026-09-28, plan onayı): 0021'in taksit bayrağı doğruluk kaynağı olmaktan çıkar, taksidin ve kalemin ödeme durumu hareketten okuma anında türetilir (R3/Q1, Q2); göç tutarı motor gerektirdiği için göç hareketi "hedefi tam kapatır" işaretiyle yazılır ve göçten önce otomatik yedek alınır (R4/Q3, Q4); hızlı ödeme tutarı ve hesabı dolu bir pencereyle yapılır (R17/Q5); tahsilat hesap seçicisi müşteri detayındaki ödeme formundadır (C6/Q6); sunucu eşlemesi ve eylem kimlikleri yazıldı (C6/Q7); taksidin kısmi ödenmesi ve taksitli kalemde ödemenin taksite bağlanması (R18/Q8); Kasa üst sekmesinin görünürlüğü (C6/Q9); A parçasından sonraki ara hâl (C11/Q10). R3 (2026-09-28, B planı onayı): mahsup çalışan düzeyinde bağlanır ve sınırı kalem kalanı ile açık avansın küçüğüdür (R10/B1, B2); avans izni `avans`, mahsup izni `gider_odeme` (C6/B3); avansta hesap zorunlu değildir (R9/B4); çöpteki maaş kaleminin mahsubu avans borcunda sayılmaz (R10/B5); ekstre borç özetiyle aynı kapsamı kullanır, göç hareketi o anki kalanla yazar, çalışan ekstresi tek net sütundur, ekstre yazdırılmaz (R12, R13/B6–B9); tedarikçi silme kalıcı kalır, onayda kalan borç uyarısı çıkar (C8/B10); ekstre ve avans Tedarikçiler satırından ve Kasa'daki "Çalışan avansları" bölümünden açılır (B11). |
 
 ---
 
@@ -74,16 +74,30 @@ onun ödeme kaydına dayanır.
   böylece kullanıcı bakiyeyi banka bakiyesi sanmaz. **Göçten gelen "hesap belirtilmemiş" ödemeler de**
   (R4) hiçbir bakiyeye girmez ve aynı etikette ayrıca sayılır.
 - **R9.** Çalışana **avans** verilebilir: bir hesaptan çıkan, o çalışandan alacağa geçen bir hareket.
+  **Uygulama (R3, B4, B11):** avans `hesapHareketleri`'nde `tur: "avans"` kaydıdır (`calisanId`, tutar, tarih, isteğe
+  bağlı hesap). Hesap zorunlu değildir; hesapsız avans hiçbir bakiyeye girmez ve R8 sayımına eklenir. Avans Kasa ekranındaki
+  "Çalışan avansları" bölümünden verilir ve silinir.
 - **R10.** Avans, sonraki bir maaş kaleminden **mahsup** edilebilir; mahsup edilen tutar kadar o kalemin
   kalanı azalır ve avans borcu kapanır. **Mahsup kendi kaydıdır** (avansı kalemle bağlayan bir hareket) ve
   **hesap hareketi değildir**, çünkü para hareket etmez. Kalemin ödenecek tutarı türetilmiş bir rakam olduğu
   için azaltılmaz; hesap şudur: **kalan = ödenecek tutar − ödemeler − mahsuplar**, ve "ödendi" bu kalan
   sıfırlanınca oluşur.
+  **Uygulama (R3, B1, B2, B5):** mahsup `tur: "mahsup"` kaydıdır (`calisanId`, `giderId`, taksitliyse `taksitId`, tutar,
+  tarih; hesapsız). Belirli bir avansa değil **çalışanın avans bakiyesine** bağlanır (avans borcu = verilen avanslar −
+  mahsuplar; hangi avansın kapandığını ekstre sırayla gösterir). Yalnız aynı çalışanın personel kalemine yapılır; tutar
+  kalem (ya da taksit) kalanını ve açık avans borcunu aşamaz. Çöpteki maaş kaleminin mahsubu avans borcunda sayılmaz
+  (kalem geri alınınca döner); kayıt silinmez. Mahsup personel kaleminin ödeme penceresinden girilir.
 - **R11.** **Avans bir gider değildir.** Avans verildiğinde hiçbir gider kalemi doğmaz, hiçbir makina
   maliyeti değişmez; gider maaş kalemi doğduğunda doğar.
 - **R12.** Tedarikçi **ekstresi**: seçilen tedarikçi için doğan borçlar, yapılan ödemeler ve kalan bakiye
   tarih sırasıyla listelenir.
 - **R13.** Çalışan ekstresi: aynı yapı, artı verilen ve mahsup edilen avanslar.
+  **Uygulama (R3, B6–B9):** ekstre borç özetiyle aynı kalem kapsamını kullanır (son bakiye borç özetindeki satırla aynı).
+  Tedarikçide doğan borç kalemin ödenecek tutarıdır (KDV dâhil; kirada yalnız kiraya verene giden kısım, stopaj vergi
+  dairesinindir). Tutarsız göç hareketi o anki kalanla ve "eski kayıttan aktarıldı" etiketiyle yazar. Çalışan ekstresi tek
+  net sütundur (artı: çalışana borcumuz, eksi: çalışandan alacağımız); maaş satırı resmi, elden ve ek ödeme kırılımını
+  gösterir. İsteğe bağlı tarih aralığında önceki hareketler devreden bakiye olarak yazar. Ekstre yazdırılmaz ve dışa
+  aktarılmaz (0001 C7b).
 - **R14.** "Kime ne kadar borçluyuz" özeti (0001'in borç özeti) ödenen kısmı düşerek **kalan** borcu
   gösterir; ödeme hatırlatıcısı (0003) da kalan tutarı ve kısmen ödenmiş kalemleri sayar.
 - **R15.** Hesaplar arası **virman** (kasadan bankaya para aktarımı) kaydedilebilir; virman gider ya da
@@ -126,6 +140,9 @@ onun ödeme kaydına dayanır.
   Kalan borcu varsa silme onayında uyarı çıkar (0001'in bayi silme kaskadındaki açık alacak uyarısının
   aynısı); **avans borcu açık olan çalışanda** uyarı daha güçlü yazılır, çünkü orada fabrikanın alacağı
   vardır.
+  **Uygulama (R3, B10):** tedarikçi silme 0001'den beri kalıcıdır ve öyle kalır; silme onayında kalan borç uyarısı çıkar,
+  silinmiş tedarikçinin ekstresine erişilmez. Çalışan çöpe gider; hareketleri durur, ekstrede "silinmiş" rozetiyle görünür.
+  İzin: avans `avans`, mahsup `gider_odeme` (C6).
 - **C9.** Kullanıcıya görünen metinler Türkçedir.
 - **C10.** Yeni kalıcı alanlar ve listeler dört (liste ise beş) nokta kuralına uyar.
 - **C11.** **İş iki parçaya bölünür ve sırası sabittir.** **A parçası:** hesaplar, ödeme kaydı, kısmi ödeme,
