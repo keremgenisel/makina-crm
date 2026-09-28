@@ -5,7 +5,7 @@ import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect, DateInput } from "./ui";
+import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, DateInput } from "./ui";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
@@ -1422,14 +1422,14 @@ export const Documents = ({
                           </select>
                         )}
                         {type === "kalip" && (
-                          <SearchSelect
-                            value={row.selectedKalip || ""}
-                            onChange={val => pickKalip(row.rowId, val)}
-                            options={kalipDefs.map(k => ({ value: k.ad, label: k.ad }))}
-                            placeholder="— Kalıp Seç —"
-                            searchPlaceholder="Kalıp ara..."
-                            initialLimit={10}
-                          />
+                          // Yedek parça seçicisiyle aynı yerel liste: aramalı açılır liste satır tablosunun kabında kırpılıyordu
+                          // (liste satırın dışına taşamıyordu). Tanımlarda olmayan eski kalıp adı seçenek olarak korunur.
+                          <select aria-label="Kalıp" value={row.selectedKalip || ""} onChange={e => pickKalip(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Kalıp Seç —</option>
+                            {row.selectedKalip && !kalipDefs.some(k => k.ad === row.selectedKalip) && <option value={row.selectedKalip}>{row.selectedKalip}</option>}
+                            {kalipDefs.map(k => <option key={k.id ?? k.ad} value={k.ad}>{k.ad}</option>)}
+                          </select>
                         )}
                         {type === "kalip" && form.type === "teklif" && (() => {
                           // Spec 0006 R3/R4 (plan E1): makinayla verilen standart kalıp mı, ayrı satılan Extra Kalıp mı.
