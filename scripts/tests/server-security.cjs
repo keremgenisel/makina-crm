@@ -49,6 +49,7 @@ const GIDERCI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "g
 const AYARCI = JSON.stringify({ tabs: ["settings"] });
 // Yalnız tekrarlayan kalem üretme izni (triyaj bulgu 7: tanimId eklemek serbest kalem izni sayılmamalı).
 const URETICI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_tekrar_uret"] });
+const ODEMECI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme", "kasa_hesap"] });
 const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
 let fail = 0;
@@ -75,6 +76,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
   dbmod.createUser("giderci",     bcrypt.hashSync("gider123", 10), "user", GIDERCI);
   dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
+  dbmod.createUser("odemeci",     bcrypt.hashSync("odeme123", 10), "user", ODEMECI);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
   // Spec 0006 C8: yalnız Evrak sekmeli kullanıcı (CRM'e Kaydet): gereken eylem izinleriyle / kalıp izni olmadan.
@@ -322,11 +324,34 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gU, dataVersion: undefined, giderTanimlari: [...(gU.giderTanimlari || []), gTanim] }, gU.dataVersion, adminTok)).status === 200
     && (await (async () => { const d = await gUst(uretTok); return postData({ ...d, dataVersion: undefined, giderler: [...d.giderler, { id: 9011, tarih: "2026-09-01", turId: 1, tutar: 50, tanimId: 9010, donem: "2026-09", odendi: false, modelSatirlari: [] }] }, d.dataVersion, uretTok); })()).status === 200);
   gG = await gUst(gidTok);
-  check("gider: ödeme durumu (odendi) gider_odeme ister → 403",
-    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 403);
+  // Spec 0024 AC-27 (Q1/Q7 onaylı istisna): ödeme bir harekettir; izni hareketin eklenmesinde aranır (odendi alanında değil).
+  check("spec 0024: gider_odeme olmadan ödeme hareketi eklemek → 403",
+    (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: [{ id: 9040, tur: "odeme", tarih: "2026-09-05", tutar: 50, giderId: 9003, taksitId: null, hesapId: null }] }, gG.dataVersion, gidTok)).status === 403);
+  check("spec 0024: gider_odeme olmadan virman → 403, hesap eklemek kasa_hesap ister → 403",
+    (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: [{ id: 9041, tur: "virman", tarih: "2026-09-05", tutar: 50, hesapId: 1, karsiHesapId: 2 }] }, gG.dataVersion, gidTok)).status === 403
+    && (await postData({ ...gG, dataVersion: undefined, kasaHesaplari: [{ id: 9042, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0 }] }, gG.dataVersion, gidTok)).status === 403);
+  check("spec 0024: kalemin odendi alanı artık izin istemez (doğruluk kaynağı hareket) → 200",
+    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 200);
+  gG = await gUst(gidTok);
+  await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: false } : k) }, gG.dataVersion, gidTok);
+  gG = await gUst(gidTok);
+  const odemeTok = (await login("odemeci", "odeme123")).body.token;
+  const gO = await gUst(odemeTok);
+  check("spec 0024: gider_odeme + kasa_hesap kullanıcısı hesap açar ve ödeme kaydeder → 200; kayıttan okunur",
+    (await postData({ ...gO, dataVersion: undefined, kasaHesaplari: [{ id: 9043, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }],
+      hesapHareketleri: [{ id: 9044, tur: "odeme", tarih: "2026-09-05", tutar: 50, giderId: 9003, taksitId: null, hesapId: 9043 }] }, gO.dataVersion, odemeTok)).status === 200
+    && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9044 && h.hesapId === 9043 && h.giderId === 9003));
+  gG = await gUst(gidTok);
+  check("spec 0024: gider_odeme olmadan ödemeyi silmek → 403",
+    (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: gG.hesapHareketleri.filter(h => h.id !== 9044) }, gG.dataVersion, gidTok)).status === 403);
+  check("spec 0024: Ayarlar kullanıcısı (Giderler sekmesi yok) hareket yazamaz → 403",
+    (await postData({ ...(await gUst(adminTok)), dataVersion: undefined, hesapHareketleri: [] }, await curVer(adminTok), (await login("ayarci", "ayar123")).body.token)).status === 403);
+  const gTemiz = await gUst(adminTok);
+  await postData({ ...gTemiz, dataVersion: undefined, hesapHareketleri: [], kasaHesaplari: [] }, gTemiz.dataVersion, adminTok);
+  gG = await gUst(gidTok);
   check("gider: açıklama düzenlemesi gider_edit ile → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, aciklama: "düzeltildi" } : k) }, gG.dataVersion, gidTok)).status === 200);
-  // Spec 0021 C5 / AC-20: taksit satırı ödemesi satır bazında gider_odeme ister (kalemin odendi'si değişmese bile).
+  // Spec 0021: taksitli kalem (0024 ile satır bayrakları doğruluk kaynağı değil; ödeme hareketle).
   gG = await gUst(gidTok);
   const tks = (o1 = {}, o2 = {}) => [{ id: 90301, hedef: "ana", sira: 1, vade: "2026-10-15", tutar: 600, odendi: false, odemeTarihi: null, ...o1 },
     { id: 90302, hedef: "ana", sira: 2, vade: "2026-11-15", tutar: 600, odendi: false, odemeTarihi: null, ...o2 }];
@@ -335,8 +360,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   gG = await gUst(gidTok);
   check("spec 0021: kayıttan okunan kalem taksit satırlarını kimlikleriyle taşır",
     (gG.giderler.find(k => k.id === 9030)?.taksitler || []).map(t => t.id).join() === "90301,90302");
-  check("spec 0021: gider_odeme olmadan taksiti ödendi işaretlemek → 403",
-    (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, taksitler: tks({ odendi: true, odemeTarihi: "2026-10-15" }) } : k) }, gG.dataVersion, gidTok)).status === 403);
+  check("spec 0024: gider_odeme olmadan taksite bağlı ödeme hareketi → 403",
+    (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: [{ id: 9045, tur: "odeme", tarih: "2026-10-15", tutar: 600, giderId: 9030, taksitId: 90301, hesapId: null }] }, gG.dataVersion, gidTok)).status === 403);
   check("spec 0021: tutar değişip ödenmemiş taksitler yeniden bölünürse gider_edit yeter → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9030 ? { ...k, tutar: 1500, taksitler: tks({ tutar: 900 }, { tutar: 900 }) } : k) }, gG.dataVersion, gidTok)).status === 200);
   // Spec 0022 C5: parti tanımı gider_tanim ister; makinayı partiye bağlamak stok yazımıdır (yalnız stok sekmeli kullanıcı).

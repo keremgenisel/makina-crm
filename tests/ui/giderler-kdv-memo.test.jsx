@@ -20,9 +20,10 @@ const SATIS = { customers: [], services: [], partSales: [], payments: [], teklif
 function Harness({ g0 }) {
   const [giderler, setGiderler] = useState(g0);
   const [satisVerisi, setSatisVerisi] = useState(SATIS);
+  const [hareketler, setHareketler] = useState([]);
   return <>
     <button onClick={() => setSatisVerisi({ ...SATIS, customers: [] })}>satış değişti</button>
-    <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
+    <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hareketler} setHesapHareketleri={setHareketler} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
       giderTurleri={[{ id: 4, ad: "Elektrik", davranis: "normal" }]} tedarikciler={[]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()}
       calisanlar={[]} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06" } }} serverPermissions={null}
       satisVerisi={satisVerisi} showToast={vi.fn()} />
@@ -35,8 +36,10 @@ describe("Giderler: KDV karşılaştırması memo ayrımı (bulgu 8a)", () => {
     expect(screen.getByTestId("kdv-karsilastirma")).toBeTruthy();
     const ilk = sayac.n;
     expect(ilk).toBeGreaterThan(0);
-    fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödendi olarak işaretle"));
-    expect(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödenmedi olarak işaretle")).toBeTruthy();
+    // Spec 0024: ödeme bir hareket kaydı (pencere); kalemin durumu değişir, satış KDV motoru yeniden çalışmaz.
+    fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödeme kaydet"));
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    expect(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödemeleri görüntüle")).toBeTruthy();
     expect(sayac.n).toBe(ilk);
     fireEvent.click(screen.getByText("satış değişti"));
     expect(sayac.n).toBe(ilk + 1);

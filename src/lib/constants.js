@@ -184,7 +184,8 @@ export const DEFAULT_KDV_RATES = [
 ];
 
 // ── Yedek dosyası şeması ──────────────────────────────────────────────
-export const BACKUP_SCHEMA_VERSION = 2;
+// 3 (spec 0024): gider ödemesi hesapHareketleri'nde; 2 ve öncesinde kalemdeki odendi işaretinde (geri yüklemede göç edilir).
+export const BACKUP_SCHEMA_VERSION = 3;
 export const BACKUP_APP_TAG = "altunmak-crm";
 // Şifreli yedek zarfının işareti (electron/backupCrypto.cjs MARKER ile aynı olmalı) —
 // renderer, bir yedek dosyasının şifreli mi düz mü olduğunu bu alanla ayırt eder.

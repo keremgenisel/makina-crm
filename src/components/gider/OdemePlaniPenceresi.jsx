@@ -5,8 +5,8 @@ import { Ipucu } from "../tasarim";
 import { OdemeSatirlari, tl2 } from "./GiderAlanlari";
 
 // Ödeme planı penceresi (spec 0021 R2, AC-4/5/13/20). Gider listesinden açılır; taksitler ve kiranın iki hedefi
-// satır satır işaretlenir. Kalem canlı veriden gelir (işaretleme anında güncellenir). İşaretleme `gider_odeme` ister;
-// izin yoksa satırlar yalnız okunur.
+// satır satır listelenir. Spec 0024 R18: satıra tıklamak o taksit için ödeme penceresini açar (ödeme bir harekettir,
+// satır durumu hareketlerden türer). Ödeme kaydı `gider_odeme` ister; izin yoksa satırlar yalnız okunur.
 export const OdemePlaniPenceresi = ({ kalem, davranis, turAd, odemeYetkisi, onIsaretle, onClose }) => {
   if (!kalem) return null;
   const durum = odemeDurumu(kalem);
@@ -20,7 +20,7 @@ export const OdemePlaniPenceresi = ({ kalem, davranis, turAd, odemeYetkisi, onIs
         </div>
       </div>
       <OdemeSatirlari satirlar={kalem.taksitler} davranis={davranis} onIsaretle={odemeYetkisi ? (r) => onIsaretle(kalem, r) : null} testId="odeme-plani-satirlari" />
-      {!odemeYetkisi && <Ipucu>Ödeme durumunu değiştirme yetkiniz yok.</Ipucu>}
+      {!odemeYetkisi && <Ipucu>Ödeme kaydetme yetkiniz yok.</Ipucu>}
       <Ipucu>Taksit bir ödeme kavramıdır: gider, doğduğu ayda ve tutarının tamamıyla sayılır; taksitler yalnız borç ve hatırlatmayı etkiler.</Ipucu>
     </Modal>
   );

@@ -9,7 +9,6 @@ import {
   GIDER_BOLUMLERI, giderAynaEngeli,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
-import { giderKalemDogrula, turHaritasi } from "../src/lib/gider.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
 
 const READONLY = READONLY_SERVER_PERMISSIONS.permissions;
@@ -807,54 +806,56 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
     expect(eylemDenetimi(eski, yeni, izin(["gider_add", "gider_edit"]), "user").reddedilenBolum).toBe("giderler");
     expect(eylemDenetimi(eski, yeni, izin(["gider_delete"]), "user").ok).toBe(true);
   });
-  it("ödeme durumu (odendi) gider_odeme ister; diğer alan düzenlemesi istemez", () => {
-    const eski = { giderler: [{ id: 1, odendi: false, aciklama: "a" }] };
-    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: true, aciklama: "a" }] }, izin(["gider_edit"]), "user").gerekli).toBe("gider_odeme");
-    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: false, aciklama: "b" }] }, izin(["gider_edit"]), "user").ok).toBe(true);
-  });
-  describe("spec 0021 C5 / AC-20: taksit satırları satır bazında gider_odeme ister", () => {
-    const satir = (id, o = {}) => ({ id, hedef: "ana", sira: id - 100, vade: `2026-1${id - 100}-15`, tutar: 2000, odendi: false, odemeTarihi: null, ...o });
-    const kalem = (taksitler, o = {}) => ({ id: 1, tarih: "2026-10-01", turId: 1, tutar: 5000, odendi: false, taksitler, ...o });
-    const eski = { giderler: [kalem([satir(101), satir(102)])] };
-    it("taksiti ödendi işaretlemek gider_odeme olmadan reddedilir, izinle geçer", () => {
-      const yeni = { giderler: [kalem([satir(101, { odendi: true, odemeTarihi: "2026-10-18" }), satir(102)])] };
-      expect(eylemDenetimi(eski, yeni, izin(["gider_edit"]), "user")).toMatchObject({ ok: false, reddedilenBolum: "giderler", gerekli: "gider_odeme" });
-      expect(eylemDenetimi(eski, yeni, izin(["gider_edit", "gider_odeme"]), "user").ok).toBe(true);
+  // Spec 0024 Q1/Q7 (onaylı istisna): 0001'in giderler.odendi alan denetimi ve 0021'in taksit satırı denetimi kaldırıldı;
+  // ödeme artık hesapHareketleri bölümüne bir kayıttır ve izni o kaydın eklenmesi, silinmesi ve düzenlenmesinde aranır.
+  describe("spec 0024 AC-27: ödeme ve virman hareket bölümünde kendi izniyle", () => {
+    const kalem = (o = {}) => ({ id: 1, tarih: "2026-10-01", turId: 1, tutar: 5000, odendi: false, ...o });
+    const odeme = (o = {}) => ({ id: 50, tur: "odeme", tarih: "2026-10-05", tutar: 1000, giderId: 1, taksitId: null, hesapId: 97, ...o });
+    const virman = (o = {}) => ({ id: 60, tur: "virman", tarih: "2026-10-05", tutar: 500, hesapId: 97, karsiHesapId: 98, ...o });
+    it("ödeme kaydetmek gider_odeme ister; gider_edit yetmez", () => {
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [odeme()] }, izin(["gider_edit"]), "user"))
+        .toMatchObject({ ok: false, reddedilenBolum: "hesapHareketleri", islem: "ekle", gerekli: "gider_odeme" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [odeme()] }, izin(["gider_odeme"]), "user").ok).toBe(true);
     });
-    it("yalnız ödeme tarihini değiştirmek de gider_odeme ister", () => {
-      const e = { giderler: [kalem([satir(101, { odendi: true, odemeTarihi: "2026-10-18" }), satir(102)])] };
-      const y = { giderler: [kalem([satir(101, { odendi: true, odemeTarihi: "2026-10-19" }), satir(102)])] };
-      expect(eylemDenetimi(e, y, izin(["gider_edit"]), "user").ok).toBe(false);
+    it("ödeme silmek ve düzenlemek de gider_odeme ister", () => {
+      const eski = { hesapHareketleri: [odeme()] };
+      expect(eylemDenetimi(eski, { hesapHareketleri: [] }, izin(["gider_edit"]), "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "gider_odeme" });
+      expect(eylemDenetimi(eski, { hesapHareketleri: [odeme({ tutar: 1 })] }, izin(["gider_edit"]), "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "gider_odeme" });
+      expect(eylemDenetimi(eski, { hesapHareketleri: [] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+      expect(eylemDenetimi(eski, { hesapHareketleri: [odeme()] }, izin([]), "user").ok).toBe(true); // değişmeyen kayıt
     });
-    it("tutar değişip ödenmemiş satırlar yeniden bölünürse gider_edit yeter (R10)", () => {
-      const yeni = { giderler: [kalem([satir(101, { tutar: 3000 }), satir(102, { tutar: 3000 }), satir(103)], { tutar: 8000 })] };
-      expect(eylemDenetimi(eski, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
+    it("virman virman ister; gider_odeme yetmez; ödemeyi virmana çevirmek ikisini de ister", () => {
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [virman()] }, izin(["gider_odeme"]), "user").gerekli).toBe("virman");
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [virman()] }, izin(["virman"]), "user").ok).toBe(true);
+      const cevir = { hesapHareketleri: [{ ...odeme(), tur: "virman", karsiHesapId: 98 }] };
+      expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman"]), "user").ok).toBe(false);
+      expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman", "gider_odeme"]), "user").ok).toBe(true);
     });
-    it("triyaj bulgu 1: ödenmiş eski (satırsız) kira ilk düzenlemede aynı durumla satıra çevrilince gider_edit yeter", () => {
-      const turMap = turHaritasi([{ id: 2, ad: "Kira", davranis: "kira" }]);
-      const eskiKira = { id: 9, tarih: "2026-10-01", turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 0, sonOdemeTarihi: "2026-10-05", odendi: true, odemeTarihi: "2026-10-04" };
-      const { kayit: yeniKira } = giderKalemDogrula({ ...eskiKira, aciklama: "düzeltildi" }, { turMap });
-      expect(yeniKira.taksitler).toHaveLength(2);
-      expect(eylemDenetimi({ giderler: [eskiKira] }, { giderler: [yeniKira] }, izin(["gider_edit"]), "user").ok).toBe(true);
-      // Aynı dönüşümde durum ya da tarih değişirse yine ödeme kaydıdır.
-      const oynanmis = { ...yeniKira, taksitler: yeniKira.taksitler.map((t, i) => (i === 1 ? { ...t, odemeTarihi: "2026-10-09" } : t)) };
-      expect(eylemDenetimi({ giderler: [eskiKira] }, { giderler: [oynanmis] }, izin(["gider_edit"]), "user").ok).toBe(false);
-      const odenmemis = { ...eskiKira, odendi: false, odemeTarihi: null };
-      const acik = { ...yeniKira, odendi: false, taksitler: yeniKira.taksitler.map(t => ({ ...t, odendi: false, odemeTarihi: null })) };
-      expect(eylemDenetimi({ giderler: [odenmemis] }, { giderler: [acik] }, izin(["gider_edit"]), "user").ok).toBe(true);
+    it("hesap ekle, düzenle, sil kasa_hesap ister", () => {
+      const h = { id: 97, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false };
+      expect(eylemDenetimi({ kasaHesaplari: [] }, { kasaHesaplari: [h] }, izin(["gider_add"]), "user").gerekli).toBe("kasa_hesap");
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [{ ...h, kapali: true }] }, izin(["gider_add"]), "user")).toMatchObject({ ok: false, islem: "duzenle" });
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [] }, izin(["gider_add"]), "user").ok).toBe(false);
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [{ ...h, kapali: true }] }, izin(["kasa_hesap"]), "user").ok).toBe(true);
     });
-    it("triyaj bulgu 4: yeni kalem ödenmiş doğarsa (odendi ya da ödenmiş satır) gider_odeme ister; ödenmemiş yeni kalem gider_add ile geçer", () => {
-      const yeniOdenmis = { giderler: [{ id: 5, tarih: "2026-10-01", turId: 1, tutar: 100, odendi: true, odemeTarihi: "2026-10-01" }] };
-      expect(eylemDenetimi({ giderler: [] }, yeniOdenmis, izin(["gider_add"]), "user")).toMatchObject({ ok: false, islem: "ekle", gerekli: "gider_odeme" });
-      expect(eylemDenetimi({ giderler: [] }, { giderler: [kalem([satir(101, { odendi: true, odemeTarihi: "2026-10-15" }), satir(102)], { id: 6 })] }, izin(["gider_add"]), "user").ok).toBe(false);
-      expect(eylemDenetimi({ giderler: [] }, { giderler: [kalem([satir(101), satir(102)], { id: 7 })] }, izin(["gider_add"]), "user").ok).toBe(true);
-      expect(eylemDenetimi({ giderler: [] }, yeniOdenmis, izin(["gider_add", "gider_odeme"]), "user").ok).toBe(true);
+    it("kalemin odendi alanı ve taksit satırı bayrakları artık izin istemez (doğruluk kaynağı değil, kayıt temizler)", () => {
+      const satir = (id, o = {}) => ({ id, hedef: "ana", sira: id - 100, vade: `2026-1${id - 100}-15`, tutar: 2000, odendi: false, odemeTarihi: null, ...o });
+      // Göç öncesi ödenmiş kalemi düzenleyen gider_edit kullanıcısı: kayıt bayrakları temizler, 403 almamalı.
+      const e = { giderler: [kalem({ odendi: true, odemeTarihi: "2026-10-04", taksitler: [satir(101, { odendi: true, odemeTarihi: "2026-10-04" }), satir(102)] })] };
+      const y = { giderler: [kalem({ aciklama: "düzeltildi", taksitler: [satir(101), satir(102)] })] };
+      expect(eylemDenetimi(e, y, izin(["gider_edit"]), "user").ok).toBe(true);
+      expect(eylemDenetimi({ giderler: [] }, { giderler: [kalem({ id: 5 })] }, izin(["gider_add"]), "user").ok).toBe(true);
     });
-    it("ödenmiş yeni satır eklemek ya da ödenmiş satırı silmek gider_odeme ister", () => {
-      const ekle = { giderler: [kalem([satir(101), satir(102), satir(103, { odendi: true, odemeTarihi: "2026-10-18" })])] };
-      expect(eylemDenetimi(eski, ekle, izin(["gider_edit"]), "user").ok).toBe(false);
-      const e = { giderler: [kalem([satir(101, { odendi: true, odemeTarihi: "2026-10-18" }), satir(102)])] };
-      expect(eylemDenetimi(e, { giderler: [kalem([satir(102)])] }, izin(["gider_edit"]), "user").ok).toBe(false);
+    it("tutar değişip ödenmemiş satırlar yeniden bölünürse gider_edit yeter (0021 R10)", () => {
+      const satir = (id, o = {}) => ({ id, hedef: "ana", sira: id - 100, vade: `2026-1${id - 100}-15`, tutar: 2000, ...o });
+      const yeni = { giderler: [kalem({ tutar: 8000, taksitler: [satir(101, { tutar: 3000 }), satir(102, { tutar: 3000 }), satir(103)] })] };
+      expect(eylemDenetimi({ giderler: [kalem({ taksitler: [satir(101), satir(102)] })] }, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
+    });
+    it("hesap ve hareket bölümleri yalnız Giderler sekmesiyle yazılır; sekme listesi tanımsız kullanıcı yazamaz (K6)", () => {
+      const eski = { hesapHareketleri: [] }, yeni = { hesapHareketleri: [odeme()] };
+      expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["finance"] }), "user", ["hesapHareketleri"], eski, yeni).ok).toBe(false);
+      expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"] }), "user", ["hesapHareketleri"], eski, yeni).ok).toBe(true);
+      expect(giderAynaEngeli(null, "user", ["kasaHesaplari"], { kasaHesaplari: [] }, { kasaHesaplari: [{ id: 1 }] })).toBe("kasaHesaplari");
     });
   });
   it("spec 0020 P4: tanımdan üretilmiş personel kalemine sonradan makina atamak düzenlemedir, gider_edit yeter", () => {
@@ -880,6 +881,7 @@ describe("gider: Ayarlar'ı açık ama Giderler sekmesi olmayan kullanıcı (bul
   const eski = { giderler: [{ id: 1, tarih: "2026-09-01", turId: 4, tutar: 100, odendi: false, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10, adet: 2 }] }] };
   const dene = (yeni) => yazmaYetkisiVar(ayarci, "user", degisenBolumler(eski, yeni), eski, yeni);
   it("kalem ekleyemez, silemez, ödendi değiştiremez", () => {
+    // Spec 0024: odendi artık doğruluk kaynağı değil; ama zincir dışı her kalem değişikliği Ayarlar kullanıcısına kapalı kalır.
     expect(dene({ giderler: [...eski.giderler, { id: 2, tarih: "2026-09-02", turId: 4, tutar: 99999, odendi: true, modelSatirlari: [] }] }).ok).toBe(false);
     expect(dene({ giderler: [] }).ok).toBe(false);
     expect(dene({ giderler: [{ ...eski.giderler[0], deletedAt: "x" }] }).ok).toBe(false);

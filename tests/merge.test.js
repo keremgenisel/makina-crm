@@ -185,6 +185,23 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(yeniId).not.toBe(pid);
     expect(plan.adds.customers[0].partiId).toBe(yeniId);
   });
+  it("spec 0024: iki PC aynı hesap ve kalem id'sini üretirse hareket yeni kalem ve hesap id'lerini izler; tahsilatın hesabı da", () => {
+    const hid = uid(), gid = uid(), mid = uid(), pid = uid();
+    const my = blob({
+      kasaHesaplari: [{ id: hid, ad: "Benim kasam", tur: "kasa", paraBirimi: "TRY" }],
+      giderler: [{ id: gid, tarih: "2026-09-01", turId: 1, tutar: 100 }],
+      hesapHareketleri: [{ id: mid, tur: "odeme", tarih: "2026-09-02", tutar: 100, giderId: gid, taksitId: 77, hesapId: hid },
+        { id: uid(), tur: "virman", tarih: "2026-09-03", tutar: 10, hesapId: hid, karsiHesapId: 5 }],
+      payments: [{ id: pid, customerId: 1, tutar: 50, hesapId: hid }],
+    });
+    const server = blob({ kasaHesaplari: [{ id: hid, ad: "Onun kasası", tur: "banka", paraBirimi: "TRY" }], giderler: [{ id: gid, tarih: "2026-09-05", turId: 1, tutar: 999 }], hesapHareketleri: [] });
+    const plan = buildMergePlan(my, server);
+    const yeniH = plan.maps.kasaHesaplari.get(hid), yeniG = plan.maps.giderler.get(gid);
+    expect(yeniH).toBeDefined(); expect(yeniG).toBeDefined();
+    expect(plan.adds.hesapHareketleri[0]).toMatchObject({ giderId: yeniG, hesapId: yeniH, taksitId: 77 });
+    expect(plan.adds.hesapHareketleri[1]).toMatchObject({ hesapId: yeniH, karsiHesapId: 5 });
+    expect(plan.adds.payments[0].hesapId).toBe(yeniH);
+  });
   it("spec 0023 C7: ek ödeme satırları kimliksiz, kalemle birlikte taşınır", () => {
     const ekOdemeler = [{ tur: "prim", aciklama: "A", resmiTutar: 100, eldenTutar: null }, { tur: "prim", aciklama: "B", resmiTutar: null, eldenTutar: 50 }];
     const my = blob({ giderTurleri: [{ id: 11, ad: "Personel", davranis: "personel" }], giderler: [{ id: 15, turId: 11, resmiTutar: 1000, ekOdemeler }] });

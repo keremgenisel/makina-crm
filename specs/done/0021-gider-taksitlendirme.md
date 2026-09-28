@@ -39,6 +39,11 @@ kaleminde vergi dairesine olan stopaj borcu kiraya verene olan borçtan ayrı iz
 - **R3.** Kalemin ödeme durumu taksitlerden **türetilir**: hiçbiri ödenmemişse ödenmedi, hepsi ödenmişse
   ödendi, arası kısmen ödendi. Kullanıcı kalemin durumunu doğrudan çeviremez; taksitli kalemde durum
   taksitlerden gelir.
+  **Güncelleme (2026-09-28, spec 0024 A, Q1):** aşağıdaki "kaleme yazılır" kararı değişti. Taksit satırı bayrakları
+  ve kalemin `odendi`/`odemeTarihi`'si artık doğruluk kaynağı değildir: ödeme bir hareket kaydıdır, taksidin ve
+  kalemin durumu hareketlerden okuma anında türer (`gider.odemeleriUygula`), taksit kısmen ödenebilir. Sunucunun
+  `ALAN_IZINLERI.giderler` ve satır denetimi kaldırıldı; ödeme izni hareketin eklenmesinde aranır. Bkz.
+  `specs/0024-kasa-ve-odeme-ayrimi.md`.
   **Türetilen durum kaleme yazılır, okuma anında hesaplanmaz:** `odendi` ve `odemeTarihi` alanları kalmaya
   devam eder ve taksit işaretlendiğinde tek yönlü olarak (taksitlerden kaleme) güncellenir. Sebep: sunucu
   `odendi`'yi **alan düzeyinde** denetliyor (`serverAuth.cjs` `ALAN_IZINLERI.giderler`) ve `vadesiGectiMi`

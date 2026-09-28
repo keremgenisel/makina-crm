@@ -27,6 +27,7 @@ import { TANIM_UZUN, TANIM_TURLERI, TANIM_TEDARIKCI, TANIM_CALISAN } from "../te
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
 import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
 import * as Tasarim from "../../src/components/tasarim";
+import { Kasa } from "../../src/components/Kasa";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -70,8 +71,10 @@ const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, b
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [] }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null }) {
   const [giderler, setGiderler] = useState(g0);
+  // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
+  const [hareketler, setHareketler] = useState(h0);
   const [partiler, setPartiler] = useState(p0);
   const [tanimlar, setTanimlar] = useState(t0);
   const [ted, setTed] = useState(TED);
@@ -82,7 +85,8 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed} standartGiderler={standart} setStandartGiderler={setStandart}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
     satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
-    uretimPartileri={partiler} setUretimPartileri={setPartiler} />;
+    uretimPartileri={partiler} setUretimPartileri={setPartiler}
+    setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})} />;
 }
 
 const DEALERS = [{ id: 3, name: "Ege Bayi", contact: "Veli Usta", phone: "0232 111", email: "ege@bayi.com", adres: "Bornova", country: "Türkiye", city: "İzmir", bayiMi: true }];
@@ -208,6 +212,31 @@ const KIRA_K = k(32, { turId: 1, tutar: 20000, netTutar: 16000, girisYonu: "brut
   taksitler: [tks(3201, "ana", 1, "2026-09-25", 16000), tks(3202, "stopaj", 1, "2026-08-26", 1000, true), tks(3203, "stopaj", 2, "2026-09-26", 1000),
     tks(3204, "stopaj", 3, "2026-10-26", 1000), tks(3205, "stopaj", 4, "2026-11-26", 1000)] });
 const TAKSIT_GIDERLER = [...GIDERLER, TAKSITLI_K, KIRA_K];
+
+// Spec 0024: kasa hesapları ve ödeme hareketleri. Saklı bayraklı ödenmiş satırlar göçteki gibi hareketle temsil edilir;
+// 1 numaralı kalem ve kiranın kiraya veren taksiti kısmen ödenmiş.
+const KASA_HESAPLAR = [
+  { id: 401, ad: "Ziraat Bankası", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 250000, acilisTarihi: "2026-09-01", kapali: false },
+  { id: 402, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 15000, acilisTarihi: "2026-09-01", kapali: false },
+  { id: 403, ad: "Şirket Kartı", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -8000, acilisTarihi: "2026-09-01", kapali: false },
+  { id: 404, ad: "Döviz Hesabı", tur: "banka", paraBirimi: "USD", acilisBakiyesi: 3000, acilisTarihi: "2026-09-01", kapali: false },
+  { id: 405, ad: "Eski Vadesiz", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-01-01", kapali: true },
+];
+const odm = (id, giderId, tutar, tarih, o = {}) => ({ id, tur: "odeme", giderId, taksitId: null, tutar, tarih, hesapId: 401, yontem: "Havale", ...o });
+const KASA_HAREKETLER = [
+  odm(4001, 2, null, "2026-09-12", { tamKapatir: true, hesapId: null, kaynak: "goc", gocKaynak: "gider:2" }),
+  odm(4002, 6, null, "2026-08-20", { tamKapatir: true, hesapId: null, kaynak: "goc", gocKaynak: "gider:6" }),
+  odm(4003, 31, 2000, "2026-08-12", { taksitId: 3101 }), odm(4004, 31, 2000, "2026-09-12", { taksitId: 3102 }),
+  odm(4005, 32, 1000, "2026-08-26", { taksitId: 3202, hesapId: 402, yontem: "Nakit" }),
+  odm(4006, 1, 5000, "2026-09-20"),
+  odm(4007, 32, 6000, "2026-09-22", { taksitId: 3201 }),
+  { id: 4008, tur: "virman", tarih: "2026-09-15", tutar: 20000, hesapId: 401, karsiHesapId: 402, aciklama: "Kasaya nakit" },
+  odm(4009, 5, 12000, "2026-09-24", { hesapId: 403, yontem: "Kredi Kartı" }),
+];
+const KASA_TAHSILAT = [{ id: 4101, customerId: 500, tarih: "2026-09-18", tutar: 40000, currency: "TRY", yontem: "Havale", hesapId: 401 },
+  { id: 4102, customerId: 501, tarih: "2026-09-25", tutar: 15000, currency: "TRY", yontem: "Çek", tahsilEdildi: false, hesapId: 401 }];
+const kasaEkrani = (o = {}) => <Kasa kasaHesaplari={KASA_HESAPLAR} setKasaHesaplari={bos} hesapHareketleri={KASA_HAREKETLER} setHesapHareketleri={bos}
+  payments={KASA_TAHSILAT} customers={MUSTERILER} giderler={TAKSIT_GIDERLER} giderTurleri={TURLER} tedarikciler={TED} serverPermissions={null} showToast={bos} {...o} />;
 
 // Spec 0022: üretim partileri. Kapalı parti (Haz–Ağu, iki satılmış makina; Ağustos anlık görüntüsü bugünkünden
 // küçük: kapanıştan sonra gider eklenmiş) ve açık parti (Eylül, stokta iki makina).
@@ -336,7 +365,7 @@ const EKRANLAR = {
   "giderler-taksit-borc": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
   "giderler-odeme-plani": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["dugme:Ödeme planı"]],
   "anasayfa-hatirlatma-taksit": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
-    giderYetki giderler={TAKSIT_GIDERLER} setGiderler={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri"]],
+    giderYetki giderler={TAKSIT_GIDERLER} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri"]],
   // Spec 0022: üretim partisi.
   "giderler-uretim-partileri": partiEkrani(["Üretim Partileri"]),
   "giderler-uretim-partisi-formu": partiEkrani(["Üretim Partileri", "~Yeni Üretim Partisi"]),
@@ -363,6 +392,17 @@ const EKRANLAR = {
     ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Ödeme Yöntemi"]],
   "yedek-parca-formu-kargo": [stokEkrani("yedeksatis"), ["~Yeni Satış", "kaydir:Kargoyu Veren Kişi"]],
   "musteri-detay-tahsis": [detay(601, { yedekParcaSatislar: TAHSIS_YP }), ["kaydir:Yedek Parça (Bayi)"]],
+  // Spec 0024 A: kasa, ödeme penceresi, kısmi ödeme, tahsilat hesabı.
+  "kasa-hesaplar": [kasaEkrani(), ["~Ziraat Bankası"]],
+  "kasa-hesap-hareketleri-kart": [kasaEkrani(), ["~Şirket Kartı"]],
+  "kasa-hesap-formu": [kasaEkrani(), ["dugme:Yeni Hesap"]],
+  "kasa-virman": [kasaEkrani(), ["dugme:Virman"]],
+  "kasa-bos": [kasaEkrani({ kasaHesaplari: [], hesapHareketleri: [], payments: [] }), []],
+  "giderler-kismen-odeme": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["kaydir:Gider Kalemleri"]],
+  "giderler-odeme-kayit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Kısmen ödendi"]],
+  "giderler-odeme-kayit-taksit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı", "dugme:Ödeme gir"]],
+  "giderler-odeme-plani-hareket": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı"]],
+  "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],

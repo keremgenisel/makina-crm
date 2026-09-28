@@ -188,8 +188,36 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     ac({ kalem: { id: 9, tarih: "2026-09-01", turId: 4, tutar: 1250, kdvOrani: 20, tanimId: 3, donem: "2026-09", odendi: false } });
     expect(screen.getByText(/Tekrarlayan tanımdan oluşturuldu · 2026-09/)).toBeTruthy();
   });
-  it("gider_odeme yoksa ödeme durumu değiştirilemez", () => {
+  // Spec 0024 R3/R17 (Q2, onaylı istisna): formda ödeme durumu düğmesi yok; yeni kalemde "ödendi olarak kaydet" ayrı
+  // bir ödeme hareketi talebidir, mevcut kalemde durum hareketlerden türetilip yalnız gösterilir.
+  it("gider_odeme yoksa 'ödendi olarak kaydet' seçeneği yok", () => {
     ac({ odemeDegistirebilir: false });
-    expect(screen.getByRole("radio", { name: "Ödendi" }).disabled).toBe(true);
+    expect(screen.queryByLabelText("Kaydederken ödendi olarak kaydet")).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Ödendi" })).toBeNull();
+  });
+  it("R17: 'ödendi olarak kaydet' kayda durum yazmaz, onSave'e ödeme talebi (tarih, hesap) verir", () => {
+    const H = [{ id: 1, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY" }, { id: 2, ad: "Dolar", tur: "banka", paraBirimi: "USD" }];
+    const onSave = ac({ hesaplar: H, hesapSecimi: true });
+    tur(4);
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
+    fireEvent.click(screen.getByLabelText("Kaydederken ödendi olarak kaydet"));
+    const hesap = screen.getByLabelText("Hesap");
+    expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Merkez Kasa (Kasa)"]);
+    fireEvent.change(hesap, { target: { value: "1" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    const [kayit, talep] = onSave.mock.calls[0];
+    expect(kayit).toMatchObject({ odendi: false, odemeTarihi: null });
+    expect(talep).toEqual({ tarih: "2026-09-23", hesapId: 1, yontem: "" });
+  });
+  it("R17: seçenek işaretlenmezse ödeme talebi yok; mevcut kalemde durum türetilmiş olarak gösterilir", () => {
+    const onSave = ac();
+    tur(4);
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(onSave.mock.calls[0][1]).toBeNull();
+    cleanup();
+    ac({ kalem: { id: 9, tarih: "2026-09-01", turId: 4, tutar: 1000, kdvOrani: 20, odendi: false, _odenen: { ana: 50000, stopaj: 0 } } });
+    expect(screen.getByTestId("odeme-durumu-turetilen").textContent).toBe("Kısmen ödendi");
+    expect(screen.queryByLabelText("Kaydederken ödendi olarak kaydet")).toBeNull();
   });
 });

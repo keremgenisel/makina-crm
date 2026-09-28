@@ -11,6 +11,8 @@ const ENTITY_LABELS = {
   // Gider kaydı (spec 0001)
   gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
   standart_gider: "Standart Genel Gider",
+  // Kasa (spec 0024)
+  kasa_hesap: "Kasa/Banka Hesabı", virman: "Virman",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
@@ -29,6 +31,8 @@ const ACTION_LABELS = {
   // Gider kaydı (spec 0001)
   tekrar_uretildi: "Tekrarlayan Kalemler Oluşturuldu", tur_tasindi: "Tür Taşındı", tanim_kapatildi: "Tanım Kapatıldı",
   surum_eklendi: "Yeni Tutar Sürümü", surum_geri_alindi: "Sürüm Geri Alındı", sona_erdirildi: "Sona Erdirildi",
+  // Kasa (spec 0024)
+  kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı",
 };
 
 const PER_PAGE = 10;

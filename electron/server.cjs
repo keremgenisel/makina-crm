@@ -165,6 +165,7 @@ const BOLUM_ADLARI = {
   tedarikciler: "Tedarikçiler",
   standartGiderler: "Standart Genel Giderler",
   uretimPartileri: "Üretim Partileri",
+  kasaHesaplari: "Kasa ve Banka Hesapları", hesapHareketleri: "Hesap Hareketleri",
 };
 
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {

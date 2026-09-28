@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { today, getKdvRateForDate } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, odemeDurumu, HEDEF } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
+import { secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD } from "../lib/kasa";
 import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
@@ -34,8 +35,12 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
 };
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
-  giderler = [], giderAyarlari = {}, kdvRates, odemeDegistirebilir = true, onSave, onCancel }) => {
+  giderler = [], giderAyarlari = {}, kdvRates, odemeDegistirebilir = true, onSave, onCancel,
+  // Spec 0024 R17: yeni kalem "ödendi olarak kaydet" ile bir ödeme hareketi doğurur; hesap yalnız kasa yetkisiyle seçilir.
+  hesaplar = [], hareketler = [], hesapSecimi = false }) => {
   const [form, setForm] = useState(() => formdanKalem(kalem, { giderAyarlari, kdvRates }));
+  const [odemeTalebi, setOdemeTalebi] = useState(() => ({ acik: false, tarih: today(), hesapId: hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar) ?? "") : "" }));
+  const uygunHesaplar = useMemo(() => secilebilirHesaplar(hesaplar, "TRY"), [hesaplar]);
   const [hatalar, setHatalar] = useState([]);
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
   const tur = turMap.get(String(form.turId));
@@ -57,7 +62,6 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
       eldenTutar: form.eldenTutar !== "" ? form.eldenTutar : tutarMetni(c?.eldenMaliyet),
     });
   };
-  const odendiDegis = (odendi) => set({ odendi, odemeTarihi: odendi ? (form.odemeTarihi || today()) : "" });
 
   const mukerrer = dav === DAVRANIS.PERSONEL ? personelMukerrer(giderler, { calisanId: form.calisanId, tarih: form.tarih, id: form.id }) : [];
   const secilenCalisan = calisanlar.find(x => String(x.id) === String(form.calisanId));
@@ -87,7 +91,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
       { uid: () => `onizleme-${++n}`, eskiSatirlar: eski, eskiOdendi: !eski.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
   }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.taksitler, form.odendi, form.odemeTarihi]);
   const planli = !!onizleme.hata || (onizleme.satirlar || []).length > 0;
-  const planDurumu = planli && onizleme.satirlar ? odemeDurumu({ taksitler: onizleme.satirlar }) : null;
+  // Mevcut kalemin durumu App'in hareketlerden türettiği kalemden okunur (spec 0024 R3).
+  const kalemDurumu = kalem ? odemeDurumu(kalem) : null;
+  // Taksitli yeni kalemde tek seferde "ödendi" anlamsızdır; ödemeler taksit taksit girilir (R18).
+  const tekOdemeDegil = Number(form.taksitSayisi) >= 2 || Number(form.stopajTaksitSayisi) >= 2;
   const stopajVar = dav === DAVRANIS.KIRA && (kira?.stopaj || 0) > 0;
 
   const kaydet = () => {
@@ -102,7 +109,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     delete kayit._kdvElle;
     if (dav === DAVRANIS.PERSONEL) kayit.calisanAd = secilenCalisan?.ad || kayit.calisanAd || "";
     if (dav !== DAVRANIS.PERSONEL) kayit.aciklama = String(form.aciklama || "").trim();
-    onSave(kayit);
+    // Spec 0024 R3: kayıt ödeme durumu taşımaz; "ödendi olarak kaydet" ayrı bir ödeme hareketi talebidir.
+    const talep = form.id == null && odemeDegistirebilir && odemeTalebi.acik
+      ? { tarih: odemeTalebi.tarih || today(), hesapId: odemeTalebi.hesapId === "" ? null : odemeTalebi.hesapId, yontem: kayit.odemeYontemi || "" } : null;
+    onSave(kayit, talep);
   };
 
   const cekMi = form.odemeYontemi === "Çek";
@@ -248,26 +258,40 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             <Ipucu>{taksitli ? "Sonraki taksitler birer ay arayla oluşur." : "Gider tarihinden önce olamaz."}</Ipucu>
           </Field>
         </div>
-        {!planli ? (
-          <>
-            <div style={{ flex: "1 1 200px" }}>
-              <Field label="Ödeme durumu">
-                <Segment ariaLabel="Ödeme durumu" disabled={!odemeDegistirebilir} options={[{ value: true, label: "Ödendi" }, { value: false, label: "Ödenmedi" }]} value={!!form.odendi} onChange={odendiDegis} />
-                {!odemeDegistirebilir && <Ipucu>Ödeme durumunu değiştirme yetkiniz yok.</Ipucu>}
-              </Field>
-            </div>
-            {form.odendi && (
-              <div style={{ flex: "1 1 150px" }}><Field label="Ödeme tarihi"><Input type="date" value={form.odemeTarihi} disabled={!odemeDegistirebilir} onChange={e => set({ odemeTarihi: e.target.value })} /></Field></div>
-            )}
-          </>
-        ) : (
+        {form.id != null ? (
           <div style={{ flex: "1 1 200px" }}>
-            {/* AC-6, AC-25: satırı olan kalemin durumu satırlardan türetilir, burada çevrilmez. */}
+            {/* Spec 0024 R3: durum ödeme hareketlerinden türer, formda çevrilmez. */}
             <Field label="Ödeme durumu">
-              <div data-testid="odeme-durumu-turetilen" style={{ fontSize: 13, fontWeight: 700, padding: "7px 0" }}>{planDurumu === "odendi" ? "Ödendi" : planDurumu === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</div>
-              <Ipucu>Ödeme durumu ödeme satırlarından gelir; satırları gider listesindeki “Ödeme planı” penceresinden işaretleyin.</Ipucu>
+              <div data-testid="odeme-durumu-turetilen" style={{ fontSize: 13, fontWeight: 700, padding: "7px 0" }}>{kalemDurumu === "odendi" ? "Ödendi" : kalemDurumu === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</div>
+              <Ipucu>Ödemeler gider listesindeki ödeme penceresinden kaydedilir ve silinir.</Ipucu>
             </Field>
           </div>
+        ) : odemeDegistirebilir && !tekOdemeDegil ? (
+          <div style={{ flex: "1 1 240px" }}>
+            <Field label="Ödeme">
+              <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, padding: "7px 0", cursor: "pointer" }}>
+                <input type="checkbox" checked={odemeTalebi.acik} onChange={e => setOdemeTalebi(t => ({ ...t, acik: e.target.checked }))} />
+                Kaydederken ödendi olarak kaydet
+              </label>
+              <Ipucu>Kalemin tamamı için bir ödeme kaydı oluşturulur.</Ipucu>
+            </Field>
+          </div>
+        ) : null}
+        {form.id == null && odemeTalebi.acik && odemeDegistirebilir && !tekOdemeDegil && (
+          <>
+            <div style={{ flex: "1 1 150px" }}><Field label="Ödeme tarihi"><Input type="date" value={odemeTalebi.tarih} onChange={e => setOdemeTalebi(t => ({ ...t, tarih: e.target.value }))} /></Field></div>
+            {hesapSecimi && (
+              <div style={{ flex: "1 1 180px" }}>
+                <Field label="Hesap">
+                  <Select value={odemeTalebi.hesapId ?? ""} onChange={e => setOdemeTalebi(t => ({ ...t, hesapId: e.target.value === "" ? "" : uygunHesaplar.find(h => String(h.id) === e.target.value)?.id ?? "" }))}>
+                    <option value="">Hesap belirtilmedi</option>
+                    {uygunHesaplar.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur})</option>)}
+                  </Select>
+                </Field>
+                {!uygunHesaplar.length && <Ipucu>Açık TL hesabı yok. Ödeme hesapsız kaydedilir ve hiçbir bakiyeye girmez.</Ipucu>}
+              </div>
+            )}
+          </>
         )}
       </div>
       {stopajVar && (

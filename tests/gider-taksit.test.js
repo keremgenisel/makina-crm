@@ -1,9 +1,9 @@
 // Spec 0021: gider taksitlendirme ve vergi dairesi (stopaj) ödemesi, saf motor (src/lib/gider.js).
 import { describe, it, expect } from "vitest";
 import {
-  esitBol, ayEkleGun, taksitPlaniOlustur, planYenidenBol, giderKalemDogrula, odemeHedefleri, odemeDurumu, taksitIsaretle,
-  hedefIsaretle, hedefDurumuDegistir, odemeDurumuDegistir, odendiIsaretle, borcOzeti, hesaplaGiderRaporu, tekrarlayanUret,
-  turHaritasi, kdvKarsilastir, vadesiGectiMi, HEDEF, DAVRANIS,
+  esitBol, ayEkleGun, taksitPlaniOlustur, planYenidenBol, giderKalemDogrula, odemeHedefleri, odemeDurumu,
+  borcOzeti, hesaplaGiderRaporu, tekrarlayanUret,
+  turHaritasi, kdvKarsilastir, vadesiGectiMi, HEDEF, DAVRANIS, odemeleriUygula,
 } from "../src/lib/gider";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../src/lib/makinaMaliyeti";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
@@ -24,7 +24,12 @@ const taksitli = (o = {}) => kayit({ id: 1, tarih: "2026-10-01", turId: 1, tutar
 const kira = (o = {}) => kayit({ id: 2, tarih: "2026-10-01", turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, sonOdemeTarihi: "2026-10-05", ...o });
 const ana = (k) => k.taksitler.filter(r => r.hedef === HEDEF.ANA);
 const stp = (k) => k.taksitler.filter(r => r.hedef === HEDEF.STOPAJ);
-const isaretle = (k, adet) => ana(k).slice(0, adet).reduce((x, r) => taksitIsaretle(x, r.id, true, "2026-10-18"), k);
+// Spec 0024 (Q1, C-istisna): ödeme durumu hareketten türer; kaydedilen satır ödeme bayrağı taşımaz. Plan testleri
+// ödemeyi hareketle verir ve `odemeleriUygula` ile zenginleştirilmiş kalemi forma geçirir.
+const odemeHareketi = (k, r, tarih = "2026-10-18") => ({ id: uid(), tur: "odeme", giderId: k.id, taksitId: r.id, tutar: r.tutar, tarih });
+const plan = (r) => ({ id: r.id, hedef: r.hedef, sira: r.sira, vade: r.vade, tutar: r.tutar });
+// İlk `adet` ana taksite ödeme hareketi girilmiş kalem (durum hareketten türer; triyaj bulgu 3: eski işaretleyici kalktı).
+const isaretle = (k, adet) => odemeleriUygula([k], ana(k).slice(0, adet).map(r => odemeHareketi(k, r)), turMap)[0];
 
 describe("Spec 0021: taksit planı (R1, R12, C1)", () => {
   it("AC-1: 12.000 ödenecek, 6 taksit → her biri 2.000, toplam 12.000", () => {
@@ -60,14 +65,13 @@ describe("Spec 0021: ödeme durumu (R2, R3)", () => {
     expect(odemeDurumu(k6)).toBe("odendi");
     expect(k6).toMatchObject({ odendi: true, odemeTarihi: "2026-10-18" });
   });
-  it("AC-6 / AC-25: kalem durumu doğrudan çevrilmez; odendi, odemeTarihi ve sonOdemeTarihi satırlardan türetilir", () => {
+  it("AC-6 / AC-25: kalem durumu doğrudan çevrilmez; odendi, odemeTarihi ve sonOdemeTarihi ödeme hareketlerinden türetilir", () => {
     const k = taksitli();
-    expect(odemeDurumuDegistir(k, BUGUN)).toBe(k);
     expect(dogrula({ ...taksitliForm(k), odendi: true }).kayit.odendi).toBe(false);
     const k2 = isaretle(k, 2);
     expect(k2).toMatchObject({ odendi: false, odemeTarihi: null, sonOdemeTarihi: "2026-12-15" });
-    expect(odendiIsaretle(k2, BUGUN)).toMatchObject({ sonOdemeTarihi: "2027-01-15" }); // Anasayfa: yalnız en yakın taksit
-    const kaldir = taksitIsaretle(k2, ana(k2)[0].id, false, BUGUN);
+    // İlk taksitin ödemesi silinince o taksit yeniden açılır, en yakın vade geri gelir.
+    const kaldir = odemeleriUygula([k], [odemeHareketi(k, ana(k)[1])], turMap)[0];
     expect(ana(kaldir)[0]).toMatchObject({ odendi: false, odemeTarihi: null });
     expect(kaldir.sonOdemeTarihi).toBe("2026-10-15");
   });
@@ -125,12 +129,12 @@ describe("Spec 0021: kira kaleminin iki ödeme hedefi (R6, R8, R13)", () => {
   it("AC-13: stopaj tarafı taksitlenir; kiraya veren tarafı ayrı durum taşır", () => {
     const k = kira({ stopajTaksitSayisi: 4, stopajVade: "2026-11-26" });
     expect(stp(k).map(r => [r.tutar, r.vade])).toEqual([[1000, "2026-11-26"], [1000, "2026-12-26"], [1000, "2027-01-26"], [1000, "2027-02-26"]]);
-    const k1 = hedefDurumuDegistir(k, HEDEF.ANA, BUGUN);
+    const kiraOdemesi = [odemeHareketi(k, ana(k)[0])];
+    const k1 = odemeleriUygula([k], kiraOdemesi, turMap)[0];
     expect(ana(k1)[0].odendi).toBe(true);
     expect(stp(k1).every(r => !r.odendi)).toBe(true);
     expect(odemeDurumu(k1)).toBe("kismen");
-    expect(hedefDurumuDegistir(k1, HEDEF.STOPAJ, BUGUN)).toBe(k1); // taksitli hedef tek anahtarla çevrilmez
-    const tum = [0, 1, 2, 3].reduce((x) => hedefIsaretle(x, HEDEF.STOPAJ, BUGUN), k1);
+    const tum = odemeleriUygula([k], [...kiraOdemesi, ...stp(k).map(r => odemeHareketi(k, r))], turMap)[0];
     expect(odemeDurumu(tum)).toBe("odendi");
     expect(tum.odendi).toBe(true);
   });
@@ -142,7 +146,7 @@ describe("Spec 0021: kira kaleminin iki ödeme hedefi (R6, R8, R13)", () => {
     const r = hesaplaGiderRaporu({ giderler: [k], turler, tedarikciler }, { baslangic: "2026-10-01", bitis: "2026-10-31" }, { bugun: BUGUN });
     expect(r.tedarikciKirilimi.tedarikciBorcu).toBe(16000);
     // Kiraya veren ödenince yalnız vergi dairesi kalır.
-    const b2 = borcOzeti([hedefDurumuDegistir(k, HEDEF.ANA, BUGUN)], { turler, tedarikciler }, BUGUN);
+    const b2 = borcOzeti([odemeleriUygula([k], [odemeHareketi(k, ana(k)[0])], turMap)[0]], { turler, tedarikciler }, BUGUN);
     expect(b2.satirlar.map(s => [s.tur, s.tutar])).toEqual([["vergiDairesi", 4000]]);
   });
   it("R13: satırsız eski kira: ödenmişse vergi dairesi borcu yok, ödenmemişse stopaj borçta; hatırlatıcıya girmez", () => {
@@ -151,10 +155,13 @@ describe("Spec 0021: kira kaleminin iki ödeme hedefi (R6, R8, R13)", () => {
     expect(borcOzeti([{ ...eski, odendi: true, odemeTarihi: "2026-10-04" }], { turler, tedarikciler }, BUGUN).satirlar).toEqual([]);
     const h = odemeHatirlatmalari([eski], { turler, tedarikciler }, BUGUN);
     expect(h.gecmis.map(o => o.hedef)).toEqual(["ana"]);
-    // Düzenlenip kaydedilince satırlar kalıcı olur; ödenmiş eski kalem ödenmiş satırlarla doğar.
+    // Düzenlenip kaydedilince satırlar kalıcı olur. Spec 0024: satır ödeme bayrağı saklamaz; eski kalemin ödemesi göç
+    // hareketiyle (tamKapatir) taşınır ve iki hedefi de kapatır.
     const kaydedildi = kayit({ ...eski, odendi: true, odemeTarihi: "2026-10-04" });
-    expect(kaydedildi.taksitler.map(r => [r.hedef, r.odendi, r.odemeTarihi])).toEqual([["ana", true, "2026-10-04"], ["stopaj", true, "2026-10-04"]]);
-    expect(kaydedildi.odendi).toBe(true);
+    expect(kaydedildi.taksitler.map(r => [r.hedef, r.odendi, r.odemeTarihi])).toEqual([["ana", false, null], ["stopaj", false, null]]);
+    const [z] = odemeleriUygula([kaydedildi], [{ id: 1, tur: "odeme", giderId: 9, tamKapatir: true, tarih: "2026-10-04", kaynak: "goc" }], turMap);
+    expect(z.taksitler.map(r => [r.hedef, r.odendi, r.odemeTarihi])).toEqual([["ana", true, "2026-10-04"], ["stopaj", true, "2026-10-04"]]);
+    expect(z.odendi).toBe(true);
   });
   it("R6: stopajı olmayan kira satır taşımaz; tekrarlayan üretim stopajlı kirayı iki hedefle üretir", () => {
     expect(kira({ stopajOrani: 0 }).taksitler).toEqual([]);
@@ -166,10 +173,13 @@ describe("Spec 0021: kira kaleminin iki ödeme hedefi (R6, R8, R13)", () => {
 
 describe("Spec 0021: planın değiştirilmesi (R10, T10, T11)", () => {
   const odenmis2 = () => isaretle(taksitli(), 2);
+  // Spec 0024: plan değişimi ödeme almış taksitleri hareketten tanır (zenginleştirilmiş kalem).
+  const hareketle2 = () => { const k = taksitli(); const h = ana(k).slice(0, 2).map(r => odemeHareketi(k, r)); return { k: odemeleriUygula([k], h, turMap)[0], h }; };
   it("AC-17: taksit sayısı değişince ödenmiş taksitler (kimlik, tutar, tarih) korunur", () => {
-    const k = odenmis2();
+    const { k, h } = hareketle2();
     const y = kayit({ ...taksitliForm(k), taksitSayisi: 3 });
-    expect(ana(y).slice(0, 2)).toEqual(ana(k).slice(0, 2));
+    expect(ana(y).slice(0, 2).map(plan)).toEqual(ana(k).slice(0, 2).map(plan));
+    expect(odemeleriUygula([y], h, turMap)[0].taksitler.map(r => r.odendi)).toEqual([true, true, false]);
     expect(ana(y).map(r => r.tutar)).toEqual([2000, 2000, 8000]);
     expect(ana(y)[2].id).toBe(ana(k)[2].id); // ödenmemiş satır kimliği yeniden kullanılır
   });
@@ -179,9 +189,9 @@ describe("Spec 0021: planın değiştirilmesi (R10, T10, T11)", () => {
     expect(r.hatalar).toEqual([{ alan: "taksitSayisi", mesaj: "Taksit sayısı ödenmiş taksit sayısının (2) altına indirilemez." }]);
   });
   it("AC-23: tutar değişince ödenmişler aynen kalır, ödenmemişler yeniden bölünür, toplam yeni ödenecek tutara eşit", () => {
-    const k = odenmis2();
+    const { k } = hareketle2();
     const y = kayit({ ...taksitliForm(k), tutar: 12500 }); // 12.500 + %20 = 15.000
-    expect(ana(y).slice(0, 2)).toEqual(ana(k).slice(0, 2));
+    expect(ana(y).slice(0, 2).map(plan)).toEqual(ana(k).slice(0, 2).map(plan));
     expect(ana(y).map(r => r.tutar)).toEqual([2000, 2000, 2750, 2750, 2750, 2750]);
     expect(ana(y).reduce((a, r) => a + Math.round(r.tutar * 100), 0)).toBe(1500000);
   });
@@ -203,15 +213,21 @@ describe("Spec 0021 triyaj düzeltmeleri", () => {
     sonOdemeTarihi: "2026-10-05", odendi: true, odemeTarihi: "2026-10-04" };
   it("bulgu 1: ödenmiş eski kira düzenlenince satırlar eski durumla doğar ve ana hedefin vadesi korunur", () => {
     const y = kayit({ ...eskiKira, aciklama: "Eski kira (düzeltildi)" });
-    expect(y.taksitler.map(r => [r.hedef, r.odendi, r.odemeTarihi, r.vade])).toEqual([["ana", true, "2026-10-04", "2026-10-05"], ["stopaj", true, "2026-10-04", null]]);
-    expect(y).toMatchObject({ odendi: true, odemeTarihi: "2026-10-04" });
+    // Spec 0024: satırlar planı (vade korunur) taşır; ödeme durumu göç hareketinden gelir.
+    expect(y.taksitler.map(r => [r.hedef, r.odendi, r.vade])).toEqual([["ana", false, "2026-10-05"], ["stopaj", false, null]]);
+    const [z] = odemeleriUygula([y], [{ id: 1, tur: "odeme", giderId: 9, tamKapatir: true, tarih: "2026-10-04", kaynak: "goc" }], turMap);
+    expect(z).toMatchObject({ odendi: true, odemeTarihi: "2026-10-04" });
   });
   it("bulgu 2: stopaj sıfıra çekilince kiraya verene yapılmış ödeme korunur; kalan tutar ödenmemiş satır olur", () => {
-    const k = hedefDurumuDegistir(kira(), HEDEF.ANA, "2026-10-04"); // kiraya verene 16.000 ödendi
+    const k0 = kira();
+    const h = [odemeHareketi(k0, ana(k0)[0], "2026-10-04")]; // kiraya verene 16.000 ödendi (hareket)
+    const k = odemeleriUygula([k0], h, turMap)[0];
     const y = kayit({ ...k, stopajOrani: 0, sonOdemeTarihi: ana(k)[0].vade });
     expect(stp(y)).toEqual([]);
-    expect(ana(y).map(r => [r.tutar, r.odendi, r.odemeTarihi])).toEqual([[16000, true, "2026-10-04"], [4000, false, null]]);
-    expect(odemeDurumu(y)).toBe("kismen");
+    expect(ana(y).map(r => r.tutar)).toEqual([16000, 4000]);
+    const z = odemeleriUygula([y], h, turMap)[0];
+    expect(ana(z).map(r => [r.tutar, r.odendi, r.odemeTarihi])).toEqual([[16000, true, "2026-10-04"], [4000, false, null]]);
+    expect(odemeDurumu(z)).toBe("kismen");
   });
   it("bulgu 3: taksit sayısı 1–60 arası tam sayı; aşımda ya da kesirde satır üretilmez, neden söylenir", () => {
     const mesaj = "Taksit sayısı 1 ile 60 arasında tam sayı olmalı.";

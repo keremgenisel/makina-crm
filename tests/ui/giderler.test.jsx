@@ -20,8 +20,10 @@ function Harness({ g0 = [], t0 = [], s0 = [], ayar = { giderAyarlari: { yururluk
   const [giderTanimlari, setGiderTanimlari] = useState(t0);
   const [tedarikciler, setTedarikciler] = useState(TED);
   const [standartGiderler, setStandartGiderler] = useState(s0);
-  onState?.({ giderler, giderTanimlari, tedarikciler, standartGiderler });
-  return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
+  // Spec 0024: ödeme bir hareket kaydıdır; App gibi hareket dizisi verilir.
+  const [hesapHareketleri, setHesapHareketleri] = useState([]);
+  onState?.({ giderler, giderTanimlari, tedarikciler, standartGiderler, hesapHareketleri });
+  return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
     giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
     calisanlar={CAL} standardModels={[{ model: "AK120_DSC" }]} customModels={[]} appSettings={ayar} serverPermissions={perms}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
@@ -60,7 +62,9 @@ describe("Giderler sekmesi: dönem raporu", () => {
     const kart = (e) => screen.getByText(e).parentElement;
     expect(within(kart("Ödenmemiş gider (KDV hariç)")).getByText("10.000 ₺")).toBeTruthy();
     expect(within(kart("Tedarikçilere açık borç (KDV dâhil)")).getByText("12.000 ₺")).toBeTruthy();
-    fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödendi olarak işaretle"));
+    // Spec 0024 R17 (onaylı istisna): anahtar ödeme penceresini açar, kalan tutarla kaydedilir.
+    fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödeme kaydet"));
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(within(kart("Ödenmemiş gider (KDV hariç)")).getByText("0 ₺")).toBeTruthy();
     expect(within(kart("Tedarikçilere açık borç (KDV dâhil)")).getByText("0 ₺")).toBeTruthy();
   });

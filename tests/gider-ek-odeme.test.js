@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   giderKalemDogrula, turHaritasi, kalemTutari, odenecekTutar, hesaplaGiderRaporu, tekrarlayanUret, kovaDagilimi, borcOzeti,
-  odemeHedefleri, taksitIsaretle, EK_ODEME_TURLERI, DAVRANIS, HEDEF,
+  odemeHedefleri, odemeleriUygula, EK_ODEME_TURLERI, DAVRANIS, HEDEF,
 } from "../src/lib/gider";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 import { hesaplaMakinaMaliyetleri } from "../src/lib/makinaMaliyeti";
@@ -60,11 +60,14 @@ describe("Spec 0023: ek ödeme satırları ve tek toplam (R1–R3, C5)", () => {
     expect(borcOzeti([{ ...k, odendi: true }], { turler: TUR }, "2026-09-28").satirlar).toEqual([]);
   });
   it("R12 (P6): taksitli personel kaleminde ek ödeme eklenince fark yalnız ödenmemiş taksitlere bölünür", () => {
+    // Spec 0024 (Q1): ödeme hareketle; satır bayrak saklamaz, durum hareketten türer.
     const k = kayit(per({ id: 6, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30" }));
-    const odenmis = taksitIsaretle(k, k.taksitler[0].id, true, "2026-09-30");
+    const h = [{ id: 1, tur: "odeme", giderId: 6, taksitId: k.taksitler[0].id, tutar: 25000, tarih: "2026-09-30" }];
+    const odenmis = odemeleriUygula([k], h, turMap)[0];
     const y = kayit({ ...odenmis, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30", ekOdemeler: [ek("ikramiye", "10.000")] });
-    expect(y.taksitler.map(r => [r.tutar, r.odendi])).toEqual([[25000, true], [35000, false]]);
-    expect(odemeHedefleri(y, DAVRANIS.PERSONEL).find(h => h.hedef === HEDEF.ANA).kalanK).toBe(3500000);
+    const z = odemeleriUygula([y], h, turMap)[0];
+    expect(z.taksitler.map(r => [r.tutar, r.odendi])).toEqual([[25000, true], [35000, false]]);
+    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.ANA).kalanK).toBe(3500000);
   });
 });
 

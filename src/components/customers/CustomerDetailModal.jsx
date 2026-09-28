@@ -20,7 +20,8 @@ import {
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
-import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
+import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi, Ipucu } from "../tasarim";
+import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
@@ -71,6 +72,8 @@ export const CustomerDetailModal = ({
   onGoYedekParca = null,
   // Spec 0002 (R15, R26): maliyet ve kâr kutusu yalnız gider yetkisiyle; hesap App'te bir kez yapılır.
   giderYetki = false, makinaMaliyet = null, rates = null,
+  // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
+  kasaHesaplari = [], kasaYetki = false,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -547,7 +550,7 @@ export const CustomerDetailModal = ({
   const openEditPayment = (p) => {
     setPaymentForm({
       id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "",
-      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi,
+      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi, hesapId: p.hesapId ?? "",
     });
   };
   const syncKalanBorc = (customerId, newPayments) => {
@@ -565,6 +568,8 @@ export const CustomerDetailModal = ({
         currency: paymentForm.currency || "TRY", not: paymentForm.not || "", yontem,
         vadeTarihi: yontem === "Çek" ? (paymentForm.vadeTarihi || "") : undefined,
         tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
+        // Hesap alanı yalnız kasa yetkisiyle çizilir; yetkisiz düzenleme mevcut hesabı korur.
+        ...(kasaYetki ? { hesapId: paymentForm.hesapId === "" || paymentForm.hesapId == null ? null : paymentForm.hesapId } : {}),
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
       logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(payments.find(x => x.id === paymentForm.id)) } });
@@ -572,7 +577,8 @@ export const CustomerDetailModal = ({
     } else {
       const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
       if (satirlar.length === 0) return;
-      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
+      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
+        ...(kasaYetki && paymentForm.hesapId !== "" && paymentForm.hesapId != null ? { hesapId: paymentForm.hesapId } : {}) };
       bumpId(customers, services, partSales, payments);
       // Kredi kartı ödemesi: girilen tutar KDV hariç mal → karta KDV + komisyon eklenir, borçtan KDV dahil düşer.
       const odemeKdvOran = calcKDV(detailView?.faturali, 100, ortak.tarih, kdvRates); // faturalı yurtiçi → oran, değilse 0
@@ -1290,6 +1296,22 @@ export const CustomerDetailModal = ({
                 krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()} />
             </Field>
           )}
+          {kasaYetki && (() => {
+            // C5 (1), AC-29: yalnız tahsilatın para biriminde ve açık hesaplar; düzenlemede kapanmış mevcut hesap görünür kalır.
+            const pb = paymentForm.currency || "TRY";
+            const uygun = secilebilirHesaplar(kasaHesaplari, pb);
+            const mevcut = paymentForm.hesapId !== "" && paymentForm.hesapId != null ? kasaHesaplari.find(h => String(h.id) === String(paymentForm.hesapId)) : null;
+            const secenekler = mevcut && !uygun.includes(mevcut) ? [...uygun, mevcut] : uygun;
+            return (
+              <Field label="Hesap">
+                <Select aria-label="Tahsilat hesabı" value={paymentForm.hesapId ?? ""} onChange={e => setPaymentForm(p => ({ ...p, hesapId: e.target.value === "" ? "" : secenekler.find(h => String(h.id) === e.target.value)?.id ?? "" }))}>
+                  <option value="">Hesap belirtilmedi</option>
+                  {secenekler.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur}){h.kapali ? " · kapalı" : ""}</option>)}
+                </Select>
+                <Ipucu>{uygun.length ? "Tahsilat seçilen hesabın bakiyesine girer; seçilmezse hiçbir bakiyeye girmez." : `${pb} para biriminde açık hesap yok; tahsilat hiçbir bakiyeye girmez.`}</Ipucu>
+              </Field>
+            );
+          })()}
           <Field label="Not (isteğe bağlı)">
             <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi..." />
           </Field>

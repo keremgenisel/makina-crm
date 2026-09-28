@@ -233,9 +233,10 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     const yetki = canDo("gider_odeme");
     const hedefRozeti = (h) => {
       const ad = h.hedef === HEDEF.STOPAJ ? "Vergi dairesi" : "Kiraya veren";
-      const r = <Rozet renk={h.odendi ? "yesil" : "kirmizi"}>{ad}: {h.odendi ? "Ödendi" : "Ödenmedi"}</Rozet>;
+      const kismen = !h.odendi && h.kalanK < h.toplamK;
+      const r = <Rozet renk={h.odendi ? "yesil" : kismen ? "turuncu" : "kirmizi"}>{ad}: {h.odendi ? "Ödendi" : kismen ? `Kısmen · kalan ${tl2(h.kalanK / 100)}` : "Ödenmedi"}</Rozet>;
       return yetki && onHedefDegistir
-        ? <button key={h.hedef} type="button" onClick={() => onHedefDegistir(k, h.hedef)} title={h.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{r}</button>
+        ? <button key={h.hedef} type="button" onClick={() => onHedefDegistir(k, h.hedef)} title={h.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{r}</button>
         : <span key={h.hedef}>{r}</span>;
     };
     const acikAna = hedefler.find(h => h.hedef === HEDEF.ANA && !h.odendi);
@@ -245,6 +246,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           ? <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>{hedefler.map(hedefRozeti)}</div>
           : <Rozet renk={durum === "odendi" ? "yesil" : durum === "kismen" ? "turuncu" : "kirmizi"}>
             {durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"} {k.taksitler.filter(r => r.odendi).length}/{k.taksitler.length}</Rozet>}
+        {!tekSatirliKira && durum === "kismen" && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Kalan {tl2(hedefler.reduce((a, h) => a + h.kalanK, 0) / 100)}</div>}
         <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>
           {k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi && !k.odendi ? ` · ${acikAna?.toplamAdet > 1 ? "sonraki taksit" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}
         </div>
@@ -253,15 +255,26 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
       </div>
     );
   };
-  const odemeHucre = (k) => satirliMi(k) ? planliHucre(k) : (
-    <div>
-      {canDo("gider_odeme")
-        ? <button type="button" onClick={() => onOdendi(k)} title={k.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{k.odendi ? <Rozet renk="yesil">Ödendi{k.odemeTarihi ? ` ${fmtTR(k.odemeTarihi).slice(0, 5)}` : ""}</Rozet> : <Rozet renk="kirmizi">Ödenmedi</Rozet>}</button>
-        : (k.odendi ? <Rozet renk="yesil">Ödendi</Rozet> : <Rozet renk="kirmizi">Ödenmedi</Rozet>)}
-      <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi ? ` · ${k.odemeYontemi === "Çek" ? "çek vade" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}</div>
-      {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
-    </div>
-  );
+  // Spec 0024 R3/AC-4: taksitsiz kalemde durum hareketlerden gelir; kısmen ödenmişte ödenen ve kalan yazar.
+  // Rozet ödeme penceresini açar (ödeme kaydet, kayıtlı ödemeleri gör/sil).
+  const odemeHucre = (k) => {
+    if (satirliMi(k)) return planliHucre(k);
+    const hedefler = odemeHedefleri(k, dav(k));
+    const toplamK = hedefler.reduce((a, h) => a + h.toplamK, 0), kalanK = hedefler.reduce((a, h) => a + h.kalanK, 0);
+    const kismen = !k.odendi && kalanK < toplamK;
+    const rozet = k.odendi ? <Rozet renk="yesil">Ödendi{k.odemeTarihi ? ` ${fmtTR(k.odemeTarihi).slice(0, 5)}` : ""}</Rozet>
+      : kismen ? <Rozet renk="turuncu">Kısmen ödendi</Rozet> : <Rozet renk="kirmizi">Ödenmedi</Rozet>;
+    return (
+      <div>
+        {canDo("gider_odeme") && onOdendi
+          ? <button type="button" onClick={() => onOdendi(k)} title={k.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{rozet}</button>
+          : rozet}
+        {kismen && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Ödenen {tl2((toplamK - kalanK) / 100)} · kalan {tl2(kalanK / 100)}</div>}
+        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi ? ` · ${k.odemeYontemi === "Çek" ? "çek vade" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}</div>
+        {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
+      </div>
+    );
+  };
   const islem = (k) => (
     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
       {canDo("gider_edit") && <Btn small variant="ghost" onClick={() => onDuzenle(k)} title="Düzenle"><Icon name="edit" size={12} /></Btn>}

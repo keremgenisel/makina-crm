@@ -29,6 +29,12 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0024: kasa göçü tek sefer, tekrarsız, yedekli; yalnız yerel veritabanında (AC-21, AC-22)", () => {
+    const r = runElectron("kasa-goc.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

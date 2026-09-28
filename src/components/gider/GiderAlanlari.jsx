@@ -161,6 +161,9 @@ export const hedefAdi = (hedef, davranis) => (hedef === HEDEF.ANA && davranis ==
 
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
 // satırın durum hücresi düğmedir (gider_odeme).
+// Spec 0024 R18: taksit kısmen ödenebilir; _odenenK okuma anında hareketlerden gelir (odemeleriUygula).
+const kismenMi = (r) => !r.odendi && (r._odenenK || 0) > 0;
+const satirKalani = (r) => Math.max(0, Math.round((Number(r.tutar) || 0) * 100) - (r._odenenK || 0)) / 100;
 export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) => {
   const hedefler = [HEDEF.ANA, HEDEF.STOPAJ].filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
   const izgara = { display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) minmax(0, 1fr) 130px", gap: 10, alignItems: "center" };
@@ -181,10 +184,10 @@ export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) 
                 <span>{r.vade ? fmtTR(r.vade) : <span style={{ color: "var(--n500, #64748b)" }}>Vade girilmemiş</span>}</span>
                 <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(r.tutar)}</b>
                 <span>{onIsaretle
-                  ? <button type="button" onClick={() => onIsaretle(r)} title={r.odendi ? "Ödenmedi olarak işaretle" : "Ödendi olarak işaretle"}
-                    style={{ border: "1px solid var(--n200, #e2e8f0)", background: r.odendi ? "var(--grnBg, #f0fdf4)" : "var(--surface, #ffffff)", color: r.odendi ? "var(--grn700, #15803d)" : "var(--n700, #334155)", borderRadius: 7, padding: "3px 9px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    {r.odendi ? `Ödendi${r.odemeTarihi ? ` ${fmtTR(r.odemeTarihi).slice(0, 5)}` : ""}` : "Ödendi işaretle"}</button>
-                  : <span style={{ fontSize: 12, fontWeight: 700, color: r.odendi ? "var(--grn700, #15803d)" : "var(--n600, #475569)" }}>{r.odendi ? "Ödendi" : "Ödenmedi"}</span>}</span>
+                  ? <button type="button" onClick={() => onIsaretle(r)} title={r.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"}
+                    style={{ border: "1px solid var(--n200, #e2e8f0)", background: r.odendi ? "var(--grnBg, #f0fdf4)" : "var(--surface, #ffffff)", color: r.odendi ? "var(--grn700, #15803d)" : kismenMi(r) ? "var(--orTx, #c2410c)" : "var(--n700, #334155)", borderRadius: 7, padding: "3px 9px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {r.odendi ? `Ödendi${r.odemeTarihi ? ` ${fmtTR(r.odemeTarihi).slice(0, 5)}` : ""}` : kismenMi(r) ? `Kısmen · kalan ${tl2(satirKalani(r))}` : "Ödeme gir"}</button>
+                  : <span style={{ fontSize: 12, fontWeight: 700, color: r.odendi ? "var(--grn700, #15803d)" : "var(--n600, #475569)" }}>{r.odendi ? "Ödendi" : kismenMi(r) ? `Kısmen · kalan ${tl2(satirKalani(r))}` : "Ödenmedi"}</span>}</span>
               </div>
             ))}
           </div>

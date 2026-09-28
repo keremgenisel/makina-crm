@@ -17,6 +17,8 @@ const BLOB_SECTIONS = [
   "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler",
   // Üretim partisi (spec 0022)
   "uretimPartileri",
+  // Kasa ve ödeme hareketleri (spec 0024 A)
+  "kasaHesaplari", "hesapHareketleri",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -53,6 +55,9 @@ const SECTION_GROUP = {
   tedarikciler: "giderActions",
   standartGiderler: "giderActions",
   uretimPartileri: "giderActions",
+  // Spec 0024 C6/Q7: hesaplar ve hareketler gider izin boyutunda; kendi eylem kimlikleri (kasa_hesap, gider_odeme, virman).
+  kasaHesaplari: "giderActions",
+  hesapHareketleri: "giderActions",
 };
 
 // İzin nesnesindeki tüm grup anahtarları — kısıtlı kullanıcı tespiti için.
@@ -61,7 +66,7 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 // Gider bölümleri (spec 0001 C6 kural 3 + plan K6): bu uygulamanın "tabs tanımsız = serbest" kuralının
 // TEK istisnası. Sekme listesi tanımsız (veya izin gövdesi hiç olmayan) user rolü gider bölümlerini
 // YAZAMAZ; arayüzde de gider sekmesi yalnız açıkça verildiğinde görünür.
-const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri"]);
+const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri"]);
 
 // ── Sekme (tabs) düzeyi yazma kısıtı ────────────────────────────────────────────
 // REGRESYON: arayüzün "Kullanıcı Ekle" formu izin gövdesine YALNIZ {tabs:[...]} yazıyordu.
@@ -121,6 +126,9 @@ const BOLUM_SEKMELERI = {
   giderTurleri:     ["settings"],
   tedarikciler:     ["gider"],
   standartGiderler: ["gider"],
+  // Spec 0024 Q7: Kasa ekranı ve ödeme penceresi yalnız gider sekmesiyle görünür.
+  kasaHesaplari:    ["gider"],
+  hesapHareketleri: ["gider"],
   // Spec 0022 C5 (triyaj bulgu 3): parti tanımları yalnız Giderler sekmesinde yazılır. Makinayı partiye bağlamak
   // `stock` bölümündeki partiId alanıdır, bu bölüme dokunmaz; bu yüzden "stock" burada YOKTUR (eklenseydi etkisiz
   // kalırdı: gider bölümü olduğu için gider sekmesi olmayan kullanıcıyı K6 aynası zaten reddeder).
@@ -367,6 +375,9 @@ const EYLEM_IDLERI = {
   standartGiderler: { ekle: "gider_tanim", sil: "gider_tanim" },
   uretimPartileri:  { ekle: "gider_tanim", sil: "gider_tanim" },
   tedarikciler:     { ekle: "tedarikci_add", sil: "tedarikci_delete" },
+  // Spec 0024 C6/Q7: ödemenin izni hareket bölümünün ekleme ve silmesindedir (kalemin odendi alanında değil).
+  kasaHesaplari:    { ekle: "kasa_hesap", sil: "kasa_hesap" },
+  hesapHareketleri: { ekle: hareketIzni, sil: hareketIzni },
   teklifler: {
     ekle: (r) => (r?.type === "proforma" ? "evrak_proforma_add" : "evrak_teklif_add"),
     sil:  (r) => (r?.type === "proforma" ? "evrak_proforma_delete" : "evrak_teklif_delete"),
@@ -383,9 +394,14 @@ const ALAN_IZINLERI = {
   services:           [{ alan: "durum",      group: "customerActions", id: "cust_service_edit" }],
   partSales:          [{ alan: "kargoDurum", group: "customerActions", id: "cust_kalip_edit" }],
   yedekParcaSatislar: [{ alan: "kargoDurum", group: "stockActions",    id: "yedek_parca_edit" }],
-  // Gider ödeme durumu kendi iznine bağlı (listedeki ödendi anahtarı ve formdaki ödeme alanı).
-  giderler:           [{ alan: "odendi",     group: "giderActions",    id: "gider_odeme" }],
 };
+// Spec 0024 R3/Q1: giderler.odendi ve 0021 taksit satırı bayrakları artık doğruluk kaynağı değildir (durum hareketten
+// okunur, kayıt bu alanları temizler); eski alan denetimleri kaldırıldı, yoksa göç öncesi ödenmiş bir kalemi düzenleyen
+// gider_edit kullanıcısı bayrak temizlendiği için 403 alırdı.
+
+// Spec 0024: bir hareketin izni türüne bağlı. Var olan hareketi düzenlemek de (tutar, hesap, hedef) aynı izni ister.
+function hareketIzni(r) { return r?.tur === "virman" ? "virman" : "gider_odeme"; }
+const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni };
 
 // Bir eylem id'si kullanıcının grup dizisinde izinli mi? Dizi değilse (tanımsız) tam erişim.
 function eylemIzinli(perms, group, actionId) {
@@ -546,42 +562,21 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       }
     }
   }
-  // Gider ödeme satırları (spec 0021 C5, plan T3): denetim SATIR bazında. Mevcut kalemde bir satırın ödeme durumu
-  // veya ödeme tarihi değişirse ya da kaleme ödenmiş yeni satır eklenirse `gider_odeme` istenir. Planın ve tutarın
-  // değişmesi (R10 yeniden bölme) yalnız ödenmemiş satırları etkiler ve bölüm düzeyinde (`gider_edit`) kalır;
-  // diziyi bütün olarak izlemek tutar düzenleyen kullanıcıyı da reddederdi.
-  // Yeni kalem (triyaj bulgu 4): ödenmiş doğan kalem ya da ödenmiş satır da ödeme kaydıdır; ekleme izni yetmez.
-  if (Array.isArray(yeni.giderler) && !eylemIzinli(perms, "giderActions", "gider_odeme")) {
-    const eskiById = new Map((Array.isArray(eski.giderler) ? eski.giderler : []).map(r => [r.id, r]));
-    for (const r of yeni.giderler) {
+  // Spec 0024 C6: hesap ve hareket kaydını düzenlemek ekleme/silmeyle aynı izni ister (bölüm düzeyinde bırakılsaydı
+  // gider_edit kullanıcısı bir ödemenin tutarını ya da hesabını değiştirebilirdi).
+  for (const [section, idOf] of Object.entries(KAYIT_DUZENLE_IZINLERI)) {
+    const yeniArr = yeni[section];
+    if (!Array.isArray(yeniArr)) continue;
+    const eskiById = new Map((Array.isArray(eski[section]) ? eski[section] : []).map(r => [r.id, r]));
+    for (const r of yeniArr) {
       const e = eskiById.get(r.id);
-      const degisti = e ? taksitOdemesiDegistiMi(e.taksitler, r.taksitler, e)
-        : !r.deletedAt && (!!r.odendi || (Array.isArray(r.taksitler) && r.taksitler.some(t => t.odendi)));
-      if (degisti) return { ok: false, reddedilenBolum: "giderler", islem: e ? "duzenle" : "ekle", gerekli: "gider_odeme" };
+      if (!e || stableStringify(e) === stableStringify(r)) continue;
+      const id = idOf(e) === idOf(r) ? idOf(r) : null;
+      if (id ? !eylemIzinli(perms, "giderActions", id) : !(eylemIzinli(perms, "giderActions", idOf(e)) && eylemIzinli(perms, "giderActions", idOf(r))))
+        return { ok: false, reddedilenBolum: section, islem: "duzenle", gerekli: id || idOf(r) };
     }
   }
   return { ok: true };
-}
-
-// Satırlar kalıcı kimlikle eşlenir (spec 0021 C8). Ödeme alanları: odendi (boolean) ve odemeTarihi.
-// Satırsız eski kalem (R13) ilk düzenlemede satıra çevrilir; satırlar kalemin eski durumuyla (odendi, odemeTarihi)
-// aynı doğuyorsa bu bir ödeme değişikliği değildir (triyaj bulgu 1).
-function taksitOdemesiDegistiMi(eskiSatirlar, yeniSatirlar, eskiKalem = null) {
-  const eskiVar = Array.isArray(eskiSatirlar) && eskiSatirlar.length > 0;
-  if (!eskiVar && eskiKalem) {
-    const odendi = !!eskiKalem.odendi, tarih = odendi ? (eskiKalem.odemeTarihi || null) : null;
-    return (Array.isArray(yeniSatirlar) ? yeniSatirlar : []).some(t => !!t.odendi !== odendi || (t.odemeTarihi || null) !== tarih);
-  }
-  const eskiById = new Map((Array.isArray(eskiSatirlar) ? eskiSatirlar : []).map(t => [String(t.id), t]));
-  for (const t of (Array.isArray(yeniSatirlar) ? yeniSatirlar : [])) {
-    const e = eskiById.get(String(t.id));
-    if (!e) { if (t.odendi) return true; continue; }
-    if (!!e.odendi !== !!t.odendi || (e.odemeTarihi || null) !== (t.odemeTarihi || null)) return true;
-  }
-  // Ödenmiş bir satırın silinmesi de ödeme kaydının değişmesidir.
-  const yeniIdler = new Set((Array.isArray(yeniSatirlar) ? yeniSatirlar : []).map(t => String(t.id)));
-  for (const [id, e] of eskiById) if (e.odendi && !yeniIdler.has(id)) return true;
-  return false;
 }
 
 // Fiziksel dosya uçları (/api/files upload & delete) yetkisi. Künye zaten /api/data'da
@@ -636,5 +631,5 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 
 module.exports = {
   BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
-  taksitOdemesiDegistiMi, stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

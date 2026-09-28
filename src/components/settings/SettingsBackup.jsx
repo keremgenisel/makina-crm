@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
-import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, disAppSettingsSuz } from "../../lib/utils";
+import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, uid, disAppSettingsSuz } from "../../lib/utils";
+import { kasaGocuHareketleri } from "../../../electron/kasaGocuSaf.mjs";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { KartBolum } from "../tasarim";
 
@@ -12,6 +13,8 @@ export const SettingsBackup = ({
   // Gider kaydı (spec 0001): ham diziler (çöptekiler dahil); paket yalnız gider yetkisiyle görünür (R11).
   giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null, giderTurleri = [], setGiderTurleri = null,
   tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, giderYetki = true,
+  // Spec 0024: kasa hesapları ve hesap hareketleri Giderler paketiyle taşınır (ödeme hareketi gider durumunun kaynağıdır).
+  kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null,
   // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
   // (yalnız izin) beslenir. Perde inikken gider paketi listede görünmez ama tam geri yüklemede yüklenir (K3).
   giderVeriYetki = giderYetki,
@@ -49,7 +52,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -134,7 +137,7 @@ export const SettingsBackup = ({
     { id: "dosyalar", ad: "Dosyalar", aciklama: "müşteri, makina, servis ve bayi belgeleri (dosya arşivi)" },
     { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
     { id: "not", ad: "Notlar", aciklama: "" },
-    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, standart genel giderler" }] : []),
+    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, standart genel giderler, kasa hesapları ve ödemeler" }] : []),
     { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
   ];
   const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
@@ -202,6 +205,8 @@ export const SettingsBackup = ({
     if (sec("gider") && Array.isArray(restoreData?.giderler) && setGiderler) setGiderler(restoreData.giderler);
     if (sec("gider") && Array.isArray(restoreData?.standartGiderler) && setStandartGiderler) setStandartGiderler(restoreData.standartGiderler);
     if (sec("gider") && Array.isArray(restoreData?.uretimPartileri) && setUretimPartileri) setUretimPartileri(restoreData.uretimPartileri);
+    if (sec("gider") && Array.isArray(restoreData?.kasaHesaplari) && setKasaHesaplari) setKasaHesaplari(restoreData.kasaHesaplari);
+    if (sec("gider") && Array.isArray(restoreData?.hesapHareketleri) && setHesapHareketleri) setHesapHareketleri(restoreData.hesapHareketleri);
     if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.
@@ -225,9 +230,16 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
+    // Spec 0024 triyaj bulgu 1: 0024 öncesi yedekte hareket bölümü yoktur ve ödeme bilgisi kalemdeki işarettedir. Veritabanı
+    // göçüyle aynı saf çekirdek (electron/kasaGocuSaf.mjs) yedeğin kalemlerinden ödeme hareketlerini üretir; yoksa geri yüklenen
+    // bütün ödenmiş kalemler ödenmemiş görünürdü. Eski ödeme hareketleri (başka kalemlere aitti) düşer, virmanlar kalır.
+    if (sec("gider") && Array.isArray(restoreData?.giderler) && !Array.isArray(restoreData?.hesapHareketleri) && setHesapHareketleri) {
+      const goc = kasaGocuHareketleri(restoreData.giderler).map(h => ({ ...h, id: uid() }));
+      setHesapHareketleri(p => [...(Array.isArray(p) ? p : []).filter(h => h.tur !== "odeme"), ...goc]);
+    }
 
     setRestoreData(null);
     const smtpNote = smtpRestored ? " E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli." : "";

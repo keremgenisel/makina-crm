@@ -66,7 +66,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   serverPermissions = null,
   // Gider kaydı (spec 0001)
   giderYetki = false, giderVeriYetki = giderYetki, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
-  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null,
+  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
@@ -200,6 +200,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           giderYetki={giderYetki} giderVeriYetki={giderVeriYetki} giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
           giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
           standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
+          kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}

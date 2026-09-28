@@ -122,6 +122,12 @@ dbmod.writeBlobToDb({
       ekOdemeler: [{ tur: "fazlaCalisma", aciklama: "Temmuz yoğunluğu", resmiTutar: 4000, eldenTutar: 1000 }, { tur: "prim", aciklama: "Teslim", resmiTutar: null, eldenTutar: 2500 }, { tur: "prim", aciklama: "", resmiTutar: 700, eldenTutar: null }] },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
+  // Spec 0024 A: kasa hesapları ve hareketler.
+  kasaHesaplari: [{ id: 97, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 100000.5, acilisTarihi: "2026-01-01", kapali: false },
+    { id: 98, ad: "Kart", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -2000, acilisTarihi: null, kapali: true }],
+  hesapHareketleri: [{ id: 971, tur: "odeme", tarih: "2026-07-05", tutar: 1234.56, yontem: "Havale", hesapId: 97, karsiHesapId: null, giderId: 81, taksitId: null, tamKapatir: false, kaynak: null, gocKaynak: null, aciklama: "kısmi" },
+    { id: 972, tur: "virman", tarih: "2026-07-06", tutar: 500, hesapId: 97, karsiHesapId: 98, aciklama: "" },
+    { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" }],
   // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
@@ -134,7 +140,7 @@ dbmod.writeBlobToDb({
     taksitSayisi: 3, kartKomisyonu: { taksit: 3, oran: 7.47, toplamKesinti: 7.97, netTutar: 92.03, blokajGun: 0, hesabaGecis: "2026-07-20", yansitildi: false }, tahsilatTarihi: "2026-11-02" }],
   payments: [
     { id: 900, customerId: 500, tarih: "2026-07-22", tutar: 132690.52, currency: "TRY", not: "Kart", yontem: "Kredi Kartı",
-      taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 2880, netTutar: 129810, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: true, bazTarih: "2026-07-22" } },
+      taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 2880, netTutar: 129810, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: true, bazTarih: "2026-07-22" }, hesapId: 97 },
   ],
   dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
@@ -212,6 +218,13 @@ check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSO
   return p.length === 2 && k?.ad === "2026-1" && k.baslangicAy === "2026-01" && k.bitisAy === "2026-03" && k.aciklama === "70 makina"
     && k.kapanmaZamani === "2026-04-01T10:00:00" && k.kapanisOrtaklari?.["2026-02"] === 150050 && a?.bitisAy == null && a.kapanisOrtaklari == null;
 })());
+check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boolean) tam turu", (() => {
+  const h = blob.kasaHesaplari || [], m = blob.hesapHareketleri || [];
+  const z = h.find(x => x.id === 97), k = h.find(x => x.id === 98), o = m.find(x => x.id === 971), v = m.find(x => x.id === 972), g = m.find(x => x.id === 973);
+  return h.length === 2 && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000
+    && o?.tutar === 1234.56 && o.hesapId === 97 && o.giderId === 81 && o.tamKapatir === false && o.aciklama === "kısmi"
+    && v?.tur === "virman" && v.karsiHesapId === 98 && g?.tamKapatir === true && g.tutar == null && g.gocKaynak === "taksit:82:9002";
+})());
 check("spec 0022: stock.partiId ve customers.partiId tam turu", (blob.stock || []).find(x => x.id === 5)?.partiId === 95 && (blob.customers || []).find(x => x.id === 500)?.partiId === 95);
 check("customer.satisKuru + uretimTarihi tam turu (spec 0002)", (() => {
   const c = (blob.customers || []).find(x => x.id === 500);
@@ -260,6 +273,7 @@ check("servis ödeme yöntemi + kredi kartı taksit/komisyon snapshot roundtrip"
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
 check("partSale kredi kartı taksit + komisyon snapshot (JSON) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.taksitSayisi === 3 && p?.kartKomisyonu?.oran === 7.47 && p?.kartKomisyonu?.toplamKesinti === 7.97 && p?.kartKomisyonu?.yansitildi === false; })());
+check("spec 0024 R6: tahsilatın hesapId'si tam turu", (blob.payments || []).find(x => x.id === 900)?.hesapId === 97);
 check("payment kredi kartı taksit + komisyon snapshot (blokaj, yansitildi, bazTarih) roundtrip", (() => { const p = (blob.payments || []).find(x => x.id === 900); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31" && p?.kartKomisyonu?.yansitildi === true && p?.kartKomisyonu?.bazTarih === "2026-07-22"; })());
 check("yedek parça satışı kredi kartı taksit + komisyon snapshot roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 60.54; })());
 check("appSettings krediKartiKomisyonlari (JSON) roundtrip", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && Array.isArray(a?.satirlar) && a.satirlar.length === 2 && a.satirlar[1]?.taksit === 3 && a.satirlar[1]?.oran === 7.47; })());

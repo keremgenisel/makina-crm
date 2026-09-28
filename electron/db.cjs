@@ -264,6 +264,18 @@ CREATE TABLE IF NOT EXISTS uretim_partileri (
   id INTEGER PRIMARY KEY,
   ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT
 );
+-- Kasa (spec 0024 A): hesaplar ve hesap hareketleri. Bakiye saklanmaz, hareketlerden türetilir (C1).
+-- Hareket türleri: "odeme" (gider ödemesi: giderId, taksitId?; tamKapatir = göçten gelen tam kapatma) ve "virman".
+-- gocKaynak: göç izinin anahtarı ("gider:ID" / "taksit:GID:TID"); göç tekrarında ikinci kayıt üretilmez (AC-22).
+CREATE TABLE IF NOT EXISTS kasa_hesaplari (
+  id INTEGER PRIMARY KEY,
+  ad TEXT, tur TEXT, paraBirimi TEXT, acilisBakiyesi REAL, acilisTarihi TEXT, kapali INTEGER
+);
+CREATE TABLE IF NOT EXISTS hesap_hareketleri (
+  id INTEGER PRIMARY KEY,
+  tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
+  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT
+);
 CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
   ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT
@@ -277,7 +289,7 @@ CREATE TABLE IF NOT EXISTS payments (
   id INTEGER PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
   tarih TEXT, tutar REAL, currency TEXT, note TEXT,
-  yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT, deletedAt TEXT
+  yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT, deletedAt TEXT, hesapId INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id);
 
@@ -385,6 +397,8 @@ const PAYMENTS_NEW_COLUMNS = [["yontem", "TEXT"], ["vadeTarihi", "TEXT"], ["tahs
 // (JSON snapshot: kesinti kırılımı + blokaj + hesaba geçiş tarihi). payments/part_sales/yedek_parca_satis
 // üçünde de aynı iki alan (bkz. src/lib/krediKarti.js). JSON olduğu için okumada parseJsonCol gerekir.
 const KART_KOMISYON_COLUMNS = [["taksitSayisi", "INTEGER"], ["kartKomisyonu", "TEXT"]];
+// Spec 0024 R6: tahsilatın girdiği kasa/banka hesabı.
+const PAYMENTS_HESAP_COLUMN = [["hesapId", "INTEGER"]];
 // Tahsilat tarihi: "ödendi" işaretlendiği gün (nakit/havale), çek tahsil günü veya KK hesaba geçiş günü.
 // Rapordaki "giren para" bu tarihe göre aya gruplanır (yoksa satış/servis tarihine düşer). Düz TEXT →
 // ...rest ile otomatik okunur; yalnız CREATE + ensureColumns + INSERT gerekir. services/part_sales/yedek_parca_satis.
@@ -689,9 +703,9 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.payments) && !skip.has("payments")) {
     conn.prepare(`DELETE FROM payments`).run();
-    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO payments (id, customer_id, tarih, tutar, currency, note, yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, deletedAt, hesapId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const p of data.payments) {
-      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null, p.taksitSayisi ?? null, p.kartKomisyonu ? json(p.kartKomisyonu) : null, p.deletedAt ?? null);
+      stmt.run(p.id, p.customerId ?? null, p.tarih ?? null, p.tutar ?? null, p.currency ?? null, p.not ?? null, p.yontem ?? null, p.vadeTarihi ?? null, p.yontem === "Çek" ? toInt(p.tahsilEdildi) : null, p.taksitSayisi ?? null, p.kartKomisyonu ? json(p.kartKomisyonu) : null, p.deletedAt ?? null, p.hesapId ?? null);
     }
   }
 
@@ -833,6 +847,18 @@ function populateAll(conn, data, skip = new Set()) {
       stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi));
     }
   }
+  if (Array.isArray(data.kasaHesaplari) && !skip.has("kasaHesaplari")) {
+    conn.prepare(`DELETE FROM kasa_hesaplari`).run();
+    const stmt = conn.prepare(`INSERT INTO kasa_hesaplari (id, ad, tur, paraBirimi, acilisBakiyesi, acilisTarihi, kapali) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    for (const h of data.kasaHesaplari) stmt.run(h.id, h.ad ?? null, h.tur ?? null, h.paraBirimi ?? null, h.acilisBakiyesi ?? null, h.acilisTarihi ?? null, toInt(h.kapali));
+  }
+  if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
+    conn.prepare(`DELETE FROM hesap_hareketleri`).run();
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
+      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null);
+  }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
     const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari) VALUES (?, ?, ?, ?, ?, ?, ?)`);
@@ -894,7 +920,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -947,6 +973,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "part_sales", KART_KOMISYON_COLUMNS);
   ensureColumns(conn, "part_sales", TAHSILAT_TARIHI_COLUMN);
   ensureColumns(conn, "payments", KART_KOMISYON_COLUMNS);
+  ensureColumns(conn, "payments", PAYMENTS_HESAP_COLUMN);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", KART_KOMISYON_COLUMNS);
@@ -990,6 +1017,42 @@ function applyColumnMigrations(conn) {
   try { conn.prepare(`UPDATE part_stock SET miktar = 0 WHERE miktar < 0`).run(); } catch { /* tablo yoksa yok say */ }
 }
 
+// ── Kasa göçü (spec 0024 R4, AC-21, AC-22; plan Q3, Q4) ──
+// Eskiden "ödendi" işaretli gider kalemleri ve 0021 taksit satırları, onları kapatan ödeme hareketine dönüşür.
+// Yalnız YEREL veritabanı açılışında çalışır (bu fonksiyon HTTP/istemci yolunda yoktur; istemci verisi sunucudan
+// gelir). Tekrarsız: meta bayrağı + hareket başına göç izi (gocKaynak). Tutar: taksitsiz kalemde motorun (KDV,
+// stopaj, ek ödeme) hesabı burada yapılamadığı için hareket tutarsızdır ve hedefini tam kapatır (tamKapatir);
+// taksit satırında satırın tutarı yazılır. Göç hareketi hesapsızdır (R8). Göçten hemen önce veritabanının
+// zaman damgalı kopyası alınır (yalnız taşınacak kayıt varsa).
+// require(esm): Electron'un Node sürümü ES modülünü eşzamanlı yükler; aynı dosyayı arayüz de içe aktarır.
+const { kasaGocuHareketleri } = require("./kasaGocuSaf.mjs");
+const KASA_GOCU_BAYRAGI = "kasaGocu0024";
+const gocKimligi = () => 1e15 + crypto.randomInt(0, 2 ** 47); // utils.uid aralığında (1e15 üstü)
+function kasaGocu(conn, dbPath = null) {
+  if (conn.prepare(`SELECT value FROM meta WHERE key = ?`).get(KASA_GOCU_BAYRAGI)) return { atlandi: true, eklenen: 0 };
+  const izler = new Set(conn.prepare(`SELECT gocKaynak FROM hesap_hareketleri WHERE gocKaynak IS NOT NULL`).all().map(r => r.gocKaynak));
+  // Kalemleri yedek biçimine çevirip saf çekirdeğe verir (geri yükleme yolu da aynı çekirdeği kullanır, triyaj bulgu 1).
+  const taksitler = new Map();
+  for (const t of conn.prepare(`SELECT gider_id, taksit_id, tutar, odendi, odemeTarihi FROM gider_taksitleri`).all()) {
+    if (!taksitler.has(t.gider_id)) taksitler.set(t.gider_id, []);
+    taksitler.get(t.gider_id).push({ id: t.taksit_id, tutar: t.tutar, odendi: !!t.odendi, odemeTarihi: t.odemeTarihi });
+  }
+  const giderler = conn.prepare(`SELECT id, odendi, odemeTarihi, odemeYontemi, deletedAt FROM giderler`).all()
+    .map(k => ({ ...k, odendi: !!k.odendi, taksitler: taksitler.get(k.id) || [] }));
+  const yeni = kasaGocuHareketleri(giderler, izler);
+  if (yeni.length && dbPath && fs.existsSync(dbPath)) {
+    try { conn.pragma("wal_checkpoint(FULL)"); } catch { /* WAL değilse yoksay */ }
+    fs.copyFileSync(dbPath, `${dbPath}.kasa-gocu-${new Date().toISOString().replace(/[:.]/g, "-")}.bak`);
+  }
+  const ins = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama)
+    VALUES (?, 'odeme', ?, ?, ?, NULL, NULL, ?, ?, ?, 'goc', ?, NULL)`);
+  conn.transaction(() => {
+    for (const y of yeni) ins.run(gocKimligi(), y.tarih ?? null, y.tutar ?? null, y.yontem ?? null, y.giderId, y.taksitId, y.tamKapatir ? 1 : 0, y.gocKaynak);
+    conn.prepare(`INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(KASA_GOCU_BAYRAGI, new Date().toISOString());
+  })();
+  return { atlandi: false, eklenen: yeni.length };
+}
+
 function migrateFromJsonIfNeeded() {
   if (!Database) return; // native modül yüklenemedi, eski JSON modunda kal
 
@@ -1003,6 +1066,7 @@ function migrateFromJsonIfNeeded() {
       // Sonradan eklenen yeni tabloları oluşturur (CREATE TABLE IF NOT EXISTS idempotent — var olanları bozmaz).
       db.exec(SCHEMA_SQL);
       applyColumnMigrations(db);
+      kasaGocu(db, dbPath);
       pruneAuditLog(db);
       pruneSecurityLog(db);
       active = true;
@@ -1028,6 +1092,7 @@ function migrateFromJsonIfNeeded() {
     conn.pragma("foreign_keys = ON");
     conn.exec(SCHEMA_SQL);
     applyColumnMigrations(conn);
+    kasaGocu(conn); // temiz kurulum: taşınacak kayıt yok, yalnız bayrak yazılır
     db = conn;
     active = true;
     return;
@@ -1065,6 +1130,7 @@ function migrateFromJsonIfNeeded() {
     conn.exec(SCHEMA_SQL);
     applyColumnMigrations(conn); // populateAll yeni sütunlara yazdığı için geçişten ÖNCE şart
     conn.transaction(() => populateAll(conn, parsed))();
+    kasaGocu(conn); // data.json yedeği zaten kalıyor (migrated backup)
     conn.close();
 
     fs.renameSync(tmpPath, dbPath);
@@ -1302,6 +1368,8 @@ function readBlobFromDb() {
   }));
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
+  const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, ...rest }) => ({ ...rest, kapali: toBool(kapali) }));
+  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir) }));
   const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
@@ -1324,7 +1392,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
-    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri,
   };
 }
 
@@ -1592,7 +1660,7 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 }
 
 module.exports = {
-  migrateFromJsonIfNeeded, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  migrateFromJsonIfNeeded, kasaGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
   getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,

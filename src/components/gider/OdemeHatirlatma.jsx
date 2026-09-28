@@ -39,7 +39,7 @@ const KalemSatiri = ({ o, bolum, odendiYetkisi, onOdendi, girinti = false }) => 
     <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(o.odenecek)}</b>
     <span><span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{o.vadeEtiketi}</span><br />{fmtTR(o.vade)}</span>
     <span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(o.gunFarki)}</span>
-    <span style={{ textAlign: "right" }}>{odendiYetkisi && <Btn small variant="ghost" onClick={() => onOdendi(o.kalem, o.hedef)} title={o.taksit ? "Bu taksiti ödendi olarak işaretle" : "Ödendi olarak işaretle"}><Icon name="check" size={12} /> Ödendi</Btn>}</span>
+    <span style={{ textAlign: "right" }}>{odendiYetkisi && <Btn small variant="ghost" onClick={() => onOdendi(o.kalem, o.hedef)} title={o.taksit ? "Bu taksit için ödeme kaydet" : "Ödeme kaydet"}><Icon name="check" size={12} /> Ödendi</Btn>}</span>
   </div>
 );
 

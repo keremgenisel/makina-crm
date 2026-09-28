@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from "vitest
 import {
   odemeHatirlatmalari, gunFarki, gunEkle, hatirlatmaEsikDogrula, hatirlatmaEsigi, vadeEtiketi, gunFarkiMetni,
 } from "../src/lib/odemeHatirlatma";
-import { vadesiGectiMi, odemeDurumuDegistir } from "../src/lib/gider";
+import { vadesiGectiMi, odemeleriUygula, turHaritasi } from "../src/lib/gider";
 import { yerelBugun, today } from "../src/lib/utils";
 
 const BUGUN = "2026-09-24";
@@ -158,12 +158,14 @@ describe("eşik ayarı (R5, AC-23)", () => {
 });
 
 describe("ödendi dönüşümü (R6, plan H8)", () => {
-  it("AC-6 (motor): ödendi işaretlenen kalem kapsamdan düşer, ödeme tarihi yazılır", () => {
+  // Spec 0024 triyaj bulgu 3: ödeme işaretle değil hareketle; silinince kalem kapsama geri döner.
+  it("AC-6 (motor): ödeme hareketi girilen kalem kapsamdan düşer, ödeme tarihi türetilir", () => {
     const g = [k(1), k(2)];
-    const sonra = g.map(x => (x.id === 1 ? odemeDurumuDegistir(x, BUGUN) : x));
+    const h = { id: 1, tur: "odeme", giderId: 1, taksitId: null, tutar: 12000, tarih: BUGUN };
+    const sonra = odemeleriUygula(g, [h], turHaritasi(TUR));
     expect(sonra[0]).toMatchObject({ odendi: true, odemeTarihi: BUGUN });
     expect(hesap(sonra).sayilar.yaklasan).toBe(1);
-    expect(odemeDurumuDegistir(sonra[0], BUGUN)).toMatchObject({ odendi: false, odemeTarihi: null });
+    expect(odemeleriUygula(g, [], turHaritasi(TUR))[0]).toMatchObject({ odendi: false, odemeTarihi: null });
   });
 });
 

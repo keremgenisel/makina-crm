@@ -16,13 +16,16 @@ const TED = [{ id: 11, ad: "Yıldız Gayrimenkul" }, { id: 12, ad: "Bölge Elekt
 const TAM = null;
 const ODEMESIZ = { role: "user", permissions: JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "gider_edit"] }) };
 
+// Spec 0024 (Q1): satır bayrağı doğruluk kaynağı değil; tohum veride ödenmiş işaretli satırlar hareket olarak verilir.
+const tohumHareketleri = (g) => g.flatMap(k => (k.taksitler || []).filter(r => r.odendi).map(r => ({ id: 9000 + r.id, tur: "odeme", giderId: k.id, taksitId: r.id, tutar: r.tutar, tarih: r.odemeTarihi, hesapId: null })));
 function Harness({ g0 = [], perms = TAM, onState }) {
   const [giderler, setGiderler] = useState(g0);
+  const [hesapHareketleri, setHesapHareketleri] = useState(() => tohumHareketleri(g0));
   const [giderTanimlari, setGiderTanimlari] = useState([]);
   const [tedarikciler, setTedarikciler] = useState(TED);
   const [standartGiderler, setStandartGiderler] = useState([]);
-  onState?.({ giderler });
-  return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
+  onState?.({ giderler, hesapHareketleri });
+  return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
     giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
     calisanlar={[]} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }} serverPermissions={perms}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
@@ -44,33 +47,64 @@ describe("Liste ve ödeme planı penceresi (R2, R3)", () => {
     expect(within(s).getByText("Kısmen ödendi 2/6")).toBeTruthy();
     expect(within(s).queryByTitle("Ödendi olarak işaretle")).toBeNull();
   });
-  it("AC-5 / AC-25: pencereden kalan dört taksit işaretlenince kalem 'Ödendi' olur; odendi ve odemeTarihi türetilir", () => {
+  // Spec 0024 R18 (Q1/Q5, onaylı istisna): satır "Ödeme gir" düğmesi o taksite bağlı ödeme penceresini açar; durum hareketten türer.
+  it("AC-5 / AC-25: pencereden kalan dört taksite ödeme girilince kalem 'Ödendi' olur; durum hareketlerden türer", () => {
     let st;
     render(<Harness g0={[TAKSITLI]} onState={s => { st = s; }} />);
-    fireEvent.click(within(satirOf("Kompresör")).getByText("Ödeme planı"));
-    const pencere = () => screen.getByTestId("odeme-plani-satirlari");
-    for (let i = 0; i < 4; i++) fireEvent.click(within(pencere()).getAllByText("Ödendi işaretle")[0]);
-    expect(within(screen.getByTestId("odeme-plani-ozet")).getByText("Ödendi")).toBeTruthy();
-    expect(st.giderler[0]).toMatchObject({ odendi: true, odemeTarihi: "2026-09-23" });
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(within(satirOf("Kompresör")).getByText("Ödeme planı"));
+      fireEvent.click(within(screen.getByTestId("odeme-plani-satirlari")).getAllByText("Ödeme gir")[0]);
+      fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    }
+    expect(st.hesapHareketleri.slice(2).map(h => [h.taksitId, h.tutar, h.tarih])).toEqual([[3, 2000, "2026-09-23"], [4, 2000, "2026-09-23"], [5, 2000, "2026-09-23"], [6, 2000, "2026-09-23"]]);
+    expect(st.giderler[0]).toBe(TAKSITLI); // ödeme kalemi değiştirmez; yalnız hareket eklenir
     expect(within(satirOf("Kompresör")).getByText("Ödendi 6/6")).toBeTruthy();
+    fireEvent.click(within(satirOf("Kompresör")).getByText("Ödeme planı"));
+    expect(within(screen.getByTestId("odeme-plani-ozet")).getByText("Ödendi")).toBeTruthy();
   });
-  it("AC-13: taksitsiz kira iki anahtarla işaretlenir: vergi dairesi kiraya verenden bağımsız", () => {
+  it("AC-13: taksitsiz kira iki anahtarla ödenir: vergi dairesi kiraya verenden bağımsız", () => {
     let st;
     render(<Harness g0={[KIRA]} onState={s => { st = s; }} />);
-    const s = satirOf("Eylül kira");
-    fireEvent.click(within(s).getByText("Vergi dairesi: Ödenmedi"));
-    expect(st.giderler[0].taksitler.map(r => [r.hedef, r.odendi])).toEqual([["ana", false], ["stopaj", true]]);
-    expect(st.giderler[0].odendi).toBe(false);
+    fireEvent.click(within(satirOf("Eylül kira")).getByText("Vergi dairesi: Ödenmedi"));
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    expect(st.hesapHareketleri).toEqual([expect.objectContaining({ giderId: 502, taksitId: 12, tutar: 4000 })]);
+    expect(within(satirOf("Eylül kira")).getByText("Vergi dairesi: Ödendi")).toBeTruthy();
     expect(within(satirOf("Eylül kira")).getByText("Kiraya veren: Ödenmedi")).toBeTruthy();
     fireEvent.click(within(satirOf("Eylül kira")).getByText("Kiraya veren: Ödenmedi"));
-    expect(st.giderler[0].odendi).toBe(true);
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    expect(within(satirOf("Eylül kira")).getByText("Kiraya veren: Ödendi")).toBeTruthy();
+  });
+  it("R18 / AC-36: taksit kısmen ödenir; rozet kalanı yazar, ikinci ödeme kalandan fazla olamaz", () => {
+    let st;
+    render(<Harness g0={[KIRA]} onState={s => { st = s; }} />);
+    fireEvent.click(within(satirOf("Eylül kira")).getByText("Kiraya veren: Ödenmedi"));
+    fireEvent.change(screen.getByLabelText("Ödeme tutarı"), { target: { value: "6.000" } });
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    expect(within(satirOf("Eylül kira")).getByText(/Kiraya veren: Kısmen · kalan 10\.000/)).toBeTruthy();
+    fireEvent.click(within(satirOf("Eylül kira")).getByText(/Kiraya veren: Kısmen/));
+    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("10000");
+    fireEvent.change(screen.getByLabelText("Ödeme tutarı"), { target: { value: "10.001" } });
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    expect(screen.getByText(/Kalandan fazla ödeme kaydedilemez/)).toBeTruthy();
+    expect(st.hesapHareketleri).toHaveLength(1);
+  });
+  it("AC-6: ödeme silinince taksit durumu geri döner", () => {
+    render(<Harness g0={[TAKSITLI]} />);
+    fireEvent.click(within(satirOf("Kompresör")).getByText("Ödeme planı"));
+    fireEvent.click(within(screen.getByTestId("odeme-plani-satirlari")).getAllByText(/^Ödendi/)[0]);
+    const kayitlar = screen.getAllByTestId("odeme-kaydi");
+    expect(kayitlar).toHaveLength(2);
+    fireEvent.click(within(kayitlar[0]).getByTitle("Ödemeyi sil"));
+    fireEvent.click(screen.getByText("Ödemeyi Sil"));
+    fireEvent.click(screen.getByText("Vazgeç"));
+    expect(within(satirOf("Kompresör")).getByText("Kısmen ödendi 1/6")).toBeTruthy();
   });
   it("AC-20: gider_odeme olmadan kira anahtarları ve penceredeki taksit düğmeleri yok", () => {
     render(<Harness g0={[TAKSITLI, KIRA]} perms={ODEMESIZ} />);
-    expect(within(satirOf("Eylül kira")).queryByTitle("Ödendi olarak işaretle")).toBeNull();
+    expect(within(satirOf("Eylül kira")).queryByTitle("Ödeme kaydet")).toBeNull();
     fireEvent.click(within(satirOf("Kompresör")).getByText("Ödeme planı"));
-    expect(within(screen.getByTestId("odeme-plani-satirlari")).queryByText("Ödendi işaretle")).toBeNull();
-    expect(screen.getByText("Ödeme durumunu değiştirme yetkiniz yok.")).toBeTruthy();
+    expect(within(screen.getByTestId("odeme-plani-satirlari")).queryByText("Ödeme gir")).toBeNull();
+    expect(screen.getByText("Ödeme kaydetme yetkiniz yok.")).toBeTruthy();
   });
 });
 

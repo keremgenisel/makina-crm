@@ -286,6 +286,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   ödendi işaretlenir, borç ve hatırlatma kalan taksitleri sayar, kalemin durumu taksitlerden türetilir. Kira
   kaleminde vergi dairesine ödenen stopaj ayrı ödeme hedefidir. Serbest kısmi ödeme kapsam dışı kalır. Bkz.
   `specs/done/0021-gider-taksitlendirme.md`.
+  **Güncelleme (2026-09-28, spec 0024 A):** kısmi ödeme artık kapsamda. Ödeme kalemden ayrı bir hareket kaydıdır
+  (`hesapHareketleri`); kalemin ve taksidin durumu hareketlerden okuma anında türer, borç ve hatırlatıcı kalanı sayar.
+  Bkz. `specs/0024-kasa-ve-odeme-ayrimi.md`.
 - **X11.** Negatif gider kalemi, gider iadesi ve alacak notu — *neden:* v1'de düzeltme, kalemin kendisi
   düzenlenerek yapılır; iade akışı ayrı bir muhasebe kavramıdır.
 - **X12.** Ay ortasında işe giriş veya çıkışta kıst personel maliyeti — *neden:* kullanıcı o ayın kalemini elle

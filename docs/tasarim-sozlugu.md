@@ -58,9 +58,9 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:183`
+**Örnek:** `src/components/Giderler.jsx:204`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:472` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Customers.jsx:474` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:312` (form içi, düğme kipi, eşit genişlik)
@@ -151,8 +151,8 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:224`
-**Örnek:** `src/components/Customers.jsx:506` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Giderler.jsx:247`
+**Örnek:** `src/components/Customers.jsx:508` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
@@ -173,7 +173,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:200`
+**Örnek:** `src/components/Giderler.jsx:223`
 **Örnek:** `src/components/stock/PartStokTab.jsx:135` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
