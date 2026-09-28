@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, uid, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
+import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
@@ -200,8 +200,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     const items = [];
     const kdvli = (tutar, faturaTipi, tarih) => parseMoney(tutar) + calcKDV(faturaTipi, tutar, tarih, kdvRates);
     // Tahsil edilmemiş çekler — makina ödemesi + Extra Kalıp + Yedek Parça (vade tarihi olmasa da göster).
+    // Spec 0040 R17: makina tahsilatı çekleri tek kaynaktan (çek kaydına bağlıysa çekin durumu).
     payments.forEach(p => {
-      if (p.yontem === "Çek" && !p.tahsilEdildi && !p.deletedAt)
+      if (cekBekliyorMu(p) && !p.deletedAt)
         items.push({ key: `cek-${p.id}`, tip: "Çek", kaynak: "payment", recId: p.id, customerId: p.customerId, vade: p.vadeTarihi || "", tutar: parseMoney(p.tutar), currency: p.currency });
     });
     partSales.forEach(ps => {
@@ -267,7 +268,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   // Çek/Kredi Kartı → payment (odemeId), Taksit → ödeme planı satırı (taksitId).
   const musteriBorcKalemleri = (c) => {
     const kalemler = [];
-    payments.filter(p => p.customerId === c.id && !p.deletedAt && p.yontem === "Çek" && !p.tahsilEdildi)
+    payments.filter(p => p.customerId === c.id && !p.deletedAt && cekBekliyorMu(p))
       .forEach(p => kalemler.push({ tip: "Çek", tutar: parseMoney(p.tutar), currency: p.currency || c.currency, odak: { odemeId: p.id }, gecikti: isCekVadesiGecmis(p) }));
     (c.odemePlani || []).filter(r => !r.odemeId && r.vadeTarihi)
       .forEach(r => kalemler.push({ tip: "Taksit", tutar: parseMoney(r.tutar), currency: c.currency, odak: { taksitId: r.id } }));

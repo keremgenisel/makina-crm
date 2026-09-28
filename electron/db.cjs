@@ -267,6 +267,10 @@ CREATE TABLE IF NOT EXISTS uretim_partileri (
 -- Kasa (spec 0024 A): hesaplar ve hesap hareketleri. Bakiye saklanmaz, hareketlerden türetilir (C1).
 -- Hareket türleri: "odeme" (gider ödemesi: giderId, taksitId?; tamKapatir = göçten gelen tam kapatma) ve "virman".
 -- gocKaynak: göç izinin anahtarı ("gider:ID" / "taksit:GID:TID"); göç tekrarında ikinci kayıt üretilmez (AC-22).
+CREATE TABLE IF NOT EXISTS cekler (
+  id INTEGER PRIMARY KEY,
+  paymentId INTEGER, no TEXT, banka TEXT, kesideci TEXT, tur TEXT, durum TEXT, gecmis TEXT
+);
 CREATE TABLE IF NOT EXISTS kasa_hesaplari (
   id INTEGER PRIMARY KEY,
   ad TEXT, tur TEXT, paraBirimi TEXT, acilisBakiyesi REAL, acilisTarihi TEXT, kapali INTEGER
@@ -401,6 +405,8 @@ const KART_KOMISYON_COLUMNS = [["taksitSayisi", "INTEGER"], ["kartKomisyonu", "T
 const PAYMENTS_HESAP_COLUMN = [["hesapId", "INTEGER"]];
 // Spec 0024 B: avans ve mahsup çalışana bağlıdır.
 const HAREKET_CALISAN_COLUMN = [["calisanId", "INTEGER"]];
+// Spec 0040: ciro hareketi portföydeki çeke bağlıdır (R4, R7).
+const HAREKET_CEK_COLUMN = [["cekId", "INTEGER"]];
 // Tahsilat tarihi: "ödendi" işaretlendiği gün (nakit/havale), çek tahsil günü veya KK hesaba geçiş günü.
 // Rapordaki "giren para" bu tarihe göre aya gruplanır (yoksa satış/servis tarihine düşer). Düz TEXT →
 // ...rest ile otomatik okunur; yalnız CREATE + ensureColumns + INSERT gerekir. services/part_sales/yedek_parca_satis.
@@ -856,10 +862,16 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
     conn.prepare(`DELETE FROM hesap_hareketleri`).run();
-    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
-      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null);
+      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null);
+  }
+  // Spec 0040: çek kaydı yalnız kendi alanlarını taşır (Q2); geçmiş kimliksiz alt satırlar, tek JSON sütunu (R12).
+  if (Array.isArray(data.cekler) && !skip.has("cekler")) {
+    conn.prepare(`DELETE FROM cekler`).run();
+    const stmt = conn.prepare(`INSERT INTO cekler (id, paymentId, no, banka, kesideci, tur, durum, gecmis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const c of data.cekler) stmt.run(c.id, c.paymentId ?? null, c.no ?? null, c.banka ?? null, c.kesideci ?? null, c.tur ?? null, c.durum ?? null, json(Array.isArray(c.gecmis) ? c.gecmis : []));
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
@@ -922,7 +934,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri, data.cekler]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -977,6 +989,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "payments", KART_KOMISYON_COLUMNS);
   ensureColumns(conn, "payments", PAYMENTS_HESAP_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
+  ensureColumns(conn, "hesap_hareketleri", HAREKET_CEK_COLUMN);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", KART_KOMISYON_COLUMNS);
@@ -1373,6 +1386,7 @@ function readBlobFromDb() {
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, ...rest }) => ({ ...rest, kapali: toBool(kapali) }));
   const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir) }));
+  const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({ ...rest, gecmis: parseJsonCol(gecmis, []) }));
   const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
@@ -1395,7 +1409,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
-    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler,
   };
 }
 

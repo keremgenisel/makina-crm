@@ -19,6 +19,8 @@ const BLOB_SECTIONS = [
   "uretimPartileri",
   // Kasa ve ödeme hareketleri (spec 0024 A)
   "kasaHesaplari", "hesapHareketleri",
+  // Çek portföyü (spec 0040)
+  "cekler",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -29,6 +31,8 @@ const SECTION_GROUP = {
   services: "customerActions",
   partSales: "customerActions",
   payments: "customerActions",
+  // Spec 0040 C11: çek müşteri tahsilatıyla doğar; müşteri grubunda, gider bölümü değildir.
+  cekler: "customerActions",
   gorusmeler: "customerActions",
   dosyalar: "customerActions",
   dealers: "dealerActions",
@@ -92,6 +96,8 @@ const BOLUM_SEKMELERI = {
   // "dealers" (spec 0007 C6): bayi modalındaki "Bayi Aracılığıyla Kalıp Satışı" Extra Kalıp yazar; cust_kalip_add aynen aranır.
   partSales:      ["customers", "stock", "settings", "servis", "evrak", "dealers"],
   payments:       ["customers", "settings"],
+  // Spec 0040 C11: GIDER_BOLUMLERI'ne girmez; gider sekmesi olmayan tahsilatçı 403 almaz (AC-33), portföydeki işlemler için "gider".
+  cekler:         ["customers", "gider", "settings"],
   gorusmeler:     ["customers", "dashboard", "settings"],
   dosyalar:       ["customers", "dealers", "settings", "servis"],
   dealers:        ["dealers", "settings"],
@@ -294,6 +300,23 @@ function giderAynaEngeli(permissionsJson, role, changedSections, oldBlob, newBlo
 // Not (blob mimarisi sınırı): grup boş değil ama kısmi ise (ör. düzenleyebilir ama
 // silemez) blob düzeyinde eylem ayrımı yapılamaz, o yüzden yazmaya izin verilir.
 // Bu denetim en büyük açığı kapatır: yetkisiz/salt-okunur kullanıcının bir bölümü ezmesi.
+// Spec 0040 Q6: bu yazımdaki çek değişikliklerinin hepsi ciroya giriş ya da ciro iptali mi (yeni/silinen çek yok, yalnız
+// durum ve geçmiş değişiyor ve durumun bir ucu "ciro").
+function cekYalnizCiroMu(oldBlob, newBlob) {
+  const eski = Array.isArray(oldBlob?.cekler) ? oldBlob.cekler : null, yeni = Array.isArray(newBlob?.cekler) ? newBlob.cekler : null;
+  if (!eski || !yeni || eski.length !== yeni.length) return false;
+  const eskiById = new Map(eski.map(r => [r.id, r]));
+  let degisen = 0;
+  for (const r of yeni) {
+    const e = eskiById.get(r.id);
+    if (!e) return false;
+    if (stableStringify(e) === stableStringify(r)) continue;
+    const { durum: d1, gecmis: _g1, ...a } = e, { durum: d2, gecmis: _g2, ...b } = r;
+    if (stableStringify(a) !== stableStringify(b) || d1 === d2 || (d1 !== "ciro" && d2 !== "ciro")) return false;
+    degisen++;
+  }
+  return degisen > 0;
+}
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
   const perms = parsePerms(permissionsJson);
@@ -330,6 +353,12 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
       if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
       continue;
     }
+    // Spec 0040 Q6: ciroyu Giderler kullanıcısı yapar; müşteri grubu kısıtlı olsa da yazımdaki bütün çek değişiklikleri
+    // ciroya giriş/çıkış ise (ciro, ciro iptali) ve gider_odeme izni varsa bölüm yazılabilir (kayıt düzeyi eylemDenetimi'nde).
+    if (section === "cekler" && grupEngelli(perms, group) && eylemIzinli(perms, "giderActions", "gider_odeme") && cekYalnizCiroMu(oldBlob, newBlob)) {
+      if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
+      continue;
+    }
     if (grupEngelli(perms, group)) return { ok: false, reddedilenBolum: section };
     // appSettings iki sahipli: sekme denetimi bölüm değil ALAN düzeyinde yapılır.
     if (section === "appSettings" && oldBlob && newBlob) {
@@ -356,6 +385,7 @@ const EYLEM_IDLERI = {
   services:       { ekle: "cust_service_add", sil: "cust_service_delete" },
   partSales:      { ekle: "cust_kalip_add",   sil: "cust_kalip_delete" },
   payments:       { ekle: "cust_payment_add", sil: "cust_payment_edit" }, // ödeme silme "düzenle/sil" altında
+  cekler:         { ekle: "cust_payment_add", sil: "cust_payment_edit" }, // spec 0040 C11: çek tahsilatla birlikte doğar
   gorusmeler:     { ekle: "cust_gorusme_add", sil: "cust_gorusme_del" },
   // Bayi dosyası (dealerId var, customerId yok) bayi grubunun izinleriyle denetlenir — HTTP dosya
   // ucundaki dosyaSilmeYetkisi ile aynı karar; eskiden künye yolunda hep müşteri izni aranıyordu.
@@ -563,6 +593,27 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       }
     }
   }
+  // Spec 0040 C11, Q6: çekin durumu kendi iznine bağlı: "ciro edildi"ye girmek ya da ondan çıkmak gider_odeme (bir ödeme
+  // hareketi doğurur/siler), diğer durum değişiklikleri cust_payment_edit.
+  if (Array.isArray(yeni.cekler)) {
+    const eskiById = new Map((Array.isArray(eski.cekler) ? eski.cekler : []).map(r => [r.id, r]));
+    // Triyaj: "ciro edildi"ye geçiş (ya da ciro edilmiş doğan çek) aynı yazımda o çeke bağlı en az bir YENİ ödeme hareketi
+    // ister; yoksa hazırlanmış bir istekle çek hareketsiz ciro edilir, tahsilat gelire girer ama hiçbir borç kapanmazdı.
+    const eskiHareketIdleri = new Set((Array.isArray(eski.hesapHareketleri) ? eski.hesapHareketleri : []).map(h => h?.id));
+    const yeniCiroCekleri = new Set((Array.isArray(yeni.hesapHareketleri) ? yeni.hesapHareketleri : [])
+      .filter(h => h && h.cekId != null && !eskiHareketIdleri.has(h.id)).map(h => String(h.cekId)));
+    for (const r of yeni.cekler) {
+      const e = eskiById.get(r.id);
+      if (r.durum === "ciro" && (!e || e.durum !== "ciro") && !yeniCiroCekleri.has(String(r.id))) {
+        return { ok: false, reddedilenBolum: "cekler", islem: e ? "duzenle" : "ekle", gerekli: "ciro_hareketi" };
+      }
+      if (!e || e.durum === r.durum) continue;
+      const ciro = e.durum === "ciro" || r.durum === "ciro";
+      const [grup, id] = ciro ? ["giderActions", "gider_odeme"] : ["customerActions", "cust_payment_edit"];
+      if (!eylemIzinli(perms, grup, id)) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: id };
+      if (e.durum === "ciro" && r.durum === "karsiliksiz" && !eylemIzinli(perms, "customerActions", "cust_payment_edit")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "cust_payment_edit" };
+    }
+  }
   // Spec 0024 C6: hesap ve hareket kaydını düzenlemek ekleme/silmeyle aynı izni ister (bölüm düzeyinde bırakılsaydı
   // gider_edit kullanıcısı bir ödemenin tutarını ya da hesabını değiştirebilirdi).
   for (const [section, idOf] of Object.entries(KAYIT_DUZENLE_IZINLERI)) {
@@ -631,6 +682,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

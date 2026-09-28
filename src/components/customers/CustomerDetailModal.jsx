@@ -22,6 +22,7 @@ import {
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi, Ipucu } from "../tasarim";
 import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
+import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
@@ -74,6 +75,9 @@ export const CustomerDetailModal = ({
   giderYetki = false, makinaMaliyet = null, rates = null,
   // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
   kasaHesaplari = [], kasaYetki = false,
+  // Spec 0040 R1, R2, C10, C12: çek kaydı tahsilatla birlikte doğar (perde inikken de); çeke bağlı tahsilatın "tahsil
+  // edildi" durumu çek portföyünden yönetilir.
+  cekler = [], setCekler = null,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -85,6 +89,8 @@ export const CustomerDetailModal = ({
   const pkDraftKey = pkForm ? (pkForm.id ? `kalipsatis:${pkForm.id}` : `kalipsatis:${detailView?.id}:new`) : null;
   const pkDraft = useFormDraft(pkDraftKey, pkForm, setPkForm);
   const [paymentForm, setPaymentForm] = useState(null);
+  const [paymentHata, setPaymentHata] = useState("");
+  const odemeCeki = (paymentId) => (cekler || []).find(c => String(c.paymentId) === String(paymentId)) || null;
   const [newOwnerForm, setNewOwnerForm] = useState(null);
   const [editPrevOwnerForm, setEditPrevOwnerForm] = useState(null);
   const [confirmUndoOwnerId, setConfirmUndoOwnerId] = useState(null);
@@ -535,6 +541,7 @@ export const CustomerDetailModal = ({
   useEffect(() => { setDosyaFiltre(null); }, [detailView?.id]);
 
   const openAddPayment = () => {
+    setPaymentHata("");
     setPaymentForm({ customerId: detailView.id, tarih: today(), satirlar: [], currency: detailView.currency || "TRY", not: "" });
   };
   // Taksit tahsilatı: ödeme formu taksit tutarıyla önceden doldurulur; kaydedilince
@@ -551,7 +558,9 @@ export const CustomerDetailModal = ({
     setPaymentForm({
       id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "",
       yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi, hesapId: p.hesapId ?? "",
+      cek: (() => { const c = odemeCeki(p.id); return c ? { no: c.no, banka: c.banka, kesideci: c.kesideci, tur: c.tur } : { no: "", banka: "", kesideci: "", tur: "hamiline" }; })(),
     });
+    setPaymentHata("");
   };
   const syncKalanBorc = (customerId, newPayments) => {
     setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRates) } : c));
@@ -559,24 +568,47 @@ export const CustomerDetailModal = ({
   const savePayment = () => {
     if (!setPayments || !paymentForm) return;
     const customerId = Number(paymentForm.customerId);
-    let newPayments;
+    // `payments` yalnız canlı (çöpte olmayan) tahsilatlardır: kalan borç onunla hesaplanır, ama state'e yazım tam dizi
+    // üzerinde yapılır (triyaj: canlı diziyi geri yazmak bütün müşterilerin çöpteki tahsilatlarını kalıcı siliyordu).
+    let newPayments, guncelle;
+    // Spec 0040 R2: çek kayıtları (yeni ve sonradan bağlanan) ile güncellenen çek alanları.
+    const yeniCekler = [];
+    let cekGuncelle = null;
     if (paymentForm.id) {
       if (parseMoney(paymentForm.tutar) <= 0) return;
       const yontem = paymentForm.yontem || "Nakit";
+      const bagli = odemeCeki(paymentForm.id);
+      if (yontem === "Çek" && bagli) {
+        const d = cekDogrula(paymentForm.cek || {}, { cekler, tutar: paymentForm.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+        cekGuncelle = { ...bagli, ...d.kayit };
+      } else if (yontem === "Çek" && (String(paymentForm.cek?.no || "").trim() || String(paymentForm.cek?.banka || "").trim())) {
+        // R2: mevcut tahsilata sonradan çek bağlama.
+        const d = cekDogrula(paymentForm.cek || {}, { cekler, tutar: paymentForm.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+        yeniCekler.push(yeniCek(d.kayit, paymentForm.id, paymentForm.tarih || today(), uid()));
+      }
       const fields = {
         customerId, tarih: paymentForm.tarih || today(), tutar: parseMoney(paymentForm.tutar),
         currency: paymentForm.currency || "TRY", not: paymentForm.not || "", yontem,
         vadeTarihi: yontem === "Çek" ? (paymentForm.vadeTarihi || "") : undefined,
-        tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
+        // C10: çeke bağlı tahsilatta durum çek kaydındadır; bayrağa formdan dokunulmaz.
+        tahsilEdildi: yontem === "Çek" ? (bagli ? !!payments.find(x => x.id === paymentForm.id)?.tahsilEdildi : !!paymentForm.tahsilEdildi) : undefined,
         // Hesap alanı yalnız kasa yetkisiyle çizilir; yetkisiz düzenleme mevcut hesabı korur.
         ...(kasaYetki ? { hesapId: paymentForm.hesapId === "" || paymentForm.hesapId == null ? null : paymentForm.hesapId } : {}),
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
+      guncelle = (p) => p.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
       logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(payments.find(x => x.id === paymentForm.id)) } });
       showToast("Ödeme güncellendi.");
     } else {
       const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
       if (satirlar.length === 0) return;
+      // Spec 0040 R1, R14, AC-32: her çek satırı numara ve banka ister.
+      for (const r of satirlar) if (r.yontem === "Çek") {
+        const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+      }
       const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
         ...(kasaYetki && paymentForm.hesapId !== "" && paymentForm.hesapId != null ? { hesapId: paymentForm.hesapId } : {}) };
       bumpId(customers, services, partSales, payments);
@@ -590,7 +622,9 @@ export const CustomerDetailModal = ({
         }
         return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
       });
+      satirlar.forEach((r, i) => { if (r.yontem === "Çek") yeniCekler.push(yeniCek(cekDogrula(r.cek || {}, { cekler }).kayit, yeniKayitlar[i].id, ortak.tarih, uid())); });
       newPayments = [...yeniKayitlar, ...payments];
+      guncelle = (p) => [...yeniKayitlar, ...p];
       // Taksit tahsilatıysa taksiti oluşan ödeme kaydına bağla (plan satırı kapanır)
       if (paymentForm._taksitId != null && yeniKayitlar[0]) {
         setCustomers(p => p.map(c => c.id === customerId
@@ -600,13 +634,20 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "olusturuldu", entity: "odeme", entityId: yeniKayitlar[0]?.id, entityName: detailView?.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     }
-    setPayments(newPayments);
+    setPayments(guncelle);
     syncKalanBorc(customerId, newPayments);
+    if (setCekler && (yeniCekler.length || cekGuncelle)) {
+      setCekler(p => [...p.map(c => (cekGuncelle && c.id === cekGuncelle.id ? cekGuncelle : c)), ...yeniCekler]);
+      if (yeniCekler.length) logAction({ serverPermissions, action: "olusturuldu", entity: "cek", entityId: yeniCekler[0].id, entityName: detailView?.name, detail: { adet: yeniCekler.length } });
+    }
+    setPaymentHata("");
     setPaymentForm(null);
   };
   const deletePayment = (id) => {
     if (!setPayments) return;
     const payment = payments.find(x => x.id === id);
+    // Spec 0040 Q7: ciro edilmiş çekin tahsilatı silinemez; önce ciro iptal edilir.
+    if (payment && !tahsilatSilinebilirMi(payment, cekler)) { showToast("Bu tahsilatın çeki ciro edilmiş. Önce Kasa › Çek Portföyü'nden ciroyu iptal edin."); return; }
     const newPayments = payments.filter(x => x.id !== id);
     setPayments(p => withDeleted(p, x => x.id === id));
     if (payment) syncKalanBorc(payment.customerId, newPayments);
@@ -619,8 +660,11 @@ export const CustomerDetailModal = ({
   };
   const toggleCekTahsil = (payment) => {
     if (!setPayments) return;
-    const newPayments = payments.map(x => x.id === payment.id ? { ...x, tahsilEdildi: !x.tahsilEdildi } : x);
-    setPayments(newPayments);
+    // Spec 0040 C10, AC-25: çeke bağlı tahsilatta durum çek portföyünden yönetilir.
+    if (odemeCeki(payment.id)) { showToast("Bu çekin durumu Kasa › Çek Portföyü'nden değiştirilir."); return; }
+    const cevir = (x) => x.id === payment.id ? { ...x, tahsilEdildi: !x.tahsilEdildi } : x;
+    const newPayments = payments.map(cevir);
+    setPayments(p => p.map(cevir)); // tam dizi üzerinde: çöpteki tahsilatlar korunur
     syncKalanBorc(payment.customerId, newPayments);
   };
 
@@ -1267,7 +1311,7 @@ export const CustomerDetailModal = ({
             <>
               <div style={{ display: "grid", gridTemplateColumns: paymentForm.yontem === "Çek" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
                 <Field label="Yöntem">
-                  <Select value={paymentForm.yontem || "Nakit"} onChange={e => setPaymentForm(p => ({ ...p, yontem: e.target.value }))}>
+                  <Select value={paymentForm.yontem || "Nakit"} disabled={!!odemeCeki(paymentForm.id)} onChange={e => setPaymentForm(p => ({ ...p, yontem: e.target.value }))}>
                     {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
                   </Select>
                 </Field>
@@ -1282,6 +1326,28 @@ export const CustomerDetailModal = ({
                 )}
               </div>
               {paymentForm.yontem === "Çek" && (
+                <div data-testid="cek-bilgisi" style={{ marginBottom: 12 }}>
+                  <BolumBasligi bosluk={8}>{odemeCeki(paymentForm.id) ? "Çek bilgisi" : "Çek bilgisi ekle (isteğe bağlı)"}</BolumBasligi>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 130px", gap: 8 }}>
+                    {[["no", "Çek numarası"], ["banka", "Banka"], ["kesideci", "Keşideci"]].map(([k, ad]) => (
+                      <input key={k} aria-label={ad} placeholder={ad} value={paymentForm.cek?.[k] || ""} className="input"
+                        onChange={e => setPaymentForm(p => ({ ...p, cek: { ...(p.cek || {}), [k]: e.target.value } }))} />
+                    ))}
+                    <select aria-label="Çek türü" className="select" value={paymentForm.cek?.tur || "hamiline"} onChange={e => setPaymentForm(p => ({ ...p, cek: { ...(p.cek || {}), tur: e.target.value } }))}>
+                      {CEK_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  {!odemeCeki(paymentForm.id) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Numara ve banka girilirse bu tahsilat çek portföyüne bağlanır.</div>}
+                </div>
+              )}
+              {paymentForm.yontem === "Çek" && odemeCeki(paymentForm.id) && (
+                // C10, AC-25: durumun tek kaynağı çek kaydıdır.
+                <div data-testid="cek-durum-salt-okunur" style={{ background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "10px 12px", marginBottom: 14, fontSize: 13 }}>
+                  <b>Çek durumu: {CEK_DURUM_AD[odemeCeki(paymentForm.id).durum]}</b>
+                  <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 2 }}>Çek portföyünden yönetilir (Kasa › Çek Portföyü).</div>
+                </div>
+              )}
+              {paymentForm.yontem === "Çek" && !odemeCeki(paymentForm.id) && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: paymentForm.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${paymentForm.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
                   <input type="checkbox" checked={!!paymentForm.tahsilEdildi} onChange={e => setPaymentForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: paymentForm.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
@@ -1292,10 +1358,11 @@ export const CustomerDetailModal = ({
             </>
           ) : (
             <Field label="Ödeme Satırları">
-              <PaymentRowsEditor rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
+              <PaymentRowsEditor cekler={cekler} rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
                 krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()} />
             </Field>
           )}
+          <HataMetni>{paymentHata}</HataMetni>
           {kasaYetki && (() => {
             // C5 (1), AC-29: yalnız tahsilatın para biriminde ve açık hesaplar; düzenlemede kapanmış mevcut hesap görünür kalır.
             const pb = paymentForm.currency || "TRY";

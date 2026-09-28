@@ -66,7 +66,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   serverPermissions = null,
   // Gider kaydı (spec 0001)
   giderYetki = false, giderVeriYetki = giderYetki, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
-  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null,
+  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null, cekler = [], setCekler = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
@@ -201,6 +201,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
           standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
           kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
+          cekler={cekler} setCekler={setCekler}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -333,7 +334,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       )}
       {settingsTab === "trash" && (
         <SettingsTrash
-          rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments}
+          rawCustomers={rawCustomers} rawServices={rawServices} rawPartSales={rawPartSales} rawPayments={rawPayments} cekler={cekler} setCekler={setCekler}
           rawDealers={rawDealers} rawStock={rawStock} rawNotes={rawNotes} rawKalipDefs={rawKalipDefs} rawParts={rawParts} rawCustomModels={rawCustomModels}
           rawTeklifler={rawTeklifler} rawFaturalar={rawFaturalar}
           rawUretimFormlari={rawUretimFormlari}

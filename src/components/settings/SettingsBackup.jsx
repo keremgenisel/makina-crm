@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
 import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, uid, disAppSettingsSuz } from "../../lib/utils";
 import { kasaGocuHareketleri } from "../../../electron/kasaGocuSaf.mjs";
+import { odemeleriAyikla } from "../../lib/cek";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { KartBolum } from "../tasarim";
 
@@ -15,6 +16,8 @@ export const SettingsBackup = ({
   tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, giderYetki = true,
   // Spec 0024: kasa hesapları ve hesap hareketleri Giderler paketiyle taşınır (ödeme hareketi gider durumunun kaynağıdır).
   kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null,
+  // Spec 0040: çek kayıtları tahsilatlarla aynı ("Müşteriler") pakette taşınır.
+  cekler = [], setCekler = null,
   // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
   // (yalnız izin) beslenir. Perde inikken gider paketi listede görünmez ama tam geri yüklemede yüklenir (K3).
   giderVeriYetki = giderYetki,
@@ -52,7 +55,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments, teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -182,6 +185,7 @@ export const SettingsBackup = ({
     if (sec("musteri") && Array.isArray(restoreData?.services)) setServices(restoreData.services);
     if (sec("musteri") && Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
     if (sec("musteri") && Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
+    if (sec("musteri") && setCekler && Array.isArray(restoreData?.payments)) setCekler(Array.isArray(restoreData?.cekler) ? restoreData.cekler : []);
     if (sec("musteri") && Array.isArray(restoreData?.gorusmeler) && setGorusmeler) setGorusmeler(restoreData.gorusmeler);
     if (sec("evrak") && Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
     if (sec("evrak") && Array.isArray(restoreData?.faturalar) && setFaturalar) setFaturalar(restoreData.faturalar);
@@ -230,7 +234,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "cekler"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
     // Spec 0024 triyaj bulgu 1: 0024 öncesi yedekte hareket bölümü yoktur ve ödeme bilgisi kalemdeki işarettedir. Veritabanı

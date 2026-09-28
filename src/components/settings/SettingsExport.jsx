@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi } from "../../lib/utils";
+import { fmtTR, cekGelirMi, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi } from "../../lib/utils";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -278,7 +278,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       return [
         c.name, p.tarih, curName[CURRENCIES.includes(p.currency) ? p.currency : "TRY"], parseMoney(p.tutar), yontem,
         cekMi && p.vadeTarihi ? fmtTR(p.vadeTarihi) : "",
-        cekMi ? (p.tahsilEdildi ? "Evet" : "Hayır") : "",
+        cekMi ? (cekGelirMi(p) ? "Evet" : "Hayır") : "", // spec 0040: çek kaydına bağlıysa çekin durumu (tahsil/ciro)
         kartTaksitEtiket(p), kartKomisyonTutar(p), komisyonYansitildiEtiket(p),
         p.not,
       ];

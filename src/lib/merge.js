@@ -27,7 +27,9 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar", "yedekParcaSatislar",
   "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler", "uretimPartileri",
   // Spec 0024: kasa hesapları ve hesap hareketleri (ödeme, virman).
-  "kasaHesaplari", "hesapHareketleri"];
+  "kasaHesaplari", "hesapHareketleri",
+  // Spec 0040: çek portföyü (tahsilata bağlı).
+  "cekler"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -100,7 +102,11 @@ export function buildMergePlan(myData, serverData) {
     ...(h.karsiHesapId != null ? { karsiHesapId: remapRef(maps.kasaHesaplari, h.karsiHesapId) } : {}),
     // Spec 0024 B: avans ve mahsup çalışana kimlikle bağlı.
     ...(h.calisanId != null ? { calisanId: remapRef(maps.calisanlar, h.calisanId) } : {}),
+    // Spec 0040: ciro hareketi çeke bağlı.
+    ...(h.cekId != null ? { cekId: remapRef(maps.cekler, h.cekId) } : {}),
   }));
+  // Spec 0040: çek, tahsilata kimlikle bağlı.
+  adds.cekler = adds.cekler.map(c => ({ ...c, paymentId: remapRef(maps.payments, c.paymentId) }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
   // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
   // (Stok satırları birleştirilmediği için stok bağı burada ele alınmaz; stock MERGE_KEYS'te değil.)

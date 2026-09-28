@@ -7,6 +7,7 @@ import { yedekParcaBayininMi, bayiDosyasiMi } from "../../lib/bayiKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
+import { ciroluTahsilatIdleri } from "../../lib/cek";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -14,6 +15,8 @@ export const SettingsTrash = ({
   setCustomers, setServices, setPartSales, setPayments, setDealers, setStock, setNotes, setKalipDefs, setParts, setCustomModels,
   setTeklifler, setFaturalar, setUretimFormlari = null, setGorusmeler = null, setDosyalar = null,
   rawPartTypeDefs = [], setPartTypeDefs = null, rawCalisanlar = [], setCalisanlar = null,
+  // Spec 0040 Q7: tahsilat kalıcı silinince bağlı çek kaydı da silinir.
+  cekler = [], setCekler = null,
   rawYedekParcaSatislar = [], setYedekParcaSatislar = null,
   // Gider kaydı (spec 0001 R12, AC-19): gider satırları yalnız gider yetkisiyle görünür ve yazılır (K7).
   // Yetkisiz kullanıcının "çöpü boşalt"ı giderlere dokunmaz; yoksa göremediği kaydı siler ve sunucu
@@ -57,10 +60,14 @@ export const SettingsTrash = ({
     showToast("Müşteri geri alındı.");
   };
   const purgeCustomer = (c) => {
+    if (rawPayments.some(x => x.customerId === c.id && ciroluMu(x))) {
+      showToast(`Müşteri kalıcı silinemez: tahsilatlarından biri ${CIRO_KALICI_NOTU}`); return;
+    }
     setCustomers(p => p.filter(x => x.id !== c.id));
     setServices(p => p.filter(s => !kaskadCocuk(c)(s)));
     setPartSales?.(p => p.filter(x => !kaskadCocuk(c)(x)));
     setPayments?.(p => p.filter(x => !kaskadCocuk(c)(x)));
+    cekleriSil(rawPayments.filter(kaskadCocuk(c)));
     setYedekParcaSatislar?.(p => p.filter(x => !kaskadYedekParca(c)(x)));
     // Müşteri gidince ona bağlı görüşme/dosyalar da silinmeli — yoksa customerId artık olmayan bir
     // müşteriye işaret eder (yetim FK) ve TÜM save transaction'ı "FOREIGN KEY constraint failed" ile
@@ -109,7 +116,19 @@ export const SettingsTrash = ({
     setCustomers(p => p.map(c => c.id === pay.customerId ? { ...c, kalanBorc: calcKalanBorc(c, liveCustomerPayments, appSettings?.kdvRates ?? DEFAULT_KDV_RATES) } : c));
     showToast("Ödeme kaydı geri alındı.");
   };
-  const purgePayment = (pay) => { setPayments?.(p => p.filter(x => x.id !== pay.id)); showToast("Ödeme kaydı kalıcı olarak silindi."); };
+  // Spec 0040 Q7: kalıcı silinen tahsilatların çek kayıtları.
+  // Triyaj: ciro edilmiş çek kaydı hiçbir kalıcı silmede gitmez (cekId'li hareketler yetim kalır, ciro iptal edilemezdi).
+  function cekleriSil(silinen) {
+    const ids = new Set((silinen || []).map(p => String(p.id)));
+    if (ids.size) setCekler?.(p => p.filter(c => !ids.has(String(c.paymentId)) || c.durum === "ciro"));
+  }
+  const CIRO_KALICI_NOTU = "ciro edilmiş çeke bağlı; önce Kasa › Çek Portföyü'nden ciroyu iptal edin.";
+  const ciroluOdemeler = ciroluTahsilatIdleri(cekler);
+  const ciroluMu = (pay) => ciroluOdemeler.has(String(pay.id));
+  const purgePayment = (pay) => {
+    if (ciroluMu(pay)) { showToast(`Ödeme kalıcı silinemez: ${CIRO_KALICI_NOTU}`); return; }
+    setPayments?.(p => p.filter(x => x.id !== pay.id)); cekleriSil([pay]); showToast("Ödeme kaydı kalıcı olarak silindi.");
+  };
   // Bayi kaskadı simetrisi (lib/bayiKaskad.js): aynı damgalı satışlar + bayi dosyaları birlikte döner/gider.
   const kaskadBayiSatis = (d) => (x) => yedekParcaBayininMi(x, d.id) && x.deletedAt === d.deletedAt;
   const kaskadBayiDosya = (d) => (x) => bayiDosyasiMi(x, d.id) && x.deletedAt === d.deletedAt;
@@ -164,14 +183,19 @@ export const SettingsTrash = ({
   const emptyTrash = () => {
     // Çöpten kalıcı silinecek müşterilerin id'leri — bunlara bağlı görüşme/dosyalar kendileri
     // soft-delete edilmemiş olsa bile silinmeli (yoksa yetim FK → save çöker, bkz. purgeCustomer).
-    const silinenMusteriIdler = new Set(rawCustomers.filter(x => x.deletedAt).map(x => x.id));
+    // Ciro edilmiş çeke bağlı tahsilat ve onun müşterisi çöpte kalır (triyaj, Q7).
+    const korunanOdeme = (x) => x.deletedAt && ciroluMu(x);
+    const korunanMusteriIdler = new Set(rawPayments.filter(korunanOdeme).map(x => x.customerId));
+    const musteriSilinir = (x) => x.deletedAt && !korunanMusteriIdler.has(x.id);
+    const silinenMusteriIdler = new Set(rawCustomers.filter(musteriSilinir).map(x => x.id));
     const silinenBayiIdler = new Set(rawDealers.filter(x => x.deletedAt).map(x => x.id));
     const gorusmeSil = (g) => g.deletedAt || silinenMusteriIdler.has(g.customerId);
     const dosyaSil = (d) => d.deletedAt || silinenMusteriIdler.has(d.customerId) || (d.customerId == null && silinenBayiIdler.has(d.dealerId));
-    setCustomers(p => p.filter(x => !x.deletedAt));
+    setCustomers(p => p.filter(x => !musteriSilinir(x)));
     setServices(p => p.filter(x => !x.deletedAt));
     setPartSales?.(p => p.filter(x => !x.deletedAt));
-    setPayments?.(p => p.filter(x => !x.deletedAt));
+    setPayments?.(p => p.filter(x => !x.deletedAt || korunanOdeme(x)));
+    cekleriSil(rawPayments.filter(x => x.deletedAt && !korunanOdeme(x)));
     setDealers(p => p.filter(x => !x.deletedAt));
     setStock?.(p => p.filter(x => !x.deletedAt));
     setNotes?.(p => p.filter(x => !x.deletedAt));
@@ -188,7 +212,9 @@ export const SettingsTrash = ({
     setCalisanlar?.(p => p.filter(x => !x.deletedAt));
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
     if (giderYetki && rawGiderler.some(x => x.deletedAt)) setGiderler?.(p => p.filter(x => !x.deletedAt));
-    showToast("Çöp kutusu boşaltıldı.");
+    showToast(korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
+      ? `Çöp kutusu boşaltıldı; ciro edilmiş çeke bağlı ${rawPayments.filter(korunanOdeme).length} tahsilat (ve müşterisi) çöpte bırakıldı. Önce ciroyu iptal edin.`
+      : "Çöp kutusu boşaltıldı.");
   };
 
   const trashItems = useMemo(() => {

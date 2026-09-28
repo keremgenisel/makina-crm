@@ -8,6 +8,7 @@ import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni } from "./gider/GiderAlanlari";
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
+import { CekPortfoyu } from "./cek/CekPortfoyu";
 
 // Kasa üst sekmesi (spec 0024 A; R1, R7, R8, R15, R16; C1, C5, C6). Hesaplar (kasa, banka, kredi kartı), yürüyen
 // bakiyeli hareket listesi ve virman. Bakiye saklanmaz, hareketlerden türer (lib/kasa.js). Yalnız gider yetkisi +
@@ -121,7 +122,10 @@ export const Kasa = ({
   giderler = [], giderTurleri = [], tedarikciler = [], serverPermissions = null, showToast = () => {},
   // Spec 0024 B: çalışan avansları (silinmişler dahil, C8) ve ekstre kapsamı için yürürlük ayı.
   calisanlar = [], yururlukAy = null,
+  // Spec 0040: çek portföyü görünümü.
+  cekler = [], setCekler = null, giderAyarlari = {},
 }) => {
+  const [gorunum, setGorunum] = useState("hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
   const [secili, setSecili] = useState(null);
   const [hesapFormu, setHesapFormu] = useState(null); // null | {hesap}
@@ -215,10 +219,17 @@ export const Kasa = ({
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Kasa, banka ve kredi kartı hesapları. Bakiye hareketlerden hesaplanır.</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {canDo("virman") && setHesapHareketleri && acikHesapSayisi >= 2 && <Btn variant="ghost" onClick={() => setVirmanAcik(true)}><Icon name="refresh" size={14} /> Virman</Btn>}
-          {canDo("kasa_hesap") && <Btn onClick={() => setHesapFormu({ hesap: null })}><Icon name="plus" size={14} /> Yeni Hesap</Btn>}
+          {gorunum === "hesaplar" && canDo("virman") && setHesapHareketleri && acikHesapSayisi >= 2 && <Btn variant="ghost" onClick={() => setVirmanAcik(true)}><Icon name="refresh" size={14} /> Virman</Btn>}
+          {gorunum === "hesaplar" && canDo("kasa_hesap") && <Btn onClick={() => setHesapFormu({ hesap: null })}><Icon name="plus" size={14} /> Yeni Hesap</Btn>}
         </div>
       </div>
+      {/* Spec 0040 Q5: çek portföyü Kasa'nın bir görünümüdür (görünürlük kuralı aynı). */}
+      <div style={{ maxWidth: 360 }}><Segment ariaLabel="Kasa görünümü" kip="sekme" options={[{ value: "hesaplar", label: "Hesaplar" }, { value: "cek", label: "Çek Portföyü" }]} value={gorunum} onChange={setGorunum} /></div>
+      {gorunum === "cek" ? (
+        <CekPortfoyu cekler={cekler} setCekler={setCekler} payments={payments} customers={customers} giderler={giderler} giderTurleri={giderTurleri}
+          tedarikciler={tedarikciler} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
+          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} />
+      ) : (<>
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
         {HESAPSIZ_NOTU}{hesapsiz.adet > 0 && <> <b>{hesapsiz.adet}</b> gider ödemesi hesapsız{hesapsiz.gocAdet > 0 ? `; ${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı` : ""}.</>}
         {hesapsiz.avansAdet > 0 && <> <b>{hesapsiz.avansAdet}</b> avans hesapsız.</>}
@@ -291,6 +302,7 @@ export const Kasa = ({
 
       <CalisanAvanslari calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
         giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
+      </>)}
 
       {hesapFormu && (
         <HesapFormu hesap={hesapFormu.hesap} hesaplar={kasaHesaplari} hareketVar={!!hesapFormu.hesap && hesapKullanimi(hesapFormu.hesap.id, hesapHareketleri, payments) > 0}

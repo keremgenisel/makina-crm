@@ -3,6 +3,7 @@
 // virman ve tahsilat hiçbir gider üretmez (C3). Çift kayıt defteri değildir (C2).
 // Hareket (bölüm `hesapHareketleri`): {id, tur: "odeme"|"virman", tarih, tutar, yontem, hesapId, karsiHesapId, giderId,
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
+import { cekDurumuOf } from "./utils";
 import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeleriUygula, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
 
 export const HESAP_TURLERI = [{ value: "kasa", label: "Kasa" }, { value: "banka", label: "Banka" }, { value: "kart", label: "Kredi kartı" }];
@@ -28,7 +29,9 @@ export const hesapDogrula = (form, hesaplar = [], { hareketVar = false } = {}) =
   return { hatalar, kayit: { ...form, ad, acilisBakiyesi, kapali: !!form.kapali } };
 };
 
-const tahsilatSayilirMi = (p) => !p.deletedAt && p.hesapId != null && !(p.yontem === "Çek" && !p.tahsilEdildi);
+// Spec 0040 R6 (AC-22): para bir hesaba girdi mi. Çekte yalnız "tahsil edildi"; ciro edilen çek gelire girer ama bankaya hiç
+// girmediği için hiçbir hesabın bakiyesini artırmaz (bayrağı çevirmek bu hatayı üretirdi).
+const tahsilatSayilirMi = (p) => !p.deletedAt && p.hesapId != null && (p.yontem !== "Çek" || cekDurumuOf(p) === "tahsil");
 
 // R7: hesap başına açılış, giren, çıkan, bakiye ve yürüyen bakiyeli hareket satırları (tarih sırası).
 export const hesapBakiyeleri = (hesaplar = [], hareketler = [], payments = []) => {
@@ -61,7 +64,8 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], payments = []) =
 
 // R8, AC-32: hesabı belirtilmemiş ödemeler (göç dahil) ayrıca sayılır.
 export const hesapsizOdemeler = (hareketler = []) => {
-  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null);
+  // Spec 0040 R18: ciro hareketleri kasıtlı olarak hesapsızdır (çek portföyden çıkar); eksik veri listesine girmez.
+  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null);
   // Spec 0024 B4: hesapsız avans da hiçbir bakiyeye girmez ve ayrıca sayılır.
   const avansAdet = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null).length;
   return { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet };
@@ -84,8 +88,10 @@ const tutarOku = (v) => {
 
 // R2, R3, R18, AC-7, AC-28: ödeme tek hedefi kapatır (bir kalem ya da taksitli kalemde bir taksit); kalandan fazla
 // olamaz; hesap açık ve TL olmalı (gider TL'dir). kalem: odemeleriUygula'dan geçmiş (zenginleştirilmiş) kalem.
-export const odemeDogrula = (form, { kalem, turMap, hesaplar = [] } = {}) => {
+export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false } = {}) => {
   const hatalar = {};
+  // Spec 0040 R19, AC-37: "Çek (ciro)" yöntemi elle seçilemez; yalnız portföyden çek ciro edilirken atanır.
+  if (!ciro && form?.yontem === "Çek (ciro)") hatalar.yontem = "“Çek (ciro)” elle seçilemez; müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.";
   if (!kalem) return { hatalar: { hedef: "Ödenecek kalem bulunamadı." }, kayit: null };
   const satirli = satirliMi(kalem);
   if (Array.isArray(form?.giderIdler) && form.giderIdler.length > 1) hatalar.hedef = "Bir ödeme yalnız bir kalemi kapatır; her kalem için ayrı ödeme girin.";

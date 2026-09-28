@@ -30,6 +30,7 @@ import * as Tasarim from "../../src/components/tasarim";
 import { Kasa } from "../../src/components/Kasa";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
+import { cekleriUygula } from "../../src/lib/cek";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -247,6 +248,18 @@ const KASA_B = [...KASA_HAREKETLER,
 const CAL_B = [CAL[0], { id: 24, ad: "Veli Kaya", deletedAt: "2026-09-20T10:00:00Z" }];
 const kasaB = (o = {}) => kasaEkrani({ hesapHareketleri: KASA_B, calisanlar: CAL_B, yururlukAy: "2026-06", ...o });
 const TUR_MAP = turHaritasi(TURLER);
+// Spec 0040: çek portföyü. Bugün (sabit) 2026-09-23: 3401 vadesi geçmiş, 3402 yaklaşan, 3403 tahsilde, 3404 ciro edilmiş (hareketli),
+// 3405 karşılıksız, 3406 USD (ciro edilemez).
+const cekOdeme = (id, customerId, tutar, vade, o = {}) => ({ id, customerId, tarih: "2026-09-01", tutar, currency: "TRY", yontem: "Çek", vadeTarihi: vade, tahsilEdildi: false, ...o });
+const CEK_ODEMELER = [cekOdeme(3301, 500, 45000, "2026-09-15"), cekOdeme(3302, 501, 30000, "2026-09-28"), cekOdeme(3303, 500, 20000, "2026-10-20"),
+  cekOdeme(3304, 501, 16000, "2026-10-05"), cekOdeme(3305, 500, 8000, "2026-09-10"), cekOdeme(3306, 501, 2500, "2026-09-20", { currency: "USD" })];
+const cekK = (id, paymentId, no, banka, durum, o = {}) => ({ id, paymentId, no, banka, kesideci: "Mehmet Yılmaz", tur: "hamiline", durum,
+  gecmis: [{ tarih: "2026-09-01", durum: "portfoy", not: "Alındı" }, ...(durum !== "portfoy" ? [{ tarih: "2026-09-18", durum, not: durum === "ciro" ? "Ciro: Yıldız Gayrimenkul" : "" }] : [])], ...o });
+const CEKLER = [cekK(3401, 3301, "0012345", "Ziraat", "portfoy"), cekK(3402, 3302, "0098765", "Garanti", "portfoy", { tur: "resmi" }), cekK(3403, 3303, "5544332", "İş Bankası", "tahsile"),
+  cekK(3404, 3304, "7788990", "Akbank", "ciro"), cekK(3405, 3305, "1122334", "Halkbank", "karsiliksiz"), cekK(3406, 3306, "USD-001", "Yapı Kredi", "portfoy")];
+const CIRO_H = [{ id: 4020, tur: "odeme", tarih: "2026-09-18", tutar: 16000, giderId: 32, taksitId: 3201, hesapId: null, cekId: 3404, yontem: "Çek (ciro)", aciklama: "Çek 7788990 · Akbank" }];
+const kasaCek = (o = {}) => kasaEkrani({ payments: cekleriUygula([...KASA_TAHSILAT, ...CEK_ODEMELER], CEKLER), cekler: CEKLER, setCekler: bos, giderAyarlari: AYAR.giderAyarlari,
+  hesapHareketleri: [...KASA_HAREKETLER, ...CIRO_H], giderler: odemeleriUygula(TAKSIT_GIDERLER, [...KASA_HAREKETLER, ...CIRO_H], TUR_MAP), calisanlar: CAL, ...o });
 const KASA_B_ONCE = KASA_B.filter(h => h.id !== 4012); // mahsup girilmeden önceki hâl
 const mahsupPenceresi = () => (
   <OdemeKayitPenceresi kalem={odemeleriUygula([GIDERLER.find(x => x.id === 5)], KASA_B_ONCE, TUR_MAP)[0]} davranis="personel" turAd="Personel" turMap={TUR_MAP}
@@ -423,6 +436,13 @@ const EKRANLAR = {
   "kasa-calisan-ekstresi": [kasaB({ calisanlar: [CAL[0]] }), ["dugme:Ekstre"]],
   "giderler-mahsup": [mahsupPenceresi(), ["dugme:Avanstan mahsup"]],
   "giderler-tedarikci-ekstresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_B} />, ["Tedarikçiler", "dugme:Ekstre"]],
+  // Spec 0040: çek portföyü, ciro, durum, geçmiş, çekle tahsilat.
+  "kasa-cek-portfoyu": [kasaCek(), ["Çek Portföyü"]],
+  "kasa-cek-tumu": [kasaCek(), ["Çek Portföyü", "dugme:Tümü"]],
+  "kasa-cek-ciro": [kasaCek(), ["Çek Portföyü", "dugme:Ciro Et", "sec:Tedarikçi=11"]],
+  "kasa-cek-durum": [kasaCek(), ["Çek Portföyü", "dugme:Durum"]],
+  "kasa-cek-gecmis": [kasaCek(), ["Çek Portföyü", "dugme:Ciro edildi", "dugme:Geçmiş"]],
+  "musteri-tahsilat-cek": [detay(601, { cekler: CEKLER }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "sec:Ödeme yöntemi 1=Çek"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
@@ -446,6 +466,16 @@ createRoot(document.getElementById("root")).render(<div style={{ padding: 24, mi
       const el = document.querySelector(`input[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor)) || document.querySelector(`input[placeholder="${etiket}"]`);
       if (el) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("input", { bubbles: true })); }
       else console.warn("alan yok: " + etiket);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("sec:")) {
+      // Açılır liste: aria-label ya da Field etiketiyle bulunur, React'a change olayıyla bildirilir.
+      const [etiket, deger] = metin.slice(4).split("=");
+      const etiketOgesi = [...document.querySelectorAll("label")].find(l => l.textContent.trim() === etiket && l.htmlFor);
+      const el = document.querySelector(`select[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor));
+      if (el) { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("change", { bubbles: true })); }
+      else console.warn("liste yok: " + etiket);
       await bekle(300);
       continue;
     }

@@ -6,6 +6,7 @@ import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
+import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
 import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
@@ -27,6 +28,8 @@ export const Customers = ({
   giderYetki = false, makinaMaliyet = null, rates = null,
   // Spec 0024 C6/C7: tahsilata hesap seçimi yalnız kasa yetkisiyle (gider + Finans sekmesi, perde kalkık).
   kasaHesaplari = [], kasaYetki = false,
+  // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
+  cekler = [], setCekler = null,
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -272,6 +275,11 @@ export const Customers = ({
   // Yeni müşteri ekleme gövdesi: save() mükerrer kontrolünden veya uyarı diyaloğundaki
   // "Yine de Kaydet"ten çağrılır.
   const doAdd = () => {
+    // Spec 0040 R1, R14: ilk ödemedeki her çek satırı numara ve banka ister.
+    for (const r of (form._ilkOdemeSatirlari || []).filter(x => parseMoney(x.tutar) > 0 && x.yontem === "Çek")) {
+      const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
+      if (!d.kayit) { showToast(`İlk ödeme çeki: ${Object.values(d.hatalar)[0]}`); return; }
+    }
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
@@ -293,6 +301,10 @@ export const Customers = ({
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (yeniOdemeler.length > 0 && setPayments) {
         setPayments(p => [...yeniOdemeler, ...p]);
+        // Spec 0040 R2: çek satırları çek kaydını da doğurur (ilkSatisOdemeleri tutarı sıfır olmayan satırları sırayla kaydeder).
+        const cekSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
+        const yeniCekler = cekSatirlari.map((r, i) => (r.yontem === "Çek" ? yeniCek(cekDogrula(r.cek || {}, { cekler }).kayit, yeniOdemeler[i].id, odemeTarih, uid()) : null)).filter(Boolean);
+        if (yeniCekler.length && setCekler) setCekler(p => [...p, ...yeniCekler]);
       }
       if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
       // "Stoktan düş" tipli seçimler partStock'tan 1 adet düşülür (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
@@ -350,8 +362,16 @@ export const Customers = ({
     setModal(null);
     setReturnDetailId(null);
   };
-  const del = id => setConfirmId(id);
+  // Spec 0040 triyajı (Q7): ciro edilmiş çeke bağlı tahsilatı olan müşteri silinmez; tahsilat çöpe gitseydi gelirden
+  // düşer ama çekle kapatılan gider kalemleri kapalı kalırdı. Önce ciro iptal edilir.
+  const ciroEngeli = (id) => {
+    if (!musterininCiroluTahsilatlari(id, payments, cekler).length) return false;
+    showToast("Bu müşterinin ciro edilmiş çekle yapılmış tahsilatı var. Önce Kasa › Çek Portföyü'nden ciroyu iptal edin.");
+    return true;
+  };
+  const del = id => { if (!ciroEngeli(id)) setConfirmId(id); };
   const confirmDel = () => {
+    if (ciroEngeli(confirmId)) { setConfirmId(null); return; }
     const c = customers.find(x => x.id === confirmId);
     const ts = new Date().toISOString();
     setCustomers(p => withDeleted(p, x => x.id === confirmId, ts));
@@ -645,7 +665,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
-          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates} kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki}
+          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates} kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki} cekler={cekler} setCekler={setCekler}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
@@ -698,7 +718,7 @@ export const Customers = ({
 
       {modal && (
         <CustomerAddEditForm
-          modal={modal} form={form} setForm={setForm} save={save}
+          modal={modal} form={form} setForm={setForm} save={save} cekler={cekler}
           onClose={() => { clearDraft(); setModal(null); if (returnDetailId != null) { setDetailViewId(returnDetailId); setReturnDetailId(null); } }}
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts} partTypeDefs={partTypeDefs}

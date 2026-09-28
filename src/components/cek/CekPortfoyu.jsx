@@ -1,0 +1,190 @@
+import { useState, useMemo } from "react";
+import { uid, fmtTR, fmtCur, today } from "../../lib/utils";
+import { tl } from "../../lib/gider";
+import { makeCanDo } from "../../lib/permissions";
+import { logAction } from "../../lib/audit";
+import {
+  portfoySatirlari, baglanmamisCekTahsilatlari, cekDurumDegistir, cekKarsiliksiz, ciroIptal, ciroHareketleri, elleGecilebilir,
+  CEK_DURUM, CEK_DURUM_AD, CEK_TURLERI, CEK_TUR_AD, PORTFOY_NOTU,
+} from "../../lib/cek";
+import { hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
+import { Btn, Field, Input, Select, Modal, ConfirmDialog } from "../ui";
+import { KartBolum, BosDurum, UyariSeridi, Segment, HataMetni, Ipucu } from "../tasarim";
+import { tl2 } from "../gider/GiderAlanlari";
+import { Rozet } from "../gider/DonemRaporu";
+import { CiroPenceresi } from "./CiroPenceresi";
+
+// Kasa › Çek Portföyü (spec 0040 R3, R10–R17; Q5, Q10; AC-3–AC-5, AC-7, AC-14–AC-16, AC-26–AC-29). Elde bulunan çekler
+// (portföyde + tahsile verildi) vade sırasıyla ve toplamıyla; süzgeçle diğer durumlar. Durum değişikliği `cust_payment_edit`,
+// ciro ve ciro iptali `gider_odeme` ister; ciro edilmiş çekin karşılıksız işaretlenmesi ikisini birlikte ister.
+const DURUM_SUZGECI = [
+  { value: "elde", label: "Elde" }, { value: "portfoy", label: "Portföyde" }, { value: "tahsile", label: "Tahsile verildi" },
+  { value: "tahsil", label: "Tahsil edildi" }, { value: "ciro", label: "Ciro edildi" }, { value: "karsiliksiz", label: "Karşılıksız" }, { value: "tumu", label: "Tümü" },
+];
+const DURUM_RENK = { portfoy: "mavi", tahsile: "camgobegi", tahsil: "yesil", ciro: "mor", karsiliksiz: "kirmizi" };
+
+const DurumPenceresi = ({ satir, hareketler, izin, onDegistir, onKarsiliksiz, onCiroIptal, onClose }) => {
+  const { cek } = satir;
+  const [tarih, setTarih] = useState(today());
+  const [not, setNot] = useState("");
+  const [hata, setHata] = useState("");
+  const [onay, setOnay] = useState(null); // "karsiliksiz" | "iptal"
+  const ciro = cek.durum === CEK_DURUM.CIRO;
+  const secenekler = elleGecilebilir(cek.durum).filter(d => d !== CEK_DURUM.KARSILIKSIZ);
+  const dene = (hedef) => { const r = cekDurumDegistir(cek, hedef, tarih, not); if (r.hata) { setHata(r.hata); return; } onDegistir(r.cek); };
+  const karsiliksizOlabilir = ciro ? izin.durum && izin.ciro : izin.durum && elleGecilebilir(cek.durum).includes(CEK_DURUM.KARSILIKSIZ);
+  return (
+    <Modal title="Çek Durumu" onClose={onClose} maxWidth={560} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
+      <div data-testid="cek-durum-penceresi">
+        <div style={{ fontSize: 13, marginBottom: 10 }}>Çek <b>{cek.no} · {cek.banka}</b> · şimdiki durum <b>{CEK_DURUM_AD[cek.durum]}</b></div>
+        <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12 }}>
+          <Field label="Tarih"><Input type="date" value={tarih} onChange={e => setTarih(e.target.value)} /></Field>
+          <Field label="Not"><Input value={not} onChange={e => setNot(e.target.value)} placeholder="İsteğe bağlı" /></Field>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+          {izin.durum && secenekler.map(d => <Btn key={d} small variant="ghost" onClick={() => dene(d)}>{CEK_DURUM_AD[d]}</Btn>)}
+          {/* AC-26: ciro edilmiş çekte "tahsil edildi" denenebilir ama motor nedenini yazarak reddeder (C2, çift sayım). */}
+          {izin.durum && ciro && <Btn small variant="ghost" onClick={() => dene(CEK_DURUM.TAHSIL)}>Tahsil edildi</Btn>}
+          {karsiliksizOlabilir && <Btn small variant="danger" onClick={() => setOnay("karsiliksiz")}>Karşılıksız</Btn>}
+          {ciro && izin.ciro && <Btn small variant="danger" onClick={() => setOnay("iptal")}>Ciroyu İptal Et</Btn>}
+        </div>
+        {!izin.durum && <Ipucu>Çek durumunu değiştirme yetkiniz yok.</Ipucu>}
+        {ciro && <Ipucu>Ciro edilmiş çek elle tahsil edildi yapılamaz; ciro iptaliyle portföye döner ya da karşılıksız işaretlenir. Kapattığı {ciroHareketleri(cek.id, hareketler).length} ödeme bu işlemlerde silinir.</Ipucu>}
+        <HataMetni>{hata}</HataMetni>
+      </div>
+      {onay === "karsiliksiz" && (
+        <ConfirmDialog title="Çek karşılıksız işaretlensin mi?" confirmLabel="Karşılıksız İşaretle"
+          message={ciro ? "Çekin tahsilatı gelirden çıkar ve ciro ile kapattığı gider borçları yeniden açılır (ödeme hareketleri silinir). Çek portföye dönmez." : "Çekin tahsilatı gelirden çıkar ve müşteri borcu yeniden açılır."}
+          onConfirm={() => { setOnay(null); onKarsiliksiz(tarih); }} onCancel={() => setOnay(null)} />
+      )}
+      {onay === "iptal" && (
+        <ConfirmDialog title="Ciro iptal edilsin mi?" confirmLabel="Ciroyu İptal Et" icon="refresh" confirmIcon="refresh"
+          message="Çekin ödeme hareketleri silinir, kapattığı gider borçları yeniden açılır ve çek portföye döner."
+          onConfirm={() => { setOnay(null); onCiroIptal(tarih); }} onCancel={() => setOnay(null)} />
+      )}
+    </Modal>
+  );
+};
+
+// R12, AC-16, AC-35: kimden alındı, durum geçmişi (çek kaydından), kime ciro edildi ve hangi kalemleri kapattı (hareketlerden).
+const GecmisPenceresi = ({ satir, musteriAdi, hareketler, giderler, onClose }) => {
+  const { cek, odeme } = satir;
+  const ciroH = ciroHareketleri(cek.id, hareketler);
+  const kalemAdi = (id) => { const k = giderler.find(x => String(x.id) === String(id)); return k ? (k.aciklama || k.calisanAd || fmtTR(k.tarih)) : "Silinmiş kalem"; };
+  return (
+    <Modal title="Çek Geçmişi" onClose={onClose} maxWidth={600} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
+      <div data-testid="cek-gecmisi" style={{ fontSize: 13 }}>
+        <div style={{ marginBottom: 10 }}>Çek <b>{cek.no} · {cek.banka}</b>{cek.kesideci ? ` · keşideci ${cek.kesideci}` : ""} · {CEK_TUR_AD[cek.tur] || cek.tur}</div>
+        <div style={{ marginBottom: 10 }}>Kimden: <b>{musteriAdi}</b> · alındı {fmtTR(odeme.tarih)} · tutar {fmtCur(odeme.tutar, odeme.currency || "TRY")} · vade {odeme.vadeTarihi ? fmtTR(odeme.vadeTarihi) : "girilmemiş"}</div>
+        {(cek.gecmis || []).map((g, i) => (
+          <div key={i} data-testid="cek-gecmis-satiri" style={{ display: "grid", gridTemplateColumns: "90px 130px 1fr", gap: 10, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+            <span>{fmtTR(g.tarih)}</span><b>{CEK_DURUM_AD[g.durum] || g.durum}</b><span>{g.not}</span>
+          </div>
+        ))}
+        {ciroH.length > 0 && (
+          <div style={{ marginTop: 12 }} data-testid="cek-ciro-kalemleri">
+            <b>Ciro ile kapatılan gider kalemleri</b>
+            {ciroH.map(h => <div key={h.id} style={{ padding: "4px 0" }}>{fmtTR(h.tarih)} · {kalemAdi(h.giderId)} · {tl2(h.tutar)}</div>)}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+export const CekPortfoyu = ({
+  cekler = [], setCekler, payments = [], customers = [], giderler = [], giderTurleri = [], tedarikciler = [], calisanlar = [],
+  hesapHareketleri = [], setHesapHareketleri = null, giderAyarlari = {}, serverPermissions = null, showToast = () => {},
+}) => {
+  const canGider = makeCanDo(serverPermissions, "giderActions");
+  const canCust = makeCanDo(serverPermissions, "customerActions");
+  const izin = { durum: canCust("cust_payment_edit") && !!setCekler, ciro: canGider("gider_odeme") && !!setCekler && !!setHesapHareketleri };
+  const [suzgec, setSuzgec] = useState("elde");
+  const [tur, setTur] = useState("");
+  const [ciroSatiri, setCiroSatiri] = useState(null);
+  const [durumSatiri, setDurumSatiri] = useState(null);
+  const [gecmisSatiri, setGecmisSatiri] = useState(null);
+  const bugun = today();
+  const durumlar = suzgec === "elde" ? null : suzgec === "tumu" ? new Set(Object.values(CEK_DURUM)) : new Set([suzgec]);
+  const { satirlar, toplamK } = useMemo(() => portfoySatirlari(cekler, payments, { durumlar, tur, bugun, esikGun: hatirlatmaEsigi(giderAyarlari) }),
+    [cekler, payments, suzgec, tur, bugun, giderAyarlari]);
+  const baglanmamis = baglanmamisCekTahsilatlari(payments, cekler).length;
+  const musteriAdi = (id) => customers.find(c => String(c.id) === String(id))?.name || "Silinmiş müşteri";
+  const cekYaz = (yeni) => setCekler(p => p.map(c => (c.id === yeni.id ? yeni : c)));
+  const log = (action, cek, detail = {}) => logAction({ serverPermissions, action, entity: "cek", entityId: cek.id, entityName: `${cek.no} · ${cek.banka}`, detail });
+
+  const ciroKaydet = (plan) => {
+    const hareketler = plan.hareketler.map(h => ({ ...h, id: uid() }));
+    setHesapHareketleri(p => [...(p || []), ...hareketler]);
+    cekYaz(plan.cek);
+    log("ciro_edildi", plan.cek, { hareket: hareketler.length, tutar: hareketler.reduce((a, h) => a + h.tutar, 0) });
+    setCiroSatiri(null);
+    showToast(plan.uyari ? "Çek ciro edildi. Fark hiçbir borcu kapatmadı." : "Çek ciro edildi.");
+  };
+  const durumYaz = (yeni) => { cekYaz(yeni); log("durum_degisti", yeni, { durum: yeni.durum }); setDurumSatiri(null); showToast(`Çek: ${CEK_DURUM_AD[yeni.durum]}.`); };
+  const karsiliksiz = (tarih) => {
+    const r = cekKarsiliksiz(durumSatiri.cek, hesapHareketleri || [], tarih);
+    if (r.hata) { showToast(r.hata); return; }
+    if (r.silinen.length) setHesapHareketleri(() => r.hareketler);
+    cekYaz(r.cek); log("karsiliksiz", r.cek, { silinenHareket: r.silinen.length }); setDurumSatiri(null);
+    showToast(r.silinen.length ? "Çek karşılıksız işaretlendi; ciro ile kapatılan borçlar yeniden açıldı." : "Çek karşılıksız işaretlendi.");
+  };
+  const iptal = (tarih) => {
+    const r = ciroIptal(durumSatiri.cek, hesapHareketleri || [], tarih);
+    if (r.hata) { showToast(r.hata); return; }
+    setHesapHareketleri(() => r.hareketler);
+    cekYaz(r.cek); log("ciro_iptal", r.cek); setDurumSatiri(null); showToast("Ciro iptal edildi; çek portföye döndü.");
+  };
+  const izgara = { display: "grid", gridTemplateColumns: "95px minmax(0, 1.3fr) minmax(0, 1fr) 90px 130px 130px 250px", gap: 10, alignItems: "center" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }} data-testid="cek-portfoyu">
+      <UyariSeridi aile="bilgi" testId="portfoy-notu">{PORTFOY_NOTU}{baglanmamis > 0 && <> <b>{baglanmamis}</b> eski çek tahsilatı çek kaydına bağlı değil; bağlamak için tahsilatı müşteri detayından düzenleyin.</>}</UyariSeridi>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ minWidth: 0, flex: "1 1 520px" }}><Segment ariaLabel="Çek durumu süzgeci" kip="dugme" genislik="icerik" options={DURUM_SUZGECI} value={suzgec} onChange={setSuzgec} /></div>
+        <div style={{ width: 170 }}><Select aria-label="Çek türü süzgeci" value={tur} onChange={e => setTur(e.target.value)}>
+          <option value="">Tüm türler</option>{CEK_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</Select></div>
+      </div>
+      <div data-testid="portfoy-toplam" style={{ fontSize: 14 }}>
+        Elde bulunan toplam: {Object.keys(toplamK).length ? Object.entries(toplamK).map(([pb, k]) => <b key={pb} style={{ marginRight: 10 }}>{fmtCur(tl(k), pb)}</b>) : <b>—</b>}
+        <span style={{ color: "var(--n500, #64748b)", fontSize: 12.5 }}> · {satirlar.filter(s => s.gecti).length} vadesi geçmiş · {satirlar.filter(s => s.yaklasan).length} yaklaşan ({hatirlatmaEsigi(giderAyarlari)} gün)</span>
+      </div>
+      {satirlar.length === 0 ? (
+        <BosDurum testId="bos-cek-portfoyu" baslik={suzgec === "elde" ? "Elde çek yok" : "Bu süzgeçte çek yok"} metin="Çekle tahsilat müşteri detayındaki ödeme formundan girilir; çek kaydı orada oluşur." />
+      ) : (
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="cek-listesi">
+          <div style={{ minWidth: 940 }}>
+            <div style={{ ...izgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+              <span>Vade</span><span>Çek</span><span>Kimden</span><span>Tür</span><span style={{ textAlign: "right" }}>Tutar</span><span>Durum</span><span />
+            </div>
+            {satirlar.map(s => {
+              const tlDisi = s.currency !== "TRY";
+              return (
+                <div key={s.cek.id} data-testid="cek-satiri" style={{ ...izgara, padding: "9px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)",
+                  background: s.gecti ? "var(--redBg, #fef2f2)" : s.yaklasan ? "var(--ambBg, #fffbeb)" : "transparent" }}>
+                  <span>{s.vade ? fmtTR(s.vade) : "—"}{s.gecti && <div><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}{s.yaklasan && <div><Rozet renk="turuncu">Yaklaşıyor</Rozet></div>}</span>
+                  <span style={{ minWidth: 0 }}><b>{s.cek.no}</b> · {s.cek.banka}{s.cek.kesideci && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Keşideci: {s.cek.kesideci}</div>}</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{musteriAdi(s.odeme.customerId)}<div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>alındı {fmtTR(s.odeme.tarih)}</div></span>
+                  <span>{CEK_TUR_AD[s.cek.tur] || s.cek.tur}</span>
+                  <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtCur(tl(s.tutarK), s.currency)}</b>
+                  <span><Rozet renk={DURUM_RENK[s.cek.durum]}>{CEK_DURUM_AD[s.cek.durum]}</Rozet></span>
+                  <span style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    {s.cek.durum === CEK_DURUM.PORTFOY && izin.ciro && (tlDisi
+                      ? <span title="Gider ödemeleri TL'dir." style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}><Btn small variant="ghost" disabled>Ciro Et</Btn> yalnız TL çek</span>
+                      : <Btn small onClick={() => setCiroSatiri(s)}>Ciro Et</Btn>)}
+                    {(izin.durum || izin.ciro) && <Btn small variant="ghost" onClick={() => setDurumSatiri(s)}>Durum</Btn>}
+                    <Btn small variant="ghost" onClick={() => setGecmisSatiri(s)}>Geçmiş</Btn>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </KartBolum>
+      )}
+      {ciroSatiri && <CiroPenceresi satir={ciroSatiri} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+        onKaydet={ciroKaydet} onClose={() => setCiroSatiri(null)} />}
+      {durumSatiri && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={izin} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
+      {gecmisSatiri && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={musteriAdi(gecmisSatiri.odeme.customerId)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
+    </div>
+  );
+};

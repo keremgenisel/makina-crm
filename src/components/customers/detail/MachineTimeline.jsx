@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { CEK_DURUM_AD } from "../../../lib/cek";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
@@ -191,7 +192,14 @@ export const MachineTimeline = ({
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
                     {payment.yontem && <span style={PIL}>{payment.yontem}</span>}
                     {dosyaAdet && <AtesRozeti n={dosyaAdet("odeme", payment.id)} onClick={() => onDosyaBadge("odeme", payment.id)} />}
-                    {payment.yontem === "Çek" && canDo("cust_payment_edit") && (
+                    {payment.yontem === "Çek" && payment._cek && (
+                      // Spec 0040 C10, AC-25: çeke bağlı tahsilatta durum çek kaydından okunur; buradan değiştirilmez.
+                      <span data-testid="cek-durum-rozeti" onClick={() => onToggleCekTahsil(payment)} title="Çek portföyünden yönetilir (Kasa › Çek Portföyü)"
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "help", border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", color: "var(--n700, #334155)" }}>
+                        Çek {payment._cek.no}: {CEK_DURUM_AD[payment._cek.durum] || payment._cek.durum}
+                      </span>
+                    )}
+                    {payment.yontem === "Çek" && !payment._cek && canDo("cust_payment_edit") && (
                       <button onClick={() => onToggleCekTahsil(payment)}
                         style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: payment.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: payment.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: payment.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
                         {payment.tahsilEdildi ? "Tahsil Edildi" : "Beklemede · işaretle: Tahsil Edildi"}

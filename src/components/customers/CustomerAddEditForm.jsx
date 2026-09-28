@@ -12,6 +12,7 @@ export const CustomerAddEditForm = ({
   kdvRates, payments, geoData, loadingGeo,
   addLabel, entity, parts = [], partTypeDefs = [], krediKartiKomisyonlari = null,
   draftBar = null,
+  cekler = [], // spec 0040: ilk ödemedeki çek satırında çek alanları
   // Spec 0002 (R15, plan M8): üretim tarihi ve satış kuru satırı yalnız gider yetkisiyle çizilir.
   giderYetki = false,
 }) => {
@@ -443,7 +444,7 @@ export const CustomerAddEditForm = ({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
-          <PaymentRowsEditor rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
+          <PaymentRowsEditor cekler={cekler} rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
             krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate} />
           <Ipucu>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</Ipucu>
         </Field>

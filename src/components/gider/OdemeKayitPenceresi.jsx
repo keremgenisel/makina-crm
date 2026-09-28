@@ -123,6 +123,9 @@ export const OdemeKayitPenceresi = ({
                   {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </Select>
               </Field>
+              {/* Spec 0040 R19: "Çek (ciro)" listede yok; düz "Çek" takip edilmeyen serbest bir nottur. */}
+              {hatalar.yontem ? <HataMetni>{hatalar.yontem}</HataMetni>
+                : form.yontem === "Çek" ? <Ipucu>Düz “Çek” takip edilmeyen bir nottur. Müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.</Ipucu> : null}
             </div>}
             {hesapSecimi && !mahsupKipi && (
               <div>
@@ -155,12 +158,14 @@ export const OdemeKayitPenceresi = ({
                   <span>{fmtTR(h.tarih)}</span>
                   <span style={{ minWidth: 0 }}>
                     {h.tur === "mahsup" ? "Avanstan mahsup · " : ""}{satirAdi(h.taksitId) || "Kalem"}
+                    {/* Spec 0040 Q9: ciro hareketi tek tek silinmez; iptal bütün ciro için portföyden. */}
+                    {h.cekId != null && <span data-testid="ciro-hareketi" style={{ marginLeft: 6, fontSize: 11, color: "var(--n600, #475569)" }}>· ciro iptali Kasa › Çek Portföyü'nden</span>}
                     <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>
                       {[h.yontem || null, h.tur === "mahsup" ? null : hesapAdi(h.hesapId), h.kaynak === "goc" ? "Eski kayıttan aktarıldı" : null, h.aciklama || null].filter(Boolean).join(" · ")}
                     </div>
                   </span>
                   <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? "Tamamı" : tl2(h.tutar)}</b>
-                  <span style={{ textAlign: "right" }}>{odemeYetkisi && onSil && <Btn small variant="danger" onClick={() => setSilinecek(h)} title={h.tur === "mahsup" ? "Mahsubu sil" : "Ödemeyi sil"}><Icon name="trash" size={12} /></Btn>}</span>
+                  <span style={{ textAlign: "right" }}>{odemeYetkisi && onSil && h.cekId == null && <Btn small variant="danger" onClick={() => setSilinecek(h)} title={h.tur === "mahsup" ? "Mahsubu sil" : "Ödemeyi sil"}><Icon name="trash" size={12} /></Btn>}</span>
                 </div>
               ))}
             </div>

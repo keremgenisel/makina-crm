@@ -129,7 +129,11 @@ dbmod.writeBlobToDb({
     { id: 972, tur: "virman", tarih: "2026-07-06", tutar: 500, hesapId: 97, karsiHesapId: 98, aciklama: "" },
     { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" },
     { id: 974, tur: "avans", tarih: "2026-07-08", tutar: 3000, calisanId: 55, hesapId: null },
-    { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null }],
+    { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null },
+    { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 }],
+  // Spec 0040: çek kaydı (yalnız kendi alanları, geçmiş JSON).
+  cekler: [{ id: 991, paymentId: 900, no: "123456", banka: "Ziraat", kesideci: "Ali Veli", tur: "resmi", durum: "ciro",
+    gecmis: [{ tarih: "2026-07-01", durum: "portfoy", not: "Alındı" }, { tarih: "2026-07-10", durum: "ciro", not: "Ciro: Demir Bant" }] }],
   // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
@@ -223,6 +227,11 @@ check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSO
 check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boolean) tam turu", (() => {
   const h = blob.kasaHesaplari || [], m = blob.hesapHareketleri || [];
   const z = h.find(x => x.id === 97), k = h.find(x => x.id === 98), o = m.find(x => x.id === 971), v = m.find(x => x.id === 972), g = m.find(x => x.id === 973);
+  check("spec 0040: çek kaydı (geçmiş JSON) ve ciro hareketinin cekId'si tam turu", (() => {
+    const c = (blob.cekler || []).find(x => x.id === 991);
+    return c?.paymentId === 900 && c.no === "123456" && c.banka === "Ziraat" && c.kesideci === "Ali Veli" && c.tur === "resmi" && c.durum === "ciro"
+      && c.gecmis?.length === 2 && c.gecmis[1].not === "Ciro: Demir Bant" && m.find(x => x.id === 976)?.cekId === 991;
+  })());
   check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
     && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);
   return h.length === 2 && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000

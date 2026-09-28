@@ -3,6 +3,7 @@ import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEM
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize, parseMoney } from "../lib/utils";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { cekDogrula, CEK_TURLERI } from "../lib/cek";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -202,7 +203,9 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih }) => {
+// Spec 0040 R1, R2, R14: `cekler` verilirse "Çek" satırında çek kaydının alanları (numara, banka, keşideci, tür) çizilir;
+// aynı banka ve numaralı kayıtlı çek uyarı verir (engellemez). Her çek ayrı satırdır (bir tahsilat bir çek taşır).
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih, cekler = null }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -213,7 +216,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
       {satirlar.map((r, i) => (
         <div key={i} style={{ marginBottom: 8 }}>
           <div style={{ display: "grid", gridTemplateColumns: r.yontem === "Çek" ? "1fr 1fr 1fr 36px" : "1fr 1fr 36px", gap: 8, alignItems: "center" }}>
-            <Select value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
+            <Select aria-label={`Ödeme yöntemi ${i + 1}`} value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
               {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
             </Select>
             <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
@@ -223,6 +226,25 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
             <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
               style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
           </div>
+          {r.yontem === "Çek" && Array.isArray(cekler) && (() => {
+            const d = cekDogrula(r.cek || {}, { cekler });
+            const set = (patch) => satirGuncelle(i, { cek: { ...(r.cek || {}), ...patch } });
+            const alan = { padding: "7px 10px", border: "1px solid var(--n300, #cbd5e1)", borderRadius: 8, fontSize: 13, background: "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", minWidth: 0 };
+            return (
+              <div data-testid="cek-alanlari" style={{ marginTop: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 130px", gap: 8 }}>
+                  <input aria-label="Çek numarası" placeholder="Çek no *" value={r.cek?.no || ""} onChange={e => set({ no: e.target.value })} style={alan} />
+                  <input aria-label="Banka" placeholder="Banka *" value={r.cek?.banka || ""} onChange={e => set({ banka: e.target.value })} style={alan} />
+                  <input aria-label="Keşideci" placeholder="Keşideci (çeki yazan)" value={r.cek?.kesideci || ""} onChange={e => set({ kesideci: e.target.value })} style={alan} />
+                  <select aria-label="Çek türü" value={r.cek?.tur || "hamiline"} onChange={e => set({ tur: e.target.value })} style={alan}>
+                    {CEK_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                {d.uyari && <div role="status" style={{ fontSize: 11.5, color: "var(--amb800, #92400e)", marginTop: 4 }}>{d.uyari}</div>}
+                <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Her çek ayrı satırdır: müşteri üç çek verdiyse üç satır girin. Çek tutarı bu satırın tutarıdır.</div>
+              </div>
+            );
+          })()}
           {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
             <>
               <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}

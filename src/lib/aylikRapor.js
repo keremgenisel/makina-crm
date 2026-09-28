@@ -6,7 +6,7 @@ import {
   parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
   kalipBorcTarafi, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
-  normalizeSaleType, tahsilatTarihiOf,
+  normalizeSaleType, tahsilatTarihiOf, cekBekliyorMu, odemeGelirTarihi,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
@@ -283,8 +283,10 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
 
   // ── TAHSİLAT (gerçekleşen) ──────────────────────────────────────────────────
   const ayOdemeler = canliOdemeler.filter(p => ayIci(p.tarih));
-  const gerceklesen = ayOdemeler.filter(isPaymentReceived);
-  const bekleyenCekler = ayOdemeler.filter(p => p.yontem === "Çek" && !p.tahsilEdildi);
+  // Spec 0040 R6, R17: çek kaydına bağlı tahsilat tahsil ya da ciro ayında gelire girer (odemeGelirTarihi); bağlı olmayan
+  // tahsilatta ay bugünkü gibi tahsilat tarihidir. Bekleyen çek tek kaynaktan (cekBekliyorMu).
+  const gerceklesen = canliOdemeler.filter(p => isPaymentReceived(p) && ayIci(odemeGelirTarihi(p)));
+  const bekleyenCekler = ayOdemeler.filter(cekBekliyorMu);
   const tahsilatTutar = {}, bekleyenCekTutar = {};
   bekleyenCekler.forEach(p => paraEkle(bekleyenCekTutar, p.currency, p.tutar));
   // Extra Kalıp + yedek parça (kargo) satışlarının bu ay TAHSİL EDİLEN (satisTahsilEdildi) tutarları da
@@ -537,7 +539,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     // Tahsilat
     tahsilatAdet: tumTahsilatlar.length, tahsilatTutar, tahsilatNet, tahsilatKdv, tahsilatDetay, tahsilatYontemKirilimi, tahsilatKaynakKirilimi,
     bekleyenCekAdet: bekleyenCekler.length, bekleyenCekTutar, bekleyenCekDetay,
-    cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
+    cekTahsilAdet: gerceklesen.filter(p => p.yontem === "Çek").length,
     // Alacak (rapor anı) — borçlu firma sayısı tüm kaynakları (bakiye/servis/kalıp/kargo) kapsar
     borcluFirma: alacakMap.size, acikBorc: alacak, alacakDetay, alacakYaslandirma, alacakKaynakKirilimi,
     kkBlokajda, kkBlokajdaTutar,
