@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0040-cek-portfoyu-ve-ciro.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0040-cek-portfoyu-ve-ciro.md` (R2, plan onayıyla onaylandı) |
 | **Durum** | Uygulanıyor. 2026-09-28: Q1–Q10 kullanıcı tarafından onaylandı; spec R2 ile güncellendi. Dal `feat/0040-cek` (0024 B'nin üstünde). |
 | **Önkoşul** | 0001, 0008 (perde), 0021, 0024 (hareket modeli, Kasa) |
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-28, plan onayıyla; plan `specs/0040-uygulama-plani.md` Q1–Q10). Uygulanıyor, dal `feat/0040-cek`. |
+| **Durum** | Tamamlandı (2026-09-28; commit `740c876`, dal `feat/0040-cek`; plan `specs/done/0040-uygulama-plani.md` Q1–Q10) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Yeni Çek Portföyü ekranı, gider ödemesi, kasa hareketleri, Finans ve aylık rapor, müşteri tahsilatı |
@@ -334,30 +334,30 @@ ne de kasadan olmayan bir para çıkarıyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Çek portföyü, ciro ve karşılıksız hesapları saf motorda (React'sız, testli), 0024 deseniyle.
-- [ ] Çift sayım yasağı testle sabitlendi: ciro hesaba dokunmuyor, gelir bir kez sayılıyor (AC-9, AC-10).
-- [ ] Gelirin kaybolması düzeltildi ve regresyon testiyle korundu (AC-10).
-- [ ] `kasa.js` `tahsilatSayilirMi` çaprazı testte sabit: ciro edilen çek gelire girerken hiçbir hesabın
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Çek portföyü, ciro ve karşılıksız hesapları saf motorda (React'sız, testli), 0024 deseniyle.
+- [x] Çift sayım yasağı testle sabitlendi: ciro hesaba dokunmuyor, gelir bir kez sayılıyor (AC-9, AC-10).
+- [x] Gelirin kaybolması düzeltildi ve regresyon testiyle korundu (AC-10).
+- [x] `kasa.js` `tahsilatSayilirMi` çaprazı testte sabit: ciro edilen çek gelire girerken hiçbir hesabın
       bakiyesini artırmıyor (AC-22). Bu, R6'nın yanlış uygulanmasının tek koruması.
-- [ ] Bir çekin iki kalemi kapattığı senaryo iki ayrı ödeme hareketi üretiyor ve `kasa.odemeDogrula`'nın
+- [x] Bir çekin iki kalemi kapattığı senaryo iki ayrı ödeme hareketi üretiyor ve `kasa.odemeDogrula`'nın
       tek hedef kuralı hiçbir yerde gevşetilmedi (AC-12).
-- [ ] Sunucu eşlemesi C11'e göre yapıldı: `cekler` bölümü `["customers", "gider", "settings"]`,
+- [x] Sunucu eşlemesi C11'e göre yapıldı: `cekler` bölümü `["customers", "gider", "settings"]`,
       `GIDER_BOLUMLERI`'nde değil; gider sekmesi olmayan tahsilatçı kullanıcı uçtan uca testte 403 almıyor
       (AC-33).
-- [ ] Karşılıksız ve ciro iptali yolları hareket silme üzerinden çalışıyor, çekin geçmişine iz düşüyor
+- [x] Karşılıksız ve ciro iptali yolları hareket silme üzerinden çalışıyor, çekin geçmişine iz düşüyor
       (AC-27, AC-28).
-- [ ] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
-- [ ] Sunucu yetki eşlemesi yapıldı ve uçtan uca testte sabitlendi (AC-20).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0040-*.jpg`): portföy listesi, ciro ekranı, karşılıksız durumu;
+- [x] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
+- [x] Sunucu yetki eşlemesi yapıldı ve uçtan uca testte sabitlendi (AC-20).
+- [x] Görsel kanıt eklendi (`docs/evidence/0040-*.jpg`): portföy listesi, ciro ekranı, karşılıksız durumu;
       aydınlık ve karanlık tema.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: çekin portföy kaydı, ciro kuralı, "ciro edilen çek tahsil edilmiş sayılır"
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: çekin portföy kaydı, ciro kuralı, "ciro edilen çek tahsil edilmiş sayılır"
       kararı ve bunun iki ayrı soruya (gelir doğdu mu / para hesaba girdi mi) bölünmüş uygulaması yazıldı.
-- [ ] Takım Yöneticisi onayladı ve "resmi" sözcüğünün anlamını doğruladı (Context son madde); ikinci okuma
+- [x] Takım Yöneticisi onayladı ve "resmi" sözcüğünün anlamını doğruladı (Context son madde); ikinci okuma
       çıkarsa R20'nin gizlilik kolu uygulandı ve `gider-gizlilik.test.js` desenine eklendi.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -365,10 +365,10 @@ ne de kasadan olmayan bir para çıkarıyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı anında işlendi (uygulama notları, AC değişmedi). Onaydan sonra C11'e triyaj notu eklendi: hareketsiz ciroyu sunucu reddeder ve Q7 koruması bütün silme yollarına genişletildi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 2 | Bir triyaj turu (4 bulgu) ve onun sırasında bulunan 0040 öncesi veri kaybı hatası için ayrı bir tur. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Müşteri silme ve çöp kutusunun ciro korumasını atlaması, otomatik temizliğin yetim çek bırakması, sunucunun hareketsiz ciroyu kabul etmesi, lint uyarıları. Hepsi gerçek. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Triyaj bulguları yeni özelliğin eksik yollarıydı. Müşteri detayının çöpteki tahsilatları silmesi 0040 öncesinden kalmaydı, ayrı triyajla düzeltildi ve sayılmadı. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kaydı korumaya alan kural (ciro edilmiş çekin tahsilatı silinmez) yalnız kullanıcının gördüğü tek düğmeye yazıldı; aynı kaydı silen öbür yollar (üst kaydın kaskadı, kalıcı silme, çöpü boşaltma, açılıştaki otomatik temizlik) atlandı. Koruma kuralı eklenirken kaydı diziden çıkaran bütün yollar tek listede taranmalı. İkinci ders: bileşenlere çöpsüz (`live*`) dizi verilip setter tam diziye yazdığında, türetilmiş diziyi geri yazmak sessiz veri kaybıdır; yazım her zaman tam dizi üzerinde işlevsel güncellemeyle yapılmalı.
