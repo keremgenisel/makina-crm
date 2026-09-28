@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-28, plan onayıyla; plan `specs/0023-uygulama-plani.md` P1–P8) |
+| **Durum** | Tamamlandı (2026-09-28; commit `55b54f8`, dal `feat/0023-ek-odeme`; plan `specs/done/0023-uygulama-plani.md` P1–P8) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Personel gider kalemi, çalışan tanımı, dönem raporu, borç özeti, makina maliyeti |
@@ -177,20 +177,20 @@ bozulmuyor: kimin ne kadar prim aldığı varsayılan olarak kapalı ve hiçbir 
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip testi kapsıyor (AC-13).
-- [ ] Gizlilik testinin **taradığı alan adı listesine** yeni alanlar eklendi (AC-12); listeye eklenmeyen bir
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kalıcı alanlar dört (liste ise beş) noktada eklendi; roundtrip testi kapsıyor (AC-13).
+- [x] Gizlilik testinin **taradığı alan adı listesine** yeni alanlar eklendi (AC-12); listeye eklenmeyen bir
       alan testi yeşil bırakıp çıktıya sızabilir.
-- [ ] Ek ödeme satırları **kimliksiz alt satır** olarak kuruldu ve kalemle birlikte yazılıp birleştirildiği
+- [x] Ek ödeme satırları **kimliksiz alt satır** olarak kuruldu ve kalemle birlikte yazılıp birleştirildiği
       testle gösterildi (C7).
-- [ ] 0020 tamamlanmış ve bu iş onun üstüne yazıldı (C9); PR özetinde belirtildi.
-- [ ] Personel kalem toplamı tek yerde hesaplanıyor; ikinci toplama yazılmadı (C5).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0023-*.jpg`), ek ödeme satırları ve kapalı gizlilik durumu dâhil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi; `mesai` adının iki farklı anlamı açıkça yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] 0020 tamamlanmış ve bu iş onun üstüne yazıldı (C9); PR özetinde belirtildi.
+- [x] Personel kalem toplamı tek yerde hesaplanıyor; ikinci toplama yazılmadı (C5).
+- [x] Görsel kanıt eklendi (`docs/evidence/0023-*.jpg`), ek ödeme satırları ve kapalı gizlilik durumu dâhil.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi; `mesai` adının iki farklı anlamı açıkça yazıldı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -198,10 +198,18 @@ bozulmuyor: kimin ne kadar prim aldığı varsayılan olarak kapalı ve hiçbir 
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 onay anında işlendi (P1–P8); onaydan sonra Requirements, Constraints ve AC değişmedi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu yapılmadan kapatıldı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu yok. | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Mevcut testlerin hiçbiri kırılmadı; 242 çekimde değişen yalnız personel ekranları. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Tek toplam (C5) önceki işlerde gerçekten tek yerde kurulduğu için bu iş neredeyse bedava yayıldı: ek ödemeleri
+  `kalemKurus`'a eklemek borç, hatırlatıcı, taksit, model tabanı ve makina maliyetini birlikte güncelledi. Yeni bir
+  tutar kaynağı eklerken önce "toplam nerede tek" sorusunu sormak, tüketicileri tek tek aramaktan ucuzdur.
+- Adaş tuzağı (R10) belgeyle değil testle kapatıldı: motorun ürettiği kaydın anahtarları taranıyor; ekran metni meşru
+  kaldığı için tarama dize değil tanımlayıcı hedefliyor.
+- Gizlilik için kaynak taraması tek başına yetmez; ayırt edici tutarlarla gerçek çıktı taraması, yasaklı ad listesine
+  eklenmeyen bir alanın sızmasını da yakalar.

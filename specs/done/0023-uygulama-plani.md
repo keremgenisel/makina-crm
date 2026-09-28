@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0023-calisan-mesaisi-ve-primi.md` (R2, plan onayıyla onaylandı) |
-| **Durum** | Uygulandı, commit bekliyor. 2026-09-28: P1–P8 onaylandı; spec R2; görünüm TY onaylı. Dal `feat/0023-ek-odeme`. |
+| **Bağlı spec** | `specs/done/0023-calisan-mesaisi-ve-primi.md` (R2, plan onayıyla onaylandı) |
+| **Durum** | Tamamlandı. 2026-09-28: P1–P8 onaylandı; spec R2; görünüm TY onaylı; commit `55b54f8` (dal `feat/0023-ek-odeme`, push ve sürüm yok). SCORECARD dolduruldu, spec ve plan `specs/done/`'a taşındı (§5). |
 | **Önkoşul** | 0001 (gider, personel), 0020 (personel ataması, C9), 0021 (ödeme hedefleri), 0022 (dal tabanı) |
 
 ---
@@ -64,3 +64,8 @@
 - **P8:** mevcut testlerin hiçbiri kırılmadı; istisna gerekmedi.
 - **Kanıt:** 242 çekim; değişen yalnız personel formları ve iki yeni personel ayrıntısı ekranı (`0023-piksel-raporu.json`, 10 JPEG).
 - **Belgeler:** `CLAUDE.md` 0023 bölümü (iki anlamlı `mesai`); `specs/done/0001` R5'e tarihli not (analistin commit edilmemiş değişikliğinden ayrı bölüm); sözlük satır numarası (`DonemRaporu.jsx:68`); `tests/spec-atiflari.test.js` `TASINACAK`'a 0023 dosyaları.
+
+## 5. Kapanış (2026-09-28)
+
+- Taban raporu **`0023-taban-piksel-raporu.json`**: bugünkü kod, onaylı "sonra" çekimleriyle karşılaştırıldı; 5 ekran × 2 tema = 10 çekim, hepsi 0 piksel (yan yana JPEG'ler `0023-taban-*`). Kanıt eşlemesindeki 5 `degisti` kaydı bu rapora `ayni` olarak çevrildi; `0023-piksel-raporu.json` önce/sonra kanıtı olarak kalır.
+- `tests/spec-atiflari.test.js` `TASINACAK` listesinden 0023 dosyaları çıkarıldı.
