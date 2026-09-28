@@ -55,7 +55,7 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
       <div style={{ background: "var(--surface, #ffffff)" }}>
         {satirlar.map(s => s.tur === "personel" ? (
           <div key="personel">
-            <div data-testid="hatirlatma-personel" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", background: "#faf7ff" }}>
+            <div data-testid="hatirlatma-personel" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", background: "var(--purBg3)" }}>
               <div>
                 <b>Çalışanlar · {s.adet} kalem</b>
                 <div><button type="button" aria-expanded={!!acik.personel} onClick={() => setAcik(a => ({ ...a, personel: !a.personel }))}

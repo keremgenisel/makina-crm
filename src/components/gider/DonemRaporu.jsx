@@ -330,7 +330,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </tr></thead>
           <tbody>
             {personel.length > 0 && (
-              <tr style={{ background: "#faf7ff" }}>
+              <tr style={{ background: "var(--purBg3)" }}>
                 <td style={{ ...td, color: "var(--n600, #475569)" }}>{personel.length === 1 ? fmtTR(personel[0].tarih) : ""}</td>
                 <td style={td}><DavranisRozeti davranis="personel" /></td>
                 <td style={td} colSpan={2}>
