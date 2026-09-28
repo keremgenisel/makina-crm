@@ -224,6 +224,20 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 
 ---
 
+## Menü grubu (spec 0043)
+
+Kenar çubuğunda bir **grup, aynı soruyu cevaplayan en az üç ekran biriktiğinde açılır.** İki ekranlık grup
+bir satır kazandırır ve zorlama durur. İlk ve bugün tek uygulaması "Mali İşler"dir (Finans, Giderler, Kasa).
+
+- Grup tanımı `src/lib/menuGruplari.js` `MENU_GRUPLARI`'ndadır; satır düzeni saf `menuSatirlari` üretir.
+  Grup yalnız çizim katmanıdır: sekmelerin adı, kimliği ve yetkisi değişmez, grubun kendi izni yoktur.
+- İzin süzmesinden sonra grupta tek ekran kalırsa grup çizilmez, ekran düz satır olur. Dar kipte (66 piksel)
+  grup hiç çizilmez; yeni bir açılır kutu deseni açılmaz.
+- Başlık satırı yalnız açar kapar, ekran açmaz; `aria-expanded` taşır. Kapalıyken içindeki ekran açıksa başlık
+  etkin satır görünümünü alır. Açık/kapalı durumu makineye özeldir (`localStorage`).
+- Alt satırlar başlığın ikon hizasından girintili, solda ince çizgiyle bağlı ve biraz küçüktür (ikon kutusu
+  26 piksel).
+
 ## Bilinen borç
 
 Aşağıdakiler aynı fikrin **kapsam dışı** ya da **görünüşü farklı** kopyalarıdır. Spec 0009 bunlara bilerek dokunmadı;

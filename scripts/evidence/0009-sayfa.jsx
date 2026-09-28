@@ -31,6 +31,7 @@ import { Kasa } from "../../src/components/Kasa";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
+import App from "../../src/App";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -44,6 +45,19 @@ if (ekran === "ayarlar-server-istemci") {
   };
   // Diğer çağrılar etkisiz: on* abonelikleri boş iptal fonksiyonu, geri kalanı null döndürür.
   window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
+}
+// Spec 0043: kenar çubuğu yalnız App kabuğunda çizilir; "uygulama-menu-*" ekranları gerçek App'i örnek veriyle açar.
+// Makine yereli menü tercihleri (dar kip, grup durumu) ve tek çocuklu kullanıcı App ilk çizilmeden kurulur.
+const UYGULAMA = ekran.startsWith("uygulama-menu");
+if (UYGULAMA) {
+  try { localStorage.clear(); if (ekran === "uygulama-menu-dar") localStorage.setItem("sidebarDar", "1"); } catch { /* yoksay */ }
+  window.crmStorage = { load: async () => ({ customers: [], payments: [], giderler: [], giderTurleri: [], kasaHesaplari: [], hesapHareketleri: [], cekler: [],
+    appSettings: { giderAyarlari: { yururlukAy: "2026-01" } }, dataVersion: 1 }), save: async () => true, getVersion: async () => 1 };
+  if (ekran === "uygulama-menu-tek-cocuk") {
+    const t = { getConfig: async () => ({ serverUrl: "http://10.0.0.2:3000", isActive: true, role: "user", username: "u",
+      permissions: JSON.stringify({ tabs: ["dashboard", "customers", "dealers", "stock", "finance", "evrak", "notes", "settings"] }) }) };
+    window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
+  }
 }
 applyTheme(q.get("tema") === "dark" ? "dark" : "light");
 const bos = () => {};
@@ -443,6 +457,11 @@ const EKRANLAR = {
   "kasa-cek-durum": [kasaCek(), ["Çek Portföyü", "dugme:Durum"]],
   "kasa-cek-gecmis": [kasaCek(), ["Çek Portföyü", "dugme:Ciro edildi", "dugme:Geçmiş"]],
   "musteri-tahsilat-cek": [detay(601, { cekler: CEKLER }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "sec:Ödeme yöntemi 1=Çek"]],
+  // Spec 0043: Mali İşler menü grubu (gerçek App kabuğu; önce/sonra aynı sayfa, önce düz menüyü çizer).
+  "uygulama-menu-acik": [<App />, ["Giderler"]],
+  "uygulama-menu-kapali": [<App />, ["Finans", "Mali İşler"]], // perde bu derlemede inik: Kasa menüde yok
+  "uygulama-menu-dar": [<App />, []],
+  "uygulama-menu-tek-cocuk": [<App />, ["Finans"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
@@ -452,12 +471,12 @@ const EKRANLAR = {
 window.__EKRANLAR = Object.keys(EKRANLAR);
 window.addEventListener("error", (e) => { document.body.setAttribute("data-hata", String(e.message)); });
 const [cizim, adimlar] = EKRANLAR[ekran] || [<div>Bilinmeyen ekran: {ekran}</div>, []];
-createRoot(document.getElementById("root")).render(<div style={{ padding: 24, minHeight: "100vh", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}>{cizim}</div>);
+createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style={{ padding: 24, minHeight: "100vh", boxSizing: "border-box", background: "var(--n100, #f8fafc)" }}>{cizim}</div>);
 
 // Tıklama adımları: metni birebir eşleşen son öğeye tıkla (satır için en yakın tr'ye).
 (async () => {
   const bekle = (ms) => new Promise(r => setTimeout(r, ms));
-  await bekle(300);
+  await bekle(UYGULAMA ? 1500 : 300); // App verisini eşzamansız yükler
   for (const metin of adimlar) {
     if (metin.startsWith("doldur:")) {
       // React kontrollü alanı: yerel value ayarlayıcısı + input olayı.

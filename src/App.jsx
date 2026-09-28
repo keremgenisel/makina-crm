@@ -8,6 +8,7 @@ import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMo
 import { hesaplaMakinaMaliyetleri } from "./lib/makinaMaliyeti";
 import { odemeleriUygula, turHaritasi } from "./lib/gider";
 import { cekleriUygula, odemeleriAyikla, ciroluTahsilatIdleri, bagliCekler } from "./lib/cek";
+import { menuSatirlari, MENU_GRUPLARI, MALI_ISLER_ANAHTARI, grupIcindeMi } from "./lib/menuGruplari";
 import { teklifUretimPlani, uretilenKalemBirlesimi, bekleyenIsYokkenMakinaKalemleri } from "./lib/evrakUretim";
 import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
 import { evrakAdimlariniYaz } from "./lib/evrakUygula";
@@ -83,6 +84,9 @@ export default function App() {
   // tüm istemcilere senkron olurdu; menü görünümü kişisel bir tercih.
   const [sidebarDar, setSidebarDar] = useState(() => { try { return localStorage.getItem("sidebarDar") === "1"; } catch { return false; } });
   const toggleSidebar = () => setSidebarDar(v => { const n = !v; try { localStorage.setItem("sidebarDar", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
+  // Spec 0043 R3, R4: "Mali İşler" menü grubu açık mı (makineye özel; hiç yazılmamışsa açık).
+  const [maliAcik, setMaliAcik] = useState(() => { try { return localStorage.getItem(MALI_ISLER_ANAHTARI) !== "0"; } catch { return true; } });
+  const maliAcikYaz = (n) => { setMaliAcik(n); try { localStorage.setItem(MALI_ISLER_ANAHTARI, n ? "1" : "0"); } catch { /* yoksay */ } };
   const [haritaAcik, setHaritaAcik] = useState(false); // Faaliyet Haritası ayrı penceresi açık mı
   const [servisPanoAcik, setServisPanoAcik] = useState(false); // Servis ve Kargo Panosu ayrı penceresi açık mı
   const [haritaUlke, setHaritaUlke] = useState(null);  // Harita drill durumu — sekme değişip dönünce korunsun
@@ -175,6 +179,11 @@ export default function App() {
   // Tam kiosk: client kullanıcının TEK görünür sekmesi Servis Panosu ise, uygulama kabuğu
   // (kenar menü, arama, güncelleme çubuğu) tümden atlanır; yalnız pano tam ekran gösterilir.
   const kioskMode = serverMode === "active" && visibleTabs.length === 1 && visibleTabs[0]?.id === "servis";
+  const menuSatirlariListe = useMemo(() => menuSatirlari(visibleTabs, MENU_GRUPLARI, { dar: sidebarDar }), [visibleTabs, sidebarDar]);
+  // Spec 0043 R3, AC-4: gruptaki bir ekrana geçilince grup açılır (kullanıcı orada kapatabilir; R6 başlığı etkin gösterir).
+  useEffect(() => {
+    if (MENU_GRUPLARI.some(g => grupIcindeMi(g, tab)) && !maliAcik) maliAcikYaz(true);
+  }, [tab]);
   const dataVersionRef = useRef(null);
   const loadFromStorageRef = useRef(null);
   useEffect(() => {
@@ -1246,32 +1255,35 @@ export default function App() {
           />
         </div>
         <nav className="sb-scroll" style={{ padding: sidebarDar ? "16px 8px" : "16px 12px", flex: 1, overflowY: "auto" }}>
-          {visibleTabs.map(t => {
-            const active = tab === t.id;
-            return (
-              <button key={t.id} className="nav-btn" title={sidebarDar ? t.label : undefined} onClick={() => {
+          {(() => {
+            // Spec 0043: menü düğmesi tek tanım; grup çocukları da aynı tıklama yolunu (Notlar taslak koruması, R10) kullanır.
+            const navDugmesi = (t, cocuk = false) => {
+              const active = tab === t.id;
+              const ikon = cocuk ? 26 : 30;
+              return (
+              <button key={t.id} className="nav-btn" title={sidebarDar ? t.label : undefined} aria-current={active ? "page" : undefined} onClick={() => {
                 const go = () => { if (t.id === "customers") { setCustFilter("all"); setCustDetailId(null); } if (t.id === "dealers") setDealerFilter("all"); if (t.id === "stock") setStockDefaultSubTab("makina"); setTab(t.id); };
                 if (tab === "notes" && t.id !== "notes" && notesRef.current) notesRef.current.guardNavigation(go);
                 else go();
               }} style={{
-                display: "flex", alignItems: "center", gap: sidebarDar ? 0 : 12, width: "100%", padding: sidebarDar ? "10px 0" : "10px 12px",
+                display: "flex", alignItems: "center", gap: sidebarDar ? 0 : (cocuk ? 10 : 12), width: "100%", padding: sidebarDar ? "10px 0" : (cocuk ? "8px 10px" : "10px 12px"),
                 justifyContent: sidebarDar ? "center" : "flex-start",
                 background: active ? "linear-gradient(90deg, rgba(232,93,26,.26), rgba(232,93,26,.04))" : "transparent",
                 border: "none",
                 borderLeft: active && !sidebarDar ? "3px solid #e85d1a" : "3px solid transparent",
-                borderRadius: 10, cursor: "pointer",
+                borderRadius: cocuk ? 9 : 10, cursor: "pointer",
                 color: active ? "#ff9d5c" : "var(--sbTxt, #a3846f)",
-                fontWeight: active ? 700 : 500, fontSize: 13.5, marginBottom: 5, textAlign: "left",
+                fontWeight: active ? 700 : 500, fontSize: cocuk ? 13 : 13.5, marginBottom: cocuk ? 4 : 5, textAlign: "left",
                 boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,.06)" : "none",
               }}>
                 <span className="nav-ico" style={{
                   position: "relative",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  width: 30, height: 30, borderRadius: 8, transition: "all .18s ease", flexShrink: 0,
+                  width: ikon, height: ikon, borderRadius: cocuk ? 7 : 8, transition: "all .18s ease", flexShrink: 0,
                   background: active ? "rgba(232,93,26,.24)" : "rgba(255,255,255,.045)",
                   color: active ? "#ff9d5c" : "var(--sbIco, #8d6f5c)",
                 }}>
-                  <Icon name={t.icon} size={15} />
+                  <Icon name={t.icon} size={cocuk ? 14 : 15} />
                   {/* Daraltılmış menüde etiket görünmez → rozet yerine küçük nokta */}
                   {t.id === "servis" && yeniServisSayisi > 0 && sidebarDar && (
                     <span style={{ position: "absolute", top: -2, right: -2, width: 9, height: 9, borderRadius: "50%", background: "#e85d1a", boxShadow: "0 0 0 2px #1a0f08" }} />
@@ -1282,8 +1294,46 @@ export default function App() {
                   <span style={{ marginLeft: "auto", minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "#e85d1a", color: "#fff", fontSize: 11, fontWeight: 800, display: "grid", placeItems: "center", fontVariantNumeric: "tabular-nums" }}>{yeniServisSayisi > 99 ? "99+" : yeniServisSayisi}</span>
                 )}
               </button>
-            );
-          })}
+              );
+            };
+            return menuSatirlariListe.map(satir => {
+              if (satir.tur === "sekme") return navDugmesi(satir.sekme);
+              // Spec 0043: grup başlığı yalnız açar kapar (R5), ekran açmaz; kapalıyken içindeki ekran açıksa etkin görünür (R6).
+              const g = satir.grup;
+              const icerde = satir.cocuklar.some(c => c.id === tab);
+              const etkin = !maliAcik && icerde;
+              const vurgu = maliAcik && icerde;
+              return (
+                <div key={`grup-${g.id}`}>
+                  <button type="button" className="nav-btn" data-testid={`menu-grup-${g.id}`} aria-expanded={maliAcik} aria-controls={`menu-grup-${g.id}-liste`}
+                    onClick={() => maliAcikYaz(!maliAcik)} style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 12px", justifyContent: "flex-start",
+                      background: etkin ? "linear-gradient(90deg, rgba(232,93,26,.26), rgba(232,93,26,.04))" : "transparent",
+                      border: "none", borderLeft: etkin ? "3px solid #e85d1a" : "3px solid transparent", borderRadius: 10, cursor: "pointer",
+                      color: etkin ? "#ff9d5c" : vurgu ? "#e8a878" : "var(--sbTxt, #a3846f)",
+                      fontWeight: etkin ? 700 : 600, fontSize: 13.5, marginBottom: 5, textAlign: "left",
+                      boxShadow: etkin ? "inset 0 1px 0 rgba(255,255,255,.06)" : "none",
+                    }}>
+                    <span className="nav-ico" style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, transition: "all .18s ease", flexShrink: 0,
+                      background: etkin ? "rgba(232,93,26,.24)" : vurgu ? "rgba(232,93,26,.14)" : "rgba(255,255,255,.045)",
+                      color: etkin ? "#ff9d5c" : vurgu ? "#e8a878" : "var(--sbIco, #8d6f5c)",
+                    }}>
+                      <Icon name={g.icon} size={15} />
+                    </span>
+                    <span style={{ flex: 1 }}>{g.label}</span>
+                    <span aria-hidden="true" style={{ display: "flex", opacity: .8 }}><Icon name={maliAcik ? "chevronDown" : "chevronRight"} size={14} /></span>
+                  </button>
+                  {maliAcik && (
+                    <div id={`menu-grup-${g.id}-liste`} role="group" aria-label={g.label}
+                      style={{ marginLeft: 26, paddingLeft: 8, borderLeft: "1px solid rgba(232,93,26,.22)", marginBottom: 5 }}>
+                      {satir.cocuklar.map(c => navDugmesi(c, true))}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </nav>
 
         {/* Alt bilgi — daralt/genişlet düğmesi versiyon numarasının yanında */}
