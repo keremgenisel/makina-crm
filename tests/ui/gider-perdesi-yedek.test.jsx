@@ -11,6 +11,10 @@ vi.mock("../../src/lib/yayinPerdesi", () => ({ GIDER_PERDESI: true, giderPerdesi
 const { default: App } = await import("../../src/App");
 
 afterEach(() => { cleanup(); delete window.crmStorage; delete window.appMail; vi.unstubAllGlobals(); localStorage.clear(); });
+// Spec 0030 R12 (saat kaydırma taraması): çöpteki gider (deletedAt 2026-09-20) 30 gün sonra açılışta kalıcı silinir ve
+// 2026-10-20'den sonra yedek iddiası düşerdi; "bugün" sabitlenir (yalnız Date, zamanlayıcılar gerçek), iddialar aynı kalır.
+beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-25T12:00:00Z")); });
+afterEach(() => { vi.useRealTimers(); });
 
 const GIDER = {
   giderler: [{ id: 1, tarih: "2026-09-01", turId: 1, tutar: 10000, kdvOrani: 20, odendi: false }, { id: 2, tarih: "2026-09-02", turId: 1, tutar: 50, deletedAt: "2026-09-20T10:00:00Z" }],

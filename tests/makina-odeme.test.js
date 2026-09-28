@@ -1,7 +1,7 @@
 // İlk satış ödeme kurulumu — REGRESYON: blokajlı kredi kartı (tek çekim) ilk ödeme, kalanBorc'tan
 // DÜŞMEMELİ (para henüz hesaba geçmedi) → müşteri borçlularda görünmeli. Eski hata: form satırında
 // kartKomisyonu snapshot'ı yokken isPaymentReceived kartı "alındı" sayıp borçtan düşüyordu.
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ilkSatisOdemeleri } from "../src/lib/makinaOdeme";
 import { isPaymentReceived } from "../src/lib/utils";
 
@@ -15,6 +15,10 @@ let sayac = 1000;
 const yeniId = () => ++sayac;
 
 describe("ilkSatisOdemeleri — blokajlı kredi kartı borçta kalır", () => {
+  // Spec 0030 R11: "bugün" testin içinde sabitlenir (satıştan 4 gün sonra, 40 günlük blokaj içinde). Kod `today()` ile
+  // gerçek takvimi okuduğu için sabitlenmezse test 2026-09-25'ten sonra kırmızıya dönüyordu (odeme-hatirlatma deseni).
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-08-20T12:00:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
   it("kredi kartı TEK ÇEKİM (blokajlı) alınan tutara GİRMEZ → kalanBorc'tan düşülmez", () => {
     const { kayitlar, alinanTutar } = ilkSatisOdemeleri(
       [{ yontem: "Kredi Kartı", tutar: "100000", taksitSayisi: 1 }],
