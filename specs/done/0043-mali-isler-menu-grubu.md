@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-28, mockup onayıyla; plan `specs/0043-uygulama-plani.md`). Uygulanıyor, dal `feat/0043-mali-isler`. |
+| **Durum** | Tamamlandı (2026-09-28; commit `4146280`, dal `feat/0043-mali-isler`; plan `specs/done/0043-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kenar çubuğu (`App.jsx`), tasarım sözlüğü |
@@ -141,17 +141,18 @@ değişmiyor. Grup açıkken menü bugünkünden bir satır uzundur (on dört); 
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Sekme kimlikleri, izin tanımları ve sunucu eşlemeleri değişmedi (C1, AC-15).
-- [ ] `docs/tasarim-sozlugu.md` menü grubu kuralıyla güncellendi (R11).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0043-*.jpg`): grup açık, grup kapalı, dar kip, tek çocuklu
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Sekme kimlikleri, izin tanımları ve sunucu eşlemeleri değişmedi (C1, AC-15).
+- [x] `docs/tasarim-sozlugu.md` menü grubu kuralıyla güncellendi (R11).
+- [x] Görsel kanıt eklendi (`docs/evidence/0043-*.jpg`): grup açık, grup kapalı, dar kip, tek çocuklu
       kullanıcı; aydınlık ve karanlık tema.
-- [ ] Kanıt eşlemesindeki ilgili kayıtlar `beklenen: "degisti"` ve Takım Yöneticisi onayıyla işaretlendi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: menüde grup kavramı, adların değişmediği ve grup kuralı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Kanıt eşlemesindeki ilgili kayıtlar `beklenen: "degisti"` ve Takım Yöneticisi onayıyla işaretlendi. (İlgili kayıt çıkmadı:
+      kenar çubuğu `tasarim.jsx` kullanmıyor ve mevcut ekranların hiçbiri App kabuğunu çizmiyor; plan §4.)
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: menüde grup kavramı, adların değişmediği ve grup kuralı yazıldı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -159,10 +160,10 @@ değişmiyor. Grup açıkken menü bugünkünden bir satır uzundur (on dört); 
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R1 mockup onayı anında işlendi (satır sayısı düzeltmesi ve uygulama notları); onaydan sonra değişiklik yok. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 0 | İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Triyaj turu olmadı. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam paket (234 dosya) ve 284 mevcut görüntü değişmedi. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Mockup'ı spec onayından önce göstermek, metindeki bir sayı hatasını (grup başlığının kendisinin de satır olduğu) kod yazılmadan yakaladı; yerleşim işlerinde mockup onayın parçası olmalı. İkinci ders: spec'in kanıt varsayımı ("kenar çubuğu her görüntüde var") araç okunmadan yazılmıştı; görsel kanıt bedeli yazılırken görüntü aracının neyi çizdiğine bakılmalı.

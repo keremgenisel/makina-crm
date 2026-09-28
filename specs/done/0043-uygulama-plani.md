@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0043-mali-isler-menu-grubu.md` (R1, mockup onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0043-mali-isler-menu-grubu.md` (R1, mockup onayıyla onaylandı) |
 | **Mockup** | https://claude.ai/artifact/AygnJKCGKhu6ARAzJVPhdP |
 | **Dal** | `feat/0043-mali-isler` |
 
