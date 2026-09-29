@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-29, plan onayıyla; plan `specs/0045-uygulama-plani.md` Q1–Q10). Uygulanıyor, dal `feat/0045-tutar-bicimi`. |
+| **Durum** | Tamamlandı (2026-09-29; commit `1951b35`, dal `feat/0045-tutar-bicimi`; plan `specs/done/0045-uygulama-plani.md` Q1–Q10) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider ve Kasa formlarındaki tutar girişi (`TutarInput`), bütün pencere formlarının alt düğme satırı (`Modal`), tasarım sözlüğü |
@@ -163,21 +163,21 @@ birbirine yapışık durmuyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Biçimleme ve çözümleme tek yerde; ekranlarda kopya yok (C2, kaynak taraması testi).
-- [ ] İmleç davranışı testle ölçüldü (AC-3, AC-6); elle denendiği notu yeterli değildir.
-- [ ] Kaydedilen değerlerin değişmediği çapraz testle gösterildi (AC-7, AC-8).
-- [ ] Boşluk kabın kendisinden geliyor; altı formda tek tek sarmalayıcı eklenmedi (R11).
-- [ ] `docs/tasarim-sozlugu.md` alt düğme satırı kuralıyla güncellendi (R14).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0045-*.jpg`): basamaklı tutar alanı, düğme satırı;
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Biçimleme ve çözümleme tek yerde; ekranlarda kopya yok (C2, kaynak taraması testi).
+- [x] İmleç davranışı testle ölçüldü (AC-3, AC-6); elle denendiği notu yeterli değildir.
+- [x] Kaydedilen değerlerin değişmediği çapraz testle gösterildi (AC-7, AC-8).
+- [x] Boşluk kabın kendisinden geliyor; altı formda tek tek sarmalayıcı eklenmedi (R11).
+- [x] `docs/tasarim-sozlugu.md` alt düğme satırı kuralıyla güncellendi (R14).
+- [x] Görsel kanıt eklendi (`docs/evidence/0045-*.jpg`): basamaklı tutar alanı, düğme satırı;
       aydınlık ve karanlık tema. Kanıt eşlemesindeki kayıtlar `beklenen: "degisti"` ve TY onayıyla
       işaretlendi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: tutar girdisinin biçimlemesi ve `Modal` alt kabının boşluk verdiği
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: tutar girdisinin biçimlemesi ve `Modal` alt kabının boşluk verdiği
       yazıldı (0015'in eski cümlesi düzeltildi).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -185,10 +185,10 @@ birbirine yapışık durmuyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 plan onayı anında işlendi (elle yazılan noktanın anlamı, R2'ye bilinçli sapma olarak yazıldı). Onaylandıktan sonra değişiklik olmadı. |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu olmadan kapandı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu yok. |
+| **Regresyon sayısı** | 0 | Ekranda ham tutar bekleyen 12 test satırı R1 gereği biçimli değere döndü; kuruş beklentileri değişmedi. Harf harf "12.5" girişinin anlamı bilinçli sapmadır (R2). |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Biçimli girdide asıl karar görünüm değil **anlam**dır: aynı nokta karakteri yazarken binlik, yapıştırırken ondalık olabiliyor; bu ayrım saf fonksiyonda açıkça (tek karakter = yazma, uzun ekleme = yapıştırma) ve durumda ham metinle kurulunca bütün tüketiciler ve kayıt yolu dokunulmadan kaldı. İkincisi: bir kural altı kez unutulduysa yeri yanlıştır; boşluğu belgeden bileşene taşımak (kabın `gap`'i) tekrar olasılığını sıfırladı ve mevcut sarmalayıcılarla çakışmadı.

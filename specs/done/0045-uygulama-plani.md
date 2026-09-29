@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0045-tutar-bicimi-ve-dugme-boslugu.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0045-tutar-bicimi-ve-dugme-boslugu.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0045-tutar-bicimi` (`feat/0044-tahsilat-hesap` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-29: bütün öneriler (Q1–Q10) kabul |
 
