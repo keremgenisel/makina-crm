@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-29, plan onayıyla; plan `specs/0042-uygulama-plani.md` Q1–Q11). Uygulanıyor, dal `feat/0042-personel-hedef`. |
+| **Durum** | Tamamlandı (2026-09-29; commit `cb0b3e1`, dal `feat/0042-personel-hedef`; plan `specs/done/0042-uygulama-plani.md` Q1–Q11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Personel gider kalemi, ödeme hedefleri, borç özeti, ödeme hatırlatıcısı, çalışan ekstresi, gider formu ve tanım formu, tasarım sözlüğü |
@@ -252,27 +252,27 @@ yöntemi oluyor; ve yöntem seçimi her yerde aynı, yer kaplamayan biçimde yap
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hedef hesabı tek yerde (0021'in `odemeHedefleri` yolu); personel için ikinci hesap yazılmadı (C2).
-- [ ] `odemeHedefleri` çıktısını okuyan beş tüketicinin (liste, borç özeti, hatırlatıcı, ekstre, ödeme
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hedef hesabı tek yerde (0021'in `odemeHedefleri` yolu); personel için ikinci hesap yazılmadı (C2).
+- [x] `odemeHedefleri` çıktısını okuyan beş tüketicinin (liste, borç özeti, hatırlatıcı, ekstre, ödeme
       penceresi) testleri güncellendi.
-- [ ] **Veri göçü yazılmadığı** kaynak taramasıyla sabitlendi; dönüşüm 0021 R13 yolundan gidiyor ve
+- [x] **Veri göçü yazılmadığı** kaynak taramasıyla sabitlendi; dönüşüm 0021 R13 yolundan gidiyor ve
       tekrarı ikinci kayıt üretmiyor (AC-13, AC-14, AC-15).
-- [ ] Hedef kümesi genişlemesi kira satırlarını bozmadı (AC-27) ve `_odenen` dağıtımı hedef listesi
+- [x] Hedef kümesi genişlemesi kira satırlarını bozmadı (AC-27) ve `_odenen` dağıtımı hedef listesi
       üzerinde genelleştirildi (C9).
-- [ ] Ödeme hatırlatıcısının personel toplama kuralı korundu (AC-9); 0003 AC-17 regresyon testi yeşil.
-- [ ] Gizlilik testi hedef alanlarını da kapsıyor (AC-11).
-- [ ] `docs/tasarim-sozlugu.md` segment ile açılır liste kuralıyla güncellendi (R10).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0042-*.jpg`): iki hedefli personel kalemi, yeni yöntem seçici;
+- [x] Ödeme hatırlatıcısının personel toplama kuralı korundu (AC-9); 0003 AC-17 regresyon testi yeşil.
+- [x] Gizlilik testi hedef alanlarını da kapsıyor (AC-11).
+- [x] `docs/tasarim-sozlugu.md` segment ile açılır liste kuralıyla güncellendi (R10).
+- [x] Görsel kanıt eklendi (`docs/evidence/0042-*.jpg`): iki hedefli personel kalemi, yeni yöntem seçici;
       aydınlık ve karanlık tema. **Yöntem seçicisinin görünümü bilerek değiştiği için**
       `docs/evidence/kanit-eslemesi.json`'da `GiderForm` ve `SettingsGiderTanimlari` kayıtları
       `beklenen: "degisti"` + `onay` (`Takım Yöneticisi · YYYY-AA-GG · spec 0042 R9`) taşır; spec `done`'a
       taşınırken bu kayıtlar `ayni`ye çevrilir (0009/0011 kuralı, `kanit-eslemesi.test.js`).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: personelin iki hedefi ve yöntem seçici kuralı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: personelin iki hedefi ve yöntem seçici kuralı yazıldı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -280,10 +280,10 @@ yöntemi oluyor; ve yöntem seçimi her yerde aynı, yer kaplamayan biçimde yap
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı anında işlendi. Onaydan sonra triyaj notları eklendi: hatırlatıcıda personel kalemi gruplar arasında bölünmez (R12) ve satırsız eski kirada hedef durumunun kalandan türemesi düzeltme olarak yazıldı (R7). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Resmi ve elden farklı hatırlatıcı gruplarına düşünce AC-9'un tutmaması; satırsız eski kiradaki davranış değişikliğinin yazılmamış ve testsiz olması. İkisi de gerçek. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Uygulama sırasında eski personel kaleminin elden kısmının hatırlatıcıdan düşmesi mevcut testle yakalandı ve yayına çıkmadan düzeltildi (Q5 okuma anına uygulandı). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kavramı ikiye bölen iş (tek hedef → iki hedef), o kavramı gruplayan her tüketicide "parçalar farklı kovalara düşerse ne olur" sorusunu ayrıca sormalı; birleştirme aynı kova içinde yapıldığı için sayı ile satır arasındaki fark ancak iki hedefin farklı vadeli senaryosunda görünüyordu. İkincisi: görüntü aracında metin kutusunun boyutlandırma tutamacı çekimden çekime 1 piksel oynayabiliyor; taban çekimi bunu ayırt etti, kanıt kaydı değiştirilmeden önce iki çekim karşılaştırılmalı.

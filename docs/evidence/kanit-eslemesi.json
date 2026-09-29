@@ -19,18 +19,6 @@
     ],
     "src/components/Documents.jsx": [
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
-        "ekran": "evrak-musteri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 C7"
-      },
-      {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
-        "ekran": "evrak-bayi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 C7"
-      },
-      {
         "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
         "ekran": "evrak-sekme",
         "beklenen": "ayni"
@@ -49,80 +37,76 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "evrak-bos-arama",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "evrak-musteri"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "evrak-bayi"
       }
     ],
     "src/components/GiderForm.jsx": [
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel-makina",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-taksit",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-kira-stopaj",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-ek-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-taksit",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -288,10 +272,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "giderler-personel-iki-hedef",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R5"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/FiyatOnerisi.jsx": [
@@ -302,16 +285,14 @@
     ],
     "src/components/gider/GiderAlanlari.jsx": [
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
@@ -319,34 +300,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel-makina",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-taksit",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-kira-stopaj",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "gider-formu-ek-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R9"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
@@ -967,10 +943,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "giderler-personel-odeme-plani",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R15"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/UretimPartileri.jsx": [
@@ -1049,10 +1024,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0042-piksel-raporu.json",
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
         "ekran": "giderler-personel-coklu-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-29 · spec 0042 R4"
+        "beklenen": "ayni"
       }
     ],
     "src/components/kasa/CalisanAvanslari.jsx": [

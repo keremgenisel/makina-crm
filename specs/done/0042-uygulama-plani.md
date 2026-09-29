@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0042-odeme-hedefleri-ve-yontem-secici.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0042-odeme-hedefleri-ve-yontem-secici.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0042-personel-hedef` (`feat/0041-coklu-odeme` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-29: bütün öneriler (Q1–Q11) kabul |
 
@@ -73,6 +73,6 @@ DB şeması, sunucu, izin ve merge değişmez (C7).
 - **Eski testlerin bilinçli güncellemesi:** `gider-ek-odeme` (R3/AC-20, R12/P6) ve `kasa.test` (AC-14 mahsup) personeli tek hedef varsayıyordu; spec bu davranışı değiştirdiği için yeni modele göre güncellendi (niyetleri korundu: tek toplam, ödenmemiş taksitlere bölme, mahsup sınırı). `odeme-hatirlatma` AC-17 değişmeden geçiyor (personel kalem başına birleştiği için). `ui/gider-form`'daki yöntem seçici etkileşimi düğme satırından açılır listeye çevrildi.
 - **Q5 okuma anına da uygulandı:** satırsız eski personelin elden hedefi vadesiz kalsaydı hatırlatıcıdan düşerdi (AC-17 testi yakaladı); elden vadesi okuma anında kalemin vadesidir.
 - **Test yerleşimi:** AC-9 ve AC-10 motor testinde (`personel-hedef.test.js`); plan tablosundaki `ui/dashboard-odeme-hatirlatma` ve `kasa.test` yerine. AC-29 sözlük metin kontrolü de aynı dosyada.
-- **Görsel kanıt:** `docs/evidence/0042-piksel-raporu.json` (306 çekim; 6 gider formu ekranı ve 3 yeni personel ekranı değişti). İki Evrak ekranında 83 piksellik fark Adres metin kutusunun boyutlandırma tutamacındaki 1 piksellik çizim kaymasıdır; Evrak koduna dokunulmadı. TY onayı 2026-09-29; `kanit-eslemesi.json`'da 21 kayıt `degisti` + 3 yeni ekran; done'a taşınırken `0042-taban` raporuyla `ayni`ye çevrilecek.
+- **Görsel kanıt:** `docs/evidence/0042-piksel-raporu.json` (306 çekim; 6 gider formu ekranı ve 3 yeni personel ekranı değişti). İki Evrak ekranında 83 piksellik fark Adres metin kutusunun boyutlandırma tutamacındaki 1 piksellik çizim kaymasıdır; taban çekiminde görüntü 0042 öncesiyle birebir aynı çıktı (çekimden çekime oynayan çizim ayrıntısı), bu yüzden Evrak kayıtları kapanışta 0042 öncesi hâline döndü ve taban raporuna girmedi. TY onayı 2026-09-29; `kanit-eslemesi.json`'da 21 kayıt `degisti` + 3 yeni ekran; done'a taşınırken `0042-taban` raporuyla `ayni`ye çevrilecek.
 - **Testler:** `personel-hedef.test.js` (22), `ui/personel-hedef.test.jsx` (5), ek bloklar; tam paket yeşil, lint 0 hata.
 - **Triyaj (2026-09-29):** (1) hatırlatıcıda personel kalemi en acil gruba bütün olarak girer (resmi gecikmiş, elden yaklaşan → vadesi geçmiş grubunda toplam; test `personel-hedef.test.js` AC-9 triyaj); (2) satırsız eski kirada hedef durumunun kalandan türemesi düzeltme olarak spec R7 notu ve CLAUDE.md'ye yazıldı, testle sabitlendi (AC-12 triyaj).
