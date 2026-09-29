@@ -240,9 +240,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         )}
       </div>
 
-      <Field label="Ödeme yöntemi">
-        <Segment ariaLabel="Ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
-        <Ipucu>Opsiyonel. Ödeme durumundan bağımsızdır, kalem ödenmeden önce de seçilebilir.</Ipucu>
+      {/* Spec 0041 R2, R16: alan bir varsayılandır; kalemin nasıl ödendiğini ödemeler belirler (kod adı değişmez, X7). */}
+      <Field label="Varsayılan ödeme yöntemi">
+        <Segment ariaLabel="Varsayılan ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
+        <Ipucu>Yeni ödeme girilirken ön seçili gelir. Kalemin nasıl ödendiğini ödemeler belirler.</Ipucu>
       </Field>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <div style={{ width: 130 }}>

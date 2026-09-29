@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:205`
+**Örnek:** `src/components/Giderler.jsx:213`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:494` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
@@ -103,7 +103,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:68` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:69` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
@@ -151,7 +151,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:248`
+**Örnek:** `src/components/Giderler.jsx:256`
 **Örnek:** `src/components/Customers.jsx:528` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -173,7 +173,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:224`
+**Örnek:** `src/components/Giderler.jsx:232`
 **Örnek:** `src/components/stock/PartStokTab.jsx:135` (hata ailesi)
 
 ### Serbest içerik (spec 0011)

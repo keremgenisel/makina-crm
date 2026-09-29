@@ -209,6 +209,18 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(kayit).toMatchObject({ odendi: false, odemeTarihi: null });
     expect(talep).toEqual({ tarih: "2026-09-23", hesapId: 1, yontem: "" });
   });
+  it("Spec 0041 AC-15 / R16: alan 'Varsayılan ödeme yöntemi'; 'ödendi olarak kaydet' tek harekette o yöntemi kullanır", () => {
+    const onSave = ac();
+    tur(4);
+    expect(screen.getByText("Yeni ödeme girilirken ön seçili gelir. Kalemin nasıl ödendiğini ödemeler belirler.")).toBeTruthy();
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Varsayılan ödeme yöntemi" })).getByRole("radio", { name: "Nakit" }));
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
+    fireEvent.click(screen.getByLabelText("Kaydederken ödendi olarak kaydet"));
+    fireEvent.click(screen.getByText("Kaydet"));
+    const [kayit, talep] = onSave.mock.calls[0];
+    expect(kayit.odemeYontemi).toBe("Nakit");
+    expect(talep).toMatchObject({ yontem: "Nakit" });
+  });
   it("R17: seçenek işaretlenmezse ödeme talebi yok; mevcut kalemde durum türetilmiş olarak gösterilir", () => {
     const onSave = ac();
     tur(4);

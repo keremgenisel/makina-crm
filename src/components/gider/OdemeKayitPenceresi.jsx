@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
-import { fmtTR } from "../../lib/utils";
+import { useState, useMemo, useRef } from "react";
+import { fmtTR, parseMoney } from "../../lib/utils";
 import { satirliMi, odemeHedefKalaniK, hedefOdemeleri, odemeDurumu, kurus, tl, HEDEF, DAVRANIS } from "../../lib/gider";
-import { odemeDogrula, mahsupDogrula, mahsupKapsamda, avansBorcuK, secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD } from "../../lib/kasa";
+import { cokluOdemeDogrula, mahsupDogrula, mahsupKapsamda, avansBorcuK, secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
+import { yontemKirilimi, hareketPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "../tasarim";
 import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi } from "./GiderAlanlari";
@@ -10,6 +11,9 @@ import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi } from "./Gide
 // anahtarları, Ödeme Planı satırları ve Anasayfa hatırlatıcısındaki "Ödendi" bu pencereyi açar. Ödeme bir hareket
 // kaydıdır (hesapHareketleri); kalemin durumu hareketten türer. Tutar kalanla, hesap son kullanılanla dolu gelir.
 // kalem: odemeleriUygula'dan geçmiş (zenginleştirilmiş) kalem. hedef: {taksitId} ya da {hedef: "ana"|"stopaj"}.
+// Spec 0041: "Ödeme" kipinde birden çok satır (her satır kendi yöntemi, tutarı, hesabı ve açıklamasıyla ayrı bir hareket;
+// tarih pencerenin). onKaydet bir hareket dizisi alır. Yöntem kırılımı ödemelerden türetilir (kalemin alanı yalnız
+// varsayılan). "Avanstan mahsup" tek satırlık kip olarak kalır (C8). Ciro yalnız Kasa › Çek Portföyü'nden (R7).
 const acikSatirlar = (k) => (k.taksitler || [])
   .map(r => ({ ...r, kalanK: Math.max(0, kurus(r.tutar) - (r._odenenK || 0)) }))
   .filter(r => r.kalanK > 0)
@@ -38,19 +42,39 @@ export const OdemeKayitPenceresi = ({
   const [kip, setKip] = useState("odeme");
   const mahsupKipi = mahsupVar && kip === "mahsup";
   const uygunHesaplar = useMemo(() => secilebilirHesaplar(hesaplar, "TRY"), [hesaplar]);
-  const [form, setForm] = useState(() => ({
-    tarih: bugun, tutar: tutarMetni(tl(kalanK)), yontem: kalem.odemeYontemi || "",
-    hesapId: hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar) ?? "") : "", aciklama: "",
-  }));
+  const varsayilanHesap = hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar) ?? "") : "";
+  // Mahsup kipinin tek satırı ve pencerenin tarihi.
+  const [form, setForm] = useState(() => ({ tarih: bugun, tutar: tutarMetni(tl(kalanK)), aciklama: "" }));
+  // Spec 0041 R5: ödeme satırları. Q6: yeni satır ilk satırın taksitini, o taksidin kalanını, kalemin varsayılan
+  // yöntemini ve son kullanılan hesabı alır.
+  const satirNo = useRef(1);
+  const yeniSatir = (taksit, tutarK) => ({ anahtar: satirNo.current++, taksitId: taksit, tutar: tutarK > 0 ? tutarMetni(tl(tutarK)) : "", yontem: kalem.odemeYontemi || "", hesapId: varsayilanHesap, aciklama: "" });
+  const [satirlar, setSatirlar] = useState(() => [yeniSatir(satirli ? baslangicTaksiti(kalem, hedef) : null, kalanK)]);
   const [hatalar, setHatalar] = useState({});
   const [silinecek, setSilinecek] = useState(null);
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
+  const girilenK = (liste, taksit) => liste.filter(r => !satirli || String(r.taksitId) === String(taksit)).reduce((a, r) => a + Math.max(0, Math.round((parseMoney(r.tutar) || 0) * 100)), 0);
+  const satirGuncelle = (i, patch) => setSatirlar(l => l.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const satirTaksitSec = (i, id) => {
+    const k = Math.max(0, odemeHedefKalaniK(kalem, davranis, id) - girilenK(satirlar.filter((_, j) => j !== i), id));
+    if (i === 0) setTaksitId(id);
+    setSatirlar(satirlar.map((r, j) => (j === i ? { ...r, taksitId: id, tutar: k > 0 ? tutarMetni(tl(k)) : "" } : r)));
+  };
+  const satirEkle = () => {
+    if (satirlar.length >= COKLU_ODEME_MAX_SATIR) return;
+    const taksit = satirlar[0]?.taksitId ?? null;
+    setSatirlar([...satirlar, yeniSatir(taksit, odemeHedefKalaniK(kalem, davranis, satirli ? taksit : null) - girilenK(satirlar, taksit))]);
+  };
+  const satirSil = (i) => { setSatirlar(satirlar.filter((_, j) => j !== i)); setHatalar({}); };
   const taksitSec = (id) => {
     setTaksitId(id);
     const k = odemeHedefKalaniK(kalem, davranis, id);
-    set({ tutar: tutarMetni(tl(mahsupKipi ? Math.min(k, avansK) : k)) });
+    set({ tutar: tutarMetni(tl(Math.min(k, avansK))) });
   };
   const odemeler = hedefOdemeleri(hareketler, kalem.id);
+  // R11: göçten gelen tutarsız hareketin gösterilen tutarı, motorun hesapladığı kapattığı tutardır.
+  const paylar = useMemo(() => new Map(hareketPaylari(kalem, hareketler, turMap).map(p => [String(p.hareket.id), p.payK])), [kalem, hareketler, turMap]);
+  const kirilim = useMemo(() => yontemKirilimi(kalem, hareketler, turMap), [kalem, hareketler, turMap]);
   const satirAdi = (id) => {
     const r = (kalem.taksitler || []).find(x => String(x.id) === String(id));
     if (!r) return null;
@@ -63,21 +87,26 @@ export const OdemeKayitPenceresi = ({
   };
   const kipSec = (k) => {
     setKip(k); setHatalar({});
-    set({ tutar: tutarMetni(tl(k === "mahsup" ? Math.min(kalanK, avansK) : kalanK)) });
+    if (k === "mahsup") { setTaksitId(satirlar[0]?.taksitId ?? taksitId); set({ tutar: tutarMetni(tl(Math.min(kalanK, avansK))) }); }
   };
   const kaydet = () => {
-    const r = mahsupKipi
-      ? mahsupDogrula({ ...form, taksitId }, { kalem, turMap, hareketler, giderler, bugun, yururlukAy })
-      : odemeDogrula({ ...form, taksitId }, { kalem, turMap, hesaplar });
-    if (!r.kayit) { setHatalar(r.hatalar); return; }
-    onKaydet(r.kayit);
+    if (mahsupKipi) {
+      const r = mahsupDogrula({ ...form, taksitId }, { kalem, turMap, hareketler, giderler, bugun, yururlukAy });
+      if (!r.kayit) { setHatalar(r.hatalar); return; }
+      onKaydet([r.kayit]);
+      return;
+    }
+    // R13: ya hep ya hiç; hatalar satır satır.
+    const r = cokluOdemeDogrula({ tarih: form.tarih, satirlar }, { kalem, turMap, hesaplar, hedefAdi: (id) => satirAdi(id) || "Kalem" });
+    if (!r.kayitlar) { setHatalar(r.hatalar); return; }
+    onKaydet(r.kayitlar);
   };
   const durum = odemeDurumu(kalem);
   const acik = satirli ? acikSatirlar(kalem) : [];
   const formVar = odemeYetkisi && kalanK > 0;
 
   return (
-    <Modal title="Ödeme Kaydet" onClose={onClose} maxWidth={620}
+    <Modal title="Ödeme Kaydet" onClose={onClose} maxWidth={760}
       footer={<div style={{ display: "flex", gap: 8 }}>
         <Btn variant="ghost" onClick={onClose}>{formVar ? "Vazgeç" : "Kapat"}</Btn>
         {formVar && <Btn onClick={kaydet}><Icon name="check" size={14} /> {mahsupKipi ? "Mahsubu Kaydet" : "Ödemeyi Kaydet"}</Btn>}
@@ -96,7 +125,7 @@ export const OdemeKayitPenceresi = ({
             <Segment ariaLabel="Kayıt türü" kip="dugme" options={[{ value: "odeme", label: "Ödeme" }, { value: "mahsup", label: "Avanstan mahsup" }]} value={kip} onChange={kipSec} />
           </div>
         )}
-        {formVar ? (
+        {formVar && mahsupKipi ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
             {satirli && (
               <div style={{ gridColumn: "1 / -1" }}>
@@ -110,45 +139,103 @@ export const OdemeKayitPenceresi = ({
             )}
             {!satirli && hatalar.hedef && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{hatalar.hedef}</HataMetni></div>}
             <div>
-              <Field label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"}><Input type="date" value={form.tarih || ""} onChange={e => set({ tarih: e.target.value })} /></Field>
+              <Field label="Mahsup tarihi"><Input type="date" value={form.tarih || ""} onChange={e => set({ tarih: e.target.value })} /></Field>
               {hatalar.tarih && <HataMetni>{hatalar.tarih}</HataMetni>}
             </div>
             <div>
               <Field label="Tutar"><TutarInput ariaLabel="Ödeme tutarı" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /></Field>
-              {hatalar.tutar ? <HataMetni>{hatalar.tutar}</HataMetni> : <Ipucu>{mahsupKipi ? "Kalan ile açık avansın küçüğünü aşamaz. Mahsup para hareketi değildir, hiçbir hesaba girmez." : "Kalandan az girilirse kalem kısmen ödenmiş olur."}</Ipucu>}
+              {hatalar.tutar ? <HataMetni>{hatalar.tutar}</HataMetni> : <Ipucu>Kalan ile açık avansın küçüğünü aşamaz. Mahsup para hareketi değildir, hiçbir hesaba girmez.</Ipucu>}
             </div>
-            {!mahsupKipi && <div>
-              <Field label="Ödeme yöntemi">
-                <Select value={form.yontem} onChange={e => set({ yontem: e.target.value })}>
-                  {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </Select>
-              </Field>
-              {/* Spec 0040 R19: "Çek (ciro)" listede yok; düz "Çek" takip edilmeyen serbest bir nottur. */}
-              {hatalar.yontem ? <HataMetni>{hatalar.yontem}</HataMetni>
-                : form.yontem === "Çek" ? <Ipucu>Düz “Çek” takip edilmeyen bir nottur. Müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.</Ipucu> : null}
-            </div>}
-            {hesapSecimi && !mahsupKipi && (
-              <div>
-                <Field label="Hesap">
-                  <Select value={form.hesapId ?? ""} onChange={e => set({ hesapId: e.target.value === "" ? "" : uygunHesaplar.find(h => String(h.id) === e.target.value)?.id ?? "" })}>
-                    <option value="">Hesap belirtilmedi</option>
-                    {uygunHesaplar.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur})</option>)}
-                  </Select>
-                </Field>
-                {hatalar.hesapId ? <HataMetni>{hatalar.hesapId}</HataMetni>
-                  : !uygunHesaplar.length ? <Ipucu>Açık TL hesabı yok. Ödeme hesapsız kaydedilir ve hiçbir bakiyeye girmez.</Ipucu>
-                  : !form.hesapId ? <Ipucu>Hesap seçilmezse ödeme hiçbir bakiyeye girmez.</Ipucu> : null}
-              </div>
-            )}
             <div style={{ gridColumn: "1 / -1" }}>
               <Field label="Açıklama"><Input value={form.aciklama} onChange={e => set({ aciklama: e.target.value })} placeholder="İsteğe bağlı" /></Field>
             </div>
+          </div>
+        ) : formVar ? (
+          <div data-testid="odeme-satirlari">
+            <div style={{ maxWidth: 220 }}>
+              <Field label="Ödeme tarihi"><Input type="date" value={form.tarih || ""} onChange={e => set({ tarih: e.target.value })} /></Field>
+              {hatalar.tarih && <HataMetni>{hatalar.tarih}</HataMetni>}
+            </div>
+            {satirlar.map((r, i) => {
+              const h = hatalar.satirlar?.[i] || {};
+              const ek = i === 0 ? "" : ` ${i + 1}`;
+              const cok = satirlar.length > 1;
+              return (
+                <div key={r.anahtar} data-testid="odeme-satiri" style={cok ? { border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", marginTop: 10 } : { marginTop: 4 }}>
+                  {cok && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{i + 1}. satır</span>
+                      <Btn small variant="ghost" onClick={() => satirSil(i)} title="Satırı kaldır"><Icon name="close" size={12} /> Kaldır</Btn>
+                    </div>
+                  )}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                    {satirli && (
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <Field label="Taksit">
+                          <Select aria-label={`Taksit${ek}`} value={r.taksitId ?? ""} onChange={e => satirTaksitSec(i, e.target.value === "" ? null : acik.find(x => String(x.id) === e.target.value)?.id ?? null)}>
+                            {acik.map(x => <option key={x.id} value={x.id}>{satirAdi(x.id)} · vade {x.vade ? fmtTR(x.vade) : "girilmemiş"} · kalan {para(x.kalanK)}</option>)}
+                          </Select>
+                        </Field>
+                        {h.hedef && <HataMetni>{h.hedef}</HataMetni>}
+                      </div>
+                    )}
+                    {!satirli && h.hedef && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{h.hedef}</HataMetni></div>}
+                    <div>
+                      <Field label="Tutar"><TutarInput ariaLabel={`Ödeme tutarı${ek}`} value={r.tutar} onChange={v => satirGuncelle(i, { tutar: v })} invalid={!!h.tutar} /></Field>
+                      {h.tutar ? <HataMetni>{h.tutar}</HataMetni> : (!cok && <Ipucu>Kalandan az girilirse kalem kısmen ödenmiş olur.</Ipucu>)}
+                    </div>
+                    <div>
+                      <Field label="Ödeme yöntemi">
+                        <Select aria-label={`Ödeme yöntemi${ek}`} value={r.yontem} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
+                          {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </Select>
+                      </Field>
+                      {/* Spec 0040 R19: "Çek (ciro)" listede yok; düz "Çek" takip edilmeyen serbest bir nottur. */}
+                      {h.yontem ? <HataMetni>{h.yontem}</HataMetni>
+                        : r.yontem === "Çek" ? <Ipucu>Düz “Çek” takip edilmeyen bir nottur. Müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.</Ipucu> : null}
+                    </div>
+                    {hesapSecimi && (
+                      <div>
+                        <Field label="Hesap">
+                          <Select aria-label={`Hesap${ek}`} value={r.hesapId ?? ""} onChange={e => satirGuncelle(i, { hesapId: e.target.value === "" ? "" : uygunHesaplar.find(x => String(x.id) === e.target.value)?.id ?? "" })}>
+                            <option value="">Hesap belirtilmedi</option>
+                            {uygunHesaplar.map(x => <option key={x.id} value={x.id}>{x.ad} ({HESAP_TUR_AD[x.tur] || x.tur})</option>)}
+                          </Select>
+                        </Field>
+                        {h.hesapId ? <HataMetni>{h.hesapId}</HataMetni>
+                          : !uygunHesaplar.length ? <Ipucu>Açık TL hesabı yok. Ödeme hesapsız kaydedilir ve hiçbir bakiyeye girmez.</Ipucu>
+                          : !r.hesapId ? <Ipucu>Hesap seçilmezse ödeme hiçbir bakiyeye girmez.</Ipucu> : null}
+                      </div>
+                    )}
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <Field label="Açıklama"><Input aria-label={`Açıklama${ek}`} value={r.aciklama} onChange={e => satirGuncelle(i, { aciklama: e.target.value })} placeholder="İsteğe bağlı" /></Field>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+              <Btn small variant="ghost" onClick={satirEkle} disabled={satirlar.length >= COKLU_ODEME_MAX_SATIR}><Icon name="plus" size={12} /> Başka yöntemle satır ekle</Btn>
+              <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
+                {satirlar.length >= COKLU_ODEME_MAX_SATIR ? `En çok ${COKLU_ODEME_MAX_SATIR} satır; fazlası için ayrı ödeme girin.` : "Her satır ayrı bir ödeme olarak kaydedilir."}
+              </span>
+            </div>
+            {hatalar.genel && <HataMetni>{hatalar.genel}</HataMetni>}
+            {(hatalar.hedefler || []).map((m, i) => <HataMetni key={i}>{m}</HataMetni>)}
+            <Ipucu>Kalemi bir müşteri çekiyle kapatmak için Kasa › Çek Portföyü'nden çeki ciro edin.</Ipucu>
           </div>
         ) : (
           <Ipucu>{!odemeYetkisi ? "Ödeme kaydetme yetkiniz yok." : "Bu kalemin ödenecek kalanı yok."}</Ipucu>
         )}
 
         <BolumBasligi ust={16}>Kayıtlı ödemeler</BolumBasligi>
+        {kirilim.karar !== "yok" && (
+          <div data-testid="odeme-yontem-kirilimi" style={{ fontSize: 13, marginBottom: 8 }}>
+            Nasıl ödendi: <b>{kirilim.etiket}</b>
+            {kirilim.karar === "karma" && <span style={{ color: "var(--n600, #475569)" }}> · {kirilim.satirlar.map(x => `${x.yontem} ${para(x.tutarK)}`).join(" · ")}</span>}
+            {kirilim.gocVar && <div data-testid="goc-yontem-notu" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 2 }}>{GOC_YONTEM_NOTU}</div>}
+          </div>
+        )}
         {odemeler.length === 0
           ? <div data-testid="odeme-kayit-bos" style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bu kalem için kayıtlı ödeme yok.</div>
           : (
@@ -164,7 +251,7 @@ export const OdemeKayitPenceresi = ({
                       {[h.yontem || null, h.tur === "mahsup" ? null : hesapAdi(h.hesapId), h.kaynak === "goc" ? "Eski kayıttan aktarıldı" : null, h.aciklama || null].filter(Boolean).join(" · ")}
                     </div>
                   </span>
-                  <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? "Tamamı" : tl2(h.tutar)}</b>
+                  <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? (paylar.has(String(h.id)) ? para(paylar.get(String(h.id))) : "Tamamı") : tl2(h.tutar)}</b>
                   <span style={{ textAlign: "right" }}>{odemeYetkisi && onSil && h.cekId == null && <Btn small variant="danger" onClick={() => setSilinecek(h)} title={h.tur === "mahsup" ? "Mahsubu sil" : "Ödemeyi sil"}><Icon name="trash" size={12} /></Btn>}</span>
                 </div>
               ))}

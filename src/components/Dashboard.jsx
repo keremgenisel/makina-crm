@@ -32,10 +32,11 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const [hatOdeme, setHatOdeme] = useState(null); // null | {kalemId, hedef}
   const hatOdemeKalemi = hatOdeme ? giderler.find(k => k.id === hatOdeme.kalemId) || null : null;
   const hatirlatmaOdendi = (k, hedef) => setHatOdeme({ kalemId: k.id, hedef });
-  const hatOdemeKaydet = (kayit) => {
+  const hatOdemeKaydet = (kayitlar) => { // spec 0041: çok satırlı ödeme dizi olarak gelir
     const k = hatOdemeKalemi;
-    setHesapHareketleri?.(p => [...p, { ...kayit, id: uid() }]);
-    logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar } });
+    const yeni = kayitlar.map(kayit => ({ ...kayit, id: uid() }));
+    setHesapHareketleri?.(p => [...p, ...yeni]);
+    for (const kayit of yeni) logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null } });
     setHatOdeme(null);
   };
   const hatOdemeSil = (h) => {

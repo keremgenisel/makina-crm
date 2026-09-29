@@ -14,7 +14,8 @@ import { Icon, Btn, ConfirmDialog } from "./ui";
 import { GiderForm } from "./GiderForm";
 import { tl2 } from "./gider/GiderAlanlari";
 import { Segment, BosDurum, UyariSeridi } from "./tasarim";
-import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi } from "./gider/DonemRaporu";
+import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi, YontemKirilimi } from "./gider/DonemRaporu";
+import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
 import { Tedarikciler } from "./gider/Tedarikciler";
@@ -63,6 +64,8 @@ export const Giderler = ({
   const yururlukAy = giderAyarlari.yururlukAy || null;
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
   const giderler = useMemo(() => odemeleriUygula(giderlerHam, hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
+  // Spec 0041 R3, R4: kalemin yöntemi ödemelerden türetilir (bir kez; hareket bölümü yoksa boş, yöntem yazılmaz).
+  const kirilimlar = useMemo(() => yontemKirilimlari(giderlerHam.filter(k => !k.deletedAt), hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const modeller = useMemo(() => [...standardModels, ...customModels.filter(m => !m.deletedAt)], [standardModels, customModels]);
 
@@ -81,6 +84,8 @@ export const Giderler = ({
     { baslangic, bitis }, { bugun },
   ) : null), [aralikGecerli, giderler, giderTurleri, tedarikciler, stock, customers, canliModeller, yururlukAy, baslangic, bitis, bugun]);
   const borc = useMemo(() => borcOzeti(giderler, { turler: giderTurleri, tedarikciler, yururlukAy }, bugun), [giderler, giderTurleri, tedarikciler, yururlukAy, bugun]);
+  // Spec 0041 R10 (triyaj bulgu 2): dönem yöntem kırılımı render başına değil, rapor ya da hareketler değişince hesaplanır.
+  const donemKirilimi = useMemo(() => (rapor && Array.isArray(hesapHareketleri) ? donemYontemKirilimi(rapor.kalemler, hesapHareketleri, turMap) : null), [rapor, hesapHareketleri, turMap]);
 
   // KDV karşılaştırması (R9, K1, K15): ay bazlı; kapsam içindeki aralık tam aylardan oluşmalı.
   // Satış KDV'si aylık rapor motorunu ay başına çalıştırır (pahalı); yalnız satış verisine ve ay listesine
@@ -141,13 +146,16 @@ export const Giderler = ({
   const planKalemi = planKalemId == null ? null : giderler.find(k => k.id === planKalemId) || null;
   const satirIsaretle = (k, r) => { setPlanKalemId(null); setOdemeHedefi({ kalemId: k.id, hedef: { taksitId: r.id } }); };
   const hedefDegistir = (k, hedef) => setOdemeHedefi({ kalemId: k.id, hedef: { hedef } });
-  const odemeKaydet = (kayit) => {
+  // Spec 0041 R5, R13: pencere doğrulanmış hareket dizisi verir (çok satırlı ödeme); hepsi tek güncellemeyle yazılır.
+  const odemeKaydet = (kayitlar) => {
     const k = odemeKalemi;
-    setHesapHareketleri?.(p => [...p, { ...kayit, id: uid() }]);
-    const r = kayit.taksitId != null ? (k.taksitler || []).find(x => String(x.id) === String(kayit.taksitId)) : null;
-    const mahsup = kayit.tur === "mahsup";
-    logAction({ serverPermissions, action: mahsup ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, ...(r ? { taksit: r.sira, hedef: r.hedef } : {}) } });
-    showToast(mahsup ? "Avans mahsup edildi." : "Ödeme kaydedildi.");
+    const yeni = kayitlar.map(kayit => ({ ...kayit, id: uid() }));
+    setHesapHareketleri?.(p => [...p, ...yeni]);
+    for (const kayit of yeni) {
+      const r = kayit.taksitId != null ? (k.taksitler || []).find(x => String(x.id) === String(kayit.taksitId)) : null;
+      logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null, ...(r ? { taksit: r.sira, hedef: r.hedef } : {}) } });
+    }
+    showToast(yeni[0]?.tur === "mahsup" ? "Avans mahsup edildi." : yeni.length > 1 ? `${yeni.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     setOdemeHedefi(null);
   };
   const odemeSil = (h) => {
@@ -232,7 +240,7 @@ export const Giderler = ({
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
             onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
+            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
       )}
       {gorunum === "rapor" && rapor && !hatirlatmaModu && (
@@ -261,12 +269,13 @@ export const Giderler = ({
                 </div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TedarikciKirilimi rapor={rapor} />
+                  {donemKirilimi && <YontemKirilimi kirilim={donemKirilimi} />}
                   <BorcOzeti ozet={borc} />
                 </div>
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
               </>
             )}
             {rapor.bos && <BorcOzeti ozet={borc} />}

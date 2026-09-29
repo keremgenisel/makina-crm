@@ -3,7 +3,8 @@ import { Icon, Btn } from "../ui";
 import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, EK_ODEME_TUR_AD, ekOdemeKurus } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti } from "./GiderAlanlari";
-import { KartBolum } from "../tasarim";
+import { KartBolum, BosDurum } from "../tasarim";
+import { PERSONEL_ODEMELERI, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 
 // Giderler sekmesi › Dönem Raporu parçaları (spec 0001 R8, R13–R15, R17, R19, R20; plan K21, K30, K33).
 // Personel ayrıntısı her yerde varsayılan KAPALI başlar ve kalıcı değildir (R17, K21).
@@ -177,11 +178,54 @@ export const BorcOzeti = ({ ozet }) => {
   );
 };
 
+// Spec 0041 R10, AC-12: dönemin kalemlerine yapılan ödemelerin yöntem kırılımı (Q3: ödeme tarihinden bağımsız).
+// R18, Q4: personel ödemeleri ayrıntı kapalıyken tek satır; açılınca yöntemlerine dağılır.
+export const YontemKirilimi = ({ kirilim }) => {
+  const [acik, setAcik] = useState(false);
+  if (!kirilim) return null;
+  const satirlar = acik ? kirilim.personelSatirlar.reduce((l, p) => {
+    const var_ = l.find(x => x.yontem === p.yontem);
+    return var_ ? l.map(x => (x === var_ ? { ...x, tutarK: x.tutarK + p.tutarK } : x)) : [...l, p];
+  }, kirilim.satirlar).sort((a, b) => b.tutarK - a.tutarK) : kirilim.satirlar;
+  const satir = (ad, tutarK, testId) => (
+    <div key={ad} data-testid={testId} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+      <span>{ad}</span><b style={{ fontVariantNumeric: "tabular-nums" }}>{tl2(tutarK / 100)}</b>
+    </div>
+  );
+  return (
+    <KartBolum varyant="kart" baslikStili="baslik" title="Ödeme Yöntemi Kırılımı" altBaslik="Bu dönemin giderlerine yapılan ödemeler, ödeme tarihinden bağımsız" style={{ flex: "2 1 300px", minWidth: 0 }} testId="yontem-kirilimi">
+      {kirilim.toplamK === 0 ? <BosDurum testId="bos-yontem-kirilimi" baslik="Bu dönemin giderlerine ödeme kaydedilmemiş" /> : (
+        <div>
+          {satirlar.map(s => satir(s.yontem, s.tutarK, "yontem-kirilimi-satiri"))}
+          {!acik && kirilim.personelK > 0 && satir(PERSONEL_ODEMELERI, kirilim.personelK, "yontem-kirilimi-personel")}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0 0", borderTop: "1px solid var(--n200, #e2e8f0)", fontWeight: 700 }}>
+            <span>Toplam ödenen</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{tl2(kirilim.toplamK / 100)}</span>
+          </div>
+          {kirilim.personelK > 0 && <div style={{ marginTop: 8 }}><AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Personel ödemelerini birleştir" : "Personel ödemelerini yöntemlere dağıt"}</AcKapa></div>}
+          {kirilim.gocVar && <div data-testid="goc-yontem-notu" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 8 }}>{GOC_YONTEM_NOTU}</div>}
+        </div>
+      )}
+    </KartBolum>
+  );
+};
+
+// Spec 0041 R3, R4, AC-4/5/16/17: kalemin türetilen yöntemi (kalemin kendi alanı listede gösterilmez). Ödeme yoksa yöntem
+// yazılmaz; tek yöntemde o yöntem; birden çoksa "Karma" ve altında kırılım.
+const YontemOzeti = ({ y, vade }) => {
+  const metin = [y && y.karar !== "yok" ? y.etiket : null, vade].filter(Boolean).join(" · ");
+  return (
+    <>
+      {metin && <div data-testid="kalem-yontem" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{metin}</div>}
+      {y?.karar === "karma" && <div data-testid="kalem-yontem-kirilimi" style={{ fontSize: 11.5, color: "var(--n600, #475569)", marginTop: 2 }}>{y.satirlar.map(s => `${s.yontem} ${tl2(s.tutarK / 100)}`).join(" · ")}</div>}
+    </>
+  );
+};
+
 // Kalem listesi. Personel kalemleri tek kapalı grup satırında (K21).
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
 export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
-  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir }) => {
+  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
   const [yerelFiltre, setYerelFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
   const filtre = odemeFiltre === undefined ? yerelFiltre : { ...yerelFiltre, odeme: odemeFiltre };
@@ -247,9 +291,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           : <Rozet renk={durum === "odendi" ? "yesil" : durum === "kismen" ? "turuncu" : "kirmizi"}>
             {durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"} {k.taksitler.filter(r => r.odendi).length}/{k.taksitler.length}</Rozet>}
         {!tekSatirliKira && durum === "kismen" && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Kalan {tl2(hedefler.reduce((a, h) => a + h.kalanK, 0) / 100)}</div>}
-        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>
-          {k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi && !k.odendi ? ` · ${acikAna?.toplamAdet > 1 ? "sonraki taksit" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}
-        </div>
+        <YontemOzeti y={yontemKirilimlari?.get(String(k.id))} vade={k.sonOdemeTarihi && !k.odendi ? `${acikAna?.toplamAdet > 1 ? "sonraki taksit" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : null} />
         {onOdemePlani && <button type="button" onClick={() => onOdemePlani(k)} style={{ background: "none", border: "none", padding: 0, marginTop: 4, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ödeme planı</button>}
         {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
       </div>
@@ -270,7 +312,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           ? <button type="button" onClick={() => onOdendi(k)} title={k.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{rozet}</button>
           : rozet}
         {kismen && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Ödenen {tl2((toplamK - kalanK) / 100)} · kalan {tl2(kalanK / 100)}</div>}
-        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{k.odemeYontemi || "Belirtilmemiş"}{k.sonOdemeTarihi ? ` · ${k.odemeYontemi === "Çek" ? "çek vade" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : ""}</div>
+        {/* Q9: vade etiketi kalemin varsayılan yöntemini okur ("çek vade"); bu bir yöntem iddiası değildir. */}
+        <YontemOzeti y={yontemKirilimlari?.get(String(k.id))} vade={k.sonOdemeTarihi ? `${k.odemeYontemi === "Çek" ? "çek vade" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : null} />
         {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
       </div>
     );

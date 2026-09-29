@@ -216,8 +216,10 @@ export const SettingsGiderTanimlari = ({
               </Field>
             </>
           )}
-          <Field label="Ödeme yöntemi">
-            <Segment ariaLabel="Ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
+          {/* Spec 0041 R17: üretilen kaleme varsayılan olarak kopyalanır. */}
+          <Field label="Varsayılan ödeme yöntemi">
+            <Segment ariaLabel="Varsayılan ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
+            <Ipucu>Üretilen kalemlerde yeni ödeme girilirken ön seçili gelir.</Ipucu>
           </Field>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><Field label="Başlangıç ayı *"><AyInput ariaLabel="Başlangıç ayı" value={form.baslangicAy} onChange={v => set({ baslangicAy: v })} /><HataMetni>{hatalar.baslangicAy}</HataMetni></Field></div>

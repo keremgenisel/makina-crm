@@ -42,3 +42,13 @@ describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktı
     expect(satirlar[0]).toContain("<MakinaMaliyetDetay detay={makinaKarlilik(");
   });
 });
+
+// Spec 0041 AC-27 (X6): gider ödemelerinin yöntem kırılımı Aylık Faaliyet Raporu'na ve CSV/XLSX dışa aktarmaya girmez.
+describe("Spec 0041 AC-27: yöntem kırılımı yazdırma ve dışa aktarmaya girmez", () => {
+  it("AC-27: çıktı dosyaları yöntem motorunu ve gider ödeme hareketlerini okumaz", () => {
+    const YONTEM = /odemeYontemi|yontemKirilimi|donemYontemKirilimi|hareketPaylari|hesapHareketleri/;
+    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
+      expect(oku(f)).not.toMatch(YONTEM);
+    }
+  });
+});

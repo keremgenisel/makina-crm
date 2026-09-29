@@ -250,6 +250,7 @@ const KASA_HAREKETLER = [
   { id: 4008, tur: "virman", tarih: "2026-09-15", tutar: 20000, hesapId: 401, karsiHesapId: 402, aciklama: "Kasaya nakit" },
   odm(4009, 5, 12000, "2026-09-24", { hesapId: 403, yontem: "Kredi Kartı" }),
 ];
+const KARMA_H = [...KASA_HAREKETLER, odm(4020, 1, 3000, "2026-09-21", { hesapId: 402, yontem: "Nakit" })];
 const KASA_TAHSILAT = [{ id: 4101, customerId: 500, tarih: "2026-09-18", tutar: 40000, currency: "TRY", yontem: "Havale", hesapId: 401 },
   { id: 4102, customerId: 501, tarih: "2026-09-25", tutar: 15000, currency: "TRY", yontem: "Çek", tahsilEdildi: false, hesapId: 401 }];
 const kasaEkrani = (o = {}) => <Kasa kasaHesaplari={KASA_HESAPLAR} setKasaHesaplari={bos} hesapHareketleri={KASA_HAREKETLER} setHesapHareketleri={bos}
@@ -444,6 +445,11 @@ const EKRANLAR = {
   "giderler-kismen-odeme": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["kaydir:Gider Kalemleri"]],
   "giderler-odeme-kayit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Kısmen ödendi"]],
   "giderler-odeme-kayit-taksit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı", "dugme:Ödeme gir"]],
+  // Spec 0041: 1 numaralı kalem Havale + Nakit ile kısmen ödenmiş (Karma); çok satırlı ödeme penceresi ve dönem kırılımı.
+  "giderler-karma-yontem": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["kaydir:Gider Kalemleri"]],
+  "giderler-yontem-kirilimi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["kaydir:Ödeme Yöntemi Kırılımı"]],
+  "giderler-coklu-odeme": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["dugme:Ödenmedi", "doldur:Ödeme tutarı=4000", "dugme:Başka yöntemle satır ekle", "sec:Ödeme yöntemi 2=Kredi Kartı"]],
+  "giderler-coklu-odeme-hata": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["dugme:Ödenmedi", "doldur:Ödeme tutarı=4000", "dugme:Başka yöntemle satır ekle", "doldur:Ödeme tutarı 2=999999", "dugme:Ödemeyi Kaydet"]],
   "giderler-odeme-plani-hareket": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı"]],
   "kasa-calisan-avanslari": [kasaB(), ["kaydir:Çalışan avansları"]],
   "kasa-avans-formu": [kasaB(), ["dugme:Avans Ver"]],

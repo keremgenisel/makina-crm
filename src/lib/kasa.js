@@ -4,7 +4,8 @@
 // Hareket (bölüm `hesapHareketleri`): {id, tur: "odeme"|"virman", tarih, tutar, yontem, hesapId, karsiHesapId, giderId,
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
 import { cekDurumuOf } from "./utils";
-import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeleriUygula, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
+import { hareketPaylari } from "./odemeYontemi";
+import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
 
 export const HESAP_TURLERI = [{ value: "kasa", label: "Kasa" }, { value: "banka", label: "Banka" }, { value: "kart", label: "Kredi kartı" }];
 export const HESAP_TUR_AD = Object.fromEntries(HESAP_TURLERI.map(t => [t.value, t.label]));
@@ -116,6 +117,52 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false 
       giderId: kalem.id, taksitId: satirli ? form.taksitId : null, aciklama: String(form.aciklama || "").trim(),
     },
   };
+};
+
+// Spec 0041 R5, R6, R12–R14: tek pencerede çok satırlı ödeme. Tarih pencere başına, açıklama satır başına. Her dolu satır
+// bugünkü odemeDogrula'dan geçer (ciro reddi, hesap, satırın hedef kalanı; Q8); üstüne iki katman: taksitli kalemde aynı
+// taksite giden satırların toplamı o taksidin kalanını, bütün satırların toplamı kalemin kalanını aşamaz. Ya hep ya hiç
+// (R13): bir satır bile geçersizse kayit yoktur. hedefAdi(taksitId): hata metnindeki hedef adı (pencereden, Q7).
+export const COKLU_ODEME_MAX_SATIR = 10;
+const tlMetni = (k) => tl(k).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi = (id) => (id == null ? "Kalem" : "Taksit") } = {}) => {
+  const hatalar = { satirlar: {}, hedefler: [] };
+  const satirlar = Array.isArray(form?.satirlar) ? form.satirlar : [];
+  if (!kalem) return { hatalar: { ...hatalar, genel: "Ödenecek kalem bulunamadı." }, kayitlar: null };
+  if (!form?.tarih) hatalar.tarih = "Ödeme tarihi girilmedi.";
+  if (satirlar.length > COKLU_ODEME_MAX_SATIR) hatalar.genel = `En çok ${COKLU_ODEME_MAX_SATIR} satır girilebilir; fazlası için ayrı ödeme girin.`;
+  // R12: tutarı boş bırakılmış satır sessizce atılır.
+  const dolu = satirlar.map((r, i) => ({ r, i })).filter(({ r }) => String(r?.tutar ?? "").trim() !== "");
+  if (!dolu.length && !hatalar.genel) hatalar.genel = "En az bir satırın tutarını girin.";
+  const satirli = satirliMi(kalem);
+  const dav = davranisOf(kalem, turMap);
+  const gecerli = [];
+  for (const { r, i } of dolu) {
+    const v = odemeDogrula({ ...r, tarih: form?.tarih || "2000-01-01" }, { kalem, turMap, hesaplar });
+    if (v.kayit) gecerli.push({ i, kayit: { ...v.kayit, tarih: form?.tarih } });
+    else hatalar.satirlar[i] = v.hatalar;
+  }
+  // R6 katman 2: aynı taksite giden satırların toplamı.
+  if (satirli && !Object.keys(hatalar.satirlar).length) {
+    const gruplar = new Map();
+    for (const g of gecerli) { const key = String(g.kayit.taksitId); gruplar.set(key, [...(gruplar.get(key) || []), g]); }
+    for (const [, liste] of gruplar) {
+      if (liste.length < 2) continue;
+      const taksitId = liste[0].kayit.taksitId;
+      const kalanK = odemeHedefKalaniK(kalem, dav, taksitId);
+      const topK = liste.reduce((a, g) => a + kurus(g.kayit.tutar), 0);
+      if (topK > kalanK) hatalar.hedefler.push(`${hedefAdi(taksitId)} için girilen toplam kalanı aşıyor (kalan ${tlMetni(kalanK)} ₺).`);
+    }
+  }
+  // R6 katman 3: bütün satırların toplamı kalemin kalanını aşamaz. Taksitli kalemde 1. ve 2. katman her taksidin toplamını
+  // o taksidin kalanıyla sınırladığı için toplam zaten aşamaz (triyaj bulgu 4); katman 3 yalnız taksitsiz kalemde çalışır.
+  if (!satirli && !Object.keys(hatalar.satirlar).length && gecerli.length > 1) {
+    const kalemKalanK = odemeHedefKalaniK(kalem, dav, null);
+    const topK = gecerli.reduce((a, g) => a + kurus(g.kayit.tutar), 0);
+    if (topK > kalemKalanK) hatalar.hedefler.push(`Satırların toplamı kalemin kalanını aşıyor (kalan ${tlMetni(kalemKalanK)} ₺).`);
+  }
+  const hataVar = hatalar.tarih || hatalar.genel || hatalar.hedefler.length || Object.keys(hatalar.satirlar).length;
+  return hataVar ? { hatalar, kayitlar: null } : { hatalar, kayitlar: gecerli.map(g => g.kayit) };
 };
 
 // R15, AC-12, AC-30: virman aynı para biriminde iki farklı, açık hesap arasında; gider ya da gelir değildir.
@@ -240,16 +287,7 @@ const anaHedef = (k, dav) => odemeHedefleri(k, dav).find(h => h.hedef === HEDEF.
 // Kalemin ana hedefine (kiraya veren / tedarikçi / çalışan) giden ödeme ve mahsuplar, tarih sırasıyla ve her birinin ana
 // hedefe düşen payı: hareketler sırayla eklenip motor yeniden çalıştırılır, kalan farkı o hareketin payıdır (B7: tutarsız
 // göç hareketi o anki kalanı kapatır). Stopaja giden pay tedarikçi ekstresine girmez.
-const anaPaylari = (k, hareketler, turMap) => {
-  const dav = davranisOf(k, turMap);
-  const hs = (hareketler || []).filter(h => h && (h.tur === "odeme" || h.tur === "mahsup") && idEsit(h.giderId, k.id))
-    .sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "") || Number(a.id) - Number(b.id));
-  const kalan = (liste) => anaHedef(odemeleriUygula([k], liste, turMap)[0], dav).kalanK;
-  const r = [];
-  let once = kalan([]);
-  hs.forEach((h, i) => { const sonra = kalan(hs.slice(0, i + 1)); const pay = once - sonra; once = sonra; if (pay > 0 || h.tamKapatir) r.push({ hareket: h, payK: pay }); });
-  return r;
-};
+const anaPaylari = (k, hareketler, turMap) => hareketPaylari(k, hareketler, turMap, { yalnizAna: true }); // spec 0041 Q1: tek hesap
 const sirala = (satirlar) => satirlar.sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "") || a.sira - b.sira);
 const yuru = (satirlar, baslangicK = 0) => { let b = baslangicK; for (const s of satirlar) { b += s.etkiK; s.bakiyeK = b; } return b; };
 // Tarih aralığı: aralıktan önceki satırlar "Devreden bakiye" olur, sonrası çıkar.
