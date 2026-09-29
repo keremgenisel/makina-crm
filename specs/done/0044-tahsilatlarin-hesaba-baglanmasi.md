@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-29, plan onayıyla; plan `specs/0044-uygulama-plani.md` Q1–Q13). Uygulanıyor, dal `feat/0044-tahsilat-hesap`. |
+| **Durum** | Tamamlandı (2026-09-29; commit `66d73ff`, dal `feat/0044-tahsilat-hesap`; plan `specs/done/0044-uygulama-plani.md` Q1–Q13) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa ekranı ve bakiye, servis / Extra Kalıp / yedek parça "ödendi" işaretleme, müşteri detayı, Stok alt sekmesi |
@@ -70,6 +70,8 @@ tahsilatları da sayıyor, ve hesabı söylenmemiş olanlar kaybolmuyor, ayrı b
   hesabı boş kayıtlardır; tahsil edilmemiş çek ve blokajı süren kart da listede kalır (hesap önceden atanır, bakiyeye
   tahsil edilince girer). Müşterisi silinmiş (sahipsiz) kayıt da sayılır: sahipsizlik rapordaki görünürlük kararıdır,
   kasadaki paranın değil.
+  **Triyaj (2026-09-29):** hesabı bulunamayan ya da para birimi kaydınkiyle uyuşmayan hesaba bağlı kayıt da listelenir
+  (bakiyeye giremediği için aksi hâlde hiçbir yerde görünmezdi); formda ve pencerede uyumsuz hesap seçili gelmez.
 - **R7.** Hesabı belirtilmemiş tahsilatlar listelenir ve oradan hesap atanabilir.
 - **R8.** Geçmiş kayıtlara **otomatik hesap atanmaz**; hepsi hesapsız başlar ve kullanıcı isterse atar.
 - **R9.** "Ödendi" geri alınırsa tahsilat bakiyeden çıkar. **Hesap alanı temizlenmez**, korunur; yeniden
@@ -248,27 +250,27 @@ tahsilatları da sayıyor, ve hesabı söylenmemiş olanlar kaybolmuyor, ayrı b
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Bakiye hesabı saf motorda (`kasa.js`) genişletildi; ekranlar yalnız çiziyor.
-- [ ] Gelir kuralları çağrıldı, yeniden yazılmadı; kaynak taraması testi bunu sabitliyor (C2, R4).
-- [ ] Gelir rakamlarının değişmediği çapraz testle ve kaynak taramasıyla gösterildi (AC-17, AC-18).
-- [ ] Tahsilat kuralı tekleştirildi: `tahsilatSayilirMi` kart blokajını da denetliyor, satır tarihi
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Bakiye hesabı saf motorda (`kasa.js`) genişletildi; ekranlar yalnız çiziyor.
+- [x] Gelir kuralları çağrıldı, yeniden yazılmadı; kaynak taraması testi bunu sabitliyor (C2, R4).
+- [x] Gelir rakamlarının değişmediği çapraz testle ve kaynak taramasıyla gösterildi (AC-17, AC-18).
+- [x] Tahsilat kuralı tekleştirildi: `tahsilatSayilirMi` kart blokajını da denetliyor, satır tarihi
       `tahsilatTarihiOf`'tan geliyor ve makina tahsilatı kolunun davranış değişikliği testle sabitlendi
-      (AC-12, R5). Bu değişiklik sürüm notunda tek cümleyle duyuruldu.
-- [ ] Hesapsız tahsilat sayımı gider tarafından ayrı bir saf fonksiyondadır; 0040 R18 ve 0024 B4
+      (AC-12, R5). Bu değişiklik sürüm notunda tek cümleyle duyurulur (metin planda, §6).
+- [x] Hesapsız tahsilat sayımı gider tarafından ayrı bir saf fonksiyondadır; 0040 R18 ve 0024 B4
       istisnaları bozulmadı (AC-24, AC-25).
-- [ ] Üç yeni alan `MERGE_KEYS` remap listesine eklendi ve `merge.test.js` kapsıyor (AC-29, R16).
-- [ ] Üç yeni kolon dört noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor (AC-19).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0044-*.jpg`): hesap seçimli ödendi işaretleme, hesapsız
+- [x] Üç yeni alan `MERGE_KEYS` remap listesine eklendi ve `merge.test.js` kapsıyor (AC-29, R16).
+- [x] Üç yeni kolon dört noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor (AC-19).
+- [x] Görsel kanıt eklendi (`docs/evidence/0044-*.jpg`): hesap seçimli ödendi işaretleme, hesapsız
       tahsilat listesi, yenilenmiş bilgi notu; aydınlık ve karanlık tema.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: bakiyenin üçüncü kaynağı, bakiyeye giren tutarın brüt olduğu, tek tahsilat
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: bakiyenin üçüncü kaynağı, bakiyeye giren tutarın brüt olduğu, tek tahsilat
       kuralı (kart blokajı dahil) ve "her ödendi bizim paramız değil" kuralı yazıldı; ayrıca müşteri
       detayındaki `toggleParcaOdendi` cümlesi düzeltildi (kodda böyle bir işlev yok, serviste tek `odendi`
       bayrağı var).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -276,10 +278,10 @@ tahsilatları da sayıyor, ve hesabı söylenmemiş olanlar kaybolmuyor, ayrı b
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı anında işlendi (AC-10 0007 ile çeliştiği için yeniden yazıldı). Onaydan sonra triyaj notu eklendi: hesabının para birimi uyuşmayan ya da bulunamayan tahsilat da hesapsız listede görünür (R6). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Uyumsuz hesaba bağlı kalan tahsilatın ne bakiyede ne listede görünmemesi (gerçek, R6'nın başarı tanımıyla çelişiyordu); AC-17 ve AC-25'in kendi adlı testlerinin olmaması (DoD eksiği). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Makina tahsilatında kart blokajı kuralı bilinçli davranış değişikliğidir (R5, testli, sürüm notunda). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kaydı iki listeye (bakiye ve "eksik veri") bölen her süzgeç, iki koşulun tümleyen olduğunu ayrıca sınamalı: bakiye "hesap var ve para birimi uyuşuyor" derken eksik listesi yalnız "hesap yok" diyordu, aradaki kayıt sessizce kayboldu. R9'un hesabı koruma kararı bu boşluğu normal kullanımla erişilebilir kıldı; korunan her alan, sonradan değişen komşu alanla (burada para birimi) birlikte düşünülmeli. İkincisi: bir spec ilk gün başka bir tamamlanmış spec'in kuralını (0007 kalıp borcu) yanlış okuyabiliyor; planda "bağlı spec'lerle çelişki" taraması bunu R2'de yakaladı.

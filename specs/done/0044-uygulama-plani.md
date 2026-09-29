@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0044-tahsilatlarin-hesaba-baglanmasi.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0044-tahsilatlarin-hesaba-baglanmasi.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0044-tahsilat-hesap` (`feat/0042-personel-hedef` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-29: bütün öneriler (Q1–Q13) kabul |
 
@@ -77,3 +77,7 @@
 - `kalipSatisOrtak` ve `yedekParcaRec` `hesapId`'yi yalnız formda alan varken yazar. Evrak'tan üretimde ve kasa yetkisi olmayan kullanıcının düzenlemesinde mevcut hesap korunur.
 - Görüntü aracı: `kasa-tahsilat-hareketleri`, `kasa-hesapsiz-tahsilatlar`, `musteri-tahsilat-hesap-penceresi`, `servis-formu-tahsilat-hesap`, `servis-formu-tahsilat-neden`, `kalip-formu-tahsilat-hesap`, `yedek-parca-formu-tahsilat-hesap`. Kasa'nın hesaplar görünümündeki mevcut ekranlar (not ve iki yeni satır) bilerek değişti. Öbür ekranlar 0 piksel.
 - Triyaj (2026-09-29): hesabının para birimi uyuşmayan ya da hesabı bulunmayan tahsilat hiçbir bakiyeye girmediği hâlde hesapsız listede de görünmüyordu. `hesapsizTahsilatlar(veri, hesaplar)` bu kayıtları da listeler (`neden`: `paraBirimi` / `hesapYok`, Kasa satırında yazar). Formlarda ve pencerede uyumsuz mevcut hesap artık seçili gelmez ve temizlenir (`uyumluHesapId`). Ayrıca AC-17 (Finans özeti) ve AC-25 (hesapsız ödeme istisnaları) kendi adlarıyla testlendi.
+
+## 6. Sürüm notu (R5, Q12)
+
+"Kasa bakiyesi artık kredi kartıyla alınan tahsilatları (makina tahsilatları dahil) banka blokajı bitip para hesaba geçtiği gün sayar; bu yüzden bazı hesap bakiyeleri önceki sürüme göre düşük görünebilir."
