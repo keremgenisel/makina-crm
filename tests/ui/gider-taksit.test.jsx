@@ -159,7 +159,7 @@ describe("Form (R1, R6, R11, R15)", () => {
   it("AC-6: taksitli kalemde ödeme durumu segmenti yok, durum satırlardan türetilmiş olarak yazılır", () => {
     ac(TAKSITLI);
     expect(screen.queryByRole("radiogroup", { name: "Ödeme durumu" })).toBeNull();
-    expect(screen.getByTestId("odeme-durumu-turetilen").textContent).toBe("Kısmen ödendi");
+    expect(screen.getByTestId("odeme-durumu-turetilen").textContent).toMatch(/Kısmen · kalan/); // spec 0046 R15: hedef satırı
   });
   it("AC-22: iki taksiti ödenmiş planda sayı 1'e indirilemez; nedeni gösterilir, kayıt yapılmaz", () => {
     const onSave = ac(TAKSITLI);

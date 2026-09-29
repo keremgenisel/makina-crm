@@ -8,7 +8,7 @@ import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
   ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
 } from "../lib/gider";
-import { tamOdemeHareketleri } from "../lib/kasa";
+import { formOdemesiHazirla } from "../lib/formOdemesi";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
 import { GiderForm } from "./GiderForm";
@@ -46,6 +46,8 @@ export const Giderler = ({
   // Spec 0024: ödeme bir harekettir; kalemin durumu burada hareketlerden türetilir (odemeleriUygula), yazma ham
   // diziye yapılır. hesapHareketleri verilmezse (dizi değil) saklı durum okunur. Hesap seçimi yalnız kasa yetkisiyle (C6).
   hesapHareketleri = null, setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
+  // Spec 0046 (R24, Q8): çek cirosu için; App yalnız kasa yetkisiyle verir.
+  cekler = [], setCekler = null, payments = [],
   // Triyaj bulgu 2: sunucu hareket bölümünü göndermedi (0024 öncesi sunucu); durum eski işaretten, ödeme girişi kapalı.
   hareketBolumuYok = false,
 }) => {
@@ -116,16 +118,23 @@ export const Giderler = ({
     showToast(`${ayAdi(uretimAyi)}: ${u.eklenen} kalem eklendi, ${u.zatenVardi} kalem zaten vardı.`);
   };
 
-  const kaydet = (kayit, odemeTalebi = null) => {
+  const kaydet = (kayit, odemePlani = null) => {
     if (kayit.id == null) {
       const yeni = { ...kayit, id: uid() };
+      // Spec 0046 R17, Q1: form geçici kimlikle doğruladı; aynı saf fonksiyon gerçek kimlikle yeniden çağrılır. Hata olursa
+      // (beklenmez) hiçbir şey yazılmaz. Kalem, hareketler ve çek AYNI işleyicide yazılır: tek POST (0040 ciro şartı).
+      const od = odemePlani && setHesapHareketleri ? formOdemesiHazirla(yeni, { turMap, hesaplar: kasaHesaplari, cekler, payments, ...odemePlani }) : null;
+      if (od && (!od.hareketler || (od.cek && !setCekler))) { showToast("Ödeme doğrulanamadı; gider kaydedilmedi.", "err"); return; }
+      const odemeler = (od?.hareketler || []).map(h => ({ ...h, id: uid() }));
       setGiderler(p => [...p, yeni]);
       logAction({ serverPermissions, action: "olusturuldu", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "" });
-      // Spec 0024 R17: "ödendi olarak kaydet" kalemin tamamını kapatan ödeme hareketlerini doğurur.
-      const odemeler = odemeTalebi && setHesapHareketleri ? tamOdemeHareketleri(yeni, turMap, odemeTalebi).map(h => ({ ...h, id: uid() })) : [];
       if (odemeler.length) {
         setHesapHareketleri(p => [...p, ...odemeler]);
         logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "", detail: { hareket: odemeler.length } });
+      }
+      if (od?.cek) {
+        setCekler(p => p.map(c => (c.id === od.cek.id ? od.cek : c)));
+        logAction({ serverPermissions, action: "ciro_edildi", entity: "cek", entityId: od.cek.id, entityName: `${od.cek.no} · ${od.cek.banka}`, detail: { gider: yeni.id, hareket: odemeler.filter(h => h.cekId != null).length } });
       }
       showToast(odemeler.length ? "Gider ve ödemesi kaydedildi." : "Gider kaydedildi.");
     } else {
@@ -196,7 +205,7 @@ export const Giderler = ({
   const eylemDugmeleri = (
     <>
       {canDo("gider_tekrar_uret") && giderTanimlari.length > 0 && <Btn variant="ghost" onClick={uret}><Icon name="refresh" size={14} /> {ayAdi(uretimAyi)} tekrarlayan kalemlerini oluştur</Btn>}
-      {canDo("gider_add") && <Btn onClick={() => setForm({ kalem: null })}><Icon name="plus" size={14} /> Yeni Gider</Btn>}
+      {canDo("gider_add") && <Btn onClick={() => setForm({ kalemId: null })}><Icon name="plus" size={14} /> Yeni Gider</Btn>}
     </>
   );
 
@@ -239,7 +248,7 @@ export const Giderler = ({
           <UyariSeridi aile="uyari" baslik={`Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`} metin={`Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`} testId="hatirlatma-modu" />
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-            onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
+            onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
             odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
       )}
@@ -274,7 +283,7 @@ export const Giderler = ({
                 </div>
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
+                  onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
               </>
             )}
@@ -305,17 +314,21 @@ export const Giderler = ({
         <OdemePlaniPenceresi kalem={planKalemi} davranis={turMap.get(String(planKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(planKalemi.turId))?.ad || "Gider"}
           odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
       )}
+      {form && (
+        <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
+          modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
+          hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hesapSecimi={kasaYetki}
+          cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler}
+          onHedefOde={odemeGirisi ? (k, h) => hedefDegistir(k, h) : null}
+          onSave={kaydet} onCancel={() => setForm(null)} />
+      )}
+      {/* Spec 0046 Q7: ödeme penceresi formdan SONRA çizilir; düzenleme formunun üstünde açılır. */}
       {odemeKalemi && (
         <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
           odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy} />
       )}
-      {form && (
-        <GiderForm kalem={form.kalem} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
-          modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
-          hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hesapSecimi={kasaYetki}
-          onSave={kaydet} onCancel={() => setForm(null)} />
-      )}
+
       {silinecek && (
         <ConfirmDialog title="Gider silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli “${silinecek.aciklama || silinecek.calisanAd || "gider"}” kalemi Çöp Kutusu'na taşınacak. 30 gün içinde geri alınabilir.${silinecek.tanimId != null ? " Tekrarlayan tanımdan geldiği için o ay yeniden üretilmez." : ""}`}
           confirmLabel="Çöp Kutusuna Taşı" onConfirm={sil} onCancel={() => setSilinecek(null)} />

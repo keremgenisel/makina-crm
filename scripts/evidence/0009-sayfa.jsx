@@ -287,6 +287,9 @@ const TH_YP = [{ id: 4221, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 4,
 const kasaTahsilat = (o = {}) => kasaEkrani({ services: TH_SERVIS, partSales: TH_KALIP, yedekParcaSatislar: TH_YP, dealers: DEALERS, factory: { name: "Altuntaş Makina" },
   setServices: bos, setPartSales: bos, setYedekParcaSatislar: bos, ...o });
 const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tahsilatTarihi: null });
+// Spec 0046: gider formunun ödeme bölümü (kasa yetkisi, çekler portföyde).
+const FORM_ODEME = { giderTurleri: TURLER, tedarikciler: TED, calisanlar: CAL, giderAyarlari: AYAR.giderAyarlari, onSave: bos, onCancel: bos,
+  hesaplar: KASA_HESAPLAR, hareketler: KASA_HAREKETLER, hesapSecimi: true, cekler: CEKLER, payments: cekleriUygula(CEK_ODEMELER, CEKLER), ciroYetkisi: true };
 const KASA_B_ONCE = KASA_B.filter(h => h.id !== 4012); // mahsup girilmeden önceki hâl
 const mahsupPenceresi = () => (
   <OdemeKayitPenceresi kalem={odemeleriUygula([GIDERLER.find(x => x.id === 5)], KASA_B_ONCE, TUR_MAP)[0]} davranis="personel" turAd="Personel" turMap={TUR_MAP}
@@ -507,6 +510,15 @@ const EKRANLAR = {
   "ayarlar-gidertanim-formu": [ayarlar("gidertanim"), ["dugme:Yeni Tanım"]],
   "ayarlar-gidertur-duzenle": [ayarlar("gidertur"), ["baslik:Düzenle"]],
   "kasa-hesap-formu-tutar": [kasaEkrani(), ["dugme:Yeni Hesap", "doldur:Açılış bakiyesi=150000"]],
+  // Spec 0046: gider formundan hedef bazlı ödeme ve çek cirosu.
+  "gider-formu-odeme-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, resmiTutar: "30000", eldenTutar: "20000", tarih: "2026-09-20" }} {...FORM_ODEME} />,
+    ["Hepsini ödendi işaretle", "sec:Elden ödeme yöntemi=Nakit", "sec:Resmi hesabı=401", "kaydir:Ödeme tarihi"]],
+  "gider-formu-odeme-kira": [<GiderForm kalem={{ turId: 1, girisYonu: "brut", tutar: "20000", kdvOrani: "0", stopajOrani: "20", tedarikciId: 11, tarih: "2026-09-20", taksitSayisi: "3", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />,
+    ["etiket:Vergi dairesine (stopaj) ödendi", "sec:Vergi dairesine (stopaj) hesabı=402", "kaydir:Ödeme tarihi"]],
+  "gider-formu-odeme-ciro": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,
+    ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ödeme tarihi"]],
+  "gider-formu-odeme-taksitli": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "20", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "4", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />, ["kaydir:bütün ödemeleri taksitli"]],
+  "gider-formu-odeme-duzenle": [<GiderForm kalem={odemeleriUygula([GIDERLER[0]], KASA_HAREKETLER, turHaritasi(TURLER))[0]} {...FORM_ODEME} onHedefOde={bos} />, ["kaydir:Kısmen · kalan"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
@@ -546,6 +558,13 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const aranan = metin.slice(7);
       const hedef = [...document.querySelectorAll("label, div, span, h2, h3")].filter(e => e.textContent.trim().startsWith(aranan) && e.children.length <= 3).pop();
       if (hedef) hedef.scrollIntoView({ block: "center" }); else console.warn("kaydırılamadı: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("etiket:")) {
+      // aria-label'ı birebir eşleşen öğeye tıklar (onay kutusu gibi metinsiz denetimler; spec 0046).
+      const hedef = document.querySelector(`[aria-label="${metin.slice(7)}"]`);
+      if (hedef) hedef.click(); else console.warn("etiketli öğe yok: " + metin);
       await bekle(300);
       continue;
     }

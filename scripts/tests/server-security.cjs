@@ -53,6 +53,8 @@ const ODEMECI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme", 
 // Spec 0040: yalnız Müşteriler sekmeli tahsilatçı; müşteri grubu kısıtlı Giderler/Finans cirocusu; gider_odeme'siz Giderler kullanıcısı.
 const TAHSILATCI = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
 const CIROCU = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+// Spec 0046: gider formundan ciro (yeni kalem + ciro hareketi + çek tek yazımda); müşteri grubu kısıtlı.
+const FORM_ODEMECI = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add", "gider_odeme"], customerActions: [] });
 const CIROSUZ = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_edit"], customerActions: [] });
 const BAYI_SILICI = JSON.stringify({ tabs: ["dashboard", "dealers"], stockActions: [], customerActions: [], dealerActions: ["dealer_delete"] });
 
@@ -83,6 +85,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("odemeci",     bcrypt.hashSync("odeme123", 10), "user", ODEMECI);
   dbmod.createUser("tahsilatci",  bcrypt.hashSync("tahsil123", 10), "user", TAHSILATCI);
   dbmod.createUser("cirocu",      bcrypt.hashSync("ciro1234", 10), "user", CIROCU);
+  dbmod.createUser("formodemeci", bcrypt.hashSync("form1234", 10), "user", FORM_ODEMECI);
   dbmod.createUser("cirosuz",     bcrypt.hashSync("ciro1234", 10), "user", CIROSUZ);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
@@ -459,6 +462,21 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const tK2 = await gUst(ciroTok);
   check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
     (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);
+
+  // ── Spec 0046 AC-22: gider formundan ciro; yeni kalem, ciro hareketi ve çek durumu tek yazımda ──
+  let fA = await gUst(adminTok);
+  await postData({ ...fA, dataVersion: undefined, payments: [...(fA.payments || []), { id: 9801, customerId: 9600, tarih: "2026-09-10", tutar: 2000, currency: "TRY", yontem: "Çek", vadeTarihi: "2026-10-20", tahsilEdildi: false }],
+    cekler: [...(fA.cekler || []), { id: 9802, paymentId: 9801, no: "777", banka: "Garanti", kesideci: "", tur: "hamiline", durum: "portfoy", gecmis: [{ tarih: "2026-09-10", durum: "portfoy", not: "Alındı" }] }] }, fA.dataVersion, adminTok);
+  const formTok = (await login("formodemeci", "form1234")).body.token;
+  const fF = await gUst(formTok);
+  check("spec 0046 AC-22: gider formundan ciro (yeni kalem + ciro hareketi + çek) tek yazımda → 200; üçü de kayıttan okunur",
+    (await postData({ ...fF, dataVersion: undefined,
+      giderler: [...(fF.giderler || []), { id: 9810, tarih: "2026-10-01", turId: 1, tutar: 2000, kdvOrani: 0, odendi: false, tedarikciId: null, modelSatirlari: [] }],
+      hesapHareketleri: [...(fF.hesapHareketleri || []), { id: 9811, tur: "odeme", tarih: "2026-10-01", tutar: 2000, yontem: "Çek (ciro)", giderId: 9810, taksitId: null, hesapId: null, cekId: 9802, aciklama: "Çek 777 · Garanti" }],
+      cekler: fF.cekler.map(c => c.id === 9802 ? { ...c, durum: "ciro", gecmis: [...c.gecmis, { tarih: "2026-10-01", durum: "ciro", not: "Ciro: Usta" }] } : c) }, fF.dataVersion, formTok)).status === 200
+    && (await gUst(adminTok)).giderler.some(k => k.id === 9810)
+    && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9811 && h.cekId === 9802)
+    && (await gUst(adminTok)).cekler.find(c => c.id === 9802)?.durum === "ciro");
 
   // ── Spec 0006 AC-33: yalnız Evrak sekmeli kullanıcının "CRM'e Kaydet" yazımı ─────────
   let eA = await gUst(adminTok);

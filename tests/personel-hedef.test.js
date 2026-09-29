@@ -6,7 +6,8 @@ import {
   giderKalemDogrula, turHaritasi, odemeleriUygula, odemeHedefleri, odemeDurumu, borcOzeti, kalemTutari, odenecekTutar,
   personelHedefKurus, tekrarlayanUret, DAVRANIS, HEDEF,
 } from "../src/lib/gider";
-import { cokluOdemeDogrula, calisanEkstresi, tamOdemeHareketleri } from "../src/lib/kasa";
+import { cokluOdemeDogrula, calisanEkstresi } from "../src/lib/kasa";
+import { formOdemesiHazirla, formOdemeHedefleri, hepsiniOde } from "../src/lib/formOdemesi";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 import { hesaplaMakinaMaliyetleri } from "../src/lib/makinaMaliyeti";
 
@@ -82,7 +83,9 @@ describe("Spec 0042: ödeme ve durum (R4, R5, AC-3–AC-5, AC-20, AC-21)", () =>
   });
   it("AC-15: 'ödendi olarak kaydet' kısayolu her hedefe bir hareket yazar; aynı kalem iki kez kaydedilince satır kimlikleri aynı kalır", () => {
     const kk = k();
-    expect(tamOdemeHareketleri(kk, turMap, { tarih: "2026-09-30", yontem: "Havale" }).map(h => [h.taksitId, h.tutar])).toEqual(kk.taksitler.map(r => [r.id, r.tutar]));
+    // Spec 0046 C2: kısayol artık formun "Hepsini ödendi" yolu (tamOdemeHareketleri kaldırıldı); sonuç aynı.
+    const satirlar = hepsiniOde(formOdemeHedefleri(kk, turMap), { yontem: "Havale" });
+    expect(formOdemesiHazirla(kk, { turMap, tarih: "2026-09-30", satirlar }).hareketler.map(h => [h.taksitId, h.tutar])).toEqual(kk.taksitler.map(r => [r.id, r.tutar]));
     const ikinci = kayit({ ...uygula(kk), taksitSayisi: 1, sonOdemeTarihi: "2026-09-30" });
     expect(ikinci.taksitler.map(r => r.id)).toEqual(kk.taksitler.map(r => r.id));
   });

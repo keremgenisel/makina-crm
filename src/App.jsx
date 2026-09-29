@@ -1449,7 +1449,8 @@ export default function App() {
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
           appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}
           satisVerisi={giderSatisVerisi} makinaMaliyet={makinaMaliyet} key={`gider-${giderOdemeFiltresi}`} baslangicOdemeFiltresi={giderOdemeFiltresi}
-          hesapHareketleri={hesapHareketleri} setHesapHareketleri={hareketYazici} hareketBolumuYok={!hareketBolumuVar} kasaHesaplari={kasaYetki ? kasaHesaplari : []} kasaYetki={kasaYetki} />}
+          hesapHareketleri={hesapHareketleri} setHesapHareketleri={hareketYazici} hareketBolumuYok={!hareketBolumuVar} kasaHesaplari={kasaYetki ? kasaHesaplari : []} kasaYetki={kasaYetki}
+          cekler={kasaYetki ? ceklerBagli : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? livePayments : []} />}
         {activeTab === "kasa"      && kasaYetki && <Kasa kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hareketListesi} setHesapHareketleri={hareketYazici}
           payments={livePayments} customers={liveCustomers} giderler={giderlerOdemeli} giderTurleri={giderTurleri} tedarikciler={tedarikciler} serverPermissions={effectivePermissions} showToast={showToast}
           calisanlar={calisanlar} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}

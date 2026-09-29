@@ -1063,3 +1063,22 @@ describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
     expect(tahsilatHesabiYalnizMi("payments", { payments: [{ id: 1 }] }, { payments: [{ id: 1, hesapId: 2 }] })).toBe(false);
   });
 });
+
+describe("spec 0046: gider formundan ciro tek yazımda", () => {
+  const cek = (o = {}) => ({ id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [], ...o });
+  const eski = { giderler: [], hesapHareketleri: [], cekler: [cek()] };
+  const yeni = {
+    giderler: [{ id: 5, tarih: "2026-10-01", turId: 1, tutar: 1000, kdvOrani: 0, odendi: false, modelSatirlari: [] }],
+    hesapHareketleri: [{ id: 300, tur: "odeme", tarih: "2026-10-01", tutar: 1000, yontem: "Çek (ciro)", giderId: 5, taksitId: null, hesapId: null, cekId: 200 }],
+    cekler: [cek({ durum: "ciro", gecmis: [{ tarih: "2026-10-01", durum: "ciro", not: "Ciro: Usta" }] })],
+  };
+  it("AC-22: gider_add + gider_odeme'li, müşteri grubu kısıtlı kullanıcı yeni kalem + ciro hareketi + çek durumunu birlikte yazar", () => {
+    const p = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add", "gider_odeme"], customerActions: [] });
+    expect(yazmaYetkisiVar(p, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, p, "user").ok).toBe(true);
+  });
+  it("AC-22: aynı yazımda gider_add yoksa kalem eklenemez; gider_odeme yoksa ciro hareketi ve çek durumu reddedilir", () => {
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] }), "user")).toMatchObject({ ok: false, gerekli: "gider_add" });
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add"], customerActions: [] }), "user").ok).toBe(false);
+  });
+});

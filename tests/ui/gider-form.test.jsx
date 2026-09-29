@@ -196,19 +196,19 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(screen.queryByLabelText("Kaydederken ödendi olarak kaydet")).toBeNull();
     expect(screen.queryByRole("radio", { name: "Ödendi" })).toBeNull();
   });
-  it("R17: 'ödendi olarak kaydet' kayda durum yazmaz, onSave'e ödeme talebi (tarih, hesap) verir", () => {
+  it("R17 (spec 0046 ile güncellendi): ödeme satırı kayda durum yazmaz, onSave'e hedef bazlı ödeme planı (tarih, hesap) verir", () => {
     const H = [{ id: 1, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY" }, { id: 2, ad: "Dolar", tur: "banka", paraBirimi: "USD" }];
     const onSave = ac({ hesaplar: H, hesapSecimi: true });
     tur(4);
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
-    fireEvent.click(screen.getByLabelText("Kaydederken ödendi olarak kaydet"));
-    const hesap = screen.getByLabelText("Hesap");
+    fireEvent.click(screen.getByLabelText("Tedarikçiye ödendi"));
+    const hesap = screen.getByLabelText("Tedarikçiye hesabı");
     expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Merkez Kasa (Kasa)"]);
     fireEvent.change(hesap, { target: { value: "1" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    const [kayit, talep] = onSave.mock.calls[0];
+    const [kayit, plan] = onSave.mock.calls[0];
     expect(kayit).toMatchObject({ odendi: false, odemeTarihi: null });
-    expect(talep).toEqual({ tarih: "2026-09-23", hesapId: 1, yontem: "" });
+    expect(plan).toMatchObject({ tarih: "2026-09-23", satirlar: { ana: { isaretli: true, tutar: 1200, hesapId: 1, yontem: "" } } });
   });
   it("Spec 0042 AC-16 / AC-28: gider formunda ödeme yöntemi açılır listedir; seçenekler aynı beş seçenek, 'Çek (ciro)' yok", () => {
     ac();
@@ -234,11 +234,12 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(screen.getByText("Yeni ödeme girilirken ön seçili gelir. Kalemin nasıl ödendiğini ödemeler belirler.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Varsayılan ödeme yöntemi"), { target: { value: "Nakit" } });
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
-    fireEvent.click(screen.getByLabelText("Kaydederken ödendi olarak kaydet"));
+    fireEvent.click(screen.getByLabelText("Tedarikçiye ödendi")); // spec 0046: satır varsayılan yöntemle ön dolu
+    expect(screen.getByLabelText("Tedarikçiye ödeme yöntemi").value).toBe("Nakit");
     fireEvent.click(screen.getByText("Kaydet"));
-    const [kayit, talep] = onSave.mock.calls[0];
+    const [kayit, plan] = onSave.mock.calls[0];
     expect(kayit.odemeYontemi).toBe("Nakit");
-    expect(talep).toMatchObject({ yontem: "Nakit" });
+    expect(plan.satirlar.ana).toMatchObject({ yontem: "Nakit" });
   });
   it("R17: seçenek işaretlenmezse ödeme talebi yok; mevcut kalemde durum türetilmiş olarak gösterilir", () => {
     const onSave = ac();
@@ -248,7 +249,8 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(onSave.mock.calls[0][1]).toBeNull();
     cleanup();
     ac({ kalem: { id: 9, tarih: "2026-09-01", turId: 4, tutar: 1000, kdvOrani: 20, odendi: false, _odenen: { ana: 50000, stopaj: 0 } } });
-    expect(screen.getByTestId("odeme-durumu-turetilen").textContent).toBe("Kısmen ödendi");
-    expect(screen.queryByLabelText("Kaydederken ödendi olarak kaydet")).toBeNull();
+    // Spec 0046 R15: düzenlemede hedef durumu satır satır (ödeme girişi yok).
+    expect(screen.getByTestId("odeme-durumu-turetilen").textContent).toMatch(/Tedarikçiye · 1\.200 ₺Kısmen · kalan 700 ₺/);
+    expect(screen.queryByLabelText("Tedarikçiye ödendi")).toBeNull();
   });
 });

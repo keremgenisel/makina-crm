@@ -258,16 +258,6 @@ export const sonKullanilanHesap = (hareketler = [], hesaplar = []) => {
   return h ? h.id : null;
 };
 
-// R17: yeni kalem "ödendi olarak kaydet" ile kaydedilince kalemin tamamını kapatan ödeme hareketleri (kimliksiz).
-// Satırlı kalemde her satıra kendi tutarıyla bir hareket; satırsız kalemde ödenecek tutarın tamamı (ana + stopaj).
-export const tamOdemeHareketleri = (kalem, turMap, { tarih, hesapId = null, yontem = "" } = {}) => {
-  if (!kalem) return [];
-  const ortak = { tur: "odeme", tarih, yontem: yontem || "", hesapId: hesapId == null || hesapId === "" ? null : hesapId, giderId: kalem.id, aciklama: "" };
-  if (satirliMi(kalem)) return kalem.taksitler.filter(r => kurus(r.tutar) > 0).map(r => ({ ...ortak, taksitId: r.id, tutar: r.tutar }));
-  const k = odemeHedefKalaniK({ ...kalem, odendi: false, _odenen: null }, davranisOf(kalem, turMap), null);
-  return k > 0 ? [{ ...ortak, taksitId: null, tutar: tl(k) }] : [];
-};
-
 // ── Avans, mahsup ve ekstre (spec 0024 B; R9–R13, C8; plan B1–B11) ─────────────
 const idEsit = (a, b) => a != null && b != null && String(a) === String(b);
 const hesapHatasi = (hesapId, hesaplar) => {
