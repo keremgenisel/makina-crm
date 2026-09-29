@@ -44,7 +44,17 @@ const sirala = (a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1)
 // Bölüm satırları: personel kalemleri bölüm başına tek toplu satır (R3, AC-17, H5); satır, bölümdeki en eski
 // personel vadesinin yerinde durur.
 const bolumSatirlari = (ogeler) => {
-  const personel = ogeler.filter(o => o.personel);
+  // Spec 0042 R12, Q6: iki hedefli personel kaleminin hedefleri tek alt satırda birleşir (sayı kalem sayar); hedef
+  // kırılımı alt satırın `hedefler`inde, yalnız satır açılınca görünür.
+  const birlesik = new Map();
+  for (const o of ogeler.filter(x => x.personel)) {
+    const key = String(o.id);
+    if (!birlesik.has(key)) birlesik.set(key, { ...o, hedefler: [] });
+    const b = birlesik.get(key);
+    if (b.hedefler.length) { b.odenecekK += o.odenecekK; b.odenecek = b.odenecekK / 100; }
+    b.hedefler.push({ hedef: o.hedef, odenecek: o.odenecek, vade: o.vade });
+  }
+  const personel = [...birlesik.values()];
   const satirlar = ogeler.filter(o => !o.personel).map(o => ({ tur: "kalem", ...o }));
   if (personel.length) {
     const ilk = personel[0];
@@ -78,10 +88,13 @@ export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler =
     if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || k.tarih > bugun) continue;
     const dav = davranisOf(k, turMap);
     const personel = dav === DAVRANIS.PERSONEL;
-    for (const h of odemeHedefleri(k, dav)) {
-      if (h.odendi || h.kalanK <= 0 || !h.vade) continue;
-      const gecti = hedefGecti(h, bugun);
-      if (!gecti && h.vade > sinir) continue;
+    const acikHedefler = odemeHedefleri(k, dav).filter(h => !h.odendi && h.kalanK > 0 && h.vade);
+    // Spec 0042 R12, AC-9 (triyaj): personel kalemi bölünmez; en acil gruba bütün olarak girer (bir hedefi gecikmişse
+    // bütün açık hedefleri vadesi geçmiş grubunda). Tutar iki hedefin açık toplamı, vade en erken açık vade olur.
+    const personelGrup = personel ? (acikHedefler.some(h => hedefGecti(h, bugun)) ? "gecmis" : acikHedefler.some(h => h.vade <= sinir) ? "yaklasan" : null) : null;
+    for (const h of acikHedefler) {
+      const gecti = personel ? personelGrup === "gecmis" : hedefGecti(h, bugun);
+      if (personel ? !personelGrup : (!gecti && h.vade > sinir)) continue;
       const stopaj = h.hedef === HEDEF.STOPAJ;
       const taraf = stopaj ? VERGI_DAIRESI : personel ? (k.calisanAd || "Çalışan")
         : (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";

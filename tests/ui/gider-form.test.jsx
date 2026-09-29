@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { GiderForm } from "../../src/components/GiderForm";
+import { ODEME_SECENEKLERI } from "../../src/components/gider/GiderAlanlari";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-23T10:00:00")); });
@@ -118,11 +119,11 @@ describe("GiderForm: ödeme yöntemi ve vade (R1, R18)", () => {
   });
   it("AC-69: Çek seçilince etiket 'Çek vade tarihi' olur; yöntem değişince tarih korunur", () => {
     ac();
-    fireEvent.click(screen.getByText("Çek"));
+    fireEvent.change(screen.getByLabelText("Varsayılan ödeme yöntemi"), { target: { value: "Çek" } });
     expect(screen.getByText("Çek vade tarihi")).toBeTruthy();
     const alan = screen.getByText("Çek vade tarihi").parentElement.querySelector("input");
     fireEvent.change(alan, { target: { value: "2026-10-15" } });
-    fireEvent.click(screen.getByText("Havale"));
+    fireEvent.change(screen.getByLabelText("Varsayılan ödeme yöntemi"), { target: { value: "Havale" } });
     expect(screen.getByText("Son ödeme tarihi")).toBeTruthy();
     expect(screen.getByText("Son ödeme tarihi").parentElement.querySelector("input").value).toBe("2026-10-15");
     expect(screen.queryByText("Çek vade tarihi")).toBeNull();
@@ -131,7 +132,7 @@ describe("GiderForm: ödeme yöntemi ve vade (R1, R18)", () => {
     const onSave = ac();
     tur(4);
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "100" } });
-    fireEvent.click(screen.getByText("Çek"));
+    fireEvent.change(screen.getByLabelText("Varsayılan ödeme yöntemi"), { target: { value: "Çek" } });
     fireEvent.change(screen.getByText("Çek vade tarihi").parentElement.querySelector("input"), { target: { value: "2026-09-01" } });
     fireEvent.click(screen.getByText("Kaydet"));
     expect(onSave).not.toHaveBeenCalled();
@@ -209,11 +210,29 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(kayit).toMatchObject({ odendi: false, odemeTarihi: null });
     expect(talep).toEqual({ tarih: "2026-09-23", hesapId: 1, yontem: "" });
   });
+  it("Spec 0042 AC-16 / AC-28: gider formunda ödeme yöntemi açılır listedir; seçenekler aynı beş seçenek, 'Çek (ciro)' yok", () => {
+    ac();
+    const sec = screen.getByLabelText("Varsayılan ödeme yöntemi");
+    expect(sec.tagName).toBe("SELECT");
+    expect([...sec.querySelectorAll("option")].map(o => o.value)).toEqual(ODEME_SECENEKLERI.map(o => o.value));
+    expect([...sec.querySelectorAll("option")].map(o => o.value)).not.toContain("Çek (ciro)");
+    expect(ODEME_SECENEKLERI).toHaveLength(5);
+  });
+  it("Spec 0042 AC-23: personelde resmi ve elden varken 'Elden vadesi' alanı çıkar, taksit yalnız resmiye uygulanır", () => {
+    ac();
+    tur(3);
+    expect(screen.queryByLabelText("Elden vadesi")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Resmi işveren maliyeti"), { target: { value: "30.000" } });
+    fireEvent.change(screen.getByLabelText("Elden ödenen"), { target: { value: "20.000" } });
+    expect(screen.getByLabelText("Elden vadesi")).toBeTruthy();
+    expect(screen.getByText("Yalnız resmi kısma uygulanır.")).toBeTruthy();
+    expect(screen.getByText("Boşsa resmi vadesi kullanılır. Elden kısım taksitlendirilmez.")).toBeTruthy();
+  });
   it("Spec 0041 AC-15 / R16: alan 'Varsayılan ödeme yöntemi'; 'ödendi olarak kaydet' tek harekette o yöntemi kullanır", () => {
     const onSave = ac();
     tur(4);
     expect(screen.getByText("Yeni ödeme girilirken ön seçili gelir. Kalemin nasıl ödendiğini ödemeler belirler.")).toBeTruthy();
-    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Varsayılan ödeme yöntemi" })).getByRole("radio", { name: "Nakit" }));
+    fireEvent.change(screen.getByLabelText("Varsayılan ödeme yöntemi"), { target: { value: "Nakit" } });
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
     fireEvent.click(screen.getByLabelText("Kaydederken ödendi olarak kaydet"));
     fireEvent.click(screen.getByText("Kaydet"));

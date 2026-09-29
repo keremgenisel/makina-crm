@@ -2,7 +2,8 @@ import { useState } from "react";
 import { fmtTR } from "../../lib/utils";
 import { gunFarkiMetni } from "../../lib/odemeHatirlatma";
 import { Btn, Icon, Modal } from "../ui";
-import { tl2 } from "./GiderAlanlari";
+import { tl2, hedefAdi } from "./GiderAlanlari";
+import { DAVRANIS } from "../../lib/gider";
 
 // Ödeme hatırlatıcısı arayüzü (spec 0003 R2–R4, R6, R9). Sessizdir: ses, açılışta pencere, bildirim yok.
 // Rakamlar odemeHatirlatmalari'ndan gelir; bu dosya yalnız gösterir.
@@ -35,6 +36,9 @@ const KalemSatiri = ({ o, bolum, odendiYetkisi, onOdendi, girinti = false }) => 
       <b>{o.taraf}</b>
       {!o.personel && (o.kalem.aciklama || o.taksit) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {[o.kalem.aciklama, o.taksit && `Taksit ${o.taksit.odenen + 1}/${o.taksit.toplam}`].filter(Boolean).join(" · ")}</div>}
+      {/* Spec 0042 R12: personelin hedef kırılımı yalnız personel satırı açılınca (alt satırda) görünür. */}
+      {o.personel && (o.hedefler || []).length > 1 && <div data-testid="hatirlatma-hedef-kirilimi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>
+        {o.hedefler.map(h => `${hedefAdi(h.hedef, DAVRANIS.PERSONEL, true)} ${tl2(h.odenecek)}`).join(" · ")}</div>}
     </div>
     <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(o.odenecek)}</b>
     <span><span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{o.vadeEtiketi}</span><br />{fmtTR(o.vade)}</span>

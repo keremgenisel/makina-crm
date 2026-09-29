@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
+import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
@@ -156,8 +156,12 @@ export const fmtTL = (n) => fmtCur(n, "TRY");
 export const STOPAJ_KDV_NOTU = "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV olmaz; şirketse KDV olur, stopaj olmaz. İkisi birlikte istisnai bir durumdur; doğruysa kaydedebilirsiniz.";
 // AC-14, R15: kalıcı bilgi satırı; sistem tespit yapmaz.
 export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olarak girmeyin: brüt kira zaten gider toplamındadır, vergi dairesine ödenen stopaj kira kaleminin vergi dairesi bölümünde izlenir.";
-export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
-export const hedefAdi = (hedef, davranis) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene" : hedef === HEDEF.ANA && davranis === DAVRANIS.PERSONEL ? "Çalışana" : HEDEF_AD[hedef]);
+export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
+// Spec 0042 R15, Q2: personelin resmi kısmı yalnız iki hedefli kalemde "Resmi" adını alır; tek hedefli personel
+// "Çalışana" der (elden parayı "Resmi" diye göstermemek için). ikiHedef: kalemin elden satırı/hedefi var mı.
+export const hedefAdi = (hedef, davranis, ikiHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
+  : hedef === HEDEF.ANA && davranis === DAVRANIS.PERSONEL ? (ikiHedef ? "Resmi" : "Çalışana") : HEDEF_AD[hedef]);
+export const eldenHedefliMi = (satirlar) => (satirlar || []).some(r => r.hedef === HEDEF.ELDEN);
 
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
 // satırın durum hücresi düğmedir (gider_odeme).
@@ -165,7 +169,8 @@ export const hedefAdi = (hedef, davranis) => (hedef === HEDEF.ANA && davranis ==
 const kismenMi = (r) => !r.odendi && (r._odenenK || 0) > 0;
 const satirKalani = (r) => Math.max(0, Math.round((Number(r.tutar) || 0) * 100) - (r._odenenK || 0)) / 100;
 export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) => {
-  const hedefler = [HEDEF.ANA, HEDEF.STOPAJ].filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
+  const hedefler = HEDEF_SIRASI.filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
+  const ikiHedef = eldenHedefliMi(satirlar);
   const izgara = { display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) minmax(0, 1fr) 130px", gap: 10, alignItems: "center" };
   return (
     <div data-testid={testId}>
@@ -175,7 +180,7 @@ export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) 
         return (
           <div key={h} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--n700, #334155)", marginBottom: 4 }}>
-              {hedefAdi(h, davranis)} <span style={{ fontWeight: 500, color: "var(--n500, #64748b)" }}>· {sat.length > 1 ? `${sat.length} taksit, ${odenen} ödendi` : odenen ? "ödendi" : "ödenmedi"}</span>
+              {hedefAdi(h, davranis, ikiHedef)} <span style={{ fontWeight: 500, color: "var(--n500, #64748b)" }}>· {sat.length > 1 ? `${sat.length} taksit, ${odenen} ödendi` : odenen ? "ödendi" : "ödenmedi"}</span>
             </div>
             <div style={{ ...izgara, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", padding: "0 0 4px" }}><span>#</span><span>Vade</span><span style={{ textAlign: "right" }}>Tutar</span><span>Durum</span></div>
             {sat.map(r => (

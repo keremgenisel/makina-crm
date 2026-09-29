@@ -325,12 +325,15 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
   const satirlar = [];
   for (const k of giderler) {
     if (!kapsamda(k, esik, bugun) || !idEsit(k.calisanId, calisanId) || davranisOf(k, turMap) !== DAVRANIS.PERSONEL) continue;
-    const toplamK = anaHedef(k, DAVRANIS.PERSONEL).toplamK;
+    // Spec 0042 R6, AC-10: çalışanın alacağı kalemin bütün hedefleridir (resmi ve elden); her ödeme hangi hedefi
+    // kapattığını taşır (satırlı kalemde bağlı satırın hedefi).
+    const toplamK = odemeHedefleri(k, DAVRANIS.PERSONEL).reduce((a, h) => a + h.toplamK, 0);
     satirlar.push({ tarih: k.tarih, sira: 0, tur: "maas", kalem: k, etkiK: toplamK, tutarK: toplamK,
       kirilim: { resmiK: kurus(k.resmiTutar), eldenK: kurus(k.eldenTutar), ekK: ekOdemeKurus(k), maasK: maasKurus(k) } });
-    for (const p of anaPaylari(k, hareketler, turMap)) {
+    for (const p of hareketPaylari(k, hareketler, turMap)) {
       const mahsup = p.hareket.tur === "mahsup";
-      satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: mahsup ? "mahsup" : "odeme", kalem: k, hareket: p.hareket,
+      const hedef = (k.taksitler || []).find(r => idEsit(r.id, p.hareket.taksitId))?.hedef || null;
+      satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: mahsup ? "mahsup" : "odeme", kalem: k, hareket: p.hareket, hedef,
         etkiK: mahsup ? 0 : -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc" });
     }
   }

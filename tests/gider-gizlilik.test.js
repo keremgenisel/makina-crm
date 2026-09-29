@@ -52,3 +52,13 @@ describe("Spec 0041 AC-27: yöntem kırılımı yazdırma ve dışa aktarmaya gi
     }
   });
 });
+
+// Spec 0042 AC-11 (C6, R15): personelin resmi/elden hedef adları ve tutarları yazdırma ve dışa aktarmaya girmez.
+describe("Spec 0042 AC-11: personel hedefleri çıktılara girmez", () => {
+  it("AC-11: çıktı dosyaları HEDEF.ELDEN değerini, hedef adlarını ve personel hedef hesabını okumaz", () => {
+    const HEDEF_DESEN = /HEDEF\.ELDEN|["']elden["']|hedefAdi|personelHedefKurus|HEDEF_AD\b/;
+    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
+      expect(oku(f)).not.toMatch(HEDEF_DESEN);
+    }
+  });
+});

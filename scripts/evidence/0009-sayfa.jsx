@@ -250,6 +250,8 @@ const KASA_HAREKETLER = [
   { id: 4008, tur: "virman", tarih: "2026-09-15", tutar: 20000, hesapId: 401, karsiHesapId: 402, aciklama: "Kasaya nakit" },
   odm(4009, 5, 12000, "2026-09-24", { hesapId: 403, yontem: "Kredi Kartı" }),
 ];
+const PERSONEL_IKI = k(5, { turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: 50000, kdvOrani: 0, sonOdemeTarihi: "2026-09-30",
+  taksitler: [{ id: 5101, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 30000, odendi: false, odemeTarihi: null }, { id: 5102, hedef: "elden", sira: 1, vade: "2026-09-28", tutar: 20000, odendi: false, odemeTarihi: null }] });
 const KARMA_H = [...KASA_HAREKETLER, odm(4020, 1, 3000, "2026-09-21", { hesapId: 402, yontem: "Nakit" })];
 const KASA_TAHSILAT = [{ id: 4101, customerId: 500, tarih: "2026-09-18", tutar: 40000, currency: "TRY", yontem: "Havale", hesapId: 401 },
   { id: 4102, customerId: 501, tarih: "2026-09-25", tutar: 15000, currency: "TRY", yontem: "Çek", tahsilEdildi: false, hesapId: 401 }];
@@ -422,6 +424,10 @@ const EKRANLAR = {
   // Spec 0023: ek ödemeler.
   "gider-formu-ek-odeme": [<GiderForm kalem={EK_ODEMELI} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ek ödemeler (bu ay)"]],
   "giderler-personel-ayrinti-kapali": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["kaydir:Gider Türü Kırılımı"]],
+  // Spec 0042: resmi (ana) + elden iki hedefli personel kalemi; liste, Ödeme planı ve çok satırlı ödeme (Resmi / Elden).
+  "giderler-personel-iki-hedef": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[odm(5201, 5, 30000, "2026-09-20", { taksitId: 5101, hesapId: 401 })]} />, ["dugme:Çalışanları göster", "kaydir:Gider Kalemleri"]],
+  "giderler-personel-odeme-plani": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[odm(5201, 5, 30000, "2026-09-20", { taksitId: 5101, hesapId: 401 })]} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı"]],
+  "giderler-personel-coklu-odeme": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[]} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı", "dugme:Ödeme gir", "sec:Taksit=5101", "sec:Ödeme yöntemi=Havale", "dugme:Başka yöntemle satır ekle", "sec:Taksit 2=5102", "sec:Ödeme yöntemi 2=Nakit"]],
   "giderler-personel-ayrinti-acik": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["dugme:▸ Aç", "kaydir:Gider Türü Kırılımı"]],
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}

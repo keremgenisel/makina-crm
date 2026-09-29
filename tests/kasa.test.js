@@ -215,7 +215,8 @@ describe("Spec 0024 B: avans ve mahsup (R9–R11)", () => {
     const m = mahsupDogrula({ tarih: "2026-09-25", tutar: "8.000" }, { kalem, turMap, hareketler: [AVANS], giderler: [MAAS] });
     expect(m.kayit).toMatchObject({ tur: "mahsup", calisanId: 7, giderId: 5, tutar: 8000, hesapId: null });
     const h = [AVANS, { id: 62, ...m.kayit }];
-    expect(odemeHedefleri(uygula([MAAS], h)[0], DAVRANIS.PERSONEL)[0].kalanK).toBe(4200000);
+    // Spec 0042: resmi ve eldeni olan maaş iki hedeflidir; kalan iki hedefin toplamıdır.
+    expect(odemeHedefleri(uygula([MAAS], h)[0], DAVRANIS.PERSONEL).reduce((a, x) => a + x.kalanK, 0)).toBe(4200000);
     expect(avansBorclari(h, [MAAS]).get("7").borcK).toBe(0);
     expect(mahsupDogrula({ tarih: "2026-09-25", tutar: "8.001" }, { kalem, turMap, hareketler: [AVANS], giderler: [MAAS] }).hatalar.tutar).toBe("Açık avans borcundan fazla mahsup edilemez (açık avans 8.000,00 ₺).");
     const buyuk = { ...AVANS, tutar: 90000 };

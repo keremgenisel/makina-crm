@@ -51,23 +51,27 @@ describe("Spec 0023: ek ödeme satırları ve tek toplam (R1–R3, C5)", () => {
       .toEqual([{ alan: "ekOdemeler", satir: 0, mesaj: "Ek ödeme satırında tutar sıfırdan büyük olmalı (1. satır)." }]);
   });
   it("R3 / AC-20: borç özeti ve hatırlatıcı aynı toplamı kullanır; ek ödemeler kalemin tek vadesini ve ödeme durumunu paylaşır", () => {
-    const k = { id: 5, ...kayit(per({ ekOdemeler: [ek("prim", "2.000")] })), sonOdemeTarihi: "2026-09-30" };
+    // Spec 0042: resmi ve eldeni olan maaş iki hedefle (satırlı) doğar; vade satırlardadır, hatırlatıcı personeli tek
+    // alt satırda (iki hedefin toplamı) gösterir.
+    const k = { id: 5, ...kayit(per({ ekOdemeler: [ek("prim", "2.000")], sonOdemeTarihi: "2026-09-30" })) };
     expect(Object.keys(k.ekOdemeler[0]).sort()).toEqual(["aciklama", "eldenTutar", "resmiTutar", "tur"]);
     const b = borcOzeti([k], { turler: TUR }, "2026-09-28");
     expect(b.satirlar).toEqual([expect.objectContaining({ tur: "calisanlar", tutar: 52000 })]);
     const h = odemeHatirlatmalari([k], { turler: TUR, yururlukAy: "2026-01" }, "2026-09-28");
-    expect(h.yaklasan.map(o => [o.odenecek, o.vade])).toEqual([[52000, "2026-09-30"]]);
+    expect(h.yaklasanSatirlar.filter(s => s.tur === "personel").map(s => [s.odenecek, s.vade])).toEqual([[52000, "2026-09-30"]]);
     expect(borcOzeti([{ ...k, odendi: true }], { turler: TUR }, "2026-09-28").satirlar).toEqual([]);
   });
   it("R12 (P6): taksitli personel kaleminde ek ödeme eklenince fark yalnız ödenmemiş taksitlere bölünür", () => {
     // Spec 0024 (Q1): ödeme hareketle; satır bayrak saklamaz, durum hareketten türer.
+    // Spec 0042: taksit resmi hedefe (30.000 → 2 × 15.000) uygulanır, elden (20.000) tek satırdır; resmi ikramiye
+    // eklenince fark yalnız resmi hedefin ödenmemiş taksitine bölünür, elden değişmez.
     const k = kayit(per({ id: 6, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30" }));
-    const h = [{ id: 1, tur: "odeme", giderId: 6, taksitId: k.taksitler[0].id, tutar: 25000, tarih: "2026-09-30" }];
+    const h = [{ id: 1, tur: "odeme", giderId: 6, taksitId: k.taksitler[0].id, tutar: 15000, tarih: "2026-09-30" }];
     const odenmis = odemeleriUygula([k], h, turMap)[0];
     const y = kayit({ ...odenmis, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30", ekOdemeler: [ek("ikramiye", "10.000")] });
     const z = odemeleriUygula([y], h, turMap)[0];
-    expect(z.taksitler.map(r => [r.tutar, r.odendi])).toEqual([[25000, true], [35000, false]]);
-    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.ANA).kalanK).toBe(3500000);
+    expect(z.taksitler.map(r => [r.hedef, r.tutar, r.odendi])).toEqual([["ana", 15000, true], ["ana", 25000, false], ["elden", 20000, false]]);
+    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.ANA).kalanK).toBe(2500000);
   });
 });
 

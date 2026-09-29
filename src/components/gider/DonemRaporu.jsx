@@ -167,7 +167,11 @@ export const BorcOzeti = ({ ozet }) => {
           </div>
           {s.tur === "calisanlar" && acik && (
             <div style={{ marginTop: 6, fontSize: 12.5 }} data-testid="calisan-borc-ayrinti">
-              {s.ayrinti.map(c => <div key={String(c.calisanId)} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0 3px 12px" }}><span>{c.ad}{c.vadesiGecti ? " · vadesi geçti" : ""}</span><b>{tl2(c.tutar)}</b></div>)}
+              {s.ayrinti.map(c => <div key={String(c.calisanId)} style={{ padding: "3px 0 3px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><span>{c.ad}{c.vadesiGecti ? " · vadesi geçti" : ""}</span><b>{tl2(c.tutar)}</b></div>
+                {/* Spec 0042 R6, AC-8: resmi/elden kırılımı yalnız ayrıntı açıkken. */}
+                {c.elden > 0 && <div data-testid="calisan-hedef-kirilimi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Resmi {tl2(c.resmi)} · Elden {tl2(c.elden)}</div>}
+              </div>)}
             </div>
           )}
         </div>

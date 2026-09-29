@@ -218,7 +218,10 @@ export const SettingsGiderTanimlari = ({
           )}
           {/* Spec 0041 R17: üretilen kaleme varsayılan olarak kopyalanır. */}
           <Field label="Varsayılan ödeme yöntemi">
-            <Segment ariaLabel="Varsayılan ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
+            {/* Spec 0042 R9: beş seçenek → açılır liste (sözlük "Ne zaman açılır liste?"). */}
+            <Select aria-label="Varsayılan ödeme yöntemi" value={form.odemeYontemi} onChange={e => set({ odemeYontemi: e.target.value })}>
+              {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </Select>
             <Ipucu>Üretilen kalemlerde yeni ödeme girilirken ön seçili gelir.</Ipucu>
           </Field>
           <div style={{ display: "flex", gap: 12 }}>

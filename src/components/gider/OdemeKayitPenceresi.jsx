@@ -5,7 +5,7 @@ import { cokluOdemeDogrula, mahsupDogrula, mahsupKapsamda, avansBorcuK, secilebi
 import { yontemKirilimi, hareketPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "../tasarim";
-import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi } from "./GiderAlanlari";
+import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi, eldenHedefliMi } from "./GiderAlanlari";
 
 // Ödeme kayıt penceresi (spec 0024 R2, R17, R18; AC-3–AC-7, AC-20, AC-28, AC-36). Listedeki ödeme anahtarı, kira
 // anahtarları, Ödeme Planı satırları ve Anasayfa hatırlatıcısındaki "Ödendi" bu pencereyi açar. Ödeme bir hareket
@@ -79,7 +79,7 @@ export const OdemeKayitPenceresi = ({
     const r = (kalem.taksitler || []).find(x => String(x.id) === String(id));
     if (!r) return null;
     const n = kalem.taksitler.filter(x => (x.hedef || HEDEF.ANA) === (r.hedef || HEDEF.ANA)).length;
-    return `${hedefAdi(r.hedef || HEDEF.ANA, davranis)}${n > 1 ? ` ${r.sira}/${n}. taksit` : ""}`;
+    return `${hedefAdi(r.hedef || HEDEF.ANA, davranis, eldenHedefliMi(kalem.taksitler))}${n > 1 ? ` ${r.sira}/${n}. taksit` : ""}`;
   };
   const hesapAdi = (id) => {
     const h = hesaplar.find(x => String(x.id) === String(id));

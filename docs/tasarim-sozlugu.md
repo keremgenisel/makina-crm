@@ -65,6 +65,21 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:312` (form içi, düğme kipi, eşit genişlik)
 
+### Ne zaman açılır liste? (spec 0042 R10)
+
+Segment ile `ui.jsx` `Select` (açılır liste) arasındaki seçim ölçüyle yapılır:
+
+- **Beş ve üstü seçenek**, ya da seçenek etiketleri uzunsa (bir satıra sığmıyorsa): açılır liste (`Select`).
+- **Üç ve altı**, kısa etiketli, birbirini dışlayan seçim: segment (`kip="radyo"` form içinde, `kip="dugme"` form içi
+  kısa seçimde).
+- Dört seçenek arada kalır: etiketler kısa ve form satırı genişse segment, dar formda açılır liste.
+- **Sekme ve süzgeç çubukları her zaman segmenttir** (spec 0014 birliği), seçenek sayısı ne olursa olsun.
+
+İlk uygulaması ödeme yöntemidir: beş seçenekli olduğu için gider formunda ("Varsayılan ödeme yöntemi",
+`src/components/GiderForm.jsx`) ve tekrarlayan gider tanımında (`src/components/settings/SettingsGiderTanimlari.jsx`)
+açılır listedir; ödeme penceresindeki seçici zaten açılır listeydi. Bu kural var olan segmentlerin toplu dönüşümü
+değildir (0042 X5); yeni bir seçici eklenirken uygulanır.
+
 ## KartBolum
 
 Başlıklı kart bölüm; iki görünüm varyantı var:
