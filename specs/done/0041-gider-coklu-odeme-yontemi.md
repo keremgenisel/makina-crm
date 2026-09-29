@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-29, plan onayıyla; plan `specs/0041-uygulama-plani.md` Q1–Q11). Uygulanıyor, dal `feat/0041-coklu-odeme`. |
+| **Durum** | Tamamlandı (2026-09-29; commit `de05bcf`, dal `feat/0041-coklu-odeme`; plan `specs/done/0041-uygulama-plani.md` Q1–Q11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu, ödeme kayıt penceresi, gider listesi, dönem raporu, tekrarlayan gider tanımı |
@@ -256,25 +256,25 @@ varsayılan.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Türetilen yöntem (tek / karma) saf motorda hesaplanır ve saklanmaz (C2).
-- [ ] Çok satırlı ödeme doğrulaması saf motordadır; pencere yalnız çizer.
-- [ ] Hedef başına sınır (R6) saf motorda ve üç katmanı da testli (AC-3); tek satırlı `odemeDogrula`'nın
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Türetilen yöntem (tek / karma) saf motorda hesaplanır ve saklanmaz (C2).
+- [x] Çok satırlı ödeme doğrulaması saf motordadır; pencere yalnız çizer.
+- [x] Hedef başına sınır (R6) saf motorda ve üç katmanı da testli (AC-3); tek satırlı `odemeDogrula`'nın
       bugünkü kuralı gevşetilmedi.
-- [ ] Ciro yolu tek kaldı: ödeme penceresinden "Çek (ciro)" girilemiyor ve 0040'ın kuralı bozulmadı
+- [x] Ciro yolu tek kaldı: ödeme penceresinden "Çek (ciro)" girilemiyor ve 0040'ın kuralı bozulmadı
       (AC-11).
-- [ ] Göç hareketlerinin tutarı motorun hesabından okunuyor, ikinci bir türetme yazılmadı (AC-18, C9).
-- [ ] `DonemRaporu`'nun iki eski satırı (kalem satırı ve kartı) türetilen yönteme geçirildi, eski alan
+- [x] Göç hareketlerinin tutarı motorun hesabından okunuyor, ikinci bir türetme yazılmadı (AC-18, C9).
+- [x] `DonemRaporu`'nun iki eski satırı (kalem satırı ve kartı) türetilen yönteme geçirildi, eski alan
       hiçbir listede kalmadı (AC-17).
-- [ ] Mevcut kayıtların davranışı bozulmadı: tek ödemeli kalemler aynı görünür (AC-4).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0041-*.jpg`): çok satırlı ödeme penceresi, karma yöntem rozeti;
+- [x] Mevcut kayıtların davranışı bozulmadı: tek ödemeli kalemler aynı görünür (AC-4).
+- [x] Görsel kanıt eklendi (`docs/evidence/0041-*.jpg`): çok satırlı ödeme penceresi, karma yöntem rozeti;
       aydınlık ve karanlık tema.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: yöntemin ödemenin alanı olduğu, kalem alanının yalnız varsayılan olduğu,
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: yöntemin ödemenin alanı olduğu, kalem alanının yalnız varsayılan olduğu,
       kırılımın göç hareketlerini nasıl saydığı ve ciro yolunun tek kaldığı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -282,10 +282,10 @@ varsayılan.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 0 | R2 plan onayı anında işlendi (uygulama notları, AC değişmedi); onaydan sonra değişiklik yok. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (4 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Fazla ödenmiş kalemde kırılımın ekstreyle çelişmesi, toplu hesabın kalem × hareket taraması ve dönem kırılımının her render'da hesaplanması, AC-13/14'ün yalnız kaynak taramasıyla korunması, katman 3'ün ölü taksitli dalı. Hepsi gerçek. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Mevcut testler (ekstre dahil) değişmeden geçti; 273 mevcut çekim 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Aynı rakamı iki yoldan hesaplayan bir kısayol (tutarlı harekette "pay = tutar") ancak iki yolun eşitliği sınanarak güvenlidir; kısayol, sonucu motorla karşılaştırıp tutmazsa motora düşmeli. Bu, 0024'teki "iki fonksiyon aynı rakamı hesaplıyorsa çapraz test" dersinin tekrarı. İkincisi: listede satır başına çalışan bir türetme toplu sürümünde veriyi bir kez gruplamalı; hız testi gruplamasız kodda 4,2 sn ölçtü.

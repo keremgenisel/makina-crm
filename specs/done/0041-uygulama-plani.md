@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0041-gider-coklu-odeme-yontemi.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0041-gider-coklu-odeme-yontemi.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0041-coklu-odeme` (`feat/0043-mali-isler` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-29: bütün öneriler (Q1–Q11) kabul |
 
