@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-29, plan onayıyla; plan `specs/0046-uygulama-plani.md` Q1–Q12). Uygulanıyor, dal `feat/0046-form-odeme`. |
+| **Durum** | Tamamlandı (2026-09-30; commit `70ca1df`, dal `feat/0046-form-odeme`; plan `specs/done/0046-uygulama-plani.md` Q1–Q12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu, ödeme hareketi üretimi, ödeme kayıt penceresi, çek portföyü |
@@ -96,6 +96,8 @@ seçiyor; ve kaydet dediğinde kalem, ödemeleri ve çekin durumu tek seferde ya
   `giderlerOdemeli` olarak zaten üretiyor). Ham kalemle çizilirse kalan yanlış görünür.
   **Uygulama (R2, Q7):** "Ödeme gir" düğmesi pencereyi formun **üstünde** açar; form açık kalır, girilen düzenleme
   kaybolmaz ve durum satırları canlı (zenginleştirilmiş) kalemden hemen güncellenir.
+  **Triyaj (2026-09-30):** form ödeme durumunu (taksit satırları, satırsızda türetilmiş durum) canlı kalemden izler;
+  yoksa kayıt açılıştaki eski satırlarla yapılıp "ödenmiş taksit korunur" kuralı (0021 R10, 0024 R18) atlanırdı.
 - **R16.** Kaydedilmiş ödemeler yine yalnız ödeme penceresinden silinir.
 
 ### D. Kayıt ve doğrulama
@@ -321,27 +323,27 @@ seçiyor; ve kaydet dediğinde kalem, ödemeleri ve çekin durumu tek seferde ya
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hareket üretimi ve doğrulaması saf motorda **tek yerde**; form ile ödeme penceresi aynı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hareket üretimi ve doğrulaması saf motorda **tek yerde**; form ile ödeme penceresi aynı
       fonksiyonları çağırıyor (C2, kaynak taraması testi).
-- [ ] Ciro kuralları 0040'tan çağrılıyor, yeniden yazılmıyor (R10, R11, R25); `ciroAdaylari` ve
+- [x] Ciro kuralları 0040'tan çağrılıyor, yeniden yazılmıyor (R10, R11, R25); `ciroAdaylari` ve
       `ciroPlani` imzaları değişmedi ve formda ikinci bir ciro üretimi yok (kaynak taraması).
-- [ ] Cironun yalnız ANA hedefinde olduğu testle sabitlendi (AC-19); stopaj ve elden satırlarında seçenek
+- [x] Cironun yalnız ANA hedefinde olduğu testle sabitlendi (AC-19); stopaj ve elden satırlarında seçenek
       hiç çizilmiyor.
-- [ ] `tamOdemeHareketleri` kaldırıldıysa tek çağrı yeri (`Giderler.jsx`) güncellendi ve 0024 R17
+- [x] `tamOdemeHareketleri` kaldırıldıysa tek çağrı yeri (`Giderler.jsx`) güncellendi ve 0024 R17
       regresyon testi yeşil (AC-40).
-- [ ] Tek işlem bütünlüğü testle gösterildi: ödeme hatasında kalem de kaydedilmiyor (AC-27), ciro
+- [x] Tek işlem bütünlüğü testle gösterildi: ödeme hatasında kalem de kaydedilmiyor (AC-27), ciro
       sunucudan tek yazımda geçiyor (AC-22).
-- [ ] Çift sayım yasağı testle sabitlendi: ciro bakiyeye dokunmuyor (AC-17).
-- [ ] Gider tarafının değişmediği çapraz testle gösterildi (AC-28).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0046-*.jpg`): personel iki satırlı ödeme, kira stopaj satırı,
+- [x] Çift sayım yasağı testle sabitlendi: ciro bakiyeye dokunmuyor (AC-17).
+- [x] Gider tarafının değişmediği çapraz testle gösterildi (AC-28).
+- [x] Görsel kanıt eklendi (`docs/evidence/0046-*.jpg`): personel iki satırlı ödeme, kira stopaj satırı,
       çek seçimi, taksitli hedefin pasif satırı; aydınlık ve karanlık tema. Kanıt eşlemesi güncellendi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: ödemenin kayıt anında hedef bazlı girilebildiği, ciroya ikinci giriş
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: ödemenin kayıt anında hedef bazlı girilebildiği, ciroya ikinci giriş
       noktası açıldığı ve düzenleme formunun hâlâ ödeme yazmadığı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -349,10 +351,10 @@ seçiyor; ve kaydet dediğinde kalem, ödemeleri ve çekin durumu tek seferde ya
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı anında işlendi. Onaydan sonra triyaj notu eklendi: düzenleme formu ödeme durumunu canlı kalemden izler (R15). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Açık formun eski taksit satırlarıyla kayıt yapıp ödenmiş taksit korumasını atlaması (gerçek, Q7 kararının yan etkisi); yeni bileşenin kanıt kaydının eksik olması (CI kırmızı, kanıt çekimi sürerken). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Eski "ödendi olarak kaydet" kutusunu arayan beş test bilinçli davranış değişikliğiyle güncellendi; kaydedilen hareketler aynı. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** İki pencereyi aynı anda açık tutmak (Q7) yeni bir eşzamanlılık yüzeyi açar: tek kullanıcı artık bir kaydı iki yerden değiştirebilir. Formun "açılışta bir kez oku" varsayımı bu kararla birlikte gözden geçirilmeliydi; kural şudur: iki yerden yazılan her alan, uzun ömürlü formda canlı kaynaktan izlenir. İkincisi: doğrulamayı kayıttan önce ve geçici kimlikle yapıp aynı saf fonksiyonu gerçek kimlikle yeniden çağırmak, kimlik atamasını tek yerde tutarken "ya hep ya hiç"i elle eşleme yazmadan sağladı.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0046-gider-formundan-hedef-bazli-odeme.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0046-gider-formundan-hedef-bazli-odeme.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0046-form-odeme` (`feat/0045-tutar-bicimi` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-29: bütün öneriler (Q1–Q12) kabul |
 
