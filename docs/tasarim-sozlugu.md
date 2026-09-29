@@ -253,6 +253,24 @@ bir satır kazandırır ve zorlama durur. İlk ve bugün tek uygulaması "Mali �
 - Alt satırlar başlığın ikon hizasından girintili, solda ince çizgiyle bağlı ve biraz küçüktür (ikon kutusu
   26 piksel).
 
+## Pencere alt düğme satırı (spec 0045)
+
+Form pencereleri düğmelerini `Modal`'ın `footer` yuvasına verir. **Düğmeler arasındaki boşluk kabın kendisinden gelir**
+(`gap: 8`); formun kendi sarmalayıcı yazması gerekmez ve unutulması artık düğmeleri yapıştırmaz.
+
+- Sıra: ikincil düğme (İptal / Vazgeç / Kapat) solda, birincil düğme en sağda; satır sağa hizalıdır.
+- Düğmeler doğrudan (`<>…</>` parçasıyla) verilebilir. 0015'ten kalan `<div style={{ display: "flex", gap: 8 }}>`
+  sarmalayıcıları zararsızdır (kabın tek çocuğu olduğu için boşluk ikiye katlanmaz) ama yeni formda gerekmez.
+- Tek düğmeli pencerede kabın boşluğu görünmez.
+
+**Örnek:** `src/components/GiderForm.jsx:129` (sarmalayıcısız iki düğme)
+
+## Tutar girdisi (spec 0045)
+
+Kuruşlu tutar alanı `TutarInput` (`src/components/gider/GiderAlanlari.jsx`) yazarken binlik noktası gösterir, imleci
+korur; biçimleme ve çözümleme yalnız `src/lib/tutarGirdisi.js`'tedir. Form durumu ham metni tutar ("80000",
+"1234,56"). Oran alanı `sym="%"` ile çizilir ve ayraç almaz. Tam sayılı `MoneyInput` (`ui.jsx`) ayrıdır (0045 X1).
+
 ## Bilinen borç
 
 Aşağıdakiler aynı fikrin **kapsam dışı** ya da **görünüşü farklı** kopyalarıdır. Spec 0009 bunlara bilerek dokunmadı;

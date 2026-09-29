@@ -34,6 +34,9 @@ export const tamAylar = (baslangic, bitis) => {
 // ── Tutar girişi ──────────────────────────────────────────────────────────────
 // Serbest metin tutarı çözer. parseMoney'den farkı: harf içeren metni "geçersiz" sayar (AC-2: sayıya
 // çevrilemeyen metin sıfır gibi sessizce kabul edilmez) ve eksi işaretini korur (negatif tutar reddi).
+// Türkçe biçimde tek istisna: virgülsüz "12.5" / "1234.56" gibi tek nokta ve ardından 1–2 hane ondalıktır
+// (yapıştırılan İngilizce biçim); "12.500" binliktir. tutarCoz ve tutar girdisinin yapıştırma kolu paylaşır (0045 C2).
+export const noktaOndalikMi = (t) => !String(t).includes(",") && /^\d+\.\d{1,2}$/.test(String(t));
 export const tutarCoz = (raw) => {
   if (raw == null || raw === "") return { bos: true, deger: 0, gecersiz: false };
   if (typeof raw === "number") return Number.isFinite(raw) ? { bos: false, deger: raw, gecersiz: false } : { bos: false, deger: 0, gecersiz: true };
@@ -44,7 +47,7 @@ export const tutarCoz = (raw) => {
   if (!/^[0-9.,]+$/.test(t)) return { bos: false, deger: 0, gecersiz: true };
   // Türkçe biçim: nokta binlik, virgül ondalık. Yalnız noktalı "12.5" gibi girişte tek nokta ve ardından
   // 1–2 hane ondalık kabul edilir; "12.500" binliktir.
-  if (!t.includes(",") && /^\d+\.\d{1,2}$/.test(t)) t = t.replace(".", ",");
+  if (noktaOndalikMi(t)) t = t.replace(".", ",");
   const n = parseFloat(t.replace(/\./g, "").replace(",", "."));
   if (!Number.isFinite(n)) return { bos: false, deger: 0, gecersiz: true };
   return { bos: false, deger: eksi ? -n : n, gecersiz: false };

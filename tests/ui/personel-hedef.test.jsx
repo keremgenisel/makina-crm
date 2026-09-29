@@ -57,7 +57,7 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
     degis(within(p).getByLabelText("Ödeme yöntemi"), "Havale");
     fireEvent.click(within(p).getByText(/Başka yöntemle satır ekle/));
     degis(within(p).getByLabelText("Taksit 2"), "2");
-    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("20000");
+    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
     degis(within(p).getByLabelText("Ödeme yöntemi 2"), "Nakit");
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri.map(h => [h.taksitId, h.tutar, h.yontem])).toEqual([[1, 30000, "Havale"], [2, 20000, "Nakit"]]);

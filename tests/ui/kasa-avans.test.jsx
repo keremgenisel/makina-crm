@@ -92,7 +92,7 @@ describe("Spec 0024 B: avanstan mahsup (R10, B1, B2)", () => {
     fireEvent.click(within(maasSatiri()).getByTitle("Ödeme kaydet"));
     expect(screen.getByTestId("acik-avans").textContent).toMatch(/8\.000/);
     fireEvent.click(screen.getByRole("button", { name: "Avanstan mahsup" }));
-    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("8000");
+    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("8.000"); // spec 0045 R1: görünüm binlik noktalı
     expect(screen.queryByText("Ödeme yöntemi")).toBeNull();
     fireEvent.click(screen.getByText("Mahsubu Kaydet"));
     expect(h[1]).toMatchObject({ tur: "mahsup", calisanId: 7, giderId: 5, tutar: 8000, hesapId: null });

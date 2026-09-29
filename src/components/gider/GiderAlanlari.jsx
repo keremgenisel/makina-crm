@@ -1,23 +1,48 @@
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
+import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
 // atama/tutar bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.
 
 export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n) || 0) + " ₺";
 // Kuruşlu tutar girişi: MoneyInput yalnız tam sayı aldığı için (ör. 39.223,13 işveren maliyeti) ayrı
-// bileşen. Ham metni tutar; sayıya çevirme ve doğrulama kayıtta tutarCoz ile yapılır (AC-2).
-export const TutarInput = ({ value, onChange, placeholder = "0,00", sym = "₺", invalid = false, id, ariaLabel, disabled }) => (
-  <div style={{ position: "relative" }}>
-    <input id={id} aria-label={ariaLabel} value={value ?? ""} disabled={disabled} inputMode="decimal"
-      onChange={e => onChange(e.target.value)} placeholder={placeholder} className="input"
-      style={{ paddingRight: 28, textAlign: "right", fontWeight: 600, ...(invalid ? { borderColor: "var(--red500, #ef4444)", background: "var(--redBg, #fef2f2)" } : {}) }} />
-    <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
-  </div>
-);
+// bileşen. Durum ham metni tutar; sayıya çevirme ve doğrulama kayıtta tutarCoz ile yapılır (AC-2).
+// Spec 0045: görünüm binlik noktalıdır, imleç korunur (lib/tutarGirdisi.js, tek yer). Oran alanı (sym "%") ayraç
+// almaz ve bugünkü gibi ham çalışır (R9, Q3).
+export const TutarInput = ({ value, onChange, placeholder = "0,00", sym = "₺", invalid = false, id, ariaLabel, disabled }) => {
+  const oran = sym === "%";
+  const ref = useRef(null);
+  const tusRef = useRef(null);
+  const imlecRef = useRef(null);
+  const [, yenile] = useState(0); // reddedilen tuşta da imleç geri konsun diye çizimi zorlar
+  const gosterim = oran ? (value ?? "") : tutarGosterim(value);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (imlecRef.current == null || !el || document.activeElement !== el) return;
+    el.setSelectionRange(imlecRef.current, imlecRef.current);
+    imlecRef.current = null;
+  });
+  const degisti = (e) => {
+    if (oran) { onChange(e.target.value); return; }
+    const r = tutarGirdisiIsle({ yeni: e.target.value, onceki: gosterim, imlec: e.target.selectionStart, tus: tusRef.current });
+    tusRef.current = null;
+    imlecRef.current = r.imlec;
+    yenile(n => n + 1);
+    onChange(r.ham);
+  };
+  return (
+    <div style={{ position: "relative" }}>
+      <input ref={ref} id={id} aria-label={ariaLabel} value={gosterim} disabled={disabled} inputMode="decimal"
+        onKeyDown={e => { tusRef.current = e.key; }} onChange={degisti} placeholder={placeholder} className="input"
+        style={{ paddingRight: 28, textAlign: "right", fontWeight: 600, ...(invalid ? { borderColor: "var(--red500, #ef4444)", background: "var(--redBg, #fef2f2)" } : {}) }} />
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
+    </div>
+  );
+};
 // Saklanan sayıyı forma ham metin olarak geri koymak için (düzenleme açılışı).
 export const tutarMetni = (n) => (n == null || n === "" ? "" : String(n).replace(".", ","));
 

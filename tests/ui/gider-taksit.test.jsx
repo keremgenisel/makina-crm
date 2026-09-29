@@ -82,7 +82,7 @@ describe("Liste ve ödeme planı penceresi (R2, R3)", () => {
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(within(satirOf("Eylül kira")).getByText(/Kiraya veren: Kısmen · kalan 10\.000/)).toBeTruthy();
     fireEvent.click(within(satirOf("Eylül kira")).getByText(/Kiraya veren: Kısmen/));
-    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("10000");
+    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("10.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.change(screen.getByLabelText("Ödeme tutarı"), { target: { value: "10.001" } });
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(screen.getByText(/Kalandan fazla ödeme kaydedilemez/)).toBeTruthy();

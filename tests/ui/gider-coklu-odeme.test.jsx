@@ -53,7 +53,7 @@ describe("Spec 0041: çok satırlı ödeme penceresi (R5, R6, R12–R14)", () =>
     degis(within(p).getByLabelText("Ödeme yöntemi"), "Nakit");
     degis(within(p).getByLabelText("Hesap"), "1");
     fireEvent.click(within(p).getByText(/Başka yöntemle satır ekle/));
-    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("5000");
+    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("5.000"); // spec 0045 R1: görünüm binlik noktalı
     degis(within(p).getByLabelText("Ödeme yöntemi 2"), "Kredi Kartı");
     degis(within(p).getByLabelText("Açıklama 2"), "karttan");
     expect(within(p).getAllByLabelText(/Ödeme tarihi/)).toHaveLength(1);
@@ -91,7 +91,7 @@ describe("Spec 0041: çok satırlı ödeme penceresi (R5, R6, R12–R14)", () =>
     expect(st.hesapHareketleri).toEqual([]);
     expect(screen.getByTestId("odeme-kayit-penceresi").textContent).toMatch(/Tedarikçiye 1\/3\. taksit için girilen toplam kalanı aşıyor \(kalan 2\.000,00 ₺\)/);
     degis(within(p).getByLabelText("Taksit 2"), "2");
-    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("2000");
+    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("2.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri.map(h => [h.taksitId, h.tutar])).toEqual([[1, 1500], [2, 2000]]);
   });

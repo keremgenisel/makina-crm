@@ -20,7 +20,7 @@ describe("Firma Çalışanları: maliyet (R5, R16, K7, K20, K28)", () => {
   it("AC-52: yeni çalışanda resmi alan varsayılandan dolar, değiştirilebilir; sayı olarak saklanır", () => {
     let st;
     render(<CalHarness ayar={{ giderAyarlari: { varsayilanResmiMaliyet: 39223.13 } }} onState={s => { st = s; }} />);
-    expect(screen.getByLabelText("Resmi işveren maliyeti").value).toBe("39223,13");
+    expect(screen.getByLabelText("Resmi işveren maliyeti").value).toBe("39.223,13"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.change(screen.getByPlaceholderText("Ad Soyad"), { target: { value: "Zeynep" } });
     fireEvent.change(screen.getByLabelText("Elden ödenen"), { target: { value: "10.000" } });
     fireEvent.click(screen.getByText("Ekle"));

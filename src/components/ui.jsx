@@ -410,7 +410,8 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
         <div style={{ padding: "0 28px 20px", overflowY: "auto", flex: 1 }}>
           {children}
         </div>
-        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid var(--n200, #e2e8f0)", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid var(--n200, #e2e8f0)", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          {/* Spec 0045 R11: düğmeler arası boşluk kabın kendisinden gelir (sarmalayıcılı formlarda tek çocuk, fark yok). */}
           {footer}
         </div>
       </div>

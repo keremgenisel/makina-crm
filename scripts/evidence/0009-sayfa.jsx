@@ -499,6 +499,14 @@ const EKRANLAR = {
     ilk={{ id: 751, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturasız Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "500", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "", fiyat: 500 }] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
   "yedek-parca-formu-tahsilat-hesap": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yedek Parça Satışını Düzenle" kasaHesaplari={KASA_HESAPLAR}
     ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
+  // Spec 0045: tutar alanında binlik ayracı ve pencere alt satırında düğme boşluğu (sarmalayıcısız beş form).
+  "gider-formu-tutar": [<GiderForm kalem={{ turId: 5, tarih: "2026-09-20", tutar: "1234567,5", kdvOrani: 20, tedarikciId: 12, aciklama: "Sac" }} giderTurleri={TURLER} tedarikciler={TED}
+    calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "giderler-tedarikci-formu": [<GiderEkrani />, ["Tedarikçiler", "dugme:Yeni Tedarikçi"]],
+  "giderler-standart-tutar": [<GiderEkrani />, ["Standart Genel Giderler", "dugme:Tutarı değiştir"]],
+  "ayarlar-gidertanim-formu": [ayarlar("gidertanim"), ["dugme:Yeni Tanım"]],
+  "ayarlar-gidertur-duzenle": [ayarlar("gidertur"), ["baslik:Düzenle"]],
+  "kasa-hesap-formu-tutar": [kasaEkrani(), ["dugme:Yeni Hesap", "doldur:Açılış bakiyesi=150000"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
@@ -538,6 +546,13 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const aranan = metin.slice(7);
       const hedef = [...document.querySelectorAll("label, div, span, h2, h3")].filter(e => e.textContent.trim().startsWith(aranan) && e.children.length <= 3).pop();
       if (hedef) hedef.scrollIntoView({ block: "center" }); else console.warn("kaydırılamadı: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("baslik:")) {
+      // Yalnız simgeli düğme: title özniteliği birebir eşleşen ilk düğme (spec 0045).
+      const hedef = [...document.querySelectorAll("button")].find(e => e.title === metin.slice(7));
+      if (hedef) hedef.click(); else console.warn("başlıklı düğme yok: " + metin);
       await bekle(300);
       continue;
     }

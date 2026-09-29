@@ -24,8 +24,8 @@ describe("GiderForm: personel (R5, C19, K14, K29)", () => {
     const onSave = ac();
     tur(3);
     fireEvent.change(screen.getByLabelText("Çalışan *"), { target: { value: "21" } });
-    expect(screen.getByLabelText("Resmi işveren maliyeti").value).toBe("30000");
-    expect(screen.getByLabelText("Elden ödenen").value).toBe("20000");
+    expect(screen.getByLabelText("Resmi işveren maliyeti").value).toBe("30.000"); // spec 0045 R1: görünüm binlik noktalı
+    expect(screen.getByLabelText("Elden ödenen").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.change(screen.getByLabelText("Elden ödenen"), { target: { value: "15.000" } });
     fireEvent.click(screen.getByText("Kaydet"));
     expect(onSave.mock.calls[0][0]).toMatchObject({ calisanId: 21, calisanAd: "Hasan", resmiTutar: 30000, eldenTutar: 15000, kdvOrani: 0, tedarikciId: null });
@@ -46,7 +46,7 @@ describe("GiderForm: personel (R5, C19, K14, K29)", () => {
     fireEvent.change(screen.getByLabelText("Resmi işveren maliyeti"), { target: { value: "35.000" } });
     fireEvent.change(screen.getByLabelText("Çalışan *"), { target: { value: "21" } });
     expect(screen.getByLabelText("Resmi işveren maliyeti").value).toBe("35.000");
-    expect(screen.getByLabelText("Elden ödenen").value).toBe("20000");
+    expect(screen.getByLabelText("Elden ödenen").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
   });
   it("AC-57 / AC-60 / AC-64: SGK notu görünür; KDV ve tedarikçi alanı yok", () => {
     ac();
@@ -93,9 +93,9 @@ describe("GiderForm: kira (R6)", () => {
   });
   it("triyaj bulgu 10: net girilmiş kira kalemi düzenlemede net ve brüt değerleriyle açılır, değişmeden kaydedilir", () => {
     const onSave = ac({ kalem: { id: 7, tarih: "2026-09-01", turId: 1, girisYonu: "net", tutar: 20000, netTutar: 16000, stopajOrani: 20, kdvOrani: 0, odendi: false, modelSatirlari: [] } });
-    expect(screen.getByLabelText("Net ödenen kira").value).toBe("16000");
+    expect(screen.getByLabelText("Net ödenen kira").value).toBe("16.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.click(screen.getByRole("radio", { name: "Brüt kira" }));
-    expect(screen.getByLabelText("Brüt kira").value).toBe("20000");
+    expect(screen.getByLabelText("Brüt kira").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.click(screen.getByRole("radio", { name: "Net ödenen kira" }));
     fireEvent.click(screen.getByText("Kaydet"));
     expect(onSave.mock.calls[0][0]).toMatchObject({ id: 7, girisYonu: "net", tutar: 20000, netTutar: 16000 });

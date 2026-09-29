@@ -67,7 +67,7 @@ describe("Anasayfa ödeme hatırlatıcısı", () => {
     expect(sayilar()).toEqual([0, 2]);
     ac();
     fireEvent.click(within(screen.getAllByTestId("hatirlatma-satiri")[0]).getByTitle("Ödeme kaydet"));
-    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("12000");
+    expect(screen.getByLabelText("Ödeme tutarı").value).toBe("12.000"); // spec 0045 R1: görünüm binlik noktalı
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(screen.getAllByTestId("hatirlatma-satiri")).toHaveLength(1);
     expect(sayilar()).toEqual([0, 1]);
