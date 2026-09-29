@@ -202,6 +202,22 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.hesapHareketleri[1]).toMatchObject({ hesapId: yeniH, karsiHesapId: 5 });
     expect(plan.adds.payments[0].hesapId).toBe(yeniH);
   });
+  it("spec 0044 AC-29: servis, Extra Kalıp ve yedek parça tahsilatının hesabı yeniden atanan hesap kimliğini izler", () => {
+    const hid = uid();
+    const my = blob({
+      kasaHesaplari: [{ id: hid, ad: "Benim kasam", tur: "kasa", paraBirimi: "TRY" }],
+      services: [{ id: uid(), customerId: 1, odendi: true, hesapId: hid }, { id: uid(), customerId: 1, odendi: true }],
+      partSales: [{ id: uid(), customerId: 1, tur: "Kalıp", odendi: true, hesapId: hid }],
+      yedekParcaSatislar: [{ id: uid(), aliciTipi: "bayi", dealerId: 2, odendi: true, hesapId: hid, tahsisler: [] }],
+    });
+    const server = blob({ kasaHesaplari: [{ id: hid, ad: "Onun kasası", tur: "banka", paraBirimi: "TRY" }] });
+    const plan = buildMergePlan(my, server);
+    const yeniH = plan.maps.kasaHesaplari.get(hid);
+    expect(yeniH).toBeDefined();
+    expect(plan.adds.services.map(x => x.hesapId)).toEqual([yeniH, undefined]);
+    expect(plan.adds.partSales[0].hesapId).toBe(yeniH);
+    expect(plan.adds.yedekParcaSatislar[0].hesapId).toBe(yeniH);
+  });
   it("spec 0040: çekin tahsilat bağı ve ciro hareketinin çek bağı yeniden atanan kimlikleri izler", () => {
     const pid = uid(), cid = uid(), hid = uid();
     const my = blob({ payments: [{ id: pid, customerId: 1, tutar: 5, yontem: "Çek" }], cekler: [{ id: cid, paymentId: pid, no: "1", banka: "Z", durum: "ciro", gecmis: [] }],

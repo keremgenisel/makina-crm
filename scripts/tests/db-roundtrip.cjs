@@ -91,7 +91,7 @@ dbmod.writeBlobToDb({
     { id: "bant", ad: "Bant", renk: "grn", makinaSecici: true, stokDus: true, raporGoster: true, sistem: true, rol: "bant" },
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
-  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
+  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
@@ -141,7 +141,7 @@ dbmod.writeBlobToDb({
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
     teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
@@ -153,7 +153,7 @@ dbmod.writeBlobToDb({
   ],
   dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
-    { id: 650, dealerId: 3, aliciTipi: "bayi", teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
+    { id: 650, dealerId: 3, aliciTipi: "bayi", hesapId: 97, teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
       kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30", batchId: 777001,
       teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "03121112233", teslimatAdres: "Başkent OSB 15. Cad No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan",
       yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 60.54, netTutar: 539.46, blokajGun: 0, hesabaGecis: "2026-07-15", yansitildi: false },
@@ -253,6 +253,7 @@ check("kursuz / üretim tarihsiz eski kayıt boş döner (yaklaşık hesaba ve �
 check("stock.uretimTarihi tam turu (spec 0002 plan M3)", (blob.stock || []).find(s => s.id === 5)?.uretimTarihi === "2026-02-11");
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);
+check("spec 0044 AC-19: servis, Extra Kalıp ve yedek parça tahsilat hesabı (hesapId) roundtrip", blob.services.find(x => x.id === 2)?.hesapId === 97 && blob.partSales.find(x => x.id === 600)?.hesapId === 98 && (blob.yedekParcaSatislar || []).find(x => x.id === 650)?.hesapId === 97);
 check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales.find(p => p.id === 600); return ps?.teklifId === 101 && ps?.uretimFormGonder === true && ps?.uretimFormId === 88; })());
 // Anlaşmasız dış firma alanları (servis "İşlemi Yapan Firma"=Diğer, kalıp "Satış Yapan Firma"=Diğer)
 check("service islemFirma* (Diğer dış servis) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Harici Servis Ltd" && s?.islemFirmaYetkili === "Ahmet Yılmaz" && s?.islemFirmaTel === "05551234567" && s?.islemFirmaAdres === "Organize Sanayi 5. Cadde No:12" && s?.islemFirmaUlke === "Türkiye" && s?.islemFirmaSehir === "Bursa"; })());

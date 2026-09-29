@@ -146,13 +146,13 @@ describe("Spec 0040: gelir, kasa ve borç (R5, R6, R17, R18; C2)", () => {
   const ciroluCek = () => cirola().cek;
   it("AC-9 / AC-22 / R5: ciro hiçbir hesabın bakiyesini değiştirmez; tahsilatta hesap seçili olsa bile ciro edilen çek o hesaba girmez", () => {
     const h = cirola().hareketler.map((x, i) => ({ ...x, id: 900 + i }));
-    const once = hesapBakiyeleri(HESAP, [], [zengin()]).get("97").bakiye;
-    const sonra = hesapBakiyeleri(HESAP, h, [zengin(ODEME, ciroluCek())]).get("97").bakiye;
+    const once = hesapBakiyeleri(HESAP, [], { payments: [zengin()] }).get("97").bakiye;
+    const sonra = hesapBakiyeleri(HESAP, h, { payments: [zengin(ODEME, ciroluCek())] }).get("97").bakiye;
     expect(once).toBe(0);
     expect(sonra).toBe(0);
     // Tahsil edilen çek ise hesaba girer (iki soru ayrı).
     const tahsil = cekDurumDegistir(CEK, "tahsil", "2026-10-01").cek;
-    expect(hesapBakiyeleri(HESAP, [], [zengin(ODEME, tahsil)]).get("97").bakiye).toBe(12000);
+    expect(hesapBakiyeleri(HESAP, [], { payments: [zengin(ODEME, tahsil)] }).get("97").bakiye).toBe(12000);
   });
   it("AC-24 / R18: ciro hareketleri hesabı belirtilmemiş ödemeler listesinde görünmez", () => {
     const h = cirola().hareketler.map((x, i) => ({ ...x, id: 900 + i }));

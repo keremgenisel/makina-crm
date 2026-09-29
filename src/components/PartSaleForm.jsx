@@ -5,6 +5,8 @@ import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, Country
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
+import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
@@ -13,7 +15,7 @@ const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false, kasaHesaplari = null, hesapVarsayilan = null }) => {
   const [custSearch, setCustSearch] = useState("");
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
   // Teslim şekli (fabrikaTeslim) ile panoya gönderme (kargoDurum) AYRI: teslim şekli her zaman
@@ -37,6 +39,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
   const bosKalip = { ad: "", olcu: "", fiyat: "", uretimFormGonder: false };
   const kaliplar = form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
   const kaliplarToplam = kaliplar.reduce((s, k) => s + parseMoney(k.fiyat), 0);
+  // Spec 0044: hesap sorulur mu (Extra Kalıp ücretlidir; bayi aracılı dahil, Q1).
+  const hesapDurumu = kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.KALIP, { ...form, ucretsizMi: false, ucret: kaliplarToplam }, { factoryName: factory?.name, kdvRates }) : null;
   const kalipSatirlar = () => form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
   const kalipSet = (i, alan, deger) => setForm(p => ({ ...p, kaliplar: kalipSatirlar().map((k, idx) => idx === i ? { ...k, [alan]: deger } : k) }));
   const kalipSil = (i) => setForm(p => ({ ...p, kaliplar: (p.kaliplar || []).filter((_, idx) => idx !== i) }));
@@ -235,11 +239,16 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {selectedCust && kaliplarToplam > 0 && (
         <div style={{ marginTop: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
               {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
             </span>
           </label>
+          {kasaHesaplari && form.odendi && (
+            <div style={{ marginTop: 8 }}>
+              <TahsilatHesapAlani durum={hesapDurumu} hesaplar={kasaHesaplari} value={form.hesapId} onChange={v => setForm(p => ({ ...p, hesapId: v }))} />
+            </div>
+          )}
           {form.odendi && (
             <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>

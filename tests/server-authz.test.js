@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
-  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu,
+  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, tahsilatHesabiYalnizMi,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -1039,5 +1039,27 @@ describe("spec 0040: çek bölümü yetkisi", () => {
     const numara = { cekler: [cek({ no: "2" })] };
     expect(yazmaYetkisiVar(p, "user", ["cekler"], eski, numara).ok).toBe(false);
     expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"], giderActions: ["gider_edit"], customerActions: [] }), "user", ["cekler"], eski, ciro).ok).toBe(false);
+  });
+});
+
+// ── Spec 0044 Q5: Kasa'dan tahsilat hesabı atama ────────────────────────────────────────
+describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
+  const sv = (o = {}) => ({ id: 1, customerId: 5, odendi: true, servisUcreti: 100, ...o });
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], customerActions: [], stockActions: [], giderActions: ["gider_odeme"] });
+  it("Q5: Giderler + Finans sekmeli kullanıcı servis, kalıp ve yedek parçaya yalnız hesap atayabilir", () => {
+    for (const [bolum, kayit] of [["services", sv()], ["partSales", { id: 1, customerId: 5, tur: "Kalıp", odendi: true }], ["yedekParcaSatislar", { id: 1, aliciTipi: "bayi", dealerId: 2, odendi: true, tahsisler: [] }]]) {
+      const eski = { [bolum]: [kayit] }, yeni = { [bolum]: [{ ...kayit, hesapId: 97 }] };
+      expect(tahsilatHesabiYalnizMi(bolum, eski, yeni)).toBe(true);
+      expect(yazmaYetkisiVar(kasaci, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+      expect(eylemDenetimi(eski, yeni, kasaci, "user").ok).toBe(true);
+    }
+  });
+  it("Q5: hesapla birlikte başka alan değişirse, kayıt eklenirse ya da kullanıcı Kasa'yı görmüyorsa reddedilir", () => {
+    const eski = { services: [sv()] };
+    expect(yazmaYetkisiVar(kasaci, "user", ["services"], eski, { services: [sv({ hesapId: 97, servisUcreti: 1 })] }).ok).toBe(false);
+    expect(yazmaYetkisiVar(kasaci, "user", ["services"], eski, { services: [sv({ hesapId: 97 }), sv({ id: 2 })] }).ok).toBe(false);
+    const yalnizGider = JSON.stringify({ tabs: ["gider"], customerActions: [] });
+    expect(yazmaYetkisiVar(yalnizGider, "user", ["services"], eski, { services: [sv({ hesapId: 97 })] }).ok).toBe(false);
+    expect(tahsilatHesabiYalnizMi("payments", { payments: [{ id: 1 }] }, { payments: [{ id: 1, hesapId: 2 }] })).toBe(false);
   });
 });

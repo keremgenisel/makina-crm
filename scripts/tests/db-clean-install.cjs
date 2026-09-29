@@ -38,7 +38,7 @@ try {
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
       odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
-    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", satisFirma: "Diğer", satisFirmaAd: "Aracı",
+    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", hesapId: 5, satisFirma: "Diğer", satisFirmaAd: "Aracı",
       teslimSekli: "kargo",
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
@@ -83,6 +83,7 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
   return ok;
 })());
 check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 1 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
+check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
 check("temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu oluştu (spec 0040)", (blob.cekler || [])[0]?.no === "1" && (blob.hesapHareketleri || [])[0]?.cekId === 36);
 check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
 check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {

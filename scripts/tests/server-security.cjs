@@ -449,6 +449,17 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("spec 0040 AC-20: müşteri grubu kısıtlı kullanıcı çekin numarasını değiştiremez → 403",
     (await postData({ ...cC, dataVersion: undefined, cekler: cC.cekler.map(c => c.id === 9602 ? { ...c, no: "999" } : c) }, cC.dataVersion, ciroTok)).status === 403);
 
+  // ── Spec 0044 Q5: Kasa'yı gören (Giderler + Finans), müşteri grubu kısıtlı kullanıcı tahsilata yalnız hesap atar ──
+  let tA = await gUst(adminTok);
+  await postData({ ...tA, dataVersion: undefined, services: [...(tA.services || []), { id: 9700, customerId: 9600, date: "2026-09-10", type: "Garanti Dışı", servisUcreti: 1000, currency: "TRY", odendi: true }] }, tA.dataVersion, adminTok);
+  const tK = await gUst(ciroTok);
+  check("spec 0044 Q5: Kasa kullanıcısı servise yalnız hesap atar → 200; kayıttan okunur",
+    (await postData({ ...tK, dataVersion: undefined, services: tK.services.map(x => x.id === 9700 ? { ...x, hesapId: 97 } : x) }, tK.dataVersion, ciroTok)).status === 200
+    && (await gUst(adminTok)).services.find(x => x.id === 9700)?.hesapId === 97);
+  const tK2 = await gUst(ciroTok);
+  check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
+    (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);
+
   // ── Spec 0006 AC-33: yalnız Evrak sekmeli kullanıcının "CRM'e Kaydet" yazımı ─────────
   let eA = await gUst(adminTok);
   await postData({ ...eA, dataVersion: undefined, customers: [...(eA.customers || []), { id: 9500, name: "Evrak Müşterisi", kaliplar: [] }],

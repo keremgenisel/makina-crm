@@ -27,7 +27,7 @@ export const Customers = ({
   // Makina maliyeti ve kârlılık (spec 0002 R15): yalnız gider yetkisiyle dolu gelir; rates satış kuru içindir.
   giderYetki = false, makinaMaliyet = null, rates = null,
   // Spec 0024 C6/C7: tahsilata hesap seçimi yalnız kasa yetkisiyle (gider + Finans sekmesi, perde kalkık).
-  kasaHesaplari = [], kasaYetki = false,
+  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
   cekler = [], setCekler = null,
   gorusmeler = [], setGorusmeler = null,
@@ -665,7 +665,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
-          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates} kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki} cekler={cekler} setCekler={setCekler}
+          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates} kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}

@@ -22,6 +22,8 @@ import {
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi, Ipucu } from "../tasarim";
 import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
+import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
@@ -74,7 +76,7 @@ export const CustomerDetailModal = ({
   // Spec 0002 (R15, R26): maliyet ve kâr kutusu yalnız gider yetkisiyle; hesap App'te bir kez yapılır.
   giderYetki = false, makinaMaliyet = null, rates = null,
   // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
-  kasaHesaplari = [], kasaYetki = false,
+  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040 R1, R2, C10, C12: çek kaydı tahsilatla birlikte doğar (perde inikken de); çeke bağlı tahsilatın "tahsil
   // edildi" durumu çek portföyünden yönetilir.
   cekler = [], setCekler = null,
@@ -226,12 +228,34 @@ export const CustomerDetailModal = ({
   };
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
+  // Spec 0044 R2 (Q6, Q8): "Ödendi" işaretlenirken, kasa yetkisi varsa ve bize ait tutar varsa hesap penceresi açılır.
+  // uygula(hesapId): undefined = hesap alanına dokunma (pencere açılmadı), null = hesapsız, sayı = hesap.
+  // Geri alma pencere açmaz ve hesabı temizlemez (R9).
+  const [tahsilatPencere, setTahsilatPencere] = useState(null);
+  const tahsilatSor = (kaynak, kayitlar, uygula) => {
+    if (!kasaYetki) return uygula(undefined);
+    const durumlar = kayitlar.map(r => tahsilatHesapDurumu(kaynak, r, { factoryName, kdvRates }));
+    const sorulanlar = durumlar.filter(d => d.sor);
+    if (!sorulanlar.length) {
+      // AC-27: para birimi uyuşmayan eski kayıt hesapsız işaretlenir, nedeni söylenir.
+      const neden = durumlar.find(d => d.neden && !paraBirimiUyumluMu(kaynak, kayitlar[durumlar.indexOf(d)]))?.neden;
+      if (neden) showToast(neden, "info");
+      return uygula(undefined);
+    }
+    const pb = sorulanlar[0].currency;
+    const kendi = uyumluHesapId(kasaHesaplari, kayitlar.find(r => r.hesapId != null)?.hesapId, pb); // uyumsuz hesap ön seçilmez
+    setTahsilatPencere({ currency: pb, tutar: sorulanlar.reduce((a, d) => a + d.tutar, 0), varsayilan: kendi ?? tahsilatHesapVarsayilan?.(pb) ?? null, uygula });
+  };
+  const hesapAlani = (h) => (h !== undefined ? { hesapId: h } : {});
   const toggleServisOdendi = (sv) => {
     if (!setServices) return;
     const yeniDurum = !sv.odendi;
     const cekKK = sv.yontem === "Çek" || sv.yontem === "Kredi Kartı"; // çek/KK'da tahsilat tarihi çek-tahsil/hesabaGecis'ten gelir
-    setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : s));
-    logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
+    const uygula = (h) => {
+      setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+      logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
+    };
+    if (yeniDurum) tahsilatSor(SATIS_KAYNAK.SERVIS, [sv], uygula); else uygula(undefined);
   };
   const deleteService = (id) => {
     if (!setServices) return;
@@ -264,7 +288,7 @@ export const CustomerDetailModal = ({
       setYpForm({
         batchEdit: true, batchId: rec.batchId,
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
-        currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi,
+        currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi, hesapId: rec.hesapId ?? null,
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
         taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "",
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
@@ -344,8 +368,11 @@ export const CustomerDetailModal = ({
     const yeni = !rec.odendi;
     const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
     const idler = new Set(ypGrupIdleri(rec));
-    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null } : s));
-    [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+    const uygula = (h) => {
+      setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+      [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+    };
+    if (yeni) tahsilatSor(SATIS_KAYNAK.YEDEK, (yedekParcaSatislar || []).filter(s => idler.has(s.id)), uygula); else uygula(undefined);
   };
   // Yedek parça çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır (satisTahsilEdildi).
   const toggleYedekParcaCekTahsil = (rec) => {
@@ -367,7 +394,7 @@ export const CustomerDetailModal = ({
     setPkForm({
       id: ps.id, customerId: ps.customerId,
       kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat }],
-      tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
+      tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi, hesapId: ps.hesapId ?? null,
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
       kartTarihi: ps.kartKomisyonu?.bazTarih || "",
@@ -421,8 +448,11 @@ export const CustomerDetailModal = ({
     if (!setPartSales) return;
     const yeniDurum = !ps.odendi;
     const cekKK = ps.yontem === "Çek" || ps.yontem === "Kredi Kartı";
-    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : x));
-    logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+    const uygula = (h) => {
+      setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : x));
+      logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+    };
+    if (yeniDurum) tahsilatSor(SATIS_KAYNAK.KALIP, [ps], uygula); else uygula(undefined);
   };
   // Extra Kalıp çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır.
   const togglePartSaleCekTahsil = (ps) => {
@@ -1437,6 +1467,7 @@ export const CustomerDetailModal = ({
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
           draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}
@@ -1449,6 +1480,7 @@ export const CustomerDetailModal = ({
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           dealers={dealers} calisanlar={calisanlar} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
@@ -1463,8 +1495,15 @@ export const CustomerDetailModal = ({
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       ))}
+
+      {tahsilatPencere && (
+        <TahsilatHesapPenceresi currency={tahsilatPencere.currency} tutar={tahsilatPencere.tutar} hesaplar={kasaHesaplari} varsayilan={tahsilatPencere.varsayilan}
+          onVazgec={() => setTahsilatPencere(null)}
+          onKaydet={(h) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h); }} />
+      )}
 
       {sandikModal && (
         <Modal title="Sandık Etiketi" wide onClose={() => setSandikModal(null)}>

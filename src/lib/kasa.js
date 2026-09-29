@@ -3,13 +3,16 @@
 // virman ve tahsilat hiçbir gider üretmez (C3). Çift kayıt defteri değildir (C2).
 // Hareket (bölüm `hesapHareketleri`): {id, tur: "odeme"|"virman", tarih, tutar, yontem, hesapId, karsiHesapId, giderId,
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
-import { cekDurumuOf } from "./utils";
+import { cekDurumuOf, tahsilatTarihiOf, yerelBugun } from "./utils";
+import { kartTahsilEdildiMi } from "./krediKarti";
+import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
+import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari } from "./odemeYontemi";
 import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
 
 export const HESAP_TURLERI = [{ value: "kasa", label: "Kasa" }, { value: "banka", label: "Banka" }, { value: "kart", label: "Kredi kartı" }];
 export const HESAP_TUR_AD = Object.fromEntries(HESAP_TURLERI.map(t => [t.value, t.label]));
-export const HESAPSIZ_NOTU = "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yedek parça bedellerinin “ödendi” işareti ile hesabı belirtilmemiş ödemeler hiçbir hesaba girmez.";
+export const HESAPSIZ_NOTU = "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belirtilmemiş kayıtlar aşağıda ayrıca listelenir.";
 
 const PARA = ["TRY", "USD", "EUR"];
 
@@ -30,12 +33,30 @@ export const hesapDogrula = (form, hesaplar = [], { hareketVar = false } = {}) =
   return { hatalar, kayit: { ...form, ad, acilisBakiyesi, kapali: !!form.kapali } };
 };
 
-// Spec 0040 R6 (AC-22): para bir hesaba girdi mi. Çekte yalnız "tahsil edildi"; ciro edilen çek gelire girer ama bankaya hiç
-// girmediği için hiçbir hesabın bakiyesini artırmaz (bayrağı çevirmek bu hatayı üretirdi).
-const tahsilatSayilirMi = (p) => !p.deletedAt && p.hesapId != null && (p.yontem !== "Çek" || cekDurumuOf(p) === "tahsil");
+// Spec 0040 R6 (AC-22) + 0044 R5, C9: para bir hesaba girdi mi. TEK KURAL, bakiyenin bütün tahsilat kaynakları için:
+// çekte yalnız "tahsil edildi" (ciro edilen çek gelire girer ama bankaya girmez), kredi kartında blokaj bitip para hesaba
+// geçince, nakit ve havalede hemen. Servis, Extra Kalıp ve yedek parçada ayrıca "ödendi" işaretli olmalı.
+const tahsilatSayilirMi = (r, bugun, { odendiGerekli = false } = {}) => !r.deletedAt && r.hesapId != null && (!odendiGerekli || r.odendi === true)
+  && (r.yontem !== "Çek" || cekDurumuOf(r) === "tahsil")
+  && (r.yontem !== "Kredi Kartı" || kartTahsilEdildiMi(r.kartKomisyonu, bugun));
+
+// Spec 0044 R15: bakiyenin girdileri tek veri nesnesinde. Ad çözümü motorda (R10), ekran yalnız çizer.
+const veriOf = (v = {}) => ({ payments: [], services: [], partSales: [], yedekParcaSatislar: [], customers: [], dealers: [], factory: null, kdvRates: undefined, bugun: null, ...v });
+const satisOps = (v) => ({ factoryName: v.factory?.name || "Altuntaş Makina", kdvRates: v.kdvRates });
+const firmaAdi = (kaynak, r, v) => {
+  if (kaynak === SATIS_KAYNAK.YEDEK) return aliciAd(r, v.dealers, v.customers);
+  return v.customers.find(c => String(c.id) === String(r.customerId))?.name || "Silinmiş müşteri";
+};
+// Servis / Extra Kalıp / yedek parça tahsilat kalemleri (lib/satisTahsilat.js, aylık raporla aynı; Q2). Para birimi
+// uyuşmayan servis (R3) bir hesaba yazılamaz.
+const satisKalemleri = (v) => satisTahsilatKalemleri({
+  services: v.services.filter(r => !r.deletedAt), partSales: v.partSales.filter(r => !r.deletedAt), yedekParcaSatislar: v.yedekParcaSatislar.filter(r => !r.deletedAt),
+}, satisOps(v)).filter(k => paraBirimiUyumluMu(k.kaynak, k.kayit));
 
 // R7: hesap başına açılış, giren, çıkan, bakiye ve yürüyen bakiyeli hareket satırları (tarih sırası).
-export const hesapBakiyeleri = (hesaplar = [], hareketler = [], payments = []) => {
+export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}) => {
+  const v = veriOf(veri);
+  const bugun = v.bugun || yerelBugun();
   const r = new Map();
   for (const h of hesaplar) r.set(String(h.id), { hesap: h, acilisK: kurus(h.acilisBakiyesi), girenK: 0, cikanK: 0, satirlar: [] });
   const ekle = (hesapId, satir) => { const x = r.get(String(hesapId)); if (x) x.satirlar.push(satir); };
@@ -50,7 +71,15 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], payments = []) =
       ekle(m.karsiHesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: t, cikanK: 0 });
     }
   }
-  for (const p of payments) if (tahsilatSayilirMi(p)) ekle(p.hesapId, { tarih: p.tarih, tur: "tahsilat", tahsilat: p, girenK: kurus(p.tutar), cikanK: 0 });
+  // Makina tahsilatı: satır tarihi tahsilatTarihiOf (çekte tahsil/ciro günü, kartta hesaba geçiş; 0044 R5).
+  for (const p of v.payments) if (tahsilatSayilirMi(p, bugun)) ekle(p.hesapId, { tarih: tahsilatTarihiOf(p, p.tarih), tur: "tahsilat", turAdi: "Tahsilat", tahsilat: p, firma: firmaAdi(SATIS_KAYNAK.SERVIS, p, v), girenK: kurus(p.tutar), cikanK: 0 });
+  // Spec 0044 R4, R10, R13: servis, Extra Kalıp ve yedek parça tahsilatları; tutar brüt (bize ait bedel + KDV).
+  for (const k of satisKalemleri(v)) {
+    if (!tahsilatSayilirMi(k.kayit, bugun, { odendiGerekli: true })) continue;
+    const h = hesaplar.find(x => String(x.id) === String(k.kayit.hesapId));
+    if (!h || (h.paraBirimi || "TRY") !== (k.currency || "TRY")) continue; // farklı para biriminde hesaba yazılmaz (R3)
+    ekle(k.kayit.hesapId, { tarih: k.tarih, tur: `${k.kaynak}Tahsilati`, turAdi: SATIS_KAYNAK_AD[k.kaynak], kaynak: k.kaynak, tahsilat: k.kayit, firma: firmaAdi(k.kaynak, k.kayit, v), yontem: k.yontem, girenK: kurus(k.tutar), cikanK: 0 });
+  }
   for (const x of r.values()) {
     x.satirlar.sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
     let b = x.acilisK;
@@ -72,10 +101,49 @@ export const hesapsizOdemeler = (hareketler = []) => {
   return { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet };
 };
 
-// R16, AC-24: hareketi (ödeme, virman, tahsilat) olan hesap silinemez.
-export const hesapKullanimi = (hesapId, hareketler = [], payments = []) =>
-  hareketler.filter(m => m && (String(m.hesapId) === String(hesapId) || String(m.karsiHesapId) === String(hesapId))).length
-  + payments.filter(p => !p.deletedAt && String(p.hesapId) === String(hesapId)).length;
+// R16, AC-24 + 0044 R11, AC-26: hareketi (ödeme, virman, tahsilat; servis, Extra Kalıp ve yedek parça tahsilatı dahil)
+// olan hesap silinemez.
+export const hesapKullanimi = (hesapId, hareketler = [], veri = {}) => {
+  const v = veriOf(veri);
+  const bagli = (r) => r && !r.deletedAt && String(r.hesapId) === String(hesapId);
+  return hareketler.filter(m => m && (String(m.hesapId) === String(hesapId) || String(m.karsiHesapId) === String(hesapId))).length
+    + v.payments.filter(bagli).length + v.services.filter(bagli).length + v.partSales.filter(bagli).length + v.yedekParcaSatislar.filter(bagli).length;
+};
+
+// Spec 0044 R6, R7, R14, AC-23, AC-24: hesabı belirtilmemiş tahsilatlar (gider tarafındaki hesapsizOdemeler'den ayrı).
+// Kapsam: ödendi işaretli, bize ait tutarı olan, para birimi uyumlu, hesabı boş kayıt; tahsil edilmemiş çek ve blokajı
+// süren kart da listede kalır (hesap önceden atanır, Q10). Bize ait tutarı olmayan kayıt kapsam dışıdır (eksik veri değil).
+// Triyaj: hesaplar verilince, bağlı hesabı bulunmayan ya da para birimi kaydınkiyle uyuşmayan kayıt da listelenir (neden
+// "hesapYok" / "paraBirimi"); o kayıt hesapBakiyeleri'nde hiçbir bakiyeye girmez, yoksa hiçbir yerde görünmezdi.
+export const hesapsizTahsilatlar = (veri = {}, hesaplar = null) => {
+  const v = veriOf(veri);
+  const hesapById = hesaplar ? new Map(hesaplar.map(h => [String(h.id), h])) : null;
+  const neden = (k) => {
+    if (k.kayit.hesapId == null) return "hesapsiz";
+    if (!hesapById) return null;
+    const h = hesapById.get(String(k.kayit.hesapId));
+    if (!h) return "hesapYok";
+    return (h.paraBirimi || "TRY") !== (k.currency || "TRY") ? "paraBirimi" : null;
+  };
+  const liste = satisKalemleri(v).filter(k => k.kayit.odendi === true && k.tutar > 0)
+    .map(k => ({ ...k, neden: neden(k) })).filter(k => k.neden)
+    .map(k => ({ ...k, turAdi: SATIS_KAYNAK_AD[k.kaynak], firma: firmaAdi(k.kaynak, k.kayit, v) }))
+    .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
+  return { adet: liste.length, liste };
+};
+
+// Spec 0044 R2, Q8: tahsilatta ön seçili hesap = aynı para birimindeki son tahsilatın (makina tahsilatı dahil) açık hesabı.
+// Gider tarafındaki sonKullanilanHesap kullanılmaz (çıkan ve giren paranın hesabı genelde farklıdır).
+export const sonTahsilatHesabi = (veri = {}, hesaplar = [], paraBirimi = "TRY") => {
+  const v = veriOf(veri);
+  const acik = new Set(secilebilirHesaplar(hesaplar, paraBirimi).map(h => String(h.id)));
+  const adaylar = [
+    ...v.payments.filter(p => p && !p.deletedAt && p.hesapId != null).map(p => ({ hesapId: p.hesapId, tarih: tahsilatTarihiOf(p, p.tarih), id: p.id })),
+    ...satisKalemleri(v).filter(k => k.kayit.hesapId != null).map(k => ({ hesapId: k.kayit.hesapId, tarih: k.tarih, id: k.kayit.id })),
+  ].filter(a => acik.has(String(a.hesapId)))
+    .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "") || Number(b.id) - Number(a.id));
+  return adaylar[0]?.hesapId ?? null;
+};
 
 // C5 (1): harekete yalnız aynı para biriminde ve açık hesap seçilebilir.
 export const secilebilirHesaplar = (hesaplar = [], paraBirimi = "TRY") => hesaplar.filter(h => !h.kapali && h.paraBirimi === (paraBirimi || "TRY"));

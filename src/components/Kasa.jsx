@@ -3,7 +3,9 @@ import { uid, fmtTR, fmtCur, today } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { tl } from "../lib/gider";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapsizOdemeler, hesapKullanimi, virmanDogrula, secilebilirHesaplar } from "../lib/kasa";
+import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapsizOdemeler, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizTahsilatlar } from "../lib/kasa";
+import { SATIS_KAYNAK } from "../lib/satisTahsilat";
+import { useBugun } from "../hooks/useBugun";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni } from "./gider/GiderAlanlari";
@@ -124,6 +126,9 @@ export const Kasa = ({
   calisanlar = [], yururlukAy = null,
   // Spec 0040: çek portföyü görünümü.
   cekler = [], setCekler = null, giderAyarlari = {},
+  // Spec 0044: servis, Extra Kalıp ve yedek parça tahsilatları (bakiye, hesapsız liste ve hesap ataması).
+  services = [], setServices = null, partSales = [], setPartSales = null, yedekParcaSatislar = [], setYedekParcaSatislar = null,
+  dealers = [], factory = null, kdvRates = undefined,
 }) => {
   const [gorunum, setGorunum] = useState("hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
@@ -131,22 +136,25 @@ export const Kasa = ({
   const [hesapFormu, setHesapFormu] = useState(null); // null | {hesap}
   const [virmanAcik, setVirmanAcik] = useState(false);
   const [silinecek, setSilinecek] = useState(null);
-  const bakiyeler = useMemo(() => hesapBakiyeleri(kasaHesaplari, hesapHareketleri, payments), [kasaHesaplari, hesapHareketleri, payments]);
+  const bugun = useBugun();
+  // Spec 0044 R15: motorun tek veri nesnesi (ad çözümü motorda, R10).
+  const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun }),
+    [payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun]);
+  const bakiyeler = useMemo(() => hesapBakiyeleri(kasaHesaplari, hesapHareketleri, veri), [kasaHesaplari, hesapHareketleri, veri]);
   const hesapsiz = useMemo(() => hesapsizOdemeler(hesapHareketleri), [hesapHareketleri]);
+  const hesapsizTahsilat = useMemo(() => hesapsizTahsilatlar(veri, kasaHesaplari), [veri, kasaHesaplari]);
+  const [tahsilatListesiAcik, setTahsilatListesiAcik] = useState(false);
   const siraliHesaplar = useMemo(() => [...kasaHesaplari].sort((a, b) => (a.kapali ? 1 : 0) - (b.kapali ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr")), [kasaHesaplari]);
   const seciliHesap = kasaHesaplari.find(h => String(h.id) === String(secili)) || siraliHesaplar[0] || null;
   const seciliBakiye = seciliHesap ? bakiyeler.get(String(seciliHesap.id)) : null;
   const giderById = useMemo(() => new Map(giderler.map(k => [String(k.id), k])), [giderler]);
   const turById = useMemo(() => new Map(giderTurleri.map(t => [String(t.id), t])), [giderTurleri]);
   const tedById = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
-  const musteriById = useMemo(() => new Map(customers.map(c => [String(c.id), c])), [customers]);
   const hesapById = useMemo(() => new Map(kasaHesaplari.map(h => [String(h.id), h])), [kasaHesaplari]);
 
   const satirAciklamasi = (s) => {
-    if (s.tur === "tahsilat") {
-      const c = musteriById.get(String(s.tahsilat.customerId));
-      return { tur: "Tahsilat", metin: [c?.name || "Silinmiş müşteri", s.tahsilat.yontem].filter(Boolean).join(" · ") };
-    }
+    // Spec 0044 R10, AC-14: tahsilat satırlarının türü ve firma adı motordan gelir.
+    if (s.tahsilat) return { tur: s.turAdi, metin: [s.firma, s.tahsilat.yontem || "Nakit"].filter(Boolean).join(" · ") };
     const m = s.hareket;
     if (s.tur === "avans") {
       const c = calisanlar.find(x => String(x.id) === String(m.calisanId));
@@ -198,6 +206,15 @@ export const Kasa = ({
     setVirmanAcik(false);
     showToast("Virman kaydedildi.");
   };
+  // Spec 0044 R7, AC-8: hesapsız tahsilata hesap atanır; yalnız hesapId yazılır (sunucu: tahsilatHesabiYalnizMi).
+  const TAHSILAT_YAZICI = { [SATIS_KAYNAK.SERVIS]: [setServices, "servis"], [SATIS_KAYNAK.KALIP]: [setPartSales, "kalip_satisi"], [SATIS_KAYNAK.YEDEK]: [setYedekParcaSatislar, "yedek_parca_satis"] };
+  const hesapAta = (k, hesapId) => {
+    const [yaz, entity] = TAHSILAT_YAZICI[k.kaynak] || [];
+    if (!yaz || hesapId == null) return;
+    yaz(p => p.map(r => (r.id === k.kayit.id ? { ...r, hesapId } : r)));
+    logAction({ serverPermissions, action: "duzenlendi", entity, entityId: k.kayit.id, entityName: k.firma, detail: { hesap: hesapById.get(String(hesapId))?.ad } });
+    showToast("Tahsilat hesaba bağlandı.");
+  };
   const virmanSil = (m) => {
     setHesapHareketleri(p => p.filter(x => x.id !== m.id));
     logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar } });
@@ -209,6 +226,7 @@ export const Kasa = ({
     : <b style={{ color: b.bakiyeK < 0 ? "var(--red700, #b91c1c)" : "var(--n900, #0f172a)" }}>{para(b.bakiye, b.hesap.paraBirimi)}</b>);
   const acikHesapSayisi = kasaHesaplari.filter(h => !h.kapali).length;
   const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px 70px 150px 190px", gap: 10, alignItems: "center" };
+  const tIzgara = { display: "grid", gridTemplateColumns: "90px 150px minmax(0, 1.6fr) 120px 200px", gap: 10, alignItems: "center" };
   const hIzgara = { display: "grid", gridTemplateColumns: "90px 120px minmax(0, 1.6fr) 120px 120px 130px 40px", gap: 10, alignItems: "center" };
 
   return (
@@ -231,9 +249,46 @@ export const Kasa = ({
           giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} />
       ) : (<>
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
-        {HESAPSIZ_NOTU}{hesapsiz.adet > 0 && <> <b>{hesapsiz.adet}</b> gider ödemesi hesapsız{hesapsiz.gocAdet > 0 ? `; ${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı` : ""}.</>}
+        {HESAPSIZ_NOTU}
         {hesapsiz.avansAdet > 0 && <> <b>{hesapsiz.avansAdet}</b> avans hesapsız.</>}
       </UyariSeridi>
+      {/* Spec 0044 R6, AC-24: gider tarafının hesapsız ödemeleri ile satış tahsilatları iki ayrı satır. */}
+      <div data-testid="hesapsiz-sayilar" style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "var(--n700)" }}>
+        <div data-testid="hesapsiz-odeme-satiri">Hesabı belirtilmemiş ödemeler: <b>{hesapsiz.adet}</b>{hesapsiz.gocAdet > 0 ? ` (${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı)` : ""}</div>
+        <div data-testid="hesapsiz-tahsilat-satiri" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>Hesabı belirtilmemiş tahsilatlar: <b>{hesapsizTahsilat.adet}</b></span>
+          {hesapsizTahsilat.adet > 0 && <Btn small variant="ghost" onClick={() => setTahsilatListesiAcik(a => !a)}>{tahsilatListesiAcik ? "Listeyi gizle" : "Listeyi göster"}</Btn>}
+        </div>
+      </div>
+      {tahsilatListesiAcik && hesapsizTahsilat.adet > 0 && (
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="hesapsiz-tahsilatlar">
+          <div style={{ minWidth: 720 }}>
+            <div style={{ ...tIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+              <span>Tarih</span><span>Tür</span><span>Firma</span><span style={{ textAlign: "right" }}>Tutar</span><span>Hesap ata</span>
+            </div>
+            {hesapsizTahsilat.liste.map(k => {
+              const uygun = secilebilirHesaplar(kasaHesaplari, k.currency || "TRY");
+              const yazabilir = !!TAHSILAT_YAZICI[k.kaynak]?.[0];
+              return (
+                <div key={`${k.kaynak}-${k.kayit.id}`} data-testid="hesapsiz-tahsilat" style={{ ...tIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                  <span>{fmtTR(k.tarih)}</span>
+                  <span>{k.turAdi}</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={k.firma}>{[k.firma, k.yontem].filter(Boolean).join(" · ")}{k.neden === "paraBirimi" ? " · hesabın para birimi uyuşmuyor" : k.neden === "hesapYok" ? " · hesabı bulunamadı" : ""}</span>
+                  <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(k.tutar, k.currency)}</span>
+                  <span>
+                    {!yazabilir ? null : uygun.length ? (
+                      <Select aria-label={`Hesap ata: ${k.firma}`} value="" onChange={e => hesapAta(k, uygun.find(h => String(h.id) === e.target.value)?.id)}>
+                        <option value="">Hesap seçin</option>
+                        {uygun.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur})</option>)}
+                      </Select>
+                    ) : <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{k.currency || "TRY"} hesabı yok</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </KartBolum>
+      )}
 
       {kasaHesaplari.length === 0 ? (
         <BosDurum testId="bos-kasa" baslik="Henüz hesap yok" metin="Kasa, banka ve kredi kartı hesaplarınızı ekleyin; gider ödemeleri ve müşteri tahsilatları bu hesaplara bağlanır." />
@@ -247,7 +302,7 @@ export const Kasa = ({
               {siraliHesaplar.map(h => {
                 const b = bakiyeler.get(String(h.id));
                 const secik = seciliHesap && String(seciliHesap.id) === String(h.id);
-                const kullanim = hesapKullanimi(h.id, hesapHareketleri, payments);
+                const kullanim = hesapKullanimi(h.id, hesapHareketleri, veri);
                 return (
                   <div key={h.id} data-testid="hesap-satiri" onClick={() => setSecili(h.id)}
                     style={{ ...izgara, padding: "10px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", cursor: "pointer", background: secik ? "var(--ambBg3, #fff7ed)" : "transparent", opacity: h.kapali ? 0.65 : 1 }}>
@@ -305,7 +360,7 @@ export const Kasa = ({
       </>)}
 
       {hesapFormu && (
-        <HesapFormu hesap={hesapFormu.hesap} hesaplar={kasaHesaplari} hareketVar={!!hesapFormu.hesap && hesapKullanimi(hesapFormu.hesap.id, hesapHareketleri, payments) > 0}
+        <HesapFormu hesap={hesapFormu.hesap} hesaplar={kasaHesaplari} hareketVar={!!hesapFormu.hesap && hesapKullanimi(hesapFormu.hesap.id, hesapHareketleri, veri) > 0}
           onKaydet={hesapKaydet} onClose={() => setHesapFormu(null)} />
       )}
       {virmanAcik && <VirmanFormu hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}

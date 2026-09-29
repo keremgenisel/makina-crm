@@ -277,6 +277,16 @@ const CEKLER = [cekK(3401, 3301, "0012345", "Ziraat", "portfoy"), cekK(3402, 330
 const CIRO_H = [{ id: 4020, tur: "odeme", tarih: "2026-09-18", tutar: 16000, giderId: 32, taksitId: 3201, hesapId: null, cekId: 3404, yontem: "Çek (ciro)", aciklama: "Çek 7788990 · Akbank" }];
 const kasaCek = (o = {}) => kasaEkrani({ payments: cekleriUygula([...KASA_TAHSILAT, ...CEK_ODEMELER], CEKLER), cekler: CEKLER, setCekler: bos, giderAyarlari: AYAR.giderAyarlari,
   hesapHareketleri: [...KASA_HAREKETLER, ...CIRO_H], giderler: odemeleriUygula(TAKSIT_GIDERLER, [...KASA_HAREKETLER, ...CIRO_H], TUR_MAP), calisanlar: CAL, ...o });
+// Spec 0044: servis, Extra Kalıp ve yedek parça tahsilatlarının hesabı (hesaplı ve hesapsız; tahsil edilmemiş çek hesapsız listede kalır).
+const thSv = (id, customerId, date, servisUcreti, o = {}) => ({ id, customerId, date, type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", servisUcreti,
+  currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: date, yontem: "Nakit", degisenParcalar: [], ...o });
+const TH_SERVIS = [thSv(4201, 500, "2026-09-16", 3000, { hesapId: 401 }), thSv(4202, 501, "2026-09-19", 1500, { yontem: "Havale", hesapId: null })];
+const TH_KALIP = [{ id: 4211, tur: "Kalıp", customerId: 500, ad: "Hamburger", tarih: "2026-09-21", ucret: 2000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-09-21", yontem: "Nakit", hesapId: null }];
+const TH_YP = [{ id: 4221, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 4, birimFiyat: 350, currency: "TRY", tarih: "2026-09-22", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-09-22", yontem: "Havale", hesapId: 401, tahsisler: [] },
+  { id: 4222, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-24", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Çek", tahsilEdildi: false, hesapId: null, tahsisler: [] }];
+const kasaTahsilat = (o = {}) => kasaEkrani({ services: TH_SERVIS, partSales: TH_KALIP, yedekParcaSatislar: TH_YP, dealers: DEALERS, factory: { name: "Altuntaş Makina" },
+  setServices: bos, setPartSales: bos, setYedekParcaSatislar: bos, ...o });
+const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tahsilatTarihi: null });
 const KASA_B_ONCE = KASA_B.filter(h => h.id !== 4012); // mahsup girilmeden önceki hâl
 const mahsupPenceresi = () => (
   <OdemeKayitPenceresi kalem={odemeleriUygula([GIDERLER.find(x => x.id === 5)], KASA_B_ONCE, TUR_MAP)[0]} davranis="personel" turAd="Personel" turMap={TUR_MAP}
@@ -475,6 +485,20 @@ const EKRANLAR = {
   "uygulama-menu-dar": [<App />, []],
   "uygulama-menu-tek-cocuk": [<App />, ["Finans"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
+  // Spec 0044: tahsilatın hesabı. Kasa hareketlerinde tahsilat satırları, hesapsız tahsilat listesi, Ödendi anahtarının penceresi,
+  // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
+  "kasa-tahsilat-hareketleri": [kasaTahsilat(), ["~Ziraat Bankası"]],
+  "kasa-hesapsiz-tahsilatlar": [kasaTahsilat(), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  "musteri-tahsilat-hesap-penceresi": [detay(601, { services: [...DETAY_SERVIS, TH_DETAY_SERVIS], kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapVarsayilan: () => 402 }),
+    ["dugme:Ödenmedi · işaretle: Ödendi"]],
+  "servis-formu-tahsilat-hesap": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" kasaHesaplari={KASA_HESAPLAR}
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", hesapId: 402, degisenParcalar: [] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
+  "servis-formu-tahsilat-neden": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" kasaHesaplari={KASA_HESAPLAR} dealers={[{ ...DEALERS[0], anlasmaliServisMi: true }]}
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Ege Bayi", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", degisenParcalar: [] }} />, ["kaydir:Bu bedel anlaşmalı firmaya ait"]],
+  "kalip-formu-tahsilat-hesap": [<FormEkrani Bilesen={PartSaleForm} title="Kaydı Düzenle" kasaHesaplari={KASA_HESAPLAR}
+    ilk={{ id: 751, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturasız Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "500", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "", fiyat: 500 }] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
+  "yedek-parca-formu-tahsilat-hesap": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yedek Parça Satışını Düzenle" kasaHesaplari={KASA_HESAPLAR}
+    ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],

@@ -3,13 +3,15 @@ import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFi
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
+import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
 // miktar). Alıcı her zaman bir bayi. Makina tahsisi burada YAPILMAZ — satış listesinden (YedekParcaSatisTab)
 // "Makinaya tahsis et" ile parça parça yapılır; burada yalnız satış + kargo bilgisi girilir.
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
-export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], customers = [], parts = [], partStock = [], calisanlar = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false }) => {
+export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], customers = [], parts = [], partStock = [], calisanlar = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false, kasaHesaplari = null, hesapVarsayilan = null }) => {
   // Alıcı listesine bayilerin yanı sıra anlaşmalı servis firmaları da dahil (onlar da yedek parça alır).
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false || d.anlasmaliServisMi);
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
@@ -49,6 +51,8 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
   const toplam = isEdit
     ? miktar * birim
     : satirlar.reduce((s, r) => s + (parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), 0);
+  // Spec 0044: hesap sorulur mu (satırların toplamı tek tahsilattır).
+  const hesapDurumu = kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.YEDEK, { ...form, miktar: 1, birimFiyat: toplam }, { kdvRates }) : null;
 
   return (
     <Modal title={title} onClose={onCancel} wide
@@ -222,11 +226,16 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
       {toplam > 0 && (
         <div style={{ marginTop: 4 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
               {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
             </span>
           </label>
+          {kasaHesaplari && form.odendi && (
+            <div style={{ marginTop: 8 }}>
+              <TahsilatHesapAlani durum={hesapDurumu} hesaplar={kasaHesaplari} value={form.hesapId} onChange={v => setForm(p => ({ ...p, hesapId: v }))} />
+            </div>
+          )}
           {form.odendi && (
             <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>

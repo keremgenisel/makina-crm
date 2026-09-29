@@ -56,7 +56,9 @@ export function buildMergePlan(myData, serverData) {
 
   // 2. geçiş: yeniden atanan ID'lere işaret eden referansları düzelt
   const remapRef = (map, val) => (map.has(val) ? map.get(val) : val);
-  adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
+  // Spec 0044 R16: tahsilatın girdiği hesap da yeniden atanan hesap kimliğini izler (ödeme deseni).
+  const hesapRemap = (r) => (r.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, r.hesapId) } : {});
+  adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId), ...hesapRemap(s) }));
   adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId),
     ...(p.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, p.hesapId) } : {}) }));
   adds.gorusmeler = adds.gorusmeler.map(g => ({ ...g, customerId: remapRef(maps.customers, g.customerId) }));
@@ -70,7 +72,7 @@ export function buildMergePlan(myData, serverData) {
       ...(refMap && d.refId != null ? { refId: remapRef(refMap, d.refId) } : {}),
     };
   });
-  adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
+  adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId), ...hesapRemap(p) }));
   // Yedek parça satışı: alıcı bayi (dealerId) merge edilmiyor; alıcı müşteri (musteriId) ve tahsislerin
   // makina referansı (customerId) yeniden atanan müşteri id'lerini izlemeli.
   adds.yedekParcaSatislar = adds.yedekParcaSatislar.map(s => ({
@@ -79,6 +81,7 @@ export function buildMergePlan(myData, serverData) {
     // Spec 0006: Evrak'tan üretildiyse kaynak belge de yeniden atanan teklif kimliğini izler.
     ...(s.teklifId != null ? { teklifId: remapRef(maps.teklifler, s.teklifId) } : {}),
     tahsisler: (s.tahsisler || []).map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) })),
+    ...hesapRemap(s),
   }));
   // Spec 0006 R12/R13: nihai müşteri de müşteri kimliğidir; bayi kimliği remap EDİLMEZ (bayiler birleştirilmez).
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId),

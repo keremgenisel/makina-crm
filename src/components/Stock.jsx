@@ -18,6 +18,7 @@ export const Stock = ({
   appSettings = {}, setAppSettings = () => {},
   customers = [], setCustomers = null,
   copMusteriler = [], uretimPartileri = [], giderYetki = false,
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
   partSales = [], setPartSales = null,
@@ -75,7 +76,8 @@ export const Stock = ({
           kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock} serverPermissions={serverPermissions}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
-          odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed} />
+          odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed}
+          kasaHesaplari={kasaHesaplari} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} />
       )}
       {subTab === "uretim" && (
         <UretimFormu

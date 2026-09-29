@@ -317,6 +317,29 @@ function cekYalnizCiroMu(oldBlob, newBlob) {
   }
   return degisen > 0;
 }
+// Spec 0044 R12, Q5: Kasa ekranından hesap atama. Kasa'yı gören kullanıcının (Giderler + Finans sekmeleri, 0024 C6)
+// Müşteriler/Stok sekmesi olmayabilir; bu üç bölümde kayıt eklemeyen/silmeyen ve yalnız `hesapId` değiştiren yazım ona
+// açıktır. Yeni izin tanımlanmaz.
+const TAHSILAT_HESAP_BOLUMLERI = new Set(["services", "partSales", "yedekParcaSatislar"]);
+function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
+  if (!TAHSILAT_HESAP_BOLUMLERI.has(section)) return false;
+  const eski = Array.isArray(oldBlob?.[section]) ? oldBlob[section] : null, yeni = Array.isArray(newBlob?.[section]) ? newBlob[section] : null;
+  if (!eski || !yeni || eski.length !== yeni.length) return false;
+  const eskiById = new Map(eski.map(r => [r.id, r]));
+  let degisen = 0;
+  for (const r of yeni) {
+    const e = eskiById.get(r.id);
+    if (!e) return false;
+    if (stableStringify(e) === stableStringify(r)) continue;
+    const { hesapId: _h1, ...a } = e, { hesapId: _h2, ...b } = r;
+    if (stableStringify(a) !== stableStringify(b)) return false;
+    degisen++;
+  }
+  return degisen > 0;
+}
+// Kasa yalnız Giderler ve Finans sekmeleri birlikte açıkken görünür; sekme listesi tanımsız kullanıcı gider sekmesini
+// görmez (0001 C6 kural 3), dolayısıyla Kasa'yı da.
+const kasaGorunurMu = (perms) => Array.isArray(perms?.tabs) && perms.tabs.includes("gider") && perms.tabs.includes("finance");
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
   const perms = parsePerms(permissionsJson);
@@ -326,6 +349,7 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
   for (const section of changedSections) {
     const group = SECTION_GROUP[section];
     if (!group) return { ok: false, reddedilenBolum: section }; // haritada yok → güvenli tarafta reddet
+    if (tahsilatHesabiYalnizMi(section, oldBlob, newBlob) && kasaGorunurMu(perms)) continue;
     // Gider bölümleri (C6, K6): Giderler sekmesi yoksa yalnız zincir değişikliği geçer (model adı taşıma,
     // çalışan silmede tanım kapatma), o da yazan Ayarlar sekmesi açıksa. Grup kısıtı (giderActions)
     // zincire uygulanmaz: zincir bir gider işlemi değil, Ayarlar işleminin yan etkisidir.
@@ -682,6 +706,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  cekYalnizCiroMu, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

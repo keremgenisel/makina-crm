@@ -35,8 +35,8 @@ describe("Spec 0024 A: hesaplar (R1, R16, C5)", () => {
     expect(hesapDogrula({ ...KASA, paraBirimi: "USD" }, [KASA], { hareketVar: true }).hatalar.paraBirimi).toBe("Hareketi olan hesabın para birimi değiştirilemez.");
   });
   it("AC-24 / AC-33: hareketi olan hesap kullanımda sayılır (silinemez); kapalı hesap yeni harekette seçilemez", () => {
-    expect(hesapKullanimi(101, [odeme(1, 100)], [])).toBe(1);
-    expect(hesapKullanimi(100, [odeme(1, 100)], [{ id: 5, hesapId: 100, tutar: 1 }])).toBe(1);
+    expect(hesapKullanimi(101, [odeme(1, 100)], { payments: [] })).toBe(1);
+    expect(hesapKullanimi(100, [odeme(1, 100)], { payments: [{ id: 5, hesapId: 100, tutar: 1 }] })).toBe(1);
     expect(secilebilirHesaplar([KASA, { ...BANKA, kapali: true }, USD], "TRY").map(h => h.id)).toEqual([100]);
   });
 });
@@ -132,7 +132,7 @@ describe("Spec 0024 A: hesap bakiyesi (R6–R8, R15, C5)", () => {
   ];
   const hareketler = [odeme(1, 12000), odeme(2, 3000, { hesapId: null }), { id: 3, tur: "virman", tarih: "2026-09-15", tutar: 20000, hesapId: 101, karsiHesapId: 100 },
     odeme(4, 1500, { hesapId: 103, tarih: "2026-09-16" })];
-  const b = hesapBakiyeleri([KASA, BANKA, USD, KART], hareketler, payments);
+  const b = hesapBakiyeleri([KASA, BANKA, USD, KART], hareketler, { payments });
   it("AC-8 / AC-9: ödeme bakiyeyi azaltır, hesaplı tahsilat artırır; tahsil edilmemiş çek girmez", () => {
     expect(b.get("101")).toMatchObject({ acilis: 100000, giren: 30000, cikan: 32000, bakiye: 98000 });
   });
@@ -203,7 +203,7 @@ describe("Spec 0024 B: avans ve mahsup (R9–R11)", () => {
     const r = avansDogrula({ calisanId: 7, tarih: "2026-08-15", tutar: "8.000", hesapId: 100 }, { calisanlar: CAL, hesaplar: [KASA, USD] });
     expect(r.kayit).toMatchObject({ tur: "avans", calisanId: 7, tutar: 8000, hesapId: 100 });
     expect(r.kayit.giderId).toBeUndefined();
-    expect(hesapBakiyeleri([KASA], [AVANS], []).get("100").bakiye).toBe(42000);
+    expect(hesapBakiyeleri([KASA], [AVANS], { payments: [] }).get("100").bakiye).toBe(42000);
     expect(avansBorclari([AVANS], [MAAS]).get("7")).toMatchObject({ verilenK: 800000, mahsupK: 0, borcK: 800000 });
     expect(avansDogrula({ calisanId: 7, tarih: "2026-08-15", tutar: "100" }, { calisanlar: CAL }).kayit.hesapId).toBeNull();
     expect(hesapsizOdemeler([{ ...AVANS, hesapId: null }]).avansAdet).toBe(1);
@@ -225,8 +225,8 @@ describe("Spec 0024 B: avans ve mahsup (R9–R11)", () => {
     const kapali = uygula([MAAS], [...h, { id: 63, tur: "odeme", tarih: "2026-09-30", tutar: 42000, giderId: 5, hesapId: 101 }])[0];
     expect(odemeDurumu(kapali)).toBe("odendi");
     // Mahsup para hareketi değildir: hiçbir hesabın bakiyesi değişmez.
-    expect(hesapBakiyeleri([KASA, BANKA], h, []).get("100").bakiye).toBe(42000);
-    expect(hesapBakiyeleri([KASA, BANKA], h, []).get("101").bakiye).toBe(100000);
+    expect(hesapBakiyeleri([KASA, BANKA], h, { payments: [] }).get("100").bakiye).toBe(42000);
+    expect(hesapBakiyeleri([KASA, BANKA], h, { payments: [] }).get("101").bakiye).toBe(100000);
   });
   it("B2: mahsup yalnız personel kalemine; taksitli kalemde taksite bağlanır", () => {
     const normal = uygula([{ ...KALEM }], [])[0];

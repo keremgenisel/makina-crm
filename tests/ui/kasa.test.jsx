@@ -75,7 +75,7 @@ describe("Kasa: hesaplar (R1, C5)", () => {
     const m0 = [{ id: 51, tur: "odeme", tarih: "2026-09-10", tutar: 100, hesapId: null, giderId: 7 },
       { id: 52, tur: "odeme", tarih: "2026-06-05", tamKapatir: true, hesapId: null, giderId: 7, kaynak: "goc" }];
     render(<Harness h0={[hesap(1, "Ziraat", { acilisBakiyesi: 500 })]} m0={m0} />);
-    expect(screen.getByTestId("hesapsiz-notu").textContent).toMatch(/2 gider ödemesi hesapsız; 1 tanesi eski kayıtlardan aktarıldı/);
+    expect(screen.getByTestId("hesapsiz-odeme-satiri").textContent).toBe("Hesabı belirtilmemiş ödemeler: 2 (1 tanesi eski kayıtlardan aktarıldı)"); // spec 0044 AC-24: sayı ayrı satırda
     expect(satirOf("Ziraat").textContent).toMatch(/500/);
   });
   it("hesap yokken boş durum", () => {
