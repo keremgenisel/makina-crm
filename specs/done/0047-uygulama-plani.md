@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0047-aylik-gider-ve-kasa-raporu.md` (R3, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0047-aylik-gider-ve-kasa-raporu.md` (R3, plan onayıyla onaylandı) |
 | **Dal** | `feat/0047-gider-kasa-raporu` (`feat/0046-form-odeme` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q11) kabul |
 

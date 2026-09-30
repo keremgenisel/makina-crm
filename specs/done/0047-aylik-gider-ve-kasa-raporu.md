@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-30, plan onayıyla; plan `specs/0047-uygulama-plani.md` Q1–Q11). Uygulanıyor, dal `feat/0047-gider-kasa-raporu`. |
+| **Durum** | Tamamlandı (2026-09-30; commit `db3eba2`, dal `feat/0047-gider-kasa-raporu`; plan `specs/done/0047-uygulama-plani.md` Q1–Q11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler ekranı, Kasa ekranı, yazdırma şablonları, gizlilik koruma testi |
@@ -411,26 +411,28 @@ tutar bu kâğıda çıkmıyor.**
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Rapor verisi mevcut motorlardan besleniyor; ikinci bir hesap yazılmadı (C2, kaynak taraması).
-- [ ] Ekran ile kâğıdın aynı rakamı verdiği çapraz testle gösterildi (AC-4, AC-9).
-- [ ] Tekrarlanabilirlik testle gösterildi: aynı ay, farklı günlerde, aynı belge (AC-30, AC-31).
-- [ ] Rapor düğmesi ve yetki kapısı tek yerde; üç ekran aynı bileşeni kullanıyor (R33, AC-40).
-- [ ] Gizlilik koruması **çıktı temelli** teste dönüştürüldü (AC-24) ve müşteri şablonlarındaki mevcut
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Rapor verisi mevcut motorlardan besleniyor; ikinci bir hesap yazılmadı (C2, kaynak taraması).
+- [x] Ekran ile kâğıdın aynı rakamı verdiği çapraz testle gösterildi (AC-4, AC-9).
+- [x] Tekrarlanabilirlik testle gösterildi: aynı ay, farklı günlerde, aynı belge (AC-30, AC-31).
+- [x] Rapor düğmesi ve yetki kapısı tek yerde; üç ekran aynı bileşeni kullanıyor (R33, AC-40).
+- [x] Gizlilik koruması **çıktı temelli** teste dönüştürüldü (AC-24) ve müşteri şablonlarındaki mevcut
       kaynak taraması korundu (AC-25); `tests/gider-gizlilik.test.js` bu iki katmanı birlikte içeriyor.
-- [ ] Gizlilik taraması **hiç gevşetilmedi**: rapor kurucusu `printTemplates.js` dışında, düğme
+- [x] Gizlilik taraması **hiç gevşetilmedi**: rapor kurucusu `printTemplates.js` dışında, düğme
       `src/components/gider/` dışında, dört denetim de eski hâliyle geçiyor (AC-41, AC-42, C8).
-- [ ] İki motor genişlemesi geriye dönük uyumlu: `hesapBakiyeleri` aralıksız çağrıda birebir aynı
+- [x] İki motor genişlemesi geriye dönük uyumlu: `hesapBakiyeleri` aralıksız çağrıda birebir aynı
       (AC-46), `cekDurumuAyinSonunda` saf ve testli (AC-48, AC-49).
-- [ ] Ay sonu kilidi `bugun` parametresiyle sağlandı, yeni kilit katmanı yazılmadı (R26, Ö-11).
-- [ ] Finans'a dört dizi `kasaYetki` ile geçirildi ve oradan alınan raporun kasa bölümü dolu (AC-54).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0047-*.jpg`): raporun gider ve kasa bölümleri, rapor düğmeleri.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: gizlilik kuralının yeni sınırı (toplam yazdırılır, çalışan bazlı tutar
+- [x] Ay sonu kilidi `bugun` parametresiyle sağlandı, yeni kilit katmanı yazılmadı (R26, Ö-11). Q1 ile
+      hareketler ayrıca `tarih ≤ ay sonu` süzülüp mevcut `odemeleriUygula`'dan geçiyor; yeni katman değil.
+- [x] Finans'a dört dizi `kasaYetki` ile geçirildi ve oradan alınan raporun kasa bölümü dolu (AC-54). Q4 ile
+      diziler App'in tek `giderKasaRaporVerisi` memosunda geçiyor; üç ekran aynı nesneyi alıyor.
+- [x] Görsel kanıt eklendi (`docs/evidence/0047-*.jpg`): raporun gider ve kasa bölümleri, rapor düğmeleri.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: gizlilik kuralının yeni sınırı (toplam yazdırılır, çalışan bazlı tutar
       yazdırılmaz) ve raporun tek kaynaktan beslendiği yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -438,10 +440,10 @@ tutar bu kâğıda çıkmıyor.**
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R3 plan onayı anında işlendi. Onaydan sonra triyajda R31'e TY onaylı istisna eklendi (hesapsız listede personel ödemeleri ve avanslar toplu satır). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (3 bulgu); ayrıca kanıt incelemesinde tutarsız göç hareketinin "₺0" yazdığı görülüp düzeltildi. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Hesapsız listede tek çalışanın elden ödemesi tarih ve tutarıyla kâğıda düşüyordu (gizlilik, gerçek); aynı ay içinde iptal edilen ciro sayılıyordu (gerçek); gizlilik testi başlığında AC-25 atfı eksikti (izlenebilirlik). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Motor genişlemeleri aralıksız çağrıda birebir aynı (AC-46); mevcut 342 ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Toplam yazdıran bir belgede gizlilik yalnız "hangi alan okunuyor" ile korunamaz: tek tek listelenen hareketler de kişi bazlı veridir, çünkü tarih ve tutar bir çalışanı tanıtır. Çıktı temelli test (ayırt edici ad ve tutarları üretilen HTML'de aramak) bunu yakalayabilecek tek katmandı; test verisi tek çalışanlı olduğu sürece sızıntı görünmedi, iki çalışan ve hesapsız elden ödeme eklenince göründü. İkincisi: ay sonu kilidinde "durum" (çek) geçmişten okunurken aynı ay içinde geri alınan geçişler ayrıca düşünülmeli; son durum ile ay içinde yaşanan geçiş farklı sorulardır.
