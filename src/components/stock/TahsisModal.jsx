@@ -73,11 +73,8 @@ export const TahsisModal = ({ customers = [], kalan, onEkle, onClose, showToast 
 export const tahsisToplam = (s) => (s?.tahsisler || []).reduce((t, x) => t + (parseInt(x.miktar) || 0), 0);
 
 // Yedek parça satışının alıcısı: bayi VEYA müşteri (aliciTipi). Legacy kayıtlarda aliciTipi yok → bayi.
-export const aliciAd = (s, dealers = [], customers = []) => {
-  if (s?.aliciTipi === "musteri") return (customers.find(c => c.id === s.musteriId)?.name) || "(müşteri yok)";
-  if (s?.disFirma) return s.disFirmaAd || "(dış firma)"; // anlaşmasız dış firma alıcı (kayıtlı bayi değil)
-  return (dealers.find(d => d.id === s?.dealerId)?.name) || "(bayi yok)";
-};
+// Spec 0044 (Q9): alıcı adı saf modülde (kasa motoru da kullanır); burada yeniden dışa verilir.
+export { aliciAd } from "../../lib/yedekParcaSatis";
 
 // Alıcı türü rozeti (etiket + renk). 3 tür: müşteri (mavi), anlaşmasız servis (mor), bayi (amber).
 // Anlaşmasız dış firma (disFirma) artık "BAYİ" değil "ANLAŞMASIZ SERVİS" olarak gösterilir.

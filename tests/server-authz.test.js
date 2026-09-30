@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
-  GIDER_BOLUMLERI, giderAynaEngeli,
+  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -806,10 +806,74 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
     expect(eylemDenetimi(eski, yeni, izin(["gider_add", "gider_edit"]), "user").reddedilenBolum).toBe("giderler");
     expect(eylemDenetimi(eski, yeni, izin(["gider_delete"]), "user").ok).toBe(true);
   });
-  it("ödeme durumu (odendi) gider_odeme ister; diğer alan düzenlemesi istemez", () => {
-    const eski = { giderler: [{ id: 1, odendi: false, aciklama: "a" }] };
-    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: true, aciklama: "a" }] }, izin(["gider_edit"]), "user").gerekli).toBe("gider_odeme");
-    expect(eylemDenetimi(eski, { giderler: [{ id: 1, odendi: false, aciklama: "b" }] }, izin(["gider_edit"]), "user").ok).toBe(true);
+  // Spec 0024 Q1/Q7 (onaylı istisna): 0001'in giderler.odendi alan denetimi ve 0021'in taksit satırı denetimi kaldırıldı;
+  // ödeme artık hesapHareketleri bölümüne bir kayıttır ve izni o kaydın eklenmesi, silinmesi ve düzenlenmesinde aranır.
+  describe("spec 0024 AC-27: ödeme ve virman hareket bölümünde kendi izniyle", () => {
+    const kalem = (o = {}) => ({ id: 1, tarih: "2026-10-01", turId: 1, tutar: 5000, odendi: false, ...o });
+    const odeme = (o = {}) => ({ id: 50, tur: "odeme", tarih: "2026-10-05", tutar: 1000, giderId: 1, taksitId: null, hesapId: 97, ...o });
+    const virman = (o = {}) => ({ id: 60, tur: "virman", tarih: "2026-10-05", tutar: 500, hesapId: 97, karsiHesapId: 98, ...o });
+    it("ödeme kaydetmek gider_odeme ister; gider_edit yetmez", () => {
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [odeme()] }, izin(["gider_edit"]), "user"))
+        .toMatchObject({ ok: false, reddedilenBolum: "hesapHareketleri", islem: "ekle", gerekli: "gider_odeme" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [odeme()] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+    });
+    it("ödeme silmek ve düzenlemek de gider_odeme ister", () => {
+      const eski = { hesapHareketleri: [odeme()] };
+      expect(eylemDenetimi(eski, { hesapHareketleri: [] }, izin(["gider_edit"]), "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "gider_odeme" });
+      expect(eylemDenetimi(eski, { hesapHareketleri: [odeme({ tutar: 1 })] }, izin(["gider_edit"]), "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "gider_odeme" });
+      expect(eylemDenetimi(eski, { hesapHareketleri: [] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+      expect(eylemDenetimi(eski, { hesapHareketleri: [odeme()] }, izin([]), "user").ok).toBe(true); // değişmeyen kayıt
+    });
+    it("virman virman ister; gider_odeme yetmez; ödemeyi virmana çevirmek ikisini de ister", () => {
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [virman()] }, izin(["gider_odeme"]), "user").gerekli).toBe("virman");
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [virman()] }, izin(["virman"]), "user").ok).toBe(true);
+      const cevir = { hesapHareketleri: [{ ...odeme(), tur: "virman", karsiHesapId: 98 }] };
+      expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman"]), "user").ok).toBe(false);
+      expect(eylemDenetimi({ hesapHareketleri: [odeme()] }, cevir, izin(["virman", "gider_odeme"]), "user").ok).toBe(true);
+    });
+    it("spec 0024 B (B3): avans `avans` ister, gider_odeme yetmez; mahsup gider_odeme ister, avans yetmez", () => {
+      const avans = { id: 70, tur: "avans", tarih: "2026-10-05", tutar: 500, calisanId: 7, hesapId: 97 };
+      const mahsup = { id: 71, tur: "mahsup", tarih: "2026-10-05", tutar: 500, calisanId: 7, giderId: 1 };
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [avans] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [avans] }, izin(["avans"]), "user").ok).toBe(true);
+      expect(eylemDenetimi({ hesapHareketleri: [avans] }, { hesapHareketleri: [] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [avans] }, { hesapHareketleri: [{ ...avans, tutar: 1 }] }, izin(["gider_odeme"]), "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "avans" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mahsup] }, izin(["avans"]), "user")).toMatchObject({ ok: false, gerekli: "gider_odeme" });
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mahsup] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+    });
+    it("hesap ekle, düzenle, sil kasa_hesap ister", () => {
+      const h = { id: 97, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false };
+      expect(eylemDenetimi({ kasaHesaplari: [] }, { kasaHesaplari: [h] }, izin(["gider_add"]), "user").gerekli).toBe("kasa_hesap");
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [{ ...h, kapali: true }] }, izin(["gider_add"]), "user")).toMatchObject({ ok: false, islem: "duzenle" });
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [] }, izin(["gider_add"]), "user").ok).toBe(false);
+      expect(eylemDenetimi({ kasaHesaplari: [h] }, { kasaHesaplari: [{ ...h, kapali: true }] }, izin(["kasa_hesap"]), "user").ok).toBe(true);
+    });
+    it("kalemin odendi alanı ve taksit satırı bayrakları artık izin istemez (doğruluk kaynağı değil, kayıt temizler)", () => {
+      const satir = (id, o = {}) => ({ id, hedef: "ana", sira: id - 100, vade: `2026-1${id - 100}-15`, tutar: 2000, odendi: false, odemeTarihi: null, ...o });
+      // Göç öncesi ödenmiş kalemi düzenleyen gider_edit kullanıcısı: kayıt bayrakları temizler, 403 almamalı.
+      const e = { giderler: [kalem({ odendi: true, odemeTarihi: "2026-10-04", taksitler: [satir(101, { odendi: true, odemeTarihi: "2026-10-04" }), satir(102)] })] };
+      const y = { giderler: [kalem({ aciklama: "düzeltildi", taksitler: [satir(101), satir(102)] })] };
+      expect(eylemDenetimi(e, y, izin(["gider_edit"]), "user").ok).toBe(true);
+      expect(eylemDenetimi({ giderler: [] }, { giderler: [kalem({ id: 5 })] }, izin(["gider_add"]), "user").ok).toBe(true);
+    });
+    it("tutar değişip ödenmemiş satırlar yeniden bölünürse gider_edit yeter (0021 R10)", () => {
+      const satir = (id, o = {}) => ({ id, hedef: "ana", sira: id - 100, vade: `2026-1${id - 100}-15`, tutar: 2000, ...o });
+      const yeni = { giderler: [kalem({ tutar: 8000, taksitler: [satir(101, { tutar: 3000 }), satir(102, { tutar: 3000 }), satir(103)] })] };
+      expect(eylemDenetimi({ giderler: [kalem({ taksitler: [satir(101), satir(102)] })] }, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
+    });
+    it("hesap ve hareket bölümleri yalnız Giderler sekmesiyle yazılır; sekme listesi tanımsız kullanıcı yazamaz (K6)", () => {
+      const eski = { hesapHareketleri: [] }, yeni = { hesapHareketleri: [odeme()] };
+      expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["finance"] }), "user", ["hesapHareketleri"], eski, yeni).ok).toBe(false);
+      expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"] }), "user", ["hesapHareketleri"], eski, yeni).ok).toBe(true);
+      expect(giderAynaEngeli(null, "user", ["kasaHesaplari"], { kasaHesaplari: [] }, { kasaHesaplari: [{ id: 1 }] })).toBe("kasaHesaplari");
+    });
+  });
+  it("spec 0020 P4: tanımdan üretilmiş personel kalemine sonradan makina atamak düzenlemedir, gider_edit yeter", () => {
+    const tanimlar = [{ id: 9, turId: 3, calisanId: 7, baslangicAy: "2026-01" }];
+    const kalem = { id: 2, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 3, calisanId: 7, resmiTutar: 30000, atamaTur: "" };
+    const eski = { giderler: [kalem], giderTanimlari: tanimlar };
+    const yeni = { giderler: [{ ...kalem, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 }], giderTanimlari: tanimlar };
+    expect(eylemDenetimi(eski, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
   });
   it("tedarikçi ekle/sil kendi izinleriyle; tanım, tür ve standart gider gider_tanim ile", () => {
     expect(eylemDenetimi({ tedarikciler: [] }, { tedarikciler: [{ id: 5, ad: "A" }] }, izin(["gider_add"]), "user").gerekli).toBe("tedarikci_add");
@@ -827,6 +891,7 @@ describe("gider: Ayarlar'ı açık ama Giderler sekmesi olmayan kullanıcı (bul
   const eski = { giderler: [{ id: 1, tarih: "2026-09-01", turId: 4, tutar: 100, odendi: false, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10, adet: 2 }] }] };
   const dene = (yeni) => yazmaYetkisiVar(ayarci, "user", degisenBolumler(eski, yeni), eski, yeni);
   it("kalem ekleyemez, silemez, ödendi değiştiremez", () => {
+    // Spec 0024: odendi artık doğruluk kaynağı değil; ama zincir dışı her kalem değişikliği Ayarlar kullanıcısına kapalı kalır.
     expect(dene({ giderler: [...eski.giderler, { id: 2, tarih: "2026-09-02", turId: 4, tutar: 99999, odendi: true, modelSatirlari: [] }] }).ok).toBe(false);
     expect(dene({ giderler: [] }).ok).toBe(false);
     expect(dene({ giderler: [{ ...eski.giderler[0], deletedAt: "x" }] }).ok).toBe(false);
@@ -883,5 +948,183 @@ describe("gider: tanımdan üretim izni serbest kalem için atlatılamaz (bulgu 
     expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", turId: 5 }).gerekli).toBe("gider_add");
     expect(ekle({ id: 1, tanimId: 9, donem: "2027-01", tarih: "2027-01-01", turId: 4 }).gerekli).toBe("gider_add");
     expect(ekle({ id: 1, tanimId: 9, donem: "2026-09", tarih: "2026-10-15", turId: 4 }).gerekli).toBe("gider_add");
+  });
+});
+
+// Spec 0022 C5: üretim partileri gider bölümüdür (gider_tanim); makinayı partiye bağlamak stok yazımıdır.
+describe("spec 0022: üretim partileri bölümü", () => {
+  it("bölüm eşlemesi: giderActions, BOLUM_SEKMELERI yalnız gider (triyaj bulgu 3: stok bağı stock bölümünde), gider bölümleri listesinde", () => {
+    expect(SECTION_GROUP.uretimPartileri).toBe("giderActions");
+    expect(BOLUM_SEKMELERI.uretimPartileri).toEqual(["gider"]);
+    expect(GIDER_BOLUMLERI.has("uretimPartileri")).toBe(true);
+  });
+  it("parti eklemek/silmek gider_tanim ister", () => {
+    const izin = (ids) => JSON.stringify({ tabs: ["gider"], giderActions: ids });
+    const p = { id: 1, ad: "P", baslangicAy: "2026-01" };
+    expect(eylemDenetimi({ uretimPartileri: [] }, { uretimPartileri: [p] }, izin(["gider_add"]), "user")).toMatchObject({ ok: false, gerekli: "gider_tanim" });
+    expect(eylemDenetimi({ uretimPartileri: [] }, { uretimPartileri: [p] }, izin(["gider_tanim"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ uretimPartileri: [p] }, { uretimPartileri: [] }, izin(["gider_add"]), "user").ok).toBe(false);
+  });
+  it("sekme listesi tanımsız kullanıcı parti yazamaz (K6); yalnız stok sekmeli kullanıcı partileri değiştiremez ama makinayı bağlar", () => {
+    expect(yazmaYetkisiVar(JSON.stringify({ customerActions: ["cust_add"] }), "user", ["uretimPartileri"], {}, {}).ok).toBe(false);
+    const stokcu = JSON.stringify({ tabs: ["stock"], stockActions: ["stock_makina_add", "stock_makina_edit"] });
+    expect(yazmaYetkisiVar(stokcu, "user", ["uretimPartileri"], {}, {}).ok).toBe(false);
+    const eski = { stock: [{ id: 4, model: "AK100" }], uretimPartileri: [{ id: 1, ad: "P", baslangicAy: "2026-01" }] };
+    const yeni = { ...eski, stock: [{ id: 4, model: "AK100", partiId: 1 }] };
+    expect(yazmaYetkisiVar(stokcu, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+  });
+});
+
+// ── Spec 0040: çek portföyü (C11, Q6; AC-20, AC-33, AC-34) ────────────────────────
+describe("spec 0040: çek bölümü yetkisi", () => {
+  const cek = (o = {}) => ({ id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [], ...o });
+  const odeme = { id: 100, customerId: 1, tutar: 1000, yontem: "Çek" };
+  it("C11: bölüm müşteri grubunda, sekmeler customers/gider/settings, gider bölümü değil", () => {
+    expect(SECTION_GROUP.cekler).toBe("customerActions");
+    expect(BOLUM_SEKMELERI.cekler).toEqual(["customers", "gider", "settings"]);
+    expect(GIDER_BOLUMLERI.has("cekler")).toBe(false);
+  });
+  it("AC-33: yalnız Müşteriler sekmeli tahsilatçı çekle tahsilat (tahsilat + çek) kaydeder", () => {
+    const p = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add"] });
+    const eski = { payments: [], cekler: [] }, yeni = { payments: [odeme], cekler: [cek()] };
+    expect(yazmaYetkisiVar(p, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, p, "user").ok).toBe(true);
+  });
+  it("AC-20: çek eklemek cust_payment_add ister; Müşteriler sekmesi olmayan (ve Giderler de olmayan) kullanıcı yazamaz", () => {
+    const eski = { cekler: [] }, yeni = { cekler: [cek()] };
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_edit"] }), "user")).toMatchObject({ ok: false, gerekli: "cust_payment_add" });
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["dashboard"] }), "user", ["cekler"], eski, yeni).ok).toBe(false);
+  });
+  const ciroHareketi = { id: 300, tur: "odeme", tarih: "2026-10-02", tutar: 1000, yontem: "Çek (ciro)", giderId: 5, cekId: 200 };
+  it("AC-34 / Q6: ciroya giriş ve ciro iptali gider_odeme ister; diğer durumlar cust_payment_edit", () => {
+    const eski = { cekler: [cek()], hesapHareketleri: [] };
+    const ciro = { cekler: [cek({ durum: "ciro", gecmis: [{ tarih: "2026-10-02", durum: "ciro", not: "Ciro: X" }] })], hesapHareketleri: [ciroHareketi] };
+    expect(eylemDenetimi(eski, ciro, JSON.stringify({ tabs: ["gider"], giderActions: ["gider_edit"] }), "user")).toMatchObject({ ok: false, gerekli: "gider_odeme" });
+    expect(eylemDenetimi(eski, ciro, JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme"] }), "user").ok).toBe(true);
+    expect(eylemDenetimi(ciro, eski, JSON.stringify({ tabs: ["gider"], giderActions: ["gider_edit"] }), "user").gerekli).toBe("gider_odeme");
+    const tahsil = { cekler: [cek({ durum: "tahsil" })] };
+    expect(eylemDenetimi(eski, tahsil, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add"] }), "user").gerekli).toBe("cust_payment_edit");
+    expect(eylemDenetimi(eski, tahsil, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_edit"] }), "user").ok).toBe(true);
+    // Ciro edilmiş çek karşılıksız: iki izin birlikte.
+    const karsiliksiz = { cekler: [cek({ durum: "karsiliksiz" })] };
+    expect(eylemDenetimi(ciro, karsiliksiz, JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme"], customerActions: [] }), "user").gerekli).toBe("cust_payment_edit");
+  });
+  it("triyaj: 'ciro edildi'ye geçiş aynı yazımda o çeke bağlı yeni bir ödeme hareketi ister (hareketsiz ciro reddedilir)", () => {
+    const p = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme"] });
+    const ciroCek = cek({ durum: "ciro", gecmis: [{ tarih: "2026-10-02", durum: "ciro", not: "Ciro: X" }] });
+    const eski = { cekler: [cek()], hesapHareketleri: [] };
+    // Hareketsiz ciro
+    expect(eylemDenetimi(eski, { cekler: [ciroCek], hesapHareketleri: [] }, p, "user")).toMatchObject({ ok: false, reddedilenBolum: "cekler", gerekli: "ciro_hareketi" });
+    // Hareket bölümü hiç gönderilmemiş
+    expect(eylemDenetimi(eski, { cekler: [ciroCek] }, p, "user").gerekli).toBe("ciro_hareketi");
+    // Başka çeke bağlı hareket yetmez
+    expect(eylemDenetimi(eski, { cekler: [ciroCek], hesapHareketleri: [{ ...ciroHareketi, cekId: 999 }] }, p, "user").gerekli).toBe("ciro_hareketi");
+    // Eskiden kalan (yeni olmayan) hareket yetmez
+    const eskiHareketli = { ...eski, hesapHareketleri: [ciroHareketi] };
+    expect(eylemDenetimi(eskiHareketli, { cekler: [ciroCek], hesapHareketleri: [ciroHareketi] }, p, "user").gerekli).toBe("ciro_hareketi");
+    // Ciro edilmiş doğan yeni çek de aynı şartı taşır
+    const ekleP = JSON.stringify({ tabs: ["customers", "gider"], customerActions: ["cust_payment_add"], giderActions: ["gider_odeme"] });
+    expect(eylemDenetimi({ cekler: [], hesapHareketleri: [] }, { cekler: [ciroCek], hesapHareketleri: [] }, ekleP, "user")).toMatchObject({ ok: false, islem: "ekle", gerekli: "ciro_hareketi" });
+    // Doğru ciro geçer; zaten ciro edilmiş çekin başka alanının değişmesi hareket istemez
+    expect(eylemDenetimi(eski, { cekler: [ciroCek], hesapHareketleri: [ciroHareketi] }, p, "user").ok).toBe(true);
+    const kesideci = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_edit"] });
+    expect(eylemDenetimi({ cekler: [ciroCek] }, { cekler: [{ ...ciroCek, kesideci: "Y" }] }, kesideci, "user").ok).toBe(true);
+  });
+  it("Q6: müşteri grubu kısıtlı Giderler kullanıcısı gider_odeme ile ciro yazabilir (yalnız ciroya giriş/çıkış); başka çek değişikliği yazamaz", () => {
+    const p = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+    const eski = { cekler: [cek()] };
+    const ciro = { cekler: [cek({ durum: "ciro", gecmis: [{ tarih: "2026-10-02", durum: "ciro", not: "Ciro: X" }] })] };
+    expect(cekYalnizCiroMu(eski, ciro)).toBe(true);
+    expect(yazmaYetkisiVar(p, "user", ["cekler"], eski, ciro).ok).toBe(true);
+    const numara = { cekler: [cek({ no: "2" })] };
+    expect(yazmaYetkisiVar(p, "user", ["cekler"], eski, numara).ok).toBe(false);
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"], giderActions: ["gider_edit"], customerActions: [] }), "user", ["cekler"], eski, ciro).ok).toBe(false);
+  });
+});
+
+// ── Spec 0049: bağsız alınan çek ve verilen çek (R15, Q8; AC-22, AC-23) ─────────────────
+describe("spec 0049: bağsız çek yetkisi", () => {
+  const bagsiz = (o = {}) => ({ id: 400, yon: "alinan", paymentId: null, no: "7", banka: "İş", tur: "hamiline", durum: "portfoy", tutar: 5000, currency: "TRY", vadeTarihi: "2026-11-01", tarih: "2026-09-01", kimden: "X", gecmis: [], ...o });
+  const verilen = (o = {}) => ({ id: 500, yon: "verilen", paymentId: null, no: "A1", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 3000, vadeTarihi: "2026-10-15", tarih: "2026-09-02", hesapId: 97, alacakliTur: "tedarikci", alacakliId: 11, alacakliAd: "Demir", gecmis: [], ...o });
+  const hareket = { id: 600, tur: "odeme", tarih: "2026-09-02", tutar: 3000, yontem: "Çek (kendi)", giderId: 5, cekId: 500, hesapId: null };
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+  const odemesiz = JSON.stringify({ tabs: ["gider", "finance", "customers"], giderActions: ["gider_edit"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
+  it("AC-23: bağsız çek ekleme, silme ve durum değişikliği gider_odeme ister; tahsilat izinleri yetmez", () => {
+    const bos = { cekler: [] }, ekli = { cekler: [bagsiz()] }, tahsil = { cekler: [bagsiz({ durum: "tahsil" })] };
+    expect(eylemDenetimi(bos, ekli, odemesiz, "user")).toMatchObject({ ok: false, islem: "ekle", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, bos, odemesiz, "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, tahsil, odemesiz, "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, { cekler: [bagsiz({ tutar: 1 })] }, odemesiz, "user").gerekli).toBe("gider_odeme");
+    for (const [a, b] of [[bos, ekli], [ekli, bos], [ekli, tahsil]]) expect(eylemDenetimi(a, b, kasaci, "user").ok).toBe(true);
+  });
+  it("Q8: müşteri grubu kısıtlı Kasa kullanıcısı yalnız bağsız çek yazabilir; bağlı çeke dokunan yazım reddedilir", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    const eski = { cekler: [bagli] }, yeni = { cekler: [bagli, bagsiz()] };
+    expect(cekYalnizBagsizMi(eski, yeni)).toBe(true);
+    expect(yazmaYetkisiVar(kasaci, "user", ["cekler"], eski, yeni).ok).toBe(true);
+    expect(cekYalnizBagsizMi(eski, { cekler: [{ ...bagli, no: "2" }, bagsiz()] })).toBe(false);
+    expect(yazmaYetkisiVar(kasaci, "user", ["cekler"], eski, { cekler: [{ ...bagli, no: "2" }, bagsiz()] }).ok).toBe(false);
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_edit"], customerActions: [] }), "user", ["cekler"], eski, yeni).ok).toBe(false);
+  });
+  it("Q8: yeni verilen çek aynı yazımda ona bağlı yeni bir ödeme hareketi ister", () => {
+    const eski = { cekler: [], hesapHareketleri: [] };
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [] }, kasaci, "user")).toMatchObject({ ok: false, gerekli: "cek_hareketi" });
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [{ ...hareket, cekId: 999 }] }, kasaci, "user").gerekli).toBe("cek_hareketi");
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [hareket] }, kasaci, "user").ok).toBe(true);
+  });
+  it("triyaj: bağlı çeki bağsıza çeviren (paymentId boşaltan) yazım gider_odeme ile birlikte cust_payment_edit de ister", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    const bosaltilmis = { cekler: [{ ...bagli, paymentId: null, durum: "tahsil" }] };
+    const kismi = JSON.stringify({ tabs: ["gider", "customers"], giderActions: ["gider_odeme"], customerActions: ["cust_payment_add"] });
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, kismi, "user")).toMatchObject({ ok: false, gerekli: "cust_payment_edit" });
+    expect(eylemDenetimi({ cekler: [{ ...bagli, paymentId: null }] }, { cekler: [bagli] }, kismi, "user").gerekli).toBe("cust_payment_edit"); // tersi de
+    const ikisi = JSON.stringify({ tabs: ["gider", "customers"], giderActions: ["gider_odeme"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, ikisi, "user").ok).toBe(true);
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_edit"], giderActions: [] }), "user").gerekli).toBe("gider_odeme");
+  });
+  it("AC-9: bağlı çekte 0040 kuralı aynen (durum cust_payment_edit)", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    expect(eylemDenetimi({ cekler: [bagli] }, { cekler: [{ ...bagli, durum: "tahsil" }] }, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add"] }), "user").gerekli).toBe("cust_payment_edit");
+  });
+});
+
+// ── Spec 0044 Q5: Kasa'dan tahsilat hesabı atama ────────────────────────────────────────
+describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
+  const sv = (o = {}) => ({ id: 1, customerId: 5, odendi: true, servisUcreti: 100, ...o });
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], customerActions: [], stockActions: [], giderActions: ["gider_odeme"] });
+  it("Q5: Giderler + Finans sekmeli kullanıcı servis, kalıp ve yedek parçaya yalnız hesap atayabilir", () => {
+    for (const [bolum, kayit] of [["services", sv()], ["partSales", { id: 1, customerId: 5, tur: "Kalıp", odendi: true }], ["yedekParcaSatislar", { id: 1, aliciTipi: "bayi", dealerId: 2, odendi: true, tahsisler: [] }]]) {
+      const eski = { [bolum]: [kayit] }, yeni = { [bolum]: [{ ...kayit, hesapId: 97 }] };
+      expect(tahsilatHesabiYalnizMi(bolum, eski, yeni)).toBe(true);
+      expect(yazmaYetkisiVar(kasaci, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+      expect(eylemDenetimi(eski, yeni, kasaci, "user").ok).toBe(true);
+    }
+  });
+  it("Q5: hesapla birlikte başka alan değişirse, kayıt eklenirse ya da kullanıcı Kasa'yı görmüyorsa reddedilir", () => {
+    const eski = { services: [sv()] };
+    expect(yazmaYetkisiVar(kasaci, "user", ["services"], eski, { services: [sv({ hesapId: 97, servisUcreti: 1 })] }).ok).toBe(false);
+    expect(yazmaYetkisiVar(kasaci, "user", ["services"], eski, { services: [sv({ hesapId: 97 }), sv({ id: 2 })] }).ok).toBe(false);
+    const yalnizGider = JSON.stringify({ tabs: ["gider"], customerActions: [] });
+    expect(yazmaYetkisiVar(yalnizGider, "user", ["services"], eski, { services: [sv({ hesapId: 97 })] }).ok).toBe(false);
+    expect(tahsilatHesabiYalnizMi("payments", { payments: [{ id: 1 }] }, { payments: [{ id: 1, hesapId: 2 }] })).toBe(false);
+  });
+});
+
+describe("spec 0046: gider formundan ciro tek yazımda", () => {
+  const cek = (o = {}) => ({ id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [], ...o });
+  const eski = { giderler: [], hesapHareketleri: [], cekler: [cek()] };
+  const yeni = {
+    giderler: [{ id: 5, tarih: "2026-10-01", turId: 1, tutar: 1000, kdvOrani: 0, odendi: false, modelSatirlari: [] }],
+    hesapHareketleri: [{ id: 300, tur: "odeme", tarih: "2026-10-01", tutar: 1000, yontem: "Çek (ciro)", giderId: 5, taksitId: null, hesapId: null, cekId: 200 }],
+    cekler: [cek({ durum: "ciro", gecmis: [{ tarih: "2026-10-01", durum: "ciro", not: "Ciro: Usta" }] })],
+  };
+  it("AC-22: gider_add + gider_odeme'li, müşteri grubu kısıtlı kullanıcı yeni kalem + ciro hareketi + çek durumunu birlikte yazar", () => {
+    const p = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add", "gider_odeme"], customerActions: [] });
+    expect(yazmaYetkisiVar(p, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, p, "user").ok).toBe(true);
+  });
+  it("AC-22: aynı yazımda gider_add yoksa kalem eklenemez; gider_odeme yoksa ciro hareketi ve çek durumu reddedilir", () => {
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] }), "user")).toMatchObject({ ok: false, gerekli: "gider_add" });
+    expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add"], customerActions: [] }), "user").ok).toBe(false);
   });
 });

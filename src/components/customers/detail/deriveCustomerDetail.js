@@ -4,7 +4,7 @@
 import {
   normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, calcCiro, isServisBorcluMu,
   isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, partSaleMusteriBorcuMu,
-  sumBekleyenCek, isCekVadesiGecmis, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
+  sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
 } from "../../../lib/utils";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
 
@@ -213,8 +213,8 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
     const detailBekleyenTaksit = acikTaksitler.reduce((t, r) => t + parseMoney(r.tutar), 0);
     const detailTaksitGecikmisVar = acikTaksitler.some(r => r.vadeTarihi && r.vadeTarihi < todayStr);
     const detailEnYakinTaksitVade = acikTaksitler.map(r => r.vadeTarihi).filter(Boolean).sort()[0] || "";
-    const detailEnYakinCekVade = detailView ? (payments.filter(pm => pm.customerId === detailView.id && pm.yontem === "Çek" && !pm.tahsilEdildi).map(pm => pm.vadeTarihi).filter(Boolean).sort()[0] || "") : "";
-    const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && p.yontem === "Çek" && !p.tahsilEdildi) : [];
+    const detailEnYakinCekVade = detailView ? (payments.filter(pm => pm.customerId === detailView.id && cekBekliyorMu(pm)).map(pm => pm.vadeTarihi).filter(Boolean).sort()[0] || "") : "";
+    const detailBekleyenCekler = detailView ? payments.filter(p => p.customerId === detailView.id && cekBekliyorMu(p)) : [];
     const detailCekVadesiGecmisVar = detailBekleyenCekler.some(isCekVadesiGecmis);
     const detailKalipSatisAdedi = detailView ? (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp").length : 0;
 

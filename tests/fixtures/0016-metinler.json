@@ -1,0 +1,225 @@
+{
+  "aciklama": "Spec 0016 (plan Ek A, G1): dönüşümden ÖNCE kapsamdaki boş durum ve mesaj metinleri, cümle cümle (kaynaktaki yazılışla). Dönüşümden sonra her biri aynı dosyada, boş durumlar bir <BosDurum ...> öğesinin, mesajlar bir <UyariSeridi ...> öğesinin içinde durmalı. 'asama' 2 olanlar müşteri detayı aşamasında denetlenir.",
+  "bosDurum": [
+    {
+      "dosya": "src/components/SimpleDealers.jsx",
+      "metin": "Bayi bulunamadı.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/SimpleDealers.jsx",
+      "metin": "Kayıt bulunamadı.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/MakinaStokTab.jsx",
+      "metin": "Stokta makina yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/MakinaStokTab.jsx",
+      "metin": "Aramanıza uyan makina yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/PartStokTab.jsx",
+      "metin": "Henüz yedek parça tanımı yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/PartStokTab.jsx",
+      "metin": "Ayarlar → Yedek Parça'dan ekleyin.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/PartStokTab.jsx",
+      "metin": "Arama sonucu bulunamadı.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/YedekParcaSatisTab.jsx",
+      "metin": "Aramanıza uyan satış yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/YedekParcaSatisTab.jsx",
+      "metin": "Tahsisi eksik satış yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/YedekParcaSatisTab.jsx",
+      "metin": "Henüz yedek parça satışı yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/YedekParcaSatisTab.jsx",
+      "metin": "\\\"Yeni Satış\\\" ile ekleyin.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/UretimFormu.jsx",
+      "metin": "Henüz üretim formu oluşturulmadı.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/UretimFormu.jsx",
+      "metin": "\"Yeni Form\" ile başlayın.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Finance.jsx",
+      "metin": "Veri yok",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Finance.jsx",
+      "metin": "Kayıt bulunamadı",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Documents.jsx",
+      "metin": "Henüz ${subTab === \"teklif\" ? \"teklif\" : \"proforma\"} yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Documents.jsx",
+      "metin": "Henüz fatura yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Documents.jsx",
+      "metin": "Arama sonucu bulunamadı.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Notes.jsx",
+      "metin": "Eşleşen not yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Notes.jsx",
+      "metin": "Henüz not yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Notes.jsx",
+      "metin": "'Yeni Not' ile başlayın.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Notes.jsx",
+      "metin": "Not seçilmedi",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Notes.jsx",
+      "metin": "Soldan bir not seçin veya \"Yeni Not\" oluşturun.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Seçili tarih aralığında analiz edilecek servis, yedek parça veya kalıp kaydı yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Parça hareketi yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Parça yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Servis kaydı yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Veri yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/Analiz.jsx",
+      "metin": "Bu aralıkta kalıp yok.",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/customers/CustomerDetailModal.jsx",
+      "metin": "Henüz görüşme kaydı yok.",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/detail/MachineTimeline.jsx",
+      "metin": "Bu makinaya ait kayıt bulunmuyor.",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/detail/CustomerFilesSection.jsx",
+      "metin": "Bu kayda ait dosya yok.",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/detail/CustomerFilesSection.jsx",
+      "metin": "Henüz dosya yok.",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/detail/CustomerFilesSection.jsx",
+      "metin": "PDF, resim veya Office belgesi ekleyebilirsiniz (dosya başına en fazla 20 MB).",
+      "asama": 2
+    }
+  ],
+  "mesaj": [
+    {
+      "dosya": "src/components/Customers.jsx",
+      "metin": "Firmaya göre gruplu görünüm:",
+      "aile": "bilgi",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/PartStokTab.jsx",
+      "metin": "parça tükendi",
+      "aile": "hata",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/PartStokTab.jsx",
+      "metin": "parçada stok azaldı (5 veya altı)",
+      "aile": "uyari",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/stock/UretimFormu.jsx",
+      "metin": "Bu dönem sonlandırılmış. Düzenleyebilir ama yeni kalıp ekleyemezsiniz.",
+      "aile": "uyari",
+      "asama": 1
+    },
+    {
+      "dosya": "src/components/customers/detail/PaymentSection.jsx",
+      "metin": "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var",
+      "aile": "hata",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/detail/CustomerFilesSection.jsx",
+      "metin": "Sunucu bağlantısı yok: dosya listesi görünür ama",
+      "aile": "uyari",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/CustomerDetailModal.jsx",
+      "metin": "Mevcut sahip",
+      "aile": "bilgi",
+      "asama": 2
+    },
+    {
+      "dosya": "src/components/customers/CustomerDetailModal.jsx",
+      "metin": "ödenmemiş bakiyesi var",
+      "aile": "hata",
+      "asama": 2
+    }
+  ]
+}

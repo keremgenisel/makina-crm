@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { trLower, aramaNormalize, withDeleted } from "../lib/utils";
 import { modelAdiTasi, modelKullanim } from "../lib/gider";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload } from "./ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload } from "./ui";
+import { HataMetni } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
@@ -155,11 +156,15 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       )}
 
       {modelModal && (
-        <Modal wide title={modelModal.mode === "add" ? "Yeni Model Ekle" : "Modeli Düzenle"} onClose={() => setModelModal(null)}>
+        <Modal wide title={modelModal.mode === "add" ? "Yeni Model Ekle" : "Modeli Düzenle"} onClose={() => setModelModal(null)}
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
+            <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Field label="Model Adı">
               <Input value={mForm.model || ""} onChange={e => setMForm(p => ({ ...p, model: e.target.value }))} placeholder="Örn: AK160_DSC" />
-              <Warn>{!(mForm.model || "").trim() ? "Model adı girilmedi" : ""}</Warn>
+              <HataMetni>{!(mForm.model || "").trim() ? "Model adı girilmedi" : ""}</HataMetni>
             </Field>
             <Field label="Ürün Adı (TR) — Teklifte görünür">
               <Input value={mForm.urunAdi || ""} onChange={e => setMForm(p => ({ ...p, urunAdi: e.target.value }))} placeholder="Örn: Soğutmalı Buz Makinesi" />
@@ -227,10 +232,6 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
             </Field>
           )}
 
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-            <Btn variant="ghost" onClick={() => setModelModal(null)}>İptal</Btn>
-            <Btn onClick={saveModel}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
         </Modal>
       )}
     </div>

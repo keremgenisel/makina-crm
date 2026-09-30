@@ -73,6 +73,8 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     batchId: form.batchId ?? null,
     // Evrak'tan üretildiyse kaynak belge ve alt kalem (spec 0006 R10/R15); elle girilen satışta boş.
     teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
+    // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa kayda dokunulmaz (düzenleme ...rec ile birleşir).
+    ...(form.hesapId !== undefined ? { hesapId: form.hesapId ?? null } : {}),
   } };
 }
 
@@ -142,3 +144,19 @@ export function yeniYedekParcaSatisCoklu(form, deps) {
   }
   return { ok: true, ids, n: satirlar.length };
 }
+
+// Spec 0030 R5/R6: bir satış kimliğinden kargo partisini çözer (etiket partinin tamamını kapsar). batchId varsa silinmemiş
+// bütün kardeşler, yoksa yalnız o satış; satış yoksa ya da silinmişse boş dizi (düğme çizilmez).
+export function satisPartisi(satislar, satisId) {
+  const liste = (satislar || []).filter(s => s && !s.deletedAt);
+  const s = liste.find(x => String(x.id) === String(satisId));
+  if (!s) return [];
+  return s.batchId != null ? liste.filter(x => x.batchId === s.batchId) : [s];
+}
+
+// Yedek parça satışının alıcı adı: müşteri / anlaşmasız dış firma / bayi (spec 0044 Q9: saf modülde, kasa motoru da kullanır).
+export const aliciAd = (s, dealers = [], customers = []) => {
+  if (s?.aliciTipi === "musteri") return (customers.find(c => c.id === s.musteriId)?.name) || "(müşteri yok)";
+  if (s?.disFirma) return s.disFirmaAd || "(dış firma)"; // anlaşmasız dış firma alıcı (kayıtlı bayi değil)
+  return (dealers.find(d => d.id === s?.dealerId)?.name) || "(bayi yok)";
+};

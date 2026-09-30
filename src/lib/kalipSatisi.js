@@ -34,6 +34,8 @@ export const kalipSatisOrtak = (f, customerId, bugun) => ({
   })(),
   // Evrak'tan üretildiyse kaynak belge (R15); alt kalem kimliği kalem başına (kalemler[].teklifKalemId).
   teklifId: f.teklifId ?? null,
+  // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa (kasa yetkisi yok, Evrak) kayda dokunulmaz.
+  ...(f.hesapId !== undefined ? { hesapId: f.hesapId ?? null } : {}),
 });
 
 // Yeni kalıp satışları: kayıtlar + müşterinin kalıp listesine extra olarak ekleme. kalemler:

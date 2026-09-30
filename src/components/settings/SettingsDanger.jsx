@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 export const SettingsDanger = ({ flash }) => {
   const [confirmUninstall, setConfirmUninstall] = useState(false);
@@ -52,7 +52,7 @@ export const SettingsDanger = ({ flash }) => {
 
   return (
     <>
-      <Section title="Tehlikeli Bölge" icon="trash">
+      <KartBolum title="Tehlikeli Bölge" icon="trash">
         <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 20, lineHeight: 1.6 }}>
           Buradaki işlemler <b>geri alınamaz</b> veya ciddi sonuçlar doğurabilir. Dikkatli ilerleyin.
         </div>
@@ -72,7 +72,7 @@ export const SettingsDanger = ({ flash }) => {
             </Btn>
           </div>
         </div>
-      </Section>
+      </KartBolum>
 
       {confirmUninstall && (
         <Modal title="Uygulamayı Kaldır" onClose={() => setConfirmUninstall(false)}>

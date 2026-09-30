@@ -1,0 +1,58 @@
+[
+  {
+    "ad": "gider-formu-duzenle-ek-once-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-once-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-bolunmez-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-bolunmez-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "piksel": 0
+  }
+]

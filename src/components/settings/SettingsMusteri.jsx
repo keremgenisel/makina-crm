@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { MUSTERI_SUTUN_VARSAYILAN } from "../../lib/constants";
 
 // Ayarlar > Uygulama > Müşteri Görünümü — Müşteriler listesindeki fiyat sütunlarını aç/kapa.
@@ -33,7 +33,7 @@ export const SettingsMusteri = ({ appSettings, setAppSettings, flash }) => {
   };
 
   return (
-    <Section title="Müşteri Liste Sütunları" icon="customers">
+    <KartBolum title="Müşteri Liste Sütunları" icon="customers">
       <div className="section-desc">
         Müşteriler listesinde her makina satırında gösterilecek fiyat sütunlarını seçin. Excel'den girilen
         fiyatları uygulamada aynı hizada görüp yanlış girişleri kolayca yakalamak için kullanılır. Yalnızca
@@ -59,6 +59,6 @@ export const SettingsMusteri = ({ appSettings, setAppSettings, flash }) => {
         <Btn onClick={save}>Kaydet</Btn>
         <span style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Varsayılan: tüm sütunlar kapalı.</span>
       </div>
-    </Section>
+    </KartBolum>
   );
 };

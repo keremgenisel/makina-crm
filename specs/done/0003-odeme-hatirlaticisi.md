@@ -53,6 +53,10 @@ aramak zorunda kalmıyor.
   yoktur:** 0001'de vade için tek alan vardır ve ödeme yöntemi Çek seçildiğinde yalnız etiketi "Çek vade
   tarihi" olur. Hatırlatma her iki durumda da aynı alanı kullanır; yöntem Çek ise ekranda çek vadesi olarak
   adlandırılır.
+  **Güncelleme (2026-09-27, spec 0021):** hatırlatıcı artık ödeme hedefi başına satır üretir. Taksitli kalemde
+  kalem düzeyinde vade aranmaz; vade en yakın ödenmemiş taksitin vadesi, tutar kalan taksitlerin toplamıdır. Kira
+  kaleminin vergi dairesi (stopaj) tarafı ayrı satırdır. Kart iki sayısı kalem saymaya devam eder (AC-14 eşitliği
+  korunur). Bkz. `specs/done/0021-gider-taksitlendirme.md`.
 - **R8.** Giderler ekranındaki kalem listesinde hatırlatma kapsamındaki kalemler vurgulanır. Yeni bir
   süzgeç kurulmaz: mevcut ödeme durumu süzgecine **"hatırlatma kapsamı"** seçeneği eklenir (bugün orada
   "vadesi geçti" seçeneği zaten var). Bu seçenek açıkken **dönem filtresi devre dışı kalır** ve liste tüm

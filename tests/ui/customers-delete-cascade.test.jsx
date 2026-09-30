@@ -125,3 +125,31 @@ describe("Müşteri silme — bağlı gider sayısı (spec 0001 R7, AC-28)", () 
     expect(screen.getByText(/Çöp Kutusu'na taşınacak/).textContent).not.toMatch(/gider/);
   });
 });
+
+// Spec 0040 triyajı (Q7): ciro edilmiş çeke bağlı tahsilatı olan müşteri çöpe atılamaz. Atılsaydı tahsilat gelirden düşer,
+// ama çekle kapatılan gider kalemleri cekId'li ödeme hareketleri yerinde kaldığı için kapalı kalırdı.
+describe("Müşteri silme — ciro edilmiş çek (spec 0040 triyajı)", () => {
+  const kurCekli = (durum) => {
+    const payments = [{ id: 20, customerId: M, tutar: 100, yontem: "Çek" }];
+    const cekler = [{ id: 21, paymentId: 20, no: "1", banka: "Z", durum, gecmis: [] }];
+    const setCustomers = vi.fn(), setPayments = vi.fn(), showToast = vi.fn();
+    render(<Customers customers={[musteri]} services={[]} partSales={[]} payments={payments} cekler={cekler}
+      setCustomers={setCustomers} setPayments={setPayments} showToast={showToast} />);
+    return { setCustomers, setPayments, showToast };
+  };
+  it("ciro edilmişse silme onayı açılmaz, hiçbir kayıt çöpe gitmez, neden yazılır", () => {
+    const { setCustomers, setPayments, showToast } = kurCekli("ciro");
+    silDugmesineBas();
+    expect(screen.queryByText(/Çöp Kutusu'na taşınacak/)).toBeNull();
+    expect(setCustomers).not.toHaveBeenCalled();
+    expect(setPayments).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/ciro edilmiş çekle yapılmış tahsilatı var.*ciroyu iptal edin/));
+  });
+  it("çek portföydeyse silme her zamanki gibi yapılır", () => {
+    const { setCustomers, setPayments } = kurCekli("portfoy");
+    silDugmesineBas();
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(setCustomers).toHaveBeenCalled();
+    expect(setPayments).toHaveBeenCalled();
+  });
+});

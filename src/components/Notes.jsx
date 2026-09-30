@@ -4,6 +4,7 @@ import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui"
 import { useLock } from "../hooks/useLock";
 import { withDeleted, tsToDate } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
+import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 // App.jsx sekme değiştirirken (Notlar'dan başka bir sekmeye geçişte) kaydedilmemiş taslağı
 // korumak için ref üzerinden guardNavigation çağırır — aynı dirty/pendingAction mekanizmasını paylaşır.
@@ -120,16 +121,11 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
             </button>
           )}
           {coklu && (filtreBenimIzin || filtreTumuIzin) && (
-            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["benim", "Benim Notlarım", filtreBenimIzin], ["tumu", "Tümü", filtreTumuIzin]].filter(([, , izin]) => izin).map(([k, label]) => {
-                const aktif = filtreBenim === (k === "benim");
-                return (
-                  <button key={k} onClick={() => { setFiltreBenim(k === "benim"); setPage(1); }}
-                    style={{ flex: 1, padding: "6px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${aktif ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: aktif ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)", color: aktif ? "#fff" : "var(--n500, #64748b)" }}>
-                    {label}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom: 10 }}>
+              {/* Spec 0014: sözlükteki segmentli seçici, düğme kipi, eşit genişlik (bugünkü gibi). İzin ve mod kuralı burada. */}
+              <Segment kip="dugme" ariaLabel="Not süzgeci"
+                options={[{ value: "benim", label: "Benim Notlarım", izin: filtreBenimIzin }, { value: "tumu", label: "Tümü", izin: filtreTumuIzin }].filter(o => o.izin)}
+                value={filtreBenim ? "benim" : "tumu"} onChange={v => { setFiltreBenim(v === "benim"); setPage(1); }} />
             </div>
           )}
           <div style={{ position: "relative", marginBottom: 10 }}>
@@ -137,12 +133,12 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Notlarda ara..."
               style={{ width: "100%", padding: "9px 12px 9px 32px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, fontSize: 13, boxSizing: "border-box", outline: "none", background: "var(--n100, #f8fafc)" }} />
           </div>
-          <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "auto" }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-                {q ? "Eşleşen not yok." : "Henüz not yok. 'Yeni Not' ile başlayın."}
-              </div>
-            ) : paged.map(n => {
+          {filtered.length === 0 ? (
+            q ? <BosDurum testId="bos-notlar" baslik="Eşleşen not yok." />
+              : <BosDurum testId="bos-notlar" baslik="Henüz not yok." metin="'Yeni Not' ile başlayın." />
+          ) : (
+          <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
+            {paged.map(n => {
               const active = n.id === selectedId;
               return (
                 <div key={n.id} onClick={() => requestSelectNote(n)}
@@ -165,7 +161,8 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
                 </div>
               );
             })}
-          </div>
+          </KartBolum>
+          )}
           <Pagination total={filtered.length} page={safePage} setPage={setPage} perPage={PER_PAGE} />
         </div>
 
@@ -195,11 +192,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
               {dirty && <div style={{ fontSize: 11, color: "var(--amb600, #d97706)", marginTop: 6, fontWeight: 600 }}>⚠ Kaydedilmemiş değişiklikler var</div>}
             </div>
           ) : (
-            <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: "60px 20px", textAlign: "center", color: "var(--n400, #94a3b8)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: "var(--n600, #475569)" }}>Not seçilmedi</div>
-              <div style={{ fontSize: 13 }}>Soldan bir not seçin veya "Yeni Not" oluşturun.</div>
-            </div>
+            <BosDurum testId="bos-not-secimi" baslik="Not seçilmedi" metin={'Soldan bir not seçin veya "Yeni Not" oluşturun.'} />
           )}
 
         </div>
@@ -207,14 +200,14 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
 
       {/* Kaydedilmemiş değişiklik varken not değiştirme/yeni not onayı */}
       {pendingAction && (
-        <Modal title="Kaydedilmemiş Değişiklikler" onClose={() => setPendingAction(null)}>
-          <div style={{ fontSize: 14, color: "var(--n600, #475569)", marginBottom: 20, lineHeight: 1.6 }}>
-            Bu nottaki değişiklikleri kaydetmediniz. Devam ederseniz kaydedilmemiş değişiklikler kaybolur.
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        <Modal title="Kaydedilmemiş Değişiklikler" onClose={() => setPendingAction(null)}
+          footer={<div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <Btn variant="ghost" onClick={() => setPendingAction(null)}>Vazgeç</Btn>
             <Btn variant="danger" onClick={() => { const action = pendingAction; setPendingAction(null); action(); }}>Kaydetmeden Devam Et</Btn>
             <Btn onClick={() => { const action = pendingAction; setPendingAction(null); kaydet(); action(); }}><Icon name="check" size={14} /> Kaydet ve Devam Et</Btn>
+          </div>}>
+          <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.6 }}>
+            Bu nottaki değişiklikleri kaydetmediniz. Devam ederseniz kaydedilmemiş değişiklikler kaybolur.
           </div>
         </Modal>
       )}

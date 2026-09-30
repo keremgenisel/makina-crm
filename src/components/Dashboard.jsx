@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
+import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
@@ -7,13 +7,16 @@ import { StatCard, Modal, Btn, Icon } from "./ui";
 import { useBugun } from "../hooks/useBugun";
 import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
-import { odendiIsaretle } from "../lib/gider";
+import { turHaritasi, DAVRANIS } from "../lib/gider";
+import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { logAction } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onEvrakKaydet = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
   // Ödeme hatırlatıcısı (spec 0003 R10): yalnız gider yetkisiyle; yetkisizde App boş dizi verir.
-  giderYetki = false, giderler = [], setGiderler = null, giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null }) => {
+  giderYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null,
+  // Spec 0024 R17: hatırlatıcıdaki "Ödendi" ödeme penceresini açar; ödeme hareket kaydıdır.
+  hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
@@ -23,11 +26,23 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const hatirlatma = useMemo(() => (giderYetki ? odemeHatirlatmalari(giderler, {
     turler: giderTurleri, tedarikciler, yururlukAy: giderAyarlari?.yururlukAy || null, esikGun: hatirlatmaEsigi(giderAyarlari),
   }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
-  // R6, plan H8: Giderler ile aynı işlem geçmişi satırı; pencerede yalnız "ödendi" yönü olduğu için durum
-  // çevrilmez, ayarlanır (triyaj bulgu 3).
-  const hatirlatmaOdendi = (k) => {
-    setGiderler?.(p => p.map(x => (x.id === k.id ? odendiIsaretle(x, bugunYerel) : x)));
-    logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
+  // R6, plan H8: Giderler ile aynı işlem geçmişi satırı. Spec 0024 R17: "Ödendi" tutarı kalanla, hesabı son
+  // kullanılanla dolu ödeme penceresini açar (taksitli hedefte en yakın açık taksit).
+  const giderTurMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
+  const [hatOdeme, setHatOdeme] = useState(null); // null | {kalemId, hedef}
+  const hatOdemeKalemi = hatOdeme ? giderler.find(k => k.id === hatOdeme.kalemId) || null : null;
+  const hatirlatmaOdendi = (k, hedef) => setHatOdeme({ kalemId: k.id, hedef });
+  const hatOdemeKaydet = (kayitlar) => { // spec 0041: çok satırlı ödeme dizi olarak gelir
+    const k = hatOdemeKalemi;
+    const yeni = kayitlar.map(kayit => ({ ...kayit, id: uid() }));
+    setHesapHareketleri?.(p => [...p, ...yeni]);
+    for (const kayit of yeni) logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null } });
+    setHatOdeme(null);
+  };
+  const hatOdemeSil = (h) => {
+    const k = hatOdemeKalemi;
+    setHesapHareketleri?.(p => p.filter(x => x.id !== h.id));
+    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih } });
   };
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
@@ -186,8 +201,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     const items = [];
     const kdvli = (tutar, faturaTipi, tarih) => parseMoney(tutar) + calcKDV(faturaTipi, tutar, tarih, kdvRates);
     // Tahsil edilmemiş çekler — makina ödemesi + Extra Kalıp + Yedek Parça (vade tarihi olmasa da göster).
+    // Spec 0040 R17: makina tahsilatı çekleri tek kaynaktan (çek kaydına bağlıysa çekin durumu).
     payments.forEach(p => {
-      if (p.yontem === "Çek" && !p.tahsilEdildi && !p.deletedAt)
+      if (cekBekliyorMu(p) && !p.deletedAt)
         items.push({ key: `cek-${p.id}`, tip: "Çek", kaynak: "payment", recId: p.id, customerId: p.customerId, vade: p.vadeTarihi || "", tutar: parseMoney(p.tutar), currency: p.currency });
     });
     partSales.forEach(ps => {
@@ -253,7 +269,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   // Çek/Kredi Kartı → payment (odemeId), Taksit → ödeme planı satırı (taksitId).
   const musteriBorcKalemleri = (c) => {
     const kalemler = [];
-    payments.filter(p => p.customerId === c.id && !p.deletedAt && p.yontem === "Çek" && !p.tahsilEdildi)
+    payments.filter(p => p.customerId === c.id && !p.deletedAt && cekBekliyorMu(p))
       .forEach(p => kalemler.push({ tip: "Çek", tutar: parseMoney(p.tutar), currency: p.currency || c.currency, odak: { odemeId: p.id }, gecikti: isCekVadesiGecmis(p) }));
     (c.odemePlani || []).filter(r => !r.odemeId && r.vadeTarihi)
       .forEach(r => kalemler.push({ tip: "Taksit", tutar: parseMoney(r.tutar), currency: c.currency, odak: { taksitId: r.id } }));
@@ -564,8 +580,14 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
       {/* Borçlu Firmalar */}
       {showHatirlatma && hatirlatma && (
-        <OdemeHatirlatmaPenceresi sonuc={hatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setGiderler} onOdendi={hatirlatmaOdendi}
+        <OdemeHatirlatmaPenceresi sonuc={hatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setHesapHareketleri} onOdendi={hatirlatmaOdendi}
           onGiderlereGit={onGoGiderHatirlatma ? () => { setShowHatirlatma(false); onGoGiderHatirlatma(); } : null} onClose={() => setShowHatirlatma(false)} />
+      )}
+      {hatOdemeKalemi && (
+        <OdemeKayitPenceresi kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
+          turAd={giderTurMap.get(String(hatOdemeKalemi.turId))?.ad || "Gider"} turMap={giderTurMap} hedef={{ hedef: hatOdeme.hedef }}
+          hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}
+          bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null} />
       )}
       {showDebtors && (
         <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>

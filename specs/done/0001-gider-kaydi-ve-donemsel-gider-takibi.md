@@ -66,6 +66,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   değildir (C17'nin dar istisnası). Bir çalışan listeden çıkarılırken ona bağlı açık tekrarlayan tanım varsa
   kullanıcıya bildirilir ve tanım **silinmez, bitiş ayı son üretilen ay yapılarak kapatılır**; böylece
   üretim izi korunur ve çalışan geri eklenirse geçmiş aylar ikinci kez üretilmez.
+  **Güncelleme (2026-09-28, spec 0023):** personel kaleminin tutarı artık maaş (resmi + elden) artı o ayın ek
+  ödemeleridir (fazla mesai, prim, ikramiye; her biri resmi + elden). Tek toplam korunur: ödenecek tutar, borç, hatırlatıcı
+  ve makina maliyeti aynı rakamı okur. Bkz. `specs/done/0023-calisan-mesaisi-ve-primi.md`.
 - **R6.** Kira giderinde stopaj takip edilir: brüt kira, stopaj oranı ve net ödenen tutar birlikte tutulur.
   Kullanıcı brüt veya net tutarlardan birini girer, sistem diğerini hesaplar; **hangisinin girildiği kayıtta
   saklanır ve kullanıcıya gösterilir.** Stopaj oranı kalem bazında girilir, varsayılanı tek bir firma ayarından
@@ -157,6 +160,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   dağıtılmayan kısım tanım gereği ortak giderdir. Bu üç alan yalnız **normal davranışlı** kalemlerde
   gösterilir; kira ve personel kalemleri her zaman ortak giderdir. Dağıtım kuralı 0002'nin konusudur; 0001
   yalnız model, birim maliyet ve adet bilgisini toplar.
+  **Güncelleme (2026-09-27, spec 0020):** personel davranışlı kalem de bu üç alanı taşır ve normal kalemle aynı
+  kurala uyar (personelde model dağılımının tabanı resmi + elden); yalnız kira her zaman ortak giderdir. Tekrarlayan
+  personel tanımında atama kapalı kalır (0020 X5). Bkz. `specs/done/0020-personel-giderinin-atanabilmesi.md`.
   **Toplam kontrolü:** satırların toplamı kalemin KDV hariç tutarına eşit değilse kullanıcıya fark gösterilir.
   **Eksik kalması serbesttir** ve uyarıdır, engel değildir: bir faturanın bir kısmı modellere dağıtılıp kalanı
   boş bırakılabilir, dağıtılmayan kısım ortak gider sayılır. **Aşım ise engellenir**: satır toplamı kalemin
@@ -276,6 +282,13 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
 - **X10.** Kısmi ödeme — *neden:* ödeme durumu v1'de ikili (ödendi / ödenmedi). Kısmi ödeme cari hesap ister,
   X4 ile aynı sebeple dışarıda. **Sonucu bilerek kabul ediliyor:** yarısı ödenmiş bir fatura açık borçta
   tam tutarıyla görünür (R14).
+  **Güncelleme (2026-09-27, spec 0021):** taksit planlı kalem bu kuralın bilinçli istisnasıdır: taksitler tek tek
+  ödendi işaretlenir, borç ve hatırlatma kalan taksitleri sayar, kalemin durumu taksitlerden türetilir. Kira
+  kaleminde vergi dairesine ödenen stopaj ayrı ödeme hedefidir. Serbest kısmi ödeme kapsam dışı kalır. Bkz.
+  `specs/done/0021-gider-taksitlendirme.md`.
+  **Güncelleme (2026-09-28, spec 0024 A):** kısmi ödeme artık kapsamda. Ödeme kalemden ayrı bir hareket kaydıdır
+  (`hesapHareketleri`); kalemin ve taksidin durumu hareketlerden okuma anında türer, borç ve hatırlatıcı kalanı sayar.
+  Bkz. `specs/done/0024-kasa-ve-odeme-ayrimi.md`.
 - **X11.** Negatif gider kalemi, gider iadesi ve alacak notu — *neden:* v1'de düzeltme, kalemin kendisi
   düzenlenerek yapılır; iade akışı ayrı bir muhasebe kavramıdır.
 - **X12.** Ay ortasında işe giriş veya çıkışta kıst personel maliyeti — *neden:* kullanıcı o ayın kalemini elle

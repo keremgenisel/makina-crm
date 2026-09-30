@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { uid, today } from "../lib/utils";
-import { tutarCoz, tanimKapat, acikTanimMi, ayOf } from "../lib/gider";
+import { tutarCoz, tanimKapat, acikTanimMi, ayOf, tl } from "../lib/gider";
+import { avansBorcuK } from "../lib/kasa";
 import { logAction } from "../lib/audit";
-import { Icon, Field, Input, Warn, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "./ui";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
-import { TutarInput, HataMetni, Ipucu, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { TutarInput, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { HataMetni, Ipucu } from "./tasarim";
 
 // Firma çalışanları (ad soyad). Servis Panosu kartlarındaki ve servis formundaki "teknisyen"
 // seçicisini besler. Basit {id, ad} listesi; KalipManager/PartManager ile aynı desen (soft-delete).
@@ -28,6 +30,8 @@ export const CalisanManager = ({
   calisanlar = [], setCalisanlar, setServices = null, showToast = () => {},
   giderYetki = false, maliyetDuzenleyebilir = false, appSettings = {}, setAppSettings = null,
   giderTanimlari = [], setGiderTanimlari = null, serverPermissions,
+  // Spec 0024 B (C8, AC-34): açık avans borcu olan çalışanın silme onayında güçlü uyarı (fabrikanın alacağı).
+  hesapHareketleri = [], giderler = [],
 }) => {
   const varsayilanResmi = appSettings?.giderAyarlari?.varsayilanResmiMaliyet;
   const maliyetAcik = giderYetki && maliyetDuzenleyebilir;
@@ -92,7 +96,7 @@ export const CalisanManager = ({
   return (
     <div>
       {maliyetAcik && (
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", background: "#faf7ff", border: "1px solid #ede9fe", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", background: "var(--purBg3, #faf7ff)", border: "1px solid var(--purBg2, #ede9fe)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
           <div style={{ width: 240 }}>
             <Field label="Varsayılan resmi aylık işveren maliyeti">
               <TutarInput ariaLabel="Varsayılan resmi aylık işveren maliyeti" value={varsayilanMetin} onChange={setVarsayilanMetin} />
@@ -165,7 +169,9 @@ export const CalisanManager = ({
         <ConfirmDialog
           // Gider yetkisi olmayana personel tanımının varlığı sızdırılmaz (triyaj bulgu 6): mesaj ve düğme
           // genel kalır, tanım yine arka planda kapatılır (silOnayla).
-          message={`"${confirmDel.ad}" çalışanı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz. (Geçmiş servislerdeki teknisyen adı${giderYetki ? " ve geçmiş gider kalemleri" : ""} korunur.)${giderYetki && acikTanimlar.length
+          message={`${giderYetki && avansBorcuK(confirmDel.id, hesapHareketleri || [], giderler) > 0
+            ? `DİKKAT: Bu çalışanın ${tl2(tl(avansBorcuK(confirmDel.id, hesapHareketleri || [], giderler)))} açık avans borcu var (fabrikanın alacağı). Silme borcu kapatmaz; avans hareketleri Kasa › Çalışan avansları'nda "silinmiş" olarak durur. `
+            : ""}"${confirmDel.ad}" çalışanı Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz. (Geçmiş servislerdeki teknisyen adı${giderYetki ? " ve geçmiş gider kalemleri" : ""} korunur.)${giderYetki && acikTanimlar.length
             ? ` Bu çalışanın açık bir tekrarlayan personel tanımı var: tanım silinmez, bitiş ayı son üretilen ay yapılarak kapatılır ve sonraki aylar için kalem üretilmez.`
             : ""}`}
           confirmLabel={giderYetki && acikTanimlar.length ? "Sil ve Tanımı Kapat" : "Evet, Sil"}
@@ -176,10 +182,13 @@ export const CalisanManager = ({
 
       {editId !== null && (
         <Modal title="Çalışanı Düzenle" onClose={cancelEdit}
-          footer={<><Btn variant="ghost" onClick={cancelEdit}>İptal</Btn><Btn onClick={submitEdit}><Icon name="check" size={14} /> Kaydet</Btn></>}>
+          footer={<div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
+            <Btn onClick={submitEdit}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           <Field label="Ad Soyad">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Ad Soyad" />
-            <Warn>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</Warn>
+            <HataMetni>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</HataMetni>
           </Field>
           {maliyetAcik && <>
             <Field label="Resmi işveren maliyeti (SGK dahil)">

@@ -5,6 +5,7 @@ import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
 import { UretimFormu }   from "./stock/UretimFormu";
 import { YedekParcaSatisTab } from "./stock/YedekParcaSatisTab";
+import { Segment } from "./tasarim";
 
 export const Stock = ({
   factory = null,
@@ -16,7 +17,8 @@ export const Stock = ({
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
   customers = [], setCustomers = null,
-  copMusteriler = [],
+  copMusteriler = [], uretimPartileri = [], giderYetki = false,
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {},
   partSales = [], setPartSales = null,
@@ -48,22 +50,17 @@ export const Stock = ({
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Stok</h2>
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
-        {TABS.map(([id, label]) => (
-          <button key={id} onClick={() => setSubTab(id)} style={{
-            padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
-            borderBottom: subTab === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
-            color: subTab === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
-            background: "transparent", marginBottom: -2,
-          }}>{label}</button>
-        ))}
+      <div style={{ marginBottom: 20 }}>
+        {/* Spec 0014: gezinme alt sekmeleri, sözlükteki segmentli seçicinin sekme kipi (tablist/tab/aria-selected). */}
+        <Segment kip="sekme" genislik="icerik" ariaLabel="Stok bölümleri" value={subTab} onChange={setSubTab}
+          options={TABS.map(([id, label]) => ({ value: id, label }))} />
       </div>
 
       {subTab === "makina" && (
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} giderler={giderler} copMusteriler={copMusteriler} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} giderler={giderler} copMusteriler={copMusteriler} uretimPartileri={uretimPartileri} giderYetki={giderYetki} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
@@ -79,7 +76,8 @@ export const Stock = ({
           kdvRates={kdvRates} showToast={showToast} canDoStock={canDoStock} serverPermissions={serverPermissions}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
-          odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed} />
+          odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed}
+          kasaHesaplari={kasaHesaplari} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} />
       )}
       {subTab === "uretim" && (
         <UretimFormu

@@ -19,13 +19,18 @@ import {
   kalipEtiketYazdir,
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
+import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
+import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi, Ipucu } from "../tasarim";
+import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
+import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
+import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
-import { yeniYedekParcaSatisCoklu, yedekParcaRec } from "../../lib/yedekParcaSatis";
+import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi } from "../../lib/yedekParcaSatis";
 import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
@@ -70,6 +75,11 @@ export const CustomerDetailModal = ({
   onGoYedekParca = null,
   // Spec 0002 (R15, R26): maliyet ve kâr kutusu yalnız gider yetkisiyle; hesap App'te bir kez yapılır.
   giderYetki = false, makinaMaliyet = null, rates = null,
+  // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
+  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
+  // Spec 0040 R1, R2, C10, C12: çek kaydı tahsilatla birlikte doğar (perde inikken de); çeke bağlı tahsilatın "tahsil
+  // edildi" durumu çek portföyünden yönetilir.
+  cekler = [], setCekler = null,
 }) => {
   const [svModal, setSvModal] = useState(null);
   const [svForm, setSvForm] = useState({});
@@ -81,6 +91,8 @@ export const CustomerDetailModal = ({
   const pkDraftKey = pkForm ? (pkForm.id ? `kalipsatis:${pkForm.id}` : `kalipsatis:${detailView?.id}:new`) : null;
   const pkDraft = useFormDraft(pkDraftKey, pkForm, setPkForm);
   const [paymentForm, setPaymentForm] = useState(null);
+  const [paymentHata, setPaymentHata] = useState("");
+  const odemeCeki = (paymentId) => (cekler || []).find(c => String(c.paymentId) === String(paymentId)) || null;
   const [newOwnerForm, setNewOwnerForm] = useState(null);
   const [editPrevOwnerForm, setEditPrevOwnerForm] = useState(null);
   const [confirmUndoOwnerId, setConfirmUndoOwnerId] = useState(null);
@@ -216,12 +228,34 @@ export const CustomerDetailModal = ({
   };
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
+  // Spec 0044 R2 (Q6, Q8): "Ödendi" işaretlenirken, kasa yetkisi varsa ve bize ait tutar varsa hesap penceresi açılır.
+  // uygula(hesapId): undefined = hesap alanına dokunma (pencere açılmadı), null = hesapsız, sayı = hesap.
+  // Geri alma pencere açmaz ve hesabı temizlemez (R9).
+  const [tahsilatPencere, setTahsilatPencere] = useState(null);
+  const tahsilatSor = (kaynak, kayitlar, uygula) => {
+    if (!kasaYetki) return uygula(undefined);
+    const durumlar = kayitlar.map(r => tahsilatHesapDurumu(kaynak, r, { factoryName, kdvRates }));
+    const sorulanlar = durumlar.filter(d => d.sor);
+    if (!sorulanlar.length) {
+      // AC-27: para birimi uyuşmayan eski kayıt hesapsız işaretlenir, nedeni söylenir.
+      const neden = durumlar.find(d => d.neden && !paraBirimiUyumluMu(kaynak, kayitlar[durumlar.indexOf(d)]))?.neden;
+      if (neden) showToast(neden, "info");
+      return uygula(undefined);
+    }
+    const pb = sorulanlar[0].currency;
+    const kendi = uyumluHesapId(kasaHesaplari, kayitlar.find(r => r.hesapId != null)?.hesapId, pb); // uyumsuz hesap ön seçilmez
+    setTahsilatPencere({ currency: pb, tutar: sorulanlar.reduce((a, d) => a + d.tutar, 0), varsayilan: kendi ?? tahsilatHesapVarsayilan?.(pb) ?? null, uygula });
+  };
+  const hesapAlani = (h) => (h !== undefined ? { hesapId: h } : {});
   const toggleServisOdendi = (sv) => {
     if (!setServices) return;
     const yeniDurum = !sv.odendi;
     const cekKK = sv.yontem === "Çek" || sv.yontem === "Kredi Kartı"; // çek/KK'da tahsilat tarihi çek-tahsil/hesabaGecis'ten gelir
-    setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : s));
-    logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
+    const uygula = (h) => {
+      setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+      logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
+    };
+    if (yeniDurum) tahsilatSor(SATIS_KAYNAK.SERVIS, [sv], uygula); else uygula(undefined);
   };
   const deleteService = (id) => {
     if (!setServices) return;
@@ -254,7 +288,7 @@ export const CustomerDetailModal = ({
       setYpForm({
         batchEdit: true, batchId: rec.batchId,
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
-        currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi,
+        currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi, hesapId: rec.hesapId ?? null,
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
         taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "",
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
@@ -334,8 +368,11 @@ export const CustomerDetailModal = ({
     const yeni = !rec.odendi;
     const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
     const idler = new Set(ypGrupIdleri(rec));
-    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null } : s));
-    [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+    const uygula = (h) => {
+      setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+      [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+    };
+    if (yeni) tahsilatSor(SATIS_KAYNAK.YEDEK, (yedekParcaSatislar || []).filter(s => idler.has(s.id)), uygula); else uygula(undefined);
   };
   // Yedek parça çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır (satisTahsilEdildi).
   const toggleYedekParcaCekTahsil = (rec) => {
@@ -357,7 +394,7 @@ export const CustomerDetailModal = ({
     setPkForm({
       id: ps.id, customerId: ps.customerId,
       kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat }],
-      tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi,
+      tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi, hesapId: ps.hesapId ?? null,
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
       kartTarihi: ps.kartKomisyonu?.bazTarih || "",
@@ -411,8 +448,11 @@ export const CustomerDetailModal = ({
     if (!setPartSales) return;
     const yeniDurum = !ps.odendi;
     const cekKK = ps.yontem === "Çek" || ps.yontem === "Kredi Kartı";
-    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null } : x));
-    logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+    const uygula = (h) => {
+      setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : x));
+      logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
+    };
+    if (yeniDurum) tahsilatSor(SATIS_KAYNAK.KALIP, [ps], uygula); else uygula(undefined);
   };
   // Extra Kalıp çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır.
   const togglePartSaleCekTahsil = (ps) => {
@@ -531,6 +571,7 @@ export const CustomerDetailModal = ({
   useEffect(() => { setDosyaFiltre(null); }, [detailView?.id]);
 
   const openAddPayment = () => {
+    setPaymentHata("");
     setPaymentForm({ customerId: detailView.id, tarih: today(), satirlar: [], currency: detailView.currency || "TRY", not: "" });
   };
   // Taksit tahsilatı: ödeme formu taksit tutarıyla önceden doldurulur; kaydedilince
@@ -546,8 +587,10 @@ export const CustomerDetailModal = ({
   const openEditPayment = (p) => {
     setPaymentForm({
       id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "",
-      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi,
+      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi, hesapId: p.hesapId ?? "",
+      cek: (() => { const c = odemeCeki(p.id); return c ? { no: c.no, banka: c.banka, kesideci: c.kesideci, tur: c.tur } : { no: "", banka: "", kesideci: "", tur: "hamiline" }; })(),
     });
+    setPaymentHata("");
   };
   const syncKalanBorc = (customerId, newPayments) => {
     setCustomers(p => p.map(c => c.id === customerId ? { ...c, kalanBorc: calcKalanBorc(c, newPayments, kdvRates) } : c));
@@ -555,23 +598,49 @@ export const CustomerDetailModal = ({
   const savePayment = () => {
     if (!setPayments || !paymentForm) return;
     const customerId = Number(paymentForm.customerId);
-    let newPayments;
+    // `payments` yalnız canlı (çöpte olmayan) tahsilatlardır: kalan borç onunla hesaplanır, ama state'e yazım tam dizi
+    // üzerinde yapılır (triyaj: canlı diziyi geri yazmak bütün müşterilerin çöpteki tahsilatlarını kalıcı siliyordu).
+    let newPayments, guncelle;
+    // Spec 0040 R2: çek kayıtları (yeni ve sonradan bağlanan) ile güncellenen çek alanları.
+    const yeniCekler = [];
+    let cekGuncelle = null;
     if (paymentForm.id) {
       if (parseMoney(paymentForm.tutar) <= 0) return;
       const yontem = paymentForm.yontem || "Nakit";
+      const bagli = odemeCeki(paymentForm.id);
+      if (yontem === "Çek" && bagli) {
+        const d = cekDogrula(paymentForm.cek || {}, { cekler, tutar: paymentForm.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+        cekGuncelle = { ...bagli, ...d.kayit };
+      } else if (yontem === "Çek" && (String(paymentForm.cek?.no || "").trim() || String(paymentForm.cek?.banka || "").trim())) {
+        // R2: mevcut tahsilata sonradan çek bağlama.
+        const d = cekDogrula(paymentForm.cek || {}, { cekler, tutar: paymentForm.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+        yeniCekler.push(yeniCek(d.kayit, paymentForm.id, paymentForm.tarih || today(), uid()));
+      }
       const fields = {
         customerId, tarih: paymentForm.tarih || today(), tutar: parseMoney(paymentForm.tutar),
         currency: paymentForm.currency || "TRY", not: paymentForm.not || "", yontem,
         vadeTarihi: yontem === "Çek" ? (paymentForm.vadeTarihi || "") : undefined,
-        tahsilEdildi: yontem === "Çek" ? !!paymentForm.tahsilEdildi : undefined,
+        // C10: çeke bağlı tahsilatta durum çek kaydındadır; bayrağa formdan dokunulmaz.
+        tahsilEdildi: yontem === "Çek" ? (bagli ? !!payments.find(x => x.id === paymentForm.id)?.tahsilEdildi : !!paymentForm.tahsilEdildi) : undefined,
+        // Hesap alanı yalnız kasa yetkisiyle çizilir; yetkisiz düzenleme mevcut hesabı korur.
+        ...(kasaYetki ? { hesapId: paymentForm.hesapId === "" || paymentForm.hesapId == null ? null : paymentForm.hesapId } : {}),
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
+      guncelle = (p) => p.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
       logAction({ serverPermissions, action: "duzenlendi", entity: "odeme", entityId: paymentForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(payments.find(x => x.id === paymentForm.id)) } });
       showToast("Ödeme güncellendi.");
     } else {
       const satirlar = (paymentForm.satirlar || []).filter(r => parseMoney(r.tutar) > 0);
       if (satirlar.length === 0) return;
-      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
+      // Spec 0040 R1, R14, AC-32: her çek satırı numara ve banka ister.
+      for (const r of satirlar) if (r.yontem === "Çek") {
+        const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
+        if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
+      }
+      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
+        ...(kasaYetki && paymentForm.hesapId !== "" && paymentForm.hesapId != null ? { hesapId: paymentForm.hesapId } : {}) };
       bumpId(customers, services, partSales, payments);
       // Kredi kartı ödemesi: girilen tutar KDV hariç mal → karta KDV + komisyon eklenir, borçtan KDV dahil düşer.
       const odemeKdvOran = calcKDV(detailView?.faturali, 100, ortak.tarih, kdvRates); // faturalı yurtiçi → oran, değilse 0
@@ -583,7 +652,9 @@ export const CustomerDetailModal = ({
         }
         return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
       });
+      satirlar.forEach((r, i) => { if (r.yontem === "Çek") yeniCekler.push(yeniCek(cekDogrula(r.cek || {}, { cekler }).kayit, yeniKayitlar[i].id, ortak.tarih, uid())); });
       newPayments = [...yeniKayitlar, ...payments];
+      guncelle = (p) => [...yeniKayitlar, ...p];
       // Taksit tahsilatıysa taksiti oluşan ödeme kaydına bağla (plan satırı kapanır)
       if (paymentForm._taksitId != null && yeniKayitlar[0]) {
         setCustomers(p => p.map(c => c.id === customerId
@@ -593,13 +664,20 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "olusturuldu", entity: "odeme", entityId: yeniKayitlar[0]?.id, entityName: detailView?.name, detail: { adet: yeniKayitlar.length } });
       showToast(yeniKayitlar.length > 1 ? `${yeniKayitlar.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
     }
-    setPayments(newPayments);
+    setPayments(guncelle);
     syncKalanBorc(customerId, newPayments);
+    if (setCekler && (yeniCekler.length || cekGuncelle)) {
+      setCekler(p => [...p.map(c => (cekGuncelle && c.id === cekGuncelle.id ? cekGuncelle : c)), ...yeniCekler]);
+      if (yeniCekler.length) logAction({ serverPermissions, action: "olusturuldu", entity: "cek", entityId: yeniCekler[0].id, entityName: detailView?.name, detail: { adet: yeniCekler.length } });
+    }
+    setPaymentHata("");
     setPaymentForm(null);
   };
   const deletePayment = (id) => {
     if (!setPayments) return;
     const payment = payments.find(x => x.id === id);
+    // Spec 0040 Q7: ciro edilmiş çekin tahsilatı silinemez; önce ciro iptal edilir.
+    if (payment && !tahsilatSilinebilirMi(payment, cekler)) { showToast("Bu tahsilatın çeki ciro edilmiş. Önce Kasa › Çek Portföyü'nden ciroyu iptal edin."); return; }
     const newPayments = payments.filter(x => x.id !== id);
     setPayments(p => withDeleted(p, x => x.id === id));
     if (payment) syncKalanBorc(payment.customerId, newPayments);
@@ -612,8 +690,11 @@ export const CustomerDetailModal = ({
   };
   const toggleCekTahsil = (payment) => {
     if (!setPayments) return;
-    const newPayments = payments.map(x => x.id === payment.id ? { ...x, tahsilEdildi: !x.tahsilEdildi } : x);
-    setPayments(newPayments);
+    // Spec 0040 C10, AC-25: çeke bağlı tahsilatta durum çek portföyünden yönetilir.
+    if (odemeCeki(payment.id)) { showToast("Bu çekin durumu Kasa › Çek Portföyü'nden değiştirilir."); return; }
+    const cevir = (x) => x.id === payment.id ? { ...x, tahsilEdildi: !x.tahsilEdildi } : x;
+    const newPayments = payments.map(cevir);
+    setPayments(p => p.map(cevir)); // tam dizi üzerinde: çöpteki tahsilatlar korunur
     syncKalanBorc(payment.customerId, newPayments);
   };
 
@@ -805,9 +886,7 @@ export const CustomerDetailModal = ({
         <div style={{ display: "grid", gridTemplateColumns: hasMultiple ? "220px 1fr" : "1fr", gap: 20, alignItems: "start" }}>
           {hasMultiple && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 10 }}>
-                BU FİRMANIN MAKİNALARI ({firmMachines.length})
-              </div>
+              <BolumBasligi bosluk={10}>Bu Firmanın Makinaları ({firmMachines.length})</BolumBasligi>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {firmMachines.map(m => {
                   const ok = m.warrantyEnd && m.warrantyEnd >= today();
@@ -853,23 +932,17 @@ export const CustomerDetailModal = ({
 
             {/* Görüşme kayıtları: telefon/ziyaret notları; takip tarihi verilenler Dashboard "Aranacaklar"a düşer */}
             {isCustomer && setGorusmeler && (
-              <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gorusmelerAcik || gorusmeForm ? 8 : 0 }}>
-                  <div onClick={() => setGorusmelerAcik(a => !a)}
-                    style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}>
-                    <span style={{ fontSize: 10 }}>{gorusmelerAcik || gorusmeForm ? "▾" : "▸"}</span>
-                    Görüşmeler ({detailGorusmeler.length})
-                    {detailGorusmeler.some(g => g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr) && (
-                      <span style={{ fontSize: 10, fontWeight: 800, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)", borderRadius: 6, padding: "2px 8px", textTransform: "none", letterSpacing: 0 }}>takip bekliyor</span>
-                    )}
-                  </div>
-                  {canDo("cust_gorusme_add") && !gorusmeForm && (
-                    <SoftBtn onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
-                      <Icon name="plus" size={12} /> Yeni Görüşme
-                    </SoftBtn>
-                  )}
-                </div>
-                {(gorusmelerAcik || gorusmeForm) && <>
+              <KartBolum varyant="kart" baslikStili="baslik" collapsible style={{ marginBottom: 16 }}
+                acik={gorusmelerAcik || !!gorusmeForm} onAcikDegis={() => setGorusmelerAcik(a => !a)}
+                title={<>Görüşmeler ({detailGorusmeler.length})
+                  {detailGorusmeler.some(g => g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr) && (
+                    <> <span style={{ fontSize: 10, fontWeight: 800, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)", borderRadius: 6, padding: "2px 8px" }}>takip bekliyor</span></>
+                  )}</>}
+                eylemler={canDo("cust_gorusme_add") && !gorusmeForm ? (
+                  <SoftBtn onClick={() => { setGorusmelerAcik(true); setGorusmeForm({ tarih: today(), tur: "Gelen Arama", not: "", takipTarihi: "" }); }}>
+                    <Icon name="plus" size={12} /> Yeni Görüşme
+                  </SoftBtn>
+                ) : undefined}>
                 {gorusmeForm && (
                   <div style={{ background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: 10, marginBottom: 10 }}>
                     <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
@@ -892,7 +965,7 @@ export const CustomerDetailModal = ({
                   </div>
                 )}
                 {detailGorusmeler.length === 0 && !gorusmeForm && (
-                  <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Henüz görüşme kaydı yok.</div>
+                  <BosDurum testId="bos-gorusmeler" baslik="Henüz görüşme kaydı yok." />
                 )}
                 {detailGorusmeler.map(g => {
                   const takipGecikti = g.takipTarihi && !g.tamamlandi && g.takipTarihi <= todayStr;
@@ -922,8 +995,7 @@ export const CustomerDetailModal = ({
                     </div>
                   );
                 })}
-                </>}
-              </div>
+              </KartBolum>
             )}
 
             {/* Dosya arşivi (makina bazlı) — ayrı bileşen (DealerFilesSection deseni). Filtre üstte
@@ -996,8 +1068,7 @@ export const CustomerDetailModal = ({
               </div>
             )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>KALIPLAR ({detailView.kaliplar.length})</div>
+              <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {detailView.kaliplar.map((k, i) => {
                     const extraSatistan = k.partSaleId != null || i >= detailView.kaliplar.length - detailKalipSatisAdedi;
@@ -1009,13 +1080,10 @@ export const CustomerDetailModal = ({
                     );
                   })}
                 </div>
-              </div>
+              </KartBolum>
             )}
 
-            <div style={{ marginTop: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-                İşlemler
-              </div>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginTop: 16, marginBottom: 16 }} title="İşlemler">
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {canDo("cust_payment_add") && <Btn small variant="ghost" onClick={openAddPayment}><Icon name="plus" size={12} /> Ödeme Ekle</Btn>}
@@ -1038,7 +1106,7 @@ export const CustomerDetailModal = ({
                   {canDo("cust_detail_edit") && <Btn small onClick={() => onOpenEdit(detailView)}><Icon name="edit" size={12} /> Düzenle</Btn>}
                 </div>
               </div>
-            </div>
+            </KartBolum>
 
             <OwnershipSection
               detailView={detailView}
@@ -1073,6 +1141,7 @@ export const CustomerDetailModal = ({
               onTogglePartSaleCekTahsil={setPartSales ? togglePartSaleCekTahsil : null}
               onGoYedekParca={onGoYedekParca}
               onPrintYedekParcaEtiket={(grup) => yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory })}
+              onPrintTahsisEtiket={(satisId) => { const grup = satisPartisi(yedekParcaSatislar, satisId); if (grup.length) yedekParcaEtiketYazdir(grup, { parts, dealers, customers, factory }); }}
               onEditPayment={openEditPayment}
               onToggleCekTahsil={toggleCekTahsil}
               onDeletePayment={setConfirmDeletePaymentId}
@@ -1090,21 +1159,25 @@ export const CustomerDetailModal = ({
 
       {newOwnerForm && (
         <Modal wide title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", background: "var(--ambBg3, #fff7ed)", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5 }}>
-            Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
-            Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur.
+          <div style={{ marginBottom: 16 }}>
+            <UyariSeridi aile="bilgi" testId="yeni-sahip-bilgi">
+              Mevcut sahip <b>sahiplik geçmişine</b> taşınacak, makina kaydı yeni sahibin bilgileriyle güncellenecek.
+              Servis geçmişi, makina bilgileri ve <b>orijinal satış bedeli</b> korunur.
+            </UyariSeridi>
           </div>
           {(detailKalanBorcToplam > 0 || detailEkBorcDigerPB.length > 0) && (
-            <div style={{ fontSize: 13, color: "var(--red800, #991b1b)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", padding: "10px 14px", borderRadius: 10, marginBottom: 16, lineHeight: 1.5, fontWeight: 600 }}>
-              Bu makinenin devredilmeden önce{detailKalanBorcToplam > 0 && <> <b>{fmtCur(detailKalanBorcToplam, detailView.currency)}</b></>} ödenmemiş bakiyesi var.
-              {detailEkBorcDigerPB.length > 0 && <> Ayrıca farklı para biriminden: {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}.</>}
-              {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
+            <div style={{ marginBottom: 16 }}>
+              <UyariSeridi aile="hata" testId="yeni-sahip-borc">
+                Bu makinenin devredilmeden önce{detailKalanBorcToplam > 0 && <> <b>{fmtCur(detailKalanBorcToplam, detailView.currency)}</b></>} ödenmemiş bakiyesi var.
+                {detailEkBorcDigerPB.length > 0 && <> Ayrıca farklı para biriminden: {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}.</>}
+                {" "}Devam edersen bu borç yeni sahibin kaydına geçecek.
+              </UyariSeridi>
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Yeni Sahip (Satın Alan)">
             <Input value={newOwnerForm.name || ""} onChange={e => setNewOwnerForm(p => ({ ...p, name: e.target.value }))} placeholder="Firma / kişi adı" />
-            <Warn>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</Warn>
+            <HataMetni>{!newOwnerForm.name?.trim() ? "Yeni sahip adı girilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Satan Firma">
             <PickOrType
@@ -1122,24 +1195,24 @@ export const CustomerDetailModal = ({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Field label="Telefon">
               <Input value={newOwnerForm.phone || ""} onChange={e => setNewOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" />
-              <Warn>{newOwnerForm.phone && !PHONE_RE.test(newOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{newOwnerForm.phone && !PHONE_RE.test(newOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
             <Field label="Devir Tarihi"><Input type="date" value={newOwnerForm.saleDate || ""} onChange={e => setNewOwnerForm(p => ({ ...p, saleDate: e.target.value }))} /></Field>
             <Field label="E-posta">
               <Input value={newOwnerForm.email || ""} onChange={e => setNewOwnerForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-              <Warn>{newOwnerForm.email && !EMAIL_RE.test(newOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+              <HataMetni>{newOwnerForm.email && !EMAIL_RE.test(newOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 1 - Ad Soyad"><Input value={newOwnerForm.yetkili1Ad || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 1 - Telefon">
               <Input value={newOwnerForm.yetkili1Tel || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili1Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-              <Warn>{newOwnerForm.yetkili1Tel && !PHONE_RE.test(newOwnerForm.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{newOwnerForm.yetkili1Tel && !PHONE_RE.test(newOwnerForm.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
             <Field label="Yetkili 2 - Ad Soyad"><Input value={newOwnerForm.yetkili2Ad || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili2Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 2 - Telefon">
               <Input value={newOwnerForm.yetkili2Tel || ""} onChange={e => setNewOwnerForm(p => ({ ...p, yetkili2Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-              <Warn>{newOwnerForm.yetkili2Tel && !PHONE_RE.test(newOwnerForm.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{newOwnerForm.yetkili2Tel && !PHONE_RE.test(newOwnerForm.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
           </div>
           <Field label="Adres Satırı"><Input value={newOwnerForm.adres || ""} onChange={e => setNewOwnerForm(p => ({ ...p, adres: e.target.value }))} /></Field>
@@ -1178,26 +1251,26 @@ export const CustomerDetailModal = ({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Telefon">
               <Input value={editPrevOwnerForm.phone || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, phone: e.target.value }))} placeholder="Telefon" />
-              <Warn>{editPrevOwnerForm.phone && !PHONE_RE.test(editPrevOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{editPrevOwnerForm.phone && !PHONE_RE.test(editPrevOwnerForm.phone) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
             <Field label="Devir Tarihi"><Input type="date" value={editPrevOwnerForm.soldDate || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, soldDate: e.target.value }))} /></Field>
           </div>
           <Field label="E-posta">
             <Input value={editPrevOwnerForm.email || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-            <Warn>{editPrevOwnerForm.email && !EMAIL_RE.test(editPrevOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            <HataMetni>{editPrevOwnerForm.email && !EMAIL_RE.test(editPrevOwnerForm.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 1 - Ad Soyad"><Input value={editPrevOwnerForm.yetkili1Ad || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, yetkili1Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 1 - Telefon">
               <Input value={editPrevOwnerForm.yetkili1Tel || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, yetkili1Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-              <Warn>{editPrevOwnerForm.yetkili1Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{editPrevOwnerForm.yetkili1Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili1Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Yetkili 2 - Ad Soyad"><Input value={editPrevOwnerForm.yetkili2Ad || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, yetkili2Ad: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Yetkili 2 - Telefon">
               <Input value={editPrevOwnerForm.yetkili2Tel || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, yetkili2Tel: e.target.value }))} placeholder="0xxx xxx xx xx" />
-              <Warn>{editPrevOwnerForm.yetkili2Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{editPrevOwnerForm.yetkili2Tel && !PHONE_RE.test(editPrevOwnerForm.yetkili2Tel) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
           </div>
           <Field label="Adres Satırı"><Input value={editPrevOwnerForm.adres || ""} onChange={e => setEditPrevOwnerForm(p => ({ ...p, adres: e.target.value }))} /></Field>
@@ -1268,13 +1341,13 @@ export const CustomerDetailModal = ({
             <>
               <div style={{ display: "grid", gridTemplateColumns: paymentForm.yontem === "Çek" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 12 }}>
                 <Field label="Yöntem">
-                  <Select value={paymentForm.yontem || "Nakit"} onChange={e => setPaymentForm(p => ({ ...p, yontem: e.target.value }))}>
+                  <Select value={paymentForm.yontem || "Nakit"} disabled={!!odemeCeki(paymentForm.id)} onChange={e => setPaymentForm(p => ({ ...p, yontem: e.target.value }))}>
                     {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
                   </Select>
                 </Field>
                 <Field label="Tutar">
                   <MoneyInput value={paymentForm.tutar} sym={CUR_SYM[paymentForm.currency || "TRY"]} onChange={v => setPaymentForm(p => ({ ...p, tutar: v }))} />
-                  <Warn>{parseMoney(paymentForm.tutar) <= 0 ? "Tutar girilmedi" : ""}</Warn>
+                  <HataMetni>{parseMoney(paymentForm.tutar) <= 0 ? "Tutar girilmedi" : ""}</HataMetni>
                 </Field>
                 {paymentForm.yontem === "Çek" && (
                   <Field label="Vade Tarihi">
@@ -1283,6 +1356,28 @@ export const CustomerDetailModal = ({
                 )}
               </div>
               {paymentForm.yontem === "Çek" && (
+                <div data-testid="cek-bilgisi" style={{ marginBottom: 12 }}>
+                  <BolumBasligi bosluk={8}>{odemeCeki(paymentForm.id) ? "Çek bilgisi" : "Çek bilgisi ekle (isteğe bağlı)"}</BolumBasligi>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 130px", gap: 8 }}>
+                    {[["no", "Çek numarası"], ["banka", "Banka"], ["kesideci", "Keşideci"]].map(([k, ad]) => (
+                      <input key={k} aria-label={ad} placeholder={ad} value={paymentForm.cek?.[k] || ""} className="input"
+                        onChange={e => setPaymentForm(p => ({ ...p, cek: { ...(p.cek || {}), [k]: e.target.value } }))} />
+                    ))}
+                    <select aria-label="Çek türü" className="select" value={paymentForm.cek?.tur || "hamiline"} onChange={e => setPaymentForm(p => ({ ...p, cek: { ...(p.cek || {}), tur: e.target.value } }))}>
+                      {CEK_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  {!odemeCeki(paymentForm.id) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Numara ve banka girilirse bu tahsilat çek portföyüne bağlanır.</div>}
+                </div>
+              )}
+              {paymentForm.yontem === "Çek" && odemeCeki(paymentForm.id) && (
+                // C10, AC-25: durumun tek kaynağı çek kaydıdır.
+                <div data-testid="cek-durum-salt-okunur" style={{ background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "10px 12px", marginBottom: 14, fontSize: 13 }}>
+                  <b>Çek durumu: {CEK_DURUM_AD[odemeCeki(paymentForm.id).durum]}</b>
+                  <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 2 }}>Çek portföyünden yönetilir (Kasa › Çek Portföyü).</div>
+                </div>
+              )}
+              {paymentForm.yontem === "Çek" && !odemeCeki(paymentForm.id) && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: paymentForm.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${paymentForm.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
                   <input type="checkbox" checked={!!paymentForm.tahsilEdildi} onChange={e => setPaymentForm(p => ({ ...p, tahsilEdildi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: paymentForm.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
@@ -1293,10 +1388,27 @@ export const CustomerDetailModal = ({
             </>
           ) : (
             <Field label="Ödeme Satırları">
-              <PaymentRowsEditor rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
+              <PaymentRowsEditor cekler={cekler} rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
                 krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()} />
             </Field>
           )}
+          <HataMetni>{paymentHata}</HataMetni>
+          {kasaYetki && (() => {
+            // C5 (1), AC-29: yalnız tahsilatın para biriminde ve açık hesaplar; düzenlemede kapanmış mevcut hesap görünür kalır.
+            const pb = paymentForm.currency || "TRY";
+            const uygun = secilebilirHesaplar(kasaHesaplari, pb);
+            const mevcut = paymentForm.hesapId !== "" && paymentForm.hesapId != null ? kasaHesaplari.find(h => String(h.id) === String(paymentForm.hesapId)) : null;
+            const secenekler = mevcut && !uygun.includes(mevcut) ? [...uygun, mevcut] : uygun;
+            return (
+              <Field label="Hesap">
+                <Select aria-label="Tahsilat hesabı" value={paymentForm.hesapId ?? ""} onChange={e => setPaymentForm(p => ({ ...p, hesapId: e.target.value === "" ? "" : secenekler.find(h => String(h.id) === e.target.value)?.id ?? "" }))}>
+                  <option value="">Hesap belirtilmedi</option>
+                  {secenekler.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur}){h.kapali ? " · kapalı" : ""}</option>)}
+                </Select>
+                <Ipucu>{uygun.length ? "Tahsilat seçilen hesabın bakiyesine girer; seçilmezse hiçbir bakiyeye girmez." : `${pb} para biriminde açık hesap yok; tahsilat hiçbir bakiyeye girmez.`}</Ipucu>
+              </Field>
+            );
+          })()}
           <Field label="Not (isteğe bağlı)">
             <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi..." />
           </Field>
@@ -1355,6 +1467,7 @@ export const CustomerDetailModal = ({
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
           draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}
@@ -1367,6 +1480,7 @@ export const CustomerDetailModal = ({
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           dealers={dealers} calisanlar={calisanlar} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
@@ -1381,8 +1495,15 @@ export const CustomerDetailModal = ({
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       ))}
+
+      {tahsilatPencere && (
+        <TahsilatHesapPenceresi currency={tahsilatPencere.currency} tutar={tahsilatPencere.tutar} hesaplar={kasaHesaplari} varsayilan={tahsilatPencere.varsayilan}
+          onVazgec={() => setTahsilatPencere(null)}
+          onKaydet={(h) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h); }} />
+      )}
 
       {sandikModal && (
         <Modal title="Sandık Etiketi" wide onClose={() => setSandikModal(null)}>

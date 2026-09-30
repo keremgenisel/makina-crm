@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DEFAULT_KK_KOMISYONLARI } from "../../lib/constants";
 import { Icon, Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 // Kredi Kartı Taksit Komisyonları — Ayarlar > Evrak & Süreçler. KDV oran tablosu (SettingsKdv) deseni.
 // appSettings.krediKartiKomisyonlari = { bsmv, satirlar:[{taksit, oran, katkiPayi, blokajGun}] } düzenler.
@@ -51,7 +51,7 @@ export const SettingsKKKomisyon = ({ appSettings, setAppSettings, flash = () => 
   };
 
   return (
-    <Section title="Kredi Kartı Komisyonları" icon="settings" wide>
+    <KartBolum title="Kredi Kartı Komisyonları" icon="settings" wide>
       <div className="section-desc" style={{ marginBottom: 14 }}>
         Kartla satışta banka, taksit sayısına göre komisyon keser. Buraya <b>banka ekranınızdaki "Komisyon
         Oranı"nı (BSMV dâhil)</b> girin; uygulama <b>Üye İşyeri Ücreti + BSMV</b>'yi otomatik ayrıştırır ve
@@ -116,6 +116,6 @@ export const SettingsKKKomisyon = ({ appSettings, setAppSettings, flash = () => 
         {degisti && <span style={{ fontSize: 12, fontWeight: 600, color: "var(--amb700, #b45309)" }}>Kaydedilmemiş değişiklik var</span>}
         <Btn onClick={kaydet} disabled={!degisti}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>
-    </Section>
+    </KartBolum>
   );
 };

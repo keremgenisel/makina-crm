@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Icon, Btn, Modal, ConfirmDialog, Pagination } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 const TYPE_LABELS = {
   teklif: "Teklif",
@@ -68,7 +68,7 @@ export const SettingsSentMail = () => {
 
   return (
     <>
-      <Section title="Gönderilen E-postalar" icon="mail" collapsible>
+      <KartBolum title="Gönderilen E-postalar" icon="mail" collapsible>
         <div className="section-desc">
           Servis formu, makina raporu, dışa aktarım veya bayi e-postası olarak gönderilen tüm e-postaların kaydı (en yeni üstte).
         </div>
@@ -127,10 +127,10 @@ export const SettingsSentMail = () => {
             <Pagination total={sentEmailLogFiltered.length} page={emailLogPage} setPage={setEmailLogPage} perPage={EMAIL_LOG_PER_PAGE} />
           </>
         )}
-      </Section>
+      </KartBolum>
 
       {/* ── E-posta Çöp Kutusu ── */}
-      <Section title="Silinen E-postalar" icon="trash" collapsible>
+      <KartBolum title="Silinen E-postalar" icon="trash" collapsible>
         <div className="section-desc">
           Silinen e-posta kayıtları buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
@@ -197,7 +197,7 @@ export const SettingsSentMail = () => {
             <Pagination total={deletedEmailLogFiltered.length} page={trashPage} setPage={setTrashPage} perPage={TRASH_PER_PAGE} />
           </>
         )}
-      </Section>
+      </KartBolum>
 
       {/* İçerik görüntüleme */}
       {viewing && (

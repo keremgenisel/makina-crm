@@ -5,7 +5,7 @@ import { yedekParcaGeriAl } from "../../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../../lib/servisStok";
 import { logAction } from "../../lib/audit";
 import { Icon, Btn, ConfirmDialog, Modal } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 // Ayarlar > Veri Yönetimi > Sahipsiz Kayıtlar — müşterisi artık hiçbir kayıtla (çöptekiler dahil)
 // eşleşmeyen servis / Extra Kalıp / yedek parça (alıcı=müşteri) / ödeme kayıtlarını listeler.
@@ -85,7 +85,7 @@ export const SettingsSahipsiz = ({
 
   return (
     <>
-      <Section title="Sahipsiz Kayıtlar" icon="search" wide>
+      <KartBolum title="Sahipsiz Kayıtlar" icon="search" wide>
         <div className="section-desc">
           Müşterisi ya da bayisi artık bulunmayan (silinip kalıcı olarak temizlenmiş ya da hiç eşleşmeyen) servis, Extra Kalıp,
           yedek parça satışı ve ödeme kayıtları. Bu kayıtlar Finans ve Aylık Rapor'a dahil edilmez; burada doğru
@@ -117,7 +117,7 @@ export const SettingsSahipsiz = ({
             </tbody>
           </table>
         )}
-      </Section>
+      </KartBolum>
 
       {bagla && (
         <Modal title={bayiTuru(bagla.tur) ? "Bayiye Bağla" : "Müşteriye Bağla"} onClose={() => setBagla(null)}>

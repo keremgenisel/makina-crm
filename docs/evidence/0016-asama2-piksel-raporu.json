@@ -1,0 +1,98 @@
+[
+  {
+    "ad": "musteri-detay-bolumler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ],
+    "piksel": 835706
+  },
+  {
+    "ad": "musteri-detay-bolumler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ],
+    "piksel": 836065
+  },
+  {
+    "ad": "musteri-detay-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 2319167
+  },
+  {
+    "ad": "musteri-detay-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 2226266
+  },
+  {
+    "ad": "musteri-detay-yeni-sahip-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺240.000 ödenmemiş bakiyesi var. Ayrıc"
+    ],
+    "piksel": 1358834
+  },
+  {
+    "ad": "musteri-detay-yeni-sahip-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺240.000 ödenmemiş bakiyesi var. Ayrıc"
+    ],
+    "piksel": 1141050
+  },
+  {
+    "ad": "musteri-detay-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ],
+    "piksel": 1131883
+  },
+  {
+    "ad": "musteri-detay-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ],
+    "piksel": 970034
+  },
+  {
+    "ad": "servis-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 398563
+  },
+  {
+    "ad": "servis-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 262360
+  },
+  {
+    "ad": "kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 311169
+  },
+  {
+    "ad": "kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 238990
+  },
+  {
+    "ad": "musteriler-liste-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteriler-liste-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

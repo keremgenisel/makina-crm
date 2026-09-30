@@ -76,7 +76,7 @@ check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total ===
 
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
-  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14",
+  customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14", partiId: 95,
     faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
@@ -91,7 +91,7 @@ dbmod.writeBlobToDb({
     { id: "bant", ad: "Bant", renk: "grn", makinaSecici: true, stokDus: true, raporGoster: true, sistem: true, rol: "bant" },
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
-  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
+  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
@@ -112,12 +112,41 @@ dbmod.writeBlobToDb({
   giderler: [
     { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
-    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [] },
-    { id: 83, tarih: "2026-07-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 39223.13, eldenTutar: 15000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [], deletedAt: "2026-07-20T10:00:00.000Z" },
+    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
+      // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
+      taksitler: [{ id: 9001, hedef: "ana", sira: 1, vade: "2026-07-05", tutar: 20000, odendi: true, odemeTarihi: "2026-07-05" },
+        { id: 9002, hedef: "stopaj", sira: 1, vade: "2026-08-26", tutar: 2000, odendi: true, odemeTarihi: "2026-08-20" },
+        { id: 9003, hedef: "stopaj", sira: 2, vade: "2026-09-26", tutar: 2000, odendi: false, odemeTarihi: null }] },
+    { id: 83, tarih: "2026-07-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 39223.13, eldenTutar: 15000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [], deletedAt: "2026-07-20T10:00:00.000Z",
+      // Spec 0023: ek ödemeler (aynı türden iki satır), kimliksiz.
+      ekOdemeler: [{ tur: "fazlaCalisma", aciklama: "Temmuz yoğunluğu", resmiTutar: 4000, eldenTutar: 1000 }, { tur: "prim", aciklama: "Teslim", resmiTutar: null, eldenTutar: 2500 }, { tur: "prim", aciklama: "", resmiTutar: 700, eldenTutar: null }],
+      // Spec 0042: personelin iki ödeme hedefi (resmi = ana, elden); elden vadesi satırda (yeni sütun yok).
+      taksitler: [{ id: 9011, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 43923.13, odendi: false, odemeTarihi: null },
+        { id: 9012, hedef: "elden", sira: 1, vade: "2026-07-28", tutar: 18500, odendi: false, odemeTarihi: null }] },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
+  // Spec 0024 A: kasa hesapları ve hareketler.
+  kasaHesaplari: [{ id: 97, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 100000.5, acilisTarihi: "2026-01-01", kapali: false },
+    { id: 98, ad: "Kart", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -2000, acilisTarihi: null, kapali: true }],
+  hesapHareketleri: [{ id: 971, tur: "odeme", tarih: "2026-07-05", tutar: 1234.56, yontem: "Havale", hesapId: 97, karsiHesapId: null, giderId: 81, taksitId: null, tamKapatir: false, kaynak: null, gocKaynak: null, aciklama: "kısmi" },
+    { id: 972, tur: "virman", tarih: "2026-07-06", tutar: 500, hesapId: 97, karsiHesapId: 98, aciklama: "" },
+    { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" },
+    { id: 974, tur: "avans", tarih: "2026-07-08", tutar: 3000, calisanId: 55, hesapId: null },
+    { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null },
+    { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 }],
+  // Spec 0040: çek kaydı (yalnız kendi alanları, geçmiş JSON).
+  cekler: [{ id: 991, paymentId: 900, no: "123456", banka: "Ziraat", kesideci: "Ali Veli", tur: "resmi", durum: "ciro",
+    gecmis: [{ tarih: "2026-07-01", durum: "portfoy", not: "Alındı" }, { tarih: "2026-07-10", durum: "ciro", not: "Ciro: Demir Bant" }] },
+    // Spec 0049: bağsız alınan çek (kendi tutar/para birimi/vade/kimden) ve verilen çek (alacaklı, banka hesabı).
+    { id: 992, yon: "alinan", paymentId: null, no: "555", banka: "İş", kesideci: "Mehmet", tur: "hamiline", durum: "portfoy", tutar: 12500.5, currency: "TRY",
+      vadeTarihi: "2026-11-30", tarih: "2026-09-01", kimden: "Eski müşteri", gecmis: [{ tarih: "2026-09-01", durum: "portfoy", not: "Portföye elle eklendi" }] },
+    { id: 993, yon: "verilen", paymentId: null, no: "A-7", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 3000, currency: "TRY", vadeTarihi: "2026-10-15",
+      tarih: "2026-09-02", alacakliTur: "tedarikci", alacakliId: 71, alacakliAd: "Demir Bant", hesapId: 97, aciklama: "Eylül", gecmis: [] }],
+  // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
+  uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
+    { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
     teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
@@ -125,11 +154,11 @@ dbmod.writeBlobToDb({
     taksitSayisi: 3, kartKomisyonu: { taksit: 3, oran: 7.47, toplamKesinti: 7.97, netTutar: 92.03, blokajGun: 0, hesabaGecis: "2026-07-20", yansitildi: false }, tahsilatTarihi: "2026-11-02" }],
   payments: [
     { id: 900, customerId: 500, tarih: "2026-07-22", tutar: 132690.52, currency: "TRY", not: "Kart", yontem: "Kredi Kartı",
-      taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 2880, netTutar: 129810, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: true, bazTarih: "2026-07-22" } },
+      taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 2880, netTutar: 129810, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: true, bazTarih: "2026-07-22" }, hesapId: 97 },
   ],
   dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
-    { id: 650, dealerId: 3, aliciTipi: "bayi", teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
+    { id: 650, dealerId: 3, aliciTipi: "bayi", hesapId: 97, teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
       kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30", batchId: 777001,
       teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "03121112233", teslimatAdres: "Başkent OSB 15. Cad No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan",
       yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 60.54, netTutar: 539.46, blokajGun: 0, hesabaGecis: "2026-07-15", yansitildi: false },
@@ -149,7 +178,7 @@ dbmod.writeBlobToDb({
     { id: 21, customerId: 500, refType: "makina", refId: null, ad: "sozlesme.pdf", dosyaAdi: "k2-sozlesme.pdf", boyut: 999, tur: "PDF", tarih: "2026-07-06", ekleyen: "kerem", deletedAt: "2026-07-07T10:00:00.000Z" },
     { id: 22, dealerId: 3, ad: "bayi-sozlesmesi.pdf", dosyaAdi: "k3-bayi-sozlesmesi.pdf", boyut: 500, tur: "PDF", tarih: "2026-07-08", ekleyen: "kerem" },
   ],
-  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }, { id: 5, model: "AK100_DS", serialNo: "S-2", addedDate: "2026-09-20", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-02-11" }], parts: [],
+  stock: [{ id: 4, model: "AK100_DS", serialNo: "S-1" }, { id: 5, model: "AK100_DS", serialNo: "S-2", addedDate: "2026-09-20", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-02-11", partiId: 95 }], parts: [],
   // Yedek parça stoğu: eski sürümden kalmış NEGATİF satır (miktar -3) okumada/migration'da 0'a çekilmeli.
   partStock: [
     { id: 70, partId: "7", miktar: 12, notlar: "" },
@@ -197,6 +226,33 @@ check("spec 0006: yedek parça teklifId/teklifKalemId ve Extra Kalıp teklifKale
 })());
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 // Spec 0002 C4: satış kuru (REAL) ve üretim tarihi (TEXT) satış kaydında; geri dönen stok satırının özgün üretim tarihi.
+check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSON, açık partide null)", (() => {
+  const p = (blob.uretimPartileri || []);
+  const k = p.find(x => x.id === 95), a = p.find(x => x.id === 96);
+  return p.length === 2 && k?.ad === "2026-1" && k.baslangicAy === "2026-01" && k.bitisAy === "2026-03" && k.aciklama === "70 makina"
+    && k.kapanmaZamani === "2026-04-01T10:00:00" && k.kapanisOrtaklari?.["2026-02"] === 150050 && a?.bitisAy == null && a.kapanisOrtaklari == null;
+})());
+check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boolean) tam turu", (() => {
+  const h = blob.kasaHesaplari || [], m = blob.hesapHareketleri || [];
+  const z = h.find(x => x.id === 97), k = h.find(x => x.id === 98), o = m.find(x => x.id === 971), v = m.find(x => x.id === 972), g = m.find(x => x.id === 973);
+  check("spec 0040: çek kaydı (geçmiş JSON) ve ciro hareketinin cekId'si tam turu", (() => {
+    const c = (blob.cekler || []).find(x => x.id === 991);
+    return c?.paymentId === 900 && c.no === "123456" && c.banka === "Ziraat" && c.kesideci === "Ali Veli" && c.tur === "resmi" && c.durum === "ciro"
+      && c.gecmis?.length === 2 && c.gecmis[1].not === "Ciro: Demir Bant" && m.find(x => x.id === 976)?.cekId === 991;
+  })());
+  check("spec 0049: bağsız alınan ve verilen çekin kendi alanları tam turu; bağlı çekte yeni alan yazılmaz (AC-25)", (() => {
+    const c = blob.cekler || [], b = c.find(x => x.id === 992), v = c.find(x => x.id === 993), eski = c.find(x => x.id === 991);
+    return b?.yon === "alinan" && b.paymentId == null && b.tutar === 12500.5 && b.currency === "TRY" && b.vadeTarihi === "2026-11-30" && b.tarih === "2026-09-01" && b.kimden === "Eski müşteri"
+      && v?.yon === "verilen" && v.durum === "yazildi" && v.alacakliTur === "tedarikci" && v.alacakliId === 71 && v.alacakliAd === "Demir Bant" && v.hesapId === 97 && v.aciklama === "Eylül"
+      && !("yon" in eski) && !("tutar" in eski) && !("hesapId" in eski);
+  })());
+  check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
+    && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);
+  return h.length === 2 && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000
+    && o?.tutar === 1234.56 && o.hesapId === 97 && o.giderId === 81 && o.tamKapatir === false && o.aciklama === "kısmi"
+    && v?.tur === "virman" && v.karsiHesapId === 98 && g?.tamKapatir === true && g.tutar == null && g.gocKaynak === "taksit:82:9002";
+})());
+check("spec 0022: stock.partiId ve customers.partiId tam turu", (blob.stock || []).find(x => x.id === 5)?.partiId === 95 && (blob.customers || []).find(x => x.id === 500)?.partiId === 95);
 check("customer.satisKuru + uretimTarihi tam turu (spec 0002)", (() => {
   const c = (blob.customers || []).find(x => x.id === 500);
   return c?.satisKuru === 41.2345 && c?.uretimTarihi === "2026-03-14" && c?.currency === "USD";
@@ -208,6 +264,7 @@ check("kursuz / üretim tarihsiz eski kayıt boş döner (yaklaşık hesaba ve �
 check("stock.uretimTarihi tam turu (spec 0002 plan M3)", (blob.stock || []).find(s => s.id === 5)?.uretimTarihi === "2026-02-11");
 check("customer.fromTeklifId", blob.customers[0]?.fromTeklifId === 101);
 check("kalıp uretimFormGonder/Id", blob.customers[0]?.kaliplar[0]?.uretimFormGonder === true && blob.customers[0]?.kaliplar[0]?.uretimFormId === 77);
+check("spec 0044 AC-19: servis, Extra Kalıp ve yedek parça tahsilat hesabı (hesapId) roundtrip", blob.services.find(x => x.id === 2)?.hesapId === 97 && blob.partSales.find(x => x.id === 600)?.hesapId === 98 && (blob.yedekParcaSatislar || []).find(x => x.id === 650)?.hesapId === 97);
 check("partSale teklifId + uretim alanları", (() => { const ps = blob.partSales.find(p => p.id === 600); return ps?.teklifId === 101 && ps?.uretimFormGonder === true && ps?.uretimFormId === 88; })());
 // Anlaşmasız dış firma alanları (servis "İşlemi Yapan Firma"=Diğer, kalıp "Satış Yapan Firma"=Diğer)
 check("service islemFirma* (Diğer dış servis) roundtrip", (() => { const s = blob.services.find(x => x.id === 2); return s?.islemFirma === "Diğer" && s?.islemFirmaAd === "Harici Servis Ltd" && s?.islemFirmaYetkili === "Ahmet Yılmaz" && s?.islemFirmaTel === "05551234567" && s?.islemFirmaAdres === "Organize Sanayi 5. Cadde No:12" && s?.islemFirmaUlke === "Türkiye" && s?.islemFirmaSehir === "Bursa"; })());
@@ -223,6 +280,11 @@ check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || 
 check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());
 check("gider: kalem alanları + odendi boolean roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 81); const kira = (blob.giderler || []).find(x => x.id === 82); return k?.odendi === false && k.tutar === 140000 && k.odemeYontemi === "Çek" && k.sonOdemeTarihi === "2026-08-15" && k.tedarikciId === 51 && k.atamaTur === "model" && kira?.odendi === true && kira.girisYonu === "net" && kira.netTutar === 16000 && kira.stopajOrani === 20 && kira.tanimId === 61 && kira.donem === "2026-07"; })());
 check("gider: model alt satırları sırasıyla roundtrip ve id taşımıyor", (() => { const m = (blob.giderler || []).find(x => x.id === 81)?.modelSatirlari || []; return m.length === 2 && m[0].modelAd === "AK120_DSC" && m[0].birimMaliyet === 3000 && m[0].adet === 30 && m[1].modelAd === "AK100_DS" && m.every(x => x.id === undefined); })());
+check("spec 0042 AC-25 / AC-27: personelin elden hedef satırı (hedef, vade) roundtrip; kira satırları bozulmadı", (() => { const t = (blob.giderler || []).find(x => x.id === 83)?.taksitler || []; return t.length === 2 && t.map(x => x.hedef).join() === "ana,elden" && t[1].id === 9012 && t[1].vade === "2026-07-28" && t[1].tutar === 18500; })());
+check("spec 0021: gider ödeme satırları kimlik, hedef, sıra, vade, tutar ve durumlarıyla roundtrip (C8)", (() => { const t = (blob.giderler || []).find(x => x.id === 82)?.taksitler || []; return t.length === 3 && t.map(x => x.id).join() === "9001,9002,9003" && t[1].hedef === "stopaj" && t[1].sira === 1 && t[1].vade === "2026-08-26" && t[1].tutar === 2000 && t[1].odendi === true && t[1].odemeTarihi === "2026-08-20" && t[2].odendi === false && t[2].odemeTarihi === null; })());
+check("spec 0021: satırsız gider kalemi boş taksit dizisi döner", ((blob.giderler || []).find(x => x.id === 81)?.taksitler || null)?.length === 0);
+check("spec 0023: ek ödeme satırları sırasıyla, alanlarıyla ve kimliksiz roundtrip (AC-13, C7)", (() => { const e = (blob.giderler || []).find(x => x.id === 83)?.ekOdemeler || []; return e.length === 3 && e[0].tur === "fazlaCalisma" && e[0].aciklama === "Temmuz yoğunluğu" && e[0].resmiTutar === 4000 && e[0].eldenTutar === 1000 && e[1].resmiTutar == null && e[1].eldenTutar === 2500 && e[2].tur === "prim" && e.every(x => x.id === undefined); })());
+check("spec 0023: ek ödemesiz kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 81)?.ekOdemeler || null)?.length === 0);
 check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
 check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = (blob.giderler || []).find(x => x.id === 83); return p?.resmiTutar === 39223.13 && p.eldenTutar === 15000 && p.calisanAd === "Ahmet Yılmaz" && p.deletedAt === "2026-07-20T10:00:00.000Z"; })());
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
@@ -240,6 +302,7 @@ check("servis ödeme yöntemi + kredi kartı taksit/komisyon snapshot roundtrip"
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
 check("partSale kredi kartı taksit + komisyon snapshot (JSON) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.taksitSayisi === 3 && p?.kartKomisyonu?.oran === 7.47 && p?.kartKomisyonu?.toplamKesinti === 7.97 && p?.kartKomisyonu?.yansitildi === false; })());
+check("spec 0024 R6: tahsilatın hesapId'si tam turu", (blob.payments || []).find(x => x.id === 900)?.hesapId === 97);
 check("payment kredi kartı taksit + komisyon snapshot (blokaj, yansitildi, bazTarih) roundtrip", (() => { const p = (blob.payments || []).find(x => x.id === 900); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31" && p?.kartKomisyonu?.yansitildi === true && p?.kartKomisyonu?.bazTarih === "2026-07-22"; })());
 check("yedek parça satışı kredi kartı taksit + komisyon snapshot roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 60.54; })());
 check("appSettings krediKartiKomisyonlari (JSON) roundtrip", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && Array.isArray(a?.satirlar) && a.satirlar.length === 2 && a.satirlar[1]?.taksit === 3 && a.satirlar[1]?.oran === 7.47; })());
@@ -294,6 +357,7 @@ check("atlanan bölüm korundu (customer)", out.customers[0]?.name === "Müşter
 check("atlanan bölüm korundu (dealer)", out.dealers[0]?.name === "Bayi X");
 check("FK zinciri: service korundu", out.services[0]?.type === "Garanti İçi");
 check("atlanan bölüm korundu (gider model satırları)", (out.giderler.find(x => x.id === 81)?.modelSatirlari || []).length === 2);
+check("atlanan bölüm korundu (gider ödeme satırları, spec 0021)", (out.giderler.find(x => x.id === 82)?.taksitler || []).length === 3);
 
 // ── KAPAT → YENİDEN AÇ (uygulama restart) → veri kalıcı mı? (yedek parça satışı regresyonu) ──
 dbmod.close();
@@ -304,6 +368,8 @@ check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar
 check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
 check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
 check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 4 && (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
+check("reopen: ek ödeme satırları kalıcı (spec 0023 AC-13)", ((reopen.giderler || []).find(x => x.id === 83)?.ekOdemeler || []).length === 3);
+check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
 check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 3 && (reopen.standartGiderler || []).length === 2);
 check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
 

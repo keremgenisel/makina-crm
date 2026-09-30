@@ -3,8 +3,9 @@ import { uid, today } from "../../lib/utils";
 import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
-import { Section } from "./Section";
-import { TutarInput, AyInput, Segment, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, HataMetni, Ipucu, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { KartBolum } from "../tasarim";
+import { TutarInput, AyInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
@@ -51,6 +52,8 @@ export const SettingsGiderTanimlari = ({
     }
     const k = tutarCoz(form.kdvOrani);
     if (dav !== DAVRANIS.PERSONEL && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
+    // Bilinçli: tanımda atama yalnız normal davranışta (spec 0020 X5). Personel tanımına atama açılırsa her ayın maaşı
+    // aynı makinaya yüklenirdi; kalem formundaki atanabilirMi kapısı buraya taşınmaz (AC-16).
     const atamaVar = dav === DAVRANIS.NORMAL;
     if (atamaVar && form.atamaTur === ATAMA.MAKINA && form.makinaId == null) h.atama = "Makina seçilmedi.";
     if (atamaVar && form.atamaTur === ATAMA.MODEL) {
@@ -104,7 +107,7 @@ export const SettingsGiderTanimlari = ({
   const tutarHucre = (t) => {
     const dav = davOf(t.turId);
     if (dav === DAVRANIS.PERSONEL) return <span style={{ color: "var(--n500, #64748b)" }}>çalışan kaydından<br /><span style={{ fontSize: 11 }}>resmi + elden</span></span>;
-    return <><b>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div></>;
+    return <><b style={{ whiteSpace: "nowrap" }}>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div></>;
   };
   const atamaHucre = (t) => {
     if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
@@ -116,7 +119,7 @@ export const SettingsGiderTanimlari = ({
 
   const dav = form ? davOf(form.turId) : null;
   return (
-    <Section title="Tekrarlayan Giderler" icon="gider" wide>
+    <KartBolum title="Tekrarlayan Giderler" icon="gider" wide>
       <div className="section-desc">
         Her ay tekrar eden giderler (kira, maaş, abonelik). Kalemler kendiliğinden oluşmaz; Giderler sekmesinde “tekrarlayan kalemleri oluştur” ile üretilir.
         Personel tutarı tanımda tutulmaz, kalem üretilirken çalışan kaydındaki resmi ve elden tutarlardan okunur.
@@ -133,7 +136,8 @@ export const SettingsGiderTanimlari = ({
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)", textAlign: "left", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
-              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç", "Bitiş", "Atama", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{h}</th>)}
+              {/* Spec 0030 R8/R10: başlıklar sarar; başlangıç ile bitiş tek sütun; "üretilen aylar" sayıya iner (tam liste ipucunda). */}
+              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Atama", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 6px", verticalAlign: "bottom" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {sirali.map(t => {
@@ -142,18 +146,17 @@ export const SettingsGiderTanimlari = ({
                 const bitti = t.bitisAy && t.bitisAy < buAy;
                 return (
                   <tr key={t.id} style={{ borderTop: "1px solid var(--n150, #f1f5f9)", opacity: bitti ? 0.7 : 1 }}>
-                    <td style={{ padding: "10px 12px" }}><div style={{ fontWeight: 600 }}>{t.ad}</div>
+                    <td style={{ padding: "10px 6px" }}><div style={{ fontWeight: 600 }}>{t.ad}</div>
                       {t.kapatildi && <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>{u.length ? "Kapatıldı · çalışan silindi" : "Üretilmeden kapatıldı"}</div>}
                       {!t.kapatildi && t.baslangicAy > buAy && <div style={{ fontSize: 11, color: "var(--blu600, #2563eb)", marginTop: 3 }}>{t.baslangicAy} ayında başlar</div>}
                     </td>
-                    <td style={{ padding: "10px 12px" }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{turMap.get(String(t.turId))?.ad || "(türsüz)"}<DavranisRozeti davranis={d} /></div></td>
-                    <td style={{ padding: "10px 12px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap" }}>{tutarHucre(t)}</td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{t.baslangicAy}</td>
-                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{t.bitisAy || "—"}</td>
-                    <td style={{ padding: "10px 12px" }}>{atamaHucre(t)}</td>
-                    <td style={{ padding: "10px 12px", fontSize: 12 }}>{u.length ? <>{u.slice(-3).join(", ")}{u.length > 3 ? ` +${u.length - 3}` : ""}</> : <span style={{ color: "var(--n500, #64748b)" }}>Henüz üretilmedi</span>}</td>
-                    <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "10px 6px" }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{turMap.get(String(t.turId))?.ad || "(türsüz)"}<DavranisRozeti davranis={d} /></div></td>
+                    <td style={{ padding: "10px 6px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
+                    <td style={{ padding: "10px 6px", textAlign: "right" }}>{tutarHucre(t)}</td>
+                    <td style={{ padding: "10px 6px", whiteSpace: "nowrap" }}>{t.baslangicAy}<div style={{ color: "var(--n500, #64748b)" }}>– {t.bitisAy || "—"}</div></td>
+                    <td style={{ padding: "10px 6px" }}>{atamaHucre(t)}</td>
+                    <td style={{ padding: "10px 6px", fontSize: 12 }}>{u.length ? <span title={u.join(", ")} style={{ whiteSpace: "nowrap", cursor: "help", borderBottom: "1px dotted var(--n400, #94a3b8)" }}>{u.length} ay</span> : <span style={{ color: "var(--n500, #64748b)" }}>Henüz üretilmedi</span>}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", whiteSpace: "nowrap" }}>
                       {yonetebilir && <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                         <Btn small variant="ghost" onClick={() => ac(t)} title="Düzenle"><Icon name="edit" size={12} /></Btn>
                         <Btn small variant="danger" onClick={() => setSilinecek(t)} title="Sil"><Icon name="trash" size={12} /></Btn>
@@ -213,13 +216,19 @@ export const SettingsGiderTanimlari = ({
               </Field>
             </>
           )}
-          <Field label="Ödeme yöntemi">
-            <Segment ariaLabel="Ödeme yöntemi" options={ODEME_SECENEKLERI} value={form.odemeYontemi} onChange={v => set({ odemeYontemi: v })} />
+          {/* Spec 0041 R17: üretilen kaleme varsayılan olarak kopyalanır. */}
+          <Field label="Varsayılan ödeme yöntemi">
+            {/* Spec 0042 R9: beş seçenek → açılır liste (sözlük "Ne zaman açılır liste?"). */}
+            <Select aria-label="Varsayılan ödeme yöntemi" value={form.odemeYontemi} onChange={e => set({ odemeYontemi: e.target.value })}>
+              {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </Select>
+            <Ipucu>Üretilen kalemlerde yeni ödeme girilirken ön seçili gelir.</Ipucu>
           </Field>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><Field label="Başlangıç ayı *"><AyInput ariaLabel="Başlangıç ayı" value={form.baslangicAy} onChange={v => set({ baslangicAy: v })} /><HataMetni>{hatalar.baslangicAy}</HataMetni></Field></div>
             <div style={{ flex: 1 }}><Field label="Bitiş ayı"><AyInput ariaLabel="Bitiş ayı" value={form.bitisAy} onChange={v => set({ bitisAy: v })} /><HataMetni>{hatalar.bitisAy}</HataMetni><Ipucu>Opsiyonel, boşsa süresiz.</Ipucu></Field></div>
           </div>
+          {/* spec 0020 X5: tanımda atama yalnız normal davranışta, personelde kapalı (bkz. yukarıdaki doğrulama notu). */}
           {dav === DAVRANIS.NORMAL && (
             <Field label="Makina maliyeti ataması">
               <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller} tutar={form.tutar} />
@@ -233,6 +242,6 @@ export const SettingsGiderTanimlari = ({
         <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı kalıcı olarak silinecek (çöp kutusuna düşmez). Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
           onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
-    </Section>
+    </KartBolum>
   );
 };

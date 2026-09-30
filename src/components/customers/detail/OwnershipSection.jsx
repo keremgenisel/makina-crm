@@ -1,6 +1,7 @@
 import { fmtTR } from "../../../lib/utils";
 import { resolveSatisYapan } from "../../../lib/utils";
 import { Icon } from "../../ui";
+import { KartBolum } from "../../tasarim";
 
 export const OwnershipSection = ({
   detailView,
@@ -12,8 +13,7 @@ export const OwnershipSection = ({
   if (!detailView?.prevOwners?.length) return null;
 
   return (
-    <div style={{ background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-      <div style={{ fontWeight: 700, marginBottom: 10, color: "var(--n900, #0f172a)", fontSize: 13 }}>Sahiplik Geçmişi</div>
+    <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} title="Sahiplik Geçmişi" style={{ marginBottom: 16 }}>
       {detailView.prevOwners.map((o, i) => (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--warmBr, #fde8d2)" }}>
           <div>
@@ -50,6 +50,6 @@ export const OwnershipSection = ({
       <div style={{ paddingTop: 8, fontSize: 12, fontWeight: 700, color: "var(--emerald, #059669)" }}>
         Mevcut Sahip: {detailView.name}
       </div>
-    </div>
+    </KartBolum>
   );
 };

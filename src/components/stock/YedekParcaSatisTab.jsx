@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
+import { Segment, BosDurum } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
@@ -10,6 +11,8 @@ import { yedekParcaRec, yeniYedekParcaSatisCoklu } from "../../lib/yedekParcaSat
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
 import { logAction } from "../../lib/audit";
+import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
 
 // Satışın makina-bağ durumu (bekliyor / kısmi / tam).
 const durumBilgi = (s) => {
@@ -62,6 +65,7 @@ export const YedekParcaSatisTab = ({
   kdvRates = DEFAULT_KDV_RATES, showToast = () => {}, canDoStock = () => true, serverPermissions = null,
   odakId = null, onOdakConsumed = null,
   geoData = null, loadingGeo = false, krediKartiKomisyonlari = null,
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
 }) => {
   const audit = (action, id, rec, detail) => logAction({ serverPermissions, action, entity: "yedek_parca_satis", entityId: id, entityName: aliciAd(rec, dealers, customers), detail });
   const [modal, setModal] = useState(null);   // "add" | {edit: rec}
@@ -192,9 +196,16 @@ export const YedekParcaSatisTab = ({
     if (!canDoStock("yedek_parca_edit")) return;
     const yeni = !rec.odendi;
     const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
-    setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null } : s));
-    audit(rec.odendi ? "odeme_iptal" : "odendi", rec.id, rec);
+    // Spec 0044 R2: işaretlerken (kasa yetkisi ve tutar varsa) hesap penceresi; h undefined = hesaba dokunma.
+    const uygula = (h) => {
+      setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...(h !== undefined ? { hesapId: h } : {}) } : s));
+      audit(rec.odendi ? "odeme_iptal" : "odendi", rec.id, rec);
+    };
+    const d = yeni && kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.YEDEK, rec, { kdvRates }) : null;
+    if (!d?.sor) { uygula(undefined); return; }
+    setTahsilatPencere({ currency: d.currency, tutar: d.tutar, varsayilan: uyumluHesapId(kasaHesaplari || [], rec.hesapId, d.currency) ?? tahsilatHesapVarsayilan?.(d.currency) ?? null, uygula });
   };
+  const [tahsilatPencere, setTahsilatPencere] = useState(null);
 
   const tahsisEkle = (satisId, t) => {
     setYedekParcaSatislar(p => p.map(s => s.id === satisId ? { ...s, tahsisler: [...(s.tahsisler || []), t] } : s));
@@ -305,13 +316,9 @@ export const YedekParcaSatisTab = ({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        {[["hepsi", `Tümü (${yedekParcaSatislar.length})`], ["eksik", `Tahsisi eksik (${eksikSayi})`]].map(([v, l]) => (
-          <button key={v} onClick={() => setFiltre(v)} style={{
-            padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-            border: `1px solid ${filtre === v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`,
-            background: filtre === v ? "var(--brand, #e85d1a)" : "transparent", color: filtre === v ? "#fff" : "var(--n500, #64748b)",
-          }}>{l}</button>
-        ))}
+        {/* Spec 0014 (Z5): sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Yedek parça satış süzgeci" value={filtre} onChange={setFiltre}
+          options={[{ value: "hepsi", label: "Tümü", sayi: yedekParcaSatislar.length }, { value: "eksik", label: "Tahsisi eksik", sayi: eksikSayi }]} />
         <div style={{ position: "relative", flex: "1 1 220px", minWidth: 180, maxWidth: 340 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", pointerEvents: "none" }}><Icon name="search" size={14} /></span>
           <input value={arama} onChange={e => setArama(e.target.value)} placeholder="Alıcı, parça, kargo no ile ara..."
@@ -321,9 +328,9 @@ export const YedekParcaSatisTab = ({
       </div>
 
       {toplamAdet === 0 ? (
-        <div style={{ padding: "40px 16px", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13.5 }}>
-          {arama.trim() ? "Aramanıza uyan satış yok." : filtre === "eksik" ? "Tahsisi eksik satış yok." : "Henüz yedek parça satışı yok. \"Yeni Satış\" ile ekleyin."}
-        </div>
+        arama.trim() ? <BosDurum testId="bos-yedek-satis" baslik="Aramanıza uyan satış yok." />
+          : filtre === "eksik" ? <BosDurum testId="bos-yedek-satis" baslik="Tahsisi eksik satış yok." />
+          : <BosDurum testId="bos-yedek-satis" baslik="Henüz yedek parça satışı yok." metin={"\"Yeni Satış\" ile ekleyin."} />
       ) : (
         // Her iki filtre de alıcıya göre gruplu — bayi/müşteri/anlaşmasız servis kartı, tıklayınca satışlar açılır (katlı).
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -340,8 +347,15 @@ export const YedekParcaSatisTab = ({
         <YedekParcaSatisForm
           title={modal === "add" ? "Yeni Yedek Parça Satışı" : "Yedek Parça Satışını Düzenle"}
           form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar}
-          kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)} />
+          kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)}
+          kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan} />
       ))}
+
+      {tahsilatPencere && (
+        <TahsilatHesapPenceresi currency={tahsilatPencere.currency} tutar={tahsilatPencere.tutar} hesaplar={kasaHesaplari || []} varsayilan={tahsilatPencere.varsayilan}
+          onVazgec={() => setTahsilatPencere(null)}
+          onKaydet={(h) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h); }} />
+      )}
 
       {tahsisSv && (tahsisLock ? (
         <Modal title="Makinaya Tahsis" onClose={() => setTahsisSv(null)}>

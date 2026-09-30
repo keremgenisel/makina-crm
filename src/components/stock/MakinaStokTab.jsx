@@ -4,13 +4,14 @@ import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Warn, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 
 export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, giderler = [],
   // Spec 0002 M3: çöpteki müşteriler, eski geri dönen satırın özgün üretim tarihini düzenlemede sabitlemek için.
-  copMusteriler = [] }) => {
+  copMusteriler = [], uretimPartileri = [], giderYetki = false }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -62,6 +63,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
     }))]);
   };
 
+  const partiAdi = useMemo(() => new Map(uretimPartileri.map(p => [String(p.id), p.ad])), [uretimPartileri]);
   const save = () => {
     if (!form.model) { showToast("Model seçilmeden kaydedilemez."); return; }
     if (modal === "add") {
@@ -181,7 +183,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         {canDoStock("stock_makina_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Stoğa Makina Ekle</Btn>}
       </div>
 
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? (
+        stock.length === 0
+          ? <BosDurum testId="bos-makina-stok" baslik="Stokta makina yok." />
+          : <BosDurum testId="bos-makina-stok" baslik="Aramanıza uyan makina yok." />
+      ) : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -195,7 +202,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <tr key={s.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span></td>
+                <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span>
+                  {giderYetki && s.partiId != null && partiAdi.get(String(s.partiId)) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 5 }}>Parti: {partiAdi.get(String(s.partiId))}</div>}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(s.addedDate)}</td>
                 <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
@@ -209,9 +217,9 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{stock.length === 0 ? "Stokta makina yok." : "Aramanıza uyan makina yok."}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {confirmId && (
         <ConfirmDialog
@@ -226,7 +234,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       )}
 
       {modal && (
-        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)} maxWidth={760}>
+        <Modal title={modal === "add" ? "Stoğa Makina Ekle" : "Stok Kaydını Düzenle"} onClose={() => setModal(null)} maxWidth={760}
+          footer={(stockLock && modal?.edit) ? undefined : <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+            <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           {(stockLock && modal?.edit) ? (
             <LockConflict lockedBy={stockLock.lockedBy} lockedAt={stockLock.lockedAt}
               onForce={forceStockLock} onCancel={() => setModal(null)} />
@@ -236,7 +248,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <option value="">Model seçin...</option>
               {models.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
             </Select>
-            <Warn>{!form.model ? "Model seçilmedi" : ""}</Warn>
+            <HataMetni>{!form.model ? "Model seçilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
@@ -244,6 +256,19 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             <div data-testid="stok-uretim-tarihi" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginBottom: 12 }}>
               Makinanın özgün üretim tarihi <b>{fmtTR(form.uretimTarihi)}</b>. Maliyet hesabı stoğa giriş tarihini değil bu tarihi kullanır.
             </div>
+          )}
+          {/* Spec 0022 R2, C5 (P7): makinayı üretim partisine bağlama. Yalnız gider yetkisiyle çizilir (üretim tarihi
+              alanıyla aynı kural); yazma stok izniyle. Perde inikken mevcut bağ korunur, seçici gizlenir. */}
+          {giderYetki && (
+            <Field label="Üretim partisi">
+              <Select aria-label="Üretim partisi" value={form.partiId != null ? String(form.partiId) : ""}
+                onChange={e => { const v = e.target.value; setForm(p => ({ ...p, partiId: v === "" ? null : uretimPartileri.find(x => String(x.id) === v)?.id ?? null })); }}>
+                <option value="">Partisiz (ortak gider üretim ayından)</option>
+                {uretimPartileri.map(x => <option key={x.id} value={String(x.id)}>{x.ad}{x.bitisAy ? "" : " (açık)"}</option>)}
+                {form.partiId != null && !uretimPartileri.some(x => String(x.id) === String(form.partiId)) && <option value={String(form.partiId)}>Silinmiş parti</option>}
+              </Select>
+              <Ipucu>Parti parti üretimde, partinin sürdüğü ayların ortak gideri partinin makinalarına dağılır. Satışta bağ korunur.</Ipucu>
+            </Field>
           )}
           <Field label="Not">
             <textarea value={form.note || ""} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
@@ -253,9 +278,9 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
           <div style={{ marginTop: 16, borderTop: "1px solid var(--n150, #f1f5f9)", paddingTop: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6 }}>
+              <BolumBasligi bosluk={0}>
                 Kullanılan Parçalar <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none" }}>(stoktan düşülür)</span>
-              </span>
+              </BolumBasligi>
               <div style={{ display: "flex", gap: 6 }}>
                 {selectedModelKit.length > 0 && (
                   <Btn small onClick={() => setForm(p => ({
@@ -302,10 +327,6 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save} disabled={!form.model}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
           </>)}
         </Modal>
       )}

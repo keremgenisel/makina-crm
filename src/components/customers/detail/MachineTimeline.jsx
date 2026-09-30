@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { CEK_DURUM_AD } from "../../../lib/cek";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
@@ -7,6 +8,7 @@ import {
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { Icon, Btn, AtesRozeti } from "../../ui";
+import { KartBolum, BosDurum } from "../../tasarim";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -50,6 +52,7 @@ export const MachineTimeline = ({
   onTogglePartSaleCekTahsil = null,   // Extra Kalıp çeki tahsil edildi/beklemede toggle
   onGoYedekParca = null, // bayiden tahsis edilen (salt-okunur) satıra tıklayınca Stok'taki satışa git
   onPrintYedekParcaEtiket = null, // müşterinin kendi yedek parça satışı için kargo etiketi yazdır
+  onPrintTahsisEtiket = null, // spec 0030: bayi/dış firma alımından bu makinaya tahsis edilen parçanın kargo etiketi (satış kimliğiyle)
   onEditPayment,
   onToggleCekTahsil,
   onDeletePayment,
@@ -69,19 +72,13 @@ export const MachineTimeline = ({
     return () => clearTimeout(t);
   }, [odakServisId, odakKalipId, odakTaksitId, odakOdemeId, odakNonce, detailTimelineEvents]);
   return (
-  <div style={{ background: "var(--n100, #f8fafc)", borderRadius: 12, padding: "16px 18px" }}>
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-      <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-        <Icon name="service" size={15} /> Makina Geçmişi
-        <span style={{ fontSize: 11, background: "var(--surface, #ffffff)", color: "var(--n500, #64748b)", borderRadius: 10, padding: "2px 8px", fontWeight: 600 }}>{detailTimelineEvents.length} olay</span>
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => onPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
-        {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => onPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
-      </div>
-    </div>
+  <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={14} title="Makina Geçmişi" altBaslik={`${detailTimelineEvents.length} olay`}
+    eylemler={(canDo("cust_detail_print") || canDo("cust_detail_mail")) ? (<>
+      {canDo("cust_detail_print") && <Btn small variant="ghost" onClick={() => onPrintOrPick("makina")}><Icon name="print" size={12} /> Yazdır</Btn>}
+      {canDo("cust_detail_mail") && <Btn small variant="ghost" onClick={() => onPrintOrPick("mail_makina")}><Icon name="mail" size={12} /> E-posta Gönder</Btn>}
+    </>) : undefined}>
     {detailTimelineEvents.length === 0 ? (
-      <div style={{ color: "var(--n400, #94a3b8)", fontSize: 13, padding: "8px 0" }}>Bu makinaya ait kayıt bulunmuyor.</div>
+      <BosDurum testId="bos-makina-gecmisi" baslik="Bu makinaya ait kayıt bulunmuyor." />
     ) : (
       detailTimelineEvents.map((ev, i) => {
         const last = i === detailTimelineEvents.length - 1;
@@ -177,16 +174,32 @@ export const MachineTimeline = ({
                 })() : ev.kind === "part" && ev.ypTahsisId ? (
                   // Bayi/dış firma alımından bu makinaya TAHSİS edilen parça (salt-okunur). Tıklayınca
                   // Stok > Yedek Parça Satışı'nda o satışa gidilir (burada düzenlenmez; borçlusu bayi).
+                  // Etiket düğmesi (spec 0030): satış kimliğiyle; parti pencerede çözülür, etiket partinin tamamı.
+                  <>
                   <span onClick={onGoYedekParca ? () => onGoYedekParca(ev.ypTahsisId) : undefined}
                     title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
                     style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: onGoYedekParca ? "pointer" : "default", textDecoration: onGoYedekParca ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
+                  {onPrintTahsisEtiket && (
+                    <button onClick={() => onPrintTahsisEtiket(ev.ypTahsisId)} style={YAZDIR_BTN}
+                      title="Kargo Etiketi Yazdır: alıcı parçayı satın alan bayi/firmadır; etiket bu kargonun bütün kalemlerini kapsar.">
+                      <Icon name="print" size={11} /> Etiket
+                    </button>
+                  )}
+                  </>
                 ) : ev.kind === "payment" && payment ? (
                   <>
                     <span onClick={canDo("cust_payment_edit") ? () => onEditPayment(payment) : undefined} title={canDo("cust_payment_edit") ? "Düzenlemek için tıklayın" : undefined}
                       style={{ fontWeight: 700, fontSize: 14, color: ev.color, cursor: canDo("cust_payment_edit") ? "pointer" : "default", textDecoration: canDo("cust_payment_edit") ? "underline" : "none", textDecorationColor: "var(--n200, #e2e8f0)" }}>{ev.title}</span>
                     {payment.yontem && <span style={PIL}>{payment.yontem}</span>}
                     {dosyaAdet && <AtesRozeti n={dosyaAdet("odeme", payment.id)} onClick={() => onDosyaBadge("odeme", payment.id)} />}
-                    {payment.yontem === "Çek" && canDo("cust_payment_edit") && (
+                    {payment.yontem === "Çek" && payment._cek && (
+                      // Spec 0040 C10, AC-25: çeke bağlı tahsilatta durum çek kaydından okunur; buradan değiştirilmez.
+                      <span data-testid="cek-durum-rozeti" onClick={() => onToggleCekTahsil(payment)} title="Çek portföyünden yönetilir (Kasa › Çek Portföyü)"
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "help", border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", color: "var(--n700, #334155)" }}>
+                        Çek {payment._cek.no}: {CEK_DURUM_AD[payment._cek.durum] || payment._cek.durum}
+                      </span>
+                    )}
+                    {payment.yontem === "Çek" && !payment._cek && canDo("cust_payment_edit") && (
                       <button onClick={() => onToggleCekTahsil(payment)}
                         style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: payment.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: payment.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: payment.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
                         {payment.tahsilEdildi ? "Tahsil Edildi" : "Beklemede · işaretle: Tahsil Edildi"}
@@ -407,6 +420,6 @@ export const MachineTimeline = ({
         );
       })
     )}
-  </div>
+  </KartBolum>
   );
 };

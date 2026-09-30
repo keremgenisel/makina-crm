@@ -6,34 +6,54 @@ import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
-  ayOf, ayEkle, ayinSonGunu, odemeDurumuDegistir,
+  ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
 } from "../lib/gider";
+import { formOdemesiHazirla, ciroAlacaklisi } from "../lib/formOdemesi";
+import { CiroPenceresi, cekPlaniniYaz } from "./cek/CiroPenceresi";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
+import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { GiderForm } from "./GiderForm";
-import { Segment, tl2 } from "./gider/GiderAlanlari";
-import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi } from "./gider/DonemRaporu";
+import { tl2 } from "./gider/GiderAlanlari";
+import { Segment, BosDurum, UyariSeridi } from "./tasarim";
+import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi, YontemKirilimi } from "./gider/DonemRaporu";
+import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
 import { Tedarikciler } from "./gider/Tedarikciler";
 import { StandartGiderler } from "./gider/StandartGiderler";
 import { MakinaKarliligi } from "./gider/MakinaKarliligi";
+import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
+import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
+import { UretimPartileri } from "./gider/UretimPartileri";
 
 // Giderler üst sekmesi (spec 0001, C14). Yalnız gider yetkisi olan kullanıcıya görünür (C6 kural 3).
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikçiler" }, { value: "standart", label: "Standart Genel Giderler" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikçiler" }, { value: "standart", label: "Standart Genel Giderler" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+
+// Dönem seçicisi olmayan görünümler: standart gider bütçesi ve üretim partileri (spec 0022) dönemden bağımsızdır.
+const DONEMSIZ = new Set(["standart", "partiler"]);
 
 export const Giderler = ({
-  giderler = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
-  standartGiderler = [], setStandartGiderler, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
+  giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
+  standartGiderler = [], setStandartGiderler, uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
   makinaMaliyet = null,
   // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
   baslangicOdemeFiltresi = "",
+  // Spec 0024: ödeme bir harekettir; kalemin durumu burada hareketlerden türetilir (odemeleriUygula), yazma ham
+  // diziye yapılır. hesapHareketleri verilmezse (dizi değil) saklı durum okunur. Hesap seçimi yalnız kasa yetkisiyle (C6).
+  hesapHareketleri = null, setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
+  // Spec 0047: Aylık Gider ve Kasa Raporu (App'in tek memosu; düğme ve yazdırma gider/ klasörünün dışında, R36).
+  giderKasaRaporVerisi = null,
+  // Spec 0046 (R24, Q8): çek cirosu için; App yalnız kasa yetkisiyle verir.
+  cekler = [], setCekler = null, payments = [],
+  // Triyaj bulgu 2: sunucu hareket bölümünü göndermedi (0024 öncesi sunucu); durum eski işaretten, ödeme girişi kapalı.
+  hareketBolumuYok = false,
 }) => {
   const canDo = makeCanDo(serverPermissions, "giderActions");
   // Canlı yerel gün (spec 0003 C3, H1): hatırlatma kapsamı Anasayfa kartıyla aynı "bugün"e bakmalı (AC-14).
@@ -49,6 +69,9 @@ export const Giderler = ({
   const giderAyarlari = appSettings?.giderAyarlari || {};
   const yururlukAy = giderAyarlari.yururlukAy || null;
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
+  const giderler = useMemo(() => odemeleriUygula(giderlerHam, hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
+  // Spec 0041 R3, R4: kalemin yöntemi ödemelerden türetilir (bir kez; hareket bölümü yoksa boş, yöntem yazılmaz).
+  const kirilimlar = useMemo(() => yontemKirilimlari(giderlerHam.filter(k => !k.deletedAt), hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const modeller = useMemo(() => [...standardModels, ...customModels.filter(m => !m.deletedAt)], [standardModels, customModels]);
 
@@ -67,6 +90,8 @@ export const Giderler = ({
     { baslangic, bitis }, { bugun },
   ) : null), [aralikGecerli, giderler, giderTurleri, tedarikciler, stock, customers, canliModeller, yururlukAy, baslangic, bitis, bugun]);
   const borc = useMemo(() => borcOzeti(giderler, { turler: giderTurleri, tedarikciler, yururlukAy }, bugun), [giderler, giderTurleri, tedarikciler, yururlukAy, bugun]);
+  // Spec 0041 R10 (triyaj bulgu 2): dönem yöntem kırılımı render başına değil, rapor ya da hareketler değişince hesaplanır.
+  const donemKirilimi = useMemo(() => (rapor && Array.isArray(hesapHareketleri) ? donemYontemKirilimi(rapor.kalemler, hesapHareketleri, turMap) : null), [rapor, hesapHareketleri, turMap]);
 
   // KDV karşılaştırması (R9, K1, K15): ay bazlı; kapsam içindeki aralık tam aylardan oluşmalı.
   // Satış KDV'si aylık rapor motorunu ay başına çalıştırır (pahalı); yalnız satış verisine ve ay listesine
@@ -97,12 +122,27 @@ export const Giderler = ({
     showToast(`${ayAdi(uretimAyi)}: ${u.eklenen} kalem eklendi, ${u.zatenVardi} kalem zaten vardı.`);
   };
 
-  const kaydet = (kayit) => {
+  const kaydet = (kayit, odemePlani = null) => {
     if (kayit.id == null) {
       const yeni = { ...kayit, id: uid() };
+      // Spec 0046 R17, Q1: form geçici kimlikle doğruladı; aynı saf fonksiyon gerçek kimlikle yeniden çağrılır. Hata olursa
+      // (beklenmez) hiçbir şey yazılmaz. Kalem, hareketler ve çek AYNI işleyicide yazılır: tek POST (0040 ciro şartı).
+      // Spec 0049 B: formdan yazılan kendi çekimiz gerçek kimliğini burada alır.
+      const od = odemePlani && setHesapHareketleri ? formOdemesiHazirla(yeni, { turMap, hesaplar: kasaHesaplari, cekler, payments, ...odemePlani, yeniCekId: uid() }) : null;
+      if (od && (!od.hareketler || (od.cek && !setCekler))) { showToast("Ödeme doğrulanamadı; gider kaydedilmedi.", "err"); return; }
+      const odemeler = (od?.hareketler || []).map(h => ({ ...h, id: uid() }));
       setGiderler(p => [...p, yeni]);
       logAction({ serverPermissions, action: "olusturuldu", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "" });
-      showToast("Gider kaydedildi.");
+      if (odemeler.length) {
+        setHesapHareketleri(p => [...p, ...odemeler]);
+        logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "", detail: { hareket: odemeler.length } });
+      }
+      if (od?.cek) {
+        const yeniCek = od.cek.yon === "verilen";
+        setCekler(p => (yeniCek ? [...(p || []), od.cek] : p.map(c => (c.id === od.cek.id ? od.cek : c))));
+        logAction({ serverPermissions, action: yeniCek ? "olusturuldu" : "ciro_edildi", entity: "cek", entityId: od.cek.id, entityName: `${od.cek.no} · ${od.cek.banka}`, detail: { gider: yeni.id, hareket: odemeler.filter(h => h.cekId != null).length } });
+      }
+      showToast(odemeler.length ? "Gider ve ödemesi kaydedildi." : "Gider kaydedildi.");
     } else {
       const eski = giderler.find(k => k.id === kayit.id);
       setGiderler(p => p.map(k => (k.id === kayit.id ? { ...k, ...kayit } : k)));
@@ -111,10 +151,36 @@ export const Giderler = ({
     }
     setForm(null);
   };
-  const odendiDegistir = (k) => {
-    const odendi = !k.odendi;
-    setGiderler(p => p.map(x => (x.id === k.id ? odemeDurumuDegistir(x, bugun) : x)));
-    logAction({ serverPermissions, action: odendi ? "odendi" : "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
+  // Spec 0024 R17/R18: ödeme anahtarı, kira anahtarları ve Ödeme Planı satırları aynı ödeme penceresini açar.
+  const [odemeHedefi, setOdemeHedefi] = useState(null); // null | {kalemId, hedef: {taksitId}|{hedef}|null}
+  const odemeKalemi = odemeHedefi == null ? null : giderler.find(k => k.id === odemeHedefi.kalemId) || null;
+  // Spec 0049 B (Q7): ödeme penceresinden kendi çekimizle ödeme; ortak "Çek Yaz" penceresi bu kalemin alacaklısı ve kalanıyla açılır.
+  const [kendiCekKalemi, setKendiCekKalemi] = useState(null);
+  const kendiCekYazabilir = kasaYetki && !!setCekler && !!setHesapHareketleri && canDo("gider_odeme");
+  // Hareket yazıcısı yoksa (bölümü tanımayan eski sunucu, triyaj bulgu 2) ödeme penceresi açılmaz.
+  const odemeGirisi = !!setHesapHareketleri;
+  const odendiDegistir = (k) => setOdemeHedefi({ kalemId: k.id, hedef: null });
+  const [planKalemId, setPlanKalemId] = useState(null);
+  const planKalemi = planKalemId == null ? null : giderler.find(k => k.id === planKalemId) || null;
+  const satirIsaretle = (k, r) => { setPlanKalemId(null); setOdemeHedefi({ kalemId: k.id, hedef: { taksitId: r.id } }); };
+  const hedefDegistir = (k, hedef) => setOdemeHedefi({ kalemId: k.id, hedef: { hedef } });
+  // Spec 0041 R5, R13: pencere doğrulanmış hareket dizisi verir (çok satırlı ödeme); hepsi tek güncellemeyle yazılır.
+  const odemeKaydet = (kayitlar) => {
+    const k = odemeKalemi;
+    const yeni = kayitlar.map(kayit => ({ ...kayit, id: uid() }));
+    setHesapHareketleri?.(p => [...p, ...yeni]);
+    for (const kayit of yeni) {
+      const r = kayit.taksitId != null ? (k.taksitler || []).find(x => String(x.id) === String(kayit.taksitId)) : null;
+      logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null, ...(r ? { taksit: r.sira, hedef: r.hedef } : {}) } });
+    }
+    showToast(yeni[0]?.tur === "mahsup" ? "Avans mahsup edildi." : yeni.length > 1 ? `${yeni.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
+    setOdemeHedefi(null);
+  };
+  const odemeSil = (h) => {
+    const k = odemeKalemi;
+    setHesapHareketleri?.(p => p.filter(x => x.id !== h.id));
+    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih } });
+    showToast("Ödeme silindi.");
   };
   const sil = () => {
     const k = silinecek;
@@ -145,22 +211,10 @@ export const Giderler = ({
     </div>
   );
 
-  const bosDurum = (baslikMetni, metin, eylemler) => (
-    <div style={{ border: "1.5px dashed var(--n300, #cbd5e1)", borderRadius: 12, padding: "32px 20px", textAlign: "center", background: "var(--surface, #ffffff)" }} data-testid="gider-bos-durum">
-      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{baslikMetni}</div>
-      <div style={{ fontSize: 13, color: "var(--n600, #475569)", maxWidth: 460, margin: "0 auto", lineHeight: 1.55 }}>{metin}</div>
-      {eylemler && <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>{eylemler}</div>}
-    </div>
-  );
-  const uyari = (renk, baslikMetni, metin, testId) => {
-    const r = renk === "amber" ? ["var(--amb700, #b45309)", "var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)"] : renk === "yesil" ? ["var(--grn700, #15803d)", "var(--grnBg, #f0fdf4)", "var(--grnBr, #bbf7d0)"] : ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)"];
-    return <div role="status" data-testid={testId} style={{ background: r[1], border: `1px solid ${r[2]}`, borderRadius: 10, padding: "10px 14px", fontSize: 13 }}><b style={{ color: r[0] }}>{baslikMetni}</b>{metin && <div style={{ marginTop: 2, color: "var(--n700, #334155)" }}>{metin}</div>}</div>;
-  };
-
   const eylemDugmeleri = (
     <>
       {canDo("gider_tekrar_uret") && giderTanimlari.length > 0 && <Btn variant="ghost" onClick={uret}><Icon name="refresh" size={14} /> {ayAdi(uretimAyi)} tekrarlayan kalemlerini oluştur</Btn>}
-      {canDo("gider_add") && <Btn onClick={() => setForm({ kalem: null })}><Icon name="plus" size={14} /> Yeni Gider</Btn>}
+      {canDo("gider_add") && <Btn onClick={() => setForm({ kalemId: null })}><Icon name="plus" size={14} /> Yeni Gider</Btn>}
     </>
   );
 
@@ -171,7 +225,11 @@ export const Giderler = ({
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Giderler</h2>
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Tüm tutarlar TL. Gider toplamlarına KDV hariç tutar girer.</div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{eylemDugmeleri}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {/* Spec 0047: rapor düğmesi yalnız başlıkta (boş durum kutusunun eylemlerine girmez). */}
+          <GiderKasaRaporuDugmesi veri={giderKasaRaporVerisi} kasaYetki={kasaYetki} baslangicAy={mod === "ay" ? ay : null} />
+          {eylemDugmeleri}
+        </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ minWidth: 0, flex: "1 1 460px", maxWidth: 800 }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>
@@ -186,40 +244,38 @@ export const Giderler = ({
               {hatirlatmaModu ? "Hatırlatma kapsamını kapat" : "Hatırlatma kapsamı"} ({hatirlatma.kalemIdleri.size})
             </button>
           )}
-          {gorunum !== "standart" && (hatirlatmaModu
+          {!DONEMSIZ.has(gorunum) && (hatirlatmaModu
             ? <fieldset disabled aria-label="Dönem seçici (hatırlatma kapsamında devre dışı)" style={{ border: 0, padding: 0, margin: 0, opacity: 0.45 }}>{donemSecici}</fieldset>
             : donemSecici)}
         </div>
       </div>
-      {giderTurleri.length === 0 && uyari("mavi", "Henüz gider türü tanımlı değil.", "Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir).")}
-      {uretimSonucu && uyari(uretimSonucu.eklenen ? "yesil" : "mavi",
-        `${ayAdi(uretimSonucu.ay)}: ${uretimSonucu.eklenen} kalem eklendi, ${uretimSonucu.zatenVardi} kalem zaten vardı.`,
-        [uretimSonucu.eklenen ? "Oluşturulan kalemler tek tek düzenlenebilir; tanım ve diğer aylar değişmez." : "Bir tanımdan bu ay için üretilip sonradan silinen kalemler yeniden oluşturulmaz.",
-          ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" "), "uretim-sonucu")}
-      {!aralikGecerli && gorunum !== "standart" && uyari("amber", "Başlangıç tarihi bitişten sonra olamaz.")}
+      {hareketBolumuYok && <UyariSeridi aile="uyari" testId="hareket-bolumu-yok" baslik="Ödeme kaydı şu an girilemiyor."
+        metin="Sunucu bilgisayar bu sürüme güncellenmemiş; ödeme kayıtlarını tanımıyor. Ödeme durumu eski kayıttan gösteriliyor. Sunucu güncellenince ödemeler girilebilir." />}
+      {giderTurleri.length === 0 && <UyariSeridi aile="bilgi" baslik="Henüz gider türü tanımlı değil." metin="Ayarlar › Giderler › Gider Türleri'nden türleri tanımlayın (önerilen türler tek tıkla eklenebilir)." />}
+      {uretimSonucu && <UyariSeridi aile={uretimSonucu.eklenen ? "basari" : "bilgi"} baslik={`${ayAdi(uretimSonucu.ay)}: ${uretimSonucu.eklenen} kalem eklendi, ${uretimSonucu.zatenVardi} kalem zaten vardı.`} metin={[uretimSonucu.eklenen ? "Oluşturulan kalemler tek tek düzenlenebilir; tanım ve diğer aylar değişmez." : "Bir tanımdan bu ay için üretilip sonradan silinen kalemler yeniden oluşturulmaz.",
+          ...uretimSonucu.atlanan.map(a => `${a.tanim.ad}: ${a.neden}`)].join(" ")} testId="uretim-sonucu" />}
+      {!aralikGecerli && !DONEMSIZ.has(gorunum) && <UyariSeridi aile="uyari" baslik="Başlangıç tarihi bitişten sonra olamaz." />}
 
       {hatirlatmaModu && (
         <>
-          {uyari("amber", `Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`,
-            `Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`, "hatirlatma-modu")}
+          <UyariSeridi aile="uyari" baslik={`Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`} metin={`Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`} testId="hatirlatma-modu" />
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-            onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
-            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
+            onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
+            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
       )}
       {gorunum === "rapor" && rapor && !hatirlatmaModu && (
         rapor.yururlukOncesi ? (
           <>
-            {bosDurum("Gider verisi girilmemiş", `Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`)}
+            <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`} />
             <BorcOzeti ozet={borc} />
           </>
         ) : (
           <>
-            {rapor.kapsamDisi && uyari("amber", `${fmtTR(rapor.kapsamDisi.baslangic)} – ${fmtTR(rapor.kapsamDisi.bitis)} arası kapsam dışı.`, `Gider takibi ${ayAdi(yururlukAy)} itibaren geçerli. Rapor ${fmtTR(yururlukKapsami({ baslangic, bitis }, yururlukAy).etkinBaslangic)} – ${fmtTR(bitis)} için üretildi.`, "kapsam-disi")}
-            {rapor.mukerrerUyari.length > 0 && uyari("amber", "Aynı tanımdan bu dönemde birden fazla kalem var.",
-              rapor.mukerrerUyari.map(m => `${m.aciklama || "Tanım"} (${m.donem}): ${m.kalemler.length} kalem`).join(", ") + ". İki kullanıcı aynı ayı aynı anda oluşturmuş olabilir; fazla olanı silin.", "mukerrer-uyari")}
-            {rapor.bos ? bosDurum("Bu dönemde gider kaydı yok", "Sıfır tutarlı bir tablo yerine bu mesaj gösterilir.", eylemDugmeleri) : (
+            {rapor.kapsamDisi && <UyariSeridi aile="uyari" baslik={`${fmtTR(rapor.kapsamDisi.baslangic)} – ${fmtTR(rapor.kapsamDisi.bitis)} arası kapsam dışı.`} metin={`Gider takibi ${ayAdi(yururlukAy)} itibaren geçerli. Rapor ${fmtTR(yururlukKapsami({ baslangic, bitis }, yururlukAy).etkinBaslangic)} – ${fmtTR(bitis)} için üretildi.`} testId="kapsam-disi" />}
+            {rapor.mukerrerUyari.length > 0 && <UyariSeridi aile="uyari" baslik="Aynı tanımdan bu dönemde birden fazla kalem var." metin={rapor.mukerrerUyari.map(m => `${m.aciklama || "Tanım"} (${m.donem}): ${m.kalemler.length} kalem`).join(", ") + ". İki kullanıcı aynı ayı aynı anda oluşturmuş olabilir; fazla olanı silin."} testId="mukerrer-uyari" />}
+            {rapor.bos ? <BosDurum testId="gider-bos-durum" baslik="Bu dönemde gider kaydı yok" metin="Sıfır tutarlı bir tablo yerine bu mesaj gösterilir." eylemler={eylemDugmeleri} /> : (
               <>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <StatKart etiket="Toplam gider (KDV hariç)" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
@@ -235,12 +291,13 @@ export const Giderler = ({
                 </div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TedarikciKirilimi rapor={rapor} />
+                  {donemKirilimi && <YontemKirilimi kirilim={donemKirilimi} />}
                   <BorcOzeti ozet={borc} />
                 </div>
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-                  onDuzenle={(k) => setForm({ kalem: k })} onSil={setSilinecek} onOdendi={odendiDegistir}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} />
+                  onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
               </>
             )}
             {rapor.bos && <BorcOzeti ozet={borc} />}
@@ -248,24 +305,53 @@ export const Giderler = ({
         )
       )}
       {gorunum === "makina" && rapor && (rapor.yururlukOncesi
-        ? bosDurum("Gider verisi girilmemiş", `Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`)
-        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} />)}
+        ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
+        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
+          hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
           rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
       {gorunum === "karlilik" && aralikGecerli && makinaMaliyet && (
         <MakinaKarliligi sonuc={makinaMaliyet} baslangic={baslangic} bitis={bitis} rates={rates} bugun={bugun} modeller={modeller} />
       )}
+      {gorunum === "partiler" && (
+        <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
+          makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
+      )}
       {gorunum === "standart" && (
         <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
 
+      {planKalemi && (
+        <OdemePlaniPenceresi kalem={planKalemi} davranis={turMap.get(String(planKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(planKalemi.turId))?.ad || "Gider"}
+          odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
+      )}
       {form && (
-        <GiderForm kalem={form.kalem} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
-          modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme")}
+        <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
+          modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
+          hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hareketBolumu={Array.isArray(hesapHareketleri)} hesapSecimi={kasaYetki}
+          cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler}
+          onHedefOde={odemeGirisi ? (k, h) => hedefDegistir(k, h) : null}
           onSave={kaydet} onCancel={() => setForm(null)} />
       )}
+      {/* Spec 0046 Q7: ödeme penceresi formdan SONRA çizilir; düzenleme formunun üstünde açılır. */}
+      {odemeKalemi && (
+        <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
+          turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
+          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
+          onKendiCek={kendiCekYazabilir ? (k) => { setOdemeHedefi(null); setKendiCekKalemi(k); } : null} />
+      )}
+      {kendiCekKalemi && (
+        <CiroPenceresi kip="kendi" hesaplar={kasaHesaplari} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+          baslangic={{ ...ciroAlacaklisi(kendiCekKalemi, turMap), giderId: kendiCekKalemi.id }}
+          onKaydet={(plan) => {
+            const h = cekPlaniniYaz(plan, { setHesapHareketleri, setCekler });
+            logAction({ serverPermissions, action: "olusturuldu", entity: "cek", entityId: plan.cek.id, entityName: `${plan.cek.no} · ${plan.cek.banka}`, detail: { verilen: true, hareket: h.length } });
+            setKendiCekKalemi(null); showToast("Çek yazıldı; borç kapandı.");
+          }} onClose={() => setKendiCekKalemi(null)} />
+      )}
+
       {silinecek && (
         <ConfirmDialog title="Gider silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli “${silinecek.aciklama || silinecek.calisanAd || "gider"}” kalemi Çöp Kutusu'na taşınacak. 30 gün içinde geri alınabilir.${silinecek.tanimId != null ? " Tekrarlayan tanımdan geldiği için o ay yeniden üretilmez." : ""}`}
           confirmLabel="Çöp Kutusuna Taşı" onConfirm={sil} onCancel={() => setSilinecek(null)} />

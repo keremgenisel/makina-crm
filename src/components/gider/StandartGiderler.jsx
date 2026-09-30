@@ -3,7 +3,8 @@ import { uid, today } from "../../lib/utils";
 import { standartYeni, standartTutarDegistir, standartSonSurumuGeriAl, standartSonaErdir, standartAdDegistir, standartGrupSil, standartGruplar, standartGiderAyi, ayOf, ayEkle } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
-import { TutarInput, AyInput, HataMetni, Ipucu, tl2 } from "./GiderAlanlari";
+import { TutarInput, AyInput, tl2 } from "./GiderAlanlari";
+import { HataMetni, Ipucu } from "../tasarim";
 
 // Giderler › Standart Genel Giderler (spec 0001 R22, AC-92…AC-96; plan K37). Bütçe/varsayım listesi:
 // dönem gider raporunun HİÇBİR toplamına girmez (hesaplaGiderRaporu bu listeyi almaz); yalnız makina

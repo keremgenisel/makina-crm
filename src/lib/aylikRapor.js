@@ -6,11 +6,12 @@ import {
   parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
   kalipBorcTarafi, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
-  normalizeSaleType, tahsilatTarihiOf,
+  normalizeSaleType, cekBekliyorMu, odemeGelirTarihi,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
 import { sahipsizHaric } from "./sahipsiz";
+import { satisTahsilatKalemleri } from "./satisTahsilat";
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
 // Tek kayıt için tek para birimli tutar nesnesi ({TRY:...} gibi) — detay satırlarında kullanılır
@@ -283,8 +284,10 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
 
   // ── TAHSİLAT (gerçekleşen) ──────────────────────────────────────────────────
   const ayOdemeler = canliOdemeler.filter(p => ayIci(p.tarih));
-  const gerceklesen = ayOdemeler.filter(isPaymentReceived);
-  const bekleyenCekler = ayOdemeler.filter(p => p.yontem === "Çek" && !p.tahsilEdildi);
+  // Spec 0040 R6, R17: çek kaydına bağlı tahsilat tahsil ya da ciro ayında gelire girer (odemeGelirTarihi); bağlı olmayan
+  // tahsilatta ay bugünkü gibi tahsilat tarihidir. Bekleyen çek tek kaynaktan (cekBekliyorMu).
+  const gerceklesen = canliOdemeler.filter(p => isPaymentReceived(p) && ayIci(odemeGelirTarihi(p)));
+  const bekleyenCekler = ayOdemeler.filter(cekBekliyorMu);
   const tahsilatTutar = {}, bekleyenCekTutar = {};
   bekleyenCekler.forEach(p => paraEkle(bekleyenCekTutar, p.currency, p.tutar));
   // Extra Kalıp + yedek parça (kargo) satışlarının bu ay TAHSİL EDİLEN (satisTahsilEdildi) tutarları da
@@ -305,30 +308,15 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   // yoksa satış-servis tarihi). Bu yüzden yalnız o ayın satışları değil, tahsilat tarihi o ayda olan TÜM
   // tahsil edilmiş (satisTahsilEdildi) kayıtlar taranır. Böylece ağustos işi ekimde ödenince ekime düşer.
   // Tutar/KDV yine satış tarihinin KDV oranıyla hesaplanır; yalnız ay grubu tahsilat tarihine göredir.
-  const satisTahsilatlari = [
-    ...canliServisler.filter(s => (isServisUcretliMi(s, factoryName) || isParcaUcretliMi(s)) && satisTahsilEdildi(s) && ayIci(tahsilatTarihiOf(s, s.date))).map(s => {
-      const toplam = (isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0) + (isParcaUcretliMi(s) ? altuntasParcaBedeli(s) : 0);
-      const kdv = calcKDV(s.faturaTipi, toplam, s.date, kdvRates);
-      return {
-        firma: custAdi(s.customerId), currency: s.currency, tutar: toplam + kdv, kdv,
-        yontem: s.yontem || "Nakit", tarih: tahsilatTarihiOf(s, s.date), not: "Bakım onarım", kaynak: "Bakım onarım",
-      };
-    }),
-    ...canliKalipSatislari.filter(p => !p.ucretsizMi && satisTahsilEdildi(p) && ayIci(tahsilatTarihiOf(p, p.tarih))).map(p => {
-      const kdv = calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates);
-      return {
-        firma: custAdi(p.customerId), currency: p.currency, tutar: parseMoney(p.ucret) + kdv, kdv,
-        yontem: p.yontem || "Nakit", tarih: tahsilatTarihiOf(p, p.tarih), not: "Extra kalıp", kaynak: "Extra kalıp",
-      };
-    }),
-    ...canliYedekKargo.filter(s => satisTahsilEdildi(s) && kargoBedeli(s) > 0 && ayIci(tahsilatTarihiOf(s, s.tarih))).map(s => {
-      const kdv = calcKDV(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates);
-      return {
-        firma: kargoAlici(s), currency: s.currency, tutar: kargoBedeli(s) + kdv, kdv,
-        yontem: s.yontem || "Nakit", tarih: tahsilatTarihiOf(s, s.tarih), not: "Yedek parça (kargo ve fabrika teslim)", kaynak: "Yedek parça (kargo ve fabrika teslim)",
-      };
-    }),
-  ];
+  // Spec 0044 (Q2, C2): tahsilat kalemi (bize ait bedel + KDV, tahsilat tarihi, yöntem) lib/satisTahsilat.js'ten; kasa
+  // bakiyesi aynı fonksiyonu çağırır.
+  const NOT = { servis: "Bakım onarım", kalip: "Extra kalıp", yedekParca: "Yedek parça (kargo ve fabrika teslim)" };
+  const satisTahsilatlari = satisTahsilatKalemleri({ services: canliServisler, partSales: canliKalipSatislari, yedekParcaSatislar: canliYedekKargo }, { factoryName, kdvRates })
+    .filter(k => satisTahsilEdildi(k.kayit) && ayIci(k.tarih))
+    .map(k => ({
+      firma: k.kaynak === "yedekParca" ? kargoAlici(k.kayit) : custAdi(k.kayit.customerId), currency: k.currency, tutar: k.tutar, kdv: k.kdv,
+      yontem: k.yontem, tarih: k.tarih, not: NOT[k.kaynak], kaynak: NOT[k.kaynak],
+    }));
   // Birleşik tahsilat listesi: ödeme defteri (makina) + satış tahsilatları (bakım onarım/kalıp/yedek parça).
   const tumTahsilatlar = [
     ...gerceklesen.map(p => ({ firma: custAdi(p.customerId), currency: p.currency, tutar: parseMoney(p.tutar), kdv: odemeKdv(p), yontem: p.yontem || "Nakit", tarih: p.tarih || "", not: p.not || "", kaynak: "Makina ödemesi" })),
@@ -537,7 +525,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     // Tahsilat
     tahsilatAdet: tumTahsilatlar.length, tahsilatTutar, tahsilatNet, tahsilatKdv, tahsilatDetay, tahsilatYontemKirilimi, tahsilatKaynakKirilimi,
     bekleyenCekAdet: bekleyenCekler.length, bekleyenCekTutar, bekleyenCekDetay,
-    cekTahsilAdet: ayOdemeler.filter(p => p.yontem === "Çek" && p.tahsilEdildi).length,
+    cekTahsilAdet: gerceklesen.filter(p => p.yontem === "Çek").length,
     // Alacak (rapor anı) — borçlu firma sayısı tüm kaynakları (bakiye/servis/kalıp/kargo) kapsar
     borcluFirma: alacakMap.size, acikBorc: alacak, alacakDetay, alacakYaslandirma, alacakKaynakKirilimi,
     kkBlokajda, kkBlokajdaTutar,

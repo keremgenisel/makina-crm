@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
-import { Icon, Field, Input, Warn, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { HataMetni, Ipucu } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
+import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [] }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [], kasaHesaplari = null, hesapVarsayilan = null }) => {
   // Teknisyen: firma çalışanları (Ayarlar) açılır listeden seçilir; listede olmayan harici usta için
   // "Diğer (elle yaz)" seçeneği serbest metin kutusu açar. Açılır liste, seçili olsa bile TÜM çalışanları
   // gösterir (datalist gibi önce silmek gerekmez).
@@ -64,6 +67,11 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // Ödeme yöntemi / kredi kartı komisyonu için ortak billable toplam (servis + ücretli parça) ve KDV oranı.
   const svParcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
   const svToplam = parseMoney(form.servisUcreti) + (svParcaVar ? parcaUcretiToplam : 0);
+  // Spec 0044: hesap sorulur mu, kayıttakiyle aynı alanlardan (saveService parça bedelini böyle yazar).
+  const hesapDurumu = kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.SERVIS, {
+    ...form, parcaUcretsizMi, parcaUcreti: parcaUcretiToplam, parcaCurrency: form.currency,
+    parcaUcretiAltuntastan: parcalar.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0),
+  }, { factoryName, kdvRates }) : null;
   const matchedCustomers = custSearch.trim()
     ? customers.filter(c =>
         aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
@@ -73,7 +81,11 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
     : [];
 
   return (
-    <Modal wide title={title} onClose={onCancel}>
+    <Modal wide title={title} onClose={onCancel}
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
+        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
       <Field label="Müşteri">
         {selectedCust ? (
@@ -149,7 +161,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             )}
           </div>
         )}
-        <Warn>{!form.customerId ? "Müşteri seçilmedi" : ""}</Warn>
+        <HataMetni>{!form.customerId ? "Müşteri seçilmedi" : ""}</HataMetni>
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
@@ -367,7 +379,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {/* Değişen parçalar — tanımlı yedek parçalardan çoklu seçim + her parçaya ayrı fiyat */}
       <Field label="Değişen Parçalar (varsa)">
         {parts.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</div>
+          <Ipucu>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</Ipucu>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
@@ -492,13 +504,18 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       {ucretliVarMi && (
         <div style={{ marginBottom: 4 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
               {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
             </span>
           </label>
+          {kasaHesaplari && form.odendi && (
+            <div style={{ marginTop: 8 }}>
+              <TahsilatHesapAlani durum={hesapDurumu} hesaplar={kasaHesaplari} value={form.hesapId} onChange={v => setForm(p => ({ ...p, hesapId: v }))} />
+            </div>
+          )}
           {form.odendi && (
-            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
                 <Field label="Ödeme Yöntemi">
                   <Select value={form.yontem || "Nakit"} onChange={e => {
@@ -563,10 +580,6 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
         </div>
       )}
 
-      <div className="form-footer-bar" style={{ marginTop: 12 }}>
-        <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
-        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

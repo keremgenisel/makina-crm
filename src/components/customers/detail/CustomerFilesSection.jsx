@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Icon, SoftBtn, DangerBtn, Select, ConfirmDialog } from "../../ui";
 import { today, fmtTR, fmtCur, uid, bumpId, withDeleted } from "../../../lib/utils";
 import { logAction, getAuditUsername } from "../../../lib/audit";
+import { KartBolum, BosDurum, UyariSeridi } from "../../tasarim";
 
 // Müşteri/makina dosya arşivi bölümü — CustomerDetailModal'dan çıkarıldı (DealerFilesSection deseni).
 // Dosya bir kayda (makina genel / servis / kalıp / yedek parça / ödeme) bağlanabilir; bir kayda
@@ -90,7 +91,7 @@ export function CustomerFilesSection({
   };
 
   return (
-    <div ref={sectionRef} style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+    <div ref={sectionRef} style={{ marginBottom: 16 }}>
       {confirmDelId != null && (
         <ConfirmDialog
           message="Bu dosya Çöp Kutusu'na taşınacak. Ayarlar'dan 30 gün içinde geri alabilirsiniz."
@@ -98,28 +99,18 @@ export function CustomerFilesSection({
           onCancel={() => setConfirmDelId(null)}
         />
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: acik ? 8 : 0 }}>
-        <div onClick={() => setAcik(a => !a)}
-          style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}>
-          <span style={{ fontSize: 10 }}>{acik ? "▾" : "▸"}</span>
-          Dosyalar ({detailDosyalar.length})
-        </div>
-        {canDo("cust_dosya_add") && !dosyaCevrimdisi && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <KartBolum varyant="kart" baslikStili="baslik" collapsible acik={acik} onAcikDegis={setAcik}
+        title={`Dosyalar (${detailDosyalar.length})`}
+        eylemler={canDo("cust_dosya_add") && !dosyaCevrimdisi ? (<>
             <Select value={bind} onChange={e => setBind(e.target.value)} title="Yeni dosyanın bağlanacağı kayıt">
               {bindSecenekleri()}
             </Select>
             <SoftBtn onClick={async () => { setAcik(true); await add(); }} disabled={busy}>
               <Icon name="plus" size={12} /> {busy ? "Ekleniyor..." : "Dosya Ekle"}
-            </SoftBtn>
-          </div>
-        )}
-      </div>
-      {acik && <>
+            </SoftBtn></>) : undefined}>
         {dosyaCevrimdisi && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--amb800, #92400e)", background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.5 }}>
-            <span style={{ flexShrink: 0, marginTop: 1, display: "flex" }}><Icon name="warning" size={13} /></span>
-            <span>Sunucu bağlantısı yok: dosya listesi görünür ama <b>ekleme, açma ve indirme</b> bağlantı gelince çalışır.</span>
+          <div style={{ marginBottom: 8 }}>
+            <UyariSeridi aile="uyari" testId="dosya-cevrimdisi">Sunucu bağlantısı yok: dosya listesi görünür ama <b>ekleme, açma ve indirme</b> bağlantı gelince çalışır.</UyariSeridi>
           </div>
         )}
         {dosyaFiltre && (
@@ -128,9 +119,9 @@ export function CustomerFilesSection({
             <SoftBtn onClick={() => setDosyaFiltre(null)}>Tümünü göster ({detailDosyalar.length})</SoftBtn>
           </div>
         )}
-        {gosterilecek.length === 0 && (
-          <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{dosyaFiltre ? "Bu kayda ait dosya yok." : "Henüz dosya yok. PDF, resim veya Office belgesi ekleyebilirsiniz (dosya başına en fazla 20 MB)."}</div>
-        )}
+        {gosterilecek.length === 0 && (dosyaFiltre
+          ? <BosDurum testId="bos-dosyalar" baslik="Bu kayda ait dosya yok." />
+          : <BosDurum testId="bos-dosyalar" baslik="Henüz dosya yok." metin="PDF, resim veya Office belgesi ekleyebilirsiniz (dosya başına en fazla 20 MB)." />)}
         {gosterilecek.map(d => {
           const rt = d.refType || "makina";
           const rz = REF_ROZET[rt] || REF_ROZET.makina;
@@ -158,7 +149,7 @@ export function CustomerFilesSection({
           </div>
           );
         })}
-      </>}
+      </KartBolum>
     </div>
   );
 }

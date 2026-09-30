@@ -226,7 +226,7 @@ export const GIDER_ACTION_GROUPS = [
     { id: "gider_add",         label: "Gider ekle" },
     { id: "gider_edit",        label: "Gider düzenle" },
     { id: "gider_delete",      label: "Gider sil (çöp kutusuna)" },
-    { id: "gider_odeme",       label: "Ödeme durumunu değiştir" },
+    { id: "gider_odeme",       label: "Ödeme kaydet ve sil" },
     { id: "gider_tekrar_uret", label: "Tekrarlayan kalemleri oluştur" },
   ]},
   { grup: "Tanım yönetimi", items: [
@@ -236,6 +236,12 @@ export const GIDER_ACTION_GROUPS = [
     { id: "tedarikci_add",    label: "Tedarikçi ekle" },
     { id: "tedarikci_edit",   label: "Tedarikçi düzenle" },
     { id: "tedarikci_delete", label: "Tedarikçi sil" },
+  ]},
+  // Spec 0024 C6/Q7: Kasa ekranı (hesaplar ve virman).
+  { grup: "Kasa ve hesaplar", items: [
+    { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil" },
+    { id: "virman",     label: "Hesaplar arası virman" },
+    { id: "avans",      label: "Çalışana avans ver ve sil" },
   ]},
 ];
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon, Btn } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 
 // ── Takip Süreleri ────────────────────────────────────────────────────────────
 // Dashboard hatırlatma kutularının zaman eşikleri. Bilerek canlı onChange değil:
@@ -20,7 +20,7 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
   const inp = { width: 80, padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" };
 
   return (
-    <Section title="Takip Süreleri" icon="notes">
+    <KartBolum title="Takip Süreleri" icon="notes">
       <div className="section-desc">
         Anasayfadaki hatırlatma kutularının zaman eşiği. Değişiklik Kaydet'e basınca uygulanır
         ve tüm kullanıcılar için geçerli olur.
@@ -36,6 +36,6 @@ export const SettingsTakip = ({ appSettings = {}, setAppSettings = null, flash =
       </div>
 
       <Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn>
-    </Section>
+    </KartBolum>
   );
 };

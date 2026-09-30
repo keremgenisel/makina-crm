@@ -1,0 +1,308 @@
+[
+  {
+    "ad": "musteriler-liste-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 182162
+  },
+  {
+    "ad": "musteriler-liste-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 148634
+  },
+  {
+    "ad": "musteriler-bos-arama-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 339373
+  },
+  {
+    "ad": "musteriler-bos-arama-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 309255
+  },
+  {
+    "ad": "musteriler-bos-kayit-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 342338
+  },
+  {
+    "ad": "musteriler-bos-kayit-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 312220
+  },
+  {
+    "ad": "musteriler-gruplu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Firmaya göre gruplu görünüm: 5 firma (5 makina kaydı). Birden fazla ma"
+    ],
+    "piksel": 181603
+  },
+  {
+    "ad": "musteriler-gruplu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Firmaya göre gruplu görünüm: 5 firma (5 makina kaydı). Birden fazla ma"
+    ],
+    "piksel": 148075
+  },
+  {
+    "ad": "bayiler-liste-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 130743
+  },
+  {
+    "ad": "bayiler-liste-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 99046
+  },
+  {
+    "ad": "bayiler-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1017654
+  },
+  {
+    "ad": "bayiler-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 987056
+  },
+  {
+    "ad": "bayi-detay-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1204275
+  },
+  {
+    "ad": "bayi-detay-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 975769
+  },
+  {
+    "ad": "bayi-detay-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1547729
+  },
+  {
+    "ad": "bayi-detay-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1324540
+  },
+  {
+    "ad": "stok-alt-sekme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478345
+  },
+  {
+    "ad": "stok-alt-sekme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 448226
+  },
+  {
+    "ad": "stok-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478345
+  },
+  {
+    "ad": "stok-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 448226
+  },
+  {
+    "ad": "stok-bos-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 623187
+  },
+  {
+    "ad": "stok-bos-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 623161
+  },
+  {
+    "ad": "stok-bos-yedek-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 623187
+  },
+  {
+    "ad": "stok-bos-yedek-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 623163
+  },
+  {
+    "ad": "stok-bos-uretim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 629103
+  },
+  {
+    "ad": "stok-bos-uretim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 629097
+  },
+  {
+    "ad": "stok-parca-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 284845
+  },
+  {
+    "ad": "stok-parca-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 283640
+  },
+  {
+    "ad": "stok-yedek-parca-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-yedek-parca-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "finans-aralik-aydinlik.png",
+    "boyut": "2880x3112 ≠ 2880x3146",
+    "piksel": -1
+  },
+  {
+    "ad": "finans-aralik-karanlik.png",
+    "boyut": "2880x3112 ≠ 2880x3146",
+    "piksel": -1
+  },
+  {
+    "ad": "finans-bos-aydinlik.png",
+    "boyut": "2880x2436 ≠ 2880x2466",
+    "piksel": -1
+  },
+  {
+    "ad": "finans-bos-karanlik.png",
+    "boyut": "2880x2436 ≠ 2880x2466",
+    "piksel": -1
+  },
+  {
+    "ad": "evrak-sekme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 253457
+  },
+  {
+    "ad": "evrak-sekme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 253136
+  },
+  {
+    "ad": "evrak-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478485
+  },
+  {
+    "ad": "evrak-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478477
+  },
+  {
+    "ad": "evrak-bos-arama-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478485
+  },
+  {
+    "ad": "evrak-bos-arama-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 478474
+  },
+  {
+    "ad": "notlar-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 558433
+  },
+  {
+    "ad": "notlar-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 531749
+  },
+  {
+    "ad": "notlar-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 603944
+  },
+  {
+    "ad": "notlar-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 579716
+  },
+  {
+    "ad": "notlar-bos-arama-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 573364
+  },
+  {
+    "ad": "notlar-bos-arama-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 549138
+  },
+  {
+    "ad": "analiz-onayar-aydinlik.png",
+    "boyut": "2880x2696 ≠ 2880x2980",
+    "piksel": -1
+  },
+  {
+    "ad": "analiz-onayar-karanlik.png",
+    "boyut": "2880x2696 ≠ 2880x2980",
+    "piksel": -1
+  },
+  {
+    "ad": "analiz-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 967821
+  },
+  {
+    "ad": "analiz-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 938242
+  },
+  {
+    "ad": "giderler-rapor-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-bos-tursuz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-bos-tursuz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-yururluk-oncesi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-yururluk-oncesi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

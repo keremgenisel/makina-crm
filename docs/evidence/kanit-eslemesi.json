@@ -1,0 +1,1377 @@
+{
+  "aciklama": "Tasarım sözlüğünü (src/components/tasarim.jsx) kullanan her dosyanın görsel kanıtı: dosya → [{ rapor, ekran }]. Rapor, görüntü aracının (scripts/evidence/0009-calistir.mjs) önce/sonra piksel raporudur; aynı klasörde '<önek>-<ekran>-<tema>.jpg' yan yana görüntüsü durur. tests/tasarim-kaynak.test.js bu dosyayı okur: kullanan her dosyanın kaydı olmalı; kaydın ekranı raporda iki temada çizim hatasız olmalı ve JPEG'i depoda durmalı. Kayıt alanları: rapor, ekran, beklenen ('ayni' varsayılan: 0 piksel fark; 'degisti': bilinçli görünüm değişikliği, örn. yeni tasarıma dönüşüm) ve beklenen 'degisti' ise onay, biçimi 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>' (örn. 'Takım Yöneticisi · 2026-09-24 · spec 0010 AC-12'). 'degisti' kalıcı değildir: spec specs/done'a taşınırken kayıtları 'ayni'ye çevrilir (spec 0011 AC-11b, AC-11c; tests/kanit-eslemesi.test.js). Yeni bir ekran dönüşümü kendi raporunu üretir ve kaydını buraya ekler; test dosyasına dokunmaz (spec 0011 R2). onay biçimi: 'Takım Yöneticisi · YYYY-AA-GG · spec <no> <madde>'; onayı yalnız Takım Yöneticisi verir (spec 0011 AC-11b). 'degisti' kalıcı muafiyet değildir: dönüşüm spec'i specs/done'a taşınırken o spec'in açtığı bütün 'degisti' kayıtları 'ayni'ye çevrilir ve yeni görünüm taban alınır (AC-11c). Spec done'a taşınırken 'degisti' kaydı 'ayni'ye çevrilir ve onaylanan yeni görünümü taban alan raporu gösterir: '<spec>-taban-piksel-raporu.json' (bugünkü kod, onaylı 'sonra' görüntüleriyle karşılaştırılır; 0 fark beklenir). Önce/sonra raporu kanıt olarak klasörde kalır.",
+  "dosyalar": {
+    "src/components/CalisanManager.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-calisanlar"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "katalog-calisan",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "katalog-calisan",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Documents.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "evrak-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "evrak-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "evrak-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "evrak-bos-arama",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "evrak-musteri"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "evrak-bayi"
+      }
+    ],
+    "src/components/GiderForm.jsx": [
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "gider-formu-ek-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-personel-makina",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-taksit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-kira-stopaj",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-tutar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-kira",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-duzenle",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-ek-once",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-ek-sonra",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-asim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-bolunmez",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-plan-hatasi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Giderler.jsx": [
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-rapor",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-bos-tursuz"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-yururluk-oncesi"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-aralik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-uretim-bilgi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-uretim-basari",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0011-piksel-raporu.json",
+        "ekran": "giderler-aralik-gecersiz"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-hatirlatma",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-kapsam-disi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "ekran": "giderler-bos-tursuz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "ekran": "giderler-yururluk-oncesi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-taksit-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-uretim-partileri",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-aralik-gecersiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-kismen-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
+        "ekran": "giderler-rapor-dugmesi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Settings.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-models"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-parcatipi"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-calisanlar"
+      }
+    ],
+    "src/components/gider/DonemRaporu.jsx": [
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-rapor",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-rapor-personel-acik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-taksit-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-taksit-borc",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-ayrinti-kapali",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-ayrinti-acik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-kismen-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-karma-yontem",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-yontem-kirilimi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-iki-hedef",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/FiyatOnerisi.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-karlilik"
+      }
+    ],
+    "src/components/gider/GiderAlanlari.jsx": [
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-plani",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-plani-hareket",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "gider-formu-ek-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit-taksit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-coklu-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-coklu-odeme-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-mahsup",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-coklu-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "kasa-hesap-formu-tutar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-personel-makina",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-taksit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-kira-stopaj",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-tutar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-kira",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-duzenle",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/KdvKarsilastirmaKarti.jsx": [
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-rapor",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "finans"
+      }
+    ],
+    "src/components/gider/MakinaKarliligi.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-karlilik"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-karlilik-parti",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/MakinaModelGorunumu.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-model"
+      },
+      {
+        "rapor": "docs/evidence/0020-taban-piksel-raporu.json",
+        "ekran": "giderler-model",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0020-taban-piksel-raporu.json",
+        "ekran": "giderler-model-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-model-parti-degisim",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/StandartGiderler.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-standart"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-standart-tutar",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/Tedarikciler.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "giderler-tedarikciler"
+      },
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-ekstresi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/settings/GiderTurManager.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur-duzenle",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/settings/SettingsApp.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-app"
+      }
+    ],
+    "src/components/settings/SettingsBackup.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-backup"
+      }
+    ],
+    "src/components/settings/SettingsCompany.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-company"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-company-acik"
+      }
+    ],
+    "src/components/settings/SettingsDanger.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-danger"
+      }
+    ],
+    "src/components/settings/SettingsDocuments.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-evrak"
+      }
+    ],
+    "src/components/settings/SettingsExport.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-export"
+      }
+    ],
+    "src/components/settings/SettingsGider.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-giderayar"
+      }
+    ],
+    "src/components/settings/SettingsGiderTanimlari.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "gider-tanim-tablo",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/settings/SettingsImport.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-import"
+      }
+    ],
+    "src/components/settings/SettingsKdv.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-kdv"
+      }
+    ],
+    "src/components/settings/SettingsKKKomisyon.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-kkkomisyon"
+      }
+    ],
+    "src/components/settings/SettingsMail.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-eposta"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-eposta",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/settings/SettingsMailTemplates.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-mailsablon"
+      }
+    ],
+    "src/components/settings/SettingsMusteri.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-musteri"
+      }
+    ],
+    "src/components/settings/SettingsOptimize.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-optimize"
+      }
+    ],
+    "src/components/settings/SettingsSahipsiz.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-sahipsiz"
+      }
+    ],
+    "src/components/settings/SettingsSecurity.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-security"
+      }
+    ],
+    "src/components/settings/SettingsSentMail.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-sentmail"
+      }
+    ],
+    "src/components/settings/SettingsServer.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-server"
+      },
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-server-istemci"
+      }
+    ],
+    "src/components/settings/SettingsServisPanosu.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-servispano"
+      }
+    ],
+    "src/components/settings/SettingsTakip.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-takip"
+      }
+    ],
+    "src/components/settings/SettingsTranslations.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-ceviri"
+      }
+    ],
+    "src/components/settings/SettingsTrash.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-trash"
+      }
+    ],
+    "src/components/settings/SettingsTwoFactor.jsx": [
+      {
+        "rapor": "docs/evidence/0009-piksel-raporu.json",
+        "ekran": "ayarlar-server-istemci"
+      }
+    ],
+    "src/components/Customers.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "musteriler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteriler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteriler-bos-arama",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteriler-bos-kayit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteriler-gruplu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/SimpleDealers.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "bayiler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "bayi-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "bayiler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "bayiler-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "bayi-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "bayi-detay-bos",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Stock.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/YedekParcaSatisTab.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-bos-yedek",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-suzgec",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Finance.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "finans-aralik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "finans-aralik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "finans-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
+        "ekran": "finans-rapor-dugmesi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Notes.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "notlar-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "not-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "notlar-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "notlar-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "notlar-bos-arama",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Analiz.jsx": [
+      {
+        "rapor": "docs/evidence/0014-taban-piksel-raporu.json",
+        "ekran": "analiz-onayar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "analiz-onayar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "analiz-bos",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/CustomerAddEditForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/CustomerDetailModal.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-yeni-sahip",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-tahsis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-cek",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/ServiceForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "servis-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "servis-formu-odendi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/PartSaleForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "kalip-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-odendi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/YedekParcaSatisForm.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-odendi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-kargo",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/MakinaStokTab.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/PartStokTab.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "parca-stok-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-bos-parca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-parca-uyari",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/MailCompose.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "eposta-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/ModelsManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "katalog-model",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/KalipManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/PartManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/PartTypeManager.jsx": [
+      {
+        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "ekran": "ayarlar-parcatipi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/UretimFormu.jsx": [
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "stok-bos-uretim",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/detail/MachineTimeline.jsx": [
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-tahsis",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/detail/CustomerFilesSection.jsx": [
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bos",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/detail/OwnershipSection.jsx": [
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/detail/PaymentSection.jsx": [
+      {
+        "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/OdemePlaniPenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-plani",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-plani-hareket",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0042-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-odeme-plani",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/UretimPartileri.jsx": [
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-uretim-partileri",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
+        "ekran": "giderler-uretim-partisi-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/Kasa.jsx": [
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-hesaplar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-hesap-hareketleri-kart",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-hesap-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-virman",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-calisan-avanslari",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-avans-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-calisan-ekstresi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-tahsilat-hareketleri",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kasa-hesapsiz-tahsilatlar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "kasa-hesap-formu-tutar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
+        "ekran": "kasa-rapor-dugmesi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-verilen-cek-bakiye",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/OdemeKayitPenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit-taksit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-coklu-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-coklu-odeme-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-mahsup",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "giderler-personel-coklu-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-dugmesi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/kasa/CalisanAvanslari.jsx": [
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "kasa-calisan-avanslari",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "kasa-avans-formu",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/EkstrePenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "kasa-calisan-ekstresi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0024-taban-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-ekstresi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/cek/CekPortfoyu.jsx": [
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-tumu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-durum",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0040-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-gecmis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-tumu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-durum",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-gecmis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-bagsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-bagsiz-durum",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-verilen",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/cek/CiroPenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-yaz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/kasa/TahsilatHesap.jsx": [
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-penceresi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-neden",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/gider/OdemeFormSatirlari.jsx": [
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-personel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-kira",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-ciro",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-duzenle",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-ek-once",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-ek-sonra",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-asim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-bolunmez",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-plan-hatasi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-kendi",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/cek/CekEklePenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
+        "ekran": "kasa-cek-ekle",
+        "beklenen": "ayni"
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon, Field, Input, Btn, ConfirmDialog } from "../ui";
-import { Section } from "./Section";
+import { KartBolum } from "../tasarim";
 import { DEFAULT_MAIL_TEMPLATES } from "../../lib/mailTemplates";
 
 // ── E-posta Şablonları ────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
   const rozet = { display: "inline-block", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 5, padding: "1px 6px", fontSize: 11, fontFamily: "monospace", color: "var(--n600, #475569)", marginRight: 4 };
 
   return (
-    <Section title="E-posta Şablonları" icon="mail">
+    <KartBolum title="E-posta Şablonları" icon="mail">
       <div className="section-desc">
         Evrakları e-posta ile gönderirken taslağa otomatik dolan konu ve mesaj metinleri.
         Süslü parantezli yer tutucular gönderim anında gerçek değerlerle doldurulur.
@@ -103,6 +103,6 @@ export const SettingsMailTemplates = ({ appSettings = {}, setAppSettings = null,
           onCancel={() => setConfirmReset(false)}
         />
       )}
-    </Section>
+    </KartBolum>
   );
 };

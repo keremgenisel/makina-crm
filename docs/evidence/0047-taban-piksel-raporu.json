@@ -1,0 +1,64 @@
+[
+  {
+    "ad": "gider-kasa-raporu-belge-aydinlik.png",
+    "boyut": "2880x4298",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-belge-karanlik.png",
+    "boyut": "2880x4298",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-kalemsiz-aydinlik.png",
+    "boyut": "2880x3944",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-kalemsiz-karanlik.png",
+    "boyut": "2880x3944",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "finans-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x3146",
+    "piksel": 0
+  },
+  {
+    "ad": "finans-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x3146",
+    "piksel": 0
+  }
+]

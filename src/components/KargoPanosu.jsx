@@ -62,7 +62,7 @@ export const KargoKart = ({ s, dealers = [], parts = [], customers = [], calisan
       {/* Farklı teslimat adresi varsa kartta uyarı — kargoyu hazırlayan yanlış adrese göndermez.
           Hem yedek parça hem Extra Kalıp kargosu için (ikisinde de teslimatFarkli var). */}
       {s.teslimatFarkli && (
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--acc, #e85d1a)", marginTop: 7, padding: "5px 9px", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--brand, #e85d1a)", marginTop: 7, padding: "5px 9px", background: "var(--ambBg3, #fff7ed)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 8 }}>
           📍 Farklı adres{[s.teslimatSehir, s.teslimatIlce].filter(Boolean).join(" / ") ? ` · ${[s.teslimatSehir, s.teslimatIlce].filter(Boolean).join(" / ")}` : ""}
         </div>
       )}
@@ -154,7 +154,7 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
             Hem yedek parça hem Extra Kalıp kargosu için. */}
         {satis.teslimatFarkli && (
           <div style={{ marginTop: 12, border: "1px solid var(--ambBr3, #fed7aa)", background: "var(--ambBg3, #fff7ed)", borderRadius: 12, padding: "12px 14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--acc, #e85d1a)", marginBottom: 8 }}>📍 Teslimat (kargo) Adresi</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--brand, #e85d1a)", marginBottom: 8 }}>📍 Teslimat (kargo) Adresi</div>
             <div style={{ display: "grid", gap: 3, fontSize: 12 }}>
               {[["Teslim Alacak", satis.teslimatAd], ["Telefon", satis.teslimatTel], ["Açık Adres", satis.teslimatAdres], ["Şehir / İlçe", [satis.teslimatSehir, satis.teslimatIlce].filter(Boolean).join(" / ")], ["Ülke", satis.teslimatUlke]].filter(([, v]) => v).map(([label, value]) => (
                 <div key={label} style={{ display: "flex", gap: 8 }}>

@@ -233,7 +233,7 @@ Test adları `AC-<n>: <metin>`. `M` = `tests/makina-maliyeti.test.js` (motor), `
 | AC-67 | M | dönem `installDate`'e göre |
 | AC-68 | M | Extra Kalıp geliri kâra girmez |
 | AC-69 | UI-K + UI-D | alt görünümde ve detayda var, Finans'ta yok |
-| AC-70, AC-71 | M | kira/personel atamalı olsa bile ortak; silinmiş model satırı ortağa, payı yükseltir |
+| AC-70, AC-71 | M | kira/personel atamalı olsa bile ortak *(güncelleme 2026-09-27, spec 0020: personel yarısı ters çevrildi, yalnız kira ortak)*; silinmiş model satırı ortağa, payı yükseltir |
 | AC-75 | M + UI-S | elle üretim tarihi → tahmini etiketi kalkar, pay yeni ayın |
 | DoD: dört sınıf toplamı | M | makina + model + ortak + dağıtılmayan = `hesaplaGiderRaporu(...).toplam` |
 | DoD: C9 süre | M ("C9: tek geçiş ve süre" bloğu) | 5.000 makina / 20.000 kalem: ölçülen **66 ms** (M12; test 3 sn gevşek sınır koyar) |

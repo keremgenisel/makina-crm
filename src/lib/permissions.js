@@ -31,13 +31,18 @@ export function makeCanDo(serverPermissions, groupKey) {
  * @param {import("../types").ServerPermissions | null | undefined} serverPermissions
  */
 export function gorunurSekmeler(tabs, serverMode, serverPermissions) {
-  if (serverMode !== "active") return tabs;
-  if (!serverPermissions || serverPermissions.role === "admin") return tabs;
-  const giderHaric = tabs.filter(t => t.id !== "gider");
+  // Spec 0024 C6/Q9: "kasa" kendi izin kutusu olmayan türev sekmedir; Giderler ve Finans birlikte görünüyorsa görünür.
+  const kasaSuz = (liste) => {
+    const ids = new Set(liste.map(t => t.id));
+    return liste.filter(t => t.id !== "kasa" || (ids.has("gider") && ids.has("finance")));
+  };
+  if (serverMode !== "active") return kasaSuz(tabs);
+  if (!serverPermissions || serverPermissions.role === "admin") return kasaSuz(tabs);
+  const giderHaric = kasaSuz(tabs.filter(t => t.id !== "gider"));
   try {
     const allowed = JSON.parse(serverPermissions.permissions || "null")?.tabs;
     if (!Array.isArray(allowed)) return giderHaric;
-    return tabs.filter(t => allowed.includes(t.id));
+    return kasaSuz(tabs.filter(t => allowed.includes(t.id) || t.id === "kasa"));
   } catch { return giderHaric; }
 }
 

@@ -299,6 +299,18 @@ describe("Çöp Kutusu — gider kalemleri", () => {
     expect(sonuc[0].deletedAt).toBeUndefined();
     expect(sonuc[0].tutar).toBe(14800);
   });
+  it("AC-18 (spec 0021): taksitli kalem çöpten geri alınınca taksitleri ve ödeme durumları aynen döner", () => {
+    const taksitler = [{ id: 7101, hedef: "ana", sira: 1, vade: "2026-09-15", tutar: 8880, odendi: true, odemeTarihi: "2026-09-15" },
+      { id: 7102, hedef: "ana", sira: 2, vade: "2026-10-15", tutar: 8880, odendi: false, odemeTarihi: null }];
+    const k = { ...silinmis, taksitler, odendi: false, sonOdemeTarihi: "2026-10-15" };
+    const setGiderler = vi.fn();
+    renderTrash({ rawGiderler: [k], setGiderler, giderTurleri: turler, giderYetki: true });
+    fireEvent.click(within(screen.getByText(/Ağustos faturası/).closest("tr")).getByText(/Geri Al/));
+    const sonuc = setGiderler.mock.calls[0][0]([k]);
+    expect(sonuc[0].deletedAt).toBeUndefined();
+    expect(sonuc[0].taksitler).toEqual(taksitler);
+    expect(sonuc[0]).toMatchObject({ odendi: false, sonOdemeTarihi: "2026-10-15" });
+  });
   it("personel kaleminde tutar listelenmez", () => {
     renderTrash({ rawGiderler: [{ id: 71, tarih: "2026-09-01", turId: 3, calisanAd: "Hasan", resmiTutar: 30000, deletedAt: "x" }], giderTurleri: turler, giderYetki: true, setGiderler: vi.fn() });
     expect(screen.getByText(/Personel · Hasan/)).toBeTruthy();
@@ -313,5 +325,62 @@ describe("Çöp Kutusu — gider kalemleri", () => {
     const onay = screen.getAllByRole("button").find(b => /Boşalt|Evet/.test(b.textContent) && b.closest(".modal-backdrop"));
     fireEvent.click(onay);
     expect(setGiderler).not.toHaveBeenCalled();
+  });
+});
+
+// Spec 0040 triyajı (Q7): ciro edilmiş çeke bağlı tahsilat ve çek kaydı hiçbir kalıcı silme yolunda gitmez; yoksa cekId'li
+// ödeme hareketleri kaydı olmayan bir çeke bağlı yetim kalır, ciro iptal edilemez, çek karşılıksız işaretlenemezdi.
+describe("Çöp Kutusu — ciro edilmiş çek (spec 0040 triyajı)", () => {
+  const TS = "2026-09-20T10:00:00.000Z";
+  const musteri = { id: 800, name: "Cirolu Firma", deletedAt: TS };
+  const ciroOdeme = { id: 810, customerId: 800, tutar: 5000, currency: "TRY", yontem: "Çek", deletedAt: TS };
+  const duzOdeme = { id: 811, customerId: 800, tutar: 1000, currency: "TRY", yontem: "Çek", deletedAt: TS };
+  const cekler = [
+    { id: 820, paymentId: 810, no: "1", banka: "Z", durum: "ciro", gecmis: [] },
+    { id: 821, paymentId: 811, no: "2", banka: "Z", durum: "portfoy", gecmis: [] },
+  ];
+  const kur = () => {
+    const durum = { customers: [musteri], payments: [ciroOdeme, duzOdeme], cekler: [...cekler] };
+    const setter = (k) => vi.fn((u) => { durum[k] = typeof u === "function" ? u(durum[k]) : u; });
+    const showToast = vi.fn();
+    renderTrash({ rawCustomers: durum.customers, rawPayments: durum.payments, cekler: durum.cekler,
+      setCustomers: setter("customers"), setPayments: setter("payments"), setCekler: setter("cekler"), showToast });
+    return { durum, showToast };
+  };
+  const kaliciSil = (etiket) => {
+    const satir = screen.getAllByText(etiket).map(e => e.closest("tr")).find(Boolean);
+    fireEvent.click(within(satir).getByText("Kalıcı Sil"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+  };
+
+  it("ciro edilmiş çekli tahsilat tek başına kalıcı silinemez; çek kaydı da kalır", () => {
+    const { durum, showToast } = kur();
+    kaliciSil(/Cirolu Firma · ₺5\.000/);
+    expect(durum.payments.map(p => p.id)).toEqual([810, 811]);
+    expect(durum.cekler.map(c => c.id)).toEqual([820, 821]);
+    expect(showToast.mock.calls.at(-1)[0]).toMatch(/kalıcı silinemez.*ciroyu iptal edin/);
+  });
+  it("ciro edilmemiş çekli tahsilat kalıcı silinince çek kaydı da silinir", () => {
+    const { durum } = kur();
+    kaliciSil(/Cirolu Firma · ₺1\.000/);
+    expect(durum.payments.map(p => p.id)).toEqual([810]);
+    expect(durum.cekler.map(c => c.id)).toEqual([820]);
+  });
+  it("ciro edilmiş çekli tahsilatı olan müşteri kalıcı silinemez", () => {
+    const { durum, showToast } = kur();
+    kaliciSil("Cirolu Firma");
+    expect(durum.customers.map(c => c.id)).toEqual([800]);
+    expect(durum.payments).toHaveLength(2);
+    expect(durum.cekler).toHaveLength(2);
+    expect(showToast.mock.calls.at(-1)[0]).toMatch(/Müşteri kalıcı silinemez/);
+  });
+  it("'Çöp Kutusunu Boşalt' ciro edilmiş çekli tahsilatı, müşterisini ve çek kaydını bırakır; ötekileri siler", () => {
+    const { durum, showToast } = kur();
+    fireEvent.click(screen.getByText("Çöp Kutusunu Boşalt"));
+    fireEvent.click(screen.getByText("Evet, Sil"));
+    expect(durum.customers.map(c => c.id)).toEqual([800]);
+    expect(durum.payments.map(p => p.id)).toEqual([810]);
+    expect(durum.cekler.map(c => c.id)).toEqual([820]);
+    expect(showToast.mock.calls.at(-1)[0]).toMatch(/1 tahsilat \(ve müşterisi\) çöpte bırakıldı/);
   });
 });

@@ -13,7 +13,8 @@ import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { bayiBagliSayilar, bayiBagliOzeti, yedekParcaBayiKaskad, yedekParcaBayininMi, bayiDosyasiMi } from "../lib/bayiKaskad";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { usePagination } from "../hooks/usePagination";
-import { Icon, Field, Input, Warn, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
+import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
+import { Segment, HataMetni, KartBolum, BosDurum } from "./tasarim";
 import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
@@ -346,30 +347,23 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Bayiler</h2>
         {canDo("dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> Bayi/Servis Ekle</Btn>}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        {[
-          { v: "all", l: "Tümü", count: dealers.length },
-          { v: "bayi", l: "Bayiler", count: dealers.filter(d => d.bayiMi !== false).length },
-          { v: "anlasmali", l: "Anlaşmalı Servisler", count: dealers.filter(d => d.anlasmaliServisMi).length },
-          { v: "borclu", l: "Borçlu", count: dealers.filter(dealerHasDebt).length },
-        ].map(f => (
-          <button key={f.v} onClick={() => { setDealerFilter(f.v); setPage(1); }}
-            style={{
-              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: dealerFilter === f.v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
-              background: dealerFilter === f.v ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
-              color: dealerFilter === f.v ? "#fff" : "var(--n500, #64748b)",
-            }}>
-            {f.l} ({f.count})
-          </button>
-        ))}
+      <div style={{ marginBottom: 12 }}>
+        {/* Spec 0014: sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Bayi süzgeci" value={dealerFilter} onChange={v => { setDealerFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "Tümü", sayi: dealers.length },
+            { value: "bayi", label: "Bayiler", sayi: dealers.filter(d => d.bayiMi !== false).length },
+            { value: "anlasmali", label: "Anlaşmalı Servisler", sayi: dealers.filter(d => d.anlasmaliServisMi).length },
+            { value: "borclu", label: "Borçlu", sayi: dealers.filter(dealerHasDebt).length },
+          ]} />
       </div>
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Bayi ara..."
           style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? <BosDurum testId="bos-bayiler" baslik="Bayi bulunamadı." /> : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -429,9 +423,9 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>Bayi bulunamadı.</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {/* Bayi detay görüntüleme */}
       {detailView && (
@@ -555,13 +549,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
             </div>
           );
           const servisBlok = isServisli ? (
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Servis Geçmişi ({dealerServices.length})
-              </div>
-              {svcPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" title={`Servis Geçmişi (${dealerServices.length})`}>
+              {svcPaged.length === 0 && <BosDurum testId="bos-bayi-servis" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {svcPaged.map(s => {
                   const cust = customers.find(c => c.id === s.customerId);
@@ -638,16 +627,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerSvcFiltered.length} page={svcPage} setPage={setSvcPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           const yedekBlok = (!detailView._isFactory && dealerYedekParca.length > 0) ? (
-            <div style={{ marginTop: isServisli ? 16 : 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Yedek Parça Geçmişi ({dealerYedekParca.length})
-              </div>
-              {ypPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" style={{ marginTop: isServisli ? 16 : 0 }} title={`Yedek Parça Geçmişi (${dealerYedekParca.length})`}>
+              {ypPaged.length === 0 && <BosDurum testId="bos-bayi-yedek" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {ypPaged.map(s => {
                   const part = (parts || []).find(p => String(p.id) === String(s.partId));
@@ -681,16 +665,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerYpFiltered.length} page={ypPage} setPage={setYpPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           const kalipBlok = (!detailView._isFactory && dealerKaliplar.length > 0) ? (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n600, #475569)", letterSpacing: .5, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid var(--n200, #e2e8f0)" }}>
-                Sattığı Extra Kalıplar ({dealerKaliplar.length})
-              </div>
-              {kalipPaged.length === 0 && (
-                <div style={{ padding: "16px 0", textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>Kayıt bulunamadı.</div>
-              )}
+            <KartBolum varyant="kart" baslikStili="baslik" style={{ marginTop: 16 }} title={`Sattığı Extra Kalıplar (${dealerKaliplar.length})`}>
+              {kalipPaged.length === 0 && <BosDurum testId="bos-bayi-kalip" baslik="Kayıt bulunamadı." />}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 }}>
                 {kalipPaged.map(p => {
                   const cust = customers.find(c => c.id === p.customerId);
@@ -721,7 +700,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
               </div>
               <Pagination total={dealerKalipFiltered.length} page={kalipPage} setPage={setKalipPage} perPage={5} />
-            </div>
+            </KartBolum>
           ) : null;
           return saginIcerigi ? (
             <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
@@ -832,14 +811,18 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       })()}
 
       {modal && (
-        <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}>
+        <Modal title={modal === "factory" ? "Fabrika Bilgilerini Düzenle" : modal === "add" ? "Bayi Ekle" : "Bayi Düzenle"} onClose={() => setModal(null)}
+          footer={(dealerLock && modal?.edit) ? undefined : <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
+            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
+          </div>}>
           {(dealerLock && modal?.edit) ? (
             <LockConflict lockedBy={dealerLock.lockedBy} lockedAt={dealerLock.lockedAt}
               onForce={forceDealerLock} onCancel={() => setModal(null)} />
           ) : (<>
           <Field label="Firma Adı">
             <Input value={form.name || ""} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Bayi firma adı" />
-            {modal !== "factory" && <Warn>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</Warn>}
+            {modal !== "factory" && <HataMetni>{!form.name?.trim() ? "Firma adı girilmedi" : ""}</HataMetni>}
           </Field>
           {modal !== "factory" && (
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -853,17 +836,17 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               </label>
             </div>
           )}
-          {modal !== "factory" && <Warn>{!form.bayiMi && !form.anlasmaliServisMi ? "En az biri seçili olmalı: Bayi veya Anlaşmalı Servis" : ""}</Warn>}
+          {modal !== "factory" && <HataMetni>{!form.bayiMi && !form.anlasmaliServisMi ? "En az biri seçili olmalı: Bayi veya Anlaşmalı Servis" : ""}</HataMetni>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="İletişim Kişisi"><Input value={form.contact || ""} onChange={e => setForm(p => ({ ...p, contact: e.target.value }))} placeholder="Ad Soyad" /></Field>
             <Field label="Telefon">
               <Input value={form.phone || ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-              <Warn>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</Warn>
+              <HataMetni>{form.phone && !PHONE_RE.test(form.phone) ? "Geçersiz telefon formatı" : ""}</HataMetni>
             </Field>
           </div>
           <Field label="E-posta">
             <Input value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ornek@firma.com" />
-            <Warn>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</Warn>
+            <HataMetni>{form.email && !EMAIL_RE.test(form.email) ? "Geçersiz e-posta formatı" : ""}</HataMetni>
           </Field>
           <Field label="Adres Satırı"><Input value={form.adres || ""} onChange={e => setForm(p => ({ ...p, adres: e.target.value }))} placeholder="Mahalle, cadde, no..." /></Field>
           <CountryCityFields country={form.country} city={form.city} ilce={form.ilce}
@@ -876,10 +859,6 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
               placeholder="Bayi hakkında notlar..."
               className="input" style={{ resize: "vertical", minHeight: 70 }} />
           </Field>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>İptal</Btn>
-            <Btn onClick={save}><Icon name="check" size={14} /> Kaydet</Btn>
-          </div>
           </>)}
         </Modal>
       )}

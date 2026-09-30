@@ -3,6 +3,7 @@ import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEM
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize, parseMoney } from "../lib/utils";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { cekDogrula, CEK_TURLERI } from "../lib/cek";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -22,6 +23,10 @@ export const Icon = ({ name, size = 16 }) => {
     finance:    "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
     analiz:     "M3 3v18h18M7 16v-5M12 16V8M17 16v-9",
     gider:      "M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6M9 16h3",
+    kasa:       "M3 7h18v12H3zM3 11h18M7 15h3M16 7V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2",
+    mali:       "M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3M21 11h-5a2 2 0 0 0 0 4h5z", // spec 0043: Mali İşler grubu (cüzdan)
+    chevronDown:  "M6 9l6 6 6-6",
+    chevronRight: "M9 6l6 6-6 6",
     expand:     "M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3",
     globe:      "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M2.5 9h19 M2.5 15h19 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20",
     settings:   "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
@@ -110,10 +115,6 @@ export const PasswordInput = (props) => {
     </div>
   );
 };
-// Hiçbir alan zorunlu değil — bu sadece bilgilendirme amaçlı, kaydı engellemez
-export const Warn = ({ children }) => children ? (
-  <div className="warn-msg">⚠ {children}</div>
-) : null;
 // Elektrik kesintisi/çökme sonrası bulunan form taslağını geri yükleme şeridi (bkz. useFormDraft)
 export const DraftRestoreBar = ({ draft, onRestore, onDiscard }) => {
   if (!draft) return null;
@@ -205,7 +206,9 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (Select + MoneyInput + sil butonu, "+ Satır Ekle"). Yöntem "Çek" seçilince ek bir Vade Tarihi
 // alanı çıkar. Bu bileşen sadece satırları düzenler — her satırdan ayrı bir kayıt üretmek
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih }) => {
+// Spec 0040 R1, R2, R14: `cekler` verilirse "Çek" satırında çek kaydının alanları (numara, banka, keşideci, tür) çizilir;
+// aynı banka ve numaralı kayıtlı çek uyarı verir (engellemez). Her çek ayrı satırdır (bir tahsilat bir çek taşır).
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih, cekler = null }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -216,7 +219,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
       {satirlar.map((r, i) => (
         <div key={i} style={{ marginBottom: 8 }}>
           <div style={{ display: "grid", gridTemplateColumns: r.yontem === "Çek" ? "1fr 1fr 1fr 36px" : "1fr 1fr 36px", gap: 8, alignItems: "center" }}>
-            <Select value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
+            <Select aria-label={`Ödeme yöntemi ${i + 1}`} value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
               {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
             </Select>
             <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
@@ -226,6 +229,25 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
             <button type="button" title="Bu satırı kaldır" onClick={() => satirSil(i)}
               style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
           </div>
+          {r.yontem === "Çek" && Array.isArray(cekler) && (() => {
+            const d = cekDogrula(r.cek || {}, { cekler });
+            const set = (patch) => satirGuncelle(i, { cek: { ...(r.cek || {}), ...patch } });
+            const alan = { padding: "7px 10px", border: "1px solid var(--n300, #cbd5e1)", borderRadius: 8, fontSize: 13, background: "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", minWidth: 0 };
+            return (
+              <div data-testid="cek-alanlari" style={{ marginTop: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 130px", gap: 8 }}>
+                  <input aria-label="Çek numarası" placeholder="Çek no *" value={r.cek?.no || ""} onChange={e => set({ no: e.target.value })} style={alan} />
+                  <input aria-label="Banka" placeholder="Banka *" value={r.cek?.banka || ""} onChange={e => set({ banka: e.target.value })} style={alan} />
+                  <input aria-label="Keşideci" placeholder="Keşideci (çeki yazan)" value={r.cek?.kesideci || ""} onChange={e => set({ kesideci: e.target.value })} style={alan} />
+                  <select aria-label="Çek türü" value={r.cek?.tur || "hamiline"} onChange={e => set({ tur: e.target.value })} style={alan}>
+                    {CEK_TURLERI.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                {d.uyari && <div role="status" style={{ fontSize: 11.5, color: "var(--amb800, #92400e)", marginTop: 4 }}>{d.uyari}</div>}
+                <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Her çek ayrı satırdır: müşteri üç çek verdiyse üç satır girin. Çek tutarı bu satırın tutarıdır.</div>
+              </div>
+            );
+          })()}
           {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
             <>
               <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}
@@ -388,7 +410,8 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
         <div style={{ padding: "0 28px 20px", overflowY: "auto", flex: 1 }}>
           {children}
         </div>
-        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid var(--n200, #e2e8f0)", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ padding: "12px 28px 16px", flexShrink: 0, borderTop: "1px solid var(--n200, #e2e8f0)", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          {/* Spec 0045 R11: düğmeler arası boşluk kabın kendisinden gelir (sarmalayıcılı formlarda tek çocuk, fark yok). */}
           {footer}
         </div>
       </div>

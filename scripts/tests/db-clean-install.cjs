@@ -33,12 +33,12 @@ try {
     customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, satisKuru: 38.5, uretimTarihi: "2026-08-01",
       odemePlani: [{ id: 1, vadeTarihi: "2026-09-01", tutar: 1000, odemeId: null }] }],
     teklifler: [{ id: 9, type: "teklif", no: "T-9", firma: "B", aliciTipi: "bayi", dealerId: 2, nihaiMusteriId: 1, uretilenKalemler: ["a"], satirlar: [] }],
-    stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05" }],
+    stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05", partiId: 35 }],
     uretimFormlari: [{ id: 7, baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-05", kapali: true, not: "n", satirlar: [] }],
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
       odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
-    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", satisFirma: "Diğer", satisFirmaAd: "Aracı",
+    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", hesapId: 5, satisFirma: "Diğer", satisFirmaAd: "Aracı",
       teslimSekli: "kargo",
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
@@ -49,8 +49,16 @@ try {
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }],
     tedarikciler: [{ id: 31, ad: "Tedarikçi A" }],
     giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [] }],
-    giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }] }],
+    giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
+      ekOdemeler: [{ tur: "ikramiye", aciklama: "Bayram", resmiTutar: 500, eldenTutar: null }],
+      taksitler: [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-07-15", tutar: 600, odendi: true, odemeTarihi: "2026-07-15" }, { id: 7002, hedef: "ana", sira: 2, vade: "2026-08-15", tutar: 600, odendi: false, odemeTarihi: null }] }],
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
+    uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }],
+    // Spec 0040: temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu.
+    cekler: [{ id: 36, paymentId: 37, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] },
+      // Spec 0049: temiz kurulumda çek tablosunun yeni sütunları.
+      { id: 38, yon: "verilen", paymentId: null, no: "2", banka: "Z", tur: "hamiline", durum: "yazildi", tutar: 100, vadeTarihi: "2026-12-01", hesapId: 5, alacakliAd: "X", gecmis: [] }],
+    hesapHareketleri: [{ id: 38, tur: "odeme", tarih: "2026-07-01", tutar: 1, giderId: 1, cekId: 36 }],
     payments: [{ id: 10, customerId: 1, tarih: "2026-07-22", tutar: 5000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
       mailTemplates: { teklifProforma: { konu: "K", metin: "M" } },
@@ -76,6 +84,10 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
   const ok = t?.aliciTipi === "bayi" && t?.dealerId === 2 && t?.nihaiMusteriId === 1 && t?.uretilenKalemler?.[0] === "a" && y?.teklifId === 9 && y?.teklifKalemId === "a";
   return ok;
 })());
+check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 1 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
+check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
+check("temiz kurulumda cekler tablosunun 0049 sütunları oluştu (AC-25)", (blob.cekler || []).find(c => c.id === 38)?.hesapId === 5 && (blob.cekler || []).find(c => c.id === 38)?.tutar === 100);
+check("temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu oluştu (spec 0040)", (blob.cekler || [])[0]?.no === "1" && (blob.hesapHareketleri || [])[0]?.cekId === 36);
 check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
 check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {
   const c = (blob.customers || []).find(x => x.id === 1);
@@ -95,6 +107,8 @@ check("temiz kurulumda yedek parça satışı + tahsis tabloları oluştu", (() 
 check("temiz kurulumda yedek parça ödeme yöntemi sütunu oluştu", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.yontem === "Kredi Kartı"; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (yedek parça)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 54; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (payment, blokaj)", (() => { const p = (blob.payments || []).find(x => x.id === 10); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31"; })());
+check("temiz kurulumda gider ek ödeme tablosu oluştu (spec 0023)", ((blob.giderler || []).find(x => x.id === 33)?.ekOdemeler || []).length === 1);
+check("temiz kurulumda gider ödeme satırı tablosu oluştu ve kimlikler yazıldı (spec 0021)", ((blob.giderler || []).find(x => x.id === 33)?.taksitler || []).map(x => x.id).join() === "7001,7002");
 check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 1 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 1 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());
 

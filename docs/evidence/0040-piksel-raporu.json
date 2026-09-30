@@ -1,0 +1,228 @@
+[
+  {
+    "ad": "kasa-hesaplar-aydinlik.png",
+    "boyut": "2880x1924 ≠ 2880x2024",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesaplar-karanlik.png",
+    "boyut": "2880x1924 ≠ 2880x2024",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1834389
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1834546
+  },
+  {
+    "ad": "kasa-hesap-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1461323
+  },
+  {
+    "ad": "kasa-hesap-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1461130
+  },
+  {
+    "ad": "kasa-virman-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1509587
+  },
+  {
+    "ad": "kasa-virman-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1509382
+  },
+  {
+    "ad": "kasa-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1036374
+  },
+  {
+    "ad": "kasa-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1036321
+  },
+  {
+    "ad": "kasa-calisan-avanslari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1954302
+  },
+  {
+    "ad": "kasa-calisan-avanslari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1955010
+  },
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1557909
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1558236
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1553008
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye yalnız kaydı olan hareketleri sayar. Servis, Extra Kalıp ve yed"
+    ],
+    "piksel": 1553409
+  },
+  {
+    "ad": "kasa-cek-portfoyu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-portfoyu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-tumu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-tumu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-gecmis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-cek-gecmis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yed"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "musteri-tahsilat-cek-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "musteri-tahsilat-cek-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "fark": "önce görüntüsü yok"
+  }
+]

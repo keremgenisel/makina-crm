@@ -5,7 +5,8 @@ import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, SearchSelect, DateInput } from "./ui";
+import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, DraftRestoreBar, DateInput } from "./ui";
+import { Segment, KartBolum, BosDurum } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -839,15 +840,11 @@ export const Documents = ({
       )}
 
       {/* Alt sekme */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--n150, #f1f5f9)", paddingBottom: 0 }}>
-        {[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => (
-          <button key={id} onClick={() => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }} style={{
-            padding: "8px 18px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13.5,
-            borderBottom: subTab === id ? "2px solid var(--brand, #e85d1a)" : "2px solid transparent",
-            color: subTab === id ? "var(--brand, #e85d1a)" : "var(--n400, #94a3b8)",
-            background: "transparent", marginBottom: -2,
-          }}>{label}</button>
-        ))}
+      <div style={{ marginBottom: 16 }}>
+        {/* Spec 0014: gezinme alt sekmeleri, sözlükteki segmentli seçicinin sekme kipi. Yan etkiler (sayfa, arama, odak) burada. */}
+        <Segment kip="sekme" genislik="icerik" ariaLabel="Evrak türleri" value={subTab}
+          onChange={id => { setSubTab(id); setPage(1); setSearch(""); setOdakDocId(null); }}
+          options={[["teklif","Teklifler"],["proforma","Proformalar"],["fatura","Yurt Dışı Fatura"]].map(([id, label]) => ({ value: id, label }))} />
       </div>
 
       {subTab !== "fatura" ? (<>
@@ -859,12 +856,12 @@ export const Documents = ({
       </div>
 
       {/* Tablo */}
-      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {searched.length === 0 ? (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-            {filtered.length === 0 ? `Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.` : "Arama sonucu bulunamadı."}
-          </div>
+          filtered.length === 0
+            ? <BosDurum testId="bos-evrak" baslik={`Henüz ${subTab === "teklif" ? "teklif" : "proforma"} yok.`} />
+            : <BosDurum testId="bos-evrak" baslik="Arama sonucu bulunamadı." />
         ) : (
+          <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -958,8 +955,8 @@ export const Documents = ({
               })}
             </tbody>
           </table>
+          </KartBolum>
         )}
-      </div>
       <Pagination total={searched.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </>) : (<>
         {/* Fatura Arama */}
@@ -969,12 +966,12 @@ export const Documents = ({
             style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         {/* Fatura Listesi */}
-        <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
           {filteredFaturalar.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
-              {liveFaturalar.length === 0 ? "Henüz fatura yok." : "Arama sonucu bulunamadı."}
-            </div>
+            liveFaturalar.length === 0
+              ? <BosDurum testId="bos-fatura" baslik="Henüz fatura yok." />
+              : <BosDurum testId="bos-fatura" baslik="Arama sonucu bulunamadı." />
           ) : (
+            <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -1017,8 +1014,8 @@ export const Documents = ({
                 })}
               </tbody>
             </table>
+            </KartBolum>
           )}
-        </div>
       </>)}
 
       {confirmDel && (
@@ -1107,23 +1104,15 @@ export const Documents = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Alıcı Bilgileri */}
-        <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--n400, #94a3b8)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Alıcı Bilgileri</div>
+        <KartBolum varyant="kart" title="Alıcı Bilgileri">
 
           {/* Alıcı tipi (spec 0006 R12): müşteri veya bayi. Yalnız teklifte; kayıt üretimi tekliften doğar. */}
           {form.type === "teklif" && (
-            <div role="group" aria-label="Alıcı tipi" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {[["musteri", "Müşteri"], ["bayi", "Bayi"]].map(([v, l]) => {
-                const secili = (form.aliciTipi === "bayi" ? "bayi" : "musteri") === v;
-                return (
-                  <button key={v} type="button" aria-pressed={secili}
-                    onClick={() => setForm(p => (v === "bayi" ? { ...p, aliciTipi: "bayi", customerId: null } : { ...p, aliciTipi: "musteri", dealerId: null, nihaiMusteriId: null }))}
-                    style={{ flex: 1, padding: "6px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-                      border: `1px solid ${secili ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)"}`, background: secili ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)" }}>
-                    Alıcı: {l}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom: 10 }}>
+              <Segment kip="dugme" gorunum="cerceve" ariaLabel="Alıcı tipi"
+                options={[{ value: "musteri", label: "Alıcı: Müşteri" }, { value: "bayi", label: "Alıcı: Bayi" }]}
+                value={form.aliciTipi === "bayi" ? "bayi" : "musteri"}
+                onChange={v => setForm(p => (v === "bayi" ? { ...p, aliciTipi: "bayi", customerId: null } : { ...p, aliciTipi: "musteri", dealerId: null, nihaiMusteriId: null }))} />
             </div>
           )}
           {form.type === "teklif" && form.aliciTipi === "bayi" ? (
@@ -1232,7 +1221,7 @@ export const Documents = ({
               return null;
             })}
           </div>
-        </div>
+        </KartBolum>
 
         {/* Belge Detayları */}
         <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, border: "1px solid var(--n200, #e2e8f0)", padding: 18 }}>
@@ -1433,14 +1422,14 @@ export const Documents = ({
                           </select>
                         )}
                         {type === "kalip" && (
-                          <SearchSelect
-                            value={row.selectedKalip || ""}
-                            onChange={val => pickKalip(row.rowId, val)}
-                            options={kalipDefs.map(k => ({ value: k.ad, label: k.ad }))}
-                            placeholder="— Kalıp Seç —"
-                            searchPlaceholder="Kalıp ara..."
-                            initialLimit={10}
-                          />
+                          // Yedek parça seçicisiyle aynı yerel liste: aramalı açılır liste satır tablosunun kabında kırpılıyordu
+                          // (liste satırın dışına taşamıyordu). Tanımlarda olmayan eski kalıp adı seçenek olarak korunur.
+                          <select aria-label="Kalıp" value={row.selectedKalip || ""} onChange={e => pickKalip(row.rowId, e.target.value)}
+                            style={{ ...inputStyle, fontSize: 12 }}>
+                            <option value="">— Kalıp Seç —</option>
+                            {row.selectedKalip && !kalipDefs.some(k => k.ad === row.selectedKalip) && <option value={row.selectedKalip}>{row.selectedKalip}</option>}
+                            {kalipDefs.map(k => <option key={k.id ?? k.ad} value={k.ad}>{k.ad}</option>)}
+                          </select>
                         )}
                         {type === "kalip" && form.type === "teklif" && (() => {
                           // Spec 0006 R3/R4 (plan E1): makinayla verilen standart kalıp mı, ayrı satılan Extra Kalıp mı.

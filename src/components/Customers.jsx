@@ -6,12 +6,14 @@ import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
-import { satisKuruUygula, uretimTarihiDamgala } from "../lib/satisKaydi";
+import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
+import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { Icon, Btn, ConfirmDialog, Pagination, DraftRestoreBar } from "./ui";
+import { Segment, KartBolum, BosDurum, UyariSeridi } from "./tasarim";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 
@@ -24,6 +26,10 @@ export const Customers = ({
   giderler = [],
   // Makina maliyeti ve kârlılık (spec 0002 R15): yalnız gider yetkisiyle dolu gelir; rates satış kuru içindir.
   giderYetki = false, makinaMaliyet = null, rates = null,
+  // Spec 0024 C6/C7: tahsilata hesap seçimi yalnız kasa yetkisiyle (gider + Finans sekmesi, perde kalkık).
+  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
+  // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
+  cekler = [], setCekler = null,
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -249,11 +255,11 @@ export const Customers = ({
   // Makina stoğu düşümü — ekleme ve "seri no sonradan atandı" düzenlemesi aynı mantığı
   // paylaşır: seçilen (veya serisiz) stok satırını düşer ve kaynağı müşteriye
   // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar. Stok satırı silindiği için
-  // üretim tarihi de burada satış kaydına yazılır (spec 0002 R1b), yoksa kaybolurdu.
+  // üretim tarihi ve üretim partisi de burada satış kaydına yazılır (spec 0002 R1b, spec 0022 R2), yoksa kaybolurdu.
   const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
     if (_stokSerisiz) {
       const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
       setStock(p => {
         const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
         if (idx === -1) return p;
@@ -261,7 +267,7 @@ export const Customers = ({
       });
     } else if (clean.serialNo && !_manualSerial) {
       const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, uretimTarihiDamgala(clean, srcEntry)); }
+      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
       setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
     }
   };
@@ -269,6 +275,11 @@ export const Customers = ({
   // Yeni müşteri ekleme gövdesi: save() mükerrer kontrolünden veya uyarı diyaloğundaki
   // "Yine de Kaydet"ten çağrılır.
   const doAdd = () => {
+    // Spec 0040 R1, R14: ilk ödemedeki her çek satırı numara ve banka ister.
+    for (const r of (form._ilkOdemeSatirlari || []).filter(x => parseMoney(x.tutar) > 0 && x.yontem === "Çek")) {
+      const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
+      if (!d.kayit) { showToast(`İlk ödeme çeki: ${Object.values(d.hatalar)[0]}`); return; }
+    }
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
@@ -290,6 +301,10 @@ export const Customers = ({
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (yeniOdemeler.length > 0 && setPayments) {
         setPayments(p => [...yeniOdemeler, ...p]);
+        // Spec 0040 R2: çek satırları çek kaydını da doğurur (ilkSatisOdemeleri tutarı sıfır olmayan satırları sırayla kaydeder).
+        const cekSatirlari = (_ilkOdemeSatirlari || []).filter(r => parseMoney(r.tutar) > 0);
+        const yeniCekler = cekSatirlari.map((r, i) => (r.yontem === "Çek" ? yeniCek(cekDogrula(r.cek || {}, { cekler }).kayit, yeniOdemeler[i].id, odemeTarih, uid()) : null)).filter(Boolean);
+        if (yeniCekler.length && setCekler) setCekler(p => [...p, ...yeniCekler]);
       }
       if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
       // "Stoktan düş" tipli seçimler partStock'tan 1 adet düşülür (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
@@ -347,8 +362,16 @@ export const Customers = ({
     setModal(null);
     setReturnDetailId(null);
   };
-  const del = id => setConfirmId(id);
+  // Spec 0040 triyajı (Q7): ciro edilmiş çeke bağlı tahsilatı olan müşteri silinmez; tahsilat çöpe gitseydi gelirden
+  // düşer ama çekle kapatılan gider kalemleri kapalı kalırdı. Önce ciro iptal edilir.
+  const ciroEngeli = (id) => {
+    if (!musterininCiroluTahsilatlari(id, payments, cekler).length) return false;
+    showToast("Bu müşterinin ciro edilmiş çekle yapılmış tahsilatı var. Önce Kasa › Çek Portföyü'nden ciroyu iptal edin.");
+    return true;
+  };
+  const del = id => { if (!ciroEngeli(id)) setConfirmId(id); };
   const confirmDel = () => {
+    if (ciroEngeli(confirmId)) { setConfirmId(null); return; }
     const c = customers.find(x => x.id === confirmId);
     const ts = new Date().toISOString();
     setCustomers(p => withDeleted(p, x => x.id === confirmId, ts));
@@ -428,7 +451,7 @@ export const Customers = ({
         const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: Math.abs(l.miktar) }));
         bumpId(stock);
         const newStockId = uid();
-        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
+        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), ...(c.partiId != null ? { partiId: c.partiId } : {}), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
 
         if (kitLog.length > 0 && setPartStockLog) {
           kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
@@ -465,24 +488,17 @@ export const Customers = ({
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{title}</h2>
         {canDo(isCustomer ? "cust_add" : "dealer_add") && <Btn onClick={openAdd}><Icon name="plus" size={14} /> {addLabel}</Btn>}
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        {[
-          { v: "all", l: "Hepsi", count: customers.length },
-          { v: "warranty-active", l: "Garantisi Devam Eden", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
-          { v: "warranty", l: "Garantisi Bitenler", count: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
-          ...(isCustomer ? [{ v: "debt", l: "Borçlu Firmalar", count: debtorIds.size }] : []),
-          ...(isCustomer ? [{ v: "serial-pending", l: "Seri No Bekleyen", count: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
-        ].map(f => (
-          <button key={f.v} onClick={() => { setListFilter(f.v); setPage(1); }}
-            style={{
-              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              border: "1px solid", borderColor: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)",
-              background: listFilter === f.v ? "var(--brand, #e85d1a)" : "var(--surface, #ffffff)",
-              color: listFilter === f.v ? "#fff" : "var(--n500, #64748b)",
-            }}>
-            {f.l} ({f.count})
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+        {/* Spec 0014: sözlükteki segmentli seçici (düğme kipi, içerik genişliği, sayı rozeti). "Firmaya Göre Grupla" süzgeç
+            değil, bağımsız aç/kapa: segmentin dışında kendi düğmesi (R1; sözlükte bilinen borç). */}
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Müşteri süzgeci" value={listFilter} onChange={v => { setListFilter(v); setPage(1); }}
+          options={[
+            { value: "all", label: "Hepsi", sayi: customers.length },
+            { value: "warranty-active", label: "Garantisi Devam Eden", sayi: customers.filter(c => c.warrantyEnd && c.warrantyEnd >= today()).length },
+            { value: "warranty", label: "Garantisi Bitenler", sayi: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
+            ...(isCustomer ? [{ value: "debt", label: "Borçlu Firmalar", sayi: debtorIds.size }] : []),
+            ...(isCustomer ? [{ value: "serial-pending", label: "Seri No Bekleyen", sayi: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
+          ]} />
         {isCustomer && (
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
             style={{
@@ -496,8 +512,10 @@ export const Customers = ({
         )}
       </div>
       {groupByFirm && (
-        <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "var(--blu800, #1e40af)" }}>
-          Firmaya göre gruplu görünüm: <b>{filtered.length} firma</b> ({customers.length} makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.
+        <div style={{ marginBottom: 12 }}>
+          <UyariSeridi aile="bilgi" testId="gruplu-gorunum">
+            Firmaya göre gruplu görünüm: <b>{filtered.length} firma</b> ({customers.length} makina kaydı). Birden fazla makinası olan firmaya tıklayınca tüm makinaları listelenir.
+          </UyariSeridi>
         </div>
       )}
       <div style={{ position: "relative", marginBottom: 16 }}>
@@ -505,7 +523,12 @@ export const Customers = ({
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={searchPlaceholder}
           style={{ paddingLeft: 36, padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)" }} />
       </div>
-      <div style={{ background: "var(--surface, #ffffff)", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,.08)", overflow: "auto" }}>
+      {filtered.length === 0 ? (
+        customers.length === 0
+          ? <BosDurum testId="bos-musteriler" baslik="Henüz müşteri kaydı yok" metin="Yeni müşteri eklemek için “Yeni Müşteri” düğmesini kullanın." />
+          : <BosDurum testId="bos-musteriler" baslik={emptyLabel} metin="Arama ölçütünü değiştirmeyi deneyin." />
+      ) : (
+      <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -622,9 +645,9 @@ export const Customers = ({
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "var(--n400, #94a3b8)" }}>{emptyLabel}</div>}
         <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
-      </div>
+      </KartBolum>
+      )}
 
       {detailView && (
         <CustomerDetailModal
@@ -642,7 +665,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
-          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates}
+          giderYetki={giderYetki} makinaMaliyet={makinaMaliyet} rates={rates} kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
@@ -695,7 +718,7 @@ export const Customers = ({
 
       {modal && (
         <CustomerAddEditForm
-          modal={modal} form={form} setForm={setForm} save={save}
+          modal={modal} form={form} setForm={setForm} save={save} cekler={cekler}
           onClose={() => { clearDraft(); setModal(null); if (returnDetailId != null) { setDetailViewId(returnDetailId); setReturnDetailId(null); } }}
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts} partTypeDefs={partTypeDefs}

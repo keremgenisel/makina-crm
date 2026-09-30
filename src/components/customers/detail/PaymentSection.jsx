@@ -1,4 +1,5 @@
 import { fmtCur, fmtTR } from "../../../lib/utils";
+import { UyariSeridi } from "../../tasarim";
 
 export const PaymentSection = ({
   detailView,
@@ -54,9 +55,9 @@ export const PaymentSection = ({
         </div>
       </div>
       {detailEkBorcDigerPB.length > 0 && (
-        <div style={{ fontSize: 11.5, color: "var(--red800, #991b1b)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, padding: "8px 12px", marginTop: 10, fontWeight: 600 }}>
-          Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var (yukarıdaki toplama dahil edilmedi):{" "}
-          {detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}
+        <div style={{ marginTop: 10 }}>
+          <UyariSeridi aile="hata" testId="farkli-pb-borc"
+            baslik={`Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu var (yukarıdaki toplama dahil edilmedi): ${detailEkBorcDigerPB.map(([cur, tutar]) => fmtCur(tutar, cur)).join(" + ")}`} />
         </div>
       )}
       {detailBekleyenCek > 0 && (

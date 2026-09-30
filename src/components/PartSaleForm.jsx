@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate } from "../lib/utils";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields, Warn } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
+import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
@@ -12,7 +15,7 @@ const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 // Ekleme modunda birden çok kalıp tek seferde seçilip her birine ayrı fiyat girilebilir
 // (form.kaliplar: [{ad, olcu, fiyat}]) — kaydedilince her satır kendi partSales kaydını oluşturur
 // (Customers.jsx → savePartSale). Düzenleme modunda dizi her zaman 1 elemanlı kalır.
-export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false }) => {
+export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], dealers = [], calisanlar = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false, kasaHesaplari = null, hesapVarsayilan = null }) => {
   const [custSearch, setCustSearch] = useState("");
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
   // Teslim şekli (fabrikaTeslim) ile panoya gönderme (kargoDurum) AYRI: teslim şekli her zaman
@@ -36,6 +39,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
   const bosKalip = { ad: "", olcu: "", fiyat: "", uretimFormGonder: false };
   const kaliplar = form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
   const kaliplarToplam = kaliplar.reduce((s, k) => s + parseMoney(k.fiyat), 0);
+  // Spec 0044: hesap sorulur mu (Extra Kalıp ücretlidir; bayi aracılı dahil, Q1).
+  const hesapDurumu = kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.KALIP, { ...form, ucretsizMi: false, ucret: kaliplarToplam }, { factoryName: factory?.name, kdvRates }) : null;
   const kalipSatirlar = () => form.kaliplar && form.kaliplar.length ? form.kaliplar : [bosKalip];
   const kalipSet = (i, alan, deger) => setForm(p => ({ ...p, kaliplar: kalipSatirlar().map((k, idx) => idx === i ? { ...k, [alan]: deger } : k) }));
   const kalipSil = (i) => setForm(p => ({ ...p, kaliplar: (p.kaliplar || []).filter((_, idx) => idx !== i) }));
@@ -52,7 +57,11 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
     : [];
 
   return (
-    <Modal title={title} onClose={onCancel} wide>
+    <Modal title={title} onClose={onCancel} wide
+      footer={<div style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
+        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
+      </div>}>
       {draftBar}
       <Field label="Müşteri / Makina">
         {selectedCust ? (
@@ -98,7 +107,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
           </div>
         )}
         {/* Spec 0007 R14 (K7): müşterisiz kayıt yapılmaz, neden gösterilir (bayi modalından açıldığında müşteri boş gelir). */}
-        {!selectedCust && <Warn>{KALIP_MUSTERI_SECILMEDI}</Warn>}
+        {!selectedCust && <HataMetni>{KALIP_MUSTERI_SECILMEDI}</HataMetni>}
       </Field>
 
       {/* Veriliş tarihi ile para birimi yan yana. */}
@@ -230,13 +239,18 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {selectedCust && kaliplarToplam > 0 && (
         <div style={{ marginTop: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
               {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
             </span>
           </label>
+          {kasaHesaplari && form.odendi && (
+            <div style={{ marginTop: 8 }}>
+              <TahsilatHesapAlani durum={hesapDurumu} hesaplar={kasaHesaplari} value={form.hesapId} onChange={v => setForm(p => ({ ...p, hesapId: v }))} />
+            </div>
+          )}
           {form.odendi && (
-            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+            <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>
                 <Field label="Ödeme Yöntemi">
                   <Select value={form.yontem || "Nakit"} onChange={e => {
@@ -304,21 +318,13 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {selectedCust && (
         <div style={{ marginTop: 12 }}>
           <Field label="Teslim Şekli">
-            <div style={{ display: "inline-flex", gap: 4, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 9, padding: 3 }}>
-              {[[true, "🏭 Fabrika Teslim"], [false, "📦 Kargo"]].map(([ft, l]) => {
-                const secili = fabrikaTeslim === ft;
-                return (
-                  <button key={l} type="button"
-                    onClick={() => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "" } : {}) }))}
-                    style={{ padding: "7px 16px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                      background: secili ? "var(--brand, #e85d1a)" : "transparent", color: secili ? "#fff" : "var(--n500, #64748b)" }}>{l}</button>
-                );
-              })}
-            </div>
+            <Segment kip="dugme" ariaLabel="Teslim Şekli" value={fabrikaTeslim}
+              options={[{ value: true, label: "🏭 Fabrika Teslim" }, { value: false, label: "📦 Kargo" }]}
+              onChange={ft => setForm(p => ({ ...p, fabrikaTeslim: ft, ...(ft ? { kargoFirma: "", kargoTakipNo: "" } : {}) }))} />
           </Field>
 
           {/* Teslim detayları (teslim şekline göre) — panodan bağımsız, boş bırakılabilir. */}
-          <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n050, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
+          <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
             <div style={{ display: "grid", gridTemplateColumns: fabrikaTeslim ? "1fr" : "1.4fr 1.4fr 1fr", gap: 8 }}>
               {!fabrikaTeslim && <Input value={form.kargoFirma || ""} placeholder="Kargo firması" onChange={e => setForm(p => ({ ...p, kargoFirma: e.target.value }))} />}
               {!fabrikaTeslim && <Input value={form.kargoTakipNo || ""} placeholder="Takip no" onChange={e => setForm(p => ({ ...p, kargoTakipNo: e.target.value }))} />}
@@ -359,7 +365,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                       onCity={v => setForm(p => ({ ...p, teslimatSehir: v, teslimatIlce: "" }))}
                       onIlce={v => setForm(p => ({ ...p, teslimatIlce: v }))}
                       geoData={geoData} loadingGeo={loadingGeo} />
-                    <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Boş bırakılırsa kargo, müşterinin kayıtlı adresine gider.</span>
+                    <Ipucu>Boş bırakılırsa kargo, müşterinin kayıtlı adresine gider.</Ipucu>
                   </div>
                 )}
               </div>
@@ -403,10 +409,6 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
-      </div>
     </Modal>
   );
 };

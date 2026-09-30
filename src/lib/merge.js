@@ -25,7 +25,11 @@ import { uid, bumpId, wasMintedHere } from "./utils";
 // Gider kaydı (spec 0001): kalem, tekrarlayan tanım, tür, tedarikçi ve standart genel gider listeleri.
 // Model dağılım satırları kalemin içinde taşınır (tahsis deseni), ayrı anahtar değildir.
 export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar", "yedekParcaSatislar",
-  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler"];
+  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler", "uretimPartileri",
+  // Spec 0024: kasa hesapları ve hesap hareketleri (ödeme, virman).
+  "kasaHesaplari", "hesapHareketleri",
+  // Spec 0040: çek portföyü (tahsilata bağlı).
+  "cekler"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -52,8 +56,11 @@ export function buildMergePlan(myData, serverData) {
 
   // 2. geçiş: yeniden atanan ID'lere işaret eden referansları düzelt
   const remapRef = (map, val) => (map.has(val) ? map.get(val) : val);
-  adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId) }));
-  adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId) }));
+  // Spec 0044 R16: tahsilatın girdiği hesap da yeniden atanan hesap kimliğini izler (ödeme deseni).
+  const hesapRemap = (r) => (r.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, r.hesapId) } : {});
+  adds.services  = adds.services.map(s => ({ ...s, customerId: remapRef(maps.customers, s.customerId), ...hesapRemap(s) }));
+  adds.payments  = adds.payments.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId),
+    ...(p.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, p.hesapId) } : {}) }));
   adds.gorusmeler = adds.gorusmeler.map(g => ({ ...g, customerId: remapRef(maps.customers, g.customerId) }));
   // Dosya künyesi: müşteri dosyası customerId'yi, bağ (refId) ise türüne göre servis/partSale/ödeme
   // haritasını izler. Bayi dosyaları (dealerId) merge edilmediği için dealerId olduğu gibi kalır.
@@ -65,7 +72,7 @@ export function buildMergePlan(myData, serverData) {
       ...(refMap && d.refId != null ? { refId: remapRef(refMap, d.refId) } : {}),
     };
   });
-  adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId) }));
+  adds.partSales = adds.partSales.map(p => ({ ...p, customerId: remapRef(maps.customers, p.customerId), teklifId: remapRef(maps.teklifler, p.teklifId), ...hesapRemap(p) }));
   // Yedek parça satışı: alıcı bayi (dealerId) merge edilmiyor; alıcı müşteri (musteriId) ve tahsislerin
   // makina referansı (customerId) yeniden atanan müşteri id'lerini izlemeli.
   adds.yedekParcaSatislar = adds.yedekParcaSatislar.map(s => ({
@@ -74,6 +81,7 @@ export function buildMergePlan(myData, serverData) {
     // Spec 0006: Evrak'tan üretildiyse kaynak belge de yeniden atanan teklif kimliğini izler.
     ...(s.teklifId != null ? { teklifId: remapRef(maps.teklifler, s.teklifId) } : {}),
     tahsisler: (s.tahsisler || []).map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId) })),
+    ...hesapRemap(s),
   }));
   // Spec 0006 R12/R13: nihai müşteri de müşteri kimliğidir; bayi kimliği remap EDİLMEZ (bayiler birleştirilmez).
   adds.teklifler = adds.teklifler.map(t => ({ ...t, customerId: remapRef(maps.customers, t.customerId),
@@ -89,9 +97,31 @@ export function buildMergePlan(myData, serverData) {
   });
   adds.giderTanimlari = adds.giderTanimlari.map(giderRef);
   adds.giderler = adds.giderler.map(g => ({ ...giderRef(g), tanimId: remapRef(maps.giderTanimlari, g.tanimId) }));
+  // Spec 0024: hareket kaleme ve hesaplara kimlikle bağlı; taksit kimliği kalemin içinde taşındığı için değişmez.
+  adds.hesapHareketleri = adds.hesapHareketleri.map(h => ({
+    ...h,
+    ...(h.giderId != null ? { giderId: remapRef(maps.giderler, h.giderId) } : {}),
+    ...(h.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, h.hesapId) } : {}),
+    ...(h.karsiHesapId != null ? { karsiHesapId: remapRef(maps.kasaHesaplari, h.karsiHesapId) } : {}),
+    // Spec 0024 B: avans ve mahsup çalışana kimlikle bağlı.
+    ...(h.calisanId != null ? { calisanId: remapRef(maps.calisanlar, h.calisanId) } : {}),
+    // Spec 0040: ciro hareketi çeke bağlı.
+    ...(h.cekId != null ? { cekId: remapRef(maps.cekler, h.cekId) } : {}),
+  }));
+  // Spec 0040: çek, tahsilata kimlikle bağlı.
+  // Spec 0049: bağsız çekte paymentId null kalır; bağsız alınan çekin müşterisi, verilen çekin banka hesabı ve alacaklısı
+  // (tedarikçi / çalışan) yeniden atanan kimlikleri izler.
+  adds.cekler = adds.cekler.map(c => ({ ...c, paymentId: c.paymentId == null ? c.paymentId : remapRef(maps.payments, c.paymentId),
+    ...(c.customerId != null ? { customerId: remapRef(maps.customers, c.customerId) } : {}),
+    ...(c.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, c.hesapId) } : {}),
+    ...(c.alacakliId != null && c.alacakliTur === "tedarikci" ? { alacakliId: remapRef(maps.tedarikciler, c.alacakliId) } : {}),
+    ...(c.alacakliId != null && c.alacakliTur === "calisan" ? { alacakliId: remapRef(maps.calisanlar, c.alacakliId) } : {}) }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
+  // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
+  // (Stok satırları birleştirilmediği için stok bağı burada ele alınmaz; stock MERGE_KEYS'te değil.)
   adds.customers = adds.customers.map(c => ({
     ...c,
+    ...(c.partiId != null ? { partiId: remapRef(maps.uretimPartileri, c.partiId) } : {}),
     kaliplar: (c.kaliplar || []).map(k => k.partSaleId ? { ...k, partSaleId: remapRef(maps.partSales, k.partSaleId) } : k),
   }));
 

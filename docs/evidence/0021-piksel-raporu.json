@@ -1,0 +1,146 @@
+[
+  {
+    "ad": "gider-formu-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 1213957
+  },
+  {
+    "ad": "gider-formu-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 1193412
+  },
+  {
+    "ad": "giderler-uretim-basari-aydinlik.png",
+    "boyut": "2880x3612 ≠ 2880x3716",
+    "seritler": [
+      "Eylül 2026: 1 kalem eklendi, 0 kalem zaten vardı.Oluşturulan kalemler ",
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-uretim-basari-karanlik.png",
+    "boyut": "2880x3612 ≠ 2880x3716",
+    "seritler": [
+      "Eylül 2026: 1 kalem eklendi, 0 kalem zaten vardı.Oluşturulan kalemler ",
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "gider-formu-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 40056
+  },
+  {
+    "ad": "gider-formu-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 39594
+  },
+  {
+    "ad": "gider-formu-personel-makina-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 40056
+  },
+  {
+    "ad": "gider-formu-personel-makina-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 39632
+  },
+  {
+    "ad": "gider-formu-taksit-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 819463
+  },
+  {
+    "ad": "gider-formu-taksit-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 819178
+  },
+  {
+    "ad": "gider-formu-kira-stopaj-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV "
+    ],
+    "piksel": 2036443
+  },
+  {
+    "ad": "gider-formu-kira-stopaj-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV "
+    ],
+    "piksel": 1913721
+  },
+  {
+    "ad": "giderler-taksit-liste-aydinlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-taksit-liste-karanlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-taksit-borc-aydinlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-taksit-borc-karanlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-odeme-plani-aydinlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "giderler-odeme-plani-karanlik.png",
+    "boyut": "2880x3542 ≠ 2880x3682",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "anasayfa-hatirlatma-taksit-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 972077
+  },
+  {
+    "ad": "anasayfa-hatirlatma-taksit-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 939168
+  }
+]

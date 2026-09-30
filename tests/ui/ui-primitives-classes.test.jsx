@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 
 afterEach(cleanup);
-import { Btn, Input, Select, PasswordInput, MoneyInput, StatCard, Pagination, Warn } from "../../src/components/ui";
+import { Btn, Input, Select, PasswordInput, MoneyInput, StatCard, Pagination } from "../../src/components/ui";
 
 describe("UI primitive'leri — CSS sınıfları", () => {
   it("Btn varyant + boyut sınıflarını verir", () => {
@@ -69,10 +69,4 @@ describe("UI primitive'leri — CSS sınıfları", () => {
     expect(active.textContent).toBe("2");
   });
 
-  it("Warn .warn-msg sınıfını verir, boşsa render etmez", () => {
-    const { container } = render(<Warn>Dikkat</Warn>);
-    expect(container.querySelector(".warn-msg")).toBeTruthy();
-    const { container: empty } = render(<Warn>{null}</Warn>);
-    expect(empty.querySelector(".warn-msg")).toBeNull();
-  });
 });

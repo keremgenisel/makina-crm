@@ -647,6 +647,8 @@ export const satisTahsilEdildi = (s, bugun = today()) => {
 //  3) yoksa kaydın kendi satış/servis tarihine düş (eski kayıtlar geriye dönük bozulmasın).
 // satisTarihi: servis için s.date, kalıp/yedek parça için s.tarih — çağıran verir.
 export const tahsilatTarihiOf = (rec, satisTarihi) => {
+  // Spec 0040 R6 (Q3): çek kaydına bağlı tahsilatta gelir tarihi çekin tahsil ya da ciro tarihidir (okuma anında, cekleriUygula).
+  if (rec?._cek?.gelirTarihi) return rec._cek.gelirTarihi;
   if (rec?.tahsilatTarihi) return rec.tahsilatTarihi;
   if (rec?.yontem === "Kredi Kartı" && rec?.kartKomisyonu?.hesabaGecis) return rec.kartKomisyonu.hesabaGecis;
   return satisTarihi || rec?.tarih || rec?.date || "";
@@ -745,8 +747,18 @@ export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES, payments = []) 
 // kadar (tahsilEdildi elle işaretlenene kadar) sayılmaz; Kredi Kartı ise blokaj süresi (tek çekimde
 // ~40 gün) dolup para hesaba geçene kadar sayılmaz (kartKomisyonu.hesabaGecis tarihine göre otomatik).
 // yontem alanı olmayan / kartKomisyonu olmayan eski kayıtlar hemen alınmış sayılır (geriye dönük uyum).
+// Spec 0040 R6, R17: çekin durumu tek kaynaktan. Çek kaydına bağlı tahsilatta (cekleriUygula `_cek`) durum çek kaydından,
+// bağlı olmayan eski tahsilatta ve X9 kayıtlarında (servis, Extra Kalıp, yedek parça) `tahsilEdildi` bayrağından okunur.
+// "portfoy" | "tahsile" | "tahsil" | "ciro" | "karsiliksiz"; çek değilse null.
+export const cekDurumuOf = (p) => (p?.yontem !== "Çek" ? null : p._cek ? p._cek.durum : (p.tahsilEdildi === true ? "tahsil" : "portfoy"));
+// Gelir doğdu mu (R6): tahsil edildi ya da ciro edildi. Para bir hesaba girdi mi ayrı sorudur (kasa.tahsilatSayilirMi).
+export const cekGelirMi = (p) => { const d = cekDurumuOf(p); return d === "tahsil" || d === "ciro"; };
+// Bekleyen çek (R17): elde duran, henüz ne tahsil ne ciro edilmiş, karşılıksız da çıkmamış çek.
+export const cekBekliyorMu = (p) => { const d = cekDurumuOf(p); return d === "portfoy" || d === "tahsile"; };
+// Tahsilatın gelir ayı (R6): çek kaydına bağlıysa tahsil/ciro tarihi, değilse tahsilat tarihi.
+export const odemeGelirTarihi = (p) => p?._cek?.gelirTarihi || p?.tarih || "";
 export const isPaymentReceived = (p, bugun = today()) => {
-  if (p.yontem === "Çek") return p.tahsilEdildi === true;
+  if (p.yontem === "Çek") return cekGelirMi(p);
   if (p.yontem === "Kredi Kartı") return kartTahsilEdildiMi(p.kartKomisyonu, bugun);
   return true;
 };
@@ -755,9 +767,9 @@ export const sumPayments = (customerId, payments = []) =>
   payments.filter(p => p.customerId === customerId && isPaymentReceived(p)).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
 // Bir müşterinin tahsil edilmemiş çeklerinin toplamı (Kalan Borç'a henüz dahil olmayan, beklemedeki tutar)
 export const sumBekleyenCek = (customerId, payments = []) =>
-  payments.filter(p => p.customerId === customerId && p.yontem === "Çek" && !p.tahsilEdildi).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
+  payments.filter(p => p.customerId === customerId && cekBekliyorMu(p)).reduce((sum, p) => sum + parseMoney(p.tutar), 0);
 // Tahsil edilmemiş bir çekin vade tarihi geçmiş mi
-export const isCekVadesiGecmis = (p) => p.yontem === "Çek" && !p.tahsilEdildi && !!p.vadeTarihi && p.vadeTarihi < today();
+export const isCekVadesiGecmis = (p) => cekBekliyorMu(p) && !!p.vadeTarihi && p.vadeTarihi < today();
 // Ödeme planında vadesi geçmiş açık (tahsil edilmemiş) taksit var mı — satır rozeti ve
 // Dashboard tahsilat takvimi için. Taksit bir ödeme kaydına bağlanınca (odemeId) kapanır.
 export const taksitGecikmisMi = (c) => (c?.odemePlani || []).some(r => !r.odemeId && r.vadeTarihi && r.vadeTarihi < today());
@@ -770,9 +782,10 @@ export const calcKalanBorc = (customer, payments = [], kdvRates = DEFAULT_KDV_RA
 // Çöp Kutusu: deletedAt'i retention süresinden eski olan kayıtları kalıcı olarak süzer
 // (uygulama açılışında bir defa çalışır) — 12 farklı dizi için aynı mantık birebir tekrarlandığı
 // için ortak bir yardımcıda toplandı.
-export const purgeOldTrash = (arr = [], days = TRASH_RETENTION_DAYS) => {
+// `koru(x)` true dönen kayıt süresi dolsa da kalır (spec 0040 triyajı: ciro edilmiş çeke bağlı tahsilat ve müşterisi).
+export const purgeOldTrash = (arr = [], days = TRASH_RETENTION_DAYS, koru = null) => {
   const cutoff = Date.now() - days * 86400000;
-  return arr.filter(x => !x.deletedAt || new Date(x.deletedAt).getTime() >= cutoff);
+  return arr.filter(x => !x.deletedAt || new Date(x.deletedAt).getTime() >= cutoff || (koru ? koru(x) : false));
 };
 
 // Çöp Kutusu: tek bir kaydı (veya matchFn'e uyan kayıtları) deletedAt damgasıyla işaretler —
