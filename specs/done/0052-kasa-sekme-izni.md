@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `05c6230`, dal `feat/0052-kasa-sekme-izni`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kullanıcı izinleri (UserManager), sekme görünürlüğü, sunucu yetki eşlemesi |
@@ -254,22 +254,22 @@ yanlış bakiye gösterme ihtimali açılmıyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Görünürlük kuralı tek yerde (`gorunurSekmeler`); ekranlar kendi kuralını yazmadı.
-- [ ] Geri doldurma testle kapsandı: bir kez çalışır, yalnız doğru kullanıcılara dokunur, yerel modda
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Görünürlük kuralı tek yerde (`gorunurSekmeler`); ekranlar kendi kuralını yazmadı.
+- [x] Geri doldurma testle kapsandı: bir kez çalışır, yalnız doğru kullanıcılara dokunur, yerel modda
       çalışmaz (AC-17, AC-18, AC-19).
-- [ ] İstemcide yokluğa bakan bir kural yazılmadı (kaynak taraması); görünürlük yalnız `gorunurSekmeler`
+- [x] İstemcide yokluğa bakan bir kural yazılmadı (kaynak taraması); görünürlük yalnız `gorunurSekmeler`
       içindeki tek şartla belirlenir (R2, R3).
-- [ ] Sunucu ön koşulu (kasa + gider + finance) ve `GIDER_BOLUMLERI` üyeliği testle sabitlendi (AC-10,
+- [x] Sunucu ön koşulu (kasa + gider + finance) ve `GIDER_BOLUMLERI` üyeliği testle sabitlendi (AC-10,
       AC-22).
-- [ ] Sunucu eşlemesi güncellendi ve uçtan uca testte sabitlendi (AC-10, AC-11).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0052-*.jpg`): izin ekranındaki kutu, kasasız kullanıcının
+- [x] Sunucu eşlemesi güncellendi ve uçtan uca testte sabitlendi (AC-10, AC-11).
+- [x] Görsel kanıt eklendi (`docs/evidence/0052-*.jpg`): izin ekranındaki kutu, kasasız kullanıcının
       menüsü.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: Kasa artık kendi sekme iznine sahip, önkoşul kuralı ve eski kayıt kuralı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: Kasa artık kendi sekme iznine sahip, önkoşul kuralı ve eski kayıt kuralı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -277,10 +277,10 @@ yanlış bakiye gösterme ihtimali açılmıyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | R1 QA turunda (spec başlığında); R2 plan onayında (Q1–Q10, planlamada bulunan R19 yedek geri yükleme ve R20 salt okunur mod); R3 triyajda (R21 virman, avans ve verilen çek Kasa sekmesi ister; R19'a bilinen sınır). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Kasa'sız kullanıcının sunucuda virman ve avans yazabilmesi (güvenlik, gerçek; R17'nin "gerçek kapı sunucudadır" iddiası yalnız hesap tanımları için doğruydu); yedekten gelen hareketin var olmayan hesaba bağlı kalabilmesi (kabul edilen sınır, belgelendi). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Değişen yalnız iki bilinçli ekran (kasasız menü, izin ekranı); diğer 196 ekran 0 piksel (bilinen metin kutusu gürültüsü dışında). Kasa'ya muafiyetle dayanan mevcut testlere (`ui/kasa-app`, `server-authz` 0024/0049 blokları, `odemeci`, `cirocu`) "kasa" eklendi, beklentileri değişmedi. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir ekranın sekme iznini sunucuya taşırken yalnız o ekranın **bölümüne** değil, o ekrandan **yazılan bütün kayıt türlerine** bakılmalı. Spec ödeme hareketlerini bilerek Giderler'de bıraktı, ama aynı bölümde yalnız Kasa ekranından yazılan virman, avans ve kendi çek de duruyordu; bölüm düzeyindeki eşleme bunları kaçırdı, kayıt türü düzeyinde bir kapı gerekti. İkincisi: sunucuda bir kapı eklemek, aynı verinin toplu yazıldığı her yolu (burada yedek geri yükleme) da etkiler; kapı eklenirken "bu kaydı başka hangi akış yazıyor?" sorusu sorulmalı, yoksa kural doğru olsa bile bütün kayıt 403 alır. Üçüncüsü: görüntü aracının tıklama adımı satır içindeki öğeyi satıra yükseltiyordu; kanıt görüntüsü okunmadan "çekildi" sayılmamalı.

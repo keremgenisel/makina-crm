@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0052-kasa-sekme-izni.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0052-kasa-sekme-izni.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0052-kasa-sekme-izni` (`feat/0050-pencere-boyutu` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q10) kabul; görsel kanıt ve triyaj düzeltmeleri onaylandı (2026-09-30) |
 
