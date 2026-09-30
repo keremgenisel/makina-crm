@@ -132,8 +132,9 @@ const BOLUM_SEKMELERI = {
   giderTurleri:     ["settings"],
   tedarikciler:     ["gider"],
   standartGiderler: ["gider"],
-  // Spec 0024 Q7: Kasa ekranı ve ödeme penceresi yalnız gider sekmesiyle görünür.
-  kasaHesaplari:    ["gider"],
+  // Spec 0052 R7: hesap tanımları Kasa sekmesine bağlı (önkoşul ON_KOSUL_SEKMELERI'nde). R8: ödeme hareketleri
+  // Giderler'de kalır, çünkü gider formundan ve ödeme penceresinden de yazılır (Kasa'sız gider kullanıcısı öder).
+  kasaHesaplari:    ["kasa"],
   hesapHareketleri: ["gider"],
   // Spec 0022 C5 (triyaj bulgu 3): parti tanımları yalnız Giderler sekmesinde yazılır. Makinayı partiye bağlamak
   // `stock` bölümündeki partiId alanıdır, bu bölüme dokunmaz; bu yüzden "stock" burada YOKTUR (eklenseydi etkisiz
@@ -211,6 +212,13 @@ function grupEngelli(perms, group) {
   return Array.isArray(v) && v.length === 0;
 }
 
+// Spec 0052 R7.3: bazı bölümler yazan sekmenin yanında önkoşul sekmeleri de ister (hepsi gerekli). Sunucu
+// türetilmiş görünür listeyi değil ham perms.tabs'ı okuduğu için, "kasa" yazılı ama Finans'ı olmayan kullanıcı
+// arayüzde göremediği Kasa'nın verisini yazamasın diye istemcideki kasaSuz önkoşulu burada da uygulanır.
+const ON_KOSUL_SEKMELERI = {
+  kasaHesaplari: ["gider", "finance"],
+};
+
 // Bir bölüm, kullanıcının açık sekmelerinden hiçbiri tarafından yazılamıyor mu?
 // tabs tanımsızsa (dizi değil) tüm sekmeler açık sayılır — mevcut istemci semantiği.
 function sekmeEngelli(perms, section) {
@@ -218,7 +226,8 @@ function sekmeEngelli(perms, section) {
   if (!Array.isArray(tabs)) return GIDER_BOLUMLERI.has(section); // K6: gider bölümlerinde tanımsız = kapalı
   const yazanSekmeler = BOLUM_SEKMELERI[section];
   if (!yazanSekmeler) return true; // haritada yok → güvenli tarafta reddet
-  return !yazanSekmeler.some(t => tabs.includes(t));
+  if (!yazanSekmeler.some(t => tabs.includes(t))) return true;
+  return !(ON_KOSUL_SEKMELERI[section] || []).every(t => tabs.includes(t));
 }
 
 // appSettings içinde değişen alanlardan ilk izinsiz olanın adını döndürür (yoksa null).
@@ -356,7 +365,8 @@ function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
   return degisen > 0;
 }
 // Kasa yalnız Giderler ve Finans sekmeleri birlikte açıkken görünür; sekme listesi tanımsız kullanıcı gider sekmesini
-// görmez (0001 C6 kural 3), dolayısıyla Kasa'yı da.
+// görmez (0001 C6 kural 3), dolayısıyla Kasa'yı da. Spec 0052 R14: bu 0044 istisnası bilerek Kasa sekme iznine
+// BAĞLANMAZ; tahsilat hesabını gider + finans sekmeli kullanıcı atar.
 const kasaGorunurMu = (perms) => Array.isArray(perms?.tabs) && perms.tabs.includes("gider") && perms.tabs.includes("finance");
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
@@ -475,6 +485,31 @@ const ALAN_IZINLERI = {
 // Spec 0024 B (B3): avans kendi iznine (`avans`) bağlı; mahsup bir gider borcunu kapattığı için `gider_odeme`.
 function hareketIzni(r) { return r?.tur === "virman" ? "virman" : r?.tur === "avans" ? "avans" : "gider_odeme"; }
 const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni };
+
+// Spec 0052 triyaj bulgu 1: hesap bakiyesini yalnız Kasa ekranından değiştiren kayıtlar Kasa sekmesi ister (önkoşul
+// Giderler + Finans, ON_KOSUL_SEKMELERI ile aynı). Virman ve avans hareketi ile verilen (kendi) çek eklenemez, silinemez,
+// düzenlenemez; ödeme ve mahsup Giderler'de kalır (R8), çünkü gider formundan ve ödeme penceresinden de yazılır.
+// Güncellenmemiş PC'de Kasa ekranı açık kalsa da (R17) bu yazımlar sunucuda reddedilir.
+const KASA_SEKMELI_HAREKETLER = new Set(["virman", "avans"]);
+const kasaSekmesiVar = (perms) => Array.isArray(perms?.tabs) && ["kasa", ...ON_KOSUL_SEKMELERI.kasaHesaplari].every(t => perms.tabs.includes(t));
+const KASA_SEKMELI_KAYITLAR = {
+  hesapHareketleri: (r) => KASA_SEKMELI_HAREKETLER.has(r?.tur),
+  cekler: (r) => r?.yon === "verilen",
+};
+function kasaKaydiDegistiMi(eski, yeni) {
+  for (const [bolum, kasaKaydi] of Object.entries(KASA_SEKMELI_KAYITLAR)) {
+    if (!Array.isArray(yeni?.[bolum])) continue; // istemci bu bölümü göndermedi → dokunulmadı
+    const eskiArr = Array.isArray(eski?.[bolum]) ? eski[bolum] : [];
+    const eskiById = new Map(eskiArr.map(r => [r.id, r]));
+    const yeniById = new Map(yeni[bolum].map(r => [r.id, r]));
+    for (const r of yeni[bolum]) {
+      const e = eskiById.get(r.id);
+      if ((kasaKaydi(r) || kasaKaydi(e)) && (!e || stableStringify(e) !== stableStringify(r))) return bolum;
+    }
+    for (const e of eskiArr) if (kasaKaydi(e) && !yeniById.has(e.id)) return bolum;
+  }
+  return null;
+}
 
 // Bir eylem id'si kullanıcının grup dizisinde izinli mi? Dizi değilse (tanımsız) tam erişim.
 function eylemIzinli(perms, group, actionId) {
@@ -690,6 +725,9 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
         return { ok: false, reddedilenBolum: section, islem: "duzenle", gerekli: id || idOf(r) };
     }
   }
+  // Spec 0052 triyaj bulgu 1: eylem izni denetimlerinden sonra (gerekçe özel izni göstersin) sekme kapısı.
+  const kasaBolumu = kasaKaydiDegistiMi(eski, yeni);
+  if (kasaBolumu && !kasaSekmesiVar(perms)) return { ok: false, reddedilenBolum: kasaBolumu, islem: "kasa", gerekli: "kasa_sekmesi" };
   return { ok: true };
 }
 
@@ -744,6 +782,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

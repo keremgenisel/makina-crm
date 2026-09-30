@@ -73,12 +73,17 @@ describe("Kasa sekmesi görünürlüğü (C6, C7, Q9)", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Verilen çekler" }));
     expect(screen.getByText("Çek Yaz")).toBeTruthy();
   });
-  it("user rolünde Kasa yalnız Giderler ve Finans birlikte açıkken görünür (kendi izin kutusu yok)", async () => {
-    await baslat({ sunucu: { tabs: ["dashboard", "gider"] } });
+  // Spec 0052 R2: Kasa'nın kendi sekme izni var (0024'teki "kendi izin kutusu yok" kuralının yerini aldı); Giderler ve
+  // Finans önkoşul olarak kalır.
+  it("user rolünde Kasa, kendi izni ve Giderler ile Finans birlikte açıkken görünür", async () => {
+    await baslat({ sunucu: { tabs: ["dashboard", "gider", "kasa"] } });
     expect(menudeMi("Giderler")).toBe(true);
     expect(menudeMi("Kasa")).toBe(false);
     cleanup();
     await baslat({ sunucu: { tabs: ["dashboard", "gider", "finance"] } });
+    expect(menudeMi("Kasa")).toBe(false);
+    cleanup();
+    await baslat({ sunucu: { tabs: ["dashboard", "gider", "finance", "kasa"] } });
     expect(menudeMi("Kasa")).toBe(true);
   });
 });

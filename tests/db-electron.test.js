@@ -35,6 +35,12 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0052: Kasa sekme izni geri doldurması bir kez, yalnız gider + finance'lı kullanıcıya; yerel modda hatasız (AC-6, AC-17..AC-19)", () => {
+    const r = runElectron("kasa-sekme-gocu.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

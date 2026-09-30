@@ -1083,6 +1083,32 @@ function kasaGocu(conn, dbPath = null) {
   return { atlandi: false, eklenen: yeni.length };
 }
 
+// ── Kasa sekme izni geri doldurması (spec 0052 R12, AC-6, AC-17..AC-19) ──
+// 0052 öncesinde Kasa, Giderler ve Finans birlikte verilen kullanıcıda kendiliğinden görünüyordu. Kasa'nın artık kendi
+// sekme izni var; mevcut kullanıcı hak kaybetmesin diye sekme listesinde hem "gider" hem "finance" olup "kasa" olmayan
+// kullanıcıya bir kez "kasa" eklenir. İstemcide yokluğa bakan bir kural YOKTUR (R3, X5): geri doldurmadan sonra liste
+// tektir. Tanımsız ya da bozuk izin gövdesine, admin'e ve başka hiçbir kullanıcıya dokunulmaz. Yerel modda kullanıcı
+// kaydı olmadığı için döngü boş geçer, yalnız işaret yazılır. Yedek alınmaz (yalnız izin listesine bir değer eklenir).
+const KASA_SEKME_GOCU_BAYRAGI = "kasaSekmeGocu0052";
+function kasaSekmeGocu(conn) {
+  if (conn.prepare(`SELECT value FROM meta WHERE key = ?`).get(KASA_SEKME_GOCU_BAYRAGI)) return { atlandi: true, guncellenen: 0 };
+  const guncelle = conn.prepare(`UPDATE users SET permissions = ? WHERE id = ?`);
+  let guncellenen = 0;
+  conn.transaction(() => {
+    for (const u of conn.prepare(`SELECT id, role, permissions FROM users`).all()) {
+      if (u.role === "admin" || !u.permissions) continue;
+      let p;
+      try { p = JSON.parse(u.permissions); } catch { continue; }
+      if (!p || typeof p !== "object" || !Array.isArray(p.tabs)) continue;
+      if (!p.tabs.includes("gider") || !p.tabs.includes("finance") || p.tabs.includes("kasa")) continue;
+      guncelle.run(JSON.stringify({ ...p, tabs: [...p.tabs, "kasa"] }), u.id);
+      guncellenen++;
+    }
+    conn.prepare(`INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(KASA_SEKME_GOCU_BAYRAGI, new Date().toISOString());
+  })();
+  return { atlandi: false, guncellenen };
+}
+
 function migrateFromJsonIfNeeded() {
   if (!Database) return; // native modül yüklenemedi, eski JSON modunda kal
 
@@ -1097,6 +1123,7 @@ function migrateFromJsonIfNeeded() {
       db.exec(SCHEMA_SQL);
       applyColumnMigrations(db);
       kasaGocu(db, dbPath);
+      kasaSekmeGocu(db);
       pruneAuditLog(db);
       pruneSecurityLog(db);
       active = true;
@@ -1123,6 +1150,7 @@ function migrateFromJsonIfNeeded() {
     conn.exec(SCHEMA_SQL);
     applyColumnMigrations(conn);
     kasaGocu(conn); // temiz kurulum: taşınacak kayıt yok, yalnız bayrak yazılır
+    kasaSekmeGocu(conn); // kullanıcı yok, yalnız işaret: sonradan açılan kullanıcılar yeni kurala tabidir
     db = conn;
     active = true;
     return;
@@ -1161,6 +1189,7 @@ function migrateFromJsonIfNeeded() {
     applyColumnMigrations(conn); // populateAll yeni sütunlara yazdığı için geçişten ÖNCE şart
     conn.transaction(() => populateAll(conn, parsed))();
     kasaGocu(conn); // data.json yedeği zaten kalıyor (migrated backup)
+    kasaSekmeGocu(conn);
     conn.close();
 
     fs.renameSync(tmpPath, dbPath);
@@ -1695,7 +1724,7 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 }
 
 module.exports = {
-  migrateFromJsonIfNeeded, kasaGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  migrateFromJsonIfNeeded, kasaGocu, kasaSekmeGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
   getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,

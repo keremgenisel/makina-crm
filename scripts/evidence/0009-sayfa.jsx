@@ -33,9 +33,18 @@ import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import App from "../../src/App";
+import { UserManager } from "../../src/components/settings/UserManager";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
+if (ekran.startsWith("kullanici-izin-kasa")) {
+  // Spec 0052: izin ekranı. Geri doldurulmuş (Kasa'lı) ve Kasa'sı kaldırılmış iki kullanıcı; ikincisi düzenlemede açılır.
+  const KULLANICILAR = [
+    { id: 1, username: "muhasebe", role: "user", is_active: 1, permissions: JSON.stringify({ tabs: ["dashboard", "finance", "gider", "kasa"] }) },
+    { id: 2, username: "satinalma", role: "user", is_active: 1, permissions: JSON.stringify({ tabs: ["dashboard", "finance", "gider"], giderActions: ["gider_add", "gider_odeme", "kasa_hesap", "virman"] }) },
+  ];
+  window.appServer = { apiRequest: async ({ method } = {}) => ({ ok: true, status: 200, data: method === "GET" ? KULLANICILAR : {} }) };
+}
 if (ekran === "ayarlar-server-istemci") {
   // Sunucuya bağlı istemci: Sunucu Bağlantısı + İki Adımlı Doğrulama bölümleri. Yalnız okuma çağrıları yanıtlanır.
   const t = {
@@ -54,6 +63,13 @@ if (UYGULAMA) {
   try { localStorage.clear(); if (ekran === "uygulama-menu-dar") localStorage.setItem("sidebarDar", "1"); } catch { /* yoksay */ }
   window.crmStorage = { load: async () => ({ customers: [], payments: [], giderler: [], giderTurleri: [], kasaHesaplari: [], hesapHareketleri: [], cekler: [],
     appSettings: { giderAyarlari: { yururlukAy: "2026-01" } }, dataVersion: 1 }), save: async () => true, getVersion: async () => 1 };
+  // Spec 0052: Kasa sekme izni. Kasasız kullanıcıda Mali İşler grubu Finans + Giderler; kasalıda Kasa da.
+  const SEKME_0052 = ["dashboard", "customers", "dealers", "stock", "finance", "gider", "evrak", "notes", "settings"];
+  if (ekran === "uygulama-menu-kasasiz" || ekran === "uygulama-menu-kasali") {
+    const tabs = ekran === "uygulama-menu-kasali" ? [...SEKME_0052, "kasa"] : SEKME_0052;
+    const t = { getConfig: async () => ({ serverUrl: "http://10.0.0.2:3000", isActive: true, role: "user", username: "u", permissions: JSON.stringify({ tabs }) }) };
+    window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
+  }
   if (ekran === "uygulama-menu-tek-cocuk") {
     const t = { getConfig: async () => ({ serverUrl: "http://10.0.0.2:3000", isActive: true, role: "user", username: "u",
       permissions: JSON.stringify({ tabs: ["dashboard", "customers", "dealers", "stock", "finance", "evrak", "notes", "settings"] }) }) };
@@ -552,6 +568,11 @@ const EKRANLAR = {
   "uygulama-menu-kapali": [<App />, ["Finans", "Mali İşler"]], // perde bu derlemede inik: Kasa menüde yok
   "uygulama-menu-dar": [<App />, []],
   "uygulama-menu-tek-cocuk": [<App />, ["Finans"]],
+  // Spec 0052: Kasa sekme izni (gerçek App kabuğu ve izin ekranı).
+  "uygulama-menu-kasasiz": [<App />, ["Giderler"]],
+  "uygulama-menu-kasali": [<App />, ["Giderler"]],
+  "kullanici-izin-kasa": [<UserManager flash={bos} />, ["dugme:Düzenle"]],
+  "kullanici-izin-kasa-ipucu": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Gider işlemleri", "kaydir:Kasa ve hesaplar"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Spec 0044: tahsilatın hesabı. Kasa hareketlerinde tahsilat satırları, hesapsız tahsilat listesi, Ödendi anahtarının penceresi,
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
@@ -654,6 +675,14 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       // Yalnız simgeli düğme: title özniteliği birebir eşleşen ilk düğme (spec 0045).
       const hedef = [...document.querySelectorAll("button")].find(e => e.title === metin.slice(7));
       if (hedef) hedef.click(); else console.warn("başlıklı düğme yok: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("tikla:")) {
+      // Metni birebir eşleşen son öğenin kendisine tıklar (tablo satırının içindeki başlık gibi; satıra değil). Spec 0052.
+      const aranan = metin.slice(6);
+      const hedef = [...document.querySelectorAll("span, div, label")].filter(e => e.textContent.trim() === aranan && e.children.length === 0).pop();
+      if (hedef) hedef.click(); else console.warn("tıklanamadı: " + metin);
       await bekle(300);
       continue;
     }

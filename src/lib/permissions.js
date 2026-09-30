@@ -31,7 +31,8 @@ export function makeCanDo(serverPermissions, groupKey) {
  * @param {import("../types").ServerPermissions | null | undefined} serverPermissions
  */
 export function gorunurSekmeler(tabs, serverMode, serverPermissions) {
-  // Spec 0024 C6/Q9: "kasa" kendi izin kutusu olmayan türev sekmedir; Giderler ve Finans birlikte görünüyorsa görünür.
+  // Spec 0024 C6: Kasa yalnız Giderler ve Finans birlikte görünürken görünür (önkoşul; yarım veriyle bakiye yok).
+  // Spec 0052 R2: Kasa'nın kendi sekme izni var; önkoşul üstüne gelir, izin listesinde "kasa" yazmıyorsa görünmez.
   const kasaSuz = (liste) => {
     const ids = new Set(liste.map(t => t.id));
     return liste.filter(t => t.id !== "kasa" || (ids.has("gider") && ids.has("finance")));
@@ -42,7 +43,7 @@ export function gorunurSekmeler(tabs, serverMode, serverPermissions) {
   try {
     const allowed = JSON.parse(serverPermissions.permissions || "null")?.tabs;
     if (!Array.isArray(allowed)) return giderHaric;
-    return kasaSuz(tabs.filter(t => allowed.includes(t.id) || t.id === "kasa"));
+    return kasaSuz(tabs.filter(t => allowed.includes(t.id)));
   } catch { return giderHaric; }
 }
 

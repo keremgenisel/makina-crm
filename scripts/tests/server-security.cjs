@@ -49,10 +49,16 @@ const GIDERCI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "g
 const AYARCI = JSON.stringify({ tabs: ["settings"] });
 // Yalnız tekrarlayan kalem üretme izni (triyaj bulgu 7: tanimId eklemek serbest kalem izni sayılmamalı).
 const URETICI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_tekrar_uret"] });
-const ODEMECI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_odeme", "kasa_hesap"] });
+// Spec 0052: hesap tanımı yazmak Kasa sekmesi + önkoşul (Giderler ve Finans) ister; ödemeci üçüne de sahip.
+const ODEMECI = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["gider_odeme", "kasa_hesap", "virman"] });
+// Spec 0052 AC-10 / AC-11 / AC-25: Kasa'sı olmayan gider + finans kullanıcısı; "kasa" yazılı ama Finans'ı olmayan kullanıcı.
+// Eylem izinleri (virman, avans dahil) açık, müşteri grubu kısıtlı: reddin tek nedeni Kasa sekmesi; 0044 istisnası da bununla sınanır.
+const KASASIZ = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme", "kasa_hesap", "virman", "avans"], customerActions: [] });
+const KASA_FINANSSIZ = JSON.stringify({ tabs: ["gider", "kasa"], giderActions: ["gider_odeme", "kasa_hesap"] });
 // Spec 0040: yalnız Müşteriler sekmeli tahsilatçı; müşteri grubu kısıtlı Giderler/Finans cirocusu; gider_odeme'siz Giderler kullanıcısı.
 const TAHSILATCI = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
-const CIROCU = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+// Spec 0052: kendi çek yazmak (verilen çek) Kasa sekmesi ister; cirocu Kasa kullanıcısıdır.
+const CIROCU = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["gider_odeme"], customerActions: [] });
 // Spec 0046: gider formundan ciro (yeni kalem + ciro hareketi + çek tek yazımda); müşteri grubu kısıtlı.
 const FORM_ODEMECI = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add", "gider_odeme"], customerActions: [] });
 const CIROSUZ = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_edit"], customerActions: [] });
@@ -83,6 +89,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("giderci",     bcrypt.hashSync("gider123", 10), "user", GIDERCI);
   dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
   dbmod.createUser("odemeci",     bcrypt.hashSync("odeme123", 10), "user", ODEMECI);
+  dbmod.createUser("kasasiz",     bcrypt.hashSync("kasa1234", 10), "user", KASASIZ);
+  dbmod.createUser("kasafinsiz",  bcrypt.hashSync("kasa1234", 10), "user", KASA_FINANSSIZ);
   dbmod.createUser("tahsilatci",  bcrypt.hashSync("tahsil123", 10), "user", TAHSILATCI);
   dbmod.createUser("cirocu",      bcrypt.hashSync("ciro1234", 10), "user", CIROCU);
   dbmod.createUser("formodemeci", bcrypt.hashSync("form1234", 10), "user", FORM_ODEMECI);
@@ -359,6 +367,35 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gG, dataVersion: undefined, hesapHareketleri: gG.hesapHareketleri.filter(h => h.id !== 9044) }, gG.dataVersion, gidTok)).status === 403);
   check("spec 0024: Ayarlar kullanıcısı (Giderler sekmesi yok) hareket yazamaz → 403",
     (await postData({ ...(await gUst(adminTok)), dataVersion: undefined, hesapHareketleri: [] }, await curVer(adminTok), (await login("ayarci", "ayar123")).body.token)).status === 403);
+  // Spec 0052 R7, R8, R16: hesap tanımları Kasa sekmesine (önkoşul Giderler + Finans) bağlı; ödeme hareketi Giderler'de.
+  const kasasizTok = (await login("kasasiz", "kasa1234")).body.token;
+  const kasafinsizTok = (await login("kasafinsiz", "kasa1234")).body.token;
+  const yeniHesap = { id: 9060, ad: "Yeni Banka", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false };
+  let gK = await gUst(kasasizTok);
+  check("spec 0052 AC-10: Kasa'sı olmayan kullanıcı hesap ekleyemez / düzenleyemez / silemez → 403",
+    (await postData({ ...gK, dataVersion: undefined, kasaHesaplari: [...gK.kasaHesaplari, yeniHesap] }, gK.dataVersion, kasasizTok)).status === 403
+    && (await postData({ ...gK, dataVersion: undefined, kasaHesaplari: gK.kasaHesaplari.map(h => ({ ...h, ad: "Değişti" })) }, gK.dataVersion, kasasizTok)).status === 403
+    && (await postData({ ...gK, dataVersion: undefined, kasaHesaplari: [] }, gK.dataVersion, kasasizTok)).status === 403);
+  const gKF = await gUst(kasafinsizTok);
+  check("spec 0052 AC-10: listesinde 'kasa' olan ama Finans'ı olmayan kullanıcı hesap ekleyemez → 403 (önkoşul)",
+    (await postData({ ...gKF, dataVersion: undefined, kasaHesaplari: [...gKF.kasaHesaplari, yeniHesap] }, gKF.dataVersion, kasafinsizTok)).status === 403);
+  check("spec 0052 AC-25: Kasa'sı olmayan kullanıcıya hesap verisi inmeye devam eder (okuma filtresi yok)",
+    Array.isArray(gK.kasaHesaplari) && gK.kasaHesaplari.some(h => h.id === 9043));
+  check("spec 0052 AC-11: Kasa'sı olmayan gider kullanıcısı ödeme kaydeder → 200",
+    (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9061, tur: "odeme", tarih: "2026-09-06", tutar: 1, giderId: 9003, taksitId: null, hesapId: null }] }, gK.dataVersion, kasasizTok)).status === 200
+    && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9061));
+  // Triyaj bulgu 1: virman ve avans bakiyeyi yalnız Kasa ekranından değiştirir; eylem izni olsa da Kasa sekmesi ister.
+  gK = await gUst(kasasizTok);
+  check("spec 0052 triyaj: Kasa'sız kullanıcı virman yazamaz → 403 (virman izni olsa da)",
+    (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9062, tur: "virman", tarih: "2026-09-06", tutar: 1, hesapId: 9043, karsiHesapId: 9043 }] }, gK.dataVersion, kasasizTok)).status === 403);
+  check("spec 0052 triyaj: Kasa'sız kullanıcı avans veremez → 403 (avans izni olsa da)",
+    (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9063, tur: "avans", tarih: "2026-09-06", tutar: 1, calisanId: 1, hesapId: 9043 }] }, gK.dataVersion, kasasizTok)).status === 403);
+  gK = await gUst(odemeTok);
+  check("spec 0052 triyaj: Kasa'lı kullanıcı virman yazar → 200",
+    (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9064, tur: "virman", tarih: "2026-09-06", tutar: 1, hesapId: 9043, karsiHesapId: 9043 }] }, gK.dataVersion, odemeTok)).status === 200);
+  gK = await gUst(odemeTok);
+  check("spec 0052 AC-5 (sunucu): Kasa + Giderler + Finans'lı kullanıcı hesap ekler → 200",
+    (await postData({ ...gK, dataVersion: undefined, kasaHesaplari: [...gK.kasaHesaplari, yeniHesap] }, gK.dataVersion, odemeTok)).status === 200);
   const gTemiz = await gUst(adminTok);
   await postData({ ...gTemiz, dataVersion: undefined, hesapHareketleri: [], kasaHesaplari: [] }, gTemiz.dataVersion, adminTok);
   gG = await gUst(gidTok);
@@ -481,6 +518,14 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("spec 0044 Q5: Kasa kullanıcısı servise yalnız hesap atar → 200; kayıttan okunur",
     (await postData({ ...tK, dataVersion: undefined, services: tK.services.map(x => x.id === 9700 ? { ...x, hesapId: 97 } : x) }, tK.dataVersion, ciroTok)).status === 200
     && (await gUst(adminTok)).services.find(x => x.id === 9700)?.hesapId === 97);
+  const tKs = await gUst(kasasizTok);
+  check("spec 0052 AC-23: 0044 istisnası Kasa sekmesi olmadan da çalışır (Giderler + Finans, müşteri grubu kısıtlı) → 200",
+    (await postData({ ...tKs, dataVersion: undefined, services: tKs.services.map(x => x.id === 9700 ? { ...x, hesapId: 9043 } : x) }, tKs.dataVersion, kasasizTok)).status === 200
+    && (await gUst(adminTok)).services.find(x => x.id === 9700)?.hesapId === 9043);
+  // Spec 0052 triyaj bulgu 1: verilen (kendi) çek Kasa sekmesi ister; eylem izni (gider_odeme) yetmez.
+  const vK = await gUst(kasasizTok);
+  check("spec 0052 triyaj: Kasa'sız kullanıcı verilen çeki ödendi işaretleyemez → 403",
+    (await postData({ ...vK, dataVersion: undefined, cekler: vK.cekler.map(c => c.id === 9660 ? { ...c, durum: "odendi" } : c) }, vK.dataVersion, kasasizTok)).status === 403);
   const tK2 = await gUst(ciroTok);
   check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
     (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);

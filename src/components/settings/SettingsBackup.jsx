@@ -3,6 +3,7 @@ import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../
 import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, uid, disAppSettingsSuz } from "../../lib/utils";
 import { kasaGocuHareketleri } from "../../../electron/kasaGocuSaf.mjs";
 import { odemeleriAyikla } from "../../lib/cek";
+import { kasaKayitlariniKoru, kasaHareketiMi, kasaCekiMi } from "../../lib/yedekKasa";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { KartBolum } from "../tasarim";
 
@@ -18,6 +19,8 @@ export const SettingsBackup = ({
   kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null,
   // Spec 0040: çek kayıtları tahsilatlarla aynı ("Müşteriler") pakette taşınır.
   cekler = [], setCekler = null,
+  // Spec 0052 R19: Kasa sekmesi olmayan kullanıcıda hesap tanımları, virman/avans ve verilen çekler geri yüklenmez.
+  kasaVeriYetki = true,
   // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
   // (yalnız izin) beslenir. Perde inikken gider paketi listede görünmez ama tam geri yüklemede yüklenir (K3).
   giderVeriYetki = giderYetki,
@@ -194,9 +197,11 @@ export const SettingsBackup = ({
     if (setCekler && (cekMusteri || cekGider)) {
       const yedekCekler = Array.isArray(restoreData?.cekler) ? restoreData.cekler : [];
       const bagsiz = (c) => c && c.paymentId == null;
-      if (cekMusteri && cekGider) setCekler(yedekCekler);
-      else if (cekMusteri) setCekler(p => [...(p || []).filter(bagsiz), ...yedekCekler.filter(c => !bagsiz(c))]);
-      else setCekler(p => [...(p || []).filter(c => !bagsiz(c)), ...yedekCekler.filter(bagsiz)]);
+      const hesapla = (p) => (cekMusteri ? [...(p || []).filter(bagsiz), ...yedekCekler.filter(c => !bagsiz(c))]
+        : [...(p || []).filter(c => !bagsiz(c)), ...yedekCekler.filter(bagsiz)]);
+      if (!kasaVeriYetki) setCekler(p => kasaKayitlariniKoru(p, cekMusteri && cekGider ? yedekCekler : hesapla(p), kasaCekiMi));
+      else if (cekMusteri && cekGider) setCekler(yedekCekler);
+      else setCekler(hesapla);
     }
     if (sec("musteri") && Array.isArray(restoreData?.gorusmeler) && setGorusmeler) setGorusmeler(restoreData.gorusmeler);
     if (sec("evrak") && Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
@@ -222,7 +227,10 @@ export const SettingsBackup = ({
     if (sec("gider") && Array.isArray(restoreData?.standartGiderler) && setStandartGiderler) setStandartGiderler(restoreData.standartGiderler);
     if (sec("gider") && Array.isArray(restoreData?.uretimPartileri) && setUretimPartileri) setUretimPartileri(restoreData.uretimPartileri);
     if (sec("gider") && Array.isArray(restoreData?.kasaHesaplari) && setKasaHesaplari) setKasaHesaplari(restoreData.kasaHesaplari);
-    if (sec("gider") && Array.isArray(restoreData?.hesapHareketleri) && setHesapHareketleri) setHesapHareketleri(restoreData.hesapHareketleri);
+    if (sec("gider") && Array.isArray(restoreData?.hesapHareketleri) && setHesapHareketleri) {
+      if (kasaVeriYetki) setHesapHareketleri(restoreData.hesapHareketleri);
+      else setHesapHareketleri(p => kasaKayitlariniKoru(p, restoreData.hesapHareketleri, kasaHareketiMi));
+    }
     if (sec("ayar") && restoreData?.factory) setFactory(restoreData.factory);
 
     // appSettings: makineye özgü alanları (yedek klasörü, zamanlama) koru, geri kalanını yedekten al.

@@ -786,7 +786,7 @@ describe("gider bölümleri: C6 kural 3 ve sunucu aynası (K6)", () => {
 });
 
 describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
-  const izin = (ids) => JSON.stringify({ tabs: ["gider"], giderActions: ids });
+  const izin = (ids) => JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ids }); // spec 0052: virman/avans Kasa sekmesi ister
   it("elle kalem eklemek gider_add ister; tanımdan üretilen kalem gider_tekrar_uret ister", () => {
     const yeni = { giderler: [{ id: 1, tarih: "2026-09-01" }] };
     expect(eylemDenetimi({ giderler: [] }, yeni, izin(["gider_tekrar_uret"]), "user").ok).toBe(false);
@@ -1047,7 +1047,7 @@ describe("spec 0049: bağsız çek yetkisi", () => {
   const bagsiz = (o = {}) => ({ id: 400, yon: "alinan", paymentId: null, no: "7", banka: "İş", tur: "hamiline", durum: "portfoy", tutar: 5000, currency: "TRY", vadeTarihi: "2026-11-01", tarih: "2026-09-01", kimden: "X", gecmis: [], ...o });
   const verilen = (o = {}) => ({ id: 500, yon: "verilen", paymentId: null, no: "A1", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 3000, vadeTarihi: "2026-10-15", tarih: "2026-09-02", hesapId: 97, alacakliTur: "tedarikci", alacakliId: 11, alacakliAd: "Demir", gecmis: [], ...o });
   const hareket = { id: 600, tur: "odeme", tarih: "2026-09-02", tutar: 3000, yontem: "Çek (kendi)", giderId: 5, cekId: 500, hesapId: null };
-  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["gider_odeme"], customerActions: [] }); // spec 0052: verilen çek Kasa sekmesi ister
   const odemesiz = JSON.stringify({ tabs: ["gider", "finance", "customers"], giderActions: ["gider_edit"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
   it("AC-23: bağsız çek ekleme, silme ve durum değişikliği gider_odeme ister; tahsilat izinleri yetmez", () => {
     const bos = { cekler: [] }, ekli = { cekler: [bagsiz()] }, tahsil = { cekler: [bagsiz({ durum: "tahsil" })] };
@@ -1126,5 +1126,51 @@ describe("spec 0046: gider formundan ciro tek yazımda", () => {
   it("AC-22: aynı yazımda gider_add yoksa kalem eklenemez; gider_odeme yoksa ciro hareketi ve çek durumu reddedilir", () => {
     expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] }), "user")).toMatchObject({ ok: false, gerekli: "gider_add" });
     expect(eylemDenetimi(eski, yeni, JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_add"], customerActions: [] }), "user").ok).toBe(false);
+  });
+});
+
+// ── Spec 0052 triyaj bulgu 1: virman, avans ve verilen çek Kasa sekmesi ister ─────────────────────────────
+describe("spec 0052: bakiyeyi Kasa ekranından değiştiren kayıtlar Kasa sekmesi (+ Giderler + Finans) ister", () => {
+  const tum = ["gider_add", "gider_edit", "gider_odeme", "kasa_hesap", "virman", "avans"];
+  const izin = (tabs) => JSON.stringify({ tabs, giderActions: tum, customerActions: [] });
+  const KASASIZ = izin(["dashboard", "gider", "finance"]), KASALI = izin(["dashboard", "gider", "finance", "kasa"]), FINANSSIZ = izin(["gider", "kasa"]);
+  const hr = (id, tur, o = {}) => ({ id, tur, tarih: "2026-09-10", tutar: 100, hesapId: 51, ...o });
+  const virman = hr(1, "virman", { karsiHesapId: 52 }), avans = hr(2, "avans", { calisanId: 9 });
+  const verilen = { id: 30, yon: "verilen", no: "A-1", banka: "Z", tutar: 500, currency: "TRY", durum: "yazildi", hesapId: 51, gecmis: [] };
+  const durumlar = (bolum, kayit) => [
+    ["ekleme", { [bolum]: [] }, { [bolum]: [kayit] }],
+    ["düzenleme", { [bolum]: [kayit] }, { [bolum]: [{ ...kayit, tutar: 999 }] }],
+    ["silme", { [bolum]: [kayit] }, { [bolum]: [] }],
+  ];
+  const sonuc = (p, eski, yeni) => eylemDenetimi(eski, yeni, p, "user");
+  it("Kasa'sız kullanıcı virman ve avansı ekleyemez, düzenleyemez, silemez (eylem izni olsa da)", () => {
+    for (const k of [virman, avans]) for (const [ad, eski, yeni] of durumlar("hesapHareketleri", k)) {
+      const r = sonuc(KASASIZ, eski, yeni);
+      expect(r.ok, `${k.tur} ${ad}`).toBe(false);
+      expect(r).toMatchObject({ reddedilenBolum: "hesapHareketleri", gerekli: "kasa_sekmesi" });
+      expect(sonuc(FINANSSIZ, eski, yeni).ok, `${k.tur} ${ad} finanssız`).toBe(false);
+      expect(sonuc(KASALI, eski, yeni).ok, `${k.tur} ${ad} kasalı`).toBe(true);
+    }
+  });
+  it("Kasa'sız kullanıcı verilen (kendi) çeki yazamaz, ödendi işaretleyemez, silemez", () => {
+    const hareket = { id: 70, tur: "odeme", tarih: "2026-09-10", tutar: 500, yontem: "Çek (kendi)", giderId: 5, hesapId: null, cekId: 30 };
+    const ekle = [{ cekler: [], hesapHareketleri: [] }, { cekler: [verilen], hesapHareketleri: [hareket] }];
+    expect(sonuc(KASASIZ, ...ekle)).toMatchObject({ ok: false, reddedilenBolum: "cekler", gerekli: "kasa_sekmesi" });
+    expect(sonuc(KASALI, ...ekle).ok).toBe(true);
+    const odendi = [{ cekler: [verilen] }, { cekler: [{ ...verilen, durum: "odendi", gecmis: [{ tarih: "2026-09-20", durum: "odendi" }] }] }];
+    expect(sonuc(KASASIZ, ...odendi).ok).toBe(false);
+    expect(sonuc(KASALI, ...odendi).ok).toBe(true);
+    expect(sonuc(KASASIZ, { cekler: [verilen] }, { cekler: [] }).ok).toBe(false);
+  });
+  it("R8 korunur: Kasa'sız gider kullanıcısı ödeme ve mahsup yazar; alınan (bağsız) çek eklemek de etkilenmez", () => {
+    for (const k of [hr(3, "odeme", { giderId: 5, hesapId: null }), hr(4, "mahsup", { giderId: 5, calisanId: 9, hesapId: null })])
+      for (const [ad, eski, yeni] of durumlar("hesapHareketleri", k)) expect(sonuc(KASASIZ, eski, yeni).ok, `${k.tur} ${ad}`).toBe(true);
+    const alinan = { id: 31, paymentId: null, no: "B-1", banka: "Z", tutar: 200, currency: "TRY", durum: "portfoy", kimden: "X", gecmis: [] };
+    expect(sonuc(KASASIZ, { cekler: [] }, { cekler: [alinan] }).ok).toBe(true);
+  });
+  it("değişmeden duran virman, avans ve verilen çek başka bir yazımı engellemez", () => {
+    const eski = { hesapHareketleri: [virman, avans], cekler: [verilen] };
+    const yeni = { hesapHareketleri: [virman, avans, hr(5, "odeme", { giderId: 5 })], cekler: [verilen] };
+    expect(sonuc(KASASIZ, eski, yeni).ok).toBe(true);
   });
 });

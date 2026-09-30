@@ -65,7 +65,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   yedekParcaSatislar = [], setYedekParcaSatislar = null, rawYedekParcaSatislar = [],
   serverPermissions = null,
   // Gider kaydı (spec 0001)
-  giderYetki = false, giderVeriYetki = giderYetki, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
+  giderYetki = false, giderVeriYetki = giderYetki, kasaVeriYetki = true, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
   giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null, cekler = [], setCekler = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
@@ -197,7 +197,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
           setStandardModels={setStandardModels} setFactory={setFactory} setKalipDefs={setKalipDefs} setPartTypeDefs={setPartTypeDefs} setCalisanlar={setCalisanlar} setNotes={setNotes} setParts={setParts}
           setPartSales={setPartSales} setPayments={setPayments} setTeklifler={setTeklifler} setFaturalar={setFaturalar} setPartStock={setPartStock} setPartStockLog={setPartStockLog}
           setUretimFormlari={setUretimFormlari}
-          giderYetki={giderYetki} giderVeriYetki={giderVeriYetki} giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
+          giderYetki={giderYetki} giderVeriYetki={giderVeriYetki} kasaVeriYetki={kasaVeriYetki} giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
           giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
           standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
           kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}

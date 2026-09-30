@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Modal, PasswordInput, Btn, ConfirmDialog } from "../ui";
 import {
-  ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION,
+  ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION, VARSAYILAN_KAPALI_SEKMELER, KASA_EYLEM_IDLERI, KASA_ETKISIZ_IPUCU,
   CUSTOMER_ACTION_GROUPS, DEALER_ACTION_GROUPS, STOCK_ACTION_GROUPS,
   EVRAK_ACTION_GROUPS, NOT_ACTION_GROUPS, FINANCE_ACTION_GROUPS, GIDER_ACTION_GROUPS,
   parseTabPerms, parseSettingsPerms, parseCustomerActionsPerms, parseDealerActionsPerms,
@@ -174,6 +174,9 @@ export function UserManager({ flash, settingsGroups = [] }) {
   // taşınır (görünürlük). O gruplar kendi içlerinde alt başlıklara bölünmüştür (Servis Kaydı,
   // Servis Kartı, Kargo Panosu, Extra Kalıp Kargo Panosu) — akordeon her alt başlığı ayrı gösterir.
   const servisPanoGrubuMu = (g) => g.servisPano === true;
+  // Spec 0052 R11: Kasa'nın eylem kutuları Kasa sekmesi olmayan kullanıcıda da çizilir ve işaretlenebilir (izin ekranı
+  // bir bağımlılık ağacı değildir); etkisiz oldukları tek satırla söylenir, Kasa sonradan açılınca izinler hazırdır.
+  const giderGruplari = GIDER_ACTION_GROUPS.map(g => (g.items.some(i => KASA_EYLEM_IDLERI.has(i.id)) && !editTabs.includes("kasa") ? { ...g, ipucu: KASA_ETKISIZ_IPUCU } : g));
   // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans,
   // Evrak, Notlar, Servis Panosu, Ayarlar. (Anasayfa/Harita'nın işlem izni yok.)
   const permSections = [
@@ -187,7 +190,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
       setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
     // Gider işlemleri (spec 0001): yalnız "Giderler" sekmesi açıkça verilmiş kullanıcıda etkilidir.
     { key: "gider", title: "Gider işlemleri", on: editGiderActionsOn, selected: editGiderActions, setSelected: setEditGiderActions,
-      setOn: (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); }, groups: GIDER_ACTION_GROUPS, ...yesil,
+      setOn: (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); }, groups: giderGruplari, ...yesil,
       emptyText: "Varsayılan (Giderler sekmesi açıksa tüm gider işlemleri açık)" },
     { key: "evrak", title: "Evrak işlemleri", on: editEvrakActionsOn, selected: editEvrakActions, setSelected: setEditEvrakActions,
       setOn: (v) => { setEditEvrakActionsOn(v); if (v) setEditEvrakActions([...allEvrakActionIds]); }, groups: EVRAK_ACTION_GROUPS, ...yesil },
@@ -242,6 +245,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                 {sec.groups.map(g => (
                   <div key={g.grup}>
                     <div style={grupBaslikStyle}>{g.grup}</div>
+                    {g.ipucu && <div data-testid="kasa-etkisiz-ipucu" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 5 }}>{g.ipucu}</div>}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{g.items.map(item => permChekbox(sec, item))}</div>
                   </div>
                 ))}
@@ -313,7 +317,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                 {ALL_TABS.map(t => (
                   <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: newU.tabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${newU.tabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                     <input type="checkbox" checked={newU.tabs.includes(t.id)} onChange={e => setNewU(p => ({ ...p, tabs: e.target.checked ? [...p.tabs, t.id] : p.tabs.filter(id => id !== t.id) }))} style={{ margin: 0 }} />
-                    {t.label}{t.id === "gider" && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
+                    {t.label}{VARSAYILAN_KAPALI_SEKMELER.has(t.id) && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
                   </label>
                 ))}
               </div>
@@ -422,12 +426,12 @@ export function UserManager({ flash, settingsGroups = [] }) {
                               {ALL_TABS.map(t => (
                                 <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, cursor: "pointer", background: editTabs.includes(t.id) ? "var(--bluBg2, #dbeafe)" : "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", border: `1px solid ${editTabs.includes(t.id) ? "var(--blu500, #3b82f6)" : "var(--n200, #e2e8f0)"}`, borderRadius: 6, padding: "4px 10px" }}>
                                   <input type="checkbox" checked={editTabs.includes(t.id)} onChange={e => setEditTabs(p => e.target.checked ? [...p, t.id] : p.filter(id => id !== t.id))} style={{ margin: 0 }} />
-                                  {t.label}{t.id === "gider" && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
+                                  {t.label}{VARSAYILAN_KAPALI_SEKMELER.has(t.id) && <span style={{ fontSize: 10, color: "var(--n500, #64748b)" }}>(varsayılan kapalı)</span>}
                                 </label>
                               ))}
                             </div>
                             <div style={{ fontSize: 11, color: "var(--n500, #64748b)", margin: "-4px 0 10px" }}>
-                              Giderler sekmesi yalnız açıkça işaretlendiğinde görünür. Ayarlar açık olsa bile Giderler grubu bu sekme olmadan görünmez.
+                              Giderler sekmesi yalnız açıkça işaretlendiğinde görünür. Ayarlar açık olsa bile Giderler grubu bu sekme olmadan görünmez. Kasa, Giderler ve Finans ile birlikte işaretlendiğinde görünür.
                             </div>
                             {/* İzin akordeonları */}
                             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)", marginBottom: 8 }}>İşlem İzinleri</div>
