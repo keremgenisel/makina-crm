@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0050-pencere-boyutu-ve-musteri-detay-uzunlugu.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0050-pencere-boyutu-ve-musteri-detay-uzunlugu.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0050-pencere-boyutu` (`feat/0051-kasa-bakim` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q9) kabul |
 

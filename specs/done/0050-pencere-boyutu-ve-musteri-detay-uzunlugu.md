@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-09-30; plan `specs/0050-uygulama-plani.md` Q1–Q9). Uygulanıyor, dal `feat/0050-pencere-boyutu`. |
+| **Durum** | Tamamlandı (2026-09-30; commit `dae844e`, dal `feat/0050-pencere-boyutu`; plan `specs/done/0050-uygulama-plani.md` Q1–Q9) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider ve Kasa form pencereleri, müşteri detay penceresi, tasarım sözlüğü |
@@ -218,23 +218,23 @@ pencere kısalıyor; müşteri detayındaki maliyet kutusu isteyene açılıyor,
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Boyutlar tek yerde; ekranlarda tek tek sayı kalmadı (C3, R18, kaynak taraması) ve boyut iddiası
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Boyutlar tek yerde; ekranlarda tek tek sayı kalmadı (C3, R18, kaynak taraması) ve boyut iddiası
       taşıyan mevcut testler güncellendi.
-- [ ] AC-7 için Electron yerleşim testi yazıldı ve `ELECTRON_TESTLERI` listesine eklendi (R13); jsdom'da
+- [x] AC-7 için Electron yerleşim testi yazıldı ve `ELECTRON_TESTLERI` listesine eklendi (R13); jsdom'da
       ölçüm yapılmadı.
-- [ ] Kanıt eşlemesindeki kayıtlar R14'e göre `degisti` ya da `ayni` olarak işaretlendi ve
+- [x] Kanıt eşlemesindeki kayıtlar R14'e göre `degisti` ya da `ayni` olarak işaretlendi ve
       `kanit-eslemesi.test.js` yeşil.
-- [ ] Katlama 0016'nın kart desenini kullanıyor; ikinci bir mekanizma yazılmadı (C2).
-- [ ] Kaydedilen verinin değişmediği testle gösterildi (AC-5).
-- [ ] `docs/tasarim-sozlugu.md` pencere boyutu kuralıyla güncellendi (R6).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0050-*.jpg`): geniş form penceresi, kapalı ve açık maliyet
+- [x] Katlama 0016'nın kart desenini kullanıyor; ikinci bir mekanizma yazılmadı (C2).
+- [x] Kaydedilen verinin değişmediği testle gösterildi (AC-5).
+- [x] `docs/tasarim-sozlugu.md` pencere boyutu kuralıyla güncellendi (R6).
+- [x] Görsel kanıt eklendi (`docs/evidence/0050-*.jpg`): geniş form penceresi, kapalı ve açık maliyet
       kutusu, dar ekran; kanıt eşlemesindeki kayıtlar `beklenen: "degisti"` ve TY onayıyla işaretlendi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: form penceresi boyut kuralı ve maliyet kutusunun katlanır olması.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: form penceresi boyut kuralı ve maliyet kutusunun katlanır olması.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -242,10 +242,10 @@ pencere kısalıyor; müşteri detayındaki maliyet kutusu isteyene açılıyor,
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turunda (spec başlığında); R2 plan onayında (Q1–Q9). Uygulamada kira formunun yüksekliği için TY onaylı not (R15): kanıt `degisti`. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Yerleşim testinin en geniş sabit içerikli iki pencereyi (Ekstre, dağıtım ızgarası) ölçmemesi (kapsam boşluğu, gerçek); AC-13 adlı test yoktu (izlenebilirlik). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Pencere dışındaki bütün ekranlar 0 piksel; iki mevcut test bilinçli davranış değişikliğiyle güncellendi (kutu kapalı açılıyor; müşteri detayında dördüncü kart). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir boyut kararı iki eksenlidir; spec genişliği saydı, yüksekliğin de sınıfla birlikte değiştiğini (kira formu 90vh → 94vh) ancak piksel kanıtı gösterdi. "Görünür değişiklik olmaz" iddiası ölçümle doğrulanmadan kanıt beklentisine (`ayni`) yazılmamalı. İkincisi: yerleşim testi en riskli içeriği seçerek kurulmalı; ilk sürüm en kolay üç pencereyi ölçtü, sabit genişlikli tablo ve ızgara triyajla eklendi. Üçüncüsü: Electron'un varsayılan oturumu localStorage'ı çekimler arasında taşır; yerel tercih okuyan her ekran görüntü aracında sıfırlanmalı.

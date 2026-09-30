@@ -1,0 +1,582 @@
+[
+  {
+    "ad": "gider-formu-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-makina-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-makina-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-taksit-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-taksit-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-kira-stopaj-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-kira-stopaj-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-plani-aydinlik.png",
+    "boyut": "2880x3748",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-plani-karanlik.png",
+    "boyut": "2880x3748",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-uretim-partisi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-uretim-partisi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-ek-odeme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-ek-odeme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-odeme-plani-aydinlik.png",
+    "boyut": "2880x2410",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-odeme-plani-karanlik.png",
+    "boyut": "2880x2410",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-coklu-odeme-aydinlik.png",
+    "boyut": "2880x2376",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-coklu-odeme-karanlik.png",
+    "boyut": "2880x2376",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-maliyet-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-maliyet-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-maliyet-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-maliyet-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesap-formu-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesap-formu-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-virman-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-virman-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-kayit-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-kayit-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-kayit-taksit-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-kayit-taksit-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-aydinlik.png",
+    "boyut": "2880x3870",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-karanlik.png",
+    "boyut": "2880x3870",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-hata-aydinlik.png",
+    "boyut": "2880x3870",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-hata-karanlik.png",
+    "boyut": "2880x3870",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-plani-hareket-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-plani-hareket-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1822",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1822",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-mahsup-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-mahsup-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-dugmesi-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-dugmesi-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-penceresi-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-penceresi-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-ekstre-hedef-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-ekstre-hedef-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-tutar-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-tutar-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kira-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kira-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-taksitli-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-taksitli-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-once-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-once-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-bolunmez-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-bolunmez-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "piksel": 0
+  }
+]
