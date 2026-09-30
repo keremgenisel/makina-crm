@@ -224,3 +224,45 @@ export const bagliCekler = (cekler = [], payments = []) => {
   const ids = new Set((payments || []).map(p => String(p?.id)));
   return (cekler || []).filter(c => ids.has(String(c.paymentId)));
 };
+
+// ── Spec 0047 R38, R15: çekin ay sonu durumu ve ay özeti (dönem kilidi) ─────────────
+// Çekin `tarih` (dahil) itibarıyla durumu: gecmis'in o tarihe kadarki son satırı. Geçmişi hiç olmayan eski çekte güncel
+// durum kullanılır (`gecmisYok`, belgede dipnot); geçmişi olup o tarihe kadar satırı olmayan çek henüz alınmamıştır (null).
+export const cekDurumuAyinSonunda = (cek, tarih) => {
+  const g = Array.isArray(cek?.gecmis) ? cek.gecmis : [];
+  if (!g.length) return { durum: cek?.durum || CEK_DURUM.PORTFOY, gecmisYok: true };
+  const once = g.filter(x => x && x.tarih && x.tarih <= tarih);
+  if (!once.length) return null;
+  return { durum: once[once.length - 1].durum, gecmisYok: false };
+};
+// Ay özeti: ay sonunda elde duran (portföy + tahsile) çekler; ay içinde tahsil edilen, ciro edilen, karşılıksız çıkan
+// çekler gecmis tarihlerinden. Tutar tahsilatın tutarı, para birimine göre ayrı (kur çevrimi yok). Silinmiş tahsilatın
+// çeki sayılmaz.
+export const cekAyOzeti = (cekler = [], payments = [], ay) => {
+  const bas = `${ay}-01`, [y, m] = String(ay).split("-").map(Number);
+  const son = `${ay}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
+  const pById = new Map(payments.filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+  const kova = () => ({ adet: 0, tutarK: {} });
+  const r = { elde: kova(), tahsil: kova(), ciro: kova(), karsiliksiz: kova(), gecmisYokAdet: 0 };
+  const ekle = (k, p) => { k.adet++; const pb = p.currency || "TRY"; k.tutarK[pb] = (k.tutarK[pb] || 0) + kurus(parseMoney(p.tutar)); };
+  for (const c of cekler) {
+    const p = c && pById.get(String(c.paymentId));
+    if (!p) continue;
+    const d = cekDurumuAyinSonunda(c, son);
+    if (d?.gecmisYok) r.gecmisYokAdet++;
+    if (d && ELDE_DURUMLAR.has(d.durum)) ekle(r.elde, p);
+    const gecmis = c.gecmis || [];
+    for (let i = 0; i < gecmis.length; i++) {
+      const g = gecmis[i];
+      if (!g?.tarih || g.tarih < bas || g.tarih > son) continue;
+      if (g.durum === CEK_DURUM.TAHSIL) ekle(r.tahsil, p);
+      else if (g.durum === CEK_DURUM.CIRO) {
+        // Triyaj: aynı ay içinde iptal edilip portföye dönen ciro sayılmaz (yoksa çek hem "ciro edilen" hem "elde" görünür).
+        const sonraki = gecmis[i + 1];
+        if (!(sonraki && sonraki.tarih && sonraki.tarih <= son && sonraki.durum === CEK_DURUM.PORTFOY)) ekle(r.ciro, p);
+      }
+      else if (g.durum === CEK_DURUM.KARSILIKSIZ) ekle(r.karsiliksiz, p);
+    }
+  }
+  return r;
+};

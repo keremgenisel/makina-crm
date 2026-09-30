@@ -4,6 +4,7 @@ import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, calcKDV, isFaturali, 
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
+import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
@@ -16,7 +17,9 @@ import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
 
-export const Finance = ({ customers, services: servicesHam = [], dealers = [], partSales: partSalesHam = [], yedekParcaSatislar: yedekParcaHam = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments: paymentsHam = [], teklifler = [], serverPermissions = null, giderYetki = false, giderler = [], giderTurleri = [], giderYururlukAy = null }) => {
+export const Finance = ({ customers, services: servicesHam = [], dealers = [], partSales: partSalesHam = [], yedekParcaSatislar: yedekParcaHam = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments: paymentsHam = [], teklifler = [], serverPermissions = null, giderYetki = false, giderler = [], giderTurleri = [], giderYururlukAy = null,
+  // Spec 0047 R2: Aylık Gider ve Kasa Raporu düğmesi; veri App'in tek memosundan, yalnız kasa yetkisiyle.
+  giderKasaRaporVerisi = null, kasaYetki = false }) => {
   const canDoFin = makeCanDo(serverPermissions, "financeActions");
   // Sahipsiz kayıtlar (müşterisi artık olmayan servis/kalıp/yedek parça/ödeme) ekran hesaplarına
   // ve aylık rapora girmez — ikisi aynı süzgeci (lib/sahipsiz.js) kullanır ki rakamlar ayrışmasın.
@@ -561,8 +564,10 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
           <input type="month" value={raporAy} onChange={e => setRaporAy(e.target.value)}
             style={{ padding: "7px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 13, background: "var(--n100, #f8fafc)" }} />
           <Btn small variant="ghost" onClick={aylikRapor} title="Seçili ayın faaliyet raporunu yazdır/PDF kaydet"><Icon name="print" size={13} /> Aylık Rapor</Btn>
+          <GiderKasaRaporuDugmesi veri={giderKasaRaporVerisi} kasaYetki={kasaYetki} ay={raporAy} />
         </div>
         )}
+        {!canDoFin("fin_rapor") && <GiderKasaRaporuDugmesi veri={giderKasaRaporVerisi} kasaYetki={kasaYetki} />}
         <button onClick={() => setMoneyVisible(v => !v)} title={moneyVisible ? "Tutarları gizle" : "Tutarları göster"}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid var(--n200, #e2e8f0)", background: moneyVisible ? "var(--grnBg, #f0fdf4)" : "var(--n100, #f8fafc)", color: moneyVisible ? "var(--grn600, #16a34a)" : "var(--n400, #94a3b8)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
           <Icon name={moneyVisible ? "eye" : "eyeOff"} size={15} />

@@ -11,6 +11,7 @@ import {
 import { formOdemesiHazirla } from "../lib/formOdemesi";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
+import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { GiderForm } from "./GiderForm";
 import { tl2 } from "./gider/GiderAlanlari";
 import { Segment, BosDurum, UyariSeridi } from "./tasarim";
@@ -46,6 +47,8 @@ export const Giderler = ({
   // Spec 0024: ödeme bir harekettir; kalemin durumu burada hareketlerden türetilir (odemeleriUygula), yazma ham
   // diziye yapılır. hesapHareketleri verilmezse (dizi değil) saklı durum okunur. Hesap seçimi yalnız kasa yetkisiyle (C6).
   hesapHareketleri = null, setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
+  // Spec 0047: Aylık Gider ve Kasa Raporu (App'in tek memosu; düğme ve yazdırma gider/ klasörünün dışında, R36).
+  giderKasaRaporVerisi = null,
   // Spec 0046 (R24, Q8): çek cirosu için; App yalnız kasa yetkisiyle verir.
   cekler = [], setCekler = null, payments = [],
   // Triyaj bulgu 2: sunucu hareket bölümünü göndermedi (0024 öncesi sunucu); durum eski işaretten, ödeme girişi kapalı.
@@ -216,7 +219,11 @@ export const Giderler = ({
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Giderler</h2>
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Tüm tutarlar TL. Gider toplamlarına KDV hariç tutar girer.</div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{eylemDugmeleri}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {/* Spec 0047: rapor düğmesi yalnız başlıkta (boş durum kutusunun eylemlerine girmez). */}
+          <GiderKasaRaporuDugmesi veri={giderKasaRaporVerisi} kasaYetki={kasaYetki} baslangicAy={mod === "ay" ? ay : null} />
+          {eylemDugmeleri}
+        </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ minWidth: 0, flex: "1 1 460px", maxWidth: 800 }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>

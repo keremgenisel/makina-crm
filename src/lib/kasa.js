@@ -54,7 +54,11 @@ const satisKalemleri = (v) => satisTahsilatKalemleri({
 }, satisOps(v)).filter(k => paraBirimiUyumluMu(k.kaynak, k.kayit));
 
 // R7: hesap başına açılış, giren, çıkan, bakiye ve yürüyen bakiyeli hareket satırları (tarih sırası).
-export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}) => {
+// Spec 0047 R37: aralık { baslangic, bitis } verilince her hesaba ayrıca `aralik` eklenir: aralık öncesi satırlar
+// devredene katlanır (ekstre deseni), aralık içi giren/çıkan olur, sonrası sayılmaz. Açılış tarihi aralık içindeyse
+// açılış bakiyesi ayrı "açılış" satırıdır ve devreden sıfırdır (R41); açılış aralıktan sonraysa `sonra: true`.
+// Aralıksız çağrı bugünkü çıktıyı birebir verir (AC-46).
+export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { aralik = null } = {}) => {
   const v = veriOf(veri);
   const bugun = v.bugun || yerelBugun();
   const r = new Map();
@@ -88,17 +92,59 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}) => {
     x.acilis = tl(x.acilisK); x.giren = tl(x.girenK); x.cikan = tl(x.cikanK); x.bakiye = tl(b);
     // C5: kredi kartında bakiye borç yönlüdür; ekranda "borç" etiketi.
     x.borc = x.hesap.tur === "kart" ? tl(Math.max(0, -b)) : null;
+    if (aralik) x.aralik = aralikBakiyesi(x, aralik);
   }
   return r;
 };
+const aralikBakiyesi = (x, { baslangic, bitis }) => {
+  const acilisTarihi = x.hesap.acilisTarihi || "";
+  if (acilisTarihi && acilisTarihi > bitis) return { sonra: true, devredenK: 0, acilisSatiriK: 0, girenK: 0, cikanK: 0, kapanisK: 0, satirlar: [] };
+  const acilisIcinde = !!acilisTarihi && acilisTarihi >= baslangic;
+  let devredenK = acilisIcinde ? 0 : x.acilisK, girenK = 0, cikanK = 0;
+  const satirlar = [];
+  for (const s of x.satirlar) {
+    const t = s.tarih || "";
+    if (t > bitis) continue;
+    if (t < baslangic) { devredenK += s.girenK - s.cikanK; continue; }
+    girenK += s.girenK; cikanK += s.cikanK; satirlar.push(s);
+  }
+  const acilisSatiriK = acilisIcinde ? x.acilisK : 0;
+  return { sonra: false, devredenK, acilisSatiriK, girenK, cikanK, kapanisK: devredenK + acilisSatiriK + girenK - cikanK, satirlar };
+};
+const aralikta = (tarih, aralik) => !aralik || (!!tarih && tarih >= aralik.baslangic && tarih <= aralik.bitis);
+
+// Spec 0047 R13, R14 (Kasa bölümü): aralıktaki hareketlerin türe göre sayısı ve tutarı; tahsilatlar aralıklı bakiye
+// satırlarından (bakiyeye giren para, dört kaynak; 0044), ödeme yöntemi kırılımı aralıkta yapılan ödeme hareketlerinden.
+// Mahsup para hareketi değildir (0024 R10) ama sayılır. Tutarsız göç hareketinin tutarı 0 sayılır.
+export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null) => {
+  const tur = (t) => { const l = hareketler.filter(m => m && m.tur === t && aralikta(m.tarih, aralik)); return { adet: l.length, tutarK: l.reduce((a, m) => a + kurus(m.tutar), 0), liste: l }; };
+  const odeme = tur("odeme"), virman = tur("virman"), avans = tur("avans"), mahsup = tur("mahsup");
+  const tahsilat = { adet: 0, tutarK: 0, kaynaklar: {} };
+  for (const x of bakiyeler ? bakiyeler.values() : []) {
+    for (const s of x.aralik?.satirlar || []) {
+      if (!s.tahsilat) continue;
+      const kaynak = s.kaynak || "makina";
+      tahsilat.adet++; tahsilat.tutarK += s.girenK;
+      const k = tahsilat.kaynaklar[kaynak] || (tahsilat.kaynaklar[kaynak] = { adet: 0, tutarK: 0 });
+      k.adet++; k.tutarK += s.girenK;
+    }
+  }
+  const yontem = new Map();
+  for (const m of odeme.liste) { const y = m.yontem || "Belirtilmemiş"; yontem.set(y, (yontem.get(y) || 0) + kurus(m.tutar)); }
+  const strip = ({ liste, ...r }) => r;
+  return { odeme: strip(odeme), virman: strip(virman), avans: strip(avans), mahsup: strip(mahsup), tahsilat,
+    yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK) };
+};
 
 // R8, AC-32: hesabı belirtilmemiş ödemeler (göç dahil) ayrıca sayılır.
-export const hesapsizOdemeler = (hareketler = []) => {
+// Spec 0047 R16, R31: aralık verilince yalnız aralıktaki hareketler sayılır ve `liste` (tarih sırası) döner.
+export const hesapsizOdemeler = (hareketler = [], aralik = null) => {
   // Spec 0040 R18: ciro hareketleri kasıtlı olarak hesapsızdır (çek portföyden çıkar); eksik veri listesine girmez.
-  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null);
+  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null && aralikta(m.tarih, aralik));
   // Spec 0024 B4: hesapsız avans da hiçbir bakiyeye girmez ve ayrıca sayılır.
-  const avansAdet = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null).length;
-  return { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet };
+  const av = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null && aralikta(m.tarih, aralik));
+  const r = { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet: av.length };
+  return aralik ? { ...r, liste: [...l, ...av].sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "")) } : r;
 };
 
 // R16, AC-24 + 0044 R11, AC-26: hareketi (ödeme, virman, tahsilat; servis, Extra Kalıp ve yedek parça tahsilatı dahil)
@@ -115,7 +161,7 @@ export const hesapKullanimi = (hesapId, hareketler = [], veri = {}) => {
 // süren kart da listede kalır (hesap önceden atanır, Q10). Bize ait tutarı olmayan kayıt kapsam dışıdır (eksik veri değil).
 // Triyaj: hesaplar verilince, bağlı hesabı bulunmayan ya da para birimi kaydınkiyle uyuşmayan kayıt da listelenir (neden
 // "hesapYok" / "paraBirimi"); o kayıt hesapBakiyeleri'nde hiçbir bakiyeye girmez, yoksa hiçbir yerde görünmezdi.
-export const hesapsizTahsilatlar = (veri = {}, hesaplar = null) => {
+export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null) => {
   const v = veriOf(veri);
   const hesapById = hesaplar ? new Map(hesaplar.map(h => [String(h.id), h])) : null;
   const neden = (k) => {
@@ -125,7 +171,7 @@ export const hesapsizTahsilatlar = (veri = {}, hesaplar = null) => {
     if (!h) return "hesapYok";
     return (h.paraBirimi || "TRY") !== (k.currency || "TRY") ? "paraBirimi" : null;
   };
-  const liste = satisKalemleri(v).filter(k => k.kayit.odendi === true && k.tutar > 0)
+  const liste = satisKalemleri(v).filter(k => k.kayit.odendi === true && k.tutar > 0 && aralikta(k.tarih, aralik))
     .map(k => ({ ...k, neden: neden(k) })).filter(k => k.neden)
     .map(k => ({ ...k, turAdi: SATIS_KAYNAK_AD[k.kaynak], firma: firmaAdi(k.kaynak, k.kayit, v) }))
     .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));

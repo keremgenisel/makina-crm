@@ -31,6 +31,7 @@ import { Kasa } from "../../src/components/Kasa";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
+import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import App from "../../src/App";
 
 const q = new URLSearchParams(location.hash.slice(1));
@@ -88,7 +89,7 @@ const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, b
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -103,7 +104,8 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
     satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
-    setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})} />;
+    setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
+    {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />;
 }
 
 const DEALERS = [{ id: 3, name: "Ege Bayi", contact: "Veli Usta", phone: "0232 111", email: "ege@bayi.com", adres: "Bornova", country: "Türkiye", city: "İzmir", bayiMi: true }];
@@ -132,9 +134,10 @@ const ayarlar = (tab) => (
     standartGiderler={STANDART} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} />
 );
 
-const FINANS = () => (
+const FINANS = ({ rapor = null }) => (
   <Finance customers={MUSTERILER} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
-    payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={GIDERLER} giderTurleri={TURLER} giderYururlukAy="2026-06" />
+    payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={GIDERLER} giderTurleri={TURLER} giderYururlukAy="2026-06"
+    {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />
 );
 
 // Spec 0014: sekme ve süzgeç çubuklarının yedi ekranı. Müşteriler süzgeçlerin sayılarını göstersin diye çeşitli durumlar.
@@ -290,6 +293,11 @@ const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tah
 // Spec 0046: gider formunun ödeme bölümü (kasa yetkisi, çekler portföyde).
 const FORM_ODEME = { giderTurleri: TURLER, tedarikciler: TED, calisanlar: CAL, giderAyarlari: AYAR.giderAyarlari, onSave: bos, onCancel: bos,
   hesaplar: KASA_HESAPLAR, hareketler: KASA_HAREKETLER, hesapSecimi: true, cekler: CEKLER, payments: cekleriUygula(CEK_ODEMELER, CEKLER), ciroYetkisi: true };
+// Spec 0047: Aylık Gider ve Kasa Raporu (App'in tek memosunun karşılığı). Personel kalemleri çalışan adlarıyla verilir;
+// belgede yalnız "Personel gideri" görünmeli.
+const RAPOR_VERI = { giderler: GIDERLER, hareketler: KASA_HAREKETLER, turler: TURLER, tedarikciler: TED, stock: [], customers: MUSTERILER, canliModeller: new Set(),
+  yururlukAy: AYAR.giderAyarlari.yururlukAy, esikGun: 7, satisVerisi: SATIS, kdvSecenek: { factoryName: "Altuntaş Makina" }, hesaplar: KASA_HESAPLAR, cekler: CEKLER,
+  payments: cekleriUygula([...KASA_TAHSILAT, ...CEK_ODEMELER], CEKLER), services: [], partSales: [], yedekParcaSatislar: [], dealers: DEALERS, factory: { name: "Altuntaş Makina" } };
 const KASA_B_ONCE = KASA_B.filter(h => h.id !== 4012); // mahsup girilmeden önceki hâl
 const mahsupPenceresi = () => (
   <OdemeKayitPenceresi kalem={odemeleriUygula([GIDERLER.find(x => x.id === 5)], KASA_B_ONCE, TUR_MAP)[0]} davranis="personel" turAd="Personel" turMap={TUR_MAP}
@@ -519,6 +527,12 @@ const EKRANLAR = {
     ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-taksitli": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "20", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "4", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />, ["kaydir:bütün ödemeleri taksitli"]],
   "gider-formu-odeme-duzenle": [<GiderForm kalem={odemeleriUygula([GIDERLER[0]], KASA_HAREKETLER, turHaritasi(TURLER))[0]} {...FORM_ODEME} onHedefOde={bos} />, ["kaydir:Kısmen · kalan"]],
+  // Spec 0047: Aylık Gider ve Kasa Raporu belgesi (beyaz kâğıt) ve üç ekrandaki düğme.
+  "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
+  "gider-kasa-raporu-kalemsiz": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09", { kalemListesi: false })) }} />, []],
+  "giderler-rapor-dugmesi": [<GiderEkrani rapor={RAPOR_VERI} />, []],
+  "kasa-rapor-dugmesi": [kasaEkrani({ giderKasaRaporVerisi: RAPOR_VERI }), []],
+  "finans-rapor-dugmesi": [<FINANS rapor={RAPOR_VERI} />, []],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],

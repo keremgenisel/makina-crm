@@ -10,6 +10,7 @@ import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni } from "./gider/GiderAlanlari";
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
+import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
 
 // Kasa üst sekmesi (spec 0024 A; R1, R7, R8, R15, R16; C1, C5, C6). Hesaplar (kasa, banka, kredi kartı), yürüyen
@@ -129,6 +130,8 @@ export const Kasa = ({
   // Spec 0044: servis, Extra Kalıp ve yedek parça tahsilatları (bakiye, hesapsız liste ve hesap ataması).
   services = [], setServices = null, partSales = [], setPartSales = null, yedekParcaSatislar = [], setYedekParcaSatislar = null,
   dealers = [], factory = null, kdvRates = undefined,
+  // Spec 0047: Aylık Gider ve Kasa Raporu (Kasa yalnız kasa yetkisiyle çizilir).
+  giderKasaRaporVerisi = null,
 }) => {
   const [gorunum, setGorunum] = useState("hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
@@ -237,6 +240,7 @@ export const Kasa = ({
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Kasa, banka ve kredi kartı hesapları. Bakiye hareketlerden hesaplanır.</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <GiderKasaRaporuDugmesi veri={giderKasaRaporVerisi} kasaYetki />
           {gorunum === "hesaplar" && canDo("virman") && setHesapHareketleri && acikHesapSayisi >= 2 && <Btn variant="ghost" onClick={() => setVirmanAcik(true)}><Icon name="refresh" size={14} /> Virman</Btn>}
           {gorunum === "hesaplar" && canDo("kasa_hesap") && <Btn onClick={() => setHesapFormu({ hesap: null })}><Icon name="plus" size={14} /> Yeni Hesap</Btn>}
         </div>

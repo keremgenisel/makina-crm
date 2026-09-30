@@ -10,7 +10,7 @@ const oku = (p) => readFileSync(path.join(root, p), "utf-8");
 // Spec 0023: çalışan ek ödemeleri (alan, tablo ve tür kodu) de listede; listeye eklenmeyen ad testi yeşil bırakıp sızabilirdi.
 const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma/;
 
-describe("AC-56: personel tutarı yazdırma ve dışa aktarmaya girmez", () => {
+describe("AC-56 / spec 0047 AC-25: personel tutarı yazdırma ve dışa aktarmaya girmez (müşteri şablonları, aylık rapor ve dışa aktarma gider alanlarını okumamaya devam eder)", () => {
   it("yazdırma şablonları (printTemplates.js) gider/personel alanlarını okumaz", () => {
     expect(oku("src/lib/printTemplates.js")).not.toMatch(YASAKLI);
   });
@@ -60,5 +60,42 @@ describe("Spec 0042 AC-11: personel hedefleri çıktılara girmez", () => {
     for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
       expect(oku(f)).not.toMatch(HEDEF_DESEN);
     }
+  });
+});
+
+// Spec 0047 (R22, R35, R36, C8): gider verisinin yazdırılması artık bir yerde serbest: Aylık Gider ve Kasa Raporu. Sınır
+// "toplam yazdırılır, çalışan bazlı tutar yazdırılmaz"dır ve kaynak taramasıyla ifade edilemez; koruma çıktı temellidir.
+// Yukarıdaki dört denetim GEVŞETİLMEDİ: rapor kurucusu printTemplates.js dışında, düğme gider/ klasörünün dışında.
+describe("Spec 0047: Aylık Gider ve Kasa Raporu gizliliği", () => {
+  it("AC-41 / AC-42: rapor kurucusu printTemplates.js dışında, düğme gider/ klasörünün dışında; Giderler.jsx yazdırma çağırmaz", () => {
+    expect(readdirSync(path.join(root, "src/components/gider"))).not.toContain("GiderKasaRaporuDugmesi.jsx");
+    expect(oku("src/components/rapor/GiderKasaRaporuDugmesi.jsx")).toMatch(/printHtml/);
+    expect(oku("src/lib/printTemplates.js")).not.toMatch(/giderKasaRaporu|GiderKasa/);
+    expect(oku("src/components/Giderler.jsx")).toMatch(/GiderKasaRaporuDugmesi/);
+  });
+  it("AC-24: ayırt edici çalışan verisiyle üretilen raporun çıktısında ad, resmi/elden tutarı, ek ödeme, tek tek hesapsız ödeme ve avans yok", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi, HEDEF } = await import("../src/lib/gider");
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 1;
+    const kayit = (f) => giderKalemDogrula(f, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    const behiye = kayit({ id: 9, tarih: "2026-09-30", turId: 3, calisanId: 7, calisanAd: "Behiye Sarıkamışlıoğlu", resmiTutar: 43219, eldenTutar: 18765,
+      ekOdemeler: [{ tur: "fazlaCalisma", aciklama: "Cumartesi mesaisi", resmiTutar: 1357, eldenTutar: 2468 }], sonOdemeTarihi: "2026-10-05" });
+    const yusuf = kayit({ id: 10, tarih: "2026-09-30", turId: 3, calisanId: 8, calisanAd: "Yusuf Demirkazık", resmiTutar: 25000, eldenTutar: 6543, sonOdemeTarihi: "2026-10-05" });
+    const elden = (k) => k.taksitler.find(t => t.hedef === HEDEF.ELDEN).id;
+    // Triyaj bulgu 1: elden kısımları hesap seçilmeden ödendi, avanslar hesapsız verildi. Tek tek kâğıda düşmemeli.
+    const hareketler = [
+      { id: 1, tur: "avans", tarih: "2026-09-10", tutar: 4321, calisanId: 7, hesapId: null },
+      { id: 2, tur: "avans", tarih: "2026-09-11", tutar: 1200, calisanId: 8, hesapId: null },
+      { id: 3, tur: "odeme", tarih: "2026-09-30", tutar: 21233, yontem: "", hesapId: null, giderId: 9, taksitId: elden(behiye) },
+      { id: 4, tur: "odeme", tarih: "2026-09-30", tutar: 6543, yontem: "", hesapId: null, giderId: 10, taksitId: elden(yusuf) },
+    ];
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [behiye, yusuf], hareketler, turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
+    for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "Yusuf", "Demirkazık", "43.219", "18.765", "21.233", "6.543", "1.357", "2.468", "4.321", "1.200", "Cumartesi", "mesai", "Resmi", "Elden"]) {
+      expect(html, yasak).not.toContain(yasak);
+    }
+    expect(html).toContain("Personel gideri");
+    expect(html).toContain("Personel ödemeleri · 2 adet");
+    expect(html).toContain("Çalışan avansları · 2 adet");
   });
 });

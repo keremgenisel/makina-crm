@@ -196,6 +196,12 @@
         "rapor": "docs/evidence/0041-taban-piksel-raporu.json",
         "ekran": "giderler-kismen-odeme",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-piksel-raporu.json",
+        "ekran": "giderler-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0047 R1, R2"
       }
     ],
     "src/components/Settings.jsx": [
@@ -751,6 +757,12 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "finans-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-piksel-raporu.json",
+        "ekran": "finans-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0047 R1, R2"
       }
     ],
     "src/components/Notes.jsx": [
@@ -1105,6 +1117,12 @@
         "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
         "ekran": "kasa-hesap-formu-tutar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0047-piksel-raporu.json",
+        "ekran": "kasa-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0047 R1, R2"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
