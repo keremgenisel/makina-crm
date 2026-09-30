@@ -89,7 +89,7 @@ const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, b
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -105,7 +105,8 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
     satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
-    {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />;
+    {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
+    {...(cekli ? { cekler: [], setCekler: bos, payments: [] } : {})} />;
 }
 
 const DEALERS = [{ id: 3, name: "Ege Bayi", contact: "Veli Usta", phone: "0232 111", email: "ege@bayi.com", adres: "Bornova", country: "Türkiye", city: "İzmir", bayiMi: true }];
@@ -280,6 +281,12 @@ const CEKLER = [cekK(3401, 3301, "0012345", "Ziraat", "portfoy"), cekK(3402, 330
 // Spec 0049 A: tahsilata bağlı olmayan, elle eklenmiş çek (vadesi en geç: listenin son satırı).
 const BAGSIZ_CEK = { id: 3407, yon: "alinan", paymentId: null, no: "0445566", banka: "Vakıfbank", kesideci: "Kaya Ltd.", tur: "hamiline", durum: "portfoy", tutar: 12500, currency: "TRY",
   vadeTarihi: "2026-11-30", tarih: "2026-09-12", kimden: "Kaya Ltd.", gecmis: [{ tarih: "2026-09-12", durum: "portfoy", not: "Portföye elle eklendi" }] };
+// Spec 0049 B: kendi çeklerimiz (biri yaklaşan vadeli, yazılmış; biri ödenmiş, Ziraat'ten düşmüş).
+const VERILEN_CEKLER = [
+  { id: 3408, yon: "verilen", paymentId: null, no: "A-000123", banka: "Ziraat Bankası", tur: "hamiline", durum: "yazildi", tutar: 18000, currency: "TRY", vadeTarihi: "2026-09-26",
+    tarih: "2026-09-10", hesapId: 401, alacakliTur: "tedarikci", alacakliId: 11, alacakliAd: "Yıldız Gayrimenkul", aciklama: "Eylül kira", gecmis: [{ tarih: "2026-09-10", durum: "yazildi", not: "Yazıldı: Yıldız Gayrimenkul" }] },
+  { id: 3409, yon: "verilen", paymentId: null, no: "A-000122", banka: "Ziraat Bankası", tur: "hamiline", durum: "odendi", tutar: 7500, currency: "TRY", vadeTarihi: "2026-09-15",
+    tarih: "2026-08-20", hesapId: 401, alacakliTur: "tedarikci", alacakliId: 12, alacakliAd: "Bölge Elektrik", aciklama: "", gecmis: [{ tarih: "2026-08-20", durum: "yazildi", not: "Yazıldı: Bölge Elektrik" }, { tarih: "2026-09-15", durum: "odendi", not: "Banka ödedi" }] }];
 const CIRO_H = [{ id: 4020, tur: "odeme", tarih: "2026-09-18", tutar: 16000, giderId: 32, taksitId: 3201, hesapId: null, cekId: 3404, yontem: "Çek (ciro)", aciklama: "Çek 7788990 · Akbank" }];
 const kasaCek = (o = {}) => kasaEkrani({ payments: cekleriUygula([...KASA_TAHSILAT, ...CEK_ODEMELER], CEKLER), cekler: CEKLER, setCekler: bos, giderAyarlari: AYAR.giderAyarlari,
   hesapHareketleri: [...KASA_HAREKETLER, ...CIRO_H], giderler: odemeleriUygula(TAKSIT_GIDERLER, [...KASA_HAREKETLER, ...CIRO_H], TUR_MAP), calisanlar: CAL, ...o });
@@ -508,6 +515,14 @@ const EKRANLAR = {
   "kasa-cek-bagsiz": [kasaCek({ cekler: [...CEKLER, BAGSIZ_CEK] }), ["Çek Portföyü"]],
   "kasa-cek-ekle": [kasaCek(), ["Çek Portföyü", "dugme:Çek Ekle"]],
   "kasa-cek-bagsiz-durum": [kasaCek({ cekler: [...CEKLER, BAGSIZ_CEK] }), ["Çek Portföyü", "dugme:Durum"]],
+  // Spec 0049 B: verilen çekler, Çek Yaz penceresi, ödenen çekin bakiyeye düşmesi, gider formunda ve ödeme penceresinde kendi çek.
+  "kasa-cek-verilen": [kasaCek({ cekler: [...CEKLER, ...VERILEN_CEKLER] }), ["Çek Portföyü", "Verilen çekler", "dugme:Tümü"]],
+  "kasa-cek-yaz": [kasaCek({ cekler: [...CEKLER, ...VERILEN_CEKLER] }), ["Çek Portföyü", "Verilen çekler", "dugme:Çek Yaz", "sec:Tedarikçi=11"]],
+  "kasa-verilen-cek-bakiye": [kasaCek({ cekler: [...CEKLER, ...VERILEN_CEKLER] }), []],
+  "gider-formu-odeme-kendi": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,
+    ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (kendi)", "doldur:Tedarikçiye çek numarası=A-000124", "sec:Tedarikçiye çek hesabı=401", "kaydir:Ödeme tarihi"]],
+  "giderler-kendi-cek-dugmesi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} cekli />, ["dugme:Kısmen ödendi"]],
+  "giderler-kendi-cek-penceresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} cekli />, ["dugme:Kısmen ödendi", "dugme:Kendi çekiyle öde"]],
   "musteri-tahsilat-cek": [detay(601, { cekler: CEKLER }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "sec:Ödeme yöntemi 1=Çek"]],
   // Spec 0043: Mali İşler menü grubu (gerçek App kabuğu; önce/sonra aynı sayfa, önce düz menüyü çizer).
   "uygulama-menu-acik": [<App />, ["Giderler"]],

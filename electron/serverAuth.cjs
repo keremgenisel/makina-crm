@@ -662,10 +662,12 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       if (!e && r.yon === "verilen" && !yeniCiroCekleri.has(String(r.id))) {
         return { ok: false, reddedilenBolum: "cekler", islem: "ekle", gerekli: "cek_hareketi" };
       }
-      // Spec 0049 Q8: bağsız çekte her değişiklik (durum ya da alan) gider_odeme ister.
+      // Spec 0049 Q8: bağsız çekte her değişiklik (durum ya da alan) gider_odeme ister. Triyaj: bağlı çeki bağsıza (ya da
+      // tersine) çeviren yazım iki tarafın iznini birden ister; yoksa paymentId boşaltılarak cust_payment_edit atlanırdı.
       if (e && (bagsizCek(e) || bagsizCek(r)) && stableStringify(e) !== stableStringify(r)) {
         if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "gider_odeme" };
-        continue;
+        if (bagsizCek(e) !== bagsizCek(r) && !eylemIzinli(perms, "customerActions", "cust_payment_edit")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "cust_payment_edit" };
+        if (bagsizCek(e) && bagsizCek(r)) continue;
       }
       if (!e || e.durum === r.durum) continue;
       const ciro = e.durum === "ciro" || r.durum === "ciro";

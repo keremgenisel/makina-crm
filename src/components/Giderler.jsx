@@ -8,7 +8,8 @@ import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
   ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
 } from "../lib/gider";
-import { formOdemesiHazirla } from "../lib/formOdemesi";
+import { formOdemesiHazirla, ciroAlacaklisi } from "../lib/formOdemesi";
+import { CiroPenceresi, cekPlaniniYaz } from "./cek/CiroPenceresi";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
@@ -126,7 +127,8 @@ export const Giderler = ({
       const yeni = { ...kayit, id: uid() };
       // Spec 0046 R17, Q1: form geçici kimlikle doğruladı; aynı saf fonksiyon gerçek kimlikle yeniden çağrılır. Hata olursa
       // (beklenmez) hiçbir şey yazılmaz. Kalem, hareketler ve çek AYNI işleyicide yazılır: tek POST (0040 ciro şartı).
-      const od = odemePlani && setHesapHareketleri ? formOdemesiHazirla(yeni, { turMap, hesaplar: kasaHesaplari, cekler, payments, ...odemePlani }) : null;
+      // Spec 0049 B: formdan yazılan kendi çekimiz gerçek kimliğini burada alır.
+      const od = odemePlani && setHesapHareketleri ? formOdemesiHazirla(yeni, { turMap, hesaplar: kasaHesaplari, cekler, payments, ...odemePlani, yeniCekId: uid() }) : null;
       if (od && (!od.hareketler || (od.cek && !setCekler))) { showToast("Ödeme doğrulanamadı; gider kaydedilmedi.", "err"); return; }
       const odemeler = (od?.hareketler || []).map(h => ({ ...h, id: uid() }));
       setGiderler(p => [...p, yeni]);
@@ -136,8 +138,9 @@ export const Giderler = ({
         logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "", detail: { hareket: odemeler.length } });
       }
       if (od?.cek) {
-        setCekler(p => p.map(c => (c.id === od.cek.id ? od.cek : c)));
-        logAction({ serverPermissions, action: "ciro_edildi", entity: "cek", entityId: od.cek.id, entityName: `${od.cek.no} · ${od.cek.banka}`, detail: { gider: yeni.id, hareket: odemeler.filter(h => h.cekId != null).length } });
+        const yeniCek = od.cek.yon === "verilen";
+        setCekler(p => (yeniCek ? [...(p || []), od.cek] : p.map(c => (c.id === od.cek.id ? od.cek : c))));
+        logAction({ serverPermissions, action: yeniCek ? "olusturuldu" : "ciro_edildi", entity: "cek", entityId: od.cek.id, entityName: `${od.cek.no} · ${od.cek.banka}`, detail: { gider: yeni.id, hareket: odemeler.filter(h => h.cekId != null).length } });
       }
       showToast(odemeler.length ? "Gider ve ödemesi kaydedildi." : "Gider kaydedildi.");
     } else {
@@ -151,6 +154,9 @@ export const Giderler = ({
   // Spec 0024 R17/R18: ödeme anahtarı, kira anahtarları ve Ödeme Planı satırları aynı ödeme penceresini açar.
   const [odemeHedefi, setOdemeHedefi] = useState(null); // null | {kalemId, hedef: {taksitId}|{hedef}|null}
   const odemeKalemi = odemeHedefi == null ? null : giderler.find(k => k.id === odemeHedefi.kalemId) || null;
+  // Spec 0049 B (Q7): ödeme penceresinden kendi çekimizle ödeme; ortak "Çek Yaz" penceresi bu kalemin alacaklısı ve kalanıyla açılır.
+  const [kendiCekKalemi, setKendiCekKalemi] = useState(null);
+  const kendiCekYazabilir = kasaYetki && !!setCekler && !!setHesapHareketleri && canDo("gider_odeme");
   // Hareket yazıcısı yoksa (bölümü tanımayan eski sunucu, triyaj bulgu 2) ödeme penceresi açılmaz.
   const odemeGirisi = !!setHesapHareketleri;
   const odendiDegistir = (k) => setOdemeHedefi({ kalemId: k.id, hedef: null });
@@ -333,7 +339,17 @@ export const Giderler = ({
       {odemeKalemi && (
         <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
-          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy} />
+          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
+          onKendiCek={kendiCekYazabilir ? (k) => { setOdemeHedefi(null); setKendiCekKalemi(k); } : null} />
+      )}
+      {kendiCekKalemi && (
+        <CiroPenceresi kip="kendi" hesaplar={kasaHesaplari} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+          baslangic={{ ...ciroAlacaklisi(kendiCekKalemi, turMap), giderId: kendiCekKalemi.id }}
+          onKaydet={(plan) => {
+            const h = cekPlaniniYaz(plan, { setHesapHareketleri, setCekler });
+            logAction({ serverPermissions, action: "olusturuldu", entity: "cek", entityId: plan.cek.id, entityName: `${plan.cek.no} · ${plan.cek.banka}`, detail: { verilen: true, hareket: h.length } });
+            setKendiCekKalemi(null); showToast("Çek yazıldı; borç kapandı.");
+          }} onClose={() => setKendiCekKalemi(null)} />
       )}
 
       {silinecek && (

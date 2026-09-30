@@ -56,6 +56,23 @@ describe("Kasa sekmesi görünürlüğü (C6, C7, Q9)", () => {
     await baslat();
     expect(menudeMi("Kasa")).toBe(false);
   });
+  it("spec 0049 AC-24: perde inikken Kasa (Çek Ekle / Çek Yaz) yok; Giderler perde sayfasında çek seçeneği yok; kalkıkken portföyde ikisi de var", async () => {
+    perde.indi = true;
+    await baslat();
+    expect(menudeMi("Kasa")).toBe(false);
+    menu("Giderler");
+    expect(screen.queryByText("Çek Ekle")).toBeNull();
+    expect(screen.queryByText("Çek Yaz")).toBeNull();
+    expect(screen.queryByText(/Çek \(kendi\)/)).toBeNull();
+    cleanup();
+    perde.indi = false;
+    await baslat();
+    menu("Kasa");
+    fireEvent.click(screen.getByRole("tab", { name: "Çek Portföyü" }));
+    expect(screen.getByText("Çek Ekle")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Verilen çekler" }));
+    expect(screen.getByText("Çek Yaz")).toBeTruthy();
+  });
   it("user rolünde Kasa yalnız Giderler ve Finans birlikte açıkken görünür (kendi izin kutusu yok)", async () => {
     await baslat({ sunucu: { tabs: ["dashboard", "gider"] } });
     expect(menudeMi("Giderler")).toBe(true);

@@ -226,6 +226,12 @@
         "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
         "ekran": "giderler-rapor-dugmesi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/Settings.jsx": [
@@ -1145,6 +1151,12 @@
         "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
         "ekran": "kasa-rapor-dugmesi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-verilen-cek-bakiye",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -1177,6 +1189,12 @@
         "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
         "ekran": "giderler-personel-coklu-odeme",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/kasa/CalisanAvanslari.jsx": [
@@ -1259,6 +1277,48 @@
         "ekran": "kasa-cek-bagsiz-durum",
         "beklenen": "degisti",
         "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R1, R5, R6"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-tumu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-durum",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-gecmis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-bagsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-bagsiz-durum",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-verilen",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/cek/CiroPenceresi.jsx": [
@@ -1272,6 +1332,24 @@
         "ekran": "kasa-cek-ciro",
         "beklenen": "degisti",
         "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R1, R5, R6"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-ciro",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-yaz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/kasa/TahsilatHesap.jsx": [
@@ -1351,6 +1429,12 @@
         "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-plan-hatasi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-kendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [
@@ -1359,6 +1443,12 @@
         "ekran": "kasa-cek-ekle",
         "beklenen": "degisti",
         "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R1, R5, R6"
+      },
+      {
+        "rapor": "docs/evidence/0049b-piksel-raporu.json",
+        "ekran": "kasa-cek-ekle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0049 R7–R14"
       }
     ]
   }

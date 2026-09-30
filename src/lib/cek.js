@@ -8,7 +8,13 @@ import { odemeDogrula } from "./kasa";
 import { parseMoney, trLower } from "./utils";
 
 export const CEK_DURUM = { PORTFOY: "portfoy", TAHSILE: "tahsile", TAHSIL: "tahsil", CIRO: "ciro", KARSILIKSIZ: "karsiliksiz" };
-export const CEK_DURUM_AD = { portfoy: "Portföyde", tahsile: "Tahsile verildi", tahsil: "Tahsil edildi", ciro: "Ciro edildi", karsiliksiz: "Karşılıksız" };
+export const CEK_DURUM_AD = { portfoy: "Portföyde", tahsile: "Tahsile verildi", tahsil: "Tahsil edildi", ciro: "Ciro edildi", karsiliksiz: "Karşılıksız",
+  yazildi: "Yazıldı", odendi: "Ödendi", iptal: "İptal edildi" };
+// Spec 0049 B (R8): verilen çekin durumları. "yazildi": alacaklıda, borç kapandı, para henüz çıkmadı; "odendi": banka ödedi,
+// hesaptan çıktı; "karsiliksiz" / "iptal": kapattığı gider borcu yeniden açılır.
+export const VERILEN_DURUM = { YAZILDI: "yazildi", ODENDI: "odendi", KARSILIKSIZ: "karsiliksiz", IPTAL: "iptal" };
+// R9: gider ödeme yönteminde "Çek (kendi)" elle seçilemez; yalnız kendi çekimizi yazma işlemi atar (ciro deseni).
+export const KENDI_CEK_YONTEMI = "Çek (kendi)";
 export const CEK_TURLERI = [{ value: "hamiline", label: "Hamiline" }, { value: "resmi", label: "Resmi" }];
 export const CEK_TUR_AD = Object.fromEntries(CEK_TURLERI.map(t => [t.value, t.label]));
 // R19: gider ödeme yönteminde "Çek (ciro)" elle seçilemez; yalnız ciro işlemi atar.
@@ -202,22 +208,98 @@ export const ciroPlani = ({ cek, odeme = null, tutarK = null, currency = null, a
   const toplamK = secili.reduce((a, d) => a + d.tutarK, 0);
   if (toplamK > cekK) hatalar.push(`Dağıtılan toplam çek tutarını aşamaz (çek ${kuruslu(cekK)} ₺, dağıtılan ${kuruslu(toplamK)} ₺).`);
   if (hatalar.length) return { hatalar };
-  const aciklama = `Çek ${cek.no} · ${cek.banka}`;
+  const d = dagitimHareketleri({ secili, adaylar, cekK, tarih, turMap, cekId: cek.id, yontem: CIRO_YONTEMI, aciklama: `Çek ${cek.no} · ${cek.banka}`, bayrak: { ciro: true } });
+  if (d.hatalar) return { hatalar: d.hatalar };
+  return { hatalar: [], ...d,
+    cek: { ...cek, durum: CEK_DURUM.CIRO, gecmis: [...(cek.gecmis || []), { tarih, durum: CEK_DURUM.CIRO, not: `Ciro: ${String(alacakliAd).trim()}` }] } };
+};
+// Spec 0049 Q5 (C2): ciro ile kendi çekimizin ortak çekirdeği. Her dağıtım satırı 0024 odemeDogrula'dan geçer (tek hedef,
+// kalan sınırı, hesapsız); hareketler çeke `cekId` ile bağlanır. Fark uyarıdır (R8, R12).
+const FARK_UYARISI = (farkK) => `Çek tutarı kapatılan borçlardan ${kuruslu(farkK)} ₺ fazla. Fark hiçbir borcu kapatmaz ve alacak olarak işlenmez; gerekirse açıklamaya yazın.`;
+const dagitimHareketleri = ({ secili, adaylar, cekK, tarih, turMap, cekId, yontem, aciklama, bayrak }) => {
   const hareketler = [];
   for (const d of secili) {
     const a = adaylar.find(x => x.anahtar === d.anahtar);
     if (!a) return { hatalar: ["Seçilen gider kalemi bulunamadı."] };
-    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem: CIRO_YONTEMI, hesapId: null, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar: [], ciro: true });
+    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId: null, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar: [], ...bayrak });
     if (!r.kayit) return { hatalar: Object.values(r.hatalar) };
-    hareketler.push({ ...r.kayit, cekId: cek.id });
+    hareketler.push({ ...r.kayit, cekId });
   }
-  const farkK = cekK - toplamK;
-  return {
-    hatalar: [], hareketler, farkK,
-    uyari: farkK > 0 ? `Çek tutarı kapatılan borçlardan ${kuruslu(farkK)} ₺ fazla. Fark hiçbir borcu kapatmaz ve alacak olarak işlenmez; gerekirse açıklamaya yazın.` : null,
-    cek: { ...cek, durum: CEK_DURUM.CIRO, gecmis: [...(cek.gecmis || []), { tarih, durum: CEK_DURUM.CIRO, not: `Ciro: ${String(alacakliAd).trim()}` }] },
-  };
+  const farkK = cekK - secili.reduce((a, d) => a + d.tutarK, 0);
+  return { hareketler, farkK, uyari: farkK > 0 ? FARK_UYARISI(farkK) : null };
 };
+
+// ── Spec 0049 B: kendi çekimiz (verilen çek; R7–R13, Q3–Q5) ────────────────────
+// Çek bir TL banka hesabından yazılır, en az bir gider kalemini kapatır (X8), tek alacaklıya gider. Ödeme hareketleri hesapsız
+// ve `cekId`'lidir: borç kapanır, bakiye değişmez (AC-13). Bakiye çek "ödendi" olunca, yazımdaki hesaptan, çekin tam tutarıyla
+// düşer (kasa.hesapBakiyeleri, AC-14). form: {no, hesapId, vadeTarihi, tutar (metin), aciklama}. cekId: çağıranın atadığı kimlik.
+export const kendiCekPlani = ({ form = {}, hesaplar = [], adaylar = [], dagitim = [], tarih, alacakli = null, turMap, cekId } = {}) => {
+  const hatalar = [];
+  const no = String(form.no || "").trim();
+  if (!no) hatalar.push("Çek numarası girilmedi.");
+  const hesap = hesaplar.find(h => String(h.id) === String(form.hesapId));
+  if (!hesap) hatalar.push("Çekin yazıldığı banka hesabı seçilmedi.");
+  else if (hesap.kapali) hatalar.push("Kapatılmış hesaptan çek yazılamaz.");
+  else if ((hesap.paraBirimi || "TRY") !== "TRY") hatalar.push("Kendi çekimiz yalnız TL hesaptan yazılır: gider ödemeleri TL'dir.");
+  else if (hesap.tur !== "banka") hatalar.push("Kendi çekimiz bir banka hesabından yazılır.");
+  if (!form.vadeTarihi) hatalar.push("Çek vadesi girilmedi.");
+  if (!tarih) hatalar.push("Çek tarihi girilmedi.");
+  const ad = String(alacakli?.ad || "").trim();
+  if (!ad) hatalar.push("Çekin kime verildiği girilmedi.");
+  const t = parseMoney(form.tutar);
+  const cekK = Number.isFinite(t) && t > 0 ? kurus(t) : 0;
+  if (!cekK) hatalar.push("Çek tutarı sıfırdan büyük olmalı.");
+  const secili = dagitim.filter(d => d.tutarK > 0);
+  if (!secili.length) hatalar.push("Çek en az bir gider kalemini kapatmalı; bir kaleme tutar dağıtın.");
+  const toplamK = secili.reduce((a, d) => a + d.tutarK, 0);
+  if (cekK && toplamK > cekK) hatalar.push(`Dağıtılan toplam çek tutarını aşamaz (çek ${kuruslu(cekK)} ₺, dağıtılan ${kuruslu(toplamK)} ₺).`);
+  if (hatalar.length) return { hatalar };
+  const d = dagitimHareketleri({ secili, adaylar, cekK, tarih, turMap, cekId, yontem: KENDI_CEK_YONTEMI, aciklama: `Çek ${no} · ${hesap.ad}`, bayrak: { kendiCek: true } });
+  if (d.hatalar) return { hatalar: d.hatalar };
+  return { hatalar: [], ...d, cek: {
+    id: cekId, yon: CEK_YON.VERILEN, paymentId: null, no, banka: hesap.ad, tur: "hamiline", durum: VERILEN_DURUM.YAZILDI, tutar: tl(cekK), currency: "TRY",
+    vadeTarihi: form.vadeTarihi, tarih, hesapId: hesap.id, alacakliTur: alacakli.tur, alacakliId: alacakli.id ?? null, alacakliAd: ad,
+    aciklama: String(form.aciklama || "").trim(), gecmis: [{ tarih, durum: VERILEN_DURUM.YAZILDI, not: `Yazıldı: ${ad}` }] } };
+};
+// R8, R10, R11 (AC-14, AC-15): verilen çekin durum geçişleri. Ödendi yalnız yazılmış çekte (tarih bakiyeye girer); ödendi geri
+// alınabilir (yanlış işaret); karşılıksız ve iptal yalnız yazılmış çekte ve o çeke bağlı ödeme hareketlerini siler (borç açılır).
+export const verilenCekOdendi = (cek, tarih) => {
+  if (!cek || yonOf(cek) !== CEK_YON.VERILEN) return { hata: "Çek bulunamadı." };
+  if (cek.durum !== VERILEN_DURUM.YAZILDI) return { hata: `${CEK_DURUM_AD[cek.durum] || cek.durum} durumundaki çek ödendi işaretlenemez.` };
+  if (!tarih) return { hata: "Ödeme tarihi girilmedi." };
+  return { cek: { ...cek, durum: VERILEN_DURUM.ODENDI, gecmis: [...(cek.gecmis || []), { tarih, durum: VERILEN_DURUM.ODENDI, not: "Banka ödedi" }] } };
+};
+export const verilenCekOdemeGeriAl = (cek, tarih) => {
+  if (!cek || cek.durum !== VERILEN_DURUM.ODENDI) return { hata: "Yalnız ödenmiş çekin ödemesi geri alınır." };
+  return { cek: { ...cek, durum: VERILEN_DURUM.YAZILDI, gecmis: [...(cek.gecmis || []), { tarih, durum: VERILEN_DURUM.YAZILDI, not: "Ödeme geri alındı" }] } };
+};
+export const verilenCekKapat = (cek, hareketler = [], tarih, hedef) => {
+  if (!cek || yonOf(cek) !== CEK_YON.VERILEN) return { hata: "Çek bulunamadı." };
+  if (hedef !== VERILEN_DURUM.KARSILIKSIZ && hedef !== VERILEN_DURUM.IPTAL) return { hata: "Geçersiz durum." };
+  if (cek.durum !== VERILEN_DURUM.YAZILDI) return { hata: cek.durum === VERILEN_DURUM.ODENDI ? "Banka ödemiş çek iptal edilemez ya da karşılıksız işaretlenemez; önce ödemeyi geri alın." : "Çek zaten kapanmış." };
+  const silinen = ciroHareketleri(cek.id, hareketler);
+  const ids = new Set(silinen.map(h => String(h.id)));
+  return { cek: { ...cek, durum: hedef, gecmis: [...(cek.gecmis || []), { tarih, durum: hedef, not: hedef === VERILEN_DURUM.IPTAL ? "İptal edildi, borç yeniden açıldı" : "Karşılıksız, borç yeniden açıldı" }] },
+    hareketler: hareketler.filter(h => !ids.has(String(h?.id))), silinen };
+};
+// R13, R14 (AC-18, AC-21): verilen çekler; vadesi geçen ve yaklaşan yalnız yazılmış (bankada ödenmeyi bekleyen) çekte.
+// toplamK: ödenmeyi bekleyen (yazılmış) çeklerin toplamı; alınan çeklerin toplamına karışmaz.
+export const verilenCekSatirlari = (cekler = [], { durumlar = null, bugun = null, esikGun = 7 } = {}) => {
+  const sinir = vadeSiniri(bugun, esikGun);
+  const satirlar = [];
+  for (const c of cekler) {
+    if (!c || yonOf(c) !== CEK_YON.VERILEN) continue;
+    if (durumlar ? !durumlar.has(c.durum) : c.durum !== VERILEN_DURUM.YAZILDI) continue;
+    const vade = c.vadeTarihi || "", bekliyor = c.durum === VERILEN_DURUM.YAZILDI;
+    satirlar.push({ cek: c, vade, tutarK: kurus(Number(c.tutar) || 0), currency: "TRY",
+      gecti: bekliyor && !!vade && !!bugun && vade < bugun, yaklasan: bekliyor && !!vade && !!bugun && vade >= bugun && vade <= sinir });
+  }
+  satirlar.sort((a, b) => (a.vade || "9999").localeCompare(b.vade || "9999") || String(a.cek.no).localeCompare(String(b.cek.no)));
+  const toplamK = satirlar.filter(s => s.cek.durum === VERILEN_DURUM.YAZILDI).reduce((a, s) => a + s.tutarK, 0);
+  return { satirlar, toplamK };
+};
+// AC-14: verilen çekin ödendiği gün kasa.js'te (bakiye onu okur; cek.js kasa.js'i içe aktardığı için tersi döngü olurdu).
+export { verilenCekOdemeTarihi } from "./kasa";
 
 // ── Portföy (R10, R17, AC-3–AC-5, AC-36) ─────────────────────────────────────
 // Elde bulunan = portföyde + tahsile verildi. Silinmiş tahsilatın çeki okuma anında gizlenir (Q7).

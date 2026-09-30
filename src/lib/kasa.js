@@ -41,7 +41,14 @@ const tahsilatSayilirMi = (r, bugun, { odendiGerekli = false } = {}) => !r.delet
   && (r.yontem !== "Kredi Kartı" || kartTahsilEdildiMi(r.kartKomisyonu, bugun));
 
 // Spec 0044 R15: bakiyenin girdileri tek veri nesnesinde. Ad çözümü motorda (R10), ekran yalnız çizer.
-const veriOf = (v = {}) => ({ payments: [], services: [], partSales: [], yedekParcaSatislar: [], customers: [], dealers: [], factory: null, kdvRates: undefined, bugun: null, ...v });
+const veriOf = (v = {}) => ({ payments: [], services: [], partSales: [], yedekParcaSatislar: [], customers: [], dealers: [], factory: null, kdvRates: undefined, bugun: null, cekler: [], ...v });
+// Spec 0049 B (R10, Q4; AC-14): verilen çekin ödendiği gün (geçmişin son "odendi" satırı). Tek tanım; cek.js yeniden dışa verir.
+export const verilenCekOdemeTarihi = (cek) => {
+  if (!cek || cek.durum !== "odendi") return null;
+  const g = (cek.gecmis || []).filter(x => x?.durum === "odendi").map(x => x.tarih).filter(Boolean).sort();
+  return g[g.length - 1] || null;
+};
+const odenmisVerilenCek = (c) => !!c && c.yon === "verilen" && c.durum === "odendi" && c.hesapId != null;
 const satisOps = (v) => ({ factoryName: v.factory?.name || "Altuntaş Makina", kdvRates: v.kdvRates });
 const firmaAdi = (kaynak, r, v) => {
   if (kaynak === SATIS_KAYNAK.YEDEK) return aliciAd(r, v.dealers, v.customers);
@@ -77,6 +84,9 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { ara
   }
   // Makina tahsilatı: satır tarihi tahsilatTarihiOf (çekte tahsil/ciro günü, kartta hesaba geçiş; 0044 R5).
   for (const p of v.payments) if (tahsilatSayilirMi(p, bugun)) ekle(p.hesapId, { tarih: tahsilatTarihiOf(p, p.tarih), tur: "tahsilat", turAdi: "Tahsilat", tahsilat: p, firma: firmaAdi(SATIS_KAYNAK.SERVIS, p, v), girenK: kurus(p.tutar), cikanK: 0 });
+  // Spec 0049 B (R10, Q4; AC-13, AC-14): verilen çek yazılınca bakiye değişmez (ödeme hareketleri hesapsız); banka ödediği
+  // gün, yazımda seçilen hesaptan, çekin TAM tutarıyla düşer (fark dahil). Bakiye çek kaydından okunur, çift sayım olmaz.
+  for (const c of v.cekler || []) if (odenmisVerilenCek(c)) ekle(c.hesapId, { tarih: verilenCekOdemeTarihi(c), tur: "verilenCek", turAdi: "Verilen çek", cek: c, girenK: 0, cikanK: kurus(c.tutar) });
   // Spec 0044 R4, R10, R13: servis, Extra Kalıp ve yedek parça tahsilatları; tutar brüt (bize ait bedel + KDV).
   for (const k of satisKalemleri(v)) {
     if (!tahsilatSayilirMi(k.kayit, bugun, { odendiGerekli: true })) continue;
@@ -153,7 +163,9 @@ export const hesapKullanimi = (hesapId, hareketler = [], veri = {}) => {
   const v = veriOf(veri);
   const bagli = (r) => r && !r.deletedAt && String(r.hesapId) === String(hesapId);
   return hareketler.filter(m => m && (String(m.hesapId) === String(hesapId) || String(m.karsiHesapId) === String(hesapId))).length
-    + v.payments.filter(bagli).length + v.services.filter(bagli).length + v.partSales.filter(bagli).length + v.yedekParcaSatislar.filter(bagli).length;
+    + v.payments.filter(bagli).length + v.services.filter(bagli).length + v.partSales.filter(bagli).length + v.yedekParcaSatislar.filter(bagli).length
+    // Spec 0049 B: verilen çekin yazıldığı hesap da kullanımdadır (silinmez, para birimi değişmez).
+    + (v.cekler || []).filter(c => c && c.yon === "verilen" && String(c.hesapId) === String(hesapId)).length;
 };
 
 // Spec 0044 R6, R7, R14, AC-23, AC-24: hesabı belirtilmemiş tahsilatlar (gider tarafındaki hesapsizOdemeler'den ayrı).
@@ -203,10 +215,12 @@ const tutarOku = (v) => {
 
 // R2, R3, R18, AC-7, AC-28: ödeme tek hedefi kapatır (bir kalem ya da taksitli kalemde bir taksit); kalandan fazla
 // olamaz; hesap açık ve TL olmalı (gider TL'dir). kalem: odemeleriUygula'dan geçmiş (zenginleştirilmiş) kalem.
-export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false } = {}) => {
+export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false } = {}) => {
   const hatalar = {};
   // Spec 0040 R19, AC-37: "Çek (ciro)" yöntemi elle seçilemez; yalnız portföyden çek ciro edilirken atanır.
   if (!ciro && form?.yontem === "Çek (ciro)") hatalar.yontem = "“Çek (ciro)” elle seçilemez; müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.";
+  // Spec 0049 R9: "Çek (kendi)" yalnız kendi çekimizi yazma işlemiyle atanır (cek.kendiCekPlani).
+  if (!kendiCek && form?.yontem === "Çek (kendi)") hatalar.yontem = "“Çek (kendi)” elle seçilemez; kendi çekimizle ödemek için çek yazın (Kasa › Çek Portföyü ya da gider formu).";
   if (!kalem) return { hatalar: { hedef: "Ödenecek kalem bulunamadı." }, kayit: null };
   const satirli = satirliMi(kalem);
   if (Array.isArray(form?.giderIdler) && form.giderIdler.length > 1) hatalar.hedef = "Bir ödeme yalnız bir kalemi kapatır; her kalem için ayrı ödeme girin.";

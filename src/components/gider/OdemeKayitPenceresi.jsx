@@ -32,6 +32,8 @@ export const OdemeKayitPenceresi = ({
   // Spec 0024 B (R10, B1, B2): personel kaleminde çalışanın açık avansı varsa "Avanstan mahsup" kipi. giderler: avans
   // borcunun hesabı için (çöpteki kalemin mahsubu sayılmaz, B5). Mahsup para hareketi değildir; hesap ve yöntem sorulmaz.
   giderler = [], yururlukAy = null,
+  // Spec 0049 B (Q7): kendi çekimizle ödeme ortak "Çek Yaz" penceresinde; verilirse düğme o pencereyi bu kalemle açar.
+  onKendiCek = null,
 }) => {
   const satirli = satirliMi(kalem);
   const [taksitId, setTaksitId] = useState(() => (satirli ? baslangicTaksiti(kalem, hedef) : null));
@@ -223,6 +225,7 @@ export const OdemeKayitPenceresi = ({
             {hatalar.genel && <HataMetni>{hatalar.genel}</HataMetni>}
             {(hatalar.hedefler || []).map((m, i) => <HataMetni key={i}>{m}</HataMetni>)}
             <Ipucu>Kalemi bir müşteri çekiyle kapatmak için Kasa › Çek Portföyü'nden çeki ciro edin.</Ipucu>
+            {onKendiCek && <div style={{ marginTop: 6 }}><Btn small variant="ghost" onClick={() => onKendiCek(kalem)}><Icon name="plus" size={12} /> Kendi çekiyle öde</Btn></div>}
           </div>
         ) : (
           <Ipucu>{!odemeYetkisi ? "Ödeme kaydetme yetkiniz yok." : "Bu kalemin ödenecek kalanı yok."}</Ipucu>

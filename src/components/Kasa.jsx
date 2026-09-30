@@ -141,8 +141,8 @@ export const Kasa = ({
   const [silinecek, setSilinecek] = useState(null);
   const bugun = useBugun();
   // Spec 0044 R15: motorun tek veri nesnesi (ad çözümü motorda, R10).
-  const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun }),
-    [payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun]);
+  const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler }),
+    [payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler]);
   const bakiyeler = useMemo(() => hesapBakiyeleri(kasaHesaplari, hesapHareketleri, veri), [kasaHesaplari, hesapHareketleri, veri]);
   const hesapsiz = useMemo(() => hesapsizOdemeler(hesapHareketleri), [hesapHareketleri]);
   const hesapsizTahsilat = useMemo(() => hesapsizTahsilatlar(veri, kasaHesaplari), [veri, kasaHesaplari]);
@@ -158,6 +158,8 @@ export const Kasa = ({
   const satirAciklamasi = (s) => {
     // Spec 0044 R10, AC-14: tahsilat satırlarının türü ve firma adı motordan gelir.
     if (s.tahsilat) return { tur: s.turAdi, metin: [s.firma, s.tahsilat.yontem || "Nakit"].filter(Boolean).join(" · ") };
+    // Spec 0049 B (AC-14): bankanın ödediği kendi çekimiz.
+    if (s.cek) return { tur: s.turAdi, metin: [`Çek ${s.cek.no}`, s.cek.alacakliAd].filter(Boolean).join(" · ") };
     const m = s.hareket;
     if (s.tur === "avans") {
       const c = calisanlar.find(x => String(x.id) === String(m.calisanId));
@@ -250,7 +252,7 @@ export const Kasa = ({
       {gorunum === "cek" ? (
         <CekPortfoyu cekler={cekler} setCekler={setCekler} payments={payments} customers={customers} giderler={giderler} giderTurleri={giderTurleri}
           tedarikciler={tedarikciler} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
-          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} />
+          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} />
       ) : (<>
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
         {HESAPSIZ_NOTU}
@@ -341,7 +343,7 @@ export const Kasa = ({
                   {seciliBakiye.satirlar.map((s, i) => {
                     const a = satirAciklamasi(s);
                     return (
-                      <div key={`${s.tur}-${s.hareket?.id ?? s.tahsilat?.id}-${i}`} data-testid="hareket-satiri" style={{ ...hIzgara, padding: "8px 0", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                      <div key={`${s.tur}-${s.hareket?.id ?? s.tahsilat?.id ?? s.cek?.id}-${i}`} data-testid="hareket-satiri" style={{ ...hIzgara, padding: "8px 0", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                         <span>{fmtTR(s.tarih)}</span>
                         <span>{a.tur}</span>
                         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>

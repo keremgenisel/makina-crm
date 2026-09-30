@@ -3,13 +3,15 @@
 // cek.ciroAdaylari + cek.ciroPlani'dan (R25). Form doğrulamayı geçici kalem kimliğiyle, Giderler kaydı gerçek kimlikle
 // aynı fonksiyondan yapar (Q1); bu yüzden fonksiyon girdiden başka hiçbir şeye bakmaz.
 import { cokluOdemeDogrula } from "./kasa";
-import { ciroAdaylari, ciroPlani, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM } from "./cek";
+import { ciroAdaylari, ciroPlani, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
+import { parseMoney } from "./utils";
 import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
 export const PASIF_TAKSIT_NEDENI = "Bu bölüm taksitli; taksitler kayıttan sonra ödeme penceresinden ödenir.";
 export const HEPSI_TAKSITLI_NOTU = "Bu kalemin bütün ödemeleri taksitli; taksitler kayıttan sonra listedeki ödeme penceresinden girilir.";
 export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle ödeme yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
   [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir." };
+export const KENDI_CEK_YALNIZ_ANA_NEDENI = "Kendi çekimiz yalnız ana alacaklıya verilir.";
 export const CEK_YOK_NOTU = "Portföyde ciro edilebilecek (TL, portföyde duran) çek yok; başka bir yöntem seçin.";
 
 // R1, R5, R6, R26: çizilecek hedef satırları, HEDEF_SIRASI sırasıyla. Tutarı sıfır olan hedef yoktur; iki ya da daha çok
@@ -90,13 +92,16 @@ export const ciroAlacaklisi = (kalem, turMap) => {
 // R17, R18, R22, R25: işaretli satırları doğrular ve hareketleri üretir. satirlar: { [hedef]: {isaretli, tutar, yontem,
 // hesapId, cekId} }. Dönüş { hatalar: { satir: {[hedef]: mesaj}, genel: [] }, hareketler, cek, uyari }; hata varsa
 // hareketler null (ya hep ya hiç).
-export const formOdemesiHazirla = (kalem, { turMap, tarih, satirlar = {}, hesaplar = [], cekler = [], payments = [], alacakliAd = "" } = {}) => {
+// Spec 0049 B (R9, Q6): ANA satırda "Çek (kendi)": satır {cekNo, cekHesapId, cekVade}; yeni çek kaydı `yeniCekId` kimliğiyle
+// doğar (form geçici, Giderler gerçek kimlikle çağırır). Çek tutarı satırın tutarıdır (kalan sınırı odemeDogrula'dan).
+export const formOdemesiHazirla = (kalem, { turMap, tarih, satirlar = {}, hesaplar = [], cekler = [], payments = [], alacakliAd = "", yeniCekId = "__yeni_cek__" } = {}) => {
   const hatalar = { satir: {}, genel: [] };
   const hedefler = formOdemeHedefleri(kalem, turMap);
   const isaretli = hedefler.filter(h => !h.pasif && satirlar[h.hedef]?.isaretli);
   if (!isaretli.length) return { hatalar, hareketler: [], cek: null, uyari: null };
   if (!tarih) hatalar.genel.push("Ödeme tarihi girilmedi.");
-  const normal = isaretli.filter(h => satirlar[h.hedef].yontem !== CIRO_YONTEMI);
+  const normal = isaretli.filter(h => satirlar[h.hedef].yontem !== CIRO_YONTEMI && satirlar[h.hedef].yontem !== KENDI_CEK_YONTEMI);
+  const kendi = isaretli.find(h => satirlar[h.hedef].yontem === KENDI_CEK_YONTEMI);
   const ciro = isaretli.find(h => satirlar[h.hedef].yontem === CIRO_YONTEMI);
   let hareketler = [];
   if (normal.length) {
@@ -122,6 +127,20 @@ export const formOdemesiHazirla = (kalem, { turMap, tarih, satirlar = {}, hesapl
         if (p.hatalar.length) hatalar.satir[ciro.hedef] = p.hatalar[0];
         else { hareketler = [...hareketler, ...p.hareketler]; cek = p.cek; uyari = p.uyari; }
       }
+    }
+  }
+  if (kendi) {
+    const s = satirlar[kendi.hedef];
+    const alacakli = ciroAlacaklisi(kalem, turMap);
+    const aday = kendi.ciroOlur ? ciroAdaylari([kalem], alacakli, turMap).find(a => String(a.taksitId ?? "") === String(kendi.taksitId ?? "")) : null;
+    if (!kendi.ciroOlur) hatalar.satir[kendi.hedef] = KENDI_CEK_YALNIZ_ANA_NEDENI;
+    else if (!aday) hatalar.satir[kendi.hedef] = "Bu bölüm çekle kapatılamaz.";
+    else {
+      const t = parseMoney(s.tutar);
+      const p = kendiCekPlani({ form: { no: s.cekNo, hesapId: s.cekHesapId, vadeTarihi: s.cekVade, tutar: s.tutar }, hesaplar, adaylar: [aday],
+        dagitim: [{ anahtar: aday.anahtar, tutarK: Number.isFinite(t) && t > 0 ? Math.round(t * 100) : 0 }], tarih, alacakli: { ...alacakli, ad: alacakliAd }, turMap, cekId: yeniCekId });
+      if (p.hatalar.length) hatalar.satir[kendi.hedef] = p.hatalar[0];
+      else { hareketler = [...hareketler, ...p.hareketler]; cek = p.cek; }
     }
   }
   const hataVar = hatalar.genel.length || Object.keys(hatalar.satir).length;

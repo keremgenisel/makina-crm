@@ -5,7 +5,7 @@ import { Field, Input, Select, Btn, Icon } from "../ui";
 import { HataMetni, Ipucu, KartBolum, UyariSeridi, BolumBasligi } from "../tasarim";
 import { TutarInput, ODEME_SECENEKLERI, hedefAdi, tl2 } from "./GiderAlanlari";
 import { HESAP_TUR_AD } from "../../lib/kasa";
-import { CIRO_YONTEMI } from "../../lib/cek";
+import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { tl, HEDEF } from "../../lib/gider";
 import { fmtTR } from "../../lib/utils";
 import { hepsiniOde, ciroTutariK, HEPSI_TAKSITLI_NOTU, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, KAYDEDINCE_ODENIR, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
@@ -43,8 +43,10 @@ export const OdemeFormSatirlari = ({ hedefler = [], davranis, odeme, setOdeme, h
         const ad = hedefAdi(h.hedef, davranis, ikiHedef);
         const s = satir(h);
         const ciro = s?.yontem === CIRO_YONTEMI;
+        // Spec 0049 B (R9, Q6): kendi çekimiz yalnız ANA satırda ve kasa yetkisiyle (ciro gibi); hesap alanı yerine çek alanları.
+        const kendi = s?.yontem === KENDI_CEK_YONTEMI;
         const cekSatiri = ciro ? cekSatirlari.find(x => String(x.cek.id) === String(s.cekId)) : null;
-        const secenekler = [...ODEME_SECENEKLERI, ...(h.ciroOlur && ciroYetkisi ? [{ value: CIRO_YONTEMI, label: CIRO_YONTEMI }] : [])];
+        const secenekler = [...ODEME_SECENEKLERI, ...(h.ciroOlur && ciroYetkisi ? [{ value: CIRO_YONTEMI, label: CIRO_YONTEMI }, { value: KENDI_CEK_YONTEMI, label: KENDI_CEK_YONTEMI }] : [])];
         return (
           <div key={h.hedef} data-testid="form-odeme-satiri" data-hedef={h.hedef} style={{ borderTop: "1px solid var(--n150, #f1f5f9)", padding: "10px 0" }}>
             <BolumBasligi bosluk={4}>{ad} · {tl2(tl(h.kalanK))}</BolumBasligi>
@@ -74,6 +76,17 @@ export const OdemeFormSatirlari = ({ hedefler = [], davranis, odeme, setOdeme, h
                           </Select>
                         ) : <div data-testid="form-odeme-cek-yok"><Ipucu>{CEK_YOK_NOTU}</Ipucu></div>}
                       </Field>
+                    ) : kendi ? (
+                      <>
+                        <Field label="Çek numarası"><Input aria-label={`${ad} çek numarası`} value={s.cekNo || ""} onChange={e => setSatir(h.hedef, { cekNo: e.target.value })} /></Field>
+                        <Field label="Banka hesabı">
+                          <Select aria-label={`${ad} çek hesabı`} value={s.cekHesapId ?? ""} onChange={e => setSatir(h.hedef, { cekHesapId: e.target.value === "" ? "" : hesaplar.find(x => String(x.id) === e.target.value)?.id ?? "" })}>
+                            <option value="">Hesap seçin</option>
+                            {hesaplar.filter(x => x.tur === "banka").map(x => <option key={x.id} value={x.id}>{x.ad}</option>)}
+                          </Select>
+                        </Field>
+                        <Field label="Çek vadesi"><Input aria-label={`${ad} çek vadesi`} type="date" value={s.cekVade || ""} onChange={e => setSatir(h.hedef, { cekVade: e.target.value })} /></Field>
+                      </>
                     ) : hesapSecimi && (
                       <Field label="Hesap">
                         <Select aria-label={`${ad} hesabı`} value={s.hesapId ?? ""} onChange={e => setSatir(h.hedef, { hesapId: e.target.value === "" ? "" : hesaplar.find(x => String(x.id) === e.target.value)?.id ?? "" })}>
@@ -82,14 +95,15 @@ export const OdemeFormSatirlari = ({ hedefler = [], davranis, odeme, setOdeme, h
                         </Select>
                       </Field>
                     )}
-                    {ciro && alacakliSerbest && (
-                      <Field label="Kime ciro edildi">
+                    {(ciro || kendi) && alacakliSerbest && (
+                      <Field label={kendi ? "Kime verildi" : "Kime ciro edildi"}>
                         <Input aria-label="Kime ciro edildi" value={odeme.alacakliAd || ""} onChange={e => setOdeme(o => ({ ...o, alacakliAd: e.target.value }))} placeholder="Alacaklının adı" />
                       </Field>
                     )}
                   </div>
                 )}
                 {s?.isaretli && !h.ciroOlur && ciroYetkisi && CIRO_YALNIZ_ANA_NEDENI[h.hedef] && <Ipucu>{CIRO_YALNIZ_ANA_NEDENI[h.hedef]}</Ipucu>}
+                {kendi && <Ipucu>Çek yazılınca borç kapanır; hesap bakiyesi banka çeki ödediğinde (Kasa › Çek Portföyü › Verilen) düşer.</Ipucu>}
                 {ciro && uyari && <div style={{ marginTop: 8 }}><UyariSeridi aile="uyari" testId="form-odeme-ciro-uyari">{uyari}</UyariSeridi></div>}
                 <HataMetni>{hatalar.satir[h.hedef]}</HataMetni>
               </>

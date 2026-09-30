@@ -97,7 +97,9 @@ export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) =>
 
   // ── Kasa bölümü ──
   const veri = { payments: g.payments, services: g.services, partSales: g.partSales, yedekParcaSatislar: g.yedekParcaSatislar,
-    customers: g.customers, dealers: g.dealers, factory: g.factory, kdvRates: g.kdvRates, bugun: son };
+    customers: g.customers, dealers: g.dealers, factory: g.factory, kdvRates: g.kdvRates, bugun: son,
+    // Spec 0049 Q9: ödenmiş verilen çek, ödendiği gün hesaptan çıkar (aralık ay sonuna kadar satırları sayar).
+    cekler: g.cekler };
   const bakiyeler = hesapBakiyeleri(g.hesaplar, g.hareketler, veri, { aralik });
   const hesapSatirlari = [];
   for (const x of bakiyeler.values()) {

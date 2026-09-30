@@ -1072,6 +1072,16 @@ describe("spec 0049: bağsız çek yetkisi", () => {
     expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [{ ...hareket, cekId: 999 }] }, kasaci, "user").gerekli).toBe("cek_hareketi");
     expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [hareket] }, kasaci, "user").ok).toBe(true);
   });
+  it("triyaj: bağlı çeki bağsıza çeviren (paymentId boşaltan) yazım gider_odeme ile birlikte cust_payment_edit de ister", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    const bosaltilmis = { cekler: [{ ...bagli, paymentId: null, durum: "tahsil" }] };
+    const kismi = JSON.stringify({ tabs: ["gider", "customers"], giderActions: ["gider_odeme"], customerActions: ["cust_payment_add"] });
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, kismi, "user")).toMatchObject({ ok: false, gerekli: "cust_payment_edit" });
+    expect(eylemDenetimi({ cekler: [{ ...bagli, paymentId: null }] }, { cekler: [bagli] }, kismi, "user").gerekli).toBe("cust_payment_edit"); // tersi de
+    const ikisi = JSON.stringify({ tabs: ["gider", "customers"], giderActions: ["gider_odeme"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, ikisi, "user").ok).toBe(true);
+    expect(eylemDenetimi({ cekler: [bagli] }, bosaltilmis, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_edit"], giderActions: [] }), "user").gerekli).toBe("gider_odeme");
+  });
   it("AC-9: bağlı çekte 0040 kuralı aynen (durum cust_payment_edit)", () => {
     const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
     expect(eylemDenetimi({ cekler: [bagli] }, { cekler: [{ ...bagli, durum: "tahsil" }] }, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add"] }), "user").gerekli).toBe("cust_payment_edit");

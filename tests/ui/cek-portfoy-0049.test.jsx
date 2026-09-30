@@ -120,7 +120,7 @@ describe("Spec 0049 A: portföye elle çek ekleme", () => {
   });
 });
 
-// Q10: çekler Giderler paketinde de geri yüklenir (verilen/elle çekler gider hareketlerine bağlı).
+// Q10 + triyaj: çek bölümünün iki sahibi; tek paket seçiliyse öbür paketin çekleri bugünkü hâliyle korunur.
 import { SettingsBackup } from "../../src/components/settings/SettingsBackup";
 import { waitFor } from "@testing-library/react";
 describe("Spec 0049 Q10: yedekten geri yükleme", () => {
@@ -129,28 +129,117 @@ describe("Spec 0049 Q10: yedekten geri yükleme", () => {
     setCustomers: vi.fn(), setServices: vi.fn(), setDealers: vi.fn(), setStock: vi.fn(), setCustomModels: vi.fn(), setStandardModels: vi.fn(), setFactory: vi.fn(),
     setKalipDefs: vi.fn(), setNotes: vi.fn(), setParts: vi.fn(), setPartSales: vi.fn(), setPayments: vi.fn(), setCekler: vi.fn(), setHesapHareketleri: vi.fn(),
     version: "3.39.0", appSettings: {}, setAppSettings: vi.fn(), flash: vi.fn() });
-  it("yalnız Giderler paketi seçiliyken de yedekteki çekler geri yüklenir; çek bölümü olmayan yedek çeklere dokunmaz", async () => {
+  // Bugün: tahsil edilmiş bağlı çek (yedekten sonra) + yedekten sonra eklenmiş bağlı çek + bugünkü verilen çek.
+  const BAGLI_BUGUN = { id: 200, paymentId: 100, no: "1", banka: "Z", durum: "tahsil", gecmis: [] };
+  const BAGLI_YENI = { id: 201, paymentId: 101, no: "2", banka: "Z", durum: "portfoy", gecmis: [] };
+  const VERILEN_BUGUN = { id: 500, yon: "verilen", paymentId: null, no: "V-1", durum: "yazildi", tutar: 100, gecmis: [] };
+  const MEVCUT = [BAGLI_BUGUN, BAGLI_YENI, VERILEN_BUGUN];
+  const BAGLI_YEDEK = { ...BAGLI_BUGUN, durum: "portfoy" };
+  const yedek = { app: "altunmak-crm", schemaVersion: 3, customers: [], payments: [], cekler: [BAGLI_YEDEK, BAGSIZ], hesapHareketleri: [] };
+  const geriYukle = async (kapat, y = yedek) => {
     window.appMail = { getConfigForBackup: () => Promise.resolve(null), getAllLog: () => Promise.resolve([]) };
-    const yedek = { app: "altunmak-crm", schemaVersion: 3, customers: [], payments: [], cekler: [BAGSIZ], hesapHareketleri: [] };
-    const ac = async (y) => {
-      window.crmStorage = { restore: () => Promise.resolve(structuredClone(y)), autoBackupPasswordStatus: () => Promise.resolve({ set: false, canEncrypt: true }) };
-      fireEvent.click(screen.getByRole("button", { name: /Yedekten Geri Yükle/ }));
-      const panel = (await screen.findByText(/Geri yüklenecek bölümler/)).closest("div").parentElement;
-      fireEvent.click(within(panel).getByText("Müşteri verileri"));
-      fireEvent.click(screen.getByRole("button", { name: /Evet, Geri Yükle/ }));
-    };
-    let p = temel();
+    window.crmStorage = { restore: () => Promise.resolve(structuredClone(y)), autoBackupPasswordStatus: () => Promise.resolve({ set: false, canEncrypt: true }) };
+    const p = temel();
     render(<SettingsBackup {...p} giderYetki giderVeriYetki />);
-    await ac(yedek);
-    await waitFor(() => expect(p.setHesapHareketleri).toHaveBeenCalled());
-    expect(p.setCustomers).not.toHaveBeenCalled();
-    expect(p.setCekler).toHaveBeenCalledWith([BAGSIZ]);
+    fireEvent.click(screen.getByRole("button", { name: /Yedekten Geri Yükle/ }));
+    const panel = (await screen.findByText(/Geri yüklenecek bölümler/)).closest("div").parentElement;
+    for (const ad of kapat) fireEvent.click(within(panel).getByText(ad));
+    fireEvent.click(screen.getByRole("button", { name: /Evet, Geri Yükle/ }));
+    await waitFor(() => expect(p.setFactory.mock.calls.length + p.setHesapHareketleri.mock.calls.length + p.setCustomers.mock.calls.length).toBeGreaterThan(0));
+    cleanup(); delete window.crmStorage; delete window.appMail;
+    const arg = p.setCekler.mock.calls[0]?.[0];
+    return typeof arg === "function" ? arg(MEVCUT) : arg;
+  };
+  it("yalnız Giderler: bağlı çekler bugünkü hâliyle korunur (durum geri alınmaz, yeni çek silinmez), bağsızlar yedekten gelir", async () => {
+    const son = await geriYukle(["Müşteri verileri"]);
+    expect(son.map(c => [c.id, c.durum])).toEqual([[200, "tahsil"], [201, "portfoy"], [400, "portfoy"]]);
+  });
+  it("yalnız Müşteri verileri: bağlı çekler yedekten, bağsız (verilen) çekler bugünkü hâliyle", async () => {
+    const son = await geriYukle(["Giderler"]);
+    expect(son.map(c => [c.id, c.durum])).toEqual([[500, "yazildi"], [200, "portfoy"]]);
+  });
+  it("ikisi birden (tam geri yükleme): çek bölümü yedekteki gibi; çek bölümü olmayan yedek Giderler'le çeklere dokunmaz", async () => {
+    expect((await geriYukle([])).map(c => c.id)).toEqual([200, 400]);
+    expect(await geriYukle(["Müşteri verileri"], { ...yedek, cekler: undefined })).toBeUndefined();
+  });
+});
+
+describe("Spec 0049 B: verilen çekler (Kasa › Çek Portföyü)", () => {
+  const verilenSekme = () => { portfoy(); fireEvent.click(screen.getByRole("tab", { name: "Verilen çekler" })); };
+  const Y = () => screen.getByTestId("cek-yaz-penceresi");
+  const cekYaz = (tutar = "6000") => {
+    fireEvent.click(screen.getByText("Çek Yaz"));
+    degis(within(Y()).getByLabelText("Çek numarası"), "A-7");
+    degis(within(Y()).getByLabelText("Banka hesabı"), "97");
+    degis(within(Y()).getByLabelText("Çek vadesi"), "2026-10-02");
+    degis(screen.getByDisplayValue("Tedarikçi seçin"), "10");
+    // Ön dolu biçimli değer ("6.000") üzerine tüm metni yazmak 0045 ayraç kuralında silme sayılır; önce temizlenir.
+    degis(within(Y()).getByLabelText("Çek tutarı"), "");
+    degis(within(Y()).getByLabelText("Çek tutarı"), tutar);
+    fireEvent.click(screen.getByText("Çeki Yaz"));
+    const kalan = screen.queryByTestId("cek-yaz-penceresi");
+    if (kalan) throw new Error("Çek yazılamadı: " + [...kalan.querySelectorAll('[role="alert"]')].map(e => e.textContent).join(" | "));
+  };
+  it("AC-11 / AC-12 / AC-13 / AC-21: çek yazılır, verilen listede görünür, gider kapanır, bakiye değişmez; alınan toplamına karışmaz", () => {
+    let st;
+    render(<H onState={s => { st = s; }} />);
+    const bakiye = () => screen.getAllByTestId("hesap-satiri")[0].textContent;
+    const once = bakiye();
+    verilenSekme();
+    cekYaz();
+    expect(st.cekler).toEqual([expect.objectContaining({ yon: "verilen", no: "A-7", durum: "yazildi", tutar: 6000, hesapId: 97, alacakliAd: "Demir Bant" })]);
+    expect(st.hareketler).toEqual([expect.objectContaining({ tutar: 6000, yontem: "Çek (kendi)", hesapId: null, cekId: st.cekler[0].id })]);
+    expect(screen.getAllByTestId("verilen-cek-satiri")[0].textContent).toMatch(/A-7.*Demir Bant/);
+    expect(screen.getByTestId("verilen-toplam").textContent).toMatch(/6\.000/);
+    fireEvent.click(screen.getByRole("tab", { name: "Alınan çekler" }));
+    expect(screen.getByTestId("portfoy-toplam").textContent).not.toMatch(/6\.000/);
+    fireEvent.click(screen.getByRole("tab", { name: "Hesaplar" }));
+    expect(once).toMatch(/50\.000/);
+    expect(bakiye()).toMatch(/50\.000/); // yazılınca bakiye değişmez
+    expect(bakiye()).toMatch(/1 hareket/); // hesap çekle kullanımda (silinmez)
+  });
+  it("AC-17: çek kapatılan borçtan büyükse fark uyarısı; fark borç kapatmaz", () => {
+    let st;
+    render(<H onState={s => { st = s; }} />);
+    verilenSekme();
+    fireEvent.click(screen.getByText("Çek Yaz"));
+    degis(screen.getByDisplayValue("Tedarikçi seçin"), "10");
+    degis(within(Y()).getByLabelText("Çek tutarı"), "");
+    degis(within(Y()).getByLabelText("Çek tutarı"), "8000");
+    expect(screen.getByTestId("ciro-fark").textContent).toMatch(/2\.000 ₺ fazla/);
+    degis(within(Y()).getByLabelText("Çek numarası"), "A-8");
+    degis(within(Y()).getByLabelText("Banka hesabı"), "97");
+    degis(within(Y()).getByLabelText("Çek vadesi"), "2026-10-02");
+    fireEvent.click(screen.getByText("Çeki Yaz"));
+    expect(st.cekler[0].tutar).toBe(8000);
+    expect(st.hareketler.reduce((a, h) => a + h.tutar, 0)).toBe(6000);
+  });
+  it("AC-14 / AC-15 / AC-18: ödendi olunca bakiye düşer; iptal borcu açar; vadesi yaklaşan işaretli", () => {
+    let st;
+    render(<H onState={s => { st = s; }} />);
+    const bakiye = () => screen.getAllByTestId("hesap-satiri")[0].textContent;
+    verilenSekme();
+    cekYaz();
+    expect(within(screen.getAllByTestId("verilen-cek-satiri")[0]).getByText("Yaklaşıyor")).toBeTruthy(); // vade 02.10, bugün 28.09, eşik 7
+    fireEvent.click(within(screen.getAllByTestId("verilen-cek-satiri")[0]).getByText("Durum"));
+    fireEvent.click(screen.getByText("Ödendi (banka ödedi)"));
+    expect(st.cekler[0].durum).toBe("odendi");
+    fireEvent.click(screen.getByRole("tab", { name: "Hesaplar" }));
+    expect(bakiye()).toMatch(/44\.000/); // 50.000 − 6.000
     cleanup();
-    p = temel();
-    render(<SettingsBackup {...p} giderYetki giderVeriYetki />);
-    await ac({ ...yedek, cekler: undefined });
-    await waitFor(() => expect(p.setHesapHareketleri).toHaveBeenCalled());
-    expect(p.setCekler).not.toHaveBeenCalled();
-    delete window.crmStorage; delete window.appMail;
+    render(<H onState={s => { st = s; }} />);
+    verilenSekme();
+    cekYaz();
+    fireEvent.click(within(screen.getAllByTestId("verilen-cek-satiri")[0]).getByText("Durum"));
+    fireEvent.click(screen.getByText("İptal Et"));
+    fireEvent.click(screen.getAllByText("İptal Et").filter(e => e.closest("button")).pop());
+    expect(st.cekler[0].durum).toBe("iptal");
+    expect(st.hareketler).toEqual([]);
+  });
+  it("AC-22: gider_odeme izni olmayan kullanıcı Çek Yaz ve Durum düğmelerini görmez", () => {
+    render(<H c0={[{ id: 900, yon: "verilen", paymentId: null, no: "A-1", durum: "yazildi", tutar: 100, vadeTarihi: "2026-12-01", hesapId: 97, alacakliAd: "X", gecmis: [] }]} perms={ODEMESIZ} />);
+    verilenSekme();
+    expect(screen.queryByText("Çek Yaz")).toBeNull();
+    expect(within(screen.getAllByTestId("verilen-cek-satiri")[0]).queryByText("Durum")).toBeNull();
   });
 });

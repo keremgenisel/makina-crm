@@ -452,6 +452,28 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("spec 0040 AC-20: müşteri grubu kısıtlı kullanıcı çekin numarasını değiştiremez → 403",
     (await postData({ ...cC, dataVersion: undefined, cekler: cC.cekler.map(c => c.id === 9602 ? { ...c, no: "999" } : c) }, cC.dataVersion, ciroTok)).status === 403);
 
+  // ── Spec 0049 AC-23: bağsız alınan çek ve verilen çek (gider_odeme; müşteri grubu kısıtlı Kasa kullanıcısı) ──
+  const bagsizCek = { id: 9650, yon: "alinan", paymentId: null, no: "B-55", banka: "İş", kesideci: "", tur: "hamiline", durum: "portfoy", tutar: 4000, currency: "TRY",
+    vadeTarihi: "2026-11-30", tarih: "2026-09-05", kimden: "Eski müşteri", gecmis: [{ tarih: "2026-09-05", durum: "portfoy", not: "Portföye elle eklendi" }] };
+  const cekEkle = async (tok, cek, hareket = null) => {
+    const d = await gUst(tok);
+    return postData({ ...d, dataVersion: undefined, cekler: [...(d.cekler || []), cek], ...(hareket ? { hesapHareketleri: [...(d.hesapHareketleri || []), hareket] } : {}) }, d.dataVersion, tok);
+  };
+  check("spec 0049 AC-23: gider_odeme olmadan bağsız çek eklemek → 403", (await cekEkle((await login("cirosuz", "ciro1234")).body.token, bagsizCek)).status === 403);
+  check("spec 0049 Q8: müşteri grubu kısıtlı Kasa kullanıcısı gider_odeme ile bağsız çek ekler → 200; alanlar kayıttan okunur",
+    (await cekEkle(ciroTok, bagsizCek)).status === 200
+    && (await gUst(adminTok)).cekler.some(c => c.id === 9650 && c.paymentId == null && c.tutar === 4000 && c.kimden === "Eski müşteri"));
+  const verilenCek = { id: 9660, yon: "verilen", paymentId: null, no: "V-1", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 500, currency: "TRY", vadeTarihi: "2026-10-30",
+    tarih: "2026-09-20", hesapId: 97, alacakliTur: "serbest", alacakliAd: "Demir", gecmis: [{ tarih: "2026-09-20", durum: "yazildi", not: "Yazıldı: Demir" }] };
+  check("spec 0049 Q8: hareketsiz verilen çek (bağlı ödeme hareketi yok) → 403", (await cekEkle(ciroTok, verilenCek)).status === 403);
+  check("spec 0049 AC-12 / AC-23: verilen çek ödeme hareketiyle birlikte yazılır → 200; çek ve hareket kayıttan okunur",
+    (await cekEkle(ciroTok, verilenCek, { id: 9661, tur: "odeme", tarih: "2026-09-20", tutar: 500, yontem: "Çek (kendi)", giderId: 9610, hesapId: null, cekId: 9660 })).status === 200
+    && (await gUst(adminTok)).cekler.some(c => c.id === 9660 && c.hesapId === 97 && c.durum === "yazildi")
+    && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9661 && h.cekId === 9660));
+  const vC = await gUst((await login("cirosuz", "ciro1234")).body.token);
+  check("spec 0049 AC-23: gider_odeme olmadan verilen çeki ödendi işaretlemek → 403",
+    (await postData({ ...vC, dataVersion: undefined, cekler: vC.cekler.map(c => c.id === 9660 ? { ...c, durum: "odendi" } : c) }, vC.dataVersion, (await login("cirosuz", "ciro1234")).body.token)).status === 403);
+
   // ── Spec 0044 Q5: Kasa'yı gören (Giderler + Finans), müşteri grubu kısıtlı kullanıcı tahsilata yalnız hesap atar ──
   let tA = await gUst(adminTok);
   await postData({ ...tA, dataVersion: undefined, services: [...(tA.services || []), { id: 9700, customerId: 9600, date: "2026-09-10", type: "Garanti Dışı", servisUcreti: 1000, currency: "TRY", odendi: true }] }, tA.dataVersion, adminTok);
