@@ -4,7 +4,7 @@
 // aynı fonksiyondan yapar (Q1); bu yüzden fonksiyon girdiden başka hiçbir şeye bakmaz.
 import { cokluOdemeDogrula } from "./kasa";
 import { ciroAdaylari, ciroPlani, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM } from "./cek";
-import { tl, satirliMi, davranisOf, odemeHedefleri, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
+import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
 export const PASIF_TAKSIT_NEDENI = "Bu bölüm taksitli; taksitler kayıttan sonra ödeme penceresinden ödenir.";
 export const HEPSI_TAKSITLI_NOTU = "Bu kalemin bütün ödemeleri taksitli; taksitler kayıttan sonra listedeki ödeme penceresinden girilir.";
@@ -14,19 +14,62 @@ export const CEK_YOK_NOTU = "Portföyde ciro edilebilecek (TL, portföyde duran)
 
 // R1, R5, R6, R26: çizilecek hedef satırları, HEDEF_SIRASI sırasıyla. Tutarı sıfır olan hedef yoktur; iki ya da daha çok
 // taksitli hedef pasiftir. taksitId: formdan ödenebilen hedefin tek satırı (satırsız kalemde null, Q2).
+// Spec 0048 (R12, R13, C2): nesne ham ödenen tutarı (odenenK: satırda `_odenenK`, satırsızda `_odenen`; kırpılmaz),
+// hedefin satır sayısını (satirSayisi) ve personelde maaş/ek ödeme kırılımını (maasK, ekOdemeK; diğerlerinde null) da taşır.
+// Mevcut alanlar değişmedi (AC-28).
 export const formOdemeHedefleri = (kalem, turMap) => {
   if (!kalem) return [];
   const dav = davranisOf(kalem, turMap);
   const satirli = satirliMi(kalem);
-  return odemeHedefleri(kalem, dav)
-    .filter(h => h.toplamK > 0)
+  const hedefler = odemeHedefleri(kalem, dav).filter(h => h.toplamK > 0);
+  const ikiHedef = hedefler.some(h => h.hedef === HEDEF.ELDEN);
+  return hedefler
     .sort((a, b) => HEDEF_SIRASI.indexOf(a.hedef) - HEDEF_SIRASI.indexOf(b.hedef))
     .map(h => {
       const satirlar = satirli ? kalem.taksitler.filter(r => (r.hedef || HEDEF.ANA) === h.hedef) : [];
       const pasif = satirlar.length > 1;
+      const odenenK = satirli ? satirlar.reduce((a, r) => a + (r._odenenK != null ? r._odenenK : (r.odendi ? kurus(r.tutar) : 0)), 0)
+        : (kalem._odenen ? (kalem._odenen[h.hedef] || 0) : (kalem.odendi ? h.toplamK : 0));
+      const kirilim = dav === DAVRANIS.PERSONEL && h.hedef !== HEDEF.STOPAJ ? personelHedefKirilimi(kalem, h.hedef, ikiHedef) : { maasK: null, ekOdemeK: null };
       return { hedef: h.hedef, taksitId: satirli && !pasif ? satirlar[0]?.id ?? null : null, toplamK: h.toplamK, kalanK: h.kalanK,
-        odendi: h.odendi, pasif, neden: pasif ? PASIF_TAKSIT_NEDENI : null, ciroOlur: h.hedef === HEDEF.ANA && !pasif };
+        odendi: h.odendi, pasif, neden: pasif ? PASIF_TAKSIT_NEDENI : null, ciroOlur: h.hedef === HEDEF.ANA && !pasif,
+        odenenK, satirSayisi: satirlar.length, ...kirilim };
     });
+};
+
+// Spec 0048: düzenleme kipindeki ödeme kutusunun kararları (R4, R5, R12, R14, R15, R16; plan Q2–Q6). Saf; form yalnız çizer.
+// canliKalem: formun canlı önizleme kalemi, kaydın motorundan (odemeleriUygula) geçmiş (Q1). kayitliKalem: kayıttaki
+// zenginleştirilmiş kalem. Dönüş { hedefler, kaybolanlar, planHatasi, turDegisti, bolunmez }.
+export const KAYDEDINCE_ODENIR = "Kaydedince ödenebilir";
+export const PLAN_HATASI_NOTU = "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor.";
+export const TUR_DEGISTI_UYARISI = "Bu kalemin kayıtlı ödemesi var; türü değiştirmek hedefleri ve ödeme bağlarını etkiler.";
+export const duzenlemeOdemeDurumu = ({ canliKalem, kayitliKalem, turMap, planHatasi = false }) => {
+  const kayitli = formOdemeHedefleri(kayitliKalem, turMap);
+  const kayitliDav = kayitliKalem ? davranisOf(kayitliKalem, turMap) : null;
+  const bolunmez = !!kayitliKalem && personelBolunmezMi(kayitliKalem.taksitler, kayitliDav);
+  // R14: plan hatalıyken kutu kayıtlı hâli gösterir (taksitli kalem tek hedefe düşmesin); düğme bugünkü kuralla.
+  if (planHatasi || !canliKalem) {
+    return { hedefler: kayitli.map(h => ({ ...h, dugme: h.kalanK > 0, kaydedinceOdenir: false, asimK: 0 })), kaybolanlar: [], planHatasi: !!planHatasi, turDegisti: false, bolunmez };
+  }
+  const canli = formOdemeHedefleri(canliKalem, turMap);
+  const hedefler = canli.map(h => {
+    const k = kayitli.find(x => x.hedef === h.hedef);
+    // R5 (Q3): düğme yalnız hedef kayıtta aynı satır yapısıyla varsa; pencere kayıtlı kalemi öder (X5).
+    // Triyaj: satırsız hedef (0 satır) tek satırlı hedefle eşdeğerdir. Göçsüz eski kalemler (0042 öncesi iki hedefli
+    // personel, 0021 öncesi stopajlı kira) önizlemede ilk kayıtta satırlıya döner; hiçbir şey değişmemişken yapı
+    // "değişmiş" sayılıp düğme kaybolmasın. Ölçüt taksit sayısıdır.
+    const taksitSayisi = (n) => Math.max(1, n || 0);
+    const yapiAyni = !!k && taksitSayisi(k.satirSayisi) === taksitSayisi(h.satirSayisi);
+    const dugme = h.kalanK > 0 && yapiAyni;
+    // R4, R12 (Q4): aşım, kayıtlı hedefin ham ödenen tutarı ile canlı toplamın farkı.
+    const asimK = k ? Math.max(0, k.odenenK - h.toplamK) : 0;
+    return { ...h, dugme, kaydedinceOdenir: h.kalanK > 0 && !dugme, asimK, kayitliOdenenK: k ? k.odenenK : 0 };
+  });
+  // R16 (Q5): canlıda kalmamış ama kayıtta ödeme almış hedef görünür kalır.
+  const kaybolanlar = kayitli.filter(k => k.odenenK > 0 && !canli.some(h => h.hedef === k.hedef)).map(k => ({ hedef: k.hedef, odenenK: k.odenenK, toplamK: 0 }));
+  // R15 (Q6): davranış değişti ve kayıtlı ödeme var.
+  const turDegisti = kayitliDav != null && davranisOf(canliKalem, turMap) !== kayitliDav && kayitli.some(k => k.odenenK > 0);
+  return { hedefler, kaybolanlar, planHatasi: false, turDegisti, bolunmez };
 };
 
 // R21, Q10: "Hepsini ödendi işaretle" — çizilebilen bütün satırlar tam tutar, varsayılan yöntem ve hesapla (ciro asla).

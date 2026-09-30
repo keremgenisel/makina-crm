@@ -105,6 +105,15 @@ export const personelHedefKurus = (k) => {
     eldenK: kurus(k?.eldenTutar) + ek.reduce((a, e) => a + kurus(e?.eldenTutar), 0),
   };
 };
+// Spec 0048 R13: bir hedefin maaş ve ek ödeme kırılımı (personelHedefKurus ile aynı kaynak; toplamı hedefin toplamıdır).
+// ikiHedef false ise (tek hedefli ya da 0042 Q4 gereği bölünmez personel) hepsi ANA hedefe toplanır.
+export const personelHedefKirilimi = (k, hedef, ikiHedef) => {
+  const ek = Array.isArray(k?.ekOdemeler) ? k.ekOdemeler : [];
+  const maasR = kurus(k?.resmiTutar), maasE = kurus(k?.eldenTutar);
+  const ekR = ek.reduce((a, e) => a + kurus(e?.resmiTutar), 0), ekE = ek.reduce((a, e) => a + kurus(e?.eldenTutar), 0);
+  if (!ikiHedef) return hedef === HEDEF.ANA ? { maasK: maasR + maasE, ekOdemeK: ekR + ekE } : { maasK: 0, ekOdemeK: 0 };
+  return hedef === HEDEF.ELDEN ? { maasK: maasE, ekOdemeK: ekE } : { maasK: maasR, ekOdemeK: ekR };
+};
 export const personelIkiHedef = (k, dav) => {
   if (dav !== DAVRANIS.PERSONEL) return false;
   const p = personelHedefKurus(k);
@@ -258,6 +267,8 @@ export const taksitSayisiCoz = (v) => {
 };
 const satirOdemeAlmis = (x) => x.odendi || (x._odenenK || 0) > 0;
 // Spec 0042 Q4: elden satırı olmayan eski satırlı personel kaleminin ana satırı ödeme almışsa kalem ikiye bölünmez.
+// Spec 0048 R7: nedeni formda iki yerde (vade alanları, ödeme kutusu) aynı sabitten yazılır.
+export const PERSONEL_BOLUNMEZ_NEDENI = "Bu kalem eski planla ödendiği için resmi ve elden olarak ayrılmaz.";
 export const personelBolunmezMi = (eskiSatirlar, dav) => dav === DAVRANIS.PERSONEL && Array.isArray(eskiSatirlar) && eskiSatirlar.length > 0
   && !eskiSatirlar.some(x => x.hedef === HEDEF.ELDEN) && eskiSatirlar.some(x => (x.hedef || HEDEF.ANA) === HEDEF.ANA && satirOdemeAlmis(x));
 export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, eskiSatirlar = null, eskiOdendi = false, eskiOdemeTarihi = null } = {}) => {

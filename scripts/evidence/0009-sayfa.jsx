@@ -293,6 +293,18 @@ const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tah
 // Spec 0046: gider formunun ödeme bölümü (kasa yetkisi, çekler portföyde).
 const FORM_ODEME = { giderTurleri: TURLER, tedarikciler: TED, calisanlar: CAL, giderAyarlari: AYAR.giderAyarlari, onSave: bos, onCancel: bos,
   hesaplar: KASA_HESAPLAR, hareketler: KASA_HAREKETLER, hesapSecimi: true, cekler: CEKLER, payments: cekleriUygula(CEK_ODEMELER, CEKLER), ciroYetkisi: true };
+// Spec 0048: düzenleme formu, kayıtlı hareketlerle (Giderler'in verdiği gibi zenginleştirilmiş kalem, hareket bölümü var).
+const D48_PERS = { id: 4801, tarih: "2026-09-01", turId: 3, calisanId: 21, resmiTutar: 30000, eldenTutar: 0, ekOdemeler: [], sonOdemeTarihi: "2026-09-30", modelSatirlari: [] };
+const D48_NORMAL = { id: 4802, tarih: "2026-09-01", turId: 5, tutar: 39500, kdvOrani: 0, tedarikciId: 11, aciklama: "Sac levha", sonOdemeTarihi: "2026-09-30", modelSatirlari: [] };
+const D48_BOLUNMEZ = { ...D48_PERS, id: 4803, eldenTutar: 10000, taksitler: [{ id: 48031, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 20000 }, { id: 48032, hedef: "ana", sira: 2, vade: "2026-10-30", tutar: 20000 }] };
+const D48_TAKSITLI = { ...D48_NORMAL, id: 4804, tutar: 12000, taksitler: [1, 2, 3].map(i => ({ id: 48040 + i, hedef: "ana", sira: i, vade: `2026-${String(8 + i).padStart(2, "0")}-30`, tutar: 4000 })) };
+const D48_HAR = [
+  { id: 48101, tur: "odeme", tarih: "2026-09-15", tutar: 12000, hesapId: 401, giderId: 4801, taksitId: null, yontem: "Havale" },
+  { id: 48102, tur: "odeme", tarih: "2026-09-15", tutar: 39500, hesapId: 401, giderId: 4802, taksitId: null, yontem: "Havale" },
+  { id: 48103, tur: "odeme", tarih: "2026-09-15", tutar: 20000, hesapId: 401, giderId: 4803, taksitId: 48031, yontem: "Havale" },
+  { id: 48104, tur: "odeme", tarih: "2026-09-15", tutar: 4000, hesapId: 401, giderId: 4804, taksitId: 48041, yontem: "Havale" },
+];
+const duzenle48 = (k) => <GiderForm kalem={odemeleriUygula([k], D48_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} hareketler={D48_HAR} hareketBolumu onHedefOde={bos} />;
 // Spec 0047: Aylık Gider ve Kasa Raporu (App'in tek memosunun karşılığı). Personel kalemleri çalışan adlarıyla verilir;
 // belgede yalnız "Personel gideri" görünmeli.
 const RAPOR_VERI = { giderler: GIDERLER, hareketler: KASA_HAREKETLER, turler: TURLER, tedarikciler: TED, stock: [], customers: MUSTERILER, canliModeller: new Set(),
@@ -527,6 +539,12 @@ const EKRANLAR = {
     ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-taksitli": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "20", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "4", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />, ["kaydir:bütün ödemeleri taksitli"]],
   "gider-formu-odeme-duzenle": [<GiderForm kalem={odemeleriUygula([GIDERLER[0]], KASA_HAREKETLER, turHaritasi(TURLER))[0]} {...FORM_ODEME} onHedefOde={bos} />, ["kaydir:Kısmen · kalan"]],
+  // Spec 0048: düzenleme formunda canlı ödeme kutusu (ek ödeme öncesi/sonrası, aşım, bölünmezlik nedeni, plan hatası).
+  "gider-formu-duzenle-ek-once": [duzenle48(D48_PERS), ["kaydir:Ödemeler gider listesindeki"]],
+  "gider-formu-duzenle-ek-sonra": [duzenle48(D48_PERS), ["dugme:Ek ödeme ekle", "doldur:Ek ödeme elden 1=9500", "kaydir:Ödemeler gider listesindeki"]],
+  "gider-formu-duzenle-asim": [duzenle48(D48_NORMAL), ["doldur:Tutar=30000", "kaydir:Ödemeler gider listesindeki"]],
+  "gider-formu-duzenle-bolunmez": [duzenle48(D48_BOLUNMEZ), ["kaydir:Ödemeler gider listesindeki"]],
+  "gider-formu-duzenle-plan-hatasi": [duzenle48(D48_TAKSITLI), ["doldur:Tutar=3000", "kaydir:Ödemeler gider listesindeki"]],
   // Spec 0047: Aylık Gider ve Kasa Raporu belgesi (beyaz kâğıt) ve üç ekrandaki düğme.
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
   "gider-kasa-raporu-kalemsiz": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09", { kalemListesi: false })) }} />, []],

@@ -324,7 +324,7 @@ export const Giderler = ({
       {form && (
         <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
           modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
-          hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hesapSecimi={kasaYetki}
+          hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hareketBolumu={Array.isArray(hesapHareketleri)} hesapSecimi={kasaYetki}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler}
           onHedefOde={odemeGirisi ? (k, h) => hedefDegistir(k, h) : null}
           onSave={kaydet} onCancel={() => setForm(null)} />

@@ -48,7 +48,7 @@ const personelAc = () => { yeni(3); degis(L("Çalışan *"), "21"); };
 const normalAc = (tutar = "10000", ted = "11") => { yeni(4); degis(L("Tutar"), tutar); degis(L("KDV oranı"), "0"); if (ted) degis(L("Tedarikçi"), ted); };
 
 describe("Spec 0046: hedef bazlı ödeme satırları", () => {
-  it("AC-1 / AC-38 / AC-13 / AC-35: personelde Resmi ve Elden iki satır, bu sırayla; son kullanılan hesap ön seçili; yalnız açık TL hesaplar", () => {
+  it("AC-1 / AC-38 / AC-13 / AC-35 (spec 0048 AC-13: yeni kalem kipinde bugünkü davranış değişmez): personelde Resmi ve Elden iki satır, bu sırayla; son kullanılan hesap ön seçili; yalnız açık TL hesaplar", () => {
     render(<H />);
     personelAc();
     expect(satirlar().map(s => s.dataset.hedef)).toEqual(["ana", "elden"]);

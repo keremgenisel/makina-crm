@@ -8,7 +8,8 @@ import { HESAP_TUR_AD } from "../../lib/kasa";
 import { CIRO_YONTEMI } from "../../lib/cek";
 import { tl, HEDEF } from "../../lib/gider";
 import { fmtTR } from "../../lib/utils";
-import { hepsiniOde, ciroTutariK, HEPSI_TAKSITLI_NOTU, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU } from "../../lib/formOdemesi";
+import { hepsiniOde, ciroTutariK, HEPSI_TAKSITLI_NOTU, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, KAYDEDINCE_ODENIR, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
+import { PERSONEL_BOLUNMEZ_NEDENI } from "../../lib/gider";
 
 const cekEtiketi = (s) => [s.cek.no, s.cek.banka, s.cek.kesideci, tl2(tl(s.tutarK)), s.vade ? `vade ${fmtTR(s.vade)}` : ""].filter(Boolean).join(" · ");
 
@@ -100,22 +101,40 @@ export const OdemeFormSatirlari = ({ hedefler = [], davranis, odeme, setOdeme, h
   );
 };
 
-// Düzenleme (R15): her hedefin durumu; düğme ödeme penceresini o hedef için açar (yalnız gider_odeme ile).
-export const OdemeDurumSatirlari = ({ hedefler = [], davranis, onHedefOde = null }) => {
-  if (!hedefler.length) return null;
+// Düzenleme (0046 R15, 0048): her hedefin canlı durumu; düğme ödeme penceresini o hedef için açar (yalnız gider_odeme ile).
+// durum: formOdemesi.duzenlemeOdemeDurumu çıktısı (kararlar orada; bu bileşen yalnız çizer).
+const asimMetni = (odenenK, toplamK) => `Ödenen ${tl2(tl(odenenK))}, yeni toplam ${tl2(tl(toplamK))}; ödenen yeni toplamı aşıyor.`;
+export const OdemeDurumSatirlari = ({ durum, davranis, onHedefOde = null, bolunmezNotu = false }) => {
+  if (!durum) return null;
+  const { hedefler = [], kaybolanlar = [] } = durum;
+  if (!hedefler.length && !kaybolanlar.length) return null;
   const ikiHedef = hedefler.some(h => h.hedef === HEDEF.ELDEN);
   return (
     <KartBolum varyant="kart" baslikStili="baslik" title="Ödeme" altBaslik="Ödemeler gider listesindeki ödeme penceresinden kaydedilir ve silinir." testId="form-odeme-durumu" style={{ marginBottom: 12, padding: 14 }}>
+      {durum.planHatasi && <div style={{ marginBottom: 8 }}><UyariSeridi aile="uyari" testId="form-odeme-plan-hatasi">{PLAN_HATASI_NOTU}</UyariSeridi></div>}
+      {durum.turDegisti && <div style={{ marginBottom: 8 }}><UyariSeridi aile="uyari" testId="form-odeme-tur-uyarisi">{TUR_DEGISTI_UYARISI}</UyariSeridi></div>}
+      {bolunmezNotu && <div data-testid="form-odeme-bolunmez"><Ipucu>{PERSONEL_BOLUNMEZ_NEDENI}</Ipucu></div>}
       {hedefler.map(h => {
-        const durum = h.kalanK === 0 ? "Ödendi" : h.kalanK < h.toplamK ? `Kısmen · kalan ${tl2(tl(h.kalanK))}` : "Ödenmedi";
+        const durumMetni = h.kalanK === 0 ? "Ödendi" : h.kalanK < h.toplamK ? `Kısmen · kalan ${tl2(tl(h.kalanK))}` : "Ödenmedi";
         return (
-          <div key={h.hedef} data-testid="form-odeme-durum-satiri" data-hedef={h.hedef} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13 }}>
-            <b style={{ flex: 1 }}>{hedefAdi(h.hedef, davranis, ikiHedef)} · {tl2(tl(h.toplamK))}</b>
-            <span>{durum}</span>
-            {onHedefOde && h.kalanK > 0 && <Btn small variant="ghost" onClick={() => onHedefOde(h.hedef)}><Icon name="check" size={12} /> Ödeme gir</Btn>}
+          <div key={h.hedef} data-testid="form-odeme-durum-satiri" data-hedef={h.hedef} style={{ padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <b style={{ flex: 1 }}>{hedefAdi(h.hedef, davranis, ikiHedef)} · {tl2(tl(h.toplamK))}</b>
+              <span>{durumMetni}</span>
+              {onHedefOde && h.dugme && <Btn small variant="ghost" onClick={() => onHedefOde(h.hedef)}><Icon name="check" size={12} /> Ödeme gir</Btn>}
+              {onHedefOde && h.kaydedinceOdenir && <span data-testid="form-odeme-kaydedince" style={{ color: "var(--n500)", fontSize: 12 }}>{KAYDEDINCE_ODENIR}</span>}
+            </div>
+            {(h.ekOdemeK || 0) > 0 && <Ipucu>maaş {tl2(tl(h.maasK))} + ek ödeme {tl2(tl(h.ekOdemeK))}</Ipucu>}
+            {h.asimK > 0 && <HataMetni>{asimMetni(h.kayitliOdenenK, h.toplamK)}</HataMetni>}
           </div>
         );
       })}
+      {kaybolanlar.map(k => (
+        <div key={k.hedef} data-testid="form-odeme-kaybolan" data-hedef={k.hedef} style={{ padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13 }}>
+          <b>{hedefAdi(k.hedef, davranis, true)} · {tl2(0)}</b>
+          <HataMetni>{asimMetni(k.odenenK, 0)}</HataMetni>
+        </div>
+      ))}
     </KartBolum>
   );
 };
