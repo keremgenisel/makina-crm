@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0051-kasa-baslangic-tarihi-ve-stopaj-etiketi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0051-kasa-baslangic-tarihi-ve-stopaj-etiketi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0051-kasa-bakim` (`main` üstünden, v3.40.0 sonrası) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q10) kabul |
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-09-30; plan `specs/0051-uygulama-plani.md` Q1–Q10). Uygulanıyor, dal `feat/0051-kasa-bakim`. |
+| **Durum** | Tamamlandı (2026-09-30; commit `211c9f4`, dal `feat/0051-kasa-bakim`; plan `specs/done/0051-uygulama-plani.md` Q1–Q10) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa ekranı (hesapsız ödeme ve tahsilat listeleri, hareket listesi), gider ayarları |
@@ -256,21 +256,21 @@ Başarı şu demek: hesapsız kayıtlar listesi yalnız gerçekten düzeltilebil
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Süzgeç yalnız listeye uygulanıyor; bakiye motoru değişmedi (C1, AC-8) ve 0047 raporuna sızmadı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Süzgeç yalnız listeye uygulanıyor; bakiye motoru değişmedi (C1, AC-8) ve 0047 raporuna sızmadı
       (X6, AC-21).
-- [ ] Süzme parametresi geriye dönük uyumlu genişletildi: eşiksiz ve ay aralıklı çağrılar birebir aynı
+- [x] Süzme parametresi geriye dönük uyumlu genişletildi: eşiksiz ve ay aralıklı çağrılar birebir aynı
       (AC-19, AC-20).
-- [ ] Tarihsiz kayıtların gizlenmediği testle sabitlendi (AC-18).
-- [ ] Satırsız kalemin hedef çözümü `hareketPaylari` ile; ikinci bir hesap yazılmadı (AC-26, AC-27, C2).
-- [ ] Hedef adı `hedefAdi`'dan geliyor; ekranda kopya metin yok (C2, AC-16).
-- [ ] Yeni ayar alanı `giderAyarlari` içinde; yeni sütun açılmadı (C3) ve roundtrip testi kapsıyor.
-- [ ] Görsel kanıt eklendi (`docs/evidence/0051-*.jpg`): süzülmüş hesapsız liste, stopaj ödemesi satırı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: hesapsız liste süzgeci ve ödemenin hedefiyle gösterilmesi.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Tarihsiz kayıtların gizlenmediği testle sabitlendi (AC-18).
+- [x] Satırsız kalemin hedef çözümü `hareketPaylari` ile; ikinci bir hesap yazılmadı (AC-26, AC-27, C2).
+- [x] Hedef adı `hedefAdi`'dan geliyor; ekranda kopya metin yok (C2, AC-16).
+- [x] Yeni ayar alanı `giderAyarlari` içinde; yeni sütun açılmadı (C3) ve roundtrip testi kapsıyor.
+- [x] Görsel kanıt eklendi (`docs/evidence/0051-*.jpg`): süzülmüş hesapsız liste, stopaj ödemesi satırı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: hesapsız liste süzgeci ve ödemenin hedefiyle gösterilmesi.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -278,10 +278,10 @@ Başarı şu demek: hesapsız kayıtlar listesi yalnız gerçekten düzeltilebil
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turunda (onaydan sonra, spec başlığında yazılı); R2 plan onayında (Q1 `hareketHedefPaylari`, Q2 etiketin ekstre ve ödeme penceresinde de gösterilmesi, Q3 `tarihsizDahil`). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (3 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Aynı gün girilen ödemelerde etiketin kimlik sırasıyla çıkıp motorun dağılımıyla ters düşmesi (gerçek); eşik özetinin her çizimde yeniden hesaplanması (performans); kanıt raporunun henüz eklenmemiş olması (çekim sürüyordu). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Eşiksiz ve ay aralıklı çağrılar birebir aynı (AC-19, AC-20); mevcut Kasa ekranlarında değişen yalnız hareket satırının metni. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Mevcut fonksiyonu çağır" kuralı, fonksiyonun gerçekten istenen soruyu cevapladığı doğrulanmadan yazılırsa yanıltır: `hareketPaylari` toplam payı veriyordu, hedefi değil; aynı yöntemi izleyen kardeş fonksiyon C2'nin amacını korudu. İkincisi: bir türev hesabın sonucu motorla eşleşmek zorundaysa yalnız aritmetiği değil **sıralamayı** da motordan almalı; rastgele kimliklerin sırası giriş sırası değildir. Test verisi aynı günlü hareketleri ve ters sıralı kimlikleri içermeliydi.

@@ -547,10 +547,9 @@
         "ekran": "ayarlar-giderayar"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "ayarlar-giderayar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsGiderTanimlari.jsx": [
@@ -1148,40 +1147,34 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-hesaplar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-hesap-hareketleri-kart",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-tahsilat-hareketleri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-hesapsiz-esik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-hesapsiz-hepsi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-hareket-hedef",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -1221,10 +1214,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "giderler-mahsup",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/kasa/CalisanAvanslari.jsx": [
@@ -1251,16 +1243,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-calisan-ekstresi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0051-piksel-raporu.json",
+        "rapor": "docs/evidence/0051-taban-piksel-raporu.json",
         "ekran": "kasa-ekstre-hedef",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0051 R1–R10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/cek/CekPortfoyu.jsx": [
