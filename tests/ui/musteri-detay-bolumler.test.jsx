@@ -58,7 +58,7 @@ describe("Müşteri detayı bölümleri", () => {
     expect(once("Periyodik Bakım", /^Garanti Bitişi$/)).toBe(true);
     expect(var_(/1\. Sahip: Eski Sahip Ltd/)).toBe(true);
   });
-  it("AC-9: Görüşmeler ve Dosyalar kapalı başlar, başlığa tıklayınca açılıp kapanır", () => {
+  it("AC-9 (spec 0050 AC-13: maliyet kutusu katlanır olduktan sonra da değişmedi): Görüşmeler ve Dosyalar kapalı başlar, başlığa tıklayınca açılıp kapanır", () => {
     ciz();
     expect(var_(/fiyat sordu/)).toBe(false);
     expect(var_(/^fatura\.pdf$/)).toBe(false);

@@ -67,6 +67,14 @@ describe("Makina Kârlılığı alt görünümü", () => {
     for (const t of ["Doğrudan giderler", "Ortak gider payı", "Komisyon", "Satış bedeli", "Toplam maliyet"]) expect(within(d).getByText(t)).toBeTruthy();
     expect(within(d).getByText("75.000 ₺")).toBeTruthy();
   });
+  it("spec 0050 AC-12: Makina Kârlılığı'ndaki maliyet detayı açık gelir, katlama yok", () => {
+    localStorage.setItem("maliyetKutusuAcik", "0"); // müşteri detayındaki tercih buraya uygulanmaz
+    ciz(hesapla({ customers: [mus(1, { komisyon: 15000 })], giderler: [{ id: 1, tarih: "2026-03-15", turId: 1, tutar: 60000 }] }));
+    fireEvent.click(screen.getByText("Firma 1").closest("tr"));
+    expect(within(screen.getByTestId("maliyet-detay")).getByText("Satış bedeli")).toBeTruthy();
+    expect(screen.queryByTestId("maliyet-kar-kutusu")).toBeNull();
+    localStorage.clear();
+  });
   it("AC-7 / AC-36: parça hariç notu ve kullanılan kaynak yazar", () => {
     ciz(hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } }));
     const n = screen.getAllByTestId("maliyet-notlari")[0].textContent;

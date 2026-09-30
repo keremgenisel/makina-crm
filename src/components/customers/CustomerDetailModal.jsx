@@ -480,6 +480,10 @@ export const CustomerDetailModal = ({
   // ── Görüşme kayıtları: telefon/ziyaret notları + takip tarihi ("aranacaklar") ──
   const [gorusmeForm, setGorusmeForm] = useState(null);
   const [gorusmelerAcik, setGorusmelerAcik] = useState(false); // akordeon: varsayılan kapalı
+  // Spec 0050 R8, R9: "Maliyet ve Kâr" denetimli katlanan kart; varsayılan kapalı, bu bilgisayarda hatırlanır (sidebarDar
+  // deseni). Tek okuma (başlatıcı) ve tek yazma (değiştirici); localStorage erişim hatası kutuyu kapalı bırakır.
+  const [maliyetAcik, setMaliyetAcik] = useState(() => { try { return localStorage.getItem("maliyetKutusuAcik") === "1"; } catch { return false; } });
+  const maliyetDegis = () => setMaliyetAcik(v => { const n = !v; try { localStorage.setItem("maliyetKutusuAcik", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
   // Genel arama / anasayfa "Aranacaklar": bu görüşmeye odaklan → akordeonu aç + satıra kaydır + vurgula.
   const gorusmeOdakRef = useRef(null);
   useEffect(() => {
@@ -1062,10 +1066,10 @@ export const CustomerDetailModal = ({
               })}
             </div>
             {giderYetki && makinaMaliyet && isCustomer && (
-              <div data-testid="maliyet-kar-kutusu" style={{ marginBottom: 16, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", marginBottom: 8 }}>MALİYET VE KÂR</div>
+              <KartBolum varyant="kart" baslikStili="baslik" collapsible testId="maliyet-kar-kutusu" style={{ marginBottom: 16 }}
+                acik={maliyetAcik} onAcikDegis={maliyetDegis} title="Maliyet ve Kâr" altBaslik="Makinanın maliyeti, satış bedeli ve kârı">
                 <MakinaMaliyetDetay detay={makinaKarlilik(makinaMaliyet, `musteri:${detailView.id}`, rates)} />
-              </div>
+              </KartBolum>
             )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
               <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>

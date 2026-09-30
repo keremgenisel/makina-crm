@@ -89,7 +89,7 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
       )}
 
       {form && (
-        <Modal title={form.id == null ? "Yeni Üretim Partisi" : "Üretim Partisini Düzenle"} onClose={() => setForm(null)} maxWidth={560}
+        <Modal title={form.id == null ? "Yeni Üretim Partisi" : "Üretim Partisini Düzenle"} onClose={() => setForm(null)} wide
           footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></div>}>
           <Field label="Parti adı veya numarası *"><Input aria-label="Parti adı" value={form.ad} onChange={e => setForm(f => ({ ...f, ad: e.target.value }))} placeholder="Örn. 2026-1" /><HataMetni>{hatalar.ad}</HataMetni></Field>
           <div style={{ display: "flex", gap: 12 }}>

@@ -87,7 +87,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
       )}
 
       {form && (
-        <Modal title={form.id == null ? "Yeni Tedarikçi" : "Tedarikçiyi Düzenle"} onClose={() => setForm(null)} maxWidth={560}
+        <Modal title={form.id == null ? "Yeni Tedarikçi" : "Tedarikçiyi Düzenle"} onClose={() => setForm(null)} wide
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           <Field label="Ad *"><Input value={form.ad} onChange={e => { setForm(f => ({ ...f, ad: e.target.value })); setHata(""); }} placeholder="Tedarikçi adı" /><HataMetni>{hata}</HataMetni></Field>
           <div style={{ display: "flex", gap: 12 }}><div style={{ flex: 1 }}>{alan("Yetkili kişi", "yetkili")}</div><div style={{ flex: 1 }}>{alan("Telefon", "telefon")}</div></div>

@@ -12,7 +12,7 @@ export const OdemePlaniPenceresi = ({ kalem, davranis, turAd, odemeYetkisi, onIs
   const durum = odemeDurumu(kalem);
   const kalan = odemeHedefleri(kalem, davranis).reduce((a, h) => a + h.kalanK, 0);
   return (
-    <Modal title="Ödeme Planı" onClose={onClose} maxWidth={620} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
+    <Modal title="Ödeme Planı" onClose={onClose} wide footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
       <div style={{ fontSize: 13, color: "var(--n600, #475569)", marginBottom: 12 }}>
         <b style={{ color: "var(--n900, #0f172a)" }}>{turAd}</b> · {fmtTR(kalem.tarih)}{kalem.aciklama ? ` · ${kalem.aciklama}` : ""}
         <div style={{ marginTop: 4 }} data-testid="odeme-plani-ozet">

@@ -20,7 +20,7 @@ export const CekEklePenceresi = ({ cekler = [], customers = [], onKaydet, onClos
     onKaydet(r.kayit);
   };
   return (
-    <Modal title="Portföye Çek Ekle" onClose={onClose} maxWidth={640}
+    <Modal title="Portföye Çek Ekle" onClose={onClose} wide
       footer={<><Btn variant="ghost" onClick={onClose}>Vazgeç</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Çeki Ekle</Btn></>}>
       <div data-testid="cek-ekle-penceresi">
         <div style={{ marginBottom: 12 }}><UyariSeridi aile="bilgi" testId="bagsiz-gelir-notu">{BAGSIZ_GELIR_NOTU}</UyariSeridi></div>

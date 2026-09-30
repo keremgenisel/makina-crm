@@ -35,7 +35,7 @@ const HesapFormu = ({ hesap, hesaplar, hareketVar, onKaydet, onClose }) => {
   };
   const kart = form.tur === "kart";
   return (
-    <Modal title={form.id == null ? "Yeni Hesap" : "Hesabı Düzenle"} onClose={onClose} maxWidth={560}
+    <Modal title={form.id == null ? "Yeni Hesap" : "Hesabı Düzenle"} onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></div>}>
       <div data-testid="hesap-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div style={{ gridColumn: "1 / -1" }}>
@@ -84,7 +84,7 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose }) => {
     onKaydet(r.kayit);
   };
   return (
-    <Modal title="Virman" onClose={onClose} maxWidth={560}
+    <Modal title="Virman" onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Virmanı Kaydet</Btn></div>}>
       <div data-testid="virman-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>

@@ -177,7 +177,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? "Kiraya verene son ödeme" : cekMi ? "Çek vade tarihi" : "Son ödeme tarihi";
   const sayac = new Set(hatalar.map(h => h.alan)).size;
   return (
-    <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} maxWidth={dav === DAVRANIS.KIRA ? 900 : 640}
+    <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} wide
       footer={<><Btn variant="ghost" onClick={onCancel}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> {mukerrer.length ? "Yine de Kaydet" : "Kaydet"}</Btn></>}>
       {sayac > 0 && <div role="alert" style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", color: "var(--red700, #b91c1c)", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Kayıt yapılmadı: {sayac} alan düzeltilmeli.</div>}
       {form.tanimId != null && (

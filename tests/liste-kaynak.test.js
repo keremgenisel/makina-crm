@@ -111,7 +111,9 @@ describe("AC-6: liste kapları ve bölümler kart bölümde", () => {
     if (ASAMA < 2) return;
     const d = "customers/CustomerDetailModal.jsx";
     const s = oku(C + d);
-    expect((s.match(/<KartBolum varyant="kart" baslikStili="baslik"/g) || []).length, d).toBe(3); // Görüşmeler, Kalıplar, İşlemler
+    expect((s.match(/<KartBolum varyant="kart" baslikStili="baslik"/g) || []).length, d).toBe(4); // Görüşmeler, Kalıplar, İşlemler; 0050: Maliyet ve Kâr
+    // Spec 0050 R8, C2: maliyet kutusu da 0016'nın denetimli katlanan kartı (ikinci mekanizma yok).
+    expect(s).toMatch(/<KartBolum varyant="kart" baslikStili="baslik" collapsible testId="maliyet-kar-kutusu"[\s\S]{0,120}acik=\{maliyetAcik\} onAcikDegis=\{maliyetDegis\}/);
     expect(s).toMatch(/<KartBolum varyant="kart" baslikStili="baslik" collapsible[\s\S]{0,120}acik=\{gorusmelerAcik \|\| !!gorusmeForm\}/);
     expect(s).toContain("<BolumBasligi bosluk={10}>Bu Firmanın Makinaları ({firmMachines.length})</BolumBasligi>");
     expect(s).toContain("title={`Kalıplar (${detailView.kaliplar.length})`}");

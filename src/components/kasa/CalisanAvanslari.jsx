@@ -24,7 +24,7 @@ const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
     onKaydet(r.kayit);
   };
   return (
-    <Modal title="Avans Ver" onClose={onClose} maxWidth={560}
+    <Modal title="Avans Ver" onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Avansı Kaydet</Btn></div>}>
       <div data-testid="avans-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>

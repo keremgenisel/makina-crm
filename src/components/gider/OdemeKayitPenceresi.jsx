@@ -110,7 +110,7 @@ export const OdemeKayitPenceresi = ({
   const formVar = odemeYetkisi && kalanK > 0;
 
   return (
-    <Modal title="Ödeme Kaydet" onClose={onClose} maxWidth={760}
+    <Modal title="Ödeme Kaydet" onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}>
         <Btn variant="ghost" onClick={onClose}>{formVar ? "Vazgeç" : "Kapat"}</Btn>
         {formVar && <Btn onClick={kaydet}><Icon name="check" size={14} /> {mahsupKipi ? "Mahsubu Kaydet" : "Ödemeyi Kaydet"}</Btn>}

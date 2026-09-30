@@ -265,6 +265,24 @@ Form pencereleri düğmelerini `Modal`'ın `footer` yuvasına verir. **Düğmele
 
 **Örnek:** `src/components/GiderForm.jsx:129` (sarmalayıcısız iki düğme)
 
+## Pencere boyutu (spec 0050)
+
+Boyut sayıları **tek yerde**, `Modal`'ın varsayılanlarındadır (`ui.jsx`): dar pencere 520 × 90vh, **geniş pencere
+(`wide`) 900 × 94vh**. Ekran kendi sayısını yazmaz; hangi pencerenin hangi sınıfta olduğu burada durur. Pencere dar
+ekranda kendiliğinden küçülür (`width: 100%`), içerik pencerenin içinde kayar, alt düğme satırı yerinde kalır.
+
+- **Sınıf 1, geniş (`wide`, `maxWidth`/`maxHeight` verilmez):** veri girme ve tablo pencereleri. Gider formu (yeni ve
+  düzenle, kira dahil), Ödeme Kaydet, Avans Ver, Virman, Kasa hesap formu, Çeki Ciro Et ve Kendi Çekimizi Yaz, Portföye
+  Çek Ekle, Tedarikçi formu, Üretim Partisi formu, Ödeme Planı, Tedarikçi/Çalışan Ekstresi. Yeni bir veri girme ya da
+  tablo penceresi de bu sınıfta açılır.
+- **Sınıf 2, kendi küçük boyutunda:** onay (`ConfirmDialog`), "silinemez" ve tek düğmeli bilgi pencereleri; Çek Durumu
+  ve Çek Geçmişi (alınan ve verilen); bir iki alanlık kısa pencereler (Standart Gider işlemi, Tahsilat Hesap penceresi,
+  varsayılan 520). Bunları genişletmek boş alan üretir.
+- **Kapsam dışı:** müşteri ve bayi **detay** modalları kendi genişliğini korur (bayi 760, 0007 R16; müşteri 1080).
+- Genişleyen pencerede formun sarmalayan alan satırları kendiliğinden yan yana dizilir; alan sırası ve etiketleri
+  değişmez. Yerleşim `tests/form-pencere-yerlesim.test.js` ile Electron'da (1280 ve 1024 px) ölçülür, değerler
+  `tests/ui/form-pencere-boyutu.test.jsx` ile.
+
 ## Tutar girdisi (spec 0045)
 
 Kuruşlu tutar alanı `TutarInput` (`src/components/gider/GiderAlanlari.jsx`) yazarken binlik noktası gösterir, imleci

@@ -192,6 +192,10 @@ const DETAY_SERVIS = [
 const DETAY_KALIP = [{ id: 621, tur: "Kalıp", customerId: 601, ad: "Köfte Kalıbı", tarih: "2026-03-04", ucret: 500, currency: "TRY", odendi: true, faturaTipi: "Faturasız Yurtiçi" }];
 const DETAY_GORUSME = [{ id: 631, customerId: 601, tarih: "2026-09-01", tur: "Gelen Arama", not: "Yeni kalıp fiyatı sordu", takipTarihi: "2026-09-10", tamamlandi: false }];
 const DETAY_DOSYA = [{ id: 641, customerId: 601, refType: "makina", refId: 601, ad: "fatura.pdf", tur: "PDF", boyut: 120000, tarih: "2026-09-02" }];
+// Spec 0050: müşteri detayındaki maliyet kutusu için maliyet (makina 2025 başında üretilmiş, yürürlük 2024).
+const MALIYET_0050 = hesaplaMakinaMaliyetleri({ customers: [{ ...DETAY_MAKINA, uretimTarihi: "2025-01-05", komisyon: 10000 }], stock: [], partStockLog: [],
+  giderler: [{ id: 50501, tarih: "2025-01-12", turId: 5, tutar: 40000, kdvOrani: 0 }], giderTurleri: TURLER, standartGiderler: [], standardModels: MODELLER, customModels: [],
+  giderAyarlari: { yururlukAy: "2024-12" }, uretimPartileri: [] }, { bugun: "2026-09-23" });
 const detay = (id, o = {}) => <Customers customers={[DETAY_MAKINA, DETAY_IKINCI, DETAY_BOS]} setCustomers={bos} services={DETAY_SERVIS} setServices={bos}
   partSales={DETAY_KALIP} setPartSales={bos} payments={[]} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} factory={{ name: "Altuntaş Makina" }}
   gorusmeler={DETAY_GORUSME} setGorusmeler={bos} dosyalar={DETAY_DOSYA} setDosyalar={bos} yedekParcaSatislar={[]} setYedekParcaSatislar={bos}
@@ -369,6 +373,9 @@ function FormEkrani({ Bilesen, ilk, ...props }) {
 }
 
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
+// Spec 0050: Electron'un varsayılan oturumu localStorage'ı çekimler arasında tutar; maliyet kutusunun tercihi her sayfa
+// açılışında sıfırlanır ki "kapalı" ekranı belirleyici olsun.
+try { localStorage.removeItem("maliyetKutusuAcik"); } catch { /* yoksay */ }
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
@@ -498,6 +505,9 @@ const EKRANLAR = {
     ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Ödeme Yöntemi"]],
   "yedek-parca-formu-kargo": [stokEkrani("yedeksatis"), ["~Yeni Satış", "kaydir:Kargoyu Veren Kişi"]],
   "musteri-detay-tahsis": [detay(601, { yedekParcaSatislar: TAHSIS_YP }), ["kaydir:Yedek Parça (Bayi)"]],
+  // Spec 0050: müşteri detayında katlanan Maliyet ve Kâr kutusu (kapalı ve açık).
+  "musteri-detay-maliyet-kapali": [detay(601, { giderYetki: true, makinaMaliyet: MALIYET_0050 }), ["kaydir:Maliyet ve Kâr"]],
+  "musteri-detay-maliyet-acik": [detay(601, { giderYetki: true, makinaMaliyet: MALIYET_0050 }), ["Maliyet ve Kâr", "kaydir:Maliyet ve Kâr"]],
   // Spec 0024 A: kasa, ödeme penceresi, kısmi ödeme, tahsilat hesabı.
   "kasa-hesaplar": [kasaEkrani(), ["~Ziraat Bankası"]],
   "kasa-hesap-hareketleri-kart": [kasaEkrani(), ["~Şirket Kartı"]],

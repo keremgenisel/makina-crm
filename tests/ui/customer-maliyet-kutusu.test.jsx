@@ -9,7 +9,7 @@ import { Finance } from "../../src/components/Finance";
 import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); localStorage.clear(); });
 
 const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }];
 const hesapla = (customers, o = {}) => hesaplaMakinaMaliyetleri({ customers, stock: [], giderler: [], giderTurleri: TUR, standartGiderler: [],
@@ -26,9 +26,12 @@ function Harness({ customers, giderYetki, makinaMaliyet }) {
     </div>
   );
 }
+// Spec 0050 R8 (Q1): kutu kapalı açılır; içerik testleri kutuyu açarak çalışır (içerik iddiaları değişmedi).
+const kutuBasligi = () => within(screen.getByTestId("maliyet-kar-kutusu")).getByText("Maliyet ve Kâr");
 const ac = (customers, o = {}) => {
   render(<Harness customers={customers} giderYetki={o.giderYetki ?? true} makinaMaliyet={o.giderYetki === false ? null : hesapla(customers, o.veri)} />);
   fireEvent.click(screen.getByText("aç"));
+  if (o.kutuyuAc !== false && screen.queryByTestId("maliyet-kar-kutusu")) fireEvent.click(kutuBasligi());
 };
 const makina = (o = {}) => ({ id: 1, name: "Kutu Gıda", model: "AK100", serialNo: "K-1", installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", komisyon: 15000, uretimTarihi: "2026-03-05", ...o });
 
@@ -70,5 +73,47 @@ describe("Müşteri detayı: Maliyet ve Kâr kutusu", () => {
     render(<Finance customers={[makina()]} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }}
       rates={{}} payments={[]} teklifler={[]} serverPermissions={null} giderYetki={true} giderler={[]} giderTurleri={TUR} giderYururlukAy="2026-01" />);
     expect(document.body.textContent).not.toMatch(/Makina Kârlılığı|Ortak gider payı|Toplam maliyet|Kâr marjı/);
+  });
+});
+
+describe("Spec 0050: Maliyet ve Kâr kutusu katlanır", () => {
+  it("AC-8 / AC-22: detay açılınca kutu kapalı; başlık ve açıklama görünür, hiçbir rakam görünmez", () => {
+    ac([makina()], { kutuyuAc: false });
+    const k = screen.getByTestId("maliyet-kar-kutusu");
+    expect(k.textContent).toMatch(/Maliyet ve Kâr/);
+    expect(k.textContent).toMatch(/Makinanın maliyeti, satış bedeli ve kârı/);
+    expect(k.textContent).not.toMatch(/₺|\d/);
+    expect(within(k).queryByTestId("maliyet-detay")).toBeNull();
+  });
+  it("AC-9 / AC-10 / AC-20: başlığa tıklanınca açılır (içerik aynı); durum maliyetKutusuAcik ile hatırlanır", () => {
+    ac([makina()], { kutuyuAc: false });
+    fireEvent.click(kutuBasligi());
+    expect(within(screen.getByTestId("maliyet-kar-kutusu")).getByText("Satış bedeli")).toBeTruthy();
+    expect(localStorage.getItem("maliyetKutusuAcik")).toBe("1");
+    cleanup();
+    ac([makina()], { kutuyuAc: false }); // uygulama yeniden açıldı
+    expect(within(screen.getByTestId("maliyet-kar-kutusu")).getByText("Satış bedeli")).toBeTruthy();
+    fireEvent.click(kutuBasligi());
+    expect(localStorage.getItem("maliyetKutusuAcik")).toBe("0");
+  });
+  it("AC-20: localStorage erişimi hata verirse kutu kapalı açılır ve uygulama çökmez", () => {
+    const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("erişim yok"); });
+    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("erişim yok"); });
+    try {
+      ac([makina()], { kutuyuAc: false });
+      expect(within(screen.getByTestId("maliyet-kar-kutusu")).queryByTestId("maliyet-detay")).toBeNull();
+      fireEvent.click(kutuBasligi());
+      expect(within(screen.getByTestId("maliyet-kar-kutusu")).getByTestId("maliyet-detay")).toBeTruthy();
+    } finally { get.mockRestore(); set.mockRestore(); }
+  });
+  it("AC-21: soldaki listeden makina değiştirilince kutunun durumu korunur", () => {
+    ac([makina(), makina({ id: 2, serialNo: "K-2", model: "AK100" })]);
+    expect(within(screen.getByTestId("maliyet-kar-kutusu")).getByTestId("maliyet-detay")).toBeTruthy();
+    fireEvent.click(screen.getAllByText(/K-2/).pop());
+    expect(within(screen.getByTestId("maliyet-kar-kutusu")).getByTestId("maliyet-detay")).toBeTruthy();
+  });
+  it("AC-11: gider yetkisi olmayan kullanıcıda kutu hiç çizilmez", () => {
+    ac([makina()], { giderYetki: false });
+    expect(screen.queryByTestId("maliyet-kar-kutusu")).toBeNull();
   });
 });

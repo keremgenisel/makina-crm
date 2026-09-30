@@ -37,7 +37,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
     : `Kalan borç ${para(e.bakiyeK)}`;
 
   return (
-    <Modal title={`${calisan ? "Çalışan" : "Tedarikçi"} Ekstresi`} onClose={onClose} maxWidth={860} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
+    <Modal title={`${calisan ? "Çalışan" : "Tedarikçi"} Ekstresi`} onClose={onClose} wide footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
       <div data-testid="ekstre-penceresi">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
           <div>

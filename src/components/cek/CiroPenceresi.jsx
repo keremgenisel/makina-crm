@@ -83,7 +83,7 @@ export const CiroPenceresi = ({ satir = null, kip = "ciro", hesaplar = [], basla
   const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 100px 130px 150px", gap: 10, alignItems: "center" };
 
   return (
-    <Modal title={kendi ? "Kendi Çekimizi Yaz" : "Çeki Ciro Et"} onClose={onClose} maxWidth={760}
+    <Modal title={kendi ? "Kendi Çekimizi Yaz" : "Çeki Ciro Et"} onClose={onClose} wide
       footer={<><Btn variant="ghost" onClick={onClose}>Vazgeç</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> {kendi ? "Çeki Yaz" : "Ciro Et"}</Btn></>}>
       <div data-testid={kendi ? "cek-yaz-penceresi" : "ciro-penceresi"}>
         {kendi ? (

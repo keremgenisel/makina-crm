@@ -8,7 +8,7 @@ import react from "@vitejs/plugin-react";
 const ELECTRON_TESTLERI = [
   "tests/db-electron.test.js", "tests/server-security.test.js", "tests/image-optimize.test.js",
   "tests/security-flush.test.js", "tests/setup-admin-lockout.test.js", "tests/bayi-modal-layout.test.js",
-  "tests/suzgec-yerlesim.test.js", "tests/gider-tanim-yerlesim.test.js",
+  "tests/suzgec-yerlesim.test.js", "tests/gider-tanim-yerlesim.test.js", "tests/form-pencere-yerlesim.test.js",
 ];
 const electronModu = process.env.VITEST_ELECTRON || "";
 const testAyari = {
