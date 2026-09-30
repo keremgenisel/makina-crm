@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { uid, fmtTR, fmtCur, today } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
-import { tl } from "../lib/gider";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapsizOdemeler, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizTahsilatlar } from "../lib/kasa";
+import { tl, turHaritasi, davranisOf } from "../lib/gider";
+import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
+import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti } from "../lib/kasa";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
-import { TutarInput, tutarMetni } from "./gider/GiderAlanlari";
+import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
@@ -144,8 +145,16 @@ export const Kasa = ({
   const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler }),
     [payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler]);
   const bakiyeler = useMemo(() => hesapBakiyeleri(kasaHesaplari, hesapHareketleri, veri), [kasaHesaplari, hesapHareketleri, veri]);
-  const hesapsiz = useMemo(() => hesapsizOdemeler(hesapHareketleri), [hesapHareketleri]);
-  const hesapsizTahsilat = useMemo(() => hesapsizTahsilatlar(veri, kasaHesaplari), [veri, kasaHesaplari]);
+  // Spec 0051 A (R1–R7): hesapsız iş listesi başlangıç tarihinden (Gider Ayarları) sonrasını gösterir; tarihsiz kayıt her
+  // zaman görünür. "Hepsini göster" ekran içi geçici anahtardır (ayarı değiştirmez, hatırlanmaz, R7). Bakiye eşiği görmez.
+  const esik = giderAyarlari?.hesapsizBaslangic || "";
+  const [hepsiniGoster, setHepsiniGoster] = useState(false);
+  const hesapsizO = useMemo(() => hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, hepsiniGoster ? null : esik || null),
+    [hesapHareketleri, veri, kasaHesaplari, hepsiniGoster, esik]);
+  // Triyaj: eşik bilgisi bellekte; anahtar kapalıyken süzülmüş özetin kendisidir (aynı hesap ikinci kez yapılmaz).
+  const esikBilgisi = useMemo(() => (!esik ? null : hepsiniGoster ? hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, esik) : hesapsizO),
+    [esik, hepsiniGoster, hesapsizO, hesapHareketleri, veri, kasaHesaplari]);
+  const hesapsiz = hesapsizO.odeme, hesapsizTahsilat = hesapsizO.tahsilat;
   const [tahsilatListesiAcik, setTahsilatListesiAcik] = useState(false);
   const siraliHesaplar = useMemo(() => [...kasaHesaplari].sort((a, b) => (a.kapali ? 1 : 0) - (b.kapali ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr")), [kasaHesaplari]);
   const seciliHesap = kasaHesaplari.find(h => String(h.id) === String(secili)) || siraliHesaplar[0] || null;
@@ -154,6 +163,17 @@ export const Kasa = ({
   const turById = useMemo(() => new Map(giderTurleri.map(t => [String(t.id), t])), [giderTurleri]);
   const tedById = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
   const hesapById = useMemo(() => new Map(kasaHesaplari.map(h => [String(h.id), h])), [kasaHesaplari]);
+  // Spec 0051 B (R8, Q1): her gider ödemesinin kapattığı hedef(ler); yalnız birden çok hedefli kalemler için hesaplanır.
+  const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
+  const hedefPaylari = useMemo(() => {
+    const m = new Map();
+    for (const gid of hareketGruplari(hesapHareketleri).keys()) {
+      const k = giderById.get(gid);
+      if (!k || !cokHedefliMi(k, davranisOf(k, turMap))) continue;
+      for (const [hid, p] of hareketHedefPaylari(k, hesapHareketleri, turMap)) m.set(hid, p);
+    }
+    return m;
+  }, [hesapHareketleri, giderById, turMap]);
 
   const satirAciklamasi = (s) => {
     // Spec 0044 R10, AC-14: tahsilat satırlarının türü ve firma adı motordan gelir.
@@ -171,7 +191,9 @@ export const Kasa = ({
     }
     const k = giderById.get(String(m.giderId));
     const taraf = k ? (k.calisanAd || tedById.get(String(k.tedarikciId))?.ad || turById.get(String(k.turId))?.ad || "Gider") : "Silinmiş gider";
-    return { tur: "Gider ödemesi", metin: [taraf, k?.aciklama, m.aciklama].filter(Boolean).join(" · ") };
+    // Spec 0051 R8, R9: ödemenin kapattığı hedef (kira stopajında vergi dairesi, personelde resmi/elden); çözülemezse yok (R11).
+    const hedef = k ? hedefEtiketi(k, davranisOf(k, turMap), hedefPaylari.get(String(m.id))) : null;
+    return { tur: "Gider ödemesi", metin: [taraf, hedef, k?.aciklama, m.aciklama].filter(Boolean).join(" · ") };
   };
 
   const hesapKaydet = (kayit) => {
@@ -258,6 +280,24 @@ export const Kasa = ({
         {HESAPSIZ_NOTU}
         {hesapsiz.avansAdet > 0 && <> <b>{hesapsiz.avansAdet}</b> avans hesapsız.</>}
       </UyariSeridi>
+      {/* Spec 0051 R7, AC-6, AC-18, AC-25: eşik altında kalanlar nedene göre; tarihsiz kayıtlar listede kalır. */}
+      {esik && esikBilgisi && (esikBilgisi.gizli.toplam > 0 || esikBilgisi.tarihsiz > 0 || hepsiniGoster) && (
+        <div data-testid="hesapsiz-esik-satiri" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5, color: "var(--n600, #475569)" }}>
+          {hepsiniGoster ? <span>Bütün kayıtlar gösteriliyor; başlangıç tarihi ({fmtTR(esik)}) bu ekranda yok sayıldı.</span> : (
+            <span>
+              Başlangıç tarihi ({fmtTR(esik)}) öncesi <b>{esikBilgisi.gizli.toplam}</b> kayıt listede gösterilmiyor
+              {esikBilgisi.gizli.toplam > 0 && ` (${[
+                esikBilgisi.gizli.odeme && `${esikBilgisi.gizli.odeme} ödeme`, esikBilgisi.gizli.avans && `${esikBilgisi.gizli.avans} avans`,
+                esikBilgisi.gizli.tahsilat.hesapsiz && `${esikBilgisi.gizli.tahsilat.hesapsiz} hesapsız tahsilat`,
+                esikBilgisi.gizli.tahsilat.hesapYok && `${esikBilgisi.gizli.tahsilat.hesapYok} hesabı silinmiş tahsilat`,
+                esikBilgisi.gizli.tahsilat.paraBirimi && `${esikBilgisi.gizli.tahsilat.paraBirimi} para birimi uyuşmayan tahsilat`,
+              ].filter(Boolean).join(", ")})`}.
+              {esikBilgisi.tarihsiz > 0 && <> Tarihi olmayan <b>{esikBilgisi.tarihsiz}</b> kayıt listede kalır.</>}
+            </span>
+          )}
+          <Btn small variant="ghost" onClick={() => setHepsiniGoster(h => !h)}>{hepsiniGoster ? "Başlangıç tarihine göre süz" : "Hepsini göster"}</Btn>
+        </div>
+      )}
       {/* Spec 0044 R6, AC-24: gider tarafının hesapsız ödemeleri ile satış tahsilatları iki ayrı satır. */}
       <div data-testid="hesapsiz-sayilar" style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "var(--n700)" }}>
         <div data-testid="hesapsiz-odeme-satiri">Hesabı belirtilmemiş ödemeler: <b>{hesapsiz.adet}</b>{hesapsiz.gocAdet > 0 ? ` (${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı)` : ""}</div>

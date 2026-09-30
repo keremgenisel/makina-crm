@@ -297,6 +297,19 @@ const TH_SERVIS = [thSv(4201, 500, "2026-09-16", 3000, { hesapId: 401 }), thSv(4
 const TH_KALIP = [{ id: 4211, tur: "Kalıp", customerId: 500, ad: "Hamburger", tarih: "2026-09-21", ucret: 2000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-09-21", yontem: "Nakit", hesapId: null }];
 const TH_YP = [{ id: 4221, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 4, birimFiyat: 350, currency: "TRY", tarih: "2026-09-22", faturaTipi: "Faturalı Yurtiçi", odendi: true, tahsilatTarihi: "2026-09-22", yontem: "Havale", hesapId: 401, tahsisler: [] },
   { id: 4222, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-24", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Çek", tahsilEdildi: false, hesapId: null, tahsisler: [] }];
+// Spec 0051 B: çok hedefli kalemlere hesaplı ödemeler (satırlı kiranın stopajı ve ana taksidi, satırsız personelde bölünen ödeme)
+// ve maaştan mahsup.
+const D51_G = [
+  { id: 5101, tarih: "2026-09-01", turId: 1, tutar: 25000, kdvOrani: 0, stopajOrani: 20, tedarikciId: 11, aciklama: "Eylül kira", modelSatirlari: [],
+    taksitler: [{ id: 51011, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 20000 }, { id: 51012, hedef: "stopaj", sira: 1, vade: "2026-10-26", tutar: 5000 }] },
+  { id: 5102, tarih: "2026-09-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 10000, ekOdemeler: [], modelSatirlari: [] }];
+const D51_H = [
+  { id: 5111, tur: "odeme", tarih: "2026-09-26", tutar: 5000, hesapId: 401, giderId: 5101, taksitId: 51012, yontem: "Havale" },
+  { id: 5112, tur: "odeme", tarih: "2026-09-27", tutar: 20000, hesapId: 401, giderId: 5101, taksitId: 51011, yontem: "Havale" },
+  { id: 5113, tur: "odeme", tarih: "2026-09-28", tutar: 35000, hesapId: 401, giderId: 5102, taksitId: null, yontem: "Havale" },
+  { id: 5114, tur: "avans", tarih: "2026-09-05", tutar: 8000, calisanId: 21, hesapId: 402, yontem: "Nakit" },
+  { id: 5115, tur: "mahsup", tarih: "2026-09-29", tutar: 3000, calisanId: 21, giderId: 5102, hesapId: null }];
+const kasa51 = (o = {}) => kasaEkrani({ hesapHareketleri: D51_H, giderler: odemeleriUygula(D51_G, D51_H, turHaritasi(TURLER)), calisanlar: [CAL[0]], ...o });
 const kasaTahsilat = (o = {}) => kasaEkrani({ services: TH_SERVIS, partSales: TH_KALIP, yedekParcaSatislar: TH_YP, dealers: DEALERS, factory: { name: "Altuntaş Makina" },
   setServices: bos, setPartSales: bos, setYedekParcaSatislar: bos, ...o });
 const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tahsilatTarihi: null });
@@ -534,6 +547,11 @@ const EKRANLAR = {
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
   "kasa-tahsilat-hareketleri": [kasaTahsilat(), ["~Ziraat Bankası"]],
   "kasa-hesapsiz-tahsilatlar": [kasaTahsilat(), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
+  "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  "kasa-hareket-hedef": [kasa51(), ["~Ziraat Bankası"]],
+  "kasa-ekstre-hedef": [kasa51(), ["dugme:Ekstre"]],
   "musteri-tahsilat-hesap-penceresi": [detay(601, { services: [...DETAY_SERVIS, TH_DETAY_SERVIS], kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapVarsayilan: () => 402 }),
     ["dugme:Ödenmedi · işaretle: Ödendi"]],
   "servis-formu-tahsilat-hesap": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" kasaHesaplari={KASA_HESAPLAR}

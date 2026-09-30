@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz } from "../../lib/gider";
+import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, personelIkiHedef, tl } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 
@@ -187,6 +187,17 @@ export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [
 export const hedefAdi = (hedef, davranis, ikiHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
   : hedef === HEDEF.ANA && davranis === DAVRANIS.PERSONEL ? (ikiHedef ? "Resmi" : "Çalışana") : HEDEF_AD[hedef]);
 export const eldenHedefliMi = (satirlar) => (satirlar || []).some(r => r.hedef === HEDEF.ELDEN);
+// Spec 0051 R8–R10 (Q4, Q5): bir ödeme hareketinin kapattığı hedefin etiketi. Yalnız birden çok ödeme hedefi olan kalemde
+// (stopajlı kira, resmi ve eldeni olan personel) yazılır; aksi hâlde null (bugünkü metin korunur, R11 dahil). Ad TEK
+// kaynaktan: hedefAdi; üçüncü parametre eldenHedefliMi, satırsız iki hedefli personelde personelIkiHedef (satır yok).
+// paylar: odemeYontemi.hareketHedefPaylari'nın o hareket için [{hedef, payK}]; iki hedefe bölünmüşse tutarlarıyla.
+export const cokHedefliMi = (kalem, davranis) => !!kalem && odemeHedefleri(kalem, davranis).filter(h => h.toplamK > 0).length > 1;
+export const hedefEtiketi = (kalem, davranis, paylar) => {
+  if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
+  const iki = eldenHedefliMi(kalem.taksitler) || personelIkiHedef(kalem, davranis);
+  if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, iki);
+  return paylar.map(p => `${hedefAdi(p.hedef, davranis, iki)} ${tl2(tl(p.payK))}`).join(" + ");
+};
 
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
 // satırın durum hücresi düğmedir (gider_odeme).

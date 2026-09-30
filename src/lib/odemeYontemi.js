@@ -1,6 +1,6 @@
 // Spec 0041: gider ödemesinin yöntemi ödemenin alanıdır (C2). Kalemin `odemeYontemi` alanı yalnız yeni ödemenin
 // varsayılanıdır (R2); kalemin "nasıl ödendiği" burada ödemelerden türetilir ve saklanmaz. Saf motor, React'sız.
-import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, DAVRANIS, HEDEF, KALEM_KAPATAN_TURLER } from "./gider";
+import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, DAVRANIS, HEDEF, HEDEF_SIRASI, KALEM_KAPATAN_TURLER } from "./gider";
 
 export const YONTEM_MAHSUP = "Avanstan mahsup"; // R15: bir yöntem değil kapatma biçimi, kırılımda ayrı satır
 export const YONTEM_BELIRSIZ = "Belirtilmemiş";  // R11: yöntemi boş ödeme (göçten gelen taksit hareketi dahil)
@@ -46,6 +46,32 @@ export const hareketPaylari = (k, hareketler, turMap, { yalnizAna = false, grup 
   const r = [];
   let once = ilk;
   hs.forEach((h, i) => { const sonra = kalan(hs.slice(0, i + 1)); const pay = once - sonra; once = sonra; if (pay > 0 || h.tamKapatir) r.push({ hareket: h, payK: pay }); });
+  return r;
+};
+
+// Spec 0051 R8 (Q1): her hareketin HANGİ HEDEFE ne kadar düştüğü. hareketPaylari'nın hedef bazlı kardeşi: hareketler sırayla
+// motordan (odemeleriUygula) geçer, her adımda hedef başına kalan farkı o hareketin o hedefe payıdır. Satırlı kalemde taksit
+// bağından, satırsız kalemde motorun dağıtımından (önce ana, artan sonraki hedefe) aynı yolla çıkar; tutarsız göç hareketi
+// de doğru dağılır. Dönüş: Map(hareketId → [{hedef, payK}], HEDEF_SIRASI sırasıyla). Pay bulunamayan hareket boş dizi alır
+// (fazla ödeme, silinmiş kalem; R11: çağıran bugünkü metni korur). hareketPaylari değişmez.
+// Triyaj: aynı günlü hareketlerin sırası motorla (odemeleriUygula) AYNI kuraldır: tarihe göre kararlı sıralama, eşitlikte
+// dizideki giriş sırası. Kimliğe göre sıralanmaz (uid() rastgele; giriş sırasını yansıtmaz), yoksa satırsız iki hedefli
+// kalemde aynı gün girilen iki ödemenin etiketi motorun dağılımıyla ters düşerdi.
+export const hareketHedefPaylari = (k, hareketler, turMap) => {
+  const r = new Map();
+  if (!k) return r;
+  const hs = (hareketler || []).filter(h => h && KALEM_KAPATAN_TURLER.has(h.tur) && idEsit(h.giderId, k.id))
+    .sort((a, b) => (a.tarih || "").localeCompare(b.tarih || ""));
+  if (!hs.length) return r;
+  const dav = davranisOf(k, turMap);
+  const kalanlar = (liste) => Object.fromEntries(odemeHedefleri(odemeleriUygula([k], liste, turMap)[0], dav).map(h => [h.hedef, h.kalanK]));
+  let once = kalanlar([]);
+  hs.forEach((h, i) => {
+    const sonra = kalanlar(hs.slice(0, i + 1));
+    const paylar = HEDEF_SIRASI.filter(hd => hd in once).map(hd => ({ hedef: hd, payK: (once[hd] || 0) - (sonra[hd] || 0) })).filter(p => p.payK > 0);
+    r.set(String(h.id), paylar);
+    once = sonra;
+  });
   return r;
 };
 

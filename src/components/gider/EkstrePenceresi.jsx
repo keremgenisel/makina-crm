@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { fmtTR } from "../../lib/utils";
-import { tl } from "../../lib/gider";
+import { tl, DAVRANIS } from "../../lib/gider";
 import { Btn, Modal, Input, Field, Icon } from "../ui";
 import { BosDurum, Ipucu } from "../tasarim";
-import { tl2 } from "./GiderAlanlari";
+import { tl2, hedefEtiketi } from "./GiderAlanlari";
 import { Rozet } from "./DonemRaporu";
 
 // Tedarikçi ve çalışan ekstresi (spec 0024 B; R12, R13, B6–B9). Hesap saf motorda (kasa.tedarikciEkstresi /
@@ -24,7 +24,9 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
     }
     if (s.tur === "borc") return [k.aciklama, fmtTR(k.tarih)].filter(Boolean).join(" · ");
     const m = s.hareket;
-    return [s.tur === "avans" ? null : k && `${k.aciklama || fmtTR(k.tarih)}`, m.yontem || null, s.tur === "mahsup" ? null : hesapAdi(m.hesapId), m.aciklama || null]
+    // Spec 0051 R10, AC-17, AC-28: çalışan ekstresinde ödeme ve mahsup kapattığı hedefi yazar (Resmi / Elden; tek kaynak hedefAdi).
+    const hedef = calisan && (s.tur === "odeme" || s.tur === "mahsup") ? hedefEtiketi(k, DAVRANIS.PERSONEL, s.hedefPaylari) : null;
+    return [hedef, s.tur === "avans" ? null : k && `${k.aciklama || fmtTR(k.tarih)}`, m.yontem || null, s.tur === "mahsup" ? null : hesapAdi(m.hesapId), m.aciklama || null]
       .filter(Boolean).join(" · ");
   };
   const etki = (s) => (s.tur === "mahsup" ? <span style={{ color: "var(--n500, #64748b)" }}>{para(s.tutarK)}<div style={{ fontSize: 11 }}>net etkisiz</div></span>

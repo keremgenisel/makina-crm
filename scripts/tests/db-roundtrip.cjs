@@ -203,7 +203,7 @@ dbmod.writeBlobToDb({
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
     musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     analizGizliModeller: ["AK-100", "AK-160"],
-    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15 },
+    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15, hesapsizBaslangic: "2026-06-01" },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -275,6 +275,7 @@ check("service panoGizli (arşiv) boolean roundtrip", (() => { const a = blob.se
 check("gider: çalışan resmi/elden maliyeti (meta JSON) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); return a?.resmiMaliyet === 39223.13 && a?.eldenMaliyet === 15000; })());
 check("gider: giderAyarlari (appSettings JSON) roundtrip", (() => { const g = blob.appSettings?.giderAyarlari; return g?.stopajOrani === 20 && g?.yururlukAy === "2026-06" && g?.varsayilanResmiMaliyet === 39223.13; })());
 // Spec 0002 C4-3 ve 0003 C1: yeni alanlar yeni sütun açmadan giderAyarlari JSON'unda taşınır.
+check("spec 0051 AC-29: giderAyarlari.hesapsizBaslangic roundtrip (yeni sütun yok)", blob.appSettings?.giderAyarlari?.hesapsizBaslangic === "2026-06-01");
 check("giderAyarlari.ortakGiderKaynagi + hatirlatmaEsikGun roundtrip (spec 0002/0003)", blob.appSettings?.giderAyarlari?.ortakGiderKaynagi === "standart" && blob.appSettings?.giderAyarlari?.hatirlatmaEsikGun === 15);
 check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || []).length === 3 && blob.giderTurleri.find(t => t.id === 41)?.davranis === "kira");
 check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());

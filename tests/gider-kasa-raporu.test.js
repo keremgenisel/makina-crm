@@ -250,3 +250,12 @@ describe("Spec 0047: gizlilik (çıktı temelli, R22)", () => {
     expect(kod).not.toMatch(/calisanlar\b|calisanAd|resmiTutar|eldenTutar|ekOdemeler/);
   });
 });
+
+// Spec 0051 X6 / C6: Kasa'nın hesapsız iş listesi eşiği 0047 raporuna geçmez; rapor gerçeği yazar.
+describe("Spec 0051: başlangıç tarihi raporu etkilemez", () => {
+  it("AC-21: eşik ayın ortasına ve ay sonrasına konsa da raporun hesapsız bölümleri aynı; kurucu eşiği okumaz", () => {
+    const once = HTML({}, "2026-09");
+    for (const e of ["2026-09-15", "2027-01-01"]) expect(HTML({ giderAyarlari: { hesapsizBaslangic: e } }, "2026-09")).toBe(once);
+    expect(readFileSync("src/lib/giderRaporu.js", "utf-8")).not.toMatch(/hesapsizBaslangic|hesapsizOzeti/);
+  });
+});

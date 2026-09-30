@@ -2,10 +2,10 @@ import { useState, useMemo, useRef } from "react";
 import { fmtTR, parseMoney } from "../../lib/utils";
 import { satirliMi, odemeHedefKalaniK, hedefOdemeleri, odemeDurumu, kurus, tl, HEDEF, DAVRANIS } from "../../lib/gider";
 import { cokluOdemeDogrula, mahsupDogrula, mahsupKapsamda, avansBorcuK, secilebilirHesaplar, sonKullanilanHesap, HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
-import { yontemKirilimi, hareketPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
+import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "../tasarim";
-import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi, eldenHedefliMi } from "./GiderAlanlari";
+import { TutarInput, tutarMetni, tl2, ODEME_SECENEKLERI, hedefAdi, eldenHedefliMi, hedefEtiketi } from "./GiderAlanlari";
 
 // Ödeme kayıt penceresi (spec 0024 R2, R17, R18; AC-3–AC-7, AC-20, AC-28, AC-36). Listedeki ödeme anahtarı, kira
 // anahtarları, Ödeme Planı satırları ve Anasayfa hatırlatıcısındaki "Ödendi" bu pencereyi açar. Ödeme bir hareket
@@ -76,6 +76,8 @@ export const OdemeKayitPenceresi = ({
   const odemeler = hedefOdemeleri(hareketler, kalem.id);
   // R11: göçten gelen tutarsız hareketin gösterilen tutarı, motorun hesapladığı kapattığı tutardır.
   const paylar = useMemo(() => new Map(hareketPaylari(kalem, hareketler, turMap).map(p => [String(p.hareket.id), p.payK])), [kalem, hareketler, turMap]);
+  // Spec 0051 R10 (Q2): satırsız kalemde ödemenin (ve mahsubun) kapattığı hedef; birden çok hedefli kalemde yazılır.
+  const hedefPaylari = useMemo(() => hareketHedefPaylari(kalem, hareketler, turMap), [kalem, hareketler, turMap]);
   const kirilim = useMemo(() => yontemKirilimi(kalem, hareketler, turMap), [kalem, hareketler, turMap]);
   const satirAdi = (id) => {
     const r = (kalem.taksitler || []).find(x => String(x.id) === String(id));
@@ -247,7 +249,7 @@ export const OdemeKayitPenceresi = ({
                 <div key={h.id} data-testid="odeme-kaydi" style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr) 120px 40px", gap: 10, alignItems: "center", fontSize: 13, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{fmtTR(h.tarih)}</span>
                   <span style={{ minWidth: 0 }}>
-                    {h.tur === "mahsup" ? "Avanstan mahsup · " : ""}{satirAdi(h.taksitId) || "Kalem"}
+                    {h.tur === "mahsup" ? "Avanstan mahsup · " : ""}{satirAdi(h.taksitId) || hedefEtiketi(kalem, davranis, hedefPaylari.get(String(h.id))) || "Kalem"}
                     {/* Spec 0040 Q9: ciro hareketi tek tek silinmez; iptal bütün ciro için portföyden. */}
                     {h.cekId != null && <span data-testid="ciro-hareketi" style={{ marginLeft: 6, fontSize: 11, color: "var(--n600, #475569)" }}>· ciro iptali Kasa › Çek Portföyü'nden</span>}
                     <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>

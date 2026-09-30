@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0001: Ayarlar > Giderler grubu (türler, tekrarlayan tanımlar, gider ayarları). Firma Çalışanları
 // maliyet alanları calisan-manager.test.jsx, Makina Modelleri gider zinciri models-manager-gider.test.jsx içinde.
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
@@ -79,7 +79,7 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7 });
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, hesapsizBaslangic: "" }); // 0051: boş = eşik yok
   });
 });
 
@@ -176,5 +176,37 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
     fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
     expect(screen.getByText("Makina maliyeti ataması")).toBeTruthy();
+  });
+});
+
+describe("Spec 0051: hesapsız kayıt başlangıç tarihi (Gider Ayarları)", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-30T10:00:00")); });
+  afterEach(() => { vi.useRealTimers(); });
+  const ac = (o = {}) => { const setAppSettings = vi.fn(); render(<SettingsGider appSettings={{ giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", ...o } }} setAppSettings={setAppSettings} {...(o.__canDo ? { canDo: o.__canDo } : {})} />); return setAppSettings; };
+  const kaydedilen = (fn) => fn.mock.calls[0][0]({ giderAyarlari: {} }).giderAyarlari;
+  it("AC-1 / AC-29: tarih girilir ve giderAyarlari.hesapsizBaslangic olarak kaydedilir; yürürlük ayından önceki tarih serbest (AC-9)", () => {
+    const set = ac();
+    fireEvent.change(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi"), { target: { value: "2026-03-15" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(kaydedilen(set).hesapsizBaslangic).toBe("2026-03-15");
+  });
+  it("R4 / Q7: boşken yürürlük ayının başı önerilir; öneri yalnız formu doldurur, kendiliğinden kaydedilmez", () => {
+    const set = ac();
+    expect(screen.getByTestId("hesapsiz-baslangic-oneri").textContent).toMatch(/01\.06\.2026|01\/06\/2026/);
+    fireEvent.click(screen.getByText("Öneriyi kullan"));
+    expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").value).toBe("2026-06-01");
+    expect(set).not.toHaveBeenCalled();
+  });
+  it("AC-9: gelecek tarih ve takvimde olmayan tarih kaydedilmez, nedeni yazılır", () => {
+    const set = ac();
+    fireEvent.change(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi"), { target: { value: "2026-12-01" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(screen.getByText(/gelecekte olamaz/)).toBeTruthy();
+    expect(set).not.toHaveBeenCalled();
+  });
+  it("AC-10: gider_tanim izni olmayan kullanıcı alanı değiştiremez (pasif, Kaydet yok)", () => {
+    ac({ hesapsizBaslangic: "2026-06-01", __canDo: () => false });
+    expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").disabled).toBe(true);
+    expect(screen.queryByText("Kaydet")).toBeNull();
   });
 });

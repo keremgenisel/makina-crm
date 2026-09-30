@@ -7,7 +7,7 @@ import { cekDurumuOf, tahsilatTarihiOf, yerelBugun } from "./utils";
 import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
-import { hareketPaylari } from "./odemeYontemi";
+import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
 import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
 
 export const HESAP_TURLERI = [{ value: "kasa", label: "Kasa" }, { value: "banka", label: "Banka" }, { value: "kart", label: "Kredi kartı" }];
@@ -121,7 +121,10 @@ const aralikBakiyesi = (x, { baslangic, bitis }) => {
   const acilisSatiriK = acilisIcinde ? x.acilisK : 0;
   return { sonra: false, devredenK, acilisSatiriK, girenK, cikanK, kapanisK: devredenK + acilisSatiriK + girenK - cikanK, satirlar };
 };
-const aralikta = (tarih, aralik) => !aralik || (!!tarih && tarih >= aralik.baslangic && tarih <= aralik.bitis);
+// Spec 0051 R12, R13 (Q3): üst sınır isteğe bağlı (tek eşik tarihi); tarihsiz kayıt yalnız açık `tarihsizDahil` bayrağıyla
+// dahil edilir. 0047'nin ay aralıklı çağrısı (iki sınır, bayraksız) bugünkü gibi çalışır (AC-19, AC-20).
+const aralikta = (tarih, aralik) => !aralik
+  || (!tarih ? !!aralik.tarihsizDahil : tarih >= (aralik.baslangic || "") && (!aralik.bitis || tarih <= aralik.bitis));
 
 // Spec 0047 R13, R14 (Kasa bölümü): aralıktaki hareketlerin türe göre sayısı ve tutarı; tahsilatlar aralıklı bakiye
 // satırlarından (bakiyeye giren para, dört kaynak; 0044), ödeme yöntemi kırılımı aralıkta yapılan ödeme hareketlerinden.
@@ -188,6 +191,35 @@ export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null) =
     .map(k => ({ ...k, turAdi: SATIS_KAYNAK_AD[k.kaynak], firma: firmaAdi(k.kaynak, k.kayit, v) }))
     .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
   return { adet: liste.length, liste };
+};
+
+// ── Spec 0051 A: hesapsız kayıtlarda başlangıç tarihi (R1–R7, R12–R15) ──────────────────
+// Kasa ekranının iş listesi: sayılar ve tahsilat listesi eşikten geçer (tek eşik, tarihsiz kayıt her zaman görünür); eşik
+// altında kalanlar nedene göre sayılır. Bakiye, 0047 raporu ve diğer tüketiciler eşiği hiç görmez (R6, C6, X6).
+// Yeni süzme yolu yok: hesapsizOdemeler / hesapsizTahsilatlar iki kez (hepsi ve süzülmüş) çağrılır (C2).
+const HEPSI = { baslangic: "", tarihsizDahil: true };
+export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik = null) => {
+  const aralik = esik ? { baslangic: esik, tarihsizDahil: true } : HEPSI;
+  const hepsiO = hesapsizOdemeler(hareketler, HEPSI), hepsiT = hesapsizTahsilatlar(veri, hesaplar, HEPSI);
+  const odeme = esik ? hesapsizOdemeler(hareketler, aralik) : hepsiO;
+  const tahsilat = esik ? hesapsizTahsilatlar(veri, hesaplar, aralik) : hepsiT;
+  const nedenSay = (l) => l.reduce((a, k) => ({ ...a, [k.neden]: (a[k.neden] || 0) + 1 }), { hesapsiz: 0, hesapYok: 0, paraBirimi: 0 });
+  const tH = nedenSay(hepsiT.liste), tS = nedenSay(tahsilat.liste);
+  const gizli = { odeme: hepsiO.adet - odeme.adet, avans: hepsiO.avansAdet - odeme.avansAdet,
+    tahsilat: { hesapsiz: tH.hesapsiz - tS.hesapsiz, hesapYok: tH.hesapYok - tS.hesapYok, paraBirimi: tH.paraBirimi - tS.paraBirimi } };
+  gizli.toplam = gizli.odeme + gizli.avans + gizli.tahsilat.hesapsiz + gizli.tahsilat.hesapYok + gizli.tahsilat.paraBirimi;
+  const tarihsiz = odeme.liste.filter(m => !m.tarih).length + tahsilat.liste.filter(k => !k.tarih).length;
+  return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz };
+};
+// R15 (Q8): boş = eşik yok; biçimsiz ya da takvimde olmayan tarih ve gelecek tarih reddedilir. Yürürlük ayından önce serbest.
+export const hesapsizBaslangicDogrula = (ham, bugun = yerelBugun()) => {
+  const t = String(ham ?? "").trim();
+  if (!t) return { deger: "" };
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  if (!d || d.getFullYear() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) return { hata: "Başlangıç tarihi geçersiz; takvimden bir gün seçin." };
+  if (t > bugun) return { hata: "Başlangıç tarihi gelecekte olamaz: sistemin kullanılmaya başladığı günü girin." };
+  return { deger: t };
 };
 
 // Spec 0044 R2, Q8: tahsilatta ön seçili hesap = aynı para birimindeki son tahsilatın (makina tahsilatı dahil) açık hesabı.
@@ -448,10 +480,13 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
     const toplamK = odemeHedefleri(k, DAVRANIS.PERSONEL).reduce((a, h) => a + h.toplamK, 0);
     satirlar.push({ tarih: k.tarih, sira: 0, tur: "maas", kalem: k, etkiK: toplamK, tutarK: toplamK,
       kirilim: { resmiK: kurus(k.resmiTutar), eldenK: kurus(k.eldenTutar), ekK: ekOdemeKurus(k), maasK: maasKurus(k) } });
+    const hedefMap = hareketHedefPaylari(k, hareketler, turMap);
     for (const p of hareketPaylari(k, hareketler, turMap)) {
       const mahsup = p.hareket.tur === "mahsup";
       const hedef = (k.taksitler || []).find(r => idEsit(r.id, p.hareket.taksitId))?.hedef || null;
-      satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: mahsup ? "mahsup" : "odeme", kalem: k, hareket: p.hareket, hedef,
+      // Spec 0051 R8, R10 (Q1): hedef payları (satırsız kalemde de; bölünmüş hareket iki hedef taşır).
+      const hedefPaylari = hedefMap.get(String(p.hareket.id)) || [];
+      satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: mahsup ? "mahsup" : "odeme", kalem: k, hareket: p.hareket, hedef, hedefPaylari,
         etkiK: mahsup ? 0 : -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc" });
     }
   }

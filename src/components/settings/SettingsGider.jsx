@@ -6,6 +6,8 @@ import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu, Segment } from "../tasarim";
 import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
+import { hesapsizBaslangicDogrula } from "../../lib/kasa";
+import { fmtTR, yerelBugun } from "../../lib/utils";
 
 // Gider ayarları (spec 0001 R6, R10): varsayılan kira stopaj oranı ve gider takibinin yürürlük ayı.
 // appSettings.giderAyarlari sunucu-paylaşımlıdır (disAppSettingsSuz'a girmez). Varsayılan resmi aylık
@@ -14,7 +16,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
   const mevcut = appSettings?.giderAyarlari || {};
   const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
     ortakGiderKaynagi: mevcut.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK,
-    hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)) });
+    hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "" });
   const [hata, setHata] = useState("");
   const yonetebilir = canDo("gider_tanim");
   const esikAlti = esikAltiKalemSayisi(giderler, form.yururlukAy || null);
@@ -25,8 +27,11 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     // Spec 0003 R5, AC-23: 0–365 tam sayı; geçersizse hiçbir alan kaydedilmez, neden yazılır.
     const e = hatirlatmaEsikDogrula(form.hatirlatmaEsikGun);
     if (e.hata) { setHata(e.hata); return; }
+    // Spec 0051 R14, R15 (AC-9): biçimsiz ya da gelecek tarih kaydedilmez; boş = eşik yok.
+    const b = hesapsizBaslangicDogrula(form.hesapsizBaslangic, yerelBugun());
+    if (b.hata) { setHata(b.hata); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, hesapsizBaslangic: b.deger } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -57,6 +62,20 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
             <input aria-label="Ödeme hatırlatma eşiği (gün)" className="input" inputMode="numeric" value={form.hatirlatmaEsikGun} disabled={!yonetebilir}
               onChange={e => setForm(p => ({ ...p, hatirlatmaEsikGun: e.target.value }))} style={{ width: 100 }} />
             <Ipucu>Vadesine bu kadar gün (bugün dahil) kalan ödenmemiş kalemler Anasayfa'da "yaklaşan" sayılır. 0 ile 365 arası; varsayılan 7.</Ipucu>
+          </Field>
+        </div>
+        {/* Spec 0051 R3, R4 (Q7): Kasa'nın hesapsız iş listesi bu günden sonrasını gösterir; bakiye ve raporlar etkilenmez. */}
+        <div style={{ maxWidth: 360 }}>
+          <Field label="Hesapsız kayıt başlangıç tarihi">
+            <input aria-label="Hesapsız kayıt başlangıç tarihi" type="date" className="input" value={form.hesapsizBaslangic} disabled={!yonetebilir}
+              onChange={e => setForm(p => ({ ...p, hesapsizBaslangic: e.target.value }))} style={{ width: 170 }} />
+            <Ipucu>Kasa'daki hesabı belirtilmemiş ödeme ve tahsilat listesi bu tarihten önceki kayıtları göstermez; kayıtlar silinmez, bakiye ve raporlar değişmez. Boş bırakılırsa bütün kayıtlar görünür.</Ipucu>
+            {!form.hesapsizBaslangic && form.yururlukAy && yonetebilir && (
+              <div data-testid="hesapsiz-baslangic-oneri" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, marginTop: 4 }}>
+                <span style={{ color: "var(--n600, #475569)" }}>Öneri: {fmtTR(`${form.yururlukAy}-01`)} (gider takibi yürürlük ayının başı)</span>
+                <Btn small variant="ghost" onClick={() => setForm(p => ({ ...p, hesapsizBaslangic: `${p.yururlukAy}-01` }))}>Öneriyi kullan</Btn>
+              </div>
+            )}
           </Field>
         </div>
         {esikAlti > 0 && (
