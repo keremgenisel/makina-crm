@@ -12,11 +12,14 @@ const dosyalar = (dir) => readdirSync(dir).flatMap(ad => {
 });
 
 describe("yayın perdesi işareti", () => {
-  it("R3 / R9: işaret kodda tanımlı ve açık (yayın bu hâliyle çıkar)", () => {
-    expect(GIDER_PERDESI).toBe(true);
+  it("R3 / R9: işaret kodda tanımlı; 2026-09-30'dan beri kapalı (perde kaldırıldı, modül kullanıcıya açık)", () => {
+    expect(GIDER_PERDESI).toBe(false);
   });
-  it("R1: üretim derlemesinde (kurulu sürüm) perde iner", () => {
-    expect(giderPerdesiIndi({ PROD: true, DEV: false })).toBe(true);
+  it("perde kaldırıldı: üretim derlemesinde (kurulu sürüm) de perde inmez", () => {
+    expect(giderPerdesiIndi({ PROD: true, DEV: false })).toBe(false);
+  });
+  it("R1: işaret açılırsa üretim derlemesinde perde yine iner (mekanizma korunur)", () => {
+    expect(giderPerdesiIndi({ PROD: true, DEV: false }, true)).toBe(true);
   });
   it("AC-10: Geliştirme modunda modülün tamamı bugünkü gibi çalışır; perde hiçbir yerde görünmez", () => {
     expect(giderPerdesiIndi({ PROD: false, DEV: true })).toBe(false);

@@ -7,7 +7,8 @@
 // İsteğe bağlı temizlik (ayrı iş): bu dosya, components/gider/GiderPerdesi.jsx, App.jsx'teki giderPerdesiIndi
 // dalı ve spec 0008 testleri (yayin-perdesi, ui/gider-perdesi, ui/gider-perdesi-yedek) silinebilir;
 // SettingsBackup'ın giderVeriYetki prop'u giderYetki ile aynı değere düşer.
-export const GIDER_PERDESI = true;
+// 2026-09-30: perde kaldırıldı (gider modülü kullanıcıya açıldı). Temizlik ayrı iştir.
+export const GIDER_PERDESI = false;
 
 // Perde bu derlemede inik mi? Ölçüt Vite'ın üretim işareti (senkron, derleme anında sabit; spec 0008 K1).
 export const giderPerdesiIndi = (ortam = import.meta.env, isaret = GIDER_PERDESI) => !!isaret && !!ortam?.PROD;
