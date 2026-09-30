@@ -140,7 +140,7 @@ export const SettingsBackup = ({
     { id: "dosyalar", ad: "Dosyalar", aciklama: "müşteri, makina, servis ve bayi belgeleri (dosya arşivi)" },
     { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
     { id: "not", ad: "Notlar", aciklama: "" },
-    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, standart genel giderler, kasa hesapları ve ödemeler" }] : []),
+    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, standart genel giderler, kasa hesapları, ödemeler ve çekler" }] : []),
     { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
   ];
   const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
@@ -185,7 +185,9 @@ export const SettingsBackup = ({
     if (sec("musteri") && Array.isArray(restoreData?.services)) setServices(restoreData.services);
     if (sec("musteri") && Array.isArray(restoreData?.partSales) && setPartSales) setPartSales(restoreData.partSales);
     if (sec("musteri") && Array.isArray(restoreData?.payments) && setPayments) setPayments(restoreData.payments);
-    if (sec("musteri") && setCekler && Array.isArray(restoreData?.payments)) setCekler(Array.isArray(restoreData?.cekler) ? restoreData.cekler : []);
+    // Spec 0049 Q10: çekler iki pakette de geri yüklenir (bölümün tamamı aynı yedekten). Verilen ve elle eklenen çekler gider
+    // ödeme hareketlerine bağlıdır; yalnız Giderler geri yüklenince cekId'li hareketler karşılıksız kalmasın.
+    if (setCekler && ((sec("musteri") && Array.isArray(restoreData?.payments)) || (sec("gider") && Array.isArray(restoreData?.cekler)))) setCekler(Array.isArray(restoreData?.cekler) ? restoreData.cekler : []);
     if (sec("musteri") && Array.isArray(restoreData?.gorusmeler) && setGorusmeler) setGorusmeler(restoreData.gorusmeler);
     if (sec("evrak") && Array.isArray(restoreData?.teklifler) && setTeklifler) setTeklifler(restoreData.teklifler);
     if (sec("evrak") && Array.isArray(restoreData?.faturalar) && setFaturalar) setFaturalar(restoreData.faturalar);

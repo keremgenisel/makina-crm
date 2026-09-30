@@ -227,6 +227,20 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.cekler[0].paymentId).toBe(plan.maps.payments.get(pid));
     expect(plan.adds.hesapHareketleri[0].cekId).toBe(plan.maps.cekler.get(cid));
   });
+  it("spec 0049 (C6, Q10): bağsız çekin paymentId'si null kalır; müşteri, banka hesabı ve alacaklı (tedarikçi/çalışan) yeniden atanır", () => {
+    const cus = uid(), hes = uid(), ted = uid(), cal = uid(), c1 = uid(), c2 = uid(), c3 = uid();
+    const my = blob({ customers: [{ id: cus, name: "Benim" }], kasaHesaplari: [{ id: hes, ad: "Benim banka" }], tedarikciler: [{ id: ted, ad: "Benim ted" }], calisanlar: [{ id: cal, ad: "Benim çal" }],
+      cekler: [{ id: c1, yon: "alinan", paymentId: null, customerId: cus, no: "1", banka: "Z", durum: "portfoy", gecmis: [] },
+        { id: c2, yon: "verilen", paymentId: null, hesapId: hes, alacakliTur: "tedarikci", alacakliId: ted, no: "2", banka: "Z", durum: "yazildi", gecmis: [] },
+        { id: c3, yon: "verilen", paymentId: null, hesapId: hes, alacakliTur: "calisan", alacakliId: cal, no: "3", banka: "Z", durum: "yazildi", gecmis: [] }] });
+    const server = blob({ customers: [{ id: cus, name: "Onun" }], kasaHesaplari: [{ id: hes, ad: "Onun banka" }], tedarikciler: [{ id: ted, ad: "Onun ted" }], calisanlar: [{ id: cal, ad: "Onun çal" }] });
+    const plan = buildMergePlan(my, server);
+    const [a, b, c] = plan.adds.cekler;
+    expect(a.paymentId).toBeNull();
+    expect(a.customerId).toBe(plan.maps.customers.get(cus));
+    expect([b.hesapId, b.alacakliId]).toEqual([plan.maps.kasaHesaplari.get(hes), plan.maps.tedarikciler.get(ted)]);
+    expect(c.alacakliId).toBe(plan.maps.calisanlar.get(cal));
+  });
   it("spec 0024 B: avans ve mahsubun çalışan bağı yeniden atanan çalışan kimliğini izler", () => {
     const cid = uid(), aid = uid();
     const my = blob({ calisanlar: [{ id: cid, ad: "Benim çalışanım" }], hesapHareketleri: [{ id: aid, tur: "avans", tarih: "2026-09-02", tutar: 100, calisanId: cid, hesapId: null }] });

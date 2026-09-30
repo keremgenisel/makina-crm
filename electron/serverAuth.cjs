@@ -317,6 +317,24 @@ function cekYalnizCiroMu(oldBlob, newBlob) {
   }
   return degisen > 0;
 }
+// Spec 0049 R15, Q8: tahsilata bağlı olmayan çekler (portföye elle eklenen alınan çek, fabrikanın verdiği çek) bir gider
+// ödeme aracıdır; müşteri grubuna değil `gider_odeme`'ye bağlıdır. Bu yazımda eklenen, silinen ya da değişen BÜTÜN çek
+// kayıtları (eski ve yeni hâlleriyle) bağsızsa, müşteri grubu kısıtlı kullanıcı `gider_odeme` ile yazabilir.
+const bagsizCek = (r) => r && r.paymentId == null;
+function cekYalnizBagsizMi(oldBlob, newBlob) {
+  const eski = Array.isArray(oldBlob?.cekler) ? oldBlob.cekler : [], yeni = Array.isArray(newBlob?.cekler) ? newBlob.cekler : null;
+  if (!yeni) return false;
+  const eskiById = new Map(eski.map(r => [r.id, r])), yeniIdler = new Set(yeni.map(r => r.id));
+  let degisen = 0;
+  for (const r of yeni) {
+    const e = eskiById.get(r.id);
+    if (e && stableStringify(e) === stableStringify(r)) continue;
+    if (!bagsizCek(r) || (e && !bagsizCek(e))) return false;
+    degisen++;
+  }
+  for (const e of eski) if (!yeniIdler.has(e.id)) { if (!bagsizCek(e)) return false; degisen++; }
+  return degisen > 0;
+}
 // Spec 0044 R12, Q5: Kasa ekranından hesap atama. Kasa'yı gören kullanıcının (Giderler + Finans sekmeleri, 0024 C6)
 // Müşteriler/Stok sekmesi olmayabilir; bu üç bölümde kayıt eklemeyen/silmeyen ve yalnız `hesapId` değiştiren yazım ona
 // açıktır. Yeni izin tanımlanmaz.
@@ -379,7 +397,7 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
     }
     // Spec 0040 Q6: ciroyu Giderler kullanıcısı yapar; müşteri grubu kısıtlı olsa da yazımdaki bütün çek değişiklikleri
     // ciroya giriş/çıkış ise (ciro, ciro iptali) ve gider_odeme izni varsa bölüm yazılabilir (kayıt düzeyi eylemDenetimi'nde).
-    if (section === "cekler" && grupEngelli(perms, group) && eylemIzinli(perms, "giderActions", "gider_odeme") && cekYalnizCiroMu(oldBlob, newBlob)) {
+    if (section === "cekler" && grupEngelli(perms, group) && eylemIzinli(perms, "giderActions", "gider_odeme") && (cekYalnizCiroMu(oldBlob, newBlob) || cekYalnizBagsizMi(oldBlob, newBlob))) {
       if (sekmeEngelli(perms, section)) return { ok: false, reddedilenBolum: section };
       continue;
     }
@@ -581,6 +599,11 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
         if (!yedekParcaEkleyebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: "yedek_parca_add" };
         continue;
       }
+      // Spec 0049 Q8: bağsız çek (elle alınan ya da verilen) gider_odeme ile eklenir.
+      if (section === "cekler" && bagsizCek(r)) {
+        if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: section, islem: "ekle", gerekli: "gider_odeme" };
+        continue;
+      }
       // Tanımdan üretilmiş gider kalemi: gider_tekrar_uret yeterli (gider_add gerekmez).
       if (section === "giderler" && tanimliUretimMi(r, eski, yeni) && eylemIzinli(perms, group, "gider_tekrar_uret")) continue;
       const bayiDosyasi = map.bayi && kaskadBayiId(section, r) != null; // bayi dosyası → bayi grubu izinleri
@@ -593,6 +616,10 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       const y = yeniById.get(r.id);
       if (y && !y.deletedAt) continue; // duruyor ve aktif → silme değil
       if (kaskadSilmeMi(section, r, eski, yeni, perms)) continue; // müşteri silme kaskadı (cust_delete yeter)
+      if (section === "cekler" && bagsizCek(r)) {
+        if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "gider_odeme" };
+        continue;
+      }
       // yedek parça satışı SİL iki boyuttan gelebilir → herhangi biri yeterli (bkz. yedekParcaSilebilir).
       if (section === "yedekParcaSatislar") {
         if (!yedekParcaSilebilir(perms)) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "yedek_parca_delete" };
@@ -630,6 +657,15 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       const e = eskiById.get(r.id);
       if (r.durum === "ciro" && (!e || e.durum !== "ciro") && !yeniCiroCekleri.has(String(r.id))) {
         return { ok: false, reddedilenBolum: "cekler", islem: e ? "duzenle" : "ekle", gerekli: "ciro_hareketi" };
+      }
+      // Spec 0049 Q8: verilen çek bir gideri kapatarak doğar; aynı yazımda ona bağlı yeni bir ödeme hareketi ister.
+      if (!e && r.yon === "verilen" && !yeniCiroCekleri.has(String(r.id))) {
+        return { ok: false, reddedilenBolum: "cekler", islem: "ekle", gerekli: "cek_hareketi" };
+      }
+      // Spec 0049 Q8: bağsız çekte her değişiklik (durum ya da alan) gider_odeme ister.
+      if (e && (bagsizCek(e) || bagsizCek(r)) && stableStringify(e) !== stableStringify(r)) {
+        if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "gider_odeme" };
+        continue;
       }
       if (!e || e.durum === r.durum) continue;
       const ciro = e.durum === "ciro" || r.durum === "ciro";
@@ -706,6 +742,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  cekYalnizCiroMu, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

@@ -136,7 +136,12 @@ dbmod.writeBlobToDb({
     { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 }],
   // Spec 0040: çek kaydı (yalnız kendi alanları, geçmiş JSON).
   cekler: [{ id: 991, paymentId: 900, no: "123456", banka: "Ziraat", kesideci: "Ali Veli", tur: "resmi", durum: "ciro",
-    gecmis: [{ tarih: "2026-07-01", durum: "portfoy", not: "Alındı" }, { tarih: "2026-07-10", durum: "ciro", not: "Ciro: Demir Bant" }] }],
+    gecmis: [{ tarih: "2026-07-01", durum: "portfoy", not: "Alındı" }, { tarih: "2026-07-10", durum: "ciro", not: "Ciro: Demir Bant" }] },
+    // Spec 0049: bağsız alınan çek (kendi tutar/para birimi/vade/kimden) ve verilen çek (alacaklı, banka hesabı).
+    { id: 992, yon: "alinan", paymentId: null, no: "555", banka: "İş", kesideci: "Mehmet", tur: "hamiline", durum: "portfoy", tutar: 12500.5, currency: "TRY",
+      vadeTarihi: "2026-11-30", tarih: "2026-09-01", kimden: "Eski müşteri", gecmis: [{ tarih: "2026-09-01", durum: "portfoy", not: "Portföye elle eklendi" }] },
+    { id: 993, yon: "verilen", paymentId: null, no: "A-7", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 3000, currency: "TRY", vadeTarihi: "2026-10-15",
+      tarih: "2026-09-02", alacakliTur: "tedarikci", alacakliId: 71, alacakliAd: "Demir Bant", hesapId: 97, aciklama: "Eylül", gecmis: [] }],
   // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
@@ -234,6 +239,12 @@ check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boo
     const c = (blob.cekler || []).find(x => x.id === 991);
     return c?.paymentId === 900 && c.no === "123456" && c.banka === "Ziraat" && c.kesideci === "Ali Veli" && c.tur === "resmi" && c.durum === "ciro"
       && c.gecmis?.length === 2 && c.gecmis[1].not === "Ciro: Demir Bant" && m.find(x => x.id === 976)?.cekId === 991;
+  })());
+  check("spec 0049: bağsız alınan ve verilen çekin kendi alanları tam turu; bağlı çekte yeni alan yazılmaz (AC-25)", (() => {
+    const c = blob.cekler || [], b = c.find(x => x.id === 992), v = c.find(x => x.id === 993), eski = c.find(x => x.id === 991);
+    return b?.yon === "alinan" && b.paymentId == null && b.tutar === 12500.5 && b.currency === "TRY" && b.vadeTarihi === "2026-11-30" && b.tarih === "2026-09-01" && b.kimden === "Eski müşteri"
+      && v?.yon === "verilen" && v.durum === "yazildi" && v.alacakliTur === "tedarikci" && v.alacakliId === 71 && v.alacakliAd === "Demir Bant" && v.hesapId === 97 && v.aciklama === "Eylül"
+      && !("yon" in eski) && !("tutar" in eski) && !("hesapId" in eski);
   })());
   check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
     && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);

@@ -5,10 +5,11 @@ import { makeCanDo } from "../../lib/permissions";
 import { logAction } from "../../lib/audit";
 import {
   portfoySatirlari, baglanmamisCekTahsilatlari, cekDurumDegistir, cekKarsiliksiz, ciroIptal, ciroHareketleri, elleGecilebilir,
-  CEK_DURUM, CEK_DURUM_AD, CEK_TURLERI, CEK_TUR_AD, PORTFOY_NOTU,
+  CEK_DURUM, CEK_DURUM_AD, CEK_TURLERI, CEK_TUR_AD, PORTFOY_NOTU, BAGSIZ_TAHSIL_NOTU, bagsizCekSilinebilirMi, yeniBagsizCek, bagliCekler,
 } from "../../lib/cek";
+import { CekEklePenceresi } from "./CekEklePenceresi";
 import { hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
-import { Btn, Field, Input, Select, Modal, ConfirmDialog } from "../ui";
+import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
 import { KartBolum, BosDurum, UyariSeridi, Segment, HataMetni, Ipucu } from "../tasarim";
 import { tl2 } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
@@ -49,12 +50,15 @@ const DurumPenceresi = ({ satir, hareketler, izin, onDegistir, onKarsiliksiz, on
           {ciro && izin.ciro && <Btn small variant="danger" onClick={() => setOnay("iptal")}>Ciroyu İptal Et</Btn>}
         </div>
         {!izin.durum && <Ipucu>Çek durumunu değiştirme yetkiniz yok.</Ipucu>}
+        {!satir.bilgi?.bagli && <Ipucu>{BAGSIZ_TAHSIL_NOTU}</Ipucu>}
         {ciro && <Ipucu>Ciro edilmiş çek elle tahsil edildi yapılamaz; ciro iptaliyle portföye döner ya da karşılıksız işaretlenir. Kapattığı {ciroHareketleri(cek.id, hareketler).length} ödeme bu işlemlerde silinir.</Ipucu>}
         <HataMetni>{hata}</HataMetni>
       </div>
       {onay === "karsiliksiz" && (
         <ConfirmDialog title="Çek karşılıksız işaretlensin mi?" confirmLabel="Karşılıksız İşaretle"
-          message={ciro ? "Çekin tahsilatı gelirden çıkar ve ciro ile kapattığı gider borçları yeniden açılır (ödeme hareketleri silinir). Çek portföye dönmez." : "Çekin tahsilatı gelirden çıkar ve müşteri borcu yeniden açılır."}
+          message={!satir.bilgi?.bagli
+            ? (ciro ? "Ciro ile kapattığı gider borçları yeniden açılır (ödeme hareketleri silinir). Çek portföye dönmez." : "Çek karşılıksız işaretlenir. Tahsilat kaydı olmadığı için gelir ya da müşteri borcu değişmez.")
+            : ciro ? "Çekin tahsilatı gelirden çıkar ve ciro ile kapattığı gider borçları yeniden açılır (ödeme hareketleri silinir). Çek portföye dönmez." : "Çekin tahsilatı gelirden çıkar ve müşteri borcu yeniden açılır."}
           onConfirm={() => { setOnay(null); onKarsiliksiz(tarih); }} onCancel={() => setOnay(null)} />
       )}
       {onay === "iptal" && (
@@ -68,14 +72,14 @@ const DurumPenceresi = ({ satir, hareketler, izin, onDegistir, onKarsiliksiz, on
 
 // R12, AC-16, AC-35: kimden alındı, durum geçmişi (çek kaydından), kime ciro edildi ve hangi kalemleri kapattı (hareketlerden).
 const GecmisPenceresi = ({ satir, musteriAdi, hareketler, giderler, onClose }) => {
-  const { cek, odeme } = satir;
+  const { cek, bilgi } = satir;
   const ciroH = ciroHareketleri(cek.id, hareketler);
   const kalemAdi = (id) => { const k = giderler.find(x => String(x.id) === String(id)); return k ? (k.aciklama || k.calisanAd || fmtTR(k.tarih)) : "Silinmiş kalem"; };
   return (
     <Modal title="Çek Geçmişi" onClose={onClose} maxWidth={600} footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
       <div data-testid="cek-gecmisi" style={{ fontSize: 13 }}>
         <div style={{ marginBottom: 10 }}>Çek <b>{cek.no} · {cek.banka}</b>{cek.kesideci ? ` · keşideci ${cek.kesideci}` : ""} · {CEK_TUR_AD[cek.tur] || cek.tur}</div>
-        <div style={{ marginBottom: 10 }}>Kimden: <b>{musteriAdi}</b> · alındı {fmtTR(odeme.tarih)} · tutar {fmtCur(odeme.tutar, odeme.currency || "TRY")} · vade {odeme.vadeTarihi ? fmtTR(odeme.vadeTarihi) : "girilmemiş"}</div>
+        <div style={{ marginBottom: 10 }}>Kimden: <b>{musteriAdi}</b> · alındı {fmtTR(bilgi.tarih)} · tutar {fmtCur(tl(bilgi.tutarK), bilgi.currency)} · vade {bilgi.vade ? fmtTR(bilgi.vade) : "girilmemiş"}{!bilgi.bagli && " · elle eklendi (tahsilat kaydı yok)"}</div>
         {(cek.gecmis || []).map((g, i) => (
           <div key={i} data-testid="cek-gecmis-satiri" style={{ display: "grid", gridTemplateColumns: "90px 130px 1fr", gap: 10, padding: "6px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
             <span>{fmtTR(g.tarih)}</span><b>{CEK_DURUM_AD[g.durum] || g.durum}</b><span>{g.not}</span>
@@ -98,7 +102,12 @@ export const CekPortfoyu = ({
 }) => {
   const canGider = makeCanDo(serverPermissions, "giderActions");
   const canCust = makeCanDo(serverPermissions, "customerActions");
-  const izin = { durum: canCust("cust_payment_edit") && !!setCekler, ciro: canGider("gider_odeme") && !!setCekler && !!setHesapHareketleri };
+  const izin = { durum: canCust("cust_payment_edit") && !!setCekler, ciro: canGider("gider_odeme") && !!setCekler && !!setHesapHareketleri,
+    // Spec 0049 R15 (Q8): bağsız çek ekleme, silme ve durumu gider_odeme ister.
+    bagsiz: canGider("gider_odeme") && !!setCekler };
+  const satirIzni = (s) => (s.bilgi?.bagli ? izin : { ...izin, durum: izin.bagsiz });
+  const [ekle, setEkle] = useState(false);
+  const [silinecek, setSilinecek] = useState(null);
   const [suzgec, setSuzgec] = useState("elde");
   const [tur, setTur] = useState("");
   const [ciroSatiri, setCiroSatiri] = useState(null);
@@ -110,6 +119,16 @@ export const CekPortfoyu = ({
     [cekler, payments, suzgec, tur, bugun, giderAyarlari]);
   const baglanmamis = baglanmamisCekTahsilatlari(payments, cekler).length;
   const musteriAdi = (id) => customers.find(c => String(c.id) === String(id))?.name || "Silinmiş müşteri";
+  const kimden = (b) => (b.customerId != null ? musteriAdi(b.customerId) : b.kimden || "—");
+  const ekleKaydet = (kayit) => {
+    const cek = yeniBagsizCek(kayit, uid());
+    setCekler(p => [...(p || []), cek]); log("olusturuldu", cek, { tutar: cek.tutar, bagsiz: true }); setEkle(false); showToast("Çek portföye eklendi.");
+  };
+  const sil = () => {
+    const c = silinecek.cek;
+    if (!bagsizCekSilinebilirMi(c)) { showToast("Ciro edilmiş çek silinemez; önce ciroyu iptal edin."); setSilinecek(null); return; }
+    setCekler(p => p.filter(x => x.id !== c.id)); log("silindi", c); setSilinecek(null); showToast("Çek silindi.");
+  };
   const cekYaz = (yeni) => setCekler(p => p.map(c => (c.id === yeni.id ? yeni : c)));
   const log = (action, cek, detail = {}) => logAction({ serverPermissions, action, entity: "cek", entityId: cek.id, entityName: `${cek.no} · ${cek.banka}`, detail });
 
@@ -140,6 +159,7 @@ export const CekPortfoyu = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }} data-testid="cek-portfoyu">
       <UyariSeridi aile="bilgi" testId="portfoy-notu">{PORTFOY_NOTU}{baglanmamis > 0 && <> <b>{baglanmamis}</b> eski çek tahsilatı çek kaydına bağlı değil; bağlamak için tahsilatı müşteri detayından düzenleyin.</>}</UyariSeridi>
+      {izin.bagsiz && <div style={{ display: "flex", justifyContent: "flex-end" }}><Btn small onClick={() => setEkle(true)}><Icon name="plus" size={13} /> Çek Ekle</Btn></div>}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ minWidth: 0, flex: "1 1 520px" }}><Segment ariaLabel="Çek durumu süzgeci" kip="dugme" genislik="icerik" options={DURUM_SUZGECI} value={suzgec} onChange={setSuzgec} /></div>
         <div style={{ width: 170 }}><Select aria-label="Çek türü süzgeci" value={tur} onChange={e => setTur(e.target.value)}>
@@ -150,7 +170,7 @@ export const CekPortfoyu = ({
         <span style={{ color: "var(--n500, #64748b)", fontSize: 12.5 }}> · {satirlar.filter(s => s.gecti).length} vadesi geçmiş · {satirlar.filter(s => s.yaklasan).length} yaklaşan ({hatirlatmaEsigi(giderAyarlari)} gün)</span>
       </div>
       {satirlar.length === 0 ? (
-        <BosDurum testId="bos-cek-portfoyu" baslik={suzgec === "elde" ? "Elde çek yok" : "Bu süzgeçte çek yok"} metin="Çekle tahsilat müşteri detayındaki ödeme formundan girilir; çek kaydı orada oluşur." />
+        <BosDurum testId="bos-cek-portfoyu" baslik={suzgec === "elde" ? "Elde çek yok" : "Bu süzgeçte çek yok"} metin="Çekle tahsilat müşteri detayındaki ödeme formundan girilir; tahsilatı olmayan bir çek “Çek Ekle” ile portföye eklenir." />
       ) : (
         <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="cek-listesi">
           <div style={{ minWidth: 940 }}>
@@ -164,7 +184,7 @@ export const CekPortfoyu = ({
                   background: s.gecti ? "var(--redBg, #fef2f2)" : s.yaklasan ? "var(--ambBg, #fffbeb)" : "transparent" }}>
                   <span>{s.vade ? fmtTR(s.vade) : "—"}{s.gecti && <div><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}{s.yaklasan && <div><Rozet renk="turuncu">Yaklaşıyor</Rozet></div>}</span>
                   <span style={{ minWidth: 0 }}><b>{s.cek.no}</b> · {s.cek.banka}{s.cek.kesideci && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Keşideci: {s.cek.kesideci}</div>}</span>
-                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{musteriAdi(s.odeme.customerId)}<div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>alındı {fmtTR(s.odeme.tarih)}</div></span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{kimden(s.bilgi)}<div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>alındı {fmtTR(s.bilgi.tarih)}{!s.bilgi.bagli && " · elle eklendi"}</div></span>
                   <span>{CEK_TUR_AD[s.cek.tur] || s.cek.tur}</span>
                   <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtCur(tl(s.tutarK), s.currency)}</b>
                   <span><Rozet renk={DURUM_RENK[s.cek.durum]}>{CEK_DURUM_AD[s.cek.durum]}</Rozet></span>
@@ -172,8 +192,9 @@ export const CekPortfoyu = ({
                     {s.cek.durum === CEK_DURUM.PORTFOY && izin.ciro && (tlDisi
                       ? <span title="Gider ödemeleri TL'dir." style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}><Btn small variant="ghost" disabled>Ciro Et</Btn> yalnız TL çek</span>
                       : <Btn small onClick={() => setCiroSatiri(s)}>Ciro Et</Btn>)}
-                    {(izin.durum || izin.ciro) && <Btn small variant="ghost" onClick={() => setDurumSatiri(s)}>Durum</Btn>}
+                    {(satirIzni(s).durum || izin.ciro) && <Btn small variant="ghost" onClick={() => setDurumSatiri(s)}>Durum</Btn>}
                     <Btn small variant="ghost" onClick={() => setGecmisSatiri(s)}>Geçmiş</Btn>
+                    {!s.bilgi.bagli && izin.bagsiz && <Btn small variant="ghost" onClick={() => setSilinecek(s)}>Sil</Btn>}
                   </span>
                 </div>
               );
@@ -183,8 +204,12 @@ export const CekPortfoyu = ({
       )}
       {ciroSatiri && <CiroPenceresi satir={ciroSatiri} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
         onKaydet={ciroKaydet} onClose={() => setCiroSatiri(null)} />}
-      {durumSatiri && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={izin} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
-      {gecmisSatiri && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={musteriAdi(gecmisSatiri.odeme.customerId)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
+      {durumSatiri && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={satirIzni(durumSatiri)} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
+      {ekle && <CekEklePenceresi cekler={bagliCekler(cekler, payments)} customers={customers} onKaydet={ekleKaydet} onClose={() => setEkle(false)} />}
+      {silinecek && <ConfirmDialog title="Çek silinsin mi?" confirmLabel="Sil"
+        message={silinecek.cek.durum === CEK_DURUM.CIRO ? "Ciro edilmiş çek silinemez; önce ciroyu iptal edin." : `Çek ${silinecek.cek.no} · ${silinecek.cek.banka} portföyden kalıcı olarak silinir.`}
+        onConfirm={sil} onCancel={() => setSilinecek(null)} />}
+      {gecmisSatiri && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={kimden(gecmisSatiri.bilgi)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
     </div>
   );
 };

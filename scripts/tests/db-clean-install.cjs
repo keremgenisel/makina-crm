@@ -55,7 +55,9 @@ try {
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
     uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }],
     // Spec 0040: temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu.
-    cekler: [{ id: 36, paymentId: 37, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] }],
+    cekler: [{ id: 36, paymentId: 37, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] },
+      // Spec 0049: temiz kurulumda çek tablosunun yeni sütunları.
+      { id: 38, yon: "verilen", paymentId: null, no: "2", banka: "Z", tur: "hamiline", durum: "yazildi", tutar: 100, vadeTarihi: "2026-12-01", hesapId: 5, alacakliAd: "X", gecmis: [] }],
     hesapHareketleri: [{ id: 38, tur: "odeme", tarih: "2026-07-01", tutar: 1, giderId: 1, cekId: 36 }],
     payments: [{ id: 10, customerId: 1, tarih: "2026-07-22", tutar: 5000, currency: "TRY", yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
     appSettings: { autoBackup: false, teklifTakipGun: 3,
@@ -84,6 +86,7 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
 })());
 check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 1 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
 check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
+check("temiz kurulumda cekler tablosunun 0049 sütunları oluştu (AC-25)", (blob.cekler || []).find(c => c.id === 38)?.hesapId === 5 && (blob.cekler || []).find(c => c.id === 38)?.tutar === 100);
 check("temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu oluştu (spec 0040)", (blob.cekler || [])[0]?.no === "1" && (blob.hesapHareketleri || [])[0]?.cekId === 36);
 check("temiz kurulumda stock.uretimTarihi sütunu oluştu (spec 0002)", (blob.stock || []).find(x => x.id === 3)?.uretimTarihi === "2026-05-05");
 check("temiz kurulumda satisKuru/uretimTarihi sütunları oluştu (spec 0002)", (() => {

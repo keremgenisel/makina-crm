@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
-  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, tahsilatHesabiYalnizMi,
+  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -1039,6 +1039,42 @@ describe("spec 0040: çek bölümü yetkisi", () => {
     const numara = { cekler: [cek({ no: "2" })] };
     expect(yazmaYetkisiVar(p, "user", ["cekler"], eski, numara).ok).toBe(false);
     expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider"], giderActions: ["gider_edit"], customerActions: [] }), "user", ["cekler"], eski, ciro).ok).toBe(false);
+  });
+});
+
+// ── Spec 0049: bağsız alınan çek ve verilen çek (R15, Q8; AC-22, AC-23) ─────────────────
+describe("spec 0049: bağsız çek yetkisi", () => {
+  const bagsiz = (o = {}) => ({ id: 400, yon: "alinan", paymentId: null, no: "7", banka: "İş", tur: "hamiline", durum: "portfoy", tutar: 5000, currency: "TRY", vadeTarihi: "2026-11-01", tarih: "2026-09-01", kimden: "X", gecmis: [], ...o });
+  const verilen = (o = {}) => ({ id: 500, yon: "verilen", paymentId: null, no: "A1", banka: "Ziraat", tur: "hamiline", durum: "yazildi", tutar: 3000, vadeTarihi: "2026-10-15", tarih: "2026-09-02", hesapId: 97, alacakliTur: "tedarikci", alacakliId: 11, alacakliAd: "Demir", gecmis: [], ...o });
+  const hareket = { id: 600, tur: "odeme", tarih: "2026-09-02", tutar: 3000, yontem: "Çek (kendi)", giderId: 5, cekId: 500, hesapId: null };
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"], customerActions: [] });
+  const odemesiz = JSON.stringify({ tabs: ["gider", "finance", "customers"], giderActions: ["gider_edit"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
+  it("AC-23: bağsız çek ekleme, silme ve durum değişikliği gider_odeme ister; tahsilat izinleri yetmez", () => {
+    const bos = { cekler: [] }, ekli = { cekler: [bagsiz()] }, tahsil = { cekler: [bagsiz({ durum: "tahsil" })] };
+    expect(eylemDenetimi(bos, ekli, odemesiz, "user")).toMatchObject({ ok: false, islem: "ekle", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, bos, odemesiz, "user")).toMatchObject({ ok: false, islem: "sil", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, tahsil, odemesiz, "user")).toMatchObject({ ok: false, islem: "duzenle", gerekli: "gider_odeme" });
+    expect(eylemDenetimi(ekli, { cekler: [bagsiz({ tutar: 1 })] }, odemesiz, "user").gerekli).toBe("gider_odeme");
+    for (const [a, b] of [[bos, ekli], [ekli, bos], [ekli, tahsil]]) expect(eylemDenetimi(a, b, kasaci, "user").ok).toBe(true);
+  });
+  it("Q8: müşteri grubu kısıtlı Kasa kullanıcısı yalnız bağsız çek yazabilir; bağlı çeke dokunan yazım reddedilir", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    const eski = { cekler: [bagli] }, yeni = { cekler: [bagli, bagsiz()] };
+    expect(cekYalnizBagsizMi(eski, yeni)).toBe(true);
+    expect(yazmaYetkisiVar(kasaci, "user", ["cekler"], eski, yeni).ok).toBe(true);
+    expect(cekYalnizBagsizMi(eski, { cekler: [{ ...bagli, no: "2" }, bagsiz()] })).toBe(false);
+    expect(yazmaYetkisiVar(kasaci, "user", ["cekler"], eski, { cekler: [{ ...bagli, no: "2" }, bagsiz()] }).ok).toBe(false);
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_edit"], customerActions: [] }), "user", ["cekler"], eski, yeni).ok).toBe(false);
+  });
+  it("Q8: yeni verilen çek aynı yazımda ona bağlı yeni bir ödeme hareketi ister", () => {
+    const eski = { cekler: [], hesapHareketleri: [] };
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [] }, kasaci, "user")).toMatchObject({ ok: false, gerekli: "cek_hareketi" });
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [{ ...hareket, cekId: 999 }] }, kasaci, "user").gerekli).toBe("cek_hareketi");
+    expect(eylemDenetimi(eski, { cekler: [verilen()], hesapHareketleri: [hareket] }, kasaci, "user").ok).toBe(true);
+  });
+  it("AC-9: bağlı çekte 0040 kuralı aynen (durum cust_payment_edit)", () => {
+    const bagli = { id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] };
+    expect(eylemDenetimi({ cekler: [bagli] }, { cekler: [{ ...bagli, durum: "tahsil" }] }, JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add"] }), "user").gerekli).toBe("cust_payment_edit");
   });
 });
 

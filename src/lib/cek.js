@@ -14,7 +14,14 @@ export const CEK_TUR_AD = Object.fromEntries(CEK_TURLERI.map(t => [t.value, t.la
 // R19: gider ödeme yönteminde "Çek (ciro)" elle seçilemez; yalnız ciro işlemi atar.
 export const CIRO_YONTEMI = "Çek (ciro)";
 export const TAM_CIRO_NOTU = "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numarası ve adresi (KDV müteselsil sorumluluğu).";
-export const PORTFOY_NOTU = "Bu ekran müşteri tahsilat çeklerini kapsar; servis, Extra Kalıp ve yedek parça çekleri kayıtlarında izlenir.";
+export const PORTFOY_NOTU = "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri kapsar; servis, Extra Kalıp ve yedek parça çekleri kayıtlarında izlenir.";
+// Spec 0049: çekin yönü. Alınan çek (varsayılan; tahsilata bağlı ya da portföye elle eklenmiş "bağsız") ve fabrikanın kendi
+// çek defterinden yazdığı verilen çek. Eski kayıtta alan yoktur, alınan sayılır.
+export const CEK_YON = { ALINAN: "alinan", VERILEN: "verilen" };
+export const yonOf = (c) => (c?.yon === CEK_YON.VERILEN ? CEK_YON.VERILEN : CEK_YON.ALINAN);
+// R6, Q11: bağsız alınan çekin "tahsil edildi" işareti hiçbir bakiyeye girmez (arkasında tahsilat kaydı yok, X4).
+export const BAGSIZ_TAHSIL_NOTU = "Bu çekin tahsilat kaydı yok; tahsil edildi işareti hiçbir hesabın bakiyesine girmez ve gelir yazmaz.";
+export const BAGSIZ_GELIR_NOTU = "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve aylık rapora girmez; yalnız portföyde duran bir kıymettir.";
 
 // R3: elle yapılabilen geçişler. "ciro edildi"ye yalnız ciro işlemiyle girilir, ondan yalnız ciro iptali (portföye) ya da
 // karşılıksız (hareketleri silerek) çıkılır; bunlar kendi fonksiyonlarındadır.
@@ -38,11 +45,44 @@ export const cekDogrula = (form, { cekler = [], tutar = null } = {}) => {
   if (!banka) hatalar.banka = "Banka girilmedi.";
   if (tutar != null && (String(tutar).trim().startsWith("-") || !(parseMoney(tutar) > 0))) hatalar.tutar = "Çek tutarı sıfırdan büyük olmalı.";
   const tur = CEK_TUR_AD[form?.tur] ? form.tur : "hamiline";
-  const ayni = no && banka && cekler.find(c => !idEsit(c.id, form?.id) && trLower(String(c.banka || "").trim()) === trLower(banka) && String(c.no || "").trim() === no);
+  // Spec 0049: yinelenen çek uyarısı yalnız aynı yöndeki çekler arasında (kendi çekimizin numarası alınanla çakışabilir).
+  const ayni = no && banka && cekler.find(c => !idEsit(c.id, form?.id) && yonOf(c) === yonOf(form) && trLower(String(c.banka || "").trim()) === trLower(banka) && String(c.no || "").trim() === no);
   const uyari = ayni ? `Aynı banka ve numaralı bir çek zaten kayıtlı (${banka} · ${no}). Banka numaraları müşteriler arasında tekrar edebildiği için kayıt engellenmez.` : null;
   if (Object.keys(hatalar).length) return { hatalar, uyari, kayit: null };
   return { hatalar, uyari, kayit: { no, banka, kesideci: String(form?.kesideci || "").trim(), tur } };
 };
+// Spec 0049 R1, R2 (Q2, Q11): tahsilata bağlı olmayan alınan çek. Tutar, para birimi, vade, alınma tarihi ve kimden bilgisi
+// çekin kendi alanlarıdır; kimden serbest metin ya da müşteri (`customerId`).
+export const bagsizCekDogrula = (form, { cekler = [] } = {}) => {
+  const r = cekDogrula({ ...form, yon: CEK_YON.ALINAN }, { cekler, tutar: form?.tutar ?? "" });
+  const hatalar = { ...r.hatalar };
+  if (!form?.vadeTarihi) hatalar.vadeTarihi = "Vade girilmedi.";
+  if (!form?.tarih) hatalar.tarih = "Alınma tarihi girilmedi.";
+  const customerId = form?.customerId === "" || form?.customerId == null ? null : form.customerId;
+  const kimden = String(form?.kimden || "").trim();
+  if (customerId == null && !kimden) hatalar.kimden = "Çekin kimden alındığı girilmedi.";
+  if (Object.keys(hatalar).length) return { hatalar, uyari: r.uyari, kayit: null };
+  return { hatalar, uyari: r.uyari, kayit: { ...r.kayit, yon: CEK_YON.ALINAN, paymentId: null, tutar: parseMoney(form.tutar), currency: form.currency || "TRY",
+    vadeTarihi: form.vadeTarihi, tarih: form.tarih, customerId, kimden: customerId == null ? kimden : "" } };
+};
+export const yeniBagsizCek = (kayit, id) => ({ id, ...kayit, durum: CEK_DURUM.PORTFOY, gecmis: [{ tarih: kayit.tarih, durum: CEK_DURUM.PORTFOY, not: "Portföye elle eklendi" }] });
+// Spec 0049 R2 (Q2): çekin tutar, para birimi, vade, alınma tarihi ve kimden bilgisinin TEK okuma yolu. Bağlı çekte hepsi
+// okuma anında tahsilattan (kopyalanmaz; tahsilat düzenlenince kendiliğinden güncel, AC-10), bağsız çekte kendi alanlarından.
+// pById: silinmemiş tahsilatlar (kimlik → tahsilat). Tahsilatı çözülmeyen bağlı çek null döner (silinmiş tahsilat, 0040 Q7).
+export const tahsilatHaritasi = (payments = []) => new Map((payments || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+export const cekBilgisi = (c, pById) => {
+  if (!c) return null;
+  if (c.paymentId != null) {
+    const p = pById.get(String(c.paymentId));
+    if (!p) return null;
+    return { bagli: true, odeme: p, tutarK: kurus(parseMoney(p.tutar)), currency: p.currency || "TRY", vade: p.vadeTarihi || "", tarih: p.tarih || "",
+      customerId: p.customerId ?? null, kimden: "" };
+  }
+  return { bagli: false, odeme: null, tutarK: kurus(Number(c.tutar) || 0), currency: c.currency || "TRY", vade: c.vadeTarihi || "", tarih: c.tarih || "",
+    customerId: c.customerId ?? null, kimden: c.kimden || "" };
+};
+// R5, AC-7: bağsız çek silinebilir; ciro edilmişse önce ciro iptali.
+export const bagsizCekSilinebilirMi = (c) => !!c && c.paymentId == null && c.durum !== CEK_DURUM.CIRO;
 export const yeniCek = (alanlar, paymentId, tarih, id) => ({
   id, paymentId, ...alanlar, durum: CEK_DURUM.PORTFOY, gecmis: [{ tarih, durum: CEK_DURUM.PORTFOY, not: "Alındı" }],
 });
@@ -148,14 +188,15 @@ export const ciroVarsayilanDagitim = (adaylar = [], cekK) => {
 // R4–R9, R16, AC-6–AC-13, AC-29: ciro planı. Çek portföyde ve TL olmalı; en az bir hedefe pozitif tutar; dağıtılan toplam çek
 // tutarını aşamaz; her hareket 0024 odemeDogrula'dan geçer (tek hedef ve kalan sınırı, hesapsız). Fark uyarıdır (R8).
 // dagitim: [{anahtar, tutarK}]; adaylar: ciroAdaylari sonucu. Dönüş: {hatalar} | {hareketler (kimliksiz), cek, farkK, uyari}.
-export const ciroPlani = ({ cek, odeme, adaylar = [], dagitim = [], tarih, alacakliAd = "", turMap } = {}) => {
+// Spec 0049 (Q2): tutar ve para birimi çek bilgisinden (tutarK, currency); eski çağrı `odeme` ile de çalışır.
+export const ciroPlani = ({ cek, odeme = null, tutarK = null, currency = null, adaylar = [], dagitim = [], tarih, alacakliAd = "", turMap } = {}) => {
   const hatalar = [];
-  if (!cek || !odeme) return { hatalar: ["Çek bulunamadı."] };
+  if (!cek || (!odeme && tutarK == null)) return { hatalar: ["Çek bulunamadı."] };
   if (cek.durum !== CEK_DURUM.PORTFOY) hatalar.push(cek.durum === CEK_DURUM.CIRO ? "Bu çek zaten ciro edilmiş; bir çek bir kez ciro edilir." : `${CEK_DURUM_AD[cek.durum]} durumundaki çek ciro edilemez; yalnız portföydeki çek ciro edilir.`);
-  if ((odeme.currency || "TRY") !== "TRY") hatalar.push("Yalnız TL çek ciro edilebilir: gider ödemeleri TL'dir.");
+  if ((currency || odeme?.currency || "TRY") !== "TRY") hatalar.push("Yalnız TL çek ciro edilebilir: gider ödemeleri TL'dir.");
   if (!tarih) hatalar.push("Ciro tarihi girilmedi.");
   if (!String(alacakliAd || "").trim()) hatalar.push("Kime ciro edildiği girilmedi.");
-  const cekK = kurus(parseMoney(odeme.tutar));
+  const cekK = tutarK != null ? tutarK : kurus(parseMoney(odeme.tutar));
   const secili = dagitim.filter(d => d.tutarK > 0);
   if (!secili.length) hatalar.push("En az bir gider kalemine tutar dağıtın.");
   const toplamK = secili.reduce((a, d) => a + d.tutarK, 0);
@@ -181,18 +222,21 @@ export const ciroPlani = ({ cek, odeme, adaylar = [], dagitim = [], tarih, alaca
 // ── Portföy (R10, R17, AC-3–AC-5, AC-36) ─────────────────────────────────────
 // Elde bulunan = portföyde + tahsile verildi. Silinmiş tahsilatın çeki okuma anında gizlenir (Q7).
 export const ELDE_DURUMLAR = new Set([CEK_DURUM.PORTFOY, CEK_DURUM.TAHSILE]);
+// Spec 0049: yalnız alınan çekler; bağsız çek de listelenir (R1). Satır bilgisi tek yoldan (cekBilgisi): `odeme` bağsızda null.
+export const vadeSiniri = (bugun, esikGun) => (bugun ? new Date(new Date(`${bugun}T12:00:00`).getTime() + esikGun * 86400000).toISOString().slice(0, 10) : null);
 export const portfoySatirlari = (cekler = [], payments = [], { durumlar = null, tur = "", bugun = null, esikGun = 7 } = {}) => {
-  const pById = new Map(payments.filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
-  const sinir = bugun ? new Date(new Date(`${bugun}T12:00:00`).getTime() + esikGun * 86400000).toISOString().slice(0, 10) : null;
+  const pById = tahsilatHaritasi(payments);
+  const sinir = vadeSiniri(bugun, esikGun);
   const satirlar = [];
   for (const c of cekler) {
-    const p = c && pById.get(String(c.paymentId));
-    if (!p) continue;
+    if (!c || yonOf(c) !== CEK_YON.ALINAN) continue;
+    const b = cekBilgisi(c, pById);
+    if (!b) continue;
     const secili = durumlar ? durumlar.has(c.durum) : ELDE_DURUMLAR.has(c.durum);
     if (!secili || (tur && c.tur !== tur)) continue;
-    const vade = p.vadeTarihi || "";
+    const vade = b.vade;
     const elde = ELDE_DURUMLAR.has(c.durum);
-    satirlar.push({ cek: c, odeme: p, vade, tutarK: kurus(parseMoney(p.tutar)), currency: p.currency || "TRY",
+    satirlar.push({ cek: c, odeme: b.odeme, bilgi: b, vade, tutarK: b.tutarK, currency: b.currency,
       gecti: elde && !!vade && !!bugun && vade < bugun, yaklasan: elde && !!vade && !!bugun && vade >= bugun && vade <= sinir });
   }
   satirlar.sort((a, b) => (a.vade || "9999").localeCompare(b.vade || "9999") || String(a.cek.no).localeCompare(String(b.cek.no)));
@@ -202,7 +246,7 @@ export const portfoySatirlari = (cekler = [], payments = [], { durumlar = null, 
 };
 // Q4: çek kaydına bağlanmamış eski çek tahsilatları (bayrakla çalışır).
 export const baglanmamisCekTahsilatlari = (payments = [], cekler = []) => {
-  const bagli = new Set((cekler || []).map(c => String(c.paymentId)));
+  const bagli = new Set((cekler || []).filter(c => c?.paymentId != null).map(c => String(c.paymentId)));
   return payments.filter(p => p && !p.deletedAt && p.yontem === "Çek" && !bagli.has(String(p.id)));
 };
 // Q7: ciro edilmiş çekin tahsilatı silinemez (önce ciro iptali).
@@ -220,9 +264,10 @@ export const musterininCiroluTahsilatlari = (customerId, payments = [], cekler =
   return (payments || []).filter(p => p && !p.deletedAt && idEsit(p.customerId, customerId) && cirolu.has(String(p.id)));
 };
 // Triyaj: tahsilatı artık olmayan (kalıcı silinmiş) çek kaydı yinelenen çek uyarısına girmez (cekDogrula bu listeyle çağrılır).
+// Spec 0049: bağsız (paymentId'siz) çekler her zaman sayılır.
 export const bagliCekler = (cekler = [], payments = []) => {
   const ids = new Set((payments || []).map(p => String(p?.id)));
-  return (cekler || []).filter(c => ids.has(String(c.paymentId)));
+  return (cekler || []).filter(c => c && (c.paymentId == null || ids.has(String(c.paymentId))));
 };
 
 // ── Spec 0047 R38, R15: çekin ay sonu durumu ve ay özeti (dönem kilidi) ─────────────
@@ -236,17 +281,19 @@ export const cekDurumuAyinSonunda = (cek, tarih) => {
   return { durum: once[once.length - 1].durum, gecmisYok: false };
 };
 // Ay özeti: ay sonunda elde duran (portföy + tahsile) çekler; ay içinde tahsil edilen, ciro edilen, karşılıksız çıkan
-// çekler gecmis tarihlerinden. Tutar tahsilatın tutarı, para birimine göre ayrı (kur çevrimi yok). Silinmiş tahsilatın
-// çeki sayılmaz.
+// çekler gecmis tarihlerinden. Tutar çek bilgisinden (bağlıda tahsilat, bağsızda çekin kendisi; 0049), para birimine göre
+// ayrı (kur çevrimi yok). Silinmiş tahsilatın çeki sayılmaz.
 export const cekAyOzeti = (cekler = [], payments = [], ay) => {
   const bas = `${ay}-01`, [y, m] = String(ay).split("-").map(Number);
   const son = `${ay}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
-  const pById = new Map(payments.filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+  const pById = tahsilatHaritasi(payments);
   const kova = () => ({ adet: 0, tutarK: {} });
   const r = { elde: kova(), tahsil: kova(), ciro: kova(), karsiliksiz: kova(), gecmisYokAdet: 0 };
-  const ekle = (k, p) => { k.adet++; const pb = p.currency || "TRY"; k.tutarK[pb] = (k.tutarK[pb] || 0) + kurus(parseMoney(p.tutar)); };
+  const ekle = (k, b) => { k.adet++; k.tutarK[b.currency] = (k.tutarK[b.currency] || 0) + b.tutarK; };
   for (const c of cekler) {
-    const p = c && pById.get(String(c.paymentId));
+    // Spec 0049 Q9: bağsız alınan çek de portföydedir; verilen çek bu özete girmez.
+    if (!c || yonOf(c) !== CEK_YON.ALINAN) continue;
+    const p = cekBilgisi(c, pById);
     if (!p) continue;
     const d = cekDurumuAyinSonunda(c, son);
     if (d?.gecmisYok) r.gecmisYokAdet++;

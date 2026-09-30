@@ -109,7 +109,13 @@ export function buildMergePlan(myData, serverData) {
     ...(h.cekId != null ? { cekId: remapRef(maps.cekler, h.cekId) } : {}),
   }));
   // Spec 0040: çek, tahsilata kimlikle bağlı.
-  adds.cekler = adds.cekler.map(c => ({ ...c, paymentId: remapRef(maps.payments, c.paymentId) }));
+  // Spec 0049: bağsız çekte paymentId null kalır; bağsız alınan çekin müşterisi, verilen çekin banka hesabı ve alacaklısı
+  // (tedarikçi / çalışan) yeniden atanan kimlikleri izler.
+  adds.cekler = adds.cekler.map(c => ({ ...c, paymentId: c.paymentId == null ? c.paymentId : remapRef(maps.payments, c.paymentId),
+    ...(c.customerId != null ? { customerId: remapRef(maps.customers, c.customerId) } : {}),
+    ...(c.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, c.hesapId) } : {}),
+    ...(c.alacakliId != null && c.alacakliTur === "tedarikci" ? { alacakliId: remapRef(maps.tedarikciler, c.alacakliId) } : {}),
+    ...(c.alacakliId != null && c.alacakliTur === "calisan" ? { alacakliId: remapRef(maps.calisanlar, c.alacakliId) } : {}) }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
   // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
   // (Stok satırları birleştirilmediği için stok bağı burada ele alınmaz; stock MERGE_KEYS'te değil.)

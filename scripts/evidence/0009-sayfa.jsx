@@ -277,6 +277,9 @@ const cekK = (id, paymentId, no, banka, durum, o = {}) => ({ id, paymentId, no, 
   gecmis: [{ tarih: "2026-09-01", durum: "portfoy", not: "Alındı" }, ...(durum !== "portfoy" ? [{ tarih: "2026-09-18", durum, not: durum === "ciro" ? "Ciro: Yıldız Gayrimenkul" : "" }] : [])], ...o });
 const CEKLER = [cekK(3401, 3301, "0012345", "Ziraat", "portfoy"), cekK(3402, 3302, "0098765", "Garanti", "portfoy", { tur: "resmi" }), cekK(3403, 3303, "5544332", "İş Bankası", "tahsile"),
   cekK(3404, 3304, "7788990", "Akbank", "ciro"), cekK(3405, 3305, "1122334", "Halkbank", "karsiliksiz"), cekK(3406, 3306, "USD-001", "Yapı Kredi", "portfoy")];
+// Spec 0049 A: tahsilata bağlı olmayan, elle eklenmiş çek (vadesi en geç: listenin son satırı).
+const BAGSIZ_CEK = { id: 3407, yon: "alinan", paymentId: null, no: "0445566", banka: "Vakıfbank", kesideci: "Kaya Ltd.", tur: "hamiline", durum: "portfoy", tutar: 12500, currency: "TRY",
+  vadeTarihi: "2026-11-30", tarih: "2026-09-12", kimden: "Kaya Ltd.", gecmis: [{ tarih: "2026-09-12", durum: "portfoy", not: "Portföye elle eklendi" }] };
 const CIRO_H = [{ id: 4020, tur: "odeme", tarih: "2026-09-18", tutar: 16000, giderId: 32, taksitId: 3201, hesapId: null, cekId: 3404, yontem: "Çek (ciro)", aciklama: "Çek 7788990 · Akbank" }];
 const kasaCek = (o = {}) => kasaEkrani({ payments: cekleriUygula([...KASA_TAHSILAT, ...CEK_ODEMELER], CEKLER), cekler: CEKLER, setCekler: bos, giderAyarlari: AYAR.giderAyarlari,
   hesapHareketleri: [...KASA_HAREKETLER, ...CIRO_H], giderler: odemeleriUygula(TAKSIT_GIDERLER, [...KASA_HAREKETLER, ...CIRO_H], TUR_MAP), calisanlar: CAL, ...o });
@@ -501,6 +504,10 @@ const EKRANLAR = {
   "kasa-cek-ciro": [kasaCek(), ["Çek Portföyü", "dugme:Ciro Et", "sec:Tedarikçi=11"]],
   "kasa-cek-durum": [kasaCek(), ["Çek Portföyü", "dugme:Durum"]],
   "kasa-cek-gecmis": [kasaCek(), ["Çek Portföyü", "dugme:Ciro edildi", "dugme:Geçmiş"]],
+  // Spec 0049 A: portföye elle eklenmiş (tahsilatsız) çek, Çek Ekle penceresi, bağsız çekin durum penceresi.
+  "kasa-cek-bagsiz": [kasaCek({ cekler: [...CEKLER, BAGSIZ_CEK] }), ["Çek Portföyü"]],
+  "kasa-cek-ekle": [kasaCek(), ["Çek Portföyü", "dugme:Çek Ekle"]],
+  "kasa-cek-bagsiz-durum": [kasaCek({ cekler: [...CEKLER, BAGSIZ_CEK] }), ["Çek Portföyü", "dugme:Durum"]],
   "musteri-tahsilat-cek": [detay(601, { cekler: CEKLER }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "sec:Ödeme yöntemi 1=Çek"]],
   // Spec 0043: Mali İşler menü grubu (gerçek App kabuğu; önce/sonra aynı sayfa, önce düz menüyü çizer).
   "uygulama-menu-acik": [<App />, ["Giderler"]],

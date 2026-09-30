@@ -12,9 +12,10 @@ import { TutarInput, tutarMetni, tl2 } from "../gider/GiderAlanlari";
 const ALACAKLI_TURLERI = [{ value: "tedarikci", label: "Tedarikçi" }, { value: "calisan", label: "Çalışan" }, { value: "serbest", label: "Serbest ad" }];
 
 export const CiroPenceresi = ({ satir, giderler = [], giderTurleri = [], tedarikciler = [], calisanlar = [], onKaydet, onClose }) => {
-  const { cek, odeme } = satir;
+  const { cek } = satir;
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
-  const cekK = kurus(odeme.tutar);
+  // Spec 0049 (Q2): tutar, para birimi ve vade çek bilgisinden (bağsız çekte tahsilat yok).
+  const cekK = satir.tutarK;
   const [tur, setTur] = useState("tedarikci");
   const [secilen, setSecilen] = useState("");
   const [serbestAd, setSerbestAd] = useState("");
@@ -35,7 +36,7 @@ export const CiroPenceresi = ({ satir, giderler = [], giderTurleri = [], tedarik
   const dagitilanK = dagitim.reduce((x, d) => x + d.tutarK, 0);
   const farkK = cekK - dagitilanK;
   const kaydet = () => {
-    const r = ciroPlani({ cek, odeme, adaylar, dagitim, tarih, alacakliAd, turMap });
+    const r = ciroPlani({ cek, tutarK: cekK, currency: satir.currency, adaylar, dagitim, tarih, alacakliAd, turMap });
     if (r.hatalar.length) { setHatalar(r.hatalar); return; }
     onKaydet(r);
   };
@@ -51,7 +52,7 @@ export const CiroPenceresi = ({ satir, giderler = [], giderTurleri = [], tedarik
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>Vazgeç</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Ciro Et</Btn></div>}>
       <div data-testid="ciro-penceresi">
         <div style={{ fontSize: 13, marginBottom: 12 }}>
-          <b>Çek {cek.no} · {cek.banka}</b> · vade {odeme.vadeTarihi ? fmtTR(odeme.vadeTarihi) : "girilmemiş"} · tutar <b>{tl2(odeme.tutar)}</b>
+          <b>Çek {cek.no} · {cek.banka}</b> · vade {satir.vade ? fmtTR(satir.vade) : "girilmemiş"} · tutar <b>{tl2(tl(cekK))}</b>
         </div>
         <div style={{ marginBottom: 12 }}><UyariSeridi aile="uyari" testId="tam-ciro-notu">{TAM_CIRO_NOTU}</UyariSeridi></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>

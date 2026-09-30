@@ -269,7 +269,9 @@ CREATE TABLE IF NOT EXISTS uretim_partileri (
 -- gocKaynak: göç izinin anahtarı ("gider:ID" / "taksit:GID:TID"); göç tekrarında ikinci kayıt üretilmez (AC-22).
 CREATE TABLE IF NOT EXISTS cekler (
   id INTEGER PRIMARY KEY,
-  paymentId INTEGER, no TEXT, banka TEXT, kesideci TEXT, tur TEXT, durum TEXT, gecmis TEXT
+  paymentId INTEGER, no TEXT, banka TEXT, kesideci TEXT, tur TEXT, durum TEXT, gecmis TEXT,
+  yon TEXT, tutar REAL, currency TEXT, vadeTarihi TEXT, tarih TEXT, kimden TEXT, customerId INTEGER,
+  alacakliTur TEXT, alacakliId INTEGER, alacakliAd TEXT, hesapId INTEGER, aciklama TEXT
 );
 CREATE TABLE IF NOT EXISTS kasa_hesaplari (
   id INTEGER PRIMARY KEY,
@@ -409,6 +411,10 @@ const SATIS_HESAP_COLUMN = [["hesapId", "INTEGER"]];
 const HAREKET_CALISAN_COLUMN = [["calisanId", "INTEGER"]];
 // Spec 0040: ciro hareketi portföydeki çeke bağlıdır (R4, R7).
 const HAREKET_CEK_COLUMN = [["cekId", "INTEGER"]];
+// Spec 0049: bağsız alınan çekin kendi alanları (tutar, para birimi, vade, alınma tarihi, kimden/müşteri) ve verilen çekin
+// alacaklısı, banka hesabı, açıklaması. Bağlı çekte bu alanlar boştur (bilgi tahsilattan okunur, Q2).
+const CEKLER_0049_COLUMNS = [["yon", "TEXT"], ["tutar", "REAL"], ["currency", "TEXT"], ["vadeTarihi", "TEXT"], ["tarih", "TEXT"], ["kimden", "TEXT"],
+  ["customerId", "INTEGER"], ["alacakliTur", "TEXT"], ["alacakliId", "INTEGER"], ["alacakliAd", "TEXT"], ["hesapId", "INTEGER"], ["aciklama", "TEXT"]];
 // Tahsilat tarihi: "ödendi" işaretlendiği gün (nakit/havale), çek tahsil günü veya KK hesaba geçiş günü.
 // Rapordaki "giren para" bu tarihe göre aya gruplanır (yoksa satış/servis tarihine düşer). Düz TEXT →
 // ...rest ile otomatik okunur; yalnız CREATE + ensureColumns + INSERT gerekir. services/part_sales/yedek_parca_satis.
@@ -872,8 +878,10 @@ function populateAll(conn, data, skip = new Set()) {
   // Spec 0040: çek kaydı yalnız kendi alanlarını taşır (Q2); geçmiş kimliksiz alt satırlar, tek JSON sütunu (R12).
   if (Array.isArray(data.cekler) && !skip.has("cekler")) {
     conn.prepare(`DELETE FROM cekler`).run();
-    const stmt = conn.prepare(`INSERT INTO cekler (id, paymentId, no, banka, kesideci, tur, durum, gecmis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const c of data.cekler) stmt.run(c.id, c.paymentId ?? null, c.no ?? null, c.banka ?? null, c.kesideci ?? null, c.tur ?? null, c.durum ?? null, json(Array.isArray(c.gecmis) ? c.gecmis : []));
+    const stmt = conn.prepare(`INSERT INTO cekler (id, paymentId, no, banka, kesideci, tur, durum, gecmis, yon, tutar, currency, vadeTarihi, tarih, kimden, customerId, alacakliTur, alacakliId, alacakliAd, hesapId, aciklama) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const c of data.cekler) stmt.run(c.id, c.paymentId ?? null, c.no ?? null, c.banka ?? null, c.kesideci ?? null, c.tur ?? null, c.durum ?? null, json(Array.isArray(c.gecmis) ? c.gecmis : []),
+      c.yon ?? null, c.tutar ?? null, c.currency ?? null, c.vadeTarihi ?? null, c.tarih ?? null, c.kimden ?? null, c.customerId ?? null,
+      c.alacakliTur ?? null, c.alacakliId ?? null, c.alacakliAd ?? null, c.hesapId ?? null, c.aciklama ?? null);
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
@@ -995,6 +1003,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "yedek_parca_satis", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CEK_COLUMN);
+  ensureColumns(conn, "cekler", CEKLER_0049_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", KART_KOMISYON_COLUMNS);
@@ -1391,7 +1400,11 @@ function readBlobFromDb() {
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, ...rest }) => ({ ...rest, kapali: toBool(kapali) }));
   const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir) }));
-  const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({ ...rest, gecmis: parseJsonCol(gecmis, []) }));
+  // Spec 0049: boş kalan yeni alanlar blob'a hiç yazılmaz; eski (bağlı) çek kaydı okununca 0040'taki şekliyle aynı kalır
+  // (sunucunun kayıt karşılaştırması null ile yokluğu ayırır).
+  const cek0049 = new Set(CEKLER_0049_COLUMNS.map(([ad]) => ad));
+  const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({
+    ...Object.fromEntries(Object.entries(rest).filter(([k, v]) => v != null || !cek0049.has(k))), gecmis: parseJsonCol(gecmis, []) }));
   const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({

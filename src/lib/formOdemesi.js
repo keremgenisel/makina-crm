@@ -118,7 +118,7 @@ export const formOdemesiHazirla = (kalem, { turMap, tarih, satirlar = {}, hesapl
       const aday = ciroAdaylari([kalem], ciroAlacaklisi(kalem, turMap), turMap).find(a => String(a.taksitId ?? "") === String(ciro.taksitId ?? ""));
       if (!aday) hatalar.satir[ciro.hedef] = "Bu bölüm çekle kapatılamaz.";
       else {
-        const p = ciroPlani({ cek: secili.cek, odeme: secili.odeme, adaylar: [aday], dagitim: [{ anahtar: aday.anahtar, tutarK: Math.min(secili.tutarK, aday.kalanK) }], tarih, alacakliAd, turMap });
+        const p = ciroPlani({ cek: secili.cek, tutarK: secili.tutarK, currency: secili.currency, adaylar: [aday], dagitim: [{ anahtar: aday.anahtar, tutarK: Math.min(secili.tutarK, aday.kalanK) }], tarih, alacakliAd, turMap });
         if (p.hatalar.length) hatalar.satir[ciro.hedef] = p.hatalar[0];
         else { hareketler = [...hareketler, ...p.hareketler]; cek = p.cek; uyari = p.uyari; }
       }
