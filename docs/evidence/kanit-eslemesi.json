@@ -109,33 +109,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-ek-once",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-ek-sonra",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-asim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-bolunmez",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-plan-hatasi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -1290,33 +1286,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-ek-once",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-ek-sonra",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-asim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-bolunmez",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0048-piksel-raporu.json",
+        "rapor": "docs/evidence/0048-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-plan-hatasi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-09-30 · spec 0048 R1, R4, R7, R14"
+        "beklenen": "ayni"
       }
     ]
   }

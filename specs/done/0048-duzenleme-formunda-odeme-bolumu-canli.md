@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-30, plan onayıyla; plan `specs/0048-uygulama-plani.md` Q1–Q11). Uygulanıyor, dal `feat/0048-duzenleme-odeme`. |
+| **Durum** | Tamamlandı (2026-09-30; commit `71a3506`, dal `feat/0048-duzenleme-odeme`; plan `specs/done/0048-uygulama-plani.md` Q1–Q11) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formunun "Ödeme" bölümü (düzenleme kipi) |
@@ -260,23 +260,23 @@ gösteriyor; ödenmiş tutarlar ise kayıttan gelmeye devam ediyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hedefler tek motordan (`formOdemeHedefleri`) geliyor; forma özel ikinci hesap yazılmadı (C2).
-- [ ] Ödeme planı önizlemesi ile ödeme kutusunun aynı kaynağı kullandığı testle sabitlendi (AC-12).
-- [ ] Ödenen tutarın formdan etkilenmediği testle gösterildi (AC-5, AC-16, AC-17, AC-18).
-- [ ] "Ödeme gir" düğmesinin üç koşulu testli; kayıtta olmayan hedefte düğme yok ve ölü tıklama üretilemez
-      (AC-19, AC-20, AC-21).
-- [ ] Hedef nesnesinin genişlemesi (ham ödenen, maaş ve ek ödeme kırılımı) motorda; formda ikinci hesap
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hedefler tek motordan (`formOdemeHedefleri`) geliyor; forma özel ikinci hesap yazılmadı (C2).
+- [x] Ödeme planı önizlemesi ile ödeme kutusunun aynı kaynağı kullandığı testle sabitlendi (AC-12).
+- [x] Ödenen tutarın formdan etkilenmediği testle gösterildi (AC-5, AC-16, AC-17, AC-18).
+- [x] "Ödeme gir" düğmesinin üç koşulu testli; kayıtta olmayan hedefte düğme yok ve ölü tıklama üretilemez
+      (AC-19, AC-20, AC-21). AC-20 R2/Q3 ile revize: yapısı değişmemiş taksitli hedefte düğme korunur.
+- [x] Hedef nesnesinin genişlemesi (ham ödenen, maaş ve ek ödeme kırılımı) motorda; formda ikinci hesap
       yazılmadı (R12, R13, C2) ve 0046'nın mevcut testleri aynen geçiyor (AC-28).
-- [ ] Plan hatası dalı ve tür değişikliği uyarısı testli (AC-24, AC-25).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0048-*.jpg`): ek ödeme öncesi ve sonrası ödeme kutusu,
+- [x] Plan hatası dalı ve tür değişikliği uyarısı testli (AC-24, AC-25).
+- [x] Görsel kanıt eklendi (`docs/evidence/0048-*.jpg`): ek ödeme öncesi ve sonrası ödeme kutusu,
       bölünemeyen kalemin nedeni.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` 0046 bölümü güncellendi: düzenleme kipinde durum satırlarının canlı kalemden geldiği,
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` 0046 bölümü güncellendi: düzenleme kipinde durum satırlarının canlı kalemden geldiği,
       ödenen tutarın kayıttan geldiği yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -284,10 +284,10 @@ gösteriyor; ödenmiş tutarlar ise kayıttan gelmeye devam ediyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı anında işlendi (R11'in form durumu yolu yerine kaydın motoru, Q1; AC-20 Q3 ile revize). Onaydan sonra triyajda R5'e ölçüt notu eklendi (satır sayısı değil taksit sayısı). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Göçsüz eski satırsız kalemlerde (0042 öncesi iki hedefli personel, 0021 öncesi stopajlı kira) hiçbir şey değişmeden "Ödeme gir" kayboluyordu (gerçek); AC-13 adlı test yoktu (izlenebilirlik). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Triyajın yakaladığı düğme kaybı yayına çıkmadan düzeltildi; 0046 testleri aynen geçiyor, mevcut 354 ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in önerdiği düzeltme (form durumundaki ödeneni önizlemeye taşımak) kök sebebi doğru bulup yanlış yamıyordu: iki ayrı durumda ödenmiş para ekranda yanlış görünürdü. Doğru soru "kaydedince ne olacak?" idi ve cevabı zaten kaydın motorunda vardı; önizlemeyi aynı motordan geçirmek hem düzeltmeyi hem C2'yi karşıladı. İkincisi: "yapı değişti mi" gibi karşılaştırmalar göçsüz eski veride sessizce yanlış sonuç verir (satırsız 0 ile önizlemenin 1'i); karşılaştırmayı temsil biçimine değil anlama (taksit sayısı) bağlamak gerekir ve test verisi eski biçimleri de içermelidir.

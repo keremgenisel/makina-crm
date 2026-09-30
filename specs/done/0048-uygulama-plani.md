@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0048-duzenleme-formunda-odeme-bolumu-canli.md` (R2, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0048-duzenleme-formunda-odeme-bolumu-canli.md` (R2, plan onayıyla onaylandı) |
 | **Dal** | `feat/0048-duzenleme-odeme` (`feat/0047-gider-kasa-raporu` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q11) kabul |
 
