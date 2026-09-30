@@ -1,0 +1,220 @@
+[
+  {
+    "ad": "kasa-cek-portfoyu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-portfoyu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-aydinlik.png",
+    "boyut": "2880x1822",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-karanlik.png",
+    "boyut": "2880x1822",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-kendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-dugmesi-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-dugmesi-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-penceresi-aydinlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-kendi-cek-penceresi-karanlik.png",
+    "boyut": "2880x3840",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  }
+]

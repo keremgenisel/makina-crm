@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-09-30, plan onayıyla; plan `specs/0049-uygulama-plani.md` Q1–Q12). Uygulanıyor, dal `feat/0049-cek`, iki parça (A: alınan, B: verilen). |
+| **Durum** | Tamamlandı (2026-09-30; A commit `6259114`, B commit `d93b813`, dal `feat/0049-cek`; plan `specs/done/0049-uygulama-plani.md` Q1–Q12) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa › Çek Portföyü, gider formu ve ödeme penceresi, kasa bakiyesi, `cekler` bölümü |
@@ -207,21 +207,22 @@ doğru görünüyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Ciro ve ödeme hareketleri mevcut fonksiyonlardan geçiyor; ikinci bir mekanizma yazılmadı (C2).
-- [ ] Çift sayım yasağı testle sabitlendi: elle çek gelir değil, kendi çekimiz bir kez bakiyeye giriyor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Ciro ve ödeme hareketleri mevcut fonksiyonlardan geçiyor; ikinci bir mekanizma yazılmadı (C2).
+- [x] Çift sayım yasağı testle sabitlendi: elle çek gelir değil, kendi çekimiz bir kez bakiyeye giriyor
       (AC-3, AC-13, AC-14).
-- [ ] `paymentId` boş olabilen çekin bütün tüketicileri gözden geçirildi (portföy, silme koruması, merge,
+- [x] `paymentId` boş olabilen çekin bütün tüketicileri gözden geçirildi (portföy, silme koruması, merge,
       yedek) ve testle kapsandı.
-- [ ] Yeni alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
-- [ ] Sunucu yetki eşlemesi güncellendi ve uçtan uca testte sabitlendi (AC-23).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0049-*.jpg`): elle çek ekleme, verilen çek listesi, gider
-      formunda iki çek seçeneği.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` 0040 bölümü güncellendi: çekin kendi tutar/vade alanları, bağsız çek ve verilen çek.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Yeni alanlar dört (liste ise beş) noktada eklendi; roundtrip ve temiz kurulum testleri kapsıyor.
+- [x] Sunucu yetki eşlemesi güncellendi ve uçtan uca testte sabitlendi (AC-23).
+- [x] Görsel kanıt eklendi (`docs/evidence/0049-*.jpg`): elle çek ekleme, verilen çek listesi, gider
+      formunda iki çek seçeneği. A raporu `0049-piksel-raporu.json`, B raporu `0049b-piksel-raporu.json`, taban
+      `0049-taban-piksel-raporu.json`.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` 0040 bölümü güncellendi: çekin kendi tutar/vade alanları, bağsız çek ve verilen çek.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -229,10 +230,10 @@ doğru görünüyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R1 plan onayı anında işlendi (Q2 bağlı çekte alan kopyalanmaz, Q3 yalnız TL ve gidere bağlı verilen çek, X8). Onaydan sonra triyaj notu R15'e eklendi (bağlı↔bağsız geçişi iki izin, kısmi geri yükleme). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (3 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Kanıt kaydı eksik (CI kırmızı, çekim sürüyordu); yalnız Giderler geri yüklemesi bağlı çekleri geri alıyordu (gerçek, gelir değişirdi); bağlı çeki bağsıza çeviren yazım cust_payment_edit'i atlıyordu (güvenlik, gerçek). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | 0040 testleri aynen geçiyor; eski bağlı çek kaydı okunurken 0040 şekliyle kalıyor (null alanlar blob'a yazılmıyor). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir bölümün iki sahibi olunca (tahsilata bağlı çekler müşteri tarafının, bağsız ve verilen çekler gider tarafının) bölüm düzeyinde çalışan her yol (kısmi geri yükleme, grup istisnası, alan denetimi) bu ayrımı ayrı ayrı gözetmek zorunda; tek bir "veya" koşulu bir sahibin iznini sessizce atlattı. Kayıt düzeyinde sahiplik bir kez tanımlanmalı (burada `paymentId`'nin boşluğu) ve her yol aynı tanımı kullanmalı. İkincisi: bağlı çekte alanları kopyalamamak (okuma anında çözmek) senkron yazım ve sunucu yetkisi sorunlarının tamamını baştan kaldırdı; türetilebilen veri saklanmamalı.

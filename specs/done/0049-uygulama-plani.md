@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0049-portfoye-cek-ekleme-ve-kendi-cekimiz.md` (R1, plan onayıyla onaylandı) |
+| **Bağlı spec** | `specs/done/0049-portfoye-cek-ekleme-ve-kendi-cekimiz.md` (R1, plan onayıyla onaylandı) |
 | **Dal** | `feat/0049-cek` (`feat/0048-duzenleme-odeme` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-09-30: bütün öneriler (Q1–Q12) kabul |
 
