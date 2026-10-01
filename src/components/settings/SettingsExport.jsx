@@ -7,6 +7,7 @@ import { Icon, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 import { aliciAd, aliciRozet } from "../stock/TahsisModal";
+import { hareketTipAdi } from "../../lib/stokHareketi";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 
 // Kredi kartı taksit/komisyon export yardımcıları (payments/servis/Extra Kalıp/Yedek Parça'da ortak).
@@ -386,7 +387,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     const head = ["Yedek Parça", "Tarih", "İşlem Tipi", "Miktar", "Not"];
     const rows = [head, ...partStockLog.map(l => {
       const part = parts.find(p => String(p.id) === String(l.partId)) || {};
-      const tip = l.tip === "stok_girisi" ? "Stok Girişi" : l.tip === "manuel_duzelt" ? "Manuel Düzeltme" : (l.tip || "");
+      const tip = hareketTipAdi(l.tip); // spec 0065 R8: karşı hareketler dahil okunur ad (tek liste)
       return [part.ad || l.partId, l.tarih || "", tip, l.miktar ?? "", l.notlar || ""];
     })];
     try {

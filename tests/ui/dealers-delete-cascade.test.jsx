@@ -7,6 +7,7 @@ import { render, fireEvent, screen, cleanup, within } from "@testing-library/rea
 
 afterEach(cleanup);
 import { SimpleDealers } from "../../src/components/SimpleDealers";
+import { netDusum } from "../../src/lib/stokHareketi";
 
 const B = 5;
 function kur() {
@@ -73,7 +74,10 @@ describe("Bayi silme kaskadı", () => {
     expect(durum.dosyalar.find(d => d.id === 802).deletedAt).toBeUndefined();
     // stok: 1 + 2 + 1 = 4; başka bayinin hareketi (702) kalır
     expect(durum.partStock.find(s => s.partId === "7").miktar).toBe(4);
-    expect(durum.partStockLog.map(l => l.referansId)).toEqual([702]);
+    // Spec 0065 R6 ile güncellendi: silinen satışların satırları kalır, karşı hareket yazılır; 702 net düşümünü korur.
+    expect(netDusum(durum.partStockLog, 700, "bayi_satis", "7") + netDusum(durum.partStockLog, 701, "bayi_satis", "7")).toBe(0);
+    expect(durum.partStockLog.filter(l => l.tip === "bayi_satis_iade").map(l => l.referansId).sort()).toEqual([700, 701]);
+    expect(netDusum(durum.partStockLog, 702, "bayi_satis", "7")).toBeGreaterThan(0);
   });
 
   it("bağlı kayıt yoksa 'Bağlı kayıt yok' der", () => {

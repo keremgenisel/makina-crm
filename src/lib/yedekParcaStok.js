@@ -3,6 +3,7 @@
 // raporlarda "serviste kullanılan parça" ile "bayiye satılan parça" karışmaz. Stok YALNIZ satışta
 // düşer; makina tahsisi (yedek_parca_tahsis) stok hareketi DEĞİL, sadece izlenebilirliktir.
 import { uid, today, mergeAndUpdate, totalMiktar } from "./utils";
+import { stokGeriAl } from "./stokHareketi";
 
 /** Bir yedek parça satışının (partId + miktar) parçasını stoktan düş ve stok logu yaz. */
 export const yedekParcaDus = (partId, miktar, satisId, setPartStock, setPartStockLog) => {
@@ -17,21 +18,9 @@ export const yedekParcaDus = (partId, miktar, satisId, setPartStock, setPartStoc
   ]);
 };
 
-/** Bir yedek parça satışının daha önce düşülmüş stok hareketini geri al ve o log kaydını sil. */
-export const yedekParcaGeriAl = (satisId, setPartStock, setPartStockLog) => {
-  if (!setPartStock || !setPartStockLog) return;
-  setPartStockLog(lg => {
-    const toRestore = lg.filter(l => l.referansId === satisId && l.tip === "bayi_satis" && l.partId);
-    if (toRestore.length > 0) {
-      setPartStock(ps => {
-        let updated = [...ps];
-        toRestore.forEach(l => {
-          const pid = String(l.partId);
-          updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
-        });
-        return updated;
-      });
-    }
-    return lg.filter(l => !(l.referansId === satisId && l.tip === "bayi_satis" && l.partId));
-  });
-};
+/**
+ * Bir yedek parça satışının düşülmüş stoğunu geri al. Spec 0065 R6: log satırı silinmez, `bayi_satis_iade` karşı hareketi
+ * yazılır; net düşümü kalmamış satışta etkisizdir (R7).
+ */
+export const yedekParcaGeriAl = (satisId, setPartStock, setPartStockLog) =>
+  stokGeriAl(satisId, "bayi_satis", setPartStock, setPartStockLog, { tarih: today(), notlar: "Yedek parça satışı silindi ya da düzenlendi" });

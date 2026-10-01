@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { today, fmtTR, uid, bumpId, parseMoney, calcKDV, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
 import { servisSureleri } from "../lib/servisAnaliz";
-import { servisParcaDus, servisParcaGeriAl } from "../lib/servisStok";
+import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../lib/servisStok";
 import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
 import { yerelServisEkle } from "../lib/yerelServis";
 import { createAlarm, kilidiAc } from "../lib/alarmSes";
@@ -563,9 +563,8 @@ export const ServisPanosu = ({
     setSvModal(null);
   };
   const restoreThenSave = (rec) => {
-    servisParcaGeriAl(form.id, setPartStock, setPartStockLog);
     setServices(p => p.map(s => s.id === form.id ? rec : s));
-    servisParcaDus(rec.degisenParcalar, form.id, setPartStock, setPartStockLog, partStock, partStockLog);
+    servisParcaYenile(rec.degisenParcalar, form.id, setPartStock, setPartStockLog, partStock, partStockLog);
   };
 
   // Teknisyen seçenekleri (form.tech listede yoksa onu da göster ki eski/serbest değer kaybolmasın)

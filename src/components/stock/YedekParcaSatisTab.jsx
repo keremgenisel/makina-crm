@@ -7,6 +7,7 @@ import { useLock } from "../../hooks/useLock";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
 import { yedekParcaDus, yedekParcaGeriAl } from "../../lib/yedekParcaStok";
+import { netDusum, netDusumAyni } from "../../lib/stokHareketi";
 import { yedekParcaRec, yeniYedekParcaSatisCoklu } from "../../lib/yedekParcaSatis";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
@@ -168,14 +169,17 @@ export const YedekParcaSatisTab = ({
       const sonuc = yedekParcaRec(form, krediKartiKomisyonlari, kdvRates);
       if (!sonuc.ok) { showToast(sonuc.hata, "err"); return; }
       const rec = sonuc.rec, eski = modal.edit;
-      // Parça/miktar değişmiş olabilir → eski stok hareketini geri al, yenisini düş.
-      yedekParcaGeriAl(eski.id, setPartStock, setPartStockLog);
-      // Stok eksiye düşmesin: kullanılabilir = mevcut stok + bu satışın (aynı parça) GERİ GELEN düşümü
-      // (log'daki gerçek düşüm; eski.miktar değil, çünkü eski satış da kırpılmış olabilir).
-      const eskiDusum = (partStockLog || []).filter(l => l.referansId === eski.id && l.tip === "bayi_satis" && String(l.partId) === String(rec.partId)).reduce((s, l) => s + Math.abs(l.miktar), 0);
-      const kullanilabilir = totalMiktar(partStock, rec.partId) + eskiDusum;
-      const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
-      yedekParcaDus(rec.partId, dusulen, eski.id, setPartStock, setPartStockLog);
+      // Spec 0065: parça ve miktar değişmemiş, tam düşülmüşse stoğa dokunulmaz (karşı hareketle log iki satır büyürdü).
+      if (!netDusumAyni(partStockLog, eski.id, "bayi_satis", [rec])) {
+        // Parça/miktar değişmiş olabilir → eski stok hareketini geri al, yenisini düş.
+        yedekParcaGeriAl(eski.id, setPartStock, setPartStockLog);
+        // Stok eksiye düşmesin: kullanılabilir = mevcut stok + bu satışın (aynı parça) GERİ GELEN düşümü
+        // (log'daki gerçek düşüm; eski.miktar değil, çünkü eski satış da kırpılmış olabilir).
+        const eskiDusum = netDusum(partStockLog, eski.id, "bayi_satis", rec.partId); // spec 0065 R7: karşı hareketler düşülür
+        const kullanilabilir = totalMiktar(partStock, rec.partId) + eskiDusum;
+        const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
+        yedekParcaDus(rec.partId, dusulen, eski.id, setPartStock, setPartStockLog);
+      }
       setYedekParcaSatislar(p => p.map(s => s.id === eski.id ? { ...s, ...rec } : s));
       audit("duzenlendi", eski.id, rec);
       showToast("Satış güncellendi.");

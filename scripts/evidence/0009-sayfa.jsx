@@ -209,6 +209,13 @@ const BAYI_SERVIS = [
 ];
 const bayiDetay = (id, o = {}) => <SimpleDealers dealers={BAYI_LISTE} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={BAYI_KALIP}
   services={[]} customers={MUSTERILER} showToast={bos} openDetailId={id} yedekParcaSatislar={YP_SATIS} parts={[{ id: 7, ad: "Rulman" }]} {...o} />;
+// Spec 0065: bir servisin düşümü, silinince karşı hareketi ve yeni bir satış.
+const STOK_LOG_0065 = [
+  { id: 9101, partId: "7", miktar: 10, tip: "stok_girisi", tarih: "2026-09-01", notlar: "Fatura 2026/118" },
+  { id: 9102, partId: "7", miktar: -3, tip: "servis", referansId: 40, tarih: "2026-09-10", notlar: "" },
+  { id: 9103, partId: "7", miktar: 3, tip: "servis_iade", referansId: 40, tarih: "2026-09-12", notlar: "Servis kaydı silindi ya da düzenlendi" },
+  { id: 9107, partId: "7", miktar: -1, tip: "bayi_satis", referansId: 41, tarih: "2026-09-15", notlar: "" },
+];
 const stokBos = (alt, o = {}) => <Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]}
   dealers={DEALERS} yedekParcaSatislar={[]} defaultSubTab={alt} showToast={bos} {...o} />;
 
@@ -493,6 +500,14 @@ const EKRANLAR = {
   "stok-bos-parca": [stokBos("parca"), []],
   "stok-bos-yedek": [stokBos("yedeksatis"), []],
   "stok-bos-uretim": [stokBos("uretim"), []],
+  // Spec 0065 R18: parça hareketleri (karşı hareket satırıyla) ve stok tutarlılığı (sapmalı + sıra belirsiz, tutarlı).
+  "parca-stok-hareketleri": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }], partStock: [{ id: 1, partId: "7", miktar: 9 }], partStockLog: STOK_LOG_0065 }), ["dugme:Hareketler"]],
+  "parca-stok-tutarlilik": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }, { id: 8, ad: "V Kayış" }, { id: 9, ad: "Conta" }],
+    partStock: [{ id: 1, partId: "7", miktar: 12 }, { id: 2, partId: "8", miktar: 4 }, { id: 3, partId: "9", miktar: 40 }],
+    partStockLog: [...STOK_LOG_0065, { id: 9104, partId: "8", miktar: 5, tip: "manuel_duzelt", tarih: "2026-09-05", notlar: "Sayım düzeltmesi" },
+      { id: 9105, partId: "8", miktar: -1, tip: "servis", referansId: 41, tarih: "2026-09-05", notlar: "" },
+      { id: 9106, partId: "9", miktar: 40, tip: "stok_girisi", tarih: "2026-09-01", notlar: "" }] }), ["dugme:Stok Tutarlılığı"]],
+  "parca-stok-tutarli": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }], partStock: [{ id: 1, partId: "7", miktar: 9 }], partStockLog: STOK_LOG_0065 }), ["dugme:Stok Tutarlılığı"]],
   "stok-parca-uyari": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }, { id: 8, ad: "V Kayış" }, { id: 9, ad: "Conta" }], partStock: [{ partId: 8, miktar: 3 }, { partId: 9, miktar: 40 }] }), []],
   "finans-bos": [<Finance customers={[]} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
     payments={[]} teklifler={[]} serverPermissions={null} />, []],

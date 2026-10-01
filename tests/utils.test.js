@@ -6,11 +6,12 @@ import {
   isAltuntasServisi, disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster,
   girisNoHaritasi, servisYedekParcaDurumu, servisKanali, parcaGruplari,
   satisTahsilEdildi, isPartSaleBorcluMu, isYedekParcaBorcluMu, tahsilatTarihiOf,
-  stokKirparakDus, stokGeriEklenmis, totalMiktar,
+  stokKirparakDus, totalMiktar,
   servisParcaSatirTutari, altuntasParcaBedeli, faturaBedeliOf,
   isPaymentReceived, isServisBorcluMu, calcCiro, calcKalanBorc,
   tsToDate, tsGunTR, mergeAppSettings, disAppSettingsSuz,
 } from "../src/lib/utils";
+import { netGeriEklenmis as stokGeriEklenmis } from "../src/lib/stokHareketi";
 import { makinaKartOdemesi } from "../src/lib/krediKarti";
 
 describe("calcCiro / calcKalanBorc — kredi kartı komisyonu KDV matrahında (option B)", () => {
@@ -315,7 +316,8 @@ describe("stokKirparakDus (stok eksiye düşmez)", () => {
   });
 });
 
-describe("stokGeriEklenmis (geri-al sonrası kırpma tabanı)", () => {
+// Spec 0065: fonksiyon lib/stokHareketi.js'e taşındı (netGeriEklenmis; karşı hareketleri de sayar). Eski beklentiler aynen.
+describe("netGeriEklenmis (geri-al sonrası kırpma tabanı)", () => {
   it("referansa ait düşümleri partStock'a geri ekler", () => {
     const base = stokGeriEklenmis(
       [{ partId: "7", miktar: 2 }],

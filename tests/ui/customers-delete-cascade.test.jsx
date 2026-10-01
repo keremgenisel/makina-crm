@@ -8,6 +8,7 @@ import { render, fireEvent, screen, cleanup, within } from "@testing-library/rea
 
 afterEach(cleanup);
 import { Customers } from "../../src/components/Customers";
+import { netDusum } from "../../src/lib/stokHareketi";
 
 const M = 500;
 const musteri = { id: M, name: "BAL KÖFTE&BURGER", model: "AK140_DSC", serialNo: "F11224822" };
@@ -77,8 +78,10 @@ describe("Müşteri silme kaskadı", () => {
     expect(bayi.tahsisler[0]).toEqual({ customerId: null, miktar: 1, makinaSerbest: "BAL KÖFTE&BURGER · F11224822 (silinen müşteri)" });
     // YENİ: parça stoğu iade (yalnız silinen satışın hareketi; bayi satışınınki kalır)
     expect(durum.partStock.find(s => s.partId === "7").miktar).toBe(3); // 1 + 2
-    expect(durum.partStockLog.some(l => l.referansId === 30)).toBe(false);
-    expect(durum.partStockLog.some(l => l.referansId === 31)).toBe(true);
+    // Spec 0065 R6 ile güncellendi: satır silinmez, karşı hareket yazılır (net düşüm 0); bayi satışınınki dokunulmaz.
+    expect(netDusum(durum.partStockLog, 30, "bayi_satis", "7")).toBe(0);
+    expect(durum.partStockLog.some(l => l.referansId === 30 && l.tip === "bayi_satis_iade")).toBe(true);
+    expect(netDusum(durum.partStockLog, 31, "bayi_satis", "7")).toBeGreaterThan(0);
     // YENİ: görüşme + dosya aynı damga; başka müşterininki dokunulmaz
     expect(durum.gorusmeler.find(g => g.id === 40).deletedAt).toBe(ts);
     expect(durum.gorusmeler.find(g => g.id === 41).deletedAt).toBeUndefined();

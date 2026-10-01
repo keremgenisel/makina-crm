@@ -16,6 +16,7 @@ import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
 import { evrakAdimlariniYaz } from "./lib/evrakUygula";
 import { UretimOzeti } from "./components/evrak/UretimOzeti";
 import { buildMergePlan } from "./lib/merge";
+import { stokEtkisi, stokuUygula } from "./lib/stokHareketi";
 import { kayitSirasiOlustur } from "./lib/kayitSirasi";
 import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "./lib/servisAlarm";
 import { yerelServisMi } from "./lib/yerelServis";
@@ -191,6 +192,12 @@ export default function App() {
   }, [tab]);
   const dataVersionRef = useRef(null);
   const loadFromStorageRef = useRef(null);
+  // Spec 0065 triyaj (bulgu 1): sunucuda olduğu BİLİNEN stok hareketi kimlikleri (son yükleme ya da başarılı kayıt).
+  // Birleştirme yalnız sunucuda olmayan VE bu kümede olmayan satırı "yeni" sayar; bilinen ama artık sunucuda olmayan satır
+  // sunucuda silinmiştir (eski istemcinin geri alması, yedekten geri yükleme) ve diriltilmez. Yeniden yükleme kümeyi
+  // tazelemeden önce eski hâli `oncekiBilinenLogRef`'e alınır; birleştirme o hâli kullanır.
+  const bilinenLogRef = useRef(new Set());
+  const oncekiBilinenLogRef = useRef(new Set());
   useEffect(() => {
     if (!window.appServer) { setServerMode("none"); return; }
     window.appServer.getConfig().then(cfg => {
@@ -210,7 +217,7 @@ export default function App() {
   // serverData: az önce sunucudan yüklenen blob. Karar mantığı saf ve test edilebilir
   // (src/lib/merge.js buildMergePlan); burada yalnızca plan state'e uygulanır.
   const mergeLocalIntoReloaded = (myData, serverData) => {
-    const plan = buildMergePlan(myData, serverData);
+    const plan = buildMergePlan(myData, serverData, { bilinenLogIdleri: oncekiBilinenLogRef.current });
     if (!plan) return;
     const { adds, maps, stockDeductIds, serialConflicts } = plan;
     for (const sc of serialConflicts) {
@@ -250,6 +257,21 @@ export default function App() {
     apply(setHesapHareketleri, "hesapHareketleri");
     apply(setCekler, "cekler");
     apply(setKasaKapsamDisi, "kasaKapsamDisi");
+    // Spec 0065 R1–R3, R20: stok hareketleri eklenir; adet, YENİDEN YÜKLENMİŞ (sunucu) adede yalnız gerçekten eklenen
+    // hareketlerin etkisi uygulanarak bulunur (yerel mutlak adet geri yazılmaz; 0 tabanlı).
+    if (adds.partStockLog.length) {
+      setPartStockLog(prev => {
+        const onceki = Array.isArray(prev) ? prev : [];
+        const ids = new Set(onceki.map(x => x.id));
+        const eklenen = adds.partStockLog.filter(x => !ids.has(x.id));
+        if (!eklenen.length) return prev;
+        // Normalde planın etkisi aynen kullanılır; 750 ms beklemede aynı kimlikli satır yerelde zaten belirmişse (prev'de)
+        // o satır eklenmez ve etki yalnız gerçekten eklenenlerden, aynı fonksiyonla yeniden hesaplanır (çift etki olmasın).
+        const etki = eklenen.length === adds.partStockLog.length ? plan.stokEtkisi : stokEtkisi(eklenen);
+        setPartStock(ps => stokuUygula(ps, etki));
+        return [...onceki, ...eklenen];
+      });
+    }
 
     // Birleştirilen müşterilerin kaynak stok satırları düşülür — yoksa sunucudan gelen
     // stok listesi, az önce satılan makinayı tekrar "satılabilir" olarak diriltir
@@ -1065,7 +1087,11 @@ export default function App() {
       });
       if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
       if (Array.isArray(data.partStock)) setPartStock(data.partStock);
-      if (Array.isArray(data.partStockLog)) setPartStockLog(data.partStockLog);
+      if (Array.isArray(data.partStockLog)) {
+        oncekiBilinenLogRef.current = bilinenLogRef.current;
+        bilinenLogRef.current = new Set(data.partStockLog.map(l => l?.id));
+        setPartStockLog(data.partStockLog);
+      }
       if (Array.isArray(data.uretimFormlari)) setUretimFormlari(data.uretimFormlari);
       // Makinaya özgü alanlar (yedek klasörü/zamanlama) sunucudan gelirse YOK SAYILIR, yerel
       // değer korunur — bkz. disAppSettingsSuz. Yedekten geri yükleme yolu da aynı ayıklamayı yapar.
@@ -1116,6 +1142,7 @@ export default function App() {
       if (ok) {
         failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
         clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
+        if (Array.isArray(saveData.partStockLog)) bilinenLogRef.current = new Set(saveData.partStockLog.map(l => l?.id)); // spec 0065 triyaj
       }
       else {
         if (serverMode === "active") { failedSaveRef.current = veri; }

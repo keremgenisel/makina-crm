@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { logAction, getAuditUsername, snapshotOnceki } from "../../lib/audit";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
-import { servisParcaDus, servisParcaGeriAl } from "../../lib/servisStok";
+import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../../lib/servisStok";
 import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
   calcKalanBorc, stripAutoPrint, simdiYerel,
@@ -31,6 +31,7 @@ import { PartSaleForm } from "../PartSaleForm";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi } from "../../lib/yedekParcaSatis";
 import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
+import { netDusum, netDusumAyni } from "../../lib/stokHareketi";
 import { useLock } from "../../hooks/useLock";
 import { useFormDraft } from "../../hooks/useFormDraft";
 import { renderMailTemplate } from "../../lib/mailTemplates";
@@ -215,9 +216,8 @@ export const CustomerDetailModal = ({
       logAction({ serverPermissions, action: "olusturuldu", entity: "servis", entityId: newId, entityName: detailView?.name, detail: { type: rec.type } });
       showToast(dosyaTaslaklari.length ? `Servis talebi kaydedildi (${dosyaTaslaklari.length} dosya eklendi).` : "Servis talebi kaydedildi.");
     } else {
-      restoreServiceParts(svForm.id);
       setServices(p => p.map(s => s.id === svForm.id ? rec : s));
-      deductServiceParts(rec.degisenParcalar, svForm.id);
+      servisParcaYenile(rec.degisenParcalar, svForm.id, setPartStock, setPartStockLog, partStock, partStockLog);
       bindServisDosyalari(svForm.id, dosyaTaslaklari);
       logAction({ serverPermissions, action: "duzenlendi", entity: "servis", entityId: svForm.id, entityName: detailView?.name, detail: { onceki: snapshotOnceki(services.find(x => x.id === svForm.id)) } });
       showToast("Servis talebi düzenlendi.");
@@ -307,7 +307,7 @@ export const CustomerDetailModal = ({
       const eskiler = (yedekParcaSatislar || []).filter(s => s.batchId === ypForm.batchId && !s.deletedAt);
       const geriGelen = {}; // partId → eski satıştan stoğa geri gelen miktar (sentetik stok için)
       for (const s of eskiler) {
-        const dus = (partStockLog || []).filter(l => l.referansId === s.id && l.tip === "bayi_satis").reduce((a, l) => a + Math.abs(l.miktar), 0);
+        const dus = netDusum(partStockLog, s.id, "bayi_satis", s.partId); // spec 0065 R7: karşı hareketler düşülür
         geriGelen[String(s.partId)] = (geriGelen[String(s.partId)] || 0) + dus;
       }
       eskiler.forEach(s => yedekParcaGeriAl(s.id, setPartStock, setPartStockLog));
@@ -332,11 +332,14 @@ export const CustomerDetailModal = ({
       const sonuc = yedekParcaRec(ypForm, appSettings?.krediKartiKomisyonlari, kdvRates);
       if (!sonuc.ok) { showToast(sonuc.hata, "err"); return; }
       const rec = sonuc.rec, eskiId = ypForm.id;
-      yedekParcaGeriAl(eskiId, setPartStock, setPartStockLog);
-      const eskiDusum = (partStockLog || []).filter(l => l.referansId === eskiId && l.tip === "bayi_satis" && String(l.partId) === String(rec.partId)).reduce((s, l) => s + Math.abs(l.miktar), 0);
-      const kullanilabilir = totalMiktar(partStock, rec.partId) + eskiDusum;
-      const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
-      yedekParcaDus(rec.partId, dusulen, eskiId, setPartStock, setPartStockLog);
+      // Spec 0065: parça ve miktar değişmemiş, tam düşülmüşse stoğa dokunulmaz (karşı hareketle log iki satır büyürdü).
+      if (!netDusumAyni(partStockLog, eskiId, "bayi_satis", [rec])) {
+        yedekParcaGeriAl(eskiId, setPartStock, setPartStockLog);
+        const eskiDusum = netDusum(partStockLog, eskiId, "bayi_satis", rec.partId); // spec 0065 R7
+        const kullanilabilir = totalMiktar(partStock, rec.partId) + eskiDusum;
+        const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
+        yedekParcaDus(rec.partId, dusulen, eskiId, setPartStock, setPartStockLog);
+      }
       setYedekParcaSatislar(p => p.map(s => s.id === eskiId ? { ...s, ...rec } : s));
       logAction({ serverPermissions, action: "duzenlendi", entity: "yedek_parca_satis", entityId: eskiId, entityName: detailView?.name });
       showToast("Yedek parça satışı güncellendi.");

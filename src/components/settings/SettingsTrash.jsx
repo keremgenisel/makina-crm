@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { fmtTR, fmtCur, calcKalanBorc, mergeAndUpdate, totalMiktar, uid, today, parcaAdi } from "../../lib/utils";
 import { yedekParcaDus } from "../../lib/yedekParcaStok";
+import { servisParcalariYenidenDus } from "../../lib/servisStok";
+import { IADE_TIPI } from "../../lib/stokHareketi";
 import { yedekParcaAlicisiMi, geriDonenStokBul } from "../../lib/musteriKaskad";
 import { yedekParcaBayininMi, bayiDosyasiMi } from "../../lib/bayiKaskad";
 import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
@@ -44,6 +46,8 @@ export const SettingsTrash = ({
   const restoreCustomer = (c) => {
     setCustomers(p => p.map(x => x.id === c.id ? { ...x, deletedAt: undefined } : x));
     setServices(p => p.map(s => kaskadCocuk(c)(s) ? { ...s, deletedAt: undefined } : s));
+    // Spec 0065 R17: silinirken stoğa iade edilen servis parçaları yeniden düşülür.
+    servisParcalariYenidenDus(rawServices.filter(kaskadCocuk(c)), setPartStock, setPartStockLog, partStock, partStockLog);
     setPartSales?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
     setPayments?.(p => p.map(x => kaskadCocuk(c)(x) ? { ...x, deletedAt: undefined } : x));
     rawYedekParcaSatislar.filter(kaskadYedekParca(c)).forEach(yedekParcaStokYenidenDus);
@@ -55,7 +59,7 @@ export const SettingsTrash = ({
     const donen = geriDonenStokBul(rawStock, c);
     if (donen) {
       setStock?.(p => p.filter(x => x.id !== donen.id));
-      if (c.sourceStockId != null) setPartStockLog?.(lg => lg.map(l => (l.tip === "makina_uretimi" && String(l.referansId) === String(donen.id)) ? { ...l, referansId: c.sourceStockId } : l));
+      if (c.sourceStockId != null) setPartStockLog?.(lg => lg.map(l => ((l.tip === "makina_uretimi" || l.tip === IADE_TIPI.makina_uretimi) && String(l.referansId) === String(donen.id)) ? { ...l, referansId: c.sourceStockId } : l));
     }
     showToast("Müşteri geri alındı.");
   };
@@ -77,7 +81,11 @@ export const SettingsTrash = ({
     setGorusmeler?.(p => p.filter(g => g.customerId !== c.id));
     showToast("Müşteri kalıcı olarak silindi.");
   };
-  const restoreService = (s) => { setServices(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x)); showToast("Servis kaydı geri alındı."); };
+  const restoreService = (s) => {
+    setServices(p => p.map(x => x.id === s.id ? { ...x, deletedAt: undefined } : x));
+    servisParcalariYenidenDus([s], setPartStock, setPartStockLog, partStock, partStockLog); // spec 0065 R17
+    showToast("Servis kaydı geri alındı.");
+  };
   const purgeService = (s) => { setServices(p => p.filter(x => x.id !== s.id)); showToast("Servis kaydı kalıcı olarak silindi."); };
   const restorePartSale = (ps) => {
     setPartSales?.(p => p.map(x => x.id === ps.id ? { ...x, deletedAt: undefined } : x));
@@ -258,7 +266,7 @@ export const SettingsTrash = ({
       });
     }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawGiderler, giderTurleri, giderYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar]);
+  }, [rawGiderler, giderTurleri, giderYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

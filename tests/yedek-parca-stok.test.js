@@ -3,6 +3,7 @@
 // düzenlemede geri alınır (çift düşme / stok kaçağı olmamalı); "servis" hareketleriyle karışmaz.
 import { describe, it, expect } from "vitest";
 import { yedekParcaDus, yedekParcaGeriAl } from "../src/lib/yedekParcaStok.js";
+import { netDusum } from "../src/lib/stokHareketi.js";
 
 const holder = (init) => {
   let s = init;
@@ -31,12 +32,16 @@ describe("yedekParcaDus / yedekParcaGeriAl", () => {
     expect(log.get()).toHaveLength(0);
   });
 
-  it("geri alma stoğu iade eder ve o satışın loglarını siler", () => {
+  // Spec 0065 R6 ile güncellendi: geri alma log satırını SİLMEZ, bayi_satis_iade karşı hareketi yazar.
+  it("AC-9: geri alma stoğu iade eder ve log'a karşı hareket yazar (satır silinmez); ikinci geri alma etkisiz", () => {
     const stock = holder([{ id: 1, partId: "7", miktar: 5 }]);
     const log = holder([{ id: 9, partId: "7", miktar: -5, tip: "bayi_satis", referansId: 900 }]);
     yedekParcaGeriAl(900, stock.set, log.set);
     expect(stock.get().find(x => x.partId === "7").miktar).toBe(10);
-    expect(log.get().filter(l => l.referansId === 900)).toHaveLength(0);
+    expect(log.get().filter(l => l.referansId === 900).map(l => [l.tip, l.miktar])).toEqual([["bayi_satis", -5], ["bayi_satis_iade", 5]]);
+    yedekParcaGeriAl(900, stock.set, log.set);
+    expect(stock.get()[0].miktar).toBe(10);
+    expect(netDusum(log.get(), 900, "bayi_satis", "7")).toBe(0);
   });
 
   it("düzenleme akışı (geri al → yeniden düş) stok kaçağı yaratmaz", () => {
@@ -47,7 +52,7 @@ describe("yedekParcaDus / yedekParcaGeriAl", () => {
     yedekParcaGeriAl(42, stock.set, log.set);      // 10'a döndü
     yedekParcaDus("7", 3, 42, stock.set, log.set); // yeni miktar 3 → 7
     expect(stock.get()[0].miktar).toBe(7);
-    expect(log.get().filter(l => l.referansId === 42)).toHaveLength(1);
+    expect(netDusum(log.get(), 42, "bayi_satis", "7")).toBe(3); // spec 0065: düşüm − iade + yeni düşüm
   });
 
   it("aynı parçanın 'servis' hareketini geri almaz (yalnız bayi_satis)", () => {

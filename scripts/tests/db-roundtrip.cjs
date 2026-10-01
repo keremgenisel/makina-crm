@@ -194,6 +194,11 @@ dbmod.writeBlobToDb({
     { id: 70, partId: "7", miktar: 12, notlar: "" },
     { id: 71, partId: "8", miktar: -3, notlar: "eski negatif" },
   ],
+  // Spec 0065 (AC-18): karşı hareket ayrı tip ama şema aynı; satırlar yeni sütun olmadan saklanır.
+  partStockLog: [
+    { id: 72, partId: "7", miktar: -3, tip: "servis", referansId: 3, tarih: "2026-09-01", notlar: "" },
+    { id: 73, partId: "7", miktar: 3, tip: "servis_iade", referansId: 3, tarih: "2026-09-02", notlar: "Servis kaydı silindi ya da düzenlendi" },
+  ],
   notes: [
     { id: 30, content: "Kerem'in notu", updatedAt: "1", olusturan: "kerem" },
     { id: 31, content: "Eski sahipsiz not", updatedAt: "2" },
@@ -307,6 +312,7 @@ check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p =
 check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.kargoDurum === "Kargoya Verildi" && p?.kargoFirma === "Yurtiçi" && p?.kargoTakipNo === "KL-1" && p?.kargoTarih === "2026-07-20" && p?.kargoSorumlusu === "Ahmet" && p?.panoDusmeZamani === "2026-07-25T08:00" && p?.panoGizli === true; })());
 check("partSale fabrikaTeslim (Extra Kalıp fabrika teslim, boolean) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.fabrikaTeslim === true; })());
 check("partSale teslimSekli (açık teslim şekli işareti) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimSekli === "fabrika"; })());
+check("spec 0065 AC-18: karşı hareket (servis_iade) şema değişmeden roundtrip", (() => { const l = blob.partStockLog || []; const a = l.find(x => x.id === 72); const b = l.find(x => x.id === 73); return a?.tip === "servis" && a.miktar === -3 && b?.tip === "servis_iade" && b.miktar === 3 && b.referansId === 3 && b.notlar === "Servis kaydı silindi ya da düzenlendi"; })());
 check("partStock negatif satır 0'a çekilir (stok eksiye düşmez); pozitif satır korunur", (() => { const neg = (blob.partStock || []).find(x => x.id === 71); const pos = (blob.partStock || []).find(x => x.id === 70); return neg?.miktar === 0 && pos?.miktar === 12; })());
 check("Faturalı müşteride faturaBedeli persist; Faturasıza çevrilende temizlenmiş bedel geri gelmez (falsy)", (() => { const fatura = blob.customers.find(c => c.id === 500); const faturasiz = blob.customers.find(c => c.id === 501); return Number(fatura?.faturaBedeli) === 600000 && !faturasiz?.faturaBedeli && Number(faturasiz?.fabrikaSatisBedeli) === 500000; })());
 check("servis degisenParcalar (miktar/fiyat) + parcaUcreti (miktar×fiyat) roundtrip", (() => { const sv = (blob.services || []).find(x => x.id === 3); const p = sv?.degisenParcalar?.[0]; return p?.miktar === 2 && Number(p?.fiyat) === 9000 && p?.partId === "7" && p?.disTedarik === false && sv?.parcaUcreti === 18000 && sv?.parcaCurrency === "TRY"; })());

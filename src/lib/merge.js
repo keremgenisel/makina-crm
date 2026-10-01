@@ -1,4 +1,5 @@
 import { uid, bumpId, wasMintedHere } from "./utils";
+import { stokEtkisi } from "./stokHareketi";
 
 // ── Çakışma birleştirme planı ────────────────────────────────────────────────
 // İki PC aynı anda kayıt yaptığında kaybeden taraf sunucudan güncel veriyi çeker ve
@@ -31,9 +32,19 @@ export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "p
   // Spec 0040: çek portföyü (tahsilata bağlı).
   "cekler",
   // Spec 0058 R14: kasa iş listesinden kapsam dışı bırakılan kayıtlar (satırın kaydına kimlikle bağlı).
-  "kasaKapsamDisi"];
+  "kasaKapsamDisi",
+  // Spec 0065 R1: parça stok hareketi (yalnız büyür). Adet (partStock) birleşmez; eklenen hareketlerin etkisi (planın
+  // stokEtkisi) yeniden yüklenmiş adede uygulanır (R2). Karşılığı App.mergeLocalIntoReloaded'da.
+  "partStockLog"];
 
-export function buildMergePlan(myData, serverData) {
+// Spec 0065 R15: stok hareketinin özü. Aynı kimlikli log satırı yalnız bağı (referansId) ya da notu değişmişse aynı
+// harekettir (müşteri silmede makina kitinin bağı taşınır); yeni kimlikle eklenirse stok ikinci kez düşerdi.
+const hareketOzu = (l) => JSON.stringify([String(l?.partId), Number(l?.miktar), l?.tip ?? null, l?.tarih ?? null]);
+
+// secenekler.bilinenLogIdleri (spec 0065 triyaj): sunucuda olduğu son yükleme ya da başarılı kayıtta bilinen stok hareketi
+// kimlikleri. Bu kümede olup artık sunucuda olmayan satır sunucuda SİLİNMİŞTİR; yeniden eklenirse stok etkisi bir kez daha
+// uygulanırdı (eski istemcinin geri alması, başka PC'de yedekten geri yükleme).
+export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null } = {}) {
   if (!myData || !serverData) return null;
   // Yeniden atanacak ID'ler iki tarafın da maksimumundan sonra gelsin
   bumpId(...MERGE_KEYS.flatMap(k => [serverData[k] || [], myData[k] || []]));
@@ -47,8 +58,10 @@ export function buildMergePlan(myData, serverData) {
     adds[key] = [];
     for (const rec of (myData[key] || [])) {
       const existing = byId.get(rec.id);
+      if (!existing && key === "partStockLog" && bilinenLogIdleri?.has(rec.id)) continue;
       if (!existing) { adds[key].push(rec); continue; }
       if (JSON.stringify(existing) === JSON.stringify(rec)) continue;
+      if (key === "partStockLog" && hareketOzu(existing) === hareketOzu(rec)) continue;
       if (!wasMintedHere(rec.id)) continue;
       const nid = uid();
       maps[key].set(rec.id, nid);
@@ -145,5 +158,15 @@ export function buildMergePlan(myData, serverData) {
     return c;
   });
 
-  return { adds, maps, stockDeductIds, serialConflicts };
+  // Spec 0065 triyaj (bulgu 3): stok hareketinin bağı (referansId) tipine göre yeniden atanan kaydı izler; yoksa yeni
+  // kimlik alan servisin / yedek parça satışının net düşümü 0 okunur (silinince iade yok, düzenlemede çift düşüm).
+  // Makina stoğu birleştirilmediği için makina_uretimi bağı olduğu gibi kalır.
+  const logBagHaritasi = { servis: maps.services, servis_iade: maps.services, bayi_satis: maps.yedekParcaSatislar, bayi_satis_iade: maps.yedekParcaSatislar };
+  adds.partStockLog = adds.partStockLog.map(l => {
+    const m = logBagHaritasi[l.tip];
+    return m && l.referansId != null && m.has(l.referansId) ? { ...l, referansId: m.get(l.referansId) } : l;
+  });
+
+  // Spec 0065 R2, R3: yalnız bu birleştirmede eklenen hareketlerin etkisi (hareketi olmayan parça yok).
+  return { adds, maps, stockDeductIds, serialConflicts, stokEtkisi: stokEtkisi(adds.partStockLog) };
 }

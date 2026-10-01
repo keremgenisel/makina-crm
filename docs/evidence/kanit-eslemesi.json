@@ -794,6 +794,11 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-export"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "ayarlar-export",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsGider.jsx": [
@@ -940,6 +945,11 @@
         "rapor": "docs/evidence/0064-piksel-raporu.json",
         "ekran": "ayarlar-trash",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -991,6 +1001,11 @@
       },
       {
         "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteriler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
         "ekran": "musteriler-liste",
         "beklenen": "ayni"
       }
@@ -1082,6 +1097,11 @@
       },
       {
         "rapor": "docs/evidence/0016-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
         "ekran": "stok-yedek-parca-suzgec",
         "beklenen": "ayni"
       }
@@ -1284,6 +1304,11 @@
         "rapor": "docs/evidence/0063-taban-piksel-raporu.json",
         "ekran": "musteri-tahsilat-hesap-satir",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "ayni"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -1382,6 +1407,16 @@
         "rapor": "docs/evidence/0022-taban-piksel-raporu.json",
         "ekran": "stok-makina-parti",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -1399,6 +1434,24 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-parca-uyari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "stok-parca-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 R18"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "stok-bos-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 R18"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "parca-stok-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 R18"
       }
     ],
     "src/components/MailCompose.jsx": [
@@ -2313,6 +2366,28 @@
         "rapor": "docs/evidence/0056-taban-piksel-raporu.json",
         "ekran": "kasa-0056-sil-engel",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/StokHareketleriPenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "parca-stok-hareketleri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 AC-25"
+      }
+    ],
+    "src/components/stock/StokTutarliligi.jsx": [
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "parca-stok-tutarlilik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 AC-13, AC-26"
+      },
+      {
+        "rapor": "docs/evidence/0065-piksel-raporu.json",
+        "ekran": "parca-stok-tutarli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0065 AC-14"
       }
     ]
   }

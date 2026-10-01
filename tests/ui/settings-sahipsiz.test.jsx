@@ -6,6 +6,7 @@ import { render, fireEvent, screen, cleanup, within } from "@testing-library/rea
 
 afterEach(cleanup);
 import { SettingsSahipsiz } from "../../src/components/settings/SettingsSahipsiz";
+import { netDusum } from "../../src/lib/stokHareketi";
 
 function kur() {
   const durum = {
@@ -92,6 +93,8 @@ describe("Sahipsiz Kayıtlar aracı", () => {
     fireEvent.click(screen.getByText("Evet, Sil"));
     expect(durum.yedekParcaSatislar.find(x => x.id === 30).deletedAt).toBeTruthy();
     expect(durum.partStock[0].miktar).toBe(2);
-    expect(durum.partStockLog.some(l => l.referansId === 30)).toBe(false);
+    // Spec 0065 R6 ile güncellendi: satır silinmez, karşı hareket yazılır (AC-12).
+    expect(netDusum(durum.partStockLog, 30, "bayi_satis", durum.partStock[0].partId)).toBe(0);
+    expect(durum.partStockLog.some(l => l.referansId === 30 && l.tip === "bayi_satis_iade")).toBe(true);
   });
 });

@@ -828,18 +828,8 @@ export const stokKirparakDus = (partStock, kalemler) => {
   return { partStock: updated, dusumler };
 };
 
-// Bir referansa (servis / makina üretimi) ait daha önce düşülmüş stok hareketlerini partStock'a geri
-// eklenmiş SALT-HESAP kopya döndürür (state'i değiştirmez). "Geri al + yeniden düş" (edit) akışında,
-// yeniden-düşüşün kırpma tabanı geri-alma SONRASI stok olmalıdır; bu snapshot onu verir. Ekleme (add)
-// akışında ilgili referansa ait log olmadığından partStock aynen döner.
-export const stokGeriEklenmis = (partStock, partStockLog, referansId, tip) => {
-  let updated = [...(partStock || [])];
-  (partStockLog || []).filter(l => l && l.partId && l.tip === tip && String(l.referansId) === String(referansId)).forEach(l => {
-    const pid = String(l.partId);
-    updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
-  });
-  return updated;
-};
+// Spec 0065: "geri al + yeniden düş" kırpma tabanı (eski stokGeriEklenmis) karşı hareketleri de saymak için
+// lib/stokHareketi.js'e taşındı: netGeriEklenmis.
 
 export const withoutDeleted = arr => (arr || []).filter(x => !x.deletedAt);
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
+import { servisParcaGeriAl } from "../lib/servisStok";
+import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
@@ -390,34 +392,21 @@ export const Customers = ({
     if (setGorusmeler) setGorusmeler(p => withDeleted(p, g => g.customerId === confirmId && !g.deletedAt, ts));
     if (setDosyalar) setDosyalar(p => withDeleted(p, d => d.customerId === confirmId && !d.deletedAt, ts));
 
-    // Servislerde kullanılan parçaları stoka geri al
+    // Servislerde kullanılan parçaları stoka geri al. Spec 0065 R6, R12: tekil servis silmesiyle aynı yardımcı; log satırı
+    // silinmez, karşı hareket yazılır (çöpten geri alınınca yeniden düşülür, R17).
     if (c && setPartStock && setPartStockLog) {
-      const custServices = services.filter(s => s.customerId === c.id && !s.deletedAt);
-      const svcIds = new Set(custServices.map(s => String(s.id)));
-      const svcPartLog = partStockLog.filter(l => l.tip === "servis" && svcIds.has(String(l.referansId)));
-      if (svcPartLog.length > 0) {
-        setPartStock(ps => {
-          let updated = [...ps];
-          svcPartLog.forEach(l => {
-            const pid = String(l.partId);
-            updated = updated.map(s => String(s.partId) === pid
-              ? { ...s, miktar: (s.miktar || 0) + Math.abs(l.miktar), sonGuncelleme: today() }
-              : s
-            );
-          });
-          return updated;
-        });
-        setPartStockLog(lg => lg.filter(l => !(l.tip === "servis" && svcIds.has(String(l.referansId)))));
-      }
+      services.filter(s => s.customerId === c.id && !s.deletedAt).forEach(s => servisParcaGeriAl(s.id, setPartStock, setPartStockLog));
     }
 
-    // Kit log'unu önceden belirle — stok girişinin parcalar alanı ve log güncellemesi için gerekli
+    // Kit log'unu önceden belirle — stok girişinin parcalar alanı ve log güncellemesi için gerekli. Spec 0065 R14, R16:
+    // makinanın parça tüketimi NET düşümdür (karşı hareketi yazılmış tüketim kitte sayılmaz).
     let kitLog = [];
     let restoredRefId = null;
+    const netKit = (refId) => [...netDusumleri(partStockLog, refId, "makina_uretimi")].map(([partId, adet]) => ({ partId, adet }));
     if (c && setPartStockLog) {
       if (c.sourceStockId) {
         const srcId = String(c.sourceStockId);
-        kitLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === srcId);
+        kitLog = netKit(srcId);
         restoredRefId = srcId;
       } else if (c.model) {
         const liveIds = new Set((stock || []).map(s => String(s.id)));
@@ -433,9 +422,8 @@ export const Customers = ({
             if (!groups.has(k)) groups.set(k, []);
             groups.get(k).push(l);
           });
-          const bestKey = [...groups.keys()].sort((a, b) => Number(b) - Number(a))[0];
-          kitLog = groups.get(bestKey);
-          restoredRefId = bestKey;
+          const bestKey = [...groups.keys()].filter(k => netKit(k).length > 0).sort((a, b) => Number(b) - Number(a))[0];
+          if (bestKey != null) { kitLog = netKit(bestKey); restoredRefId = bestKey; }
         }
       }
     }
@@ -448,16 +436,16 @@ export const Customers = ({
         : stock.some(s => s.model === c.model && !s.serialNo);
 
       if (!alreadyInStock) {
-        const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: Math.abs(l.miktar) }));
+        const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: l.adet }));
         bumpId(stock);
         const newStockId = uid();
         setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), ...(c.partiId != null ? { partiId: c.partiId } : {}), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
 
         if (kitLog.length > 0 && setPartStockLog) {
           kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
-          // Parçalar makinada kalmaya devam ediyor — log'u yeni stok ID'sine bağla
+          // Parçalar makinada kalmaya devam ediyor — log'u (karşı hareketleriyle birlikte) yeni stok ID'sine bağla
           setPartStockLog(log => log.map(l =>
-            l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId
+            (l.tip === "makina_uretimi" || l.tip === IADE_TIPI.makina_uretimi) && String(l.referansId) === restoredRefId
               ? { ...l, referansId: newStockId }
               : l
           ));

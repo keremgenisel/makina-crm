@@ -60,7 +60,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 
 **Örnek:** `src/components/Giderler.jsx:256`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:494` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Customers.jsx:482` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:321` (form içi, düğme kipi, eşit genişlik)
@@ -142,7 +142,7 @@ Satış / Finans); bir form bölümünün başında, yanında düğmeler olan ba
 - Kenarlıksız bir `KartBolum` ile taklit edilmez.
 
 **Örnek:** `src/components/customers/CustomerAddEditForm.jsx:142`
-**Örnek:** `src/components/stock/MakinaStokTab.jsx:261` (düğmeli başlık satırında, alt boşluk 0)
+**Örnek:** `src/components/stock/MakinaStokTab.jsx:244` (düğmeli başlık satırında, alt boşluk 0)
 
 ## BosDurum
 
@@ -167,7 +167,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:299`
-**Örnek:** `src/components/Customers.jsx:528` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Customers.jsx:516` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
@@ -189,7 +189,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Onay isteyen durum: `ConfirmDialog`.
 
 **Örnek:** `src/components/Giderler.jsx:275`
-**Örnek:** `src/components/stock/PartStokTab.jsx:135` (hata ailesi)
+**Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 

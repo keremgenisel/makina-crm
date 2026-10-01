@@ -5,12 +5,17 @@ import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
 import { HataMetni, KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
+import { StokHareketleriPenceresi } from "./StokHareketleriPenceresi";
+import { StokTutarliligi } from "./StokTutarliligi";
 
 const PER_PAGE = 15;
 
 export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  // Spec 0065 R18: salt okunur pencereler (hareket listesi, tutarlılık raporu); kilit almaz, veri yazmaz.
+  const [hareketParca, setHareketParca] = useState(null);
+  const [tutarlilikAcik, setTutarlilikAcik] = useState(false);
 
   const lockPartId = modal && form.partId ? String(form.partId) : null;
   const { lockLoading: partStokLockLoading, lockConflict: partStokLock, forceAcquire: forcePartStokLock } = useLock("partstock", lockPartId);
@@ -143,6 +148,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Parça adı veya model ara..."
             style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
+        <Btn variant="ghost" onClick={() => setTutarlilikAcik(true)}><Icon name="check" size={14} /> Stok Tutarlılığı</Btn>
         {canDoStock("stock_parca_add") && <Btn onClick={openEkle}><Icon name="plus" size={14} /> Stoğa Parça Ekle</Btn>}
       </div>
 
@@ -209,6 +215,7 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                       {canDoStock("stock_parca_add") && <Btn small onClick={() => { setForm({ partId: String(part.id), miktar: "1", notlar: "" }); setModal("ekle"); }}
                         style={{ fontSize: 11 }}>+ Ekle</Btn>}
                       {canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>}
+                      <Btn small variant="ghost" onClick={() => setHareketParca(part)} style={{ fontSize: 11 }}>Hareketler</Btn>
                       {canDoStock("stock_parca_pin") && (
                         <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
                           title={isPinned ? "Dashboarddan çıkar" : "Dashboarda ekle"}
@@ -225,6 +232,9 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
         </KartBolum>
       )}
       <Pagination total={filteredRows.length} page={page} setPage={setPage} perPage={PER_PAGE} />
+
+      {hareketParca && <StokHareketleriPenceresi part={hareketParca} partStockLog={partStockLog} onClose={() => setHareketParca(null)} />}
+      {tutarlilikAcik && <StokTutarliligi parts={parts} partStock={partStock} partStockLog={partStockLog} onClose={() => setTutarlilikAcik(false)} />}
 
       {(modal === "ekle") && (
         <Modal title="Stoğa Parça Ekle" onClose={() => setModal(null)} maxWidth={600} overflowVisible>

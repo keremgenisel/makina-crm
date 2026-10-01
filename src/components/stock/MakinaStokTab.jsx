@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { makinaGiderSayisi } from "../../lib/gider";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
-import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, stokGeriEklenmis } from "../../lib/utils";
+import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus } from "../../lib/utils";
+import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
 import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu } from "../tasarim";
@@ -49,7 +50,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const deductParts = (parcalar, stockId) => {
     const valid = parcalar.filter(r => r.partId && parseInt(r.miktar) > 0);
     if (!valid.length) return;
-    const taban = stokGeriEklenmis(partStock, partStockLog, stockId, "makina_uretimi");
+    const taban = netGeriEklenmis(partStock, partStockLog, stockId, "makina_uretimi");
     const { dusumler } = stokKirparakDus(taban, valid);
     if (!dusumler.length) return;
     setPartStock(ps => {
@@ -75,26 +76,17 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       showToast("Stok makinası kaydedildi.");
     } else {
       const stockId = form.id;
-      const sid = String(stockId);
-      const oldPartLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === sid);
-      if (oldPartLog.length > 0) {
-        setPartStock(ps => {
-          let updated = [...ps];
-          oldPartLog.forEach(l => {
-            const pid = String(l.partId);
-            updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
-          });
-          return updated;
-        });
-        setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === sid)));
-      }
+      // Spec 0065 R16: eski kit tüketimi silinmez, karşı hareket yazılır (üretim tarihi ilk tüketimden okunduğu için kaymaz).
+      // Kit değişmemiş ve tam düşülmüşse stoğa dokunulmaz (log iki satır büyürdü; stok sonucu aynı).
+      const kitAyni = netDusumAyni(partStockLog, stockId, "makina_uretimi", form.parcalar || []);
+      if (!kitAyni) stokGeriAl(stockId, "makina_uretimi", setPartStock, setPartStockLog, { tarih: today(), notlar: `${form.model} kiti düzenlendi` });
       // Spec 0002 M3: üretim tarihi taşımayan eski "geri dönen" satırın tanınması not metnine bağlı; düzenlemede
       // not değişebileceği için özgün tarih (çöpteki müşteriden, ESKİ model+seriyle) şimdi satıra yazılır.
       const eski = stock.find(x => x.id === stockId);
       const tarihTasi = eski && geriDonenStokMu(eski) && !eski.uretimTarihi ? geriDonenStokTarihi(eski, copMusteriler, partStockLog) : "";
       const kayit = tarihTasi ? { ...form, uretimTarihi: tarihTasi } : form;
       setStock(p => p.map(s => s.id === stockId ? kayit : s));
-      deductParts(form.parcalar || [], stockId);
+      if (!kitAyni) deductParts(form.parcalar || [], stockId);
       logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model, detail: { onceki: snapshotOnceki(stock.find(x => x.id === stockId)) } });
       showToast("Stok makinası düzenlendi.");
     }
@@ -104,11 +96,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const confirmDel = () => {
     const cid = String(confirmId);
     const machine = stock.find(s => s.id === confirmId);
-    let partLog = partStockLog.filter(l => l.tip === "makina_uretimi" && String(l.referansId) === cid);
+    // Spec 0065 R14, R16: kitin NET tüketimi (karşı hareketi yazılmış tüketim sayılmaz).
+    let iadeRef = netDusumleri(partStockLog, cid, "makina_uretimi").size > 0 ? confirmId : null;
 
     // Log kaydı yoksa ve makina kit parçası içeriyorsa — orphan log ara
     // (parcalar boşsa müşteri silmeden geri dönen makina; kit zaten o adımda restore edildi)
-    if (partLog.length === 0 && machine?.model && machine?.parcalar?.length) {
+    if (iadeRef == null && machine?.model && machine?.parcalar?.length) {
       const liveIds = new Set(stock.map(s => String(s.id)));
       const orphan = partStockLog.filter(l =>
         l.tip === "makina_uretimi" &&
@@ -123,23 +116,13 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           if (!groups.has(k)) groups.set(k, []);
           groups.get(k).push(l);
         });
-        const bestKey = [...groups.keys()].sort((a, b) => Number(b) - Number(a))[0];
-        partLog = groups.get(bestKey);
+        const bestKey = [...groups.keys()].filter(k => netDusumleri(partStockLog, k, "makina_uretimi").size > 0).sort((a, b) => Number(b) - Number(a))[0];
+        if (bestKey != null) iadeRef = groups.get(bestKey)[0].referansId;
       }
     }
 
-    if (partLog.length > 0) {
-      const restoredRefId = String(partLog[0].referansId);
-      setPartStock(ps => {
-        let updated = [...ps];
-        partLog.forEach(l => {
-          const pid = String(l.partId);
-          updated = mergeAndUpdate(updated, pid, totalMiktar(updated, pid) + Math.abs(l.miktar));
-        });
-        return updated;
-      });
-      setPartStockLog(log => log.filter(l => !(l.tip === "makina_uretimi" && String(l.referansId) === restoredRefId)));
-    }
+    // Spec 0065 R16: kit parçaları stoğa karşı hareketle döner (log satırı silinmez).
+    if (iadeRef != null) stokGeriAl(iadeRef, "makina_uretimi", setPartStock, setPartStockLog, { tarih: today(), notlar: `${machine?.model || "Makina"} stoktan silindi` });
     setStock(p => withDeleted(p, s => s.id === confirmId));
     setConfirmId(null);
     logAction({ serverPermissions, action: "silindi", entity: "stok_makina", entityId: confirmId, entityName: machine?.model });
