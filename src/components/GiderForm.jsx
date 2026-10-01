@@ -3,7 +3,7 @@ import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
-import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu, TAKSIT_PLANI_DEGISTI_NEDENI } from "../lib/formOdemesi";
+import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi } from "./gider/OdemeGirisi";
 import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, cokHedefliMi } from "./gider/GiderAlanlari";
@@ -143,9 +143,9 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     if (yeniKalem || form.turId === "") return null;
     return duzenlemeOdemeDurumu({ canliKalem, kayitliKalem: kalem, turMap, planHatasi: !!onizleme.hata });
   }, [yeniKalem, form.turId, canliKalem, onizleme.hata, turMap, kalem]);
-  // R30: düzenlemede taksitli hedef, taksit sayısı kayıtlıyla aynıysa taksit seçiciyle açık; değiştiyse pasif ve nedenli.
-  const girisHedefleri = yeniKalem ? odemeHedefListesi
-    : (duzenlemeDurumu?.hedefler || []).map(h => (h.taksitli ? { ...h, pasif: !!h.taksitPlaniDegisti || !!duzenlemeDurumu.planHatasi, neden: h.taksitPlaniDegisti ? TAKSIT_PLANI_DEGISTI_NEDENI : h.neden } : h));
+  // Spec 0057 R1, C2: pasif kararı çağıranın tek satırı. Yeni kalemde hiçbir hedef pasif değildir (taksitli hedef de taksit
+  // seçiciyle ödenir); düzenlemede karar duzenlemeOdemeDurumu'ndan (taksit sayısı değişen ya da plan hatalı taksitli hedef).
+  const girisHedefleri = yeniKalem ? odemeHedefListesi : (duzenlemeDurumu?.hedefler || []);
   const girisKalemi = yeniKalem ? onizlemeKalem : canliKalem;
   const avansK = dav === DAVRANIS.PERSONEL && form.calisanId !== "" ? avansBorcuK(numId(form.calisanId), kalanHareketler, giderler) : 0;
   const mahsupVar = odemeDegistirebilir && avansK > 0 && girisHedefleri.some(h => !h.pasif && h.kalanK > 0)

@@ -1,10 +1,10 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { fmtTR, parseMoney } from "../../lib/utils";
 import { tl, hedefOdemeleri, HEDEF } from "../../lib/gider";
 import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
 import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
-import { hepsiniOde, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, HEPSI_TAKSITLI_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
+import { hepsiniOde, satirSiralariniEsle, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, CEK_DAGITIM_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
 import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib/gider";
 import { Btn, Field, Input, Select, ConfirmDialog, Icon } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment, KartBolum, UyariSeridi } from "../tasarim";
@@ -64,6 +64,11 @@ export const OdemeGirisi = ({
   const hedefAc = (h, acik) => setGiris(g => ({ ...g, satirlar: acik ? [...g.satirlar, yeniSatir(h)] : g.satirlar.filter(r => r.hedef !== h.hedef) }));
   const hepsi = () => setGiris(g => ({ ...g, satirlar: hepsiniOde(g.satirlar, hedefler, { yontem: varsayilanYontem, hesapId: varsayilanHesap, yeniAnahtar }) }));
   const cizilebilir = hedefler.filter(h => !h.pasif);
+  // Spec 0057 triyaj: hedef taksitliye döndüğünde sırası boş ya da kapanmış taksite bakan satır en yakın açık taksite eşlenir
+  // (seçicinin gösterdiği ile kaydın bağlandığı taksit aynı olsun).
+  useEffect(() => {
+    setGiris(g => { const cur = g.satirlar || []; const s = satirSiralariniEsle(cur, hedefler); return s === cur ? g : { ...g, satirlar: s }; });
+  }, [hedefler, setGiris]);
   const satirHata = (r) => hatalar?.satirlar?.[r.anahtar] || {};
 
   // ── Kayıtlı ödemeler (R16) ──
@@ -90,6 +95,10 @@ export const OdemeGirisi = ({
     const cekOlur = h.hedef === HEDEF.ANA && ciroYetkisi;
     const secenekler = [...ODEME_SECENEKLERI, ...(cekOlur ? [{ value: CIRO_YONTEMI, label: CIRO_YONTEMI }, { value: KENDI_CEK_YONTEMI, label: KENDI_CEK_YONTEMI }] : [])];
     const cekSatiri = ciro ? cekSatirlari.find(x => String(x.cek.id) === String(r.cekId)) : null;
+    // Spec 0057 R8, R19: çek satırı taksit seçmez; tutar hedefin açık taksitlerine en eski vadeden dağıtılır (motor), yani
+    // ciro tutarının sınırı hedefin kalanı eksi aynı hedefteki diğer satırlardır.
+    const cekYontemi = ciro || kendi;
+    const cekKalaniK = Math.max(0, h.kalanK - satirlar.filter(x => x.anahtar !== r.anahtar && x.hedef === h.hedef).reduce((a, x) => a + satirTutarK(x), 0));
     const hedefSatirSayisi = satirlar.filter(x => x.hedef === h.hedef).length;
     const kaldirilabilir = form || hedefSatirSayisi > 1;
     const cok = hedefSatirSayisi > 1;
@@ -103,7 +112,8 @@ export const OdemeGirisi = ({
           </div>
         )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-          {h.taksitli && (
+          {h.taksitli && cekYontemi && <div style={{ gridColumn: "1 / -1" }} data-testid="cek-dagitim-notu"><Ipucu>{CEK_DAGITIM_NOTU}</Ipucu></div>}
+          {h.taksitli && !cekYontemi && (
             <div style={{ gridColumn: "1 / -1" }}>
               <Field label="Taksit">
                 <Select aria-label={lbl(h.hedef, "taksit", n)} value={r.sira ?? ""} onChange={e => setSatir(r.anahtar, { sira: e.target.value === "" ? null : Number(e.target.value), tutar: tutarOf(yerKalaniK(h, Number(e.target.value), r.anahtar)) })}>
@@ -115,7 +125,7 @@ export const OdemeGirisi = ({
           {e.hedef && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{e.hedef}</HataMetni></div>}
           <div>
             <Field label="Tutar">
-              {ciro ? <div aria-label={lbl(h.hedef, "ödeme tutarı", n)} style={{ fontWeight: 700, padding: "8px 0" }}>{cekSatiri ? para(ciroTutariK(cekSatiri, yerKalaniK(h, r.sira, r.anahtar))) : "—"}</div>
+              {ciro ? <div aria-label={lbl(h.hedef, "ödeme tutarı", n)} style={{ fontWeight: 700, padding: "8px 0" }}>{cekSatiri ? para(ciroTutariK(cekSatiri, cekKalaniK)) : "—"}</div>
                 : <TutarInput ariaLabel={lbl(h.hedef, "ödeme tutarı", n)} value={r.tutar} onChange={v => setSatir(r.anahtar, { tutar: v })} invalid={!!e.tutar} />}
             </Field>
             {e.tutar && <HataMetni>{e.tutar}</HataMetni>}
@@ -285,9 +295,8 @@ export const OdemeGirisi = ({
         </div>
       ) : (odemeYetkisi || durum) ? (
         <div data-testid="odeme-satirlari">
-          {hedefler.length > 0 && !cizilebilir.length && <div data-testid="form-odeme-hepsi-taksitli"><Ipucu>{HEPSI_TAKSITLI_NOTU}</Ipucu></div>}
-          {/* 0046 AC-32: yeni kalemde bütün hedefler taksitliyse hedef satırları yerine tek açıklama. */}
-          {(durum || cizilebilir.length > 0) && hedefler.map(h => (form || hedefler.length > 1 ? hedefCiz(h) : (
+          {/* Spec 0057 R9: 0046'nın "bütün ödemeler taksitli" açıklaması kalktı; taksitli hedef de satırla ödenir. */}
+          {hedefler.map(h => (form || hedefler.length > 1 ? hedefCiz(h) : (
             <div key={h.hedef} data-hedef={h.hedef}>
               {h.pasif ? <Ipucu>{h.neden}</Ipucu> : satirlar.filter(r => r.hedef === h.hedef).map((r, i) => satirCiz(h, r, i + 1))}
               {!h.pasif && h.kalanK > 0 && (

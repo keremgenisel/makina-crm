@@ -267,6 +267,30 @@
         "rapor": "docs/evidence/0054-taban-piksel-raporu.json",
         "ekran": "gider-formu-personel-makina",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0057-taksit-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R1"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R9"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0057-plan-degisti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R7"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-plan-hatasi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R22"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -1724,6 +1748,36 @@
         "rapor": "docs/evidence/0054-taban-piksel-raporu.json",
         "ekran": "giderler-mahsup",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0057-taksit-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R1"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0057-cek-dagitim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R8"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0053-duzenle-ciro",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R8"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-0057-plan-degisti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R9"
+      },
+      {
+        "rapor": "docs/evidence/0057-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0057 R9"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [

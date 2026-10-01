@@ -18,7 +18,8 @@ describe("Spec 0048: hedef nesnesinin genişlemesi (R12, R13, C2)", () => {
     expect(h).toMatchObject({ hedef: "ana", taksitId: null, toplamK: 4000000, kalanK: 3000000, odendi: false, pasif: false, neden: null, ciroOlur: true });
     expect(h).toMatchObject({ odenenK: 1000000, satirSayisi: 0, maasK: null, ekOdemeK: null });
     const T = formOdemeHedefleri({ ...NORMAL, taksitler: taksitler(20, [["ana", 20000], ["ana", 20000]]) }, turMap)[0];
-    expect(T).toMatchObject({ pasif: true, neden: PASIF_TAKSIT_NEDENI, satirSayisi: 2, taksitId: null });
+    // Spec 0057 R1, R21 ile güncellendi: pasif kararı çağıranda; hedef "taksitli" alanını taşır.
+    expect(T).toMatchObject({ pasif: false, neden: null, taksitli: true, satirSayisi: 2, taksitId: null });
   });
   it("AC-11 / AC-23: personelde maaş ve ek ödeme kırılımı hedef başına; toplamı hedef toplamı; kirada ve normalde null", () => {
     const k = { ...PERS, eldenTutar: 10000, ekOdemeler: [{ tur: "prim", resmiTutar: 5000, eldenTutar: 0 }, { tur: "fazlaCalisma", resmiTutar: 0, eldenTutar: 2500 }] };
@@ -78,11 +79,12 @@ describe("Spec 0048: düzenleme kararları (duzenlemeOdemeDurumu)", () => {
   });
   it("AC-7 / AC-20 (Q3) / AC-21: kalan sıfırsa düğme yok; yapısı aynı taksitli hedefte düğme var; yapı değişince yok", () => {
     const kayit = { ...NORMAL, taksitler: taksitler(20, [["ana", 20000], ["ana", 20000]]) };
-    expect(durum(kayit, kayit).hedefler[0]).toMatchObject({ pasif: true, dugme: true, kaydedinceOdenir: false });
+    // Spec 0057 R1, R7 ile güncellendi: yapısı aynı taksitli hedef pasif değil; taksit sayısı değişince pasif ve nedenli.
+    expect(durum(kayit, kayit).hedefler[0]).toMatchObject({ pasif: false, dugme: true, kaydedinceOdenir: false });
     const tam = [od(40000, 20)];
     expect(durum(NORMAL, NORMAL, tam).hedefler[0]).toMatchObject({ kalanK: 0, dugme: false, kaydedinceOdenir: false });
     const iki = { ...NORMAL, taksitler: taksitler(20, [["ana", 20000], ["ana", 20000]]).map((r, i) => ({ ...r, id: `onizleme-${i + 1}` })) };
-    expect(durum(NORMAL, iki).hedefler[0]).toMatchObject({ dugme: false, kaydedinceOdenir: true });
+    expect(durum(NORMAL, iki).hedefler[0]).toMatchObject({ dugme: false, kaydedinceOdenir: true, pasif: true, neden: PASIF_TAKSIT_NEDENI });
   });
   it("triyaj: göçsüz eski satırsız kalemler (iki hedefli personel, stopajlı kira) değiştirilmeden açılınca düğme durur", () => {
     const pers = { ...PERS, resmiTutar: 1000, eldenTutar: 500 };

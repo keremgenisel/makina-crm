@@ -73,7 +73,8 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     const b = hesapBakiyeleri(HESAP, yeniler, {});
     expect([b.get("51").bakiye, b.get("52").bakiye]).toEqual([70000, 30000]);
   });
-  it("AC-4 / AC-5 / AC-11: kirada kiraya veren ve stopaj satırı; ana taksitliyken pasif ve nedenli, stopaj ayrı hesaptan ödenir", () => {
+  // Spec 0057 R1 ile güncellendi: taksitli ana hedef artık pasif değil; işareti ve taksit seçicisi çizilir (0046 AC-11 ters çevrildi).
+  it("AC-4 / AC-5 / AC-11 (0057 R1): kirada kiraya veren ve stopaj satırı; ana taksitliyken de ödenebilir, stopaj ayrı hesaptan ödenir", () => {
     let st;
     render(<H onState={s => { st = s; }} />);
     yeni(1);
@@ -84,8 +85,8 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     degis(L("Taksit sayısı"), "3");
     degis(screen.getByLabelText("İlk taksitin vadesi"), "2026-09-30");
     const ana = satirlar()[0];
-    expect(within(ana).queryByLabelText("Kiraya verene ödendi")).toBeNull();
-    expect(ana.textContent).toMatch(/taksitli; taksitler kalem kaydedildikten sonra ödenir/); // spec 0053: form da öder
+    expect(within(ana).getByLabelText("Kiraya verene ödendi")).toBeTruthy();
+    expect(ana.textContent).not.toMatch(/kaydedildikten sonra/);
     fireEvent.click(L("Vergi dairesine (stopaj) ödendi"));
     degis(L("Vergi dairesine (stopaj) hesabı"), "51");
     kaydetBtn();
@@ -159,12 +160,13 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     kaydetBtn();
     expect(st.hesapHareketleri.filter(h => h.id !== 900).map(h => h.yontem)).toEqual(["Havale", "Nakit"]);
   });
-  it("AC-32: bütün hedefleri taksitli kalemde satır yerine tek açıklama", () => {
+  // Spec 0057 R9 ile güncellendi: "bütün ödemeler taksitli" açıklaması kalktı; hedef satırı ve taksit seçicisi çizilir.
+  it("AC-32 (0057 R9): bütün hedefleri taksitli kalemde açıklama yok, hedef satırı çizilir", () => {
     render(<H />);
     normalAc();
     degis(L("Taksit sayısı"), "4");
-    expect(screen.queryAllByTestId("form-odeme-satiri")).toHaveLength(0);
-    expect(screen.getByTestId("form-odeme-hepsi-taksitli").textContent).toMatch(/bütün ödemeleri taksitli/);
+    expect(screen.queryAllByTestId("form-odeme-satiri")).toHaveLength(1);
+    expect(screen.queryByTestId("form-odeme-hepsi-taksitli")).toBeNull();
   });
 });
 

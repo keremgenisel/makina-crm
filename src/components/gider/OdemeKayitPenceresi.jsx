@@ -23,6 +23,7 @@ export const OdemeKayitPenceresi = ({
   // Spec 0053 R10, R14: çek yöntemleri yalnız kasa yetkisiyle; tedarikciler alacaklının adı için (ciro "kime" ister).
   cekler = [], payments = [], ciroYetkisi = false, tedarikciler = [],
 }) => {
+  // Spec 0057 R1 (C2): pencerenin kuralı; kayıtlı kalemi öder, hiçbir hedef pasif değildir.
   const tumHedefler = useMemo(() => formOdemeHedefleri(kalem, turMap).map(h => ({ ...h, pasif: false, neden: null })), [kalem, turMap]);
   // Plan Q5: hedef verilince o hedef; taksit verilince o taksitin hedefi; yoksa bütün hedefler.
   const hedefSecimi = hedef?.taksitId != null ? ((kalem.taksitler || []).find(r => String(r.id) === String(hedef.taksitId))?.hedef || HEDEF.ANA) : hedef?.hedef || null;

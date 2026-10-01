@@ -1,7 +1,7 @@
 // Spec 0046: gider formundan hedef bazlı ödeme ve çek cirosu (saf motor, lib/formOdemesi.js).
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { formOdemeHedefleri, odemeGirisiHazirla, hepsiniOde, ciroCekleri, CIRO_YALNIZ_ANA_NEDENI, PASIF_TAKSIT_NEDENI } from "../src/lib/formOdemesi";
+import { formOdemeHedefleri, odemeGirisiHazirla, hepsiniOde, ciroCekleri, CIRO_YALNIZ_ANA_NEDENI } from "../src/lib/formOdemesi";
 import { cokluOdemeDogrula, hesapBakiyeleri } from "../src/lib/kasa";
 import { ciroAdaylari, ciroPlani } from "../src/lib/cek";
 import { giderKalemDogrula, turHaritasi, odemeleriUygula, odemeDurumu, hesaplaGiderRaporu, HEDEF } from "../src/lib/gider";
@@ -41,10 +41,12 @@ describe("Spec 0046: hedef satırları", () => {
     expect(formOdemeHedefleri(personel({ eldenTutar: 0 }), turMap).map(h => h.hedef)).toEqual([HEDEF.ANA]);
     expect(formOdemeHedefleri(normal(), turMap).map(h => [h.hedef, h.kalanK, h.taksitId])).toEqual([[HEDEF.ANA, 1200000, null]]);
   });
-  it("AC-11 / AC-32: taksitli hedef pasif ve nedenli; bütün hedefler taksitliyse çizilebilir satır yok", () => {
+  // Spec 0057 R1, R21 ile güncellendi: formOdemeHedefleri pasif üretmez (çağıran verir); taksitli hedef "taksitli" alanıyla
+  // işaretlenir ve taksit seçiciyle ödenir. 0046 AC-11/AC-32'nin pasif beklentisi bilinçli olarak ters çevrildi (R17).
+  it("AC-11 / AC-32 (0057 R1): taksitli hedef pasif değil, taksitli işaretli; neden yok", () => {
     const k = kira({ taksitSayisi: 3 });
-    expect(formOdemeHedefleri(k, turMap).map(h => [h.hedef, h.pasif, h.neden])).toEqual([[HEDEF.ANA, true, PASIF_TAKSIT_NEDENI], [HEDEF.STOPAJ, false, null]]);
-    expect(formOdemeHedefleri(normal({ taksitSayisi: 4 }), turMap).every(h => h.pasif)).toBe(true);
+    expect(formOdemeHedefleri(k, turMap).map(h => [h.hedef, h.pasif, h.neden, h.taksitli])).toEqual([[HEDEF.ANA, false, null, true], [HEDEF.STOPAJ, false, null, false]]);
+    expect(formOdemeHedefleri(normal({ taksitSayisi: 4 }), turMap).every(h => !h.pasif && h.taksitli)).toBe(true);
   });
 });
 

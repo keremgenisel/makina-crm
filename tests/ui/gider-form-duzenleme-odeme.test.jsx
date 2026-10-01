@@ -126,7 +126,8 @@ describe("Spec 0048: aşım, düğme ve dallar", () => {
     expect(L("Tedarikçiye ödendi")).toBeTruthy();
     degis(L("Taksit sayısı"), "2");
     expect(screen.queryByLabelText("Tedarikçiye ödendi")).toBeNull();
-    expect(screen.getByTestId("form-odeme-durumu").textContent).toMatch(/Taksit planı değişti; kaydettikten sonra ödeyin\./);
+    // Spec 0057 R9, R20 ile güncellendi: tek neden metni PASIF_TAKSIT_NEDENI.
+    expect(screen.getByTestId("form-odeme-durumu").textContent).toMatch(/Bu bölümün taksit planı bu düzenlemede değişti; ödemeyi kaydettikten sonra girin\./);
   });
   // Spec 0053 R15, R30: yapısı değişmemiş taksitli hedef formda taksit seçiciyle ödenir (pencere açılmaz).
   it("AC-20 (Q3, 0053 R30): yapısı değişmemiş taksitli hedef formda taksit seçerek ödenir", () => {

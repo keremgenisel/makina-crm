@@ -567,6 +567,13 @@ const EKRANLAR = {
   "gider-formu-0054-ek-hedef": [<GiderForm kalem={odemeleriUygula([D54_PERS], D54_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} hareketler={D54_HAR} hareketBolumu onHedefOde={bos} />,
     ["dugme:Ek ödeme ekle", "doldur:Ek ödeme resmi 1=9500", "etiket:Ek ödeme (resmi) ödendi", "kaydir:Kayıtlı ödemeler"]],
   "giderler-0054-ek-pencere": [<GiderEkrani g0={[D54_EKLI]} h0={D54_HAR} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı", "dugme:Ödeme gir"]],
+  // Spec 0057: taksitli hedefin taksiti formdan ödenir (yeni kalemde satır + taksit seçici), çek satırında dağıtım notu,
+  // düzenlemede taksit sayısı değişince dar pasif durum.
+  "gider-formu-0057-taksit-yeni": [<GiderForm kalem={{ turId: 5, tutar: "60000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "6", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />,
+    ["doldur:Taksit sayısı=6", "etiket:Tedarikçiye ödendi", "kaydir:Ödeme tarihi"]],
+  "gider-formu-0057-cek-dagitim": [<GiderForm kalem={{ turId: 5, tutar: "60000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "6", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />,
+    ["doldur:Taksit sayısı=6", "etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ödeme tarihi"]],
+  "gider-formu-0057-plan-degisti": [duzenle48(D48_TAKSITLI), ["doldur:Taksit sayısı=4", "kaydir:Ödeme tarihi"]],
   "giderler-odeme-0053-cek": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} cekli={{ cekler: CEKLER, setCekler: bos, payments: cekleriUygula(CEK_ODEMELER, CEKLER) }} />, ["dugme:Kısmen ödendi", "sec:Ödeme yöntemi=Çek (ciro)", "sec:Çek=3401"]],
   "giderler-tedarikci-ekstresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_B} />, ["Tedarikçiler", "dugme:Ekstre"]],
   // Spec 0040: çek portföyü, ciro, durum, geçmiş, çekle tahsilat.
@@ -633,7 +640,10 @@ const EKRANLAR = {
     ["etiket:Vergi dairesine (stopaj) ödendi", "sec:Vergi dairesine (stopaj) hesabı=402", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-ciro": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,
     ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ödeme tarihi"]],
-  "gider-formu-odeme-taksitli": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "20", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "4", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />, ["kaydir:bütün ödemeleri taksitli"]],
+  "gider-formu-odeme-taksitli": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "20", tedarikciId: 12, tarih: "2026-09-20", taksitSayisi: "4", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />,
+    // Spec 0057 R9: "bütün ödemeleri taksitli" notu kalktı; ekran ödeme bölümüne kaydırılır. Form taksit sayısını kalem
+    // prop'undan almadığı için (yeni kalemde plan alanı formun durumu) sayı adımla girilir.
+    ["doldur:Taksit sayısı=4", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-duzenle": [<GiderForm kalem={odemeleriUygula([GIDERLER[0]], KASA_HAREKETLER, turHaritasi(TURLER))[0]} {...FORM_ODEME} onHedefOde={bos} />, ["kaydir:Kısmen · kalan"]],
   // Spec 0048: düzenleme formunda canlı ödeme kutusu (ek ödeme öncesi/sonrası, aşım, bölünmezlik nedeni, plan hatası).
   "gider-formu-duzenle-ek-once": [duzenle48(D48_PERS), ["kaydir:Ödemeler gider listesindeki"]],

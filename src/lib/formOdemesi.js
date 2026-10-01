@@ -4,14 +4,15 @@
 // geçici kalem kimliğiyle, Giderler kaydı gerçek kimlikle aynı fonksiyondan yapar (0046 Q1, 0053 R24); bu yüzden fonksiyon
 // girdiden başka hiçbir şeye bakmaz.
 import { cokluOdemeDogrula, mahsupDogrula, COKLU_ODEME_MAX_SATIR } from "./kasa";
-import { ciroAdaylari, ciroPlani, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
+import { ciroAdaylari, ciroPlani, ciroVarsayilanDagitim, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
 import { parseMoney } from "./utils";
 import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, personelEkBolunmezMi, kalemPersonelAyrimi, odemeHedefKalaniK, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
-export const PASIF_TAKSIT_NEDENI = "Bu bölüm taksitli; taksitler kalem kaydedildikten sonra ödenir (düzenleme formundan ya da ödeme penceresinden).";
-export const HEPSI_TAKSITLI_NOTU = "Bu kalemin bütün ödemeleri taksitli; taksitler kalem kaydedildikten sonra ödenir (düzenleme formundan ya da ödeme penceresinden).";
-// Spec 0053 R30: düzenlemede taksit sayısı değişen hedefin taksit kimlikleri kayıtta yeniden kurulur.
-export const TAKSIT_PLANI_DEGISTI_NEDENI = "Taksit planı değişti; kaydettikten sonra ödeyin.";
+// Spec 0057 R7, R9, R20: taksitli hedef yalnız bu düzenlemede taksit sayısı değiştiyse pasiftir (satırlar kayıtta yeniden
+// kurulur); tek neden metni. 0046'nın "bütün ödemeler taksitli" notu ve 0053'ün TAKSIT_PLANI_DEGISTI_NEDENI'si kalktı.
+export const PASIF_TAKSIT_NEDENI = "Bu bölümün taksit planı bu düzenlemede değişti; ödemeyi kaydettikten sonra girin.";
+// Spec 0057 R8, R19: çek satırı taksit seçmez; tutar ANA'nın açık taksitlerine en eski vadeden dağıtılır.
+export const CEK_DAGITIM_NOTU = "Çek tutarı bu bölümün açık taksitlerine en eski vadeden dağıtılır.";
 export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle ödeme yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
   [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
   // Spec 0054 R22: ek ödeme hedefleri ANA değildir (0053 R12).
@@ -20,8 +21,11 @@ export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle 
 export const KENDI_CEK_YALNIZ_ANA_NEDENI = "Kendi çekimiz yalnız ana alacaklıya verilir.";
 export const CEK_YOK_NOTU = "Portföyde ciro edilebilecek (TL, portföyde duran) çek yok; başka bir yöntem seçin.";
 
-// R1, R5, R6, R26: çizilecek hedef satırları, HEDEF_SIRASI sırasıyla. Tutarı sıfır olan hedef yoktur; iki ya da daha çok
-// taksitli hedef pasiftir. taksitId: formdan ödenebilen hedefin tek satırı (satırsız kalemde null, Q2).
+// R1, R5, R6, R26: çizilecek hedef satırları, HEDEF_SIRASI sırasıyla. Tutarı sıfır olan hedef yoktur. taksitId: taksitli
+// olmayan hedefin tek satırı (satırsız kalemde null, Q2).
+// Spec 0057 R1, R21 (C2): pasif kararını bu fonksiyon vermez (pasif: false, neden: null); çağıran verir: pencere açık bırakır,
+// duzenlemeOdemeDurumu plan değişikliği / plan hatasıyla pasif yapar, yeni kalemde kimse pasif yapmaz. taksitli = hedefin
+// birden çok satırı var (taksit seçici ve taksit bazlı kalan buna bakar; eskiden pasif'in kopyasıydı).
 // Spec 0048 (R12, R13, C2): nesne ham ödenen tutarı (odenenK: satırda `_odenenK`, satırsızda `_odenen`; kırpılmaz),
 // hedefin satır sayısını (satirSayisi) ve personelde maaş/ek ödeme kırılımını (maasK, ekOdemeK; diğerlerinde null) da taşır.
 // Mevcut alanlar değişmedi (AC-28).
@@ -35,16 +39,16 @@ export const formOdemeHedefleri = (kalem, turMap) => {
     .sort((a, b) => HEDEF_SIRASI.indexOf(a.hedef) - HEDEF_SIRASI.indexOf(b.hedef))
     .map(h => {
       const satirlar = satirli ? kalem.taksitler.filter(r => (r.hedef || HEDEF.ANA) === h.hedef) : [];
-      const pasif = satirlar.length > 1;
+      const taksitli = satirlar.length > 1;
       const odenenK = satirli ? satirlar.reduce((a, r) => a + (r._odenenK != null ? r._odenenK : (r.odendi ? kurus(r.tutar) : 0)), 0)
         : (kalem._odenen ? (kalem._odenen[h.hedef] || 0) : (kalem.odendi ? h.toplamK : 0));
       const kirilim = dav === DAVRANIS.PERSONEL && h.hedef !== HEDEF.STOPAJ ? personelHedefKirilimi(kalem, h.hedef, ayrim) : { maasK: null, ekOdemeK: null };
       // Spec 0053 R30: taksitli hedefin açık taksitleri (sıra, vade, kalan); düzenleme formu ve pencere taksit seçer.
       const acikTaksitler = satirlar.filter(r => Math.max(0, kurus(r.tutar) - (r._odenenK || 0)) > 0)
         .map(r => ({ id: r.id, sira: r.sira, vade: r.vade || null, kalanK: Math.max(0, kurus(r.tutar) - (r._odenenK || 0)) }));
-      return { hedef: h.hedef, taksitId: satirli && !pasif ? satirlar[0]?.id ?? null : null, toplamK: h.toplamK, kalanK: h.kalanK,
-        odendi: h.odendi, pasif, neden: pasif ? PASIF_TAKSIT_NEDENI : null, ciroOlur: h.hedef === HEDEF.ANA && !pasif,
-        odenenK, satirSayisi: satirlar.length, taksitli: pasif, acikTaksitler, ...kirilim };
+      return { hedef: h.hedef, taksitId: satirli && !taksitli ? satirlar[0]?.id ?? null : null, toplamK: h.toplamK, kalanK: h.kalanK,
+        odendi: h.odendi, pasif: false, neden: null, ciroOlur: h.hedef === HEDEF.ANA,
+        odenenK, satirSayisi: satirlar.length, taksitli, acikTaksitler, ...kirilim };
     });
 };
 
@@ -62,7 +66,8 @@ export const duzenlemeOdemeDurumu = ({ canliKalem, kayitliKalem, turMap, planHat
   const ekBolunmez = !!kayitliKalem && !!canliKalem && personelEkBolunmezMi(canliKalem, kayitliKalem.taksitler, kayitliDav);
   // R14: plan hatalıyken kutu kayıtlı hâli gösterir (taksitli kalem tek hedefe düşmesin); düğme bugünkü kuralla.
   if (planHatasi || !canliKalem) {
-    return { hedefler: kayitli.map(h => ({ ...h, dugme: h.kalanK > 0, kaydedinceOdenir: false, asimK: 0 })), kaybolanlar: [], planHatasi: !!planHatasi, turDegisti: false, bolunmez, ekBolunmez: false };
+    // Spec 0057 R22: plan hatasında taksitli hedef pasif (neden kutunun üstündeki plan hatası notu).
+    return { hedefler: kayitli.map(h => ({ ...h, dugme: h.kalanK > 0, kaydedinceOdenir: false, asimK: 0, pasif: h.taksitli && !!planHatasi })), kaybolanlar: [], planHatasi: !!planHatasi, turDegisti: false, bolunmez, ekBolunmez: false };
   }
   const canli = formOdemeHedefleri(canliKalem, turMap);
   const hedefler = canli.map(h => {
@@ -79,7 +84,9 @@ export const duzenlemeOdemeDurumu = ({ canliKalem, kayitliKalem, turMap, planHat
     // Spec 0053 R24, R30: formda ödeme kalem ile aynı yazımda girilir (dugme/kaydedinceOdenir yalnız pencere bağlamının
     // bilgisi olarak kalır); yalnız taksit sayısı bu düzenlemede değişen taksitli hedef pasiftir.
     const taksitPlaniDegisti = h.taksitli && !yapiAyni;
-    return { ...h, dugme, kaydedinceOdenir: h.kalanK > 0 && !dugme, asimK, kayitliOdenenK: k ? k.odenenK : 0, taksitPlaniDegisti };
+    // Spec 0057 R1, R7: pasif kararı burada; yalnız taksit sayısı değişen taksitli hedef (vade ya da tutar değişimi değil).
+    return { ...h, dugme, kaydedinceOdenir: h.kalanK > 0 && !dugme, asimK, kayitliOdenenK: k ? k.odenenK : 0, taksitPlaniDegisti,
+      pasif: taksitPlaniDegisti, neden: taksitPlaniDegisti ? PASIF_TAKSIT_NEDENI : null };
   });
   // R16 (Q5): canlıda kalmamış ama kayıtta ödeme almış hedef görünür kalır.
   const kaybolanlar = kayitli.filter(k => k.odenenK > 0 && !canli.some(h => h.hedef === k.hedef)).map(k => ({ hedef: k.hedef, odenenK: k.odenenK, toplamK: 0 }));
@@ -114,16 +121,36 @@ export const satirTaksitId = (kalem, hedef = HEDEF.ANA, sira = null) => {
 const bosMu = (v) => String(v ?? "").trim() === "";
 const satirTutarK = (r) => { const t = parseMoney(r?.tutar); return Number.isFinite(t) && t > 0 ? Math.round(t * 100) : 0; };
 
-// R25: her çizilebilir hedefin İLK satırı tam kalanla, varsayılan yöntem ve hesapla dolar; ek satırlara dokunulmaz, dolu ilk
+// Spec 0057 triyaj: satır eklendikten sonra hedef taksitliye dönerse (yeni kalemde taksit sayısı sonradan artırıldı) ya da
+// satırın taksidi artık açık değilse, satırın sırası en yakın vadeli açık taksidin sırasına eşlenir; böylece seçicinin
+// gösterdiği ile satırın bağlandığı taksit hep aynıdır. Çek satırı taksit seçmez (R8), dokunulmaz. Değişiklik yoksa aynı dizi.
+export const satirSiralariniEsle = (satirlar = [], hedefler = []) => {
+  let degisti = false;
+  const yeni = satirlar.map(r => {
+    const h = hedefler.find(x => x.hedef === r.hedef);
+    if (!h || !h.taksitli || CEK_YONTEMLERI.has(r.yontem)) return r;
+    if (h.acikTaksitler.some(t => Number(t.sira) === Number(r.sira) && r.sira != null)) return r;
+    const ilk = h.acikTaksitler[0];
+    if (!ilk) return r;
+    degisti = true;
+    return { ...r, sira: ilk.sira };
+  });
+  return degisti ? yeni : satirlar;
+};
+
+// R25: her çizilebilir hedefin İLK satırı tam kalanla (spec 0057 R12, R23: taksitli hedefte en yakın vadeli açık taksit, o
+// taksidin kalanıyla), varsayılan yöntem ve hesapla dolar; ek satırlara dokunulmaz, dolu ilk
 // satır değişmez (ikinci basış yalnız boş ilk satırları doldurur). Ciro asla (yöntem varsayılan, elle seçilemeyen değil).
 export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId = "", yeniAnahtar = () => Math.random() } = {}) => {
   let liste = [...satirlar];
   for (const h of hedefler) {
     if (h.pasif || h.kalanK <= 0) continue;
     const i = liste.findIndex(r => r.hedef === h.hedef);
-    const tutar = String(tl(h.kalanK)).replace(".", ","); // form durumu ham metin (0045)
-    if (i < 0) liste = [...liste, { anahtar: yeniAnahtar(), hedef: h.hedef, sira: h.acikTaksitler?.[0]?.sira ?? null, tutar, yontem, hesapId, aciklama: "" }];
-    else if (bosMu(liste[i].tutar)) liste = liste.map((r, j) => (j === i ? { ...r, tutar, yontem: r.yontem || yontem, hesapId: r.hesapId || hesapId } : r));
+    const ilk = h.taksitli ? h.acikTaksitler?.[0] : null;
+    if (h.taksitli && !ilk) continue;
+    const tutar = String(tl(ilk ? ilk.kalanK : h.kalanK)).replace(".", ","); // form durumu ham metin (0045)
+    if (i < 0) liste = [...liste, { anahtar: yeniAnahtar(), hedef: h.hedef, sira: ilk ? ilk.sira : null, tutar, yontem, hesapId, aciklama: "" }];
+    else if (bosMu(liste[i].tutar)) liste = liste.map((r, j) => (j === i ? { ...r, ...(ilk ? { sira: ilk.sira } : {}), tutar, yontem: r.yontem || yontem, hesapId: r.hesapId || hesapId } : r));
   }
   return liste;
 };
@@ -188,23 +215,25 @@ export const odemeGirisiHazirla = (kalem, {
   const cs = cekSatirlari[0];
   if (cs) {
     const h = hedefler.find(x => x.hedef === (cs.hedef || HEDEF.ANA));
-    const taksitId = satirTaksitId(kalem, cs.hedef || HEDEF.ANA, cs.sira);
     const kendi = cs.yontem === KENDI_CEK_YONTEMI;
     const alacakli = ciroAlacaklisi(kalem, turMap);
-    const aday = h && h.hedef === HEDEF.ANA ? ciroAdaylari([kalem], alacakli, turMap).find(a => String(a.taksitId ?? "") === String(taksitId ?? "")) : null;
-    // Plan Q3: çek satırı aynı hedefteki (aynı taksitteki) normal satırlardan sonra kalanı kapatır.
-    const digerK = normal.filter(r => (r.hedef || HEDEF.ANA) === (cs.hedef || HEDEF.ANA) && String(satirTaksitId(kalem, r.hedef || HEDEF.ANA, r.sira) ?? "") === String(taksitId ?? ""))
+    // Spec 0057 R8, R19: çek satırı taksit seçmez; ANA'nın açık taksitlerinin (satırsız kalemde tek adayın) kalanından aynı
+    // yere giden normal satırlar düşülür (plan Q3: çek diğer satırlardan sonra kalanı kapatır) ve tutar ciroAdaylari'nın
+    // sırasıyla (en eski vade) ciroVarsayilanDagitim ile dağıtılır. Yeni hesap yok; ciroPlani / kendiCekPlani aynen.
+    const digerK = (taksitId) => normal.filter(r => (r.hedef || HEDEF.ANA) === HEDEF.ANA && String(satirTaksitId(kalem, HEDEF.ANA, r.sira) ?? "") === String(taksitId ?? ""))
       .reduce((a, r) => a + satirTutarK(r), 0);
-    const kalanK = aday ? aday.kalanK - digerK : 0;
+    const adaylar = h && h.hedef === HEDEF.ANA ? ciroAdaylari([kalem], alacakli, turMap).map(a => ({ ...a, kalanK: a.kalanK - digerK(a.taksitId) })).filter(a => a.kalanK > 0) : [];
+    const kalanK = adaylar.reduce((a, x) => a + x.kalanK, 0);
     const satirHata = (m) => { hatalar.satirlar[cs.anahtar] = { ...(hatalar.satirlar[cs.anahtar] || {}), cek: m }; };
+    const dagit = (tutarK) => ciroVarsayilanDagitim(adaylar, tutarK).filter(d => d.tutarK > 0);
     if (!h || h.hedef !== HEDEF.ANA) satirHata(kendi ? KENDI_CEK_YALNIZ_ANA_NEDENI : (CIRO_YALNIZ_ANA_NEDENI[cs.hedef] || "Bu bölüm çekle ödenemez."));
-    else if (!aday) satirHata(h.taksitli && taksitId == null ? "Çekle ödenecek taksiti seçin." : "Bu bölüm çekle kapatılamaz.");
+    else if (!ciroAdaylari([kalem], alacakli, turMap).length) satirHata("Bu bölüm çekle kapatılamaz.");
     else if (kalanK <= 0) satirHata("Bu bölümün kalanı diğer satırlarla kapanıyor; çek satırına gerek yok.");
     else if (!kendi) {
       const secili = ciroCekleri(cekler, payments).find(x => String(x.cek.id) === String(cs.cekId));
       if (!secili) satirHata("Ciro edilecek çek seçilmedi.");
       else {
-        const p = ciroPlani({ cek: secili.cek, tutarK: secili.tutarK, currency: secili.currency, adaylar: [aday], dagitim: [{ anahtar: aday.anahtar, tutarK: Math.min(secili.tutarK, kalanK) }], tarih, alacakliAd, turMap });
+        const p = ciroPlani({ cek: secili.cek, tutarK: secili.tutarK, currency: secili.currency, adaylar, dagitim: dagit(Math.min(secili.tutarK, kalanK)), tarih, alacakliAd, turMap });
         if (p.hatalar.length) satirHata(p.hatalar[0]);
         else { hareketlerC = p.hareketler; cek = p.cek; uyari = p.uyari; }
       }
@@ -212,8 +241,8 @@ export const odemeGirisiHazirla = (kalem, {
       const tK = satirTutarK(cs);
       if (tK > kalanK) satirHata(`Çek tutarı bu bölümün kalanını aşıyor (kalan ${tl(kalanK).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺).`);
       else {
-        const p = kendiCekPlani({ form: { no: cs.cekNo, hesapId: cs.cekHesapId, vadeTarihi: cs.cekVade, tutar: cs.tutar }, hesaplar, adaylar: [aday],
-          dagitim: [{ anahtar: aday.anahtar, tutarK: tK }], tarih, alacakli: { ...alacakli, ad: alacakliAd }, turMap, cekId: yeniCekId });
+        const p = kendiCekPlani({ form: { no: cs.cekNo, hesapId: cs.cekHesapId, vadeTarihi: cs.cekVade, tutar: cs.tutar }, hesaplar, adaylar,
+          dagitim: dagit(tK), tarih, alacakli: { ...alacakli, ad: alacakliAd }, turMap, cekId: yeniCekId });
         if (p.hatalar.length) satirHata(p.hatalar[0]);
         else { hareketlerC = p.hareketler; cek = p.cek; }
       }
