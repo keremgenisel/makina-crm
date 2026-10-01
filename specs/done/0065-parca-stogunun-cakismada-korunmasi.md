@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `635f1bb`, dal `feat/0065-stok-hareketi`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Çakışma birleştirmesi (`merge.js`, App'in birleştirme uygulaması), parça stoğu yardımcıları (`servisStok.js`, `yedekParcaStok.js`), Stok > Parça Stoğu |
@@ -226,18 +226,18 @@ uygulanıyor, log her iki hareketi de taşıyor ve stok adedi gerçeği gösteri
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] İki kullanıcı çakışması saf birleştirme testiyle sürülüyor (AC-1, AC-3).
-- [ ] Sayım düzeltmesinin sıfırlama anlamı testle sabitlendi (AC-6).
-- [ ] Yeniden hesap kuralının tek yerde olduğu kaynak taramasıyla gösterildi (AC-19).
-- [ ] Çakışmasız senaryoda stok davranışının değişmediği çapraz testle gösterildi (AC-5).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0065-*.jpg`): log'da karşı hareket, tutarlılık raporu (R18).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: stok hareketinin birleştirildiği, adedin türetilmiş önbellek olduğu,
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] İki kullanıcı çakışması saf birleştirme testiyle sürülüyor (AC-1, AC-3).
+- [x] Sayım düzeltmesinin sıfırlama anlamı testle sabitlendi (AC-6).
+- [x] Yeniden hesap kuralının tek yerde olduğu kaynak taramasıyla gösterildi (AC-19).
+- [x] Çakışmasız senaryoda stok davranışının değişmediği çapraz testle gösterildi (AC-5).
+- [x] Görsel kanıt eklendi (`docs/evidence/0065-*.jpg`): log'da karşı hareket, tutarlılık raporu (R18).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: stok hareketinin birleştirildiği, adedin türetilmiş önbellek olduğu,
       geri almanın karşı hareket yazdığı ve sayım düzeltmesinin sıfırlama noktası olduğu.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -245,10 +245,10 @@ uygulanıyor, log her iki hareketi de taşıyor ve stok adedi gerçeği gösteri
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı (Q1–Q9; R14–R22, AC-21…AC-27). Triyaj bulguları spec'i değil uygulamayı düzeltti. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 6 bulgu (silinmiş satırın dirilmesi, birikimsiz kırpma tabanı, log bağının eşlenmemesi, plan alanı, tablo, testler). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 6 / 0 | Altısı da gerçekti; ikisi belge/bakım. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | "Satır silinir" beklentileri bilinçli olarak "karşı hareket"e çevrildi; 54 mevcut ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Birleştirmeye bir bölüm eklerken "yerelde olup sunucuda olmayan = yeni" varsayımı yalnız ekleme yapılan listelerde doğrudur; bölümün geçmişinde silme varsa (eski istemci, yedekten geri yükleme) silinmiş satır dirilir. Yeni olanı bilinen kümeyle ayırmak gerekir. İkincisi: bir yardımcı döngüde çağrıldığında aynı anlık görüntüyü kırpma tabanı olarak kullanıyorsa, tekil testler geçer ama toplu yol taşar; toplu çağıranlar için birikimli tabanlı ayrı bir yol yazılmalı.

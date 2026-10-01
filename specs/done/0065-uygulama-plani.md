@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0065-parca-stogunun-cakismada-korunmasi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0065-parca-stogunun-cakismada-korunmasi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0065-stok-hareketi` (`feat/0064-kilit` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q9) kabul |
 

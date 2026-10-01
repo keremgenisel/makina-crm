@@ -1,0 +1,94 @@
+[
+  {
+    "ad": "parca-stok-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-hareketleri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-hareketleri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarlilik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)",
+      "KarşılaştırılmadıBu parçalarda aynı gün hem sayım düzeltmesi hem başka",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarlilik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)",
+      "KarşılaştırılmadıBu parçalarda aynı gün hem sayım düzeltmesi hem başka",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarli-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Sapma yokKarşılaştırılan 1 parçanın saklı adedi stok hareketleriyle tu",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarli-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Sapma yokKarşılaştırılan 1 parçanın saklı adedi stok hareketleriyle tu",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-parca-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-parca-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  }
+]
