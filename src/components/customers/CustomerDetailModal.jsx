@@ -20,10 +20,9 @@ import {
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
-import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi, Ipucu } from "../tasarim";
-import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
+import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
 import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
-import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
+import { TahsilatHesapPenceresi, TahsilatHesapAlani, OdemeSatiriHesap, makinaTahsilatDurumu, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
 import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
@@ -591,7 +590,7 @@ export const CustomerDetailModal = ({
   const openEditPayment = (p) => {
     setPaymentForm({
       id: p.id, customerId: p.customerId, tarih: p.tarih || today(), tutar: p.tutar || "", currency: p.currency || "TRY", not: p.not || "",
-      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi, hesapId: p.hesapId ?? "",
+      yontem: p.yontem || "Nakit", vadeTarihi: p.vadeTarihi || "", tahsilEdildi: !!p.tahsilEdildi, hesapId: p.hesapId ?? null,
       cek: (() => { const c = odemeCeki(p.id); return c ? { no: c.no, banka: c.banka, kesideci: c.kesideci, tur: c.tur } : { no: "", banka: "", kesideci: "", tur: "hamiline" }; })(),
     });
     setPaymentHata("");
@@ -643,13 +642,13 @@ export const CustomerDetailModal = ({
         const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
         if (!d.kayit) { setPaymentHata(Object.values(d.hatalar)[0]); return; }
       }
-      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "",
-        ...(kasaYetki && paymentForm.hesapId !== "" && paymentForm.hesapId != null ? { hesapId: paymentForm.hesapId } : {}) };
+      const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
       bumpId(customers, services, partSales, payments);
       // Kredi kartı ödemesi: girilen tutar KDV hariç mal → karta KDV + komisyon eklenir, borçtan KDV dahil düşer.
       const odemeKdvOran = calcKDV(detailView?.faturali, 100, ortak.tarih, kdvRates); // faturalı yurtiçi → oran, değilse 0
       const yeniKayitlar = satirlar.map(r => {
-        const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit" };
+        // Spec 0063 R13, R4: hesap satırın alanıdır; boş satırda alan hiç yazılmaz.
+        const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit", ...(kasaYetki && r.hesapId != null && r.hesapId !== "" ? { hesapId: r.hesapId } : {}) };
         if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
           const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, r.kartTarihi || ortak.tarih, !!r.kkYansit, odemeKdvOran);
           return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
@@ -1393,26 +1392,17 @@ export const CustomerDetailModal = ({
           ) : (
             <Field label="Ödeme Satırları">
               <PaymentRowsEditor cekler={cekler} rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
-                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()} />
+                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()}
+                satirEki={kasaYetki ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={paymentForm.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
+                  onChange={(idx, v) => setPaymentForm(p => ({ ...p, satirlar: (p.satirlar || []).map((x, j) => j === idx ? { ...x, hesapId: v } : x) }))} /> : null} />
             </Field>
           )}
           <HataMetni>{paymentHata}</HataMetni>
-          {kasaYetki && (() => {
-            // C5 (1), AC-29: yalnız tahsilatın para biriminde ve açık hesaplar; düzenlemede kapanmış mevcut hesap görünür kalır.
-            const pb = paymentForm.currency || "TRY";
-            const uygun = secilebilirHesaplar(kasaHesaplari, pb);
-            const mevcut = paymentForm.hesapId !== "" && paymentForm.hesapId != null ? kasaHesaplari.find(h => String(h.id) === String(paymentForm.hesapId)) : null;
-            const secenekler = mevcut && !uygun.includes(mevcut) ? [...uygun, mevcut] : uygun;
-            return (
-              <Field label="Hesap">
-                <Select aria-label="Tahsilat hesabı" value={paymentForm.hesapId ?? ""} onChange={e => setPaymentForm(p => ({ ...p, hesapId: e.target.value === "" ? "" : secenekler.find(h => String(h.id) === e.target.value)?.id ?? "" }))}>
-                  <option value="">Hesap belirtilmedi</option>
-                  {secenekler.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur}){h.kapali ? " · kapalı" : ""}</option>)}
-                </Select>
-                <Ipucu>{uygun.length ? "Tahsilat seçilen hesabın bakiyesine girer; seçilmezse hiçbir bakiyeye girmez." : `${pb} para biriminde açık hesap yok; tahsilat hiçbir bakiyeye girmez.`}</Ipucu>
-              </Field>
-            );
-          })()}
+          {kasaYetki && paymentForm.id && (
+            // Spec 0063 R13, Q5: düzenleme kipi tek kayıttır, hesap form düzeyinde ve paylaşılan alandan (R11); tutar sıfırken de sorulur.
+            <TahsilatHesapAlani durum={{ ...makinaTahsilatDurumu(paymentForm.tutar, paymentForm.currency), sor: true }} hesaplar={kasaHesaplari}
+              value={paymentForm.hesapId ?? null} onChange={v => setPaymentForm(p => ({ ...p, hesapId: v }))} />
+          )}
           <Field label="Not (isteğe bağlı)">
             <Input value={paymentForm.not || ""} onChange={e => setPaymentForm(p => ({ ...p, not: e.target.value }))} placeholder="Örn. banka havalesi..." />
           </Field>

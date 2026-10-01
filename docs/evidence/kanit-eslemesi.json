@@ -903,6 +903,26 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "musteriler-gruplu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteriler-bos-arama",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteriler-bos-kayit",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteriler-gruplu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteriler-liste",
+        "beklenen": "ayni"
       }
     ],
     "src/components/SimpleDealers.jsx": [
@@ -935,6 +955,43 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "bayi-detay-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-detay-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayiler-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayiler-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-kalip-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
       }
     ],
     "src/components/Stock.jsx": [
@@ -1042,6 +1099,22 @@
         "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
         "ekran": "musteri-formu-hata",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R1"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -1094,6 +1167,58 @@
         "rapor": "docs/evidence/0050-taban-piksel-raporu.json",
         "ekran": "musteri-detay-maliyet-acik",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-maliyet-acik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-maliyet-kapali",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-tahsis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-detay-yeni-sahip",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-cek",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R13"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-satir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R13"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -1118,6 +1243,22 @@
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "kalip-formu-odendi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "kalip-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "kalip-formu-odendi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-kalip-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -1135,6 +1276,27 @@
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-kargo",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "yedek-parca-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-kargo",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-odendi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -1902,6 +2064,61 @@
         "rapor": "docs/evidence/0044-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-tahsilat-hesap",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "kalip-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-penceresi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-neden",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-tahsilat-hesap",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R1"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "bayi-kalip-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R7"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-satir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R13"
+      },
+      {
+        "rapor": "docs/evidence/0063-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0063 R13"
       }
     ],
     "src/components/gider/OdemeGirisi.jsx": [

@@ -294,7 +294,7 @@ export const Customers = ({
       const odemeTarih = clean.installDate || today();
       // Ödeme kayıtlarını (kredi kartında kartKomisyonu snapshot'ı ile) kurup borçtan düşülecek tutarı ONLARDAN
       // süz — blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmediğinden borçta kalmalı. Bkz. ilkSatisOdemeleri.
-      const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(_ilkOdemeSatirlari, {
+      const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(kasaYetki ? _ilkOdemeSatirlari : (_ilkOdemeSatirlari || []).map(({ hesapId, ...r }) => r), { // spec 0063 R2: yetkisiz kayıtta hesap yazılmaz
         customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid,
       });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
@@ -727,6 +727,7 @@ export const Customers = ({
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
           giderYetki={giderYetki}
+          kasaHesaplari={kasaYetki ? kasaHesaplari : null} tahsilatHesapVarsayilan={kasaYetki ? tahsilatHesapVarsayilan : null}
         />
       )}
     </div>

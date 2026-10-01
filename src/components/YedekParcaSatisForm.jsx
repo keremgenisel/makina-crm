@@ -203,7 +203,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                       )}
                     </div>
                     <Input type="number" min="1" value={s.miktar ?? ""} onChange={e => setSatir(i, "miktar", e.target.value)} placeholder="Adet" />
-                    <MoneyInput value={s.birimFiyat} sym={CUR_SYM[cur]} onChange={v => setSatir(i, "birimFiyat", v)} />
+                    <MoneyInput ariaLabel={`Birim fiyat ${i + 1}`} value={s.birimFiyat} sym={CUR_SYM[cur]} onChange={v => setSatir(i, "birimFiyat", v)} />
                     <button type="button" onClick={() => satirSil(i)} disabled={satirlar.length <= 1} title="Satırı sil"
                       style={{ background: "none", border: "none", cursor: satirlar.length <= 1 ? "default" : "pointer", color: satirlar.length <= 1 ? "var(--n300, #cbd5e1)" : "var(--red600, #dc2626)", padding: "8px 4px" }}>
                       <Icon name="trash" size={15} />

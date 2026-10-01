@@ -278,3 +278,36 @@ describe("Spec 0058: kapsam dışı girişinin temizliği (gerçek App)", () => 
     expect(kayitlar.some(k => k.services?.some(s => s.id === 800 && s.hesapId === 51) && k.kasaKapsamDisi?.length)).toBe(false);
   });
 });
+
+// Spec 0063 R11, R15, R17, C6, C7: tahsilat hesabı seçicisi tek paylaşılan bileşendir; ui.jsx kasa katmanını tanımaz;
+// satış tahsilatı motoru makina tahsilatını bilmez.
+describe("Spec 0063: tek seçici (kaynak taraması)", async () => {
+  const { readFileSync, readdirSync, statSync } = await import("node:fs");
+  const path = await import("node:path");
+  const dosyalar = (k) => readdirSync(k).flatMap(a => { const p = path.join(k, a); return statSync(p).isDirectory() ? dosyalar(p) : /\.(jsx?|mjs)$/.test(a) ? [p] : []; });
+  const bilesenler = dosyalar("src/components");
+  const TEK = path.join("src", "components", "kasa", "TahsilatHesap.jsx");
+  it("AC-17: HESAP_TUR_AD içe alan ve aria-label=\"Tahsilat hesabı\" yazan tek bileşen TahsilatHesap.jsx", () => {
+    const hesapTurAlan = bilesenler.filter(f => /import\s*\{[^}]*\bHESAP_TUR_AD\b[^}]*\}\s*from/.test(readFileSync(f, "utf-8")));
+    // Plan notu (R17 ölçüsü): gider tarafının ödeme, avans ve hesap silme seçicileri ile Kasa'nın hesap listesi tahsilat
+    // seçicisi değildir; ad eşlemesini onlar da kullanır. Tahsilat giriş noktalarının hiçbiri onu içe almaz.
+    const TAHSILAT_DISI = ["Kasa.jsx", "gider/OdemeGirisi.jsx", "kasa/CalisanAvanslari.jsx", "kasa/HesapSilPenceresi.jsx"].map(f => path.join("src", "components", f));
+    expect(hesapTurAlan.filter(f => !TAHSILAT_DISI.includes(f)).sort()).toEqual([TEK]);
+    const ariaYazan = bilesenler.filter(f => readFileSync(f, "utf-8").includes('aria-label="Tahsilat hesabı"'));
+    expect(ariaYazan).toEqual([TEK]);
+  });
+  it("AC-25: ui.jsx ne kasa/TahsilatHesap'ı ne tasarim'ı içe alır; hesap alanı satır düzenleyicisine yuva olarak geçer", () => {
+    const ui = readFileSync("src/components/ui.jsx", "utf-8");
+    expect(ui).not.toMatch(/from\s+["'][^"']*TahsilatHesap["']/);
+    expect(ui).not.toMatch(/from\s+["'][^"']*tasarim["']/);
+    expect(ui).toMatch(/satirEki/);
+    for (const f of ["src/components/customers/CustomerAddEditForm.jsx", "src/components/customers/CustomerDetailModal.jsx"]) {
+      expect(readFileSync(f, "utf-8"), f).toMatch(/satirEki=\{[^}]*OdemeSatiriHesap/);
+    }
+  });
+  it("AC-24: satisTahsilat.js değişmedi: SATIS_KAYNAK üç değer, payments okunmaz", async () => {
+    const { SATIS_KAYNAK } = await import("../../src/lib/satisTahsilat");
+    expect(Object.values(SATIS_KAYNAK)).toHaveLength(3);
+    expect(readFileSync("src/lib/satisTahsilat.js", "utf-8")).not.toMatch(/payments/);
+  });
+});

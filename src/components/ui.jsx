@@ -208,7 +208,9 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // (customerId/tarih bağlamı farklı olduğu için) çağıran tarafın işi.
 // Spec 0040 R1, R2, R14: `cekler` verilirse "Çek" satırında çek kaydının alanları (numara, banka, keşideci, tür) çizilir;
 // aynı banka ve numaralı kayıtlı çek uyarı verir (engellemez). Her çek ayrı satırdır (bir tahsilat bir çek taşır).
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih, cekler = null }) => {
+// Spec 0063 R15, C6: satirEki(satir, i) satırın altına çağıranın verdiği içeriği çizer (tahsilat hesabı). Seçici buraya
+// içe alınmaz: kasa/TahsilatHesap ui.jsx'ten içe alır, döngü olurdu (KartTaksitAlani'ndaki tuzak).
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih, cekler = null, satirEki = null }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -222,7 +224,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
             <Select aria-label={`Ödeme yöntemi ${i + 1}`} value={r.yontem || "Nakit"} onChange={e => satirGuncelle(i, { yontem: e.target.value })}>
               {ODEME_YONTEMLERI.map(y => <option key={y}>{y}</option>)}
             </Select>
-            <MoneyInput value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
+            <MoneyInput ariaLabel={`Tahsilat tutarı ${i + 1}`} value={r.tutar} sym={sym} onChange={v => satirGuncelle(i, { tutar: v })} />
             {r.yontem === "Çek" && (
               <Input type="date" value={r.vadeTarihi || ""} placeholder="Vade Tarihi" onChange={e => satirGuncelle(i, { vadeTarihi: e.target.value })} />
             )}
@@ -261,6 +263,7 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
               )}
             </>
           )}
+          {satirEki && satirEki(r, i)}
         </div>
       ))}
       <button type="button" onClick={satirEkle}
@@ -340,7 +343,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   );
 };
 
-export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id }) => {
+export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id, ariaLabel }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);
   const handle = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, ""); // sadece rakam
@@ -348,7 +351,7 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id
   };
   return (
     <div style={{ position: "relative" }}>
-      <input id={id} value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
+      <input id={id} aria-label={ariaLabel} value={display} onChange={handle} placeholder={placeholder} inputMode="numeric"
         className="input" style={{ paddingRight: 28, textAlign: "right", fontWeight: 600 }} />
       <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
     </div>

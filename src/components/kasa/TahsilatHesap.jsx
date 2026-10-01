@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Field, Select, Btn, Modal, Icon } from "../ui";
 import { Ipucu } from "../tasarim";
-import { fmtCur } from "../../lib/utils";
+import { fmtCur, parseMoney } from "../../lib/utils";
 import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
 
 // Triyaj: kaydın para birimine uyan mevcut hesap (yoksa null). Uyumsuz hesap seçili gösterilmez, formda temizlenir.
@@ -32,18 +32,47 @@ const HesapSelect = ({ hesaplar, pb, value, onChange }) => {
   );
 };
 
-// Form alanı. durum = tahsilatHesapDurumu(...) çıktısı; sorulmayan kayıtta seçici yerine nedeni yazar (R14, AC-22, AC-27).
-export const TahsilatHesapAlani = ({ durum, hesaplar = [], value, onChange }) => {
+// Spec 0063 R14, R22: makina tahsilatı (ilk ödeme ve müşteri detayının ödeme satırları) satış tahsilatı motorunun kaynağı
+// değildir; durum çağıranda kurulur. Tutarı sıfır satırda alan çizilmez. Hesapsız makina tahsilatı hiçbir iş listesinde
+// görünmediği için ipucu "listede bekler" demez (R4, X3).
+export const makinaTahsilatDurumu = (tutar, currency) => {
+  const t = parseMoney(tutar);
+  return { sor: t > 0, currency: currency || "TRY", tutar: t, listedeBekler: false };
+};
+
+// Form alanı. durum = tahsilatHesapDurumu(...) çıktısı (ya da makinaTahsilatDurumu); sorulmayan kayıtta seçici yerine
+// nedeni yazar (R14, AC-22, AC-27). Spec 0063 R21: varsayilan(pb) verilince ve değer hiç seçilmemişken (undefined) uyumlu
+// ön seçim yazılır; kullanıcının boşalttığı (null) değer yeniden doldurulmaz. testId satır başına alanı ayırır.
+export const TahsilatHesapAlani = ({ durum, hesaplar = [], value, onChange, varsayilan = null, etiket = "Tahsilatın girdiği hesap", testId }) => {
   // Triyaj: para birimi değişince uyumsuz kalan mevcut hesap temizlenir (bakiyeye giremeyecek hesap seçili görünmesin).
   const uyumsuz = !!durum?.sor && value != null && uyumluHesapId(hesaplar, value, durum.currency) == null;
   useEffect(() => { if (uyumsuz) onChange(null); }, [uyumsuz]);
+  const onSecimGerekli = !!durum?.sor && value === undefined && typeof varsayilan === "function";
+  useEffect(() => { if (onSecimGerekli) onChange(uyumluHesapId(hesaplar, varsayilan(durum.currency), durum.currency)); }, [onSecimGerekli]);
   if (!durum?.sor) return durum?.neden ? <div data-testid="tahsilat-hesap-neden"><Ipucu>{durum.neden}</Ipucu></div> : null;
   const { uygun } = hesapSecenekleri(hesaplar, durum.currency, value);
+  const bosMetni = durum.listedeBekler === false ? "seçilmezse hiçbir bakiyeye girmez." : "boş bırakılırsa Kasa'da hesabı belirtilmemiş tahsilatlar arasında bekler.";
   return (
-    <Field label="Tahsilatın girdiği hesap">
-      <HesapSelect hesaplar={hesaplar} pb={durum.currency} value={value} onChange={onChange} />
-      <Ipucu>{uygun.length ? "Tahsilat seçilen hesabın bakiyesine girer; boş bırakılırsa Kasa'da hesabı belirtilmemiş tahsilatlar arasında bekler." : `${durum.currency} para biriminde açık hesap yok; tahsilat hesapsız kalır.`}</Ipucu>
-    </Field>
+    <div data-testid={testId}>
+      <Field label={etiket}>
+        <HesapSelect hesaplar={hesaplar} pb={durum.currency} value={value} onChange={onChange} />
+        <Ipucu>{uygun.length ? `Tahsilat seçilen hesabın bakiyesine girer; ${bosMetni}` : `${durum.currency} para biriminde açık hesap yok; tahsilat ${durum.listedeBekler === false ? "hiçbir bakiyeye girmez" : "hesapsız kalır"}.`}</Ipucu>
+      </Field>
+    </div>
+  );
+};
+
+// Spec 0063 R1, R13, R15, R23: ödeme satırı düzenleyicisinin (PaymentRowsEditor) yuvasına verilen satır hesabı. Tutarı
+// sıfır satırda hiçbir şey çizmez (AC-23). onChange(i, hesapId) çağıranın durumunu işlevsel güncelleyiciyle yazmalıdır:
+// aynı anda ön seçim yapan iki satır kapanıştaki diziyi paylaşırsa birbirini ezer.
+export const OdemeSatiriHesap = ({ satir, i, currency, hesaplar, varsayilan, onChange }) => {
+  const durum = makinaTahsilatDurumu(satir?.tutar, currency);
+  if (!durum.sor) return null;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <TahsilatHesapAlani testId={`odeme-satiri-hesap-${i + 1}`} durum={durum} hesaplar={hesaplar} value={satir.hesapId}
+        varsayilan={varsayilan} onChange={v => onChange(i, v)} />
+    </div>
   );
 };
 

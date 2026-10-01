@@ -674,6 +674,20 @@ const EKRANLAR = {
   "kasa-rapor-dugmesi": [kasaEkrani({ giderKasaRaporVerisi: RAPOR_VERI }), []],
   "finans-rapor-dugmesi": [<FINANS rapor={RAPOR_VERI} />, []],
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
+  // Spec 0063: ilk ödeme satırlarında hesap (iki satır, ön seçim), bayi detayından yedek parça ve kalıp satışında hesap alanı.
+  "musteri-formu-ilk-odeme": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos}
+    kasaHesaplari={KASA_HESAPLAR} kasaYetki tahsilatHesapVarsayilan={() => 402} />,
+    ["~Yeni Müşteri", "doldur:Satın alan firma / kişi=Yeni Kafe", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 1=30000", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 2=70000", "kaydir:İlk Ödeme (Kapora/Ödeme)"]],
+  "musteri-tahsilat-hesap-satir": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapVarsayilan: () => 402 }),
+    ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 1=4000", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 2=6000"]],
+  "bayi-yedek-parca-formu": [<SimpleDealers dealers={DEALERS} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={[]} services={[]} customers={MUSTERILER}
+    showToast={bos} openDetailId={3} parts={[{ id: 7, ad: "Rulman" }]} partStock={[{ partId: 7, miktar: 20 }]} setYedekParcaSatislar={bos} setPartStock={bos} setPartStockLog={bos}
+    kasaHesaplari={KASA_HESAPLAR} tahsilatHesapVarsayilan={() => 402} />,
+    ["dugme:Yedek Parça Satışı", "ara:Parça ara...=Rul>Rulman", "doldur:Adet=2", "doldur:Birim fiyat 1=1500", "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
+  "bayi-kalip-formu": [<SimpleDealers dealers={DEALERS} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={[]} setPartSales={bos} services={[]} customers={MUSTERILER}
+    setCustomers={bos} showToast={bos} openDetailId={3} kalipDefs={[{ id: 1, ad: "Hamburger" }]} kasaHesaplari={KASA_HESAPLAR} tahsilatHesapVarsayilan={() => 402} />,
+    ["dugme:Bayi Aracılığıyla Kalıp Satışı", "doldur:Firma adı, model veya seri no ile ara...=Kutu", "~Kutu Gıda", "ara:Kalıp ara...=Ham>Hamburger", "doldur:Kalıp fiyatı 1=2000",
+      "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
 };
@@ -705,6 +719,21 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const el = document.querySelector(`select[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor));
       if (el) { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("change", { bubbles: true })); }
       else console.warn("liste yok: " + etiket);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("ara:")) {
+      // Arama kutusundan seçim (SearchPick): "ara:<placeholder>=<yazı>><seçenek>"; odaklanır, yazar, seçeneğe mousedown (spec 0063).
+      const [yer, kalan] = metin.slice(4).split("=");
+      const [yazi, secenek] = kalan.split(">");
+      const el = document.querySelector(`input[placeholder="${yer}"]`);
+      if (el) {
+        el.focus(); el.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, yazi); el.dispatchEvent(new Event("input", { bubbles: true }));
+        await bekle(300);
+        const s = [...document.querySelectorAll("div, span, li, button")].filter(e => e.textContent.trim() === secenek && e.children.length <= 1).pop();
+        if (s) { s.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); s.click(); } else console.warn("seçenek yok: " + metin);
+      } else console.warn("arama kutusu yok: " + metin);
       await bekle(300);
       continue;
     }

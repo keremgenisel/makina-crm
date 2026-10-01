@@ -1112,6 +1112,48 @@ describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
   });
 });
 
+// ── Spec 0063 AC-20: yeni giriş noktalarının hesap alanı yeni bir 403 doğurmaz ─────────────────────
+describe("spec 0063: ilk ödeme ve bayi satışlarında hesapId", () => {
+  const dene = (perm, eski, yeni) => {
+    const y = yazmaYetkisiVar(perm, "user", degisenBolumler(eski, yeni), eski, yeni);
+    const e = eylemDenetimi(eski, yeni, perm, "user");
+    return y.ok && e.ok;
+  };
+  const hesapsiz = (blob) => JSON.parse(JSON.stringify(blob, (k, v) => (k === "hesapId" ? undefined : v)));
+  it("AC-20: hesapId ALAN_IZINLERI'nde yok (alan düzeyinde denetlenmez)", () => {
+    for (const kurallar of Object.values(ALAN_IZINLERI)) expect(kurallar.map(k => k.alan)).not.toContain("hesapId");
+  });
+  it("AC-20: müşteri ekleme + tahsilat izinli kullanıcı hesaplı ilk ödemeli yeni müşteri yazar; hesapsızıyla aynı sonuç", () => {
+    const perm = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_add", "cust_payment_add"] });
+    const eski = { customers: [], payments: [] };
+    const yeni = {
+      customers: [{ id: 10, name: "Yeni AŞ", model: "AK100", serialNo: "S1", currency: "TRY" }],
+      payments: [{ id: 11, customerId: 10, tutar: 30000, currency: "TRY", tarih: "2026-10-01", yontem: "Nakit", hesapId: 53 },
+        { id: 12, customerId: 10, tutar: 70000, currency: "TRY", tarih: "2026-10-01", yontem: "Nakit", hesapId: 51 }],
+    };
+    expect(dene(perm, eski, yeni)).toBe(true);
+    expect(dene(perm, eski, hesapsiz(yeni))).toBe(true);
+  });
+  it("AC-20: bayi yedek parça satışı (dealer_yedek_parca_add) ve bayi aracılı kalıp (cust_kalip_add) hesapla yazılır", () => {
+    const bayici = JSON.stringify({ tabs: ["dealers"], dealerActions: ["dealer_yedek_parca_add"] });
+    const eskiYp = { yedekParcaSatislar: [], partStock: [{ partId: 7, miktar: 10 }], partStockLog: [] };
+    const yeniYp = {
+      yedekParcaSatislar: [1, 2].map(i => ({ id: 20 + i, batchId: 20, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 1, birimFiyat: 100, currency: "TRY", tarih: "2026-10-01", odendi: true, hesapId: 51, tahsisler: [] })),
+      partStock: [{ partId: 7, miktar: 8 }], partStockLog: [{ id: 30, partId: 7, tip: "bayi_satis", miktar: -2 }],
+    };
+    expect(dene(bayici, eskiYp, yeniYp)).toBe(true);
+    expect(dene(bayici, eskiYp, hesapsiz(yeniYp))).toBe(true);
+    const kalipci = JSON.stringify({ tabs: ["dealers"], customerActions: ["cust_kalip_add"] });
+    const eskiK = { partSales: [], customers: [{ id: 500, name: "Kutu", kaliplar: [] }] };
+    const yeniK = {
+      partSales: [{ id: 40, customerId: 500, tur: "Kalıp", ad: "Hamburger", ucret: 2000, currency: "TRY", satisFirma: "Ege Bayi", odendi: true, hesapId: 51 }],
+      customers: [{ id: 500, name: "Kutu", kaliplar: [{ ad: "Hamburger", partSaleId: 40 }] }],
+    };
+    expect(dene(kalipci, eskiK, yeniK)).toBe(dene(kalipci, eskiK, hesapsiz(yeniK)));
+    expect(dene(kalipci, eskiK, yeniK)).toBe(true);
+  });
+});
+
 describe("spec 0046: gider formundan ciro tek yazımda", () => {
   const cek = (o = {}) => ({ id: 200, paymentId: 100, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [], ...o });
   const eski = { giderler: [], hesapHareketleri: [], cekler: [cek()] };

@@ -19,7 +19,9 @@ import { useLock } from "../hooks/useLock";
 import { DealerFilesSection } from "./DealerFilesSection";
 
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
-  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null, kalipDefs = [] }) => {
+  yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null, kalipDefs = [],
+  // Spec 0063 R7, R8, R16: iki satış formunun tahsilat hesabı; App yalnız Kasa yetkisiyle doldurur, yoksa null (boş dizi değil).
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null }) => {
   const canDo = makeCanDo(serverPermissions, "dealerActions");
   // Spec 0007 R1/R11: "Bayi Aracılığıyla Kalıp Satışı" mevcut Extra Kalıp ekleme iznine bağlı (yeni izin yok).
   const canCust = makeCanDo(serverPermissions, "customerActions");
@@ -748,7 +750,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       {kalipForm && (
         <PartSaleForm title={`Bayi Aracılığıyla Kalıp Satışı · ${kalipForm.satisFirma}`} form={kalipForm} setForm={setKalipForm} customers={customers}
           kalipDefs={kalipDefs} kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} dealers={dealers} calisanlar={calisanlar}
-          factory={factory} geoData={geoData} loadingGeo={loadingGeo} onSave={saveBayiKalipSatisi} onCancel={() => setKalipForm(null)} />
+          factory={factory} geoData={geoData} loadingGeo={loadingGeo} onSave={saveBayiKalipSatisi} onCancel={() => setKalipForm(null)}
+          kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan} />
       )}
 
       {ypForm && (
@@ -756,7 +759,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
-          onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
+          onSave={saveYedekParca} onCancel={() => setYpForm(null)}
+          kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan} />
       )}
 
       {/* Bayiye e-posta gönder — içerik serbest, ek dosya isteğe bağlı manuel seçilir */}

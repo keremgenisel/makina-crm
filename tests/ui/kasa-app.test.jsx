@@ -123,12 +123,13 @@ describe("Müşteri tahsilatına hesap (R6, C6, C7)", () => {
   it("AC-9 / AC-29: yalnız tahsilatın para birimindeki açık hesaplar; seçilen hesap tahsilata yazılır ve bakiyeyi artırır", async () => {
     const { kayitlar } = await baslat();
     await tahsilatFormu();
-    const sec = screen.getByLabelText("Tahsilat hesabı");
-    expect([...sec.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)"]);
-    fireEvent.change(sec, { target: { value: "51" } });
+    // Spec 0063 R13 ile güncellendi: hesap satırın alanıdır, tutarı girilmiş satırda çizilir.
     fireEvent.click(screen.getByText("+ Ödeme Ekle"));
     const satir = screen.getAllByDisplayValue("Nakit").pop().parentElement;
     fireEvent.change(satir.querySelector("input"), { target: { value: "7000" } });
+    const sec = await screen.findByLabelText("Tahsilat hesabı");
+    expect([...sec.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)"]);
+    fireEvent.change(sec, { target: { value: "51" } });
     fireEvent.click(screen.getAllByText("Kaydet").pop());
     await waitFor(() => expect(kayitlar.some(k => k.payments?.some(p => p.hesapId === 51))).toBe(true), { timeout: 3000 });
     const p = kayitlar[kayitlar.length - 1].payments.find(x => x.hesapId === 51);
@@ -138,11 +139,17 @@ describe("Müşteri tahsilatına hesap (R6, C6, C7)", () => {
     perde.indi = true;
     await baslat();
     await tahsilatFormu();
+    // Spec 0063 R13: alan satırdadır; tutarlı satır açılınca da yok.
+    fireEvent.click(screen.getByText("+ Ödeme Ekle"));
+    fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
     expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
   });
   it("AC-25 / C6: Finans sekmesi olmayan kullanıcı tahsilata hesap seçemez", async () => {
     await baslat({ sunucu: { tabs: ["dashboard", "customers", "gider"] } });
     await tahsilatFormu();
+    // Spec 0063 R13: alan satırdadır; tutarlı satır açılınca da yok.
+    fireEvent.click(screen.getByText("+ Ödeme Ekle"));
+    fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
     expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
   });
 });

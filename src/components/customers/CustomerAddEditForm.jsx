@@ -4,6 +4,7 @@ import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtI
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
+import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
 
 export const CustomerAddEditForm = ({
@@ -13,6 +14,8 @@ export const CustomerAddEditForm = ({
   addLabel, entity, parts = [], partTypeDefs = [], krediKartiKomisyonlari = null,
   draftBar = null,
   cekler = [], // spec 0040: ilk ödemedeki çek satırında çek alanları
+  // Spec 0063 R1, R2, R16: ilk ödeme satırlarının tahsilat hesabı; kapı null (boş dizi değil), yalnız Kasa yetkisiyle dolu.
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   // Spec 0002 (R15, plan M8): üretim tarihi ve satış kuru satırı yalnız gider yetkisiyle çizilir.
   giderYetki = false,
 }) => {
@@ -445,7 +448,9 @@ export const CustomerAddEditForm = ({
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor cekler={cekler} rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
-            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate} />
+            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate}
+            satirEki={kasaHesaplari ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={form.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
+              onChange={(idx, v) => setForm(p => ({ ...p, _ilkOdemeSatirlari: (p._ilkOdemeSatirlari || []).map((x, j) => j === idx ? { ...x, hesapId: v } : x) }))} /> : null} />
           <Ipucu>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</Ipucu>
         </Field>
       ) : (

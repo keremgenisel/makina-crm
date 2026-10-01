@@ -188,7 +188,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
                       )}
                     </div>
                     <Input value={k.olcu || ""} placeholder="Ölçü, örn: 55x125 mm" onChange={e => kalipSet(i, "olcu", e.target.value)} />
-                    <MoneyInput value={k.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => kalipSet(i, "fiyat", v)} />
+                    <MoneyInput ariaLabel={`Kalıp fiyatı ${i + 1}`} value={k.fiyat} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => kalipSet(i, "fiyat", v)} />
                     <button type="button" onClick={() => kalipSil(i)} disabled={kaliplar.length <= 1} title="Satırı sil"
                       style={{ background: "none", border: "none", cursor: kaliplar.length <= 1 ? "default" : "pointer", color: kaliplar.length <= 1 ? "var(--n300, #cbd5e1)" : "var(--red600, #dc2626)", padding: "8px 4px" }}>
                       <Icon name="trash" size={15} />

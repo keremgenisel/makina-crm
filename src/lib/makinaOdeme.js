@@ -9,7 +9,7 @@ import { parseMoney, isPaymentReceived, today } from "./utils";
 import { makinaKartOdemesi } from "./krediKarti";
 
 /**
- * @param {Array} satirlar İlk ödeme satırları (_ilkOdemeSatirlari): { yontem, tutar, taksitSayisi?, kkYansit?, vadeTarihi? }
+ * @param {Array} satirlar İlk ödeme satırları (_ilkOdemeSatirlari): { yontem, tutar, taksitSayisi?, kkYansit?, vadeTarihi?, hesapId? }
  * @param {object} opts
  * @param {number} opts.customerId Yeni müşteri id'si
  * @param {string} [opts.currency]
@@ -22,7 +22,9 @@ import { makinaKartOdemesi } from "./krediKarti";
  */
 export const ilkSatisOdemeleri = (satirlar = [], { customerId, currency = "TRY", tarih = today(), ayar = null, kdvOran = 0, yeniId }) => {
   const kayitlar = (satirlar || []).filter(r => parseMoney(r.tutar) > 0).map(r => {
-    const base = { id: yeniId(), customerId, tarih, currency: currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit" };
+    const base = { id: yeniId(), customerId, tarih, currency: currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit",
+      // Spec 0063 R5, R4: satırın tahsilat hesabı; boş satırda alan hiç yazılmaz (null da değil, sunucu karşılaştırması).
+      ...(r.hesapId != null && r.hesapId !== "" ? { hesapId: r.hesapId } : {}) };
     if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
       // Faturalıda karta KDV + komisyon eklenir; borçtan KDV dahil (mal×(1+KDV)) düşer (nakit/çek aynen kalır).
       // Blokaj bu satırın KART İŞLEM TARİHİnden (r.kartTarihi) hesaplanır; boşsa ödeme tarihine düşer.

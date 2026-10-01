@@ -183,11 +183,16 @@ describe("Spec 0052: kasasız kullanıcı gerçek uygulamada", () => {
     };
     await baslat(KASASIZ_SEKMELER);
     await tahsilatFormu();
+    fireEvent.click(screen.getByText("+ Ödeme Ekle"));
+    fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
     expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
     cleanup();
     await baslat(KASALI_SEKMELER);
     await tahsilatFormu();
-    expect(screen.getByLabelText("Tahsilat hesabı")).toBeTruthy();
+    // Spec 0063 R13 ile güncellendi: hesap satırın alanıdır, tutarı girilmiş satırda çizilir.
+    fireEvent.click(screen.getByText("+ Ödeme Ekle"));
+    fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
+    expect(await screen.findByLabelText("Tahsilat hesabı")).toBeTruthy();
   });
   it("R7 (yedek): Kasa'sı olmayan kullanıcıda geri yükleme hesap tanımlarına dokunmaz; App ayarlayıcıyı vermez", () => {
     const app = readFileSync("src/App.jsx", "utf-8");

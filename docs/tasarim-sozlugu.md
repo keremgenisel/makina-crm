@@ -119,8 +119,8 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:69` (kart, başlık + alt satır)
-**Örnek:** `src/components/SimpleDealers.jsx:366` (başlıksız liste kabı)
-**Örnek:** `src/components/SimpleDealers.jsx:552` (detay bölümü, başlık)
+**Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
+**Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
 **Örnek:** `src/components/customers/detail/MachineTimeline.jsx:75` (eylem yuvası, alt başlık)
 
@@ -141,7 +141,7 @@ Satış / Finans); bir form bölümünün başında, yanında düğmeler olan ba
 - Tablo başlıkları ve alan etiketleri: bölüm başlığı değildir.
 - Kenarlıksız bir `KartBolum` ile taklit edilmez.
 
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:138`
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:142`
 **Örnek:** `src/components/stock/MakinaStokTab.jsx:261` (düğmeli başlık satırında, alt boşluk 0)
 
 ## BosDurum
@@ -222,7 +222,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
 **Örnek:** `src/components/CalisanManager.jsx:191`
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:104` (canlı doğrulama, form açılır açılmaz görünür)
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:107` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
 
