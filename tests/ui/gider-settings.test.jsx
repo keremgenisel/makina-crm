@@ -79,7 +79,7 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, hesapsizBaslangic: "" }); // 0051: boş = eşik yok
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01" }); // 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır
   });
 });
 

@@ -1,0 +1,570 @@
+[
+  {
+    "ad": "ayarlar-giderayar-aydinlik.png",
+    "boyut": "2880x1944 ≠ 2880x2224",
+    "piksel": -1
+  },
+  {
+    "ad": "ayarlar-giderayar-karanlik.png",
+    "boyut": "2880x1944 ≠ 2880x2224",
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesaplar-aydinlik.png",
+    "boyut": "2880x2142 ≠ 2880x2244",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesaplar-karanlik.png",
+    "boyut": "2880x2142 ≠ 2880x2244",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-aydinlik.png",
+    "boyut": "2880x1808 ≠ 2880x1910",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-karanlik.png",
+    "boyut": "2880x1808 ≠ 2880x1910",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-virman-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-virman-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 1244919
+  },
+  {
+    "ad": "kasa-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 1244864
+  },
+  {
+    "ad": "kasa-calisan-avanslari-aydinlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-calisan-avanslari-karanlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-aydinlik.png",
+    "boyut": "2880x1800 ≠ 2880x1860",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-karanlik.png",
+    "boyut": "2880x1800 ≠ 2880x1860",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-cek-portfoyu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-portfoyu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-aydinlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-karanlik.png",
+    "boyut": "2880x1844 ≠ 2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-aydinlik.png",
+    "boyut": "2880x2322 ≠ 2880x2424",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-karanlik.png",
+    "boyut": "2880x2322 ≠ 2880x2424",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-aydinlik.png",
+    "boyut": "2880x2316 ≠ 2880x2418",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-karanlik.png",
+    "boyut": "2880x2316 ≠ 2880x2418",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0056-sil-tasi-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir",
+      "Silinen hesabın açılış bakiyesi taşınmaz; gerekirse hedef hesabın açıl"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0056-sil-tasi-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir",
+      "Silinen hesabın açılış bakiyesi taşınmaz; gerekirse hedef hesabın açıl"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0056-sil-engel-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir",
+      "Silinen hesabın açılış bakiyesi taşınmaz; gerekirse hedef hesabın açıl"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0056-sil-engel-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir",
+      "Silinen hesabın açılış bakiyesi taşınmaz; gerekirse hedef hesabın açıl"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-aydinlik.png",
+    "boyut": "2880x2794 ≠ 2880x2896",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-karanlik.png",
+    "boyut": "2880x2794 ≠ 2880x2896",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-kapsam-disi-aydinlik.png",
+    "boyut": "2880x2296 ≠ 2880x2398",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-kapsam-disi-karanlik.png",
+    "boyut": "2880x2296 ≠ 2880x2398",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-aydinlik.png",
+    "boyut": "2880x2304 ≠ 2880x2406",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-karanlik.png",
+    "boyut": "2880x2304 ≠ 2880x2406",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-aydinlik.png",
+    "boyut": "2880x2266 ≠ 2880x2368",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-karanlik.png",
+    "boyut": "2880x2266 ≠ 2880x2368",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-aydinlik.png",
+    "boyut": "2880x2396 ≠ 2880x2498",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-karanlik.png",
+    "boyut": "2880x2396 ≠ 2880x2498",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hareket-hedef-aydinlik.png",
+    "boyut": "2880x1882 ≠ 2880x1984",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hareket-hedef-karanlik.png",
+    "boyut": "2880x1882 ≠ 2880x1984",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-ekstre-hedef-aydinlik.png",
+    "boyut": "2880x1800 ≠ 2880x1838",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-ekstre-hedef-karanlik.png",
+    "boyut": "2880x1800 ≠ 2880x1838",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  }
+]

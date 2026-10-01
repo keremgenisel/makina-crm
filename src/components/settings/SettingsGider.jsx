@@ -6,7 +6,7 @@ import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu, Segment } from "../tasarim";
 import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
-import { hesapsizBaslangicDogrula } from "../../lib/kasa";
+import { hesapsizBaslangicDogrula, denemeDonemiBitisi } from "../../lib/kasa";
 import { fmtTR, yerelBugun } from "../../lib/utils";
 
 // Gider ayarları (spec 0001 R6, R10): varsayılan kira stopaj oranı ve gider takibinin yürürlük ayı.
@@ -16,7 +16,9 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
   const mevcut = appSettings?.giderAyarlari || {};
   const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
     ortakGiderKaynagi: mevcut.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK,
-    hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "" });
+    hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "",
+    // Spec 0056 R1, R2 (Q5): alan hiç yoksa varsayılan tarih gösterilir ve kaydedilir; boş = deneme dönemi kapalı.
+    denemeDonemiBitis: denemeDonemiBitisi(mevcut) || "" });
   const [hata, setHata] = useState("");
   const yonetebilir = canDo("gider_tanim");
   const esikAlti = esikAltiKalemSayisi(giderler, form.yururlukAy || null);
@@ -30,8 +32,11 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     // Spec 0051 R14, R15 (AC-9): biçimsiz ya da gelecek tarih kaydedilmez; boş = eşik yok.
     const b = hesapsizBaslangicDogrula(form.hesapsizBaslangic, yerelBugun());
     if (b.hata) { setHata(b.hata); return; }
+    // Spec 0056 Q5: biçimsiz tarih kaydedilmez; geçmiş tarih serbest (dönemi kapatmanın bir yolu).
+    const deneme = String(form.denemeDonemiBitis || "").trim();
+    if (deneme && !/^\d{4}-\d{2}-\d{2}$/.test(deneme)) { setHata("Deneme dönemi bitiş tarihi geçerli bir tarih değil."); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, hesapsizBaslangic: b.deger } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -62,6 +67,14 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
             <input aria-label="Ödeme hatırlatma eşiği (gün)" className="input" inputMode="numeric" value={form.hatirlatmaEsikGun} disabled={!yonetebilir}
               onChange={e => setForm(p => ({ ...p, hatirlatmaEsikGun: e.target.value }))} style={{ width: 100 }} />
             <Ipucu>Vadesine bu kadar gün (bugün dahil) kalan ödenmemiş kalemler Anasayfa'da "yaklaşan" sayılır. 0 ile 365 arası; varsayılan 7.</Ipucu>
+          </Field>
+        </div>
+        {/* Spec 0056 R1–R4: deneme döneminde kasa hesabı (hareketi olsa da) silinebilir, hareketleri taşınabilir. */}
+        <div style={{ maxWidth: 360 }}>
+          <Field label="Deneme dönemi bitiş tarihi">
+            <input aria-label="Deneme dönemi bitiş tarihi" type="date" className="input" value={form.denemeDonemiBitis} disabled={!yonetebilir}
+              onChange={e => setForm(p => ({ ...p, denemeDonemiBitis: e.target.value }))} style={{ width: 170 }} />
+            <Ipucu>Bu tarihe kadar (o gün hariç) Kasa'da hareketi olan hesap da silinebilir ve hareketleri başka hesaba taşınabilir. Tarih gelince hareketi olan hesap yine yalnız kapatılabilir. Boş bırakılırsa deneme dönemi hemen biter.</Ipucu>
           </Field>
         </div>
         {/* Spec 0051 R3, R4 (Q7): Kasa'nın hesapsız iş listesi bu günden sonrasını gösterir; bakiye ve raporlar etkilenmez. */}

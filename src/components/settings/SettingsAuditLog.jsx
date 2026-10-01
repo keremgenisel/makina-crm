@@ -32,7 +32,7 @@ const ACTION_LABELS = {
   tekrar_uretildi: "Tekrarlayan Kalemler Oluşturuldu", tur_tasindi: "Tür Taşındı", tanim_kapatildi: "Tanım Kapatıldı",
   surum_eklendi: "Yeni Tutar Sürümü", surum_geri_alindi: "Sürüm Geri Alındı", sona_erdirildi: "Sona Erdirildi",
   // Kasa (spec 0024)
-  kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı", kapsam_disi: "Kapsam Dışı Bırakıldı", kapsama_alindi: "Kapsama Alındı", mahsup_edildi: "Avanstan Mahsup Edildi",
+  kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı", kapsam_disi: "Kapsam Dışı Bırakıldı", hareket_tasindi: "Hareketleri Taşındı", kapsama_alindi: "Kapsama Alındı", mahsup_edildi: "Avanstan Mahsup Edildi",
   // Çek portföyü (spec 0040)
   ciro_edildi: "Ciro Edildi", ciro_iptal: "Ciro İptal Edildi", karsiliksiz: "Karşılıksız İşaretlendi",
 };

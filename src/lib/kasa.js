@@ -184,6 +184,83 @@ export const hesapKullanimi = (hesapId, hareketler = [], veri = {}) => {
     + (v.cekler || []).filter(c => c && c.yon === "verilen" && String(c.hesapId) === String(hesapId)).length;
 };
 
+// ── Spec 0056: deneme dönemi ve hesabın silinip hareketlerinin taşınması ──────────────────────────────────────
+// R1, R2 (Q5, Q7): tek kapı. Alan HİÇ yoksa varsayılan 2027-01-01 (mevcut kurulumlar kendiliğinden dönemde, o gün
+// kendiliğinden çıkar); boş dize = dönem kapalı. bugun yerel tarihtir (yerelBugun / useBugun); bitiş günü dahil değil.
+export const DENEME_DONEMI_VARSAYILAN = "2027-01-01";
+export const denemeDonemiBitisi = (ayar) => {
+  const v = ayar?.denemeDonemiBitis;
+  if (v === undefined) return DENEME_DONEMI_VARSAYILAN;
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+};
+export const denemeDonemiAcik = (ayar, bugun = yerelBugun()) => {
+  const b = denemeDonemiBitisi(ayar);
+  return !!b && !!bugun && bugun < b;
+};
+// R7, AC-29: hesapKullanimi'nin türe göre kırılımı (aynı kapsam: hareketler her durumda, tahsilat ve satış kayıtları
+// canlıysa, verilen çek). Toplam hesapKullanimi ile eşittir; `diger` başka türden hesaplı hareketler içindir.
+export const hesapKullanimDetayi = (hesapId, hareketler = [], veri = {}) => {
+  const v = veriOf(veri);
+  const es = (x) => x != null && String(x) === String(hesapId);
+  const bagli = (r) => r && !r.deletedAt && es(r.hesapId);
+  const d = { odeme: 0, virman: 0, avans: 0, diger: 0, payments: 0, servis: 0, kalip: 0, yedekParca: 0, verilenCek: 0 };
+  for (const m of hareketler || []) {
+    if (!m || !(es(m.hesapId) || es(m.karsiHesapId))) continue;
+    if (m.tur === "virman") d.virman++; else if (m.tur === "odeme") d.odeme++; else if (m.tur === "avans") d.avans++; else d.diger++;
+  }
+  d.payments = v.payments.filter(bagli).length; d.servis = v.services.filter(bagli).length;
+  d.kalip = v.partSales.filter(bagli).length; d.yedekParca = v.yedekParcaSatislar.filter(bagli).length;
+  d.verilenCek = (v.cekler || []).filter(c => c && c.yon === "verilen" && es(c.hesapId)).length;
+  d.toplam = Object.entries(d).reduce((a, [k, n]) => (k === "toplam" ? a : a + n), 0);
+  return d;
+};
+// R8, R17–R19, R22, R26, R27: silinecek hesabın bağlarının taşıma planı. Saf; çağıran güncelleyicileri TEK işleyicide
+// uygular (R23). uygunHedefler: açık, aynı para biriminde, virmanların karşı bacağı olmayan; verilen çek varsa yalnız TL
+// banka. nedenler.tasi / nedenler.hesapsiz: o yolu engelleyen kayıtlar (adıyla). Hesapsız bırakma virman (tek bacaklı
+// virman bakiyeyi sessizce değiştirirdi, R18) ve verilen çek (ödenince hiçbir bakiyeye ve hiçbir hesapsız listeye
+// girmezdi, R9/C6) varken engellenir. guncelle(hedefId|null): bölüm başına tam dizi güncelleyicileri (çöptekiler dahil).
+// Mahsup ve ciro hareketleri hesapsızdır, plana girmez (R22).
+export const hesapTasimaPlani = (hesap, hareketler = [], veri = {}, hesaplar = [], { hesapAdi = (id) => String(id), tarihYaz = (t) => t || "tarihsiz" } = {}) => {
+  const v = veriOf(veri);
+  const id = hesap?.id;
+  const es = (x) => x != null && String(x) === String(id);
+  const detay = hesapKullanimDetayi(id, hareketler, v);
+  const virmanlar = (hareketler || []).filter(m => m && m.tur === "virman" && (es(m.hesapId) || es(m.karsiHesapId)));
+  const karsiBacaklar = new Set(virmanlar.map(m => String(es(m.hesapId) ? m.karsiHesapId : m.hesapId)));
+  const verilenCekler = (v.cekler || []).filter(c => c && c.yon === "verilen" && es(c.hesapId));
+  const pb = hesap?.paraBirimi || "TRY";
+  const adaylar = (hesaplar || []).filter(h => h && !es(h.id) && !h.kapali);
+  const uygunHedefler = adaylar.filter(h => (h.paraBirimi || "TRY") === pb && !karsiBacaklar.has(String(h.id))
+    && (!verilenCekler.length || (h.tur === "banka" && (h.paraBirimi || "TRY") === "TRY")));
+  const virmanAdi = (m) => `${tarihYaz(m.tarih)} virmanı (${hesapAdi(m.hesapId)} ↔ ${hesapAdi(m.karsiHesapId)})`;
+  const tasi = [];
+  if (!uygunHedefler.length) {
+    if (!adaylar.some(h => (h.paraBirimi || "TRY") === pb)) tasi.push(`${pb} para biriminde açık başka hesap yok.`);
+    else if (verilenCekler.length && !adaylar.some(h => h.tur === "banka" && (h.paraBirimi || "TRY") === "TRY" && !karsiBacaklar.has(String(h.id))))
+      tasi.push(...verilenCekler.map(c => `Verilen çek ${c.no || ""}: yalnız açık bir TL banka hesabına taşınabilir.`.replace("  ", " ")));
+    else tasi.push(...virmanlar.map(m => `${virmanAdi(m)}: hedef virmanın karşı hesabı olamaz; önce bu virmanı silin.`));
+  }
+  const hesapsiz = [...virmanlar.map(m => `${virmanAdi(m)}: virman hesapsız bırakılamaz; önce bu virmanı silin.`),
+    ...verilenCekler.map(c => `Verilen çek ${c.no || ""}: hesapsız bırakılamaz; bir TL banka hesabına taşıyın.`.replace("  ", " "))];
+  const guncelle = (hedefId) => {
+    const yeni = hedefId == null ? null : hedefId;
+    const hesapAlani = (r) => (r && es(r.hesapId) ? { ...r, hesapId: yeni } : r);
+    return {
+      hesapHareketleri: (p) => (p || []).map(m => {
+        if (!m) return m;
+        const a = es(m.hesapId), b = es(m.karsiHesapId);
+        return a || b ? { ...m, ...(a ? { hesapId: yeni } : {}), ...(b ? { karsiHesapId: yeni } : {}) } : m;
+      }),
+      payments: (p) => (p || []).map(hesapAlani),
+      services: (p) => (p || []).map(hesapAlani),
+      partSales: (p) => (p || []).map(hesapAlani),
+      yedekParcaSatislar: (p) => (p || []).map(hesapAlani),
+      cekler: (p) => (p || []).map(c => (c && c.yon === "verilen" ? hesapAlani(c) : c)),
+    };
+  };
+  return { detay, uygunHedefler, nedenler: { tasi, hesapsiz }, guncelle };
+};
+
 // Spec 0044 R6, R7, R14, AC-23, AC-24: hesabı belirtilmemiş tahsilatlar (gider tarafındaki hesapsizOdemeler'den ayrı).
 // Kapsam: ödendi işaretli, bize ait tutarı olan, para birimi uyumlu, hesabı boş kayıt; tahsil edilmemiş çek ve blokajı
 // süren kart da listede kalır (hesap önceden atanır, Q10). Bize ait tutarı olmayan kayıt kapsam dışıdır (eksik veri değil).

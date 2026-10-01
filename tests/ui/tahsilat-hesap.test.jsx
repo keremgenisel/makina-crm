@@ -168,7 +168,9 @@ describe("Spec 0044: müşteri detayında Ödendi anahtarı hesap sorar", () => 
 
 describe("Spec 0044: Kasa ekranı", () => {
   it("AC-16 / AC-14 / AC-15: bilgi notu yeni metin; tahsilat satırı türü ve firmasıyla; tahsilatı olan hesap silinemez", async () => {
-    await baslat({ yuklenen: veri({ payments: [], services: [{ ...SERVIS, odendi: true, tahsilatTarihi: `${buAy}-06`, hesapId: 53 }] }) });
+    // Spec 0056 ile güncellendi: "hareketi olan hesap silinemez" deneme dönemi kapalıyken sınanır.
+    await baslat({ yuklenen: veri({ payments: [], services: [{ ...SERVIS, odendi: true, tahsilatTarihi: `${buAy}-06`, hesapId: 53 }],
+      appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7, denemeDonemiBitis: "" } } }) });
     menu("Kasa");
     await waitFor(() => expect(screen.getByTestId("hesapsiz-notu")).toBeTruthy());
     expect(screen.getByTestId("hesapsiz-notu").textContent).toMatch(/^Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar\. Hesabı belirtilmemiş kayıtlar aşağıda ayrıca listelenir\./);

@@ -55,6 +55,8 @@ const ODEMECI = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderAction
 // Eylem izinleri (virman, avans dahil) açık, müşteri grubu kısıtlı: reddin tek nedeni Kasa sekmesi; 0044 istisnası da bununla sınanır.
 const KASASIZ = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme", "kasa_hesap", "virman", "avans"], customerActions: [] });
 const KASA_FINANSSIZ = JSON.stringify({ tabs: ["gider", "kasa"], giderActions: ["gider_odeme", "kasa_hesap"] });
+// Spec 0056 R25: yalnız kasa_hesap'lı Kasa kullanıcısı (avans, virman, gider_odeme ve müşteri izni yok) hesap taşır.
+const TASIYICI = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["kasa_hesap"], customerActions: [] });
 // Spec 0040: yalnız Müşteriler sekmeli tahsilatçı; müşteri grubu kısıtlı Giderler/Finans cirocusu; gider_odeme'siz Giderler kullanıcısı.
 const TAHSILATCI = JSON.stringify({ tabs: ["customers"], customerActions: ["cust_payment_add", "cust_payment_edit"] });
 // Spec 0052: kendi çek yazmak (verilen çek) Kasa sekmesi ister; cirocu Kasa kullanıcısıdır.
@@ -91,6 +93,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("odemeci",     bcrypt.hashSync("odeme123", 10), "user", ODEMECI);
   dbmod.createUser("kasasiz",     bcrypt.hashSync("kasa1234", 10), "user", KASASIZ);
   dbmod.createUser("kasafinsiz",  bcrypt.hashSync("kasa1234", 10), "user", KASA_FINANSSIZ);
+  dbmod.createUser("tasiyici",    bcrypt.hashSync("tasi1234", 10), "user", TASIYICI);
   dbmod.createUser("tahsilatci",  bcrypt.hashSync("tahsil123", 10), "user", TAHSILATCI);
   dbmod.createUser("cirocu",      bcrypt.hashSync("ciro1234", 10), "user", CIROCU);
   dbmod.createUser("formodemeci", bcrypt.hashSync("form1234", 10), "user", FORM_ODEMECI);
@@ -546,6 +549,34 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...kKs2, dataVersion: undefined, services: kKs2.services.map(x => x.id === 9701 ? { ...x, hesapId: 9703 } : x),
       kasaKapsamDisi: kKs2.kasaKapsamDisi.filter(g => g.id !== 9702) }, kKs2.dataVersion, kasasizTok)).status === 200
     && !(await gUst(adminTok)).kasaKapsamDisi.some(g => g.id === 9702));
+  // ── Spec 0056 R20, R25 (AC-23): hesabı silip bağlarını taşımak yalnız kasa_hesap + Kasa sekmesi ister ──
+  let hA = await gUst(adminTok);
+  // Triyaj bulgu 2: istisna kayıtlı deneme ayarına bağlı; test gerçek tarihten bağımsız olsun diye açık uçlu tarih.
+  await postData({ ...hA, dataVersion: undefined, appSettings: { ...hA.appSettings, giderAyarlari: { ...(hA.appSettings?.giderAyarlari || {}), denemeDonemiBitis: "2099-01-01" } },
+    kasaHesaplari: [...hA.kasaHesaplari, { id: 9801, ad: "Deneme Eski", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }, { id: 9802, ad: "Deneme Yeni", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }],
+    payments: [...(hA.payments || []), { id: 9803, customerId: 9600, tarih: "2026-09-10", tutar: 300, currency: "TRY", yontem: "Havale", hesapId: 9801 }],
+    hesapHareketleri: [...hA.hesapHareketleri, { id: 9804, tur: "avans", tarih: "2026-09-11", tutar: 40, calisanId: 1, hesapId: 9801 }] }, hA.dataVersion, adminTok);
+  const tasiYazimi = (g) => ({ ...g, dataVersion: undefined, kasaHesaplari: g.kasaHesaplari.filter(h => h.id !== 9801),
+    payments: g.payments.map(p => (p.hesapId === 9801 ? { ...p, hesapId: 9802 } : p)), hesapHareketleri: g.hesapHareketleri.map(m => (m.hesapId === 9801 ? { ...m, hesapId: 9802 } : m)) });
+  const tKsz = await gUst(kasasizTok);
+  check("spec 0056 AC-23: Kasa'sız kullanıcı hesap taşıyamaz → 403", (await postData(tasiYazimi(tKsz), tKsz.dataVersion, kasasizTok)).status === 403);
+  const tasiTok = (await login("tasiyici", "tasi1234")).body.token;
+  const tTs = await gUst(tasiTok);
+  check("spec 0056 AC-23: yalnız kasa_hesap'lı Kasa kullanıcısı hesabı silip makina tahsilatını ve avansı taşır → 200",
+    (await postData(tasiYazimi(tTs), tTs.dataVersion, tasiTok)).status === 200
+    && await (async () => { const a = await gUst(adminTok); return !a.kasaHesaplari.some(h => h.id === 9801) && a.payments.find(p => p.id === 9803)?.hesapId === 9802 && a.hesapHareketleri.find(m => m.id === 9804)?.hesapId === 9802; })());
+  // Triyaj bulgu 2: dönem kapanınca (ayar boş) aynı biçimde taşıma 403.
+  let dA = await gUst(adminTok);
+  await postData({ ...dA, dataVersion: undefined, appSettings: { ...dA.appSettings, giderAyarlari: { ...(dA.appSettings?.giderAyarlari || {}), denemeDonemiBitis: "" } },
+    kasaHesaplari: [...dA.kasaHesaplari, { id: 9805, ad: "Kapalı Dönem", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }],
+    hesapHareketleri: [...dA.hesapHareketleri, { id: 9806, tur: "avans", tarih: "2026-09-12", tutar: 30, calisanId: 1, hesapId: 9805 }] }, dA.dataVersion, adminTok);
+  const dT = await gUst(tasiTok);
+  check("spec 0056 triyaj: deneme dönemi kapalıyken hesap taşıma → 403",
+    (await postData({ ...dT, dataVersion: undefined, kasaHesaplari: dT.kasaHesaplari.filter(h => h.id !== 9805),
+      hesapHareketleri: dT.hesapHareketleri.map(m => (m.hesapId === 9805 ? { ...m, hesapId: 9802 } : m)) }, dT.dataVersion, tasiTok)).status === 403);
+  const tTs2 = await gUst(tasiTok);
+  check("spec 0056 R25: taşıma yazımı dışında avansın tutarını değiştirmek → 403",
+    (await postData({ ...tTs2, dataVersion: undefined, hesapHareketleri: tTs2.hesapHareketleri.map(m => (m.id === 9804 ? { ...m, tutar: 1 } : m)) }, tTs2.dataVersion, tasiTok)).status === 403);
   const tK2 = await gUst(ciroTok);
   check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
     (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);

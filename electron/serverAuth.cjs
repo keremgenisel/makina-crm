@@ -355,7 +355,8 @@ function cekYalnizBagsizMi(oldBlob, newBlob) {
 // Spec 0044 R12, Q5: Kasa ekranından hesap atama. Kasa'yı gören kullanıcının (Giderler + Finans sekmeleri, 0024 C6)
 // Müşteriler/Stok sekmesi olmayabilir; bu üç bölümde kayıt eklemeyen/silmeyen ve yalnız `hesapId` değiştiren yazım ona
 // açıktır. Yeni izin tanımlanmaz.
-const TAHSILAT_HESAP_BOLUMLERI = new Set(["services", "partSales", "yedekParcaSatislar"]);
+// Spec 0056 R20: makina tahsilatı ve verilen çek de (hesap taşımada hesapId'leri değişir).
+const TAHSILAT_HESAP_BOLUMLERI = new Set(["services", "partSales", "yedekParcaSatislar", "payments", "cekler"]);
 function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
   if (!TAHSILAT_HESAP_BOLUMLERI.has(section)) return false;
   const eski = Array.isArray(oldBlob?.[section]) ? oldBlob[section] : null, yeni = Array.isArray(newBlob?.[section]) ? newBlob[section] : null;
@@ -400,6 +401,53 @@ function kapsamDisiTemizlikMi(oldBlob, newBlob) {
   const yeniIdler = new Set(yeni.map(r => r.id));
   return eski.filter(e => !yeniIdler.has(e.id)).every(e => kapsamGirisiGecersizMi(e, newBlob));
 }
+// Spec 0056 R25 (Q1): hesap taşıma yazımı. Aynı yazımda en az bir kasa hesabı siliniyor; taşınan bölümlerde kayıt
+// eklenmiyor ya da silinmiyor; değişen her kayıtta değişen tek alan hesapId / karsiHesapId; eski değer silinen bir hesap,
+// yeni değer boş ya da açık (yeni blob'da var, kapalı değil) bir hesap. Bu yazım, kasa_hesap + Kasa sekmesi olan
+// kullanıcıda tür izinlerini (gider_odeme / virman / avans) ve müşteri grubunu istemez: taşımada içerik değişmez.
+const TASIMA_BOLUMLERI = ["hesapHareketleri", "payments", "services", "partSales", "yedekParcaSatislar", "cekler"];
+// Triyaj (0056 R4, C4): istisna yalnız deneme dönemi açıkken geçerlidir; dönem bitince sunucuda da korumalar döner. Dönem
+// KAYITLI (eski) blob'un ayarından okunur, aynı yazımda ayarı değiştirerek açılamaz. Kural istemcideki kasa.denemeDonemiAcik
+// ile aynı: alan yoksa "2027-01-01", boş dize kapalı, bitiş günü dahil değil; bugün sunucunun yerel tarihi.
+const DENEME_DONEMI_VARSAYILAN = "2027-01-01";
+const yerelBugunSunucu = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+function denemeDonemiAcikSunucu(giderAyarlari, bugun = yerelBugunSunucu()) {
+  const v = giderAyarlari?.denemeDonemiBitis;
+  const bitis = v === undefined ? DENEME_DONEMI_VARSAYILAN : (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  return !!bitis && !!bugun && bugun < bitis;
+}
+function hesapTasimaYazimiMi(oldBlob, newBlob, bugun = yerelBugunSunucu()) {
+  if (!denemeDonemiAcikSunucu(oldBlob?.appSettings?.giderAyarlari, bugun)) return false;
+  const eskiH = Array.isArray(oldBlob?.kasaHesaplari) ? oldBlob.kasaHesaplari : [], yeniH = Array.isArray(newBlob?.kasaHesaplari) ? newBlob.kasaHesaplari : null;
+  if (!yeniH) return false;
+  const yeniIdler = new Set(yeniH.map(h => String(h.id)));
+  const silinen = new Set(eskiH.filter(h => !yeniIdler.has(String(h.id))).map(h => String(h.id)));
+  if (!silinen.size) return false;
+  const acik = new Set(yeniH.filter(h => !h.kapali).map(h => String(h.id)));
+  let degisen = 0;
+  for (const bolum of TASIMA_BOLUMLERI) {
+    const yeni = Array.isArray(newBlob?.[bolum]) ? newBlob[bolum] : null;
+    if (!yeni) continue;
+    const eski = Array.isArray(oldBlob?.[bolum]) ? oldBlob[bolum] : [];
+    if (eski.length !== yeni.length) return false;
+    const eskiById = new Map(eski.map(r => [r.id, r]));
+    for (const r of yeni) {
+      const e = eskiById.get(r.id);
+      if (!e) return false;
+      if (stableStringify(e) === stableStringify(r)) continue;
+      const { hesapId: h1, karsiHesapId: k1, ...a } = e, { hesapId: h2, karsiHesapId: k2, ...b } = r;
+      if (stableStringify(a) !== stableStringify(b)) return false;
+      for (const [o, n] of [[h1, h2], [k1, k2]]) {
+        if (stableStringify(o) === stableStringify(n)) continue;
+        if (o == null || !silinen.has(String(o))) return false;
+        if (n != null && !acik.has(String(n))) return false;
+      }
+      degisen++;
+    }
+  }
+  return degisen > 0;
+}
+const tasimaYetkilisi = (perms) => eylemIzinli(perms, "giderActions", "kasa_hesap") && kasaSekmesiVar(perms);
 const kasaGorunurMu = (perms) => Array.isArray(perms?.tabs) && perms.tabs.includes("gider") && perms.tabs.includes("finance");
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
@@ -407,11 +455,13 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
   const ayna = giderAynaEngeli(permissionsJson, role, changedSections, oldBlob, newBlob);
   if (ayna) return { ok: false, reddedilenBolum: ayna };
   if (!perms) return { ok: true }; // izin tanımsız = tam erişim (mevcut istemci semantiği)
+  const tasima = tasimaYetkilisi(perms) && hesapTasimaYazimiMi(oldBlob, newBlob);
   for (const section of changedSections) {
     const group = SECTION_GROUP[section];
     if (!group) return { ok: false, reddedilenBolum: section }; // haritada yok → güvenli tarafta reddet
     if (tahsilatHesabiYalnizMi(section, oldBlob, newBlob) && kasaGorunurMu(perms)) continue;
     if (section === "kasaKapsamDisi" && kapsamDisiTemizlikMi(oldBlob, newBlob)) continue; // spec 0058 R20
+    if (TASIMA_BOLUMLERI.includes(section) && tasima) continue; // spec 0056 R25
     // Gider bölümleri (C6, K6): Giderler sekmesi yoksa yalnız zincir değişikliği geçer (model adı taşıma,
     // çalışan silmede tanım kapatma), o da yazan Ayarlar sekmesi açıksa. Grup kısıtı (giderActions)
     // zincire uygulanmaz: zincir bir gider işlemi değil, Ayarlar işleminin yan etkisidir.
@@ -654,6 +704,7 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
   const perms = parsePerms(permissionsJson);
   if (!perms) return { ok: true }; // izin tanımsız = tam erişim
   const eski = oldBlob || {}, yeni = newBlob || {};
+  const tasima = tasimaYetkilisi(perms) && hesapTasimaYazimiMi(eski, yeni); // spec 0056 R25
   const aktifMi = (r) => r && !r.deletedAt;
   const idBul = (v, r) => (typeof v === "function" ? v(r) : v);
   for (const [section, map] of Object.entries(EYLEM_IDLERI)) {
@@ -737,6 +788,7 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       }
       // Spec 0049 Q8: bağsız çekte her değişiklik (durum ya da alan) gider_odeme ister. Triyaj: bağlı çeki bağsıza (ya da
       // tersine) çeviren yazım iki tarafın iznini birden ister; yoksa paymentId boşaltılarak cust_payment_edit atlanırdı.
+      if (e && tasima && stableStringify({ ...e, hesapId: null }) === stableStringify({ ...r, hesapId: null })) continue; // spec 0056 R25
       if (e && (bagsizCek(e) || bagsizCek(r)) && stableStringify(e) !== stableStringify(r)) {
         if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "gider_odeme" };
         if (bagsizCek(e) !== bagsizCek(r) && !eylemIzinli(perms, "customerActions", "cust_payment_edit")) return { ok: false, reddedilenBolum: "cekler", islem: "duzenle", gerekli: "cust_payment_edit" };
@@ -754,6 +806,7 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
   for (const [section, idOf] of Object.entries(KAYIT_DUZENLE_IZINLERI)) {
     const yeniArr = yeni[section];
     if (!Array.isArray(yeniArr)) continue;
+    if (tasima && section === "hesapHareketleri") continue; // spec 0056 R25: yalnız hesap alanı değişti (hesapTasimaYazimiMi)
     const eskiById = new Map((Array.isArray(eski[section]) ? eski[section] : []).map(r => [r.id, r]));
     for (const r of yeniArr) {
       const e = eskiById.get(r.id);
@@ -820,6 +873,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

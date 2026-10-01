@@ -4,7 +4,8 @@ import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { tl, turHaritasi, davranisOf } from "../lib/gider";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi } from "../lib/kasa";
+import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani } from "../lib/kasa";
+import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
@@ -23,6 +24,9 @@ const para = (n, pb) => fmtCur(n, pb || "TRY");
 // Spec 0058 R2, R8 (AC-28): ekranda birebir yazılan iki cümle.
 export const KAPSAM_DISI_ACIKLAMA = "Kapsam dışı bırakmak kaydı silmez ve hiçbir tutarı değiştirmez; yalnız bu listeden çıkarır.";
 export const KAPSAM_SUZGEC_FARKI = "Başlangıç tarihi geçici bir süzgeçtir, kapsam dışı bırakmak kalıcı bir karardır.";
+// Spec 0056 R3, R13 (AC-31, AC-32): ekranda birebir yazılan iki metin.
+export const denemeDonemiMetni = (bitis) => `Deneme dönemi ${bitis.split("-").reverse().join(".")}'de biter. O tarihten sonra hareketi olan hesap silinemez, yalnız kapatılabilir.`;
+export const ACILIS_BAKIYE_IPUCU = "Bakiye hareketlerden hesaplanır, doğrudan yazılamaz; bir hesabın başlangıç rakamını açılış bakiyesiyle ayarlayın.";
 const BOS_KAPSAM = []; // sabit kimlik: her çizimde yeni dizi bellekteki özeti boşa düşürürdü (0051 triyaj)
 const bosHesap = () => ({ id: null, ad: "", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: "", acilisTarihi: today(), kapali: false });
 
@@ -65,6 +69,7 @@ const HesapFormu = ({ hesap, hesaplar, hareketVar, onKaydet, onClose }) => {
             <TutarInput ariaLabel={kart ? "Açılış borcu" : "Açılış bakiyesi"} value={form.acilisBakiyesi} onChange={v => set({ acilisBakiyesi: v })} sym={SEMBOL[form.paraBirimi] || "₺"} />
           </Field>
           <Ipucu>{kart ? "Kredi kartında açılış tutarı borç olarak girilir." : "Hesabın takibe başladığı günkü bakiyesi."}</Ipucu>
+          <div data-testid="acilis-bakiye-ipucu"><Ipucu>{ACILIS_BAKIYE_IPUCU}</Ipucu></div>
         </div>
         <div>
           <Field label="Açılış tarihi"><Input type="date" value={form.acilisTarihi || ""} onChange={e => set({ acilisTarihi: e.target.value })} /></Field>
@@ -139,6 +144,8 @@ export const Kasa = ({
   giderKasaRaporVerisi = null,
   // Spec 0058: kasa iş listesinden kapsam dışı bırakılan hesapsız kayıtlar (setter yoksa salt okunur).
   kasaKapsamDisi = BOS_KAPSAM, setKasaKapsamDisi = null,
+  // Spec 0056: hesap taşımada makina tahsilatlarının hesap bağı da değişir.
+  setPayments = null,
 }) => {
   const [gorunum, setGorunum] = useState("hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
@@ -236,6 +243,33 @@ export const Kasa = ({
     if (String(secili) === String(h.id)) setSecili(null);
     showToast("Hesap silindi.");
   };
+  // ── Spec 0056: deneme döneminde hareketi olan hesabın silinmesi (R1–R11, R16–R27) ──
+  const denemeBitis = denemeDonemiBitisi(giderAyarlari);
+  const deneme = denemeDonemiAcik(giderAyarlari, bugun);
+  const [tasinacak, setTasinacak] = useState(null); // silinecek hareketli hesap
+  const tasimaPlani = useMemo(() => (tasinacak ? hesapTasimaPlani(tasinacak, hesapHareketleri, veri, kasaHesaplari,
+    { hesapAdi: (id) => hesapById.get(String(id))?.ad || "Silinmiş hesap", tarihYaz: (t) => (t ? fmtTR(t) : "Tarihsiz") }) : null),
+  [tasinacak, hesapHareketleri, veri, kasaHesaplari, hesapById]);
+  // R23: hesabın silinmesi ve altı bağın değişmesi aynı işleyicide (React tek güncellemede toplar → tek kayıt).
+  const tasiVeSil = (hedefId) => {
+    const h = tasinacak, plan = tasimaPlani;
+    if (!h || !plan) return;
+    const d = plan.detay;
+    const eksik = [[d.odeme + d.virman + d.avans + d.diger, setHesapHareketleri], [d.payments, setPayments], [d.servis, setServices], [d.kalip, setPartSales],
+      [d.yedekParca, setYedekParcaSatislar], [d.verilenCek, setCekler]].some(([n, f]) => n > 0 && !f);
+    if (eksik) { showToast("Bu hesabın bağlı kayıtları bu ekrandan değiştirilemiyor; hesap silinmedi.", "error"); return; }
+    const g = plan.guncelle(hedefId);
+    setHesapHareketleri?.(g.hesapHareketleri); setPayments?.(g.payments); setServices?.(g.services); setPartSales?.(g.partSales);
+    setYedekParcaSatislar?.(g.yedekParcaSatislar); setCekler?.(g.cekler);
+    setKasaHesaplari(p => p.filter(x => x.id !== h.id));
+    const hedefAd = hedefId == null ? null : hesapById.get(String(hedefId))?.ad || null;
+    logAction({ serverPermissions, action: "hareket_tasindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad,
+      detail: { kaynak: h.ad, hedef: hedefAd || "Hesapsız", adet: d.toplam } });
+    logAction({ serverPermissions, action: "silindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad });
+    setTasinacak(null);
+    if (String(secili) === String(h.id)) setSecili(null);
+    showToast(hedefAd ? `Hesap silindi; ${d.toplam} kayıt “${hedefAd}” hesabına taşındı.` : `Hesap silindi; ${d.toplam} kayıt hesapsız bırakıldı.`);
+  };
   const virmanKaydet = (kayit) => {
     const yeni = { ...kayit, id: uid() };
     setHesapHareketleri(p => [...p, yeni]);
@@ -290,7 +324,8 @@ export const Kasa = ({
     ? <span>Borç <b>{para(b.borc, b.hesap.paraBirimi)}</b></span>
     : <b style={{ color: b.bakiyeK < 0 ? "var(--red700, #b91c1c)" : "var(--n900, #0f172a)" }}>{para(b.bakiye, b.hesap.paraBirimi)}</b>);
   const acikHesapSayisi = kasaHesaplari.filter(h => !h.kapali).length;
-  const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px 70px 150px 190px", gap: 10, alignItems: "center" };
+  // Spec 0056: işlem sütunu deneme dönemindeki "Sil" düğmesine yer açar ("N hareket" kırılmasın).
+  const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px 70px 150px 230px", gap: 10, alignItems: "center" };
   const tIzgara = { display: "grid", gridTemplateColumns: "90px 150px minmax(0, 1.6fr) 120px 200px 130px", gap: 10, alignItems: "center" };
   const oIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px", gap: 10, alignItems: "center" };
   const odemeSatirlari = [...(hesapsiz.liste || [])];
@@ -323,6 +358,8 @@ export const Kasa = ({
           tedarikciler={tedarikciler} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
           giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} />
       ) : (<>
+      {/* Spec 0056 R3 (AC-2, AC-31): deneme dönemi geçici bir hâldir; bitiş ayardan. */}
+      {deneme && <UyariSeridi aile="uyari" testId="deneme-donemi">{denemeDonemiMetni(denemeBitis)}</UyariSeridi>}
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
         {HESAPSIZ_NOTU}
         {hesapsiz.avansAdet > 0 && <> <b>{hesapsiz.avansAdet}</b> avans hesapsız.</>}
@@ -478,9 +515,13 @@ export const Kasa = ({
                     <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                       {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => setHesapFormu({ hesap: h })} title="Düzenle"><Icon name="edit" size={12} /></Btn>}
                       {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => kapatAc(h)}>{h.kapali ? "Aç" : "Kapat"}</Btn>}
-                      {canDo("kasa_hesap") && (kullanim === 0
-                        ? <Btn small variant="danger" onClick={() => setSilinecek(h)} title="Sil"><Icon name="trash" size={12} /></Btn>
-                        : <span title="Hareketi olan hesap silinemez; kapatılabilir." style={{ fontSize: 11, color: "var(--n500, #64748b)", alignSelf: "center" }}>{kullanim} hareket</span>)}
+                      {canDo("kasa_hesap") && kullanim > 0 && (
+                        <span title={deneme ? "Deneme döneminde hareketi olan hesap da silinebilir." : "Hareketi olan hesap silinemez; kapatılabilir."} style={{ fontSize: 11, color: "var(--n500, #64748b)", alignSelf: "center" }}>{kullanim} hareket</span>
+                      )}
+                      {/* Spec 0056 R4, R6: deneme döneminde hareketli hesapta da silme (taşıma penceresiyle); dönem bitince kendiliğinden kalkar. */}
+                      {canDo("kasa_hesap") && (kullanim === 0 || deneme) && (
+                        <Btn small variant="danger" onClick={() => (kullanim === 0 ? setSilinecek(h) : setTasinacak(h))} title="Sil" aria-label={`Hesabı sil: ${h.ad}`}><Icon name="trash" size={12} /></Btn>
+                      )}
                     </span>
                   </div>
                 );
@@ -529,6 +570,9 @@ export const Kasa = ({
           onKaydet={hesapKaydet} onClose={() => setHesapFormu(null)} />
       )}
       {virmanAcik && <VirmanFormu hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}
+      {tasinacak && tasimaPlani && (
+        <HesapSilPenceresi hesap={tasinacak} plan={tasimaPlani} onTasi={tasiVeSil} onHesapsiz={() => tasiVeSil(null)} onClose={() => setTasinacak(null)} />
+      )}
       {silinecek && (
         <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok; kalıcı olarak silinecek.`}
           confirmLabel="Hesabı Sil" onConfirm={sil} onCancel={() => setSilinecek(null)} />

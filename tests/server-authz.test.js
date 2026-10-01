@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
-  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi,
+  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -1106,7 +1106,9 @@ describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
     expect(yazmaYetkisiVar(kasaci, "user", ["services"], eski, { services: [sv({ hesapId: 97 }), sv({ id: 2 })] }).ok).toBe(false);
     const yalnizGider = JSON.stringify({ tabs: ["gider"], customerActions: [] });
     expect(yazmaYetkisiVar(yalnizGider, "user", ["services"], eski, { services: [sv({ hesapId: 97 })] }).ok).toBe(false);
-    expect(tahsilatHesabiYalnizMi("payments", { payments: [{ id: 1 }] }, { payments: [{ id: 1, hesapId: 2 }] })).toBe(false);
+    // Spec 0056 R20 ile güncellendi: makina tahsilatı (payments) ve çek de istisnada; listede olmayan bölüm hâlâ değil.
+    expect(tahsilatHesabiYalnizMi("payments", { payments: [{ id: 1 }] }, { payments: [{ id: 1, hesapId: 2 }] })).toBe(true);
+    expect(tahsilatHesabiYalnizMi("customers", { customers: [{ id: 1 }] }, { customers: [{ id: 1, hesapId: 2 }] })).toBe(false);
   });
 });
 
@@ -1225,5 +1227,75 @@ describe("spec 0058: kasaKapsamDisi bölümü Kasa sekmesi + kasa_hesap ister; t
     const yeniGiris = { ...g, id: 803, kayitId: 12 };
     expect(yetki(KASASIZ, { kasaKapsamDisi: [g], services: [sv()], kasaHesaplari: HES }, { kasaKapsamDisi: [yeniGiris], services: [sv({ hesapId: 51 })], kasaHesaplari: HES })).toBe(false);
     expect(yetki(KASASIZ, { kasaKapsamDisi: [g, { ...g, id: 804, kayitId: 13 }], services: [sv()] }, { kasaKapsamDisi: [{ ...g, zaman: "x" }], services: [] })).toBe(false);
+  });
+});
+
+// ── Spec 0056 R20, R25 (AC-23): hesap taşıma yazımı yalnız kasa_hesap + Kasa sekmesiyle ─────────────────────────
+describe("spec 0056: hesabı silip bağlarını taşıyan yazım", () => {
+  const TASIYICI = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["kasa_hesap"], customerActions: [] });
+  const KASASIZ = JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["kasa_hesap"], customerActions: [] });
+  const IZINSIZ = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["gider_odeme"], customerActions: [] });
+  const H = (id, o = {}) => ({ id, ad: `H${id}`, tur: "banka", paraBirimi: "TRY", kapali: false, ...o });
+  // Dönem kayıtlı ayardan; testler gerçek tarihten bağımsız olsun diye açık uçlu tarih.
+  const eski = {
+    appSettings: { giderAyarlari: { denemeDonemiBitis: "2099-01-01" } },
+    kasaHesaplari: [H(51), H(52)],
+    hesapHareketleri: [{ id: 1, tur: "odeme", tutar: 10, hesapId: 51, giderId: 5 }, { id: 2, tur: "avans", tutar: 5, hesapId: 51, calisanId: 7 },
+      { id: 3, tur: "virman", tutar: 3, hesapId: 51, karsiHesapId: 9 }],
+    payments: [{ id: 10, customerId: 1, tutar: 100, hesapId: 51 }], services: [{ id: 20, customerId: 1, odendi: true, hesapId: 51 }],
+    cekler: [{ id: 30, yon: "verilen", paymentId: null, no: "K", tutar: 50, durum: "yazildi", hesapId: 51, gecmis: [] }],
+  };
+  const tasi = (hedef) => {
+    const m = (r) => (r.hesapId === 51 ? { ...r, hesapId: hedef } : r);
+    return { kasaHesaplari: [H(52), ...(hedef === 9 ? [H(9)] : [])], hesapHareketleri: eski.hesapHareketleri.map(m), payments: eski.payments.map(m), services: eski.services.map(m), cekler: eski.cekler.map(m) };
+  };
+  const yetki = (p, e, y) => {
+    const b = degisenBolumler(e, y);
+    return yazmaYetkisiVar(p, "user", b, e, y).ok && eylemDenetimi(e, y, p, "user").ok && !giderAynaEngeli(p, "user", b, e, y);
+  };
+  it("AC-23: yalnız kasa_hesap'lı Kasa kullanıcısı taşır (avans/virman/gider_odeme ve müşteri izni olmadan); hesapsız bırakma da", () => {
+    expect(hesapTasimaYazimiMi(eski, tasi(52))).toBe(true);
+    expect(yetki(TASIYICI, eski, tasi(52))).toBe(true);
+    expect(yetki(TASIYICI, eski, tasi(null))).toBe(true);
+    expect(yetki(KASASIZ, eski, tasi(52))).toBe(false);
+    expect(yetki(IZINSIZ, eski, tasi(52))).toBe(false);
+  });
+  it("R25 sınırları: hesap silinmiyorsa, başka alan değişirse, kayıt eklenirse ya da hedef kapalı/yoksa taşıma yazımı değildir", () => {
+    const y = tasi(52);
+    expect(hesapTasimaYazimiMi(eski, { ...y, kasaHesaplari: eski.kasaHesaplari })).toBe(false); // hesap silinmedi
+    expect(hesapTasimaYazimiMi(eski, { ...y, payments: y.payments.map(p => ({ ...p, tutar: 1 })) })).toBe(false);
+    expect(hesapTasimaYazimiMi(eski, { ...y, payments: [...y.payments, { id: 11, hesapId: 52 }] })).toBe(false);
+    expect(hesapTasimaYazimiMi(eski, { ...y, kasaHesaplari: [H(52, { kapali: true })] })).toBe(false);
+    expect(hesapTasimaYazimiMi(eski, tasi(77))).toBe(false); // var olmayan hedef
+    // Silinmeyen bir hesaptan alınan kayıt (52 → 53) taşıma değildir.
+    const e2 = { ...eski, kasaHesaplari: [H(51), H(52), H(53)], payments: [{ id: 10, customerId: 1, tutar: 100, hesapId: 52 }] };
+    expect(hesapTasimaYazimiMi(e2, { kasaHesaplari: [H(52), H(53)], payments: [{ id: 10, customerId: 1, tutar: 100, hesapId: 52 }] })).toBe(false);
+    expect(hesapTasimaYazimiMi(e2, { kasaHesaplari: [H(52), H(53)], payments: [{ id: 10, customerId: 1, tutar: 100, hesapId: 53 }] })).toBe(false);
+    expect(yetki(TASIYICI, eski, { ...y, payments: y.payments.map(p => ({ ...p, tutar: 1 })) })).toBe(false);
+  });
+});
+
+// Triyaj bulgu 2 (0056 R4, C4): taşıma istisnası sunucuda da deneme dönemine bağlı; dönem kayıtlı ayardan okunur.
+describe("spec 0056 triyaj: sunucudaki taşıma istisnası dönem bitince kapanır", () => {
+  const TASIYICI = JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["kasa_hesap"], customerActions: [] });
+  const H = (id) => ({ id, ad: `H${id}`, tur: "banka", paraBirimi: "TRY", kapali: false });
+  const blob = (ayar, hesapId = 51, hesaplar = [H(51), H(52)]) => ({ appSettings: { giderAyarlari: ayar }, kasaHesaplari: hesaplar,
+    hesapHareketleri: [{ id: 2, tur: "avans", tutar: 5, hesapId, calisanId: 7 }] });
+  const tasi = (ayar) => [blob(ayar), { ...blob(ayar, 52, [H(52)]) }];
+  it("kapı istemcidekiyle aynı: alan yok → 2027-01-01, boş → kapalı, bitiş günü dahil değil", () => {
+    expect(denemeDonemiAcikSunucu({}, "2026-12-31")).toBe(true);
+    expect(denemeDonemiAcikSunucu({}, "2027-01-01")).toBe(false);
+    expect(denemeDonemiAcikSunucu({ denemeDonemiBitis: "" }, "2026-10-01")).toBe(false);
+    expect(denemeDonemiAcikSunucu(undefined, "2026-10-01")).toBe(true);
+  });
+  it("dönem kapalıyken (geçmiş tarih ya da boş) taşıma yazımı tanınmaz ve avans taşıması 403'e düşer", () => {
+    expect(hesapTasimaYazimiMi(...tasi({ denemeDonemiBitis: "2099-01-01" }))).toBe(true);
+    expect(hesapTasimaYazimiMi(...tasi({}), "2027-01-01")).toBe(false);
+    expect(hesapTasimaYazimiMi(...tasi({ denemeDonemiBitis: "2026-01-01" }))).toBe(false);
+    const [e, y] = tasi({ denemeDonemiBitis: "" });
+    expect(hesapTasimaYazimiMi(e, y)).toBe(false);
+    expect(eylemDenetimi(e, y, TASIYICI, "user").ok).toBe(false); // avansın hesabı değişti: avans izni ister
+    // Dönem aynı yazımda açılamaz: kayıtlı ayar kapalıyken yeni blob'da tarih ileri alınsa da tanınmaz.
+    expect(hesapTasimaYazimiMi(e, { ...y, appSettings: { giderAyarlari: { denemeDonemiBitis: "2099-01-01" } } })).toBe(false);
   });
 });

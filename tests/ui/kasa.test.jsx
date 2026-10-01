@@ -18,7 +18,8 @@ function Harness({ h0 = [], m0 = [], p0 = [], perms = null, onState }) {
   const [hesapHareketleri, setHesapHareketleri] = useState(m0);
   onState?.({ kasaHesaplari, hesapHareketleri });
   return <Kasa kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
-    payments={p0} customers={MUSTERI} giderler={GIDER} giderTurleri={TUR} tedarikciler={TED} serverPermissions={perms} showToast={vi.fn()} />;
+    payments={p0} customers={MUSTERI} giderler={GIDER} giderTurleri={TUR} tedarikciler={TED} serverPermissions={perms} showToast={vi.fn()}
+    giderAyarlari={{ denemeDonemiBitis: "" }} />; // spec 0056 ile güncellendi: 0024'ün koruması deneme dönemi kapalıyken sınanır
 }
 const hesap = (id, ad, o = {}) => ({ id, ad, tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-09-01", kapali: false, ...o });
 const satirOf = (ad) => screen.getAllByTestId("hesap-satiri").find(s => s.textContent.includes(ad));

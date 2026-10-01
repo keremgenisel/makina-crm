@@ -617,6 +617,10 @@ const EKRANLAR = {
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
   "kasa-tahsilat-hareketleri": [kasaTahsilat(), ["~Ziraat Bankası"]],
   "kasa-hesapsiz-tahsilatlar": [kasaTahsilat(), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  // Spec 0056: deneme döneminde hareketli hesabın silinmesi: bağlı kayıtlar türüyle, "Başka hesaba taşı" (hedef seçici) ve
+  // virmanı olan hesapta "Hesapsız bırak" engeli. Görüntü aracının bugünü (2026-09-23) varsayılan 01.01.2027'den önce.
+  "kasa-0056-sil-tasi": [kasaEkrani({ setPayments: bos }), ["etiket:Hesabı sil: Şirket Kartı"]],
+  "kasa-0056-sil-engel": [kasaEkrani({ setPayments: bos }), ["etiket:Hesabı sil: Merkez Kasa", "dugme:Hesapsız bırak"]],
   // Spec 0058: hesapsız ödeme ve tahsilat listeleri, satırda ve topluca kapsam dışı; ayrı bölüm ve geri alma; toplu onay.
   "kasa-0058-listeler": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Listeyi göster", "kaydir:Kapsam dışı bırakmak"]],
   "kasa-0058-kapsam-disi": [<KasaKapsamEkrani k0={KAPSAM_K0} />, ["dugme:Göster", "kaydir:Kapsam dışı bırakılanlar"]],
