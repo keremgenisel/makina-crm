@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `a251f6b`, dal `feat/0055-kalem-listesi`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Aylık Gider ve Kasa Raporu düğmesi (Finans, Giderler, Kasa), rapor motoru |
@@ -139,21 +139,21 @@ Başarı şu demek: kutu ekrandan kalkıyor, rapor her zaman kalem listesiyle ç
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Seçenek dört yerden de kalktı (kutu, durum, parametre, motor koşulu) ve dönüş nesnesindeki
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Seçenek dört yerden de kalktı (kutu, durum, parametre, motor koşulu) ve dönüş nesnesindeki
       `kalemListesi` alanı silindi; ölü dal kalmadı (R3, AC-8).
-- [ ] Boş ay ve yürürlük öncesi ay açıklama satırıyla geçiliyor, boş tablo basılmıyor (R2, R8, AC-9, AC-10).
-- [ ] `tests/gider-kasa-raporu.test.js:173` ve `:176` kaldırıldı; dosyada `kalemListesi` adı kalmadı (R9).
-- [ ] `tests/ui/gider-kasa-raporu.test.jsx`'e üç ekran için kutunun yokluğu iddiası eklendi (R9).
-- [ ] `specs/done/0047-aylik-gider-ve-kasa-raporu.md` AC-39 ve AC-57'ye R32'dekiyle aynı tarihli not
+- [x] Boş ay ve yürürlük öncesi ay açıklama satırıyla geçiliyor, boş tablo basılmıyor (R2, R8, AC-9, AC-10).
+- [x] `tests/gider-kasa-raporu.test.js:173` ve `:176` kaldırıldı; dosyada `kalemListesi` adı kalmadı (R9).
+- [x] `tests/ui/gider-kasa-raporu.test.jsx`'e üç ekran için kutunun yokluğu iddiası eklendi (R9).
+- [x] `specs/done/0047-aylik-gider-ve-kasa-raporu.md` AC-39 ve AC-57'ye R32'dekiyle aynı tarihli not
       düşüldü (R7).
-- [ ] Görsel kanıt üretildi (`docs/evidence/0055-*.jpg`) ve `kanit-eslemesi.json` kayıtları
+- [x] Görsel kanıt üretildi (`docs/evidence/0055-*.jpg`) ve `kanit-eslemesi.json` kayıtları
       `beklenen: "degisti"` + onay ile güncellendi; `done`'a taşınırken `ayni`ye çevrilecek (R10).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` 0047 bölümündeki "kalem listesi kutusu her açılışta açık" cümlesi güncellendi (AC-16).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` 0047 bölümündeki "kalem listesi kutusu her açılışta açık" cümlesi güncellendi (AC-16).
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -161,10 +161,10 @@ Başarı şu demek: kutu ekrandan kalkıyor, rapor her zaman kalem listesiyle ç
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (10 bulgu, 3'ü bloklayıcı), R2 plan onayı (Q1–Q4; R11, AC-9 yeniden yazıldı). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu olmadı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu gelmedi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Bilinçli kaldırılan "kutu kapalıyken" iddiaları dışında mevcut beklenenler değişmeden geçti; rapor belgeleri 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir bayrağın kalkmasının yan etkisini öngören gereksinim (R2'nin "boş ayda boş tablo" uyarısı), motorun bir üst katmanda zaten aynı durumu karşıladığını gözden kaçırabilir; plan aşamasında senaryonun gerçekten oluşup oluşmadığı kodla sınanmalı, yoksa ulaşılamayan bir dal için yeni metin ve yeni kriter açılır. İkincisi: "bu dosyada şu ad geçmez" diyen bir kaynak taraması test dosyasının kendisini de tarar; tarayan testin kendi metni de kurala uymalı.

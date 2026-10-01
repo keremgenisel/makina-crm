@@ -383,10 +383,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "rapor": "docs/evidence/0055-taban-piksel-raporu.json",
         "ekran": "giderler-rapor-dugmesi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Settings.jsx": [
@@ -984,10 +983,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "rapor": "docs/evidence/0055-taban-piksel-raporu.json",
         "ekran": "finans-rapor-dugmesi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Notes.jsx": [
@@ -1589,10 +1587,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "rapor": "docs/evidence/0055-taban-piksel-raporu.json",
         "ekran": "kasa-rapor-dugmesi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
