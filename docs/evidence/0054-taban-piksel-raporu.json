@@ -1,0 +1,88 @@
+[
+  {
+    "ad": "gider-formu-personel-makina-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-personel-makina-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu kalemin tamamı seçilen makinaya yüklenecek."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-odeme-plani-aydinlik.png",
+    "boyut": "2880x2410",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-personel-odeme-plani-karanlik.png",
+    "boyut": "2880x2410",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-mahsup-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-mahsup-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-personel-elden-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-personel-elden-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0054-ek-hedef-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0054-ek-hedef-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0054-ek-pencere-aydinlik.png",
+    "boyut": "2880x2440",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0054-ek-pencere-karanlik.png",
+    "boyut": "2880x2440",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-personel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-personel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-duzenle-ek-sonra-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

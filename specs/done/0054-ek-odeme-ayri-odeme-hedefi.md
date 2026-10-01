@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `6cdc177`, dal `feat/0054-ek-odeme-hedefi`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Personel gider kaleminin ödeme hedefleri, gider formu ve ödeme penceresi, borç özeti, ödeme hatırlatıcısı, çalışan ekstresi |
@@ -259,25 +259,25 @@ kullanıcı ek ödemeyi tek başına, formdan ya da ödeme penceresinden ödeyeb
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hedefler tek yoldan (`odemeHedefleri` + `personelHedefKirilimi`) geliyor; ikinci hesap yazılmadı (C2).
-- [ ] Göçsüzlük **iki dal için** testle gösterildi: satırsız kalem okuma anında, satırlı kalem ilk
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hedefler tek yoldan (`odemeHedefleri` + `personelHedefKirilimi`) geliyor; ikinci hesap yazılmadı (C2).
+- [x] Göçsüzlük **iki dal için** testle gösterildi: satırsız kalem okuma anında, satırlı kalem ilk
       kayıtta (AC-13, AC-14).
-- [ ] Hedef sırası ve satırlı doğma kapısı testli (AC-22, AC-23, AC-24); `personelIkiHedef`'in anlamı
+- [x] Hedef sırası ve satırlı doğma kapısı testli (AC-22, AC-23, AC-24); `personelIkiHedef`'in anlamı
       değişmedi (AC-25).
-- [ ] Bölünmezlik koruması genişletildi ve `planYenidenBol` hatası üretilemiyor (AC-26).
-- [ ] Ad çözümü tek kaynaktan; `eldenHedefliMi || personelIkiHedef` birleşimi kaldırıldı (R16, kaynak
+- [x] Bölünmezlik koruması genişletildi ve `planYenidenBol` hatası üretilemiyor (AC-26).
+- [x] Ad çözümü tek kaynaktan; `eldenHedefliMi || personelIkiHedef` birleşimi kaldırıldı (R16, kaynak
       taraması).
-- [ ] `db-roundtrip.cjs` ve `db-clean-install.cjs` dört hedefli personel kalemini kapsıyor (AC-21, C3).
-- [ ] Gider tarafının değişmediği çapraz testle gösterildi (AC-20).
-- [ ] Gizlilik testi yeni hedef adlarını da yasaklıyor (AC-19).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0054-*.jpg`): dört hedefli ödeme bölümü, ödenmiş maaşın
+- [x] `db-roundtrip.cjs` ve `db-clean-install.cjs` dört hedefli personel kalemini kapsıyor (AC-21, C3).
+- [x] Gider tarafının değişmediği çapraz testle gösterildi (AC-20).
+- [x] Gizlilik testi yeni hedef adlarını da yasaklıyor (AC-19).
+- [x] Görsel kanıt eklendi (`docs/evidence/0054-*.jpg`): dört hedefli ödeme bölümü, ödenmiş maaşın
       yanında yeni ek ödeme hedefi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: 0023 C8'in ödeme tarafında geri alındığı ve dört hedefli personel modeli.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: 0023 C8'in ödeme tarafında geri alındığı ve dört hedefli personel modeli.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -285,10 +285,10 @@ kullanıcı ek ödemeyi tek başına, formdan ya da ödeme penceresinden ödeyeb
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (15 bulgu, 5'i bloklayıcı), R2 plan onayı (Q1–Q9; R21, R22). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu olmadı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu gelmedi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | 0042/0048/0051/0053'ün "Resmi"/"Elden" ad beklentileri bilinçli olarak yeni adlara çevrildi (Q5); değişmemesi gereken 22 aday ekran 0 piksel, 0047 raporu birebir aynı (AC-34). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir koruma kuralının harfiyen okunuşu spec'in Intent'ini engelleyebilir: R10 "ödeme almış satır + ek ödeme bileşeni" diyordu ve 0042'den beri satırlı doğan bütün personel kalemlerinde tam Intent'in senaryosunu yasaklıyordu. Plan aşamasında ölçülebilir koşula (taraf başına ödenmiş tutar > yeni maaş hedefi, R21) çevrilmesi asıl riski (ödenenin altına düşen satır) korurken senaryoyu açtı. İkincisi: görüntü aracının adımları ekrandaki etiketlere bağlıdır; bir ad değişikliği adımları yalnız konsola uyarı yazarak sessizce kırar ve çekim "fark var" gösterse de fark adımın çalışmamasından gelir. Ad değiştiren işte eski adı arayan adımlar çekimden önce taranmalı. Üçüncüsü: `EKRAN_ATLA` listesi kaynaktaki sabit anahtarlardan çıkarılırsa üretilen ekran adları (`ayarlar-*`) kaçar ve çekim gereksiz ekranlara koşar; liste önceki raporun ekran adlarıyla birleştirilmeli.
