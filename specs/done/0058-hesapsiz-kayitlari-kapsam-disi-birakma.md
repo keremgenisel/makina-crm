@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `c995830`, dal `feat/0058-kapsam-disi`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa ekranı (hesabı belirtilmemiş tahsilatlar ve ödemeler), aylık gider ve kasa raporu |
@@ -232,22 +232,22 @@ kaybolmuyor ve geri alınabiliyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kapsam dışılık tek bir listede `{tur, kaynak, kayitId}` anahtarıyla tutuluyor; bölümlere ayrı bayrak
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kapsam dışılık tek bir listede `{tur, kaynak, kayitId}` anahtarıyla tutuluyor; bölümlere ayrı bayrak
       sütunu eklenmedi (C2, R11, AC-18).
-- [ ] Sunucu eşlemeleri R12'ye göre yapıldı ve uçtan uca testte sabitlendi (AC-19).
-- [ ] `hesapsizOzeti` ile iki alt fonksiyonun geriye dönük uyumu testli; öncelik kuralı (önce kapsam dışı,
+- [x] Sunucu eşlemeleri R12'ye göre yapıldı ve uçtan uca testte sabitlendi (AC-19).
+- [x] `hesapsizOzeti` ile iki alt fonksiyonun geriye dönük uyumu testli; öncelik kuralı (önce kapsam dışı,
       sonra eşik) sabitlendi (AC-20, AC-21, AC-22).
-- [ ] Merge'de `kayitId` remap edildi ve bilinen sınır (silmenin geri gelebilmesi) yazıldı (R14, AC-23).
-- [ ] Hiçbir bakiyenin, gelirin ve borcun değişmediği çapraz testle gösterildi (AC-3).
-- [ ] Ekran ile raporun aynı sayıyı verdiği testle gösterildi (AC-8, AC-9).
-- [ ] Beşli kural uygulandı; roundtrip, temiz kurulum, merge ve yedek testleri kapsıyor (AC-14).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0058-*.jpg`): liste, kapsam dışı bölümü, toplu işlem onayı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: kapsam dışılık kaydı, süzgeçle farkı ve rapora etkisi.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Merge'de `kayitId` remap edildi ve bilinen sınır (silmenin geri gelebilmesi) yazıldı (R14, AC-23).
+- [x] Hiçbir bakiyenin, gelirin ve borcun değişmediği çapraz testle gösterildi (AC-3).
+- [x] Ekran ile raporun aynı sayıyı verdiği testle gösterildi (AC-8, AC-9).
+- [x] Beşli kural uygulandı; roundtrip, temiz kurulum, merge ve yedek testleri kapsıyor (AC-14).
+- [x] Görsel kanıt eklendi (`docs/evidence/0058-*.jpg`): liste, kapsam dışı bölümü, toplu işlem onayı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: kapsam dışılık kaydı, süzgeçle farkı ve rapora etkisi.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -255,10 +255,10 @@ kaybolmuyor ve geri alınabiliyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (15 bulgu, 5'i bloklayıcı), R2 plan onayı (Q1–Q8; R19–R21). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu olmadı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | Gözden geçirme bulgusu gelmedi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Bilinçli güncellenen iki test (önkoşul listesine yeni bölüm, izin etiketi metni); değişmemesi gereken 15 aday ekran 0 piksel, mevcut 14 Kasa ekranı yalnız yeni düğme kadar kaydı (TY onayı). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in "var" saydığı bir parçanın (hesapsız ödeme listesi) kodda olmadığı ancak satır satır karşılaştırmada çıktı; QA turu fonksiyonların imzasını ölçmüştü ama ekranın gerçekten ne çizdiğini değil. Plan aşamasında spec'in dayandığı her ekran öğesi kodda aranmalı. İkincisi: bir kararı birden çok yazma yoluna dağıtmak yerine (hesap atanan her ekran) tek bir türetilmiş temizlik efektiyle tutmak hem kodu hem izin denetimini sadeleştirdi; ama efektin yaptığı yazım başka bir izin boyutuna düşüyorsa sunucuda o yazımın dar tanımı (yalnız silme, yalnız geçersiz giriş) gerekir, yoksa yan etki kullanıcının asıl işlemini 403'e düşürür. Üçüncüsü: uçtan uca test verisinde var olmayan bir kimliğe (silinmiş hesap) bağlanan senaryo, kuralın doğru çalıştığını "hata" gibi gösterdi; test kurgusu önce verinin gerçekten o durumda olduğunu doğrulamalı.

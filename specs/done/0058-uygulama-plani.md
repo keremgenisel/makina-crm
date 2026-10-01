@@ -75,3 +75,4 @@ M = `tests/kasa-kapsam-disi.test.js`, U = `tests/ui/kasa-kapsam-disi.test.jsx`.
 - **Sunucu istisnası para birimine bakmaz** (istemci bakar): istemci daha az siler, sunucu daha geniş kabul eder; en kötü durumda kayıt iş listesine geri döner.
 - **Uçtan uca:** temizlik senaryosu var olan bir hesapla kuruldu (ilk denemede atanan 9043 numaralı hesap veride yoktu ve kayıt doğru olarak hâlâ hesapsız sayıldı).
 - **Kanıt sonucu:** `0058-piksel-raporu.json` (33 aday kasa ekranı, iki tema). 18 ekranda bilinçli fark, TY onayı 2026-10-01: üç yeni ekran (`kasa-0058-listeler`, `-kapsam-disi`, `-toplu-onay`), "Ödemeleri göster" düğmesinin satırı yükseltmesiyle aşağı kayan 14 mevcut Kasa ekranı (içerik aynı) ve izin etiketi; 15 ekran 0 piksel.
+- **Kapanış:** uygulama commit `c995830`. Taban çekimi (`0058-taban-piksel-raporu.json`) "degisti" kayıtlı 17 ekranı onaylanan görüntülerle karşılaştırdı: 34 görüntü, 0 piksel; kayıtlar `ayni`ye çevrildi.
