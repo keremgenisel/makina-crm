@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `ac23e10`, dal `feat/0063-tahsilat-hesap`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Yeni müşteri formunun (yalnız ekleme kipi) ilk ödemesi, müşteri detayının tahsilat formu, Bayiler sekmesindeki yedek parça ve Extra Kalıp satışı |
@@ -317,33 +317,35 @@ kayıtlardan değil.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Seçicinin tek bileşen olduğu kaynak taramasıyla gösterildi: `HESAP_TUR_AD` ve
-      `aria-label="Tahsilat hesabı"` yalnız `TahsilatHesap.jsx`'te (AC-17, R17).
-- [ ] `CustomerDetailModal.jsx:1400-1415`'teki yerel seçici kaldırıldı (R11).
-- [ ] Hesap alanı `PaymentRowsEditor`'a **yuva** olarak geçti; `ui.jsx` ne `kasa/TahsilatHesap`'ı ne
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Seçicinin tek bileşen olduğu kaynak taramasıyla gösterildi: `HESAP_TUR_AD` ve
+      `aria-label="Tahsilat hesabı"` yalnız `TahsilatHesap.jsx`'te (AC-17, R17). *Not: ölçü tahsilat tarafına daraltıldı;
+      gider tarafının ödeme, avans, hesap silme seçicileri ve Kasa'nın hesap listesi de `HESAP_TUR_AD` kullanır ve testte
+      adıyla dışarıda bırakılır (plan §7).*
+- [x] `CustomerDetailModal.jsx:1400-1415`'teki yerel seçici kaldırıldı (R11).
+- [x] Hesap alanı `PaymentRowsEditor`'a **yuva** olarak geçti; `ui.jsx` ne `kasa/TahsilatHesap`'ı ne
       `tasarim`'ı içe alıyor (R15, C6, AC-25).
-- [ ] `durum` nesnesi çağıranda kuruldu; `src/lib/satisTahsilat.js` değişmedi (R14, C7, AC-24).
-- [ ] App `SimpleDealers`'a ve `CustomerAddEditForm`'a `kasaHesaplari` / `tahsilatHesapVarsayilan`'ı
+- [x] `durum` nesnesi çağıranda kuruldu; `src/lib/satisTahsilat.js` değişmedi (R14, C7, AC-24).
+- [x] App `SimpleDealers`'a ve `CustomerAddEditForm`'a `kasaHesaplari` / `tahsilatHesapVarsayilan`'ı
       `kasaYetki ? … : null` olarak geçiriyor (R16, AC-3, AC-14).
-- [ ] Hesapsız kaydın `hesapId` alanını hiç yazmadığı testle sabitlendi (R4, AC-6).
-- [ ] Hesapsız makina tahsilatının hiçbir iş listesinde görünmediği **bilinen boşluk olarak** yazılı ve
+- [x] Hesapsız kaydın `hesapId` alanını hiç yazmadığı testle sabitlendi (R4, AC-6).
+- [x] Hesapsız makina tahsilatının hiçbir iş listesinde görünmediği **bilinen boşluk olarak** yazılı ve
       0058 X6 ile aynı olduğu belirtildi (R4, X3).
-- [ ] Çek ve kredi kartının bakiyeye erken girmediği testle sabitlendi (AC-8, AC-9).
-- [ ] Müşteri detayının tahsilat formunda davranışın korunduğu testle gösterildi (AC-18).
-- [ ] Gerçek uygulama üzerinden uçtan uca denendi: yeni müşteri + ilk ödeme ve bayi satışı sonrası
+- [x] Çek ve kredi kartının bakiyeye erken girmediği testle sabitlendi (AC-8, AC-9).
+- [x] Müşteri detayının tahsilat formunda davranışın korunduğu testle gösterildi (AC-18).
+- [x] Gerçek uygulama üzerinden uçtan uca denendi: yeni müşteri + ilk ödeme ve bayi satışı sonrası
       Kasa bakiyesi ve hesapsız listesi kontrol edildi.
-- [ ] Görsel kanıt eklendi (`docs/evidence/0063-*.jpg` + `0063-piksel-raporu.json`): ilk ödeme
+- [x] Görsel kanıt eklendi (`docs/evidence/0063-*.jpg` + `0063-piksel-raporu.json`): ilk ödeme
       satırlarında hesap alanı, bayi yedek parça ve kalıp formlarında hesap alanı; yeni ekranlar görüntü
       aracına eklendi ve `kanit-eslemesi.json` kayıtları yazıldı (R19, AC-31).
-- [ ] Mevcut kanıt kayıtlarının `ayni` kaldığı doğrulandı (0 piksel; R19, AC-30).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: 0044 bölümündeki "Servis Panosu ve bayi formları hesap sormaz" cümlesinin
+- [x] Mevcut kanıt kayıtlarının `ayni` kaldığı doğrulandı (0 piksel; R19, AC-30).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: 0044 bölümündeki "Servis Panosu ve bayi formları hesap sormaz" cümlesinin
       bayi yarısı düzeltildi, ilk ödemenin satır bazlı hesabı, seçicinin tek bileşen olduğu ve hesapsız
       makina tahsilatının hâlâ hiçbir listede olmadığı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -351,10 +353,10 @@ kayıtlardan değil.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (14 bulgu, 3'ü bloklayıcı), R2 plan onayı (Q1–Q7; R21–R23, R13 açıklaması, AC-30 istisnası). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: AC-30/31/32 için AC adlı test yoktu. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | Tek bulgu gerçekti (test adı eksikliği; davranış genel testlerle korunuyordu). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | İki eski test (`ui/kasa-app`, `ui/kasa-sekme-izni`) bilinçli R13 değişikliği yüzünden güncellendi; etkilenen 36 mevcut ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Şu ad yalnız şu dosyada geçer" biçimindeki ölçülebilir bir kural, adın gerçekte kimlerce kullanıldığı kodla taranmadan yazılırsa amaçtan geniş çıkar (R17 gider tarafının seçicilerini de yakalıyordu); kaynak taraması kriteri yazılırken grep çıktısı spec'e eklenmeli. İkincisi: birden çok satırın aynı anda kendi durumunu yazdığı bir yuvada güncelleme kapanıştaki diziyle değil işlevsel güncelleyiciyle yapılmalı; ön seçim gibi açılışta tetiklenen yazımlar satırları birbirine ezdirir.

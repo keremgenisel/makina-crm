@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0063-tahsilat-hesabi-eksik-giris-noktalari.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0063-tahsilat-hesabi-eksik-giris-noktalari.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0063-tahsilat-hesap` (`feat/0055-kalem-listesi` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q7) kabul |
 
@@ -87,3 +87,6 @@ Değişmeyenler: `satisTahsilat.js`, `kasa.js`, `db.cjs`, `merge.js`, yedek, `se
   kaydı; düzeltildi (138 → 142 zaten eskiydi).
 - Mevcut iki test (`ui/kasa-app`, `ui/kasa-sekme-izni`) form düzeyindeki seçiciyi bekliyordu; R13 ile satıra taşındığı için
   satır açıp tutar girerek güncellendi ("spec 0063 R13 ile güncellendi" notlu); olumsuz testler de tutarlı satırla güçlendirildi.
+- **Triyaj (1 bulgu):** AC-30/31/32 için AC adlı test yoktu; `ui/tahsilat-hesap-0063` "Spec 0063 kanıt kriterleri" bloğu eklendi
+  (uygulamada `degisti` + onay, done'da taban kaydını kabul eder).
+- **Kapanış:** taban `0063-taban-piksel-raporu.json` (5 ekran × 2 tema, 0 piksel); `degisti` kayıtlar tabana `ayni` olarak çevrildi.

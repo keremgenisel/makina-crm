@@ -396,7 +396,19 @@ describe("Spec 0063 kanıt kriterleri", async () => {
   const RAPOR = "docs/evidence/0063-piksel-raporu.json";
   const rapor = JSON.parse(readFileSync(RAPOR, "utf-8"));
   const eslesme = JSON.parse(readFileSync("docs/evidence/kanit-eslemesi.json", "utf-8")).dosyalar;
-  const kayitlar = Object.entries(eslesme).flatMap(([dosya, l]) => l.filter(k => k.rapor === RAPOR).map(k => ({ dosya, ...k })));
+  // Uygulama aşamasında değişen ve yeni ekranlar 0063 raporunda 'degisti' + onay; done'da taban raporuna 'ayni' olarak taşınır.
+  const TABAN = "docs/evidence/0063-taban-piksel-raporu.json";
+  const taban = existsSync(TABAN) ? JSON.parse(readFileSync(TABAN, "utf-8")) : [];
+  const kayitlar = Object.entries(eslesme).flatMap(([dosya, l]) => l.filter(k => k.rapor === RAPOR || k.rapor === TABAN).map(k => ({ dosya, ...k })));
+  const onayliYaDaTabanda = (k, madde) => {
+    if (k.rapor === TABAN) {
+      expect(k.beklenen, `${k.dosya} ${k.ekran}`).toBe("ayni");
+      for (const t of ["aydinlik", "karanlik"]) expect(taban.find(x => x.ad === `${k.ekran}-${t}.png`)?.piksel, `taban ${k.ekran}-${t}`).toBe(0);
+    } else {
+      expect(k.beklenen).toBe("degisti");
+      expect(k.onay).toMatch(new RegExp(`^Takım Yöneticisi · \\d{4}-\\d{2}-\\d{2} · spec 0063 ${madde}$`));
+    }
+  };
   const YENI = ["musteri-formu-ilk-odeme", "bayi-yedek-parca-formu", "bayi-kalip-formu", "musteri-tahsilat-hesap-satir"];
   const DEGISEN = "musteri-tahsilat-hesap";
   const satir = (ekran, tema) => rapor.find(x => x.ad === `${ekran}-${tema}.png`);
@@ -404,7 +416,7 @@ describe("Spec 0063 kanıt kriterleri", async () => {
     const mevcut = kayitlar.filter(k => !YENI.includes(k.ekran));
     expect(mevcut.length).toBeGreaterThan(20);
     for (const k of mevcut) {
-      if (k.ekran === DEGISEN) { expect(k).toMatchObject({ beklenen: "degisti" }); expect(k.onay).toMatch(/^Takım Yöneticisi · \d{4}-\d{2}-\d{2} · spec 0063 R13$/); continue; }
+      if (k.ekran === DEGISEN) { onayliYaDaTabanda(k, "R13"); continue; }
       expect(k.beklenen, `${k.dosya} ${k.ekran}`).toBe("ayni");
       for (const t of ["aydinlik", "karanlik"]) expect(satir(k.ekran, t)?.piksel, `${k.ekran}-${t}`).toBe(0);
     }
@@ -417,7 +429,7 @@ describe("Spec 0063 kanıt kriterleri", async () => {
       for (const d of dosyalar) {
         const k = kayitlar.find(x => x.dosya === `src/components/${d}` && x.ekran === ekran);
         expect(k, `${d} → ${ekran}`).toBeTruthy();
-        expect(k.onay).toMatch(/spec 0063 R(1|7|13)$/);
+        onayliYaDaTabanda(k, "R(1|7|13)");
       }
       for (const t of ["aydinlik", "karanlik"]) {
         expect(satir(ekran, t), `${ekran}-${t} raporda`).toBeTruthy();
