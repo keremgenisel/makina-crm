@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `73d1bf0`, dal `feat/0057-taksitli-form`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider formunun ödeme bölümü (yeni kalem ve düzenleme), ödeme editörü |
@@ -236,24 +236,24 @@ varsayılanı en yakın vadeli açık taksit.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Satırlar 0053'ün ödeme editöründen geliyor; forma özel ikinci taksit mantığı yazılmadı (C2) ve
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Satırlar 0053'ün ödeme editöründen geliyor; forma özel ikinci taksit mantığı yazılmadı (C2) ve
       0053 R30'un parçaları yeniden yazılmadı (AC-18, kaynak taraması).
-- [ ] `pasif` kararı tek yerde değil çağıranlarda; üç çağıranın kuralı testli (AC-16, AC-17, AC-24).
-- [ ] "Hepsini işaretle" ve çek satırı yan etkileri testli (AC-19, AC-20, AC-21).
-- [ ] 0046 AC-32 ve pasif metnine bakan mevcut testler güncellendi ve kriter → test tablosunda gösterildi
+- [x] `pasif` kararı tek yerde değil çağıranlarda; üç çağıranın kuralı testli (AC-16, AC-17, AC-24).
+- [x] "Hepsini işaretle" ve çek satırı yan etkileri testli (AC-19, AC-20, AC-21).
+- [x] 0046 AC-32 ve pasif metnine bakan mevcut testler güncellendi ve kriter → test tablosunda gösterildi
       (R17).
-- [ ] Kanıt eşlemesindeki kayıtlar `degisti` + onayla işaretlendi; `done`'a taşımada `ayni`ye çevrilecek
+- [x] Kanıt eşlemesindeki kayıtlar `degisti` + onayla işaretlendi; `done`'a taşımada `ayni`ye çevrilecek
       (R18).
-- [ ] Geçici kimlik yolu testle kapsandı: yeni kalemde ödeme gerçek taksite bağlanıyor (AC-4).
-- [ ] Ödenmiş taksit korumasının bozulmadığı testle gösterildi (AC-11).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0057-*.jpg`): taksitli yeni giderin ödeme satırı, taksit
+- [x] Geçici kimlik yolu testle kapsandı: yeni kalemde ödeme gerçek taksite bağlanıyor (AC-4).
+- [x] Ödenmiş taksit korumasının bozulmadığı testle gösterildi (AC-11).
+- [x] Görsel kanıt eklendi (`docs/evidence/0057-*.jpg`): taksitli yeni giderin ödeme satırı, taksit
       seçici, pasif kalan dar durum.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: taksitli hedefin formdan ödenebildiği ve kalan dar istisna.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: taksitli hedefin formdan ödenebildiği ve kalan dar istisna.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -261,10 +261,10 @@ varsayılanı en yakın vadeli açık taksit.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (15 bulgu, 5'i bloklayıcı), R2 plan onayı (Q1–Q8; R19–R23, AC-10 R7'ye hizalandı). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (1 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | Taksit sayısı satır eklendikten sonra artırılınca satırın sırası boş kalıyor, kayıt anlaşılmaz hatayla duruyordu (yanlış veri yazılmıyordu); 0057 öncesi oluşamazdı. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Bozulan 6 test yalnız R17'nin öngördükleri (0046 AC-11/AC-32, 0048 pasif beklentileri, neden metni); değişmemesi gereken 38 aday ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kısıtı kaldırmak, o kısıtın görünmez biçimde koruduğu durum geçişlerini açığa çıkarır: taksitli hedef formda pasifken "satır eklendikten sonra hedef taksitliye döner" geçişi hiç yaşanmıyordu; kısıt kalkınca satırın sırası boş kaldı. Pasif/aktif ayrımını kaldıran işte, hedefin şekli değiştiğinde (taksitsiz → taksitli, taksit kapanır) mevcut satırların neye bağlandığı ayrıca sorulmalı. İkincisi: bir alan başka bir alanın kopyası olarak yazılmışsa (`taksitli: pasif`) birini değiştirmek ötekini sessizce bozar; spec'in "tek ölçüt değişir" tespiti bu yüzden kodla satır satır sınanmalı. Üçüncüsü: görüntü aracının bir ekranı yıllarca yanlış çizmesi (prop'tan alınmayan taksit sayısı) ancak beklenen değişiklik 0 piksel çıkınca fark edildi; beklenen değişikliğin sıfır çıkması bir alarm sayılmalı.
