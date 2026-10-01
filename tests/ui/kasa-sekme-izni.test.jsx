@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// Spec 0058 R9 ile güncellendi: kasa_hesap etiketi "ve kasa iş listesini düzenleme" ibaresini taşır.
 // Spec 0052: Kasa sekmesinin kendi izni. İzin ekranı (UserManager: kutu, kayıt, ipucu, oran) ve gerçek App üzerinden
 // kasasız kullanıcının menüsü, Mali İşler grubu, gider formu ve tahsilat formu; yedek geri yüklemesinin hesap tanımlarına
 // dokunmaması.
@@ -64,10 +65,10 @@ describe("Spec 0052: izin ekranı", () => {
     yonetici();
     await duzenle("veli");
     giderAkordeonu();
-    expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil")).toBeTruthy();
+    expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme")).toBeTruthy();
     expect(screen.getByText("Hesaplar arası virman")).toBeTruthy();
     expect(screen.getByText("Çalışana avans ver ve sil")).toBeTruthy();
-    expect(screen.getByLabelText("Hesap ekle, düzenle, kapat ve sil").checked).toBe(true);
+    expect(screen.getByLabelText("Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme").checked).toBe(true);
     expect(screen.getByTestId("kasa-etkisiz-ipucu").textContent).toBe("Kasa sekmesi olmayan kullanıcıda bu eylemler kullanılmaz.");
     // Kutular işaretlenebilir; Kasa açılınca ipucu kalkar, izinler hazırdır.
     fireEvent.click(screen.getByLabelText("Çalışana avans ver ve sil"));
@@ -79,7 +80,7 @@ describe("Spec 0052: izin ekranı", () => {
     yonetici([{ ...ESKI, permissions: JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["kasa_hesap"] }) }]);
     await duzenle("ali");
     giderAkordeonu();
-    expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil")).toBeTruthy();
+    expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme")).toBeTruthy();
     expect(screen.queryByTestId("kasa-etkisiz-ipucu")).toBeNull();
   });
   it("AC-26: izin özetindeki oran yeni sekmeyle güncellenir; admin rolüne geçirilen kullanıcının listesine 'kasa' yazılır", async () => {

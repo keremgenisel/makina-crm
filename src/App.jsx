@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { sonTahsilatHesabi } from "./lib/kasa";
+import { sonTahsilatHesabi, kapsamDisiTemizle } from "./lib/kasa";
 import LOGO from "./assets/logo.avif?inline";
 import {
   APP_VERSION, DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
@@ -249,6 +249,7 @@ export default function App() {
     apply(setKasaHesaplari, "kasaHesaplari");
     apply(setHesapHareketleri, "hesapHareketleri");
     apply(setCekler, "cekler");
+    apply(setKasaKapsamDisi, "kasaKapsamDisi");
 
     // Birleştirilen müşterilerin kaynak stok satırları düşülür — yoksa sunucudan gelen
     // stok listesi, az önce satılan makinayı tekrar "satılabilir" olarak diriltir
@@ -707,6 +708,8 @@ export default function App() {
   const [kasaHesaplari, setKasaHesaplari] = useState([]);
   // Spec 0040: çek portföyü. Çek kaydı tahsilata bağlıdır; durumun tek kaynağıdır (C10).
   const [cekler, setCekler] = useState([]);
+  // Spec 0058: kasa iş listesinden kapsam dışı bırakılan hesapsız kayıtlar ({id, tur, kaynak, kayitId, zaman}).
+  const [kasaKapsamDisi, setKasaKapsamDisi] = useState([]);
   // Triyaj bulgu 2: başlangıç null; yükleme bölümü getirmezse (0024 öncesi sunucu) null kalır. null iken ödeme durumu
   // kalemdeki eski işaretten okunur (odemeleriUygula dizi olmayanda eskiye döner), ödeme girişi kapalıdır ve bölüm
   // kayda eklenmez; yoksa güncellenmemiş sunucuya bağlanan istemci ödenmiş her kalemi ödenmemiş gösterirdi.
@@ -763,6 +766,15 @@ export default function App() {
   // Finans'ın aylık rapora verdiği dizilerin AYNISI verilir ki iki ekran aynı rakamı üretsin.
   const giderSatisVerisi = useMemo(() => ({ customers: liveCustomers, services: liveServices, partSales: livePartSales, payments: livePayments, teklifler: liveTeklifler, dealers: liveDealers, yedekParcaSatislar: liveYedekParcaSatislar }),
     [liveCustomers, liveServices, livePartSales, livePayments, liveTeklifler, liveDealers, liveYedekParcaSatislar]);
+  // Spec 0058 R5, R16, R20: geçersiz kapsam dışı girişlerinin TEK temizliği. Kaydına geçerli hesap atanan (hangi ekrandan
+  // atanırsa atansın) ya da kaydı kalıcı olarak silinen giriş durumdan düşer; efekt hesap değişikliğiyle aynı kayıt
+  // penceresinde çalıştığı için aynı yazıma girer (sunucu bu silmeyi kasa_hesap istemeden kabul eder). Hareket bölümü
+  // yüklenmemişken (0024 öncesi sunucu) çalışmaz, yoksa bütün hareket girişleri "bulunamadı" sayılırdı.
+  useEffect(() => {
+    if (!loaded || !hareketBolumuVar || !kasaKapsamDisi.length) return;
+    const t = kapsamDisiTemizle(kasaKapsamDisi, hesapHareketleri, { services, partSales, yedekParcaSatislar }, kasaHesaplari);
+    if (t !== kasaKapsamDisi) setKasaKapsamDisi(t);
+  }, [loaded, hareketBolumuVar, kasaKapsamDisi, hesapHareketleri, services, partSales, yedekParcaSatislar, kasaHesaplari]);
   // Spec 0047 Q4: Aylık Gider ve Kasa Raporu'nun TEK girdisi; Giderler, Kasa ve Finans aynı nesneyi alır (aynı ay aynı belge).
   // Yalnız kasa yetkisiyle dolar (Q3): kapı kapalıyken hiçbir ekrana gider/kasa verisi gitmez.
   const giderKasaRaporVerisi = useMemo(() => (kasaYetki ? {
@@ -772,7 +784,8 @@ export default function App() {
     kdvSecenek: { factoryName: factory?.name || "Altuntaş Makina", kdvRates: appSettings.kdvRates, factory, rates },
     hesaplar: kasaHesaplari, cekler: ceklerBagli, payments: livePayments, services: liveServices, partSales: livePartSales,
     yedekParcaSatislar: liveYedekParcaSatislar, dealers: liveDealers, factory, kdvRates: appSettings.kdvRates,
-  } : null), [kasaYetki, giderler, hareketListesi, giderTurleri, tedarikciler, liveStock, liveCustomers, standardModels, liveCustomModels, appSettings.giderAyarlari,
+    kasaKapsamDisi, // spec 0058 R7: ekranla aynı kapsam
+  } : null), [kasaKapsamDisi, kasaYetki, giderler, hareketListesi, giderTurleri, tedarikciler, liveStock, liveCustomers, standardModels, liveCustomModels, appSettings.giderAyarlari,
     giderSatisVerisi, factory, appSettings.kdvRates, rates, kasaHesaplari, ceklerBagli, livePayments, liveServices, livePartSales, liveYedekParcaSatislar, liveDealers]);
   // Makina maliyeti ve kârlılık (spec 0002 C9): dönemden bağımsız ağır hesap BİR KEZ yapılır, Giderler >
   // Makina Kârlılığı ve müşteri detayındaki kutu aynı sonucu gösterir. Yalnız gider yetkisiyle (R15).
@@ -1030,6 +1043,7 @@ export default function App() {
       if (Array.isArray(data.uretimPartileri)) setUretimPartileri(data.uretimPartileri);
       if (Array.isArray(data.kasaHesaplari)) setKasaHesaplari(data.kasaHesaplari);
       if (Array.isArray(data.cekler)) setCekler(data.cekler);
+      if (Array.isArray(data.kasaKapsamDisi)) setKasaKapsamDisi(data.kasaKapsamDisi);
       if (Array.isArray(data.hesapHareketleri)) setHesapHareketleri(data.hesapHareketleri);
       if (Array.isArray(data.gorusmeler)) setGorusmeler(data.gorusmeler);
       if (Array.isArray(data.dosyalar)) setDosyalar(data.dosyalar);
@@ -1089,7 +1103,7 @@ export default function App() {
     // Salt okunur mod: sunucuya ulaşılamıyorken hiçbir şey kaydedilmez/kuyruklanmaz
     // (önbellekten gösterilen veriyi sunucuya geri yazmaya çalışmak veri kaybettirir)
     if (serverMode === "active" && !serverOnlineRef.current) return;
-    const data = { customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, ...(Array.isArray(hesapHareketleri) ? { hesapHareketleri } : {}), cekler, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
+    const data = { customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, ...(Array.isArray(hesapHareketleri) ? { hesapHareketleri } : {}), cekler, kasaKapsamDisi, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -1113,7 +1127,7 @@ export default function App() {
       }
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, appSettings, loaded, saveTrigger]);
+  }, [customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi, appSettings, loaded, saveTrigger]);
 
   // Açılışta bir kez: künyesi kalmayan (30 gün sonra çöpten otomatik silinmiş) fiziksel dosyaları temizle.
   // Referans = hâlâ künyede geçen depo adları (soft-delete edilmişler dahil, onlar çöpte duruyor).
@@ -1167,7 +1181,7 @@ export default function App() {
           window.appMail?.getConfigForBackup?.() ?? null,
           window.appMail?.getAllLog?.() ?? [],
         ]).catch(() => [null, []]);
-        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, appSettings, mailConfig, mailLog }).catch(() => false);
+        const ok = await window.crmStorage.writeBackup(s.backupFolder, { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version: appVersion, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi, appSettings, mailConfig, mailLog }).catch(() => false);
         if (ok) setAppSettings(p => ({ ...p, lastBackup: today() }));
       })();
     }
@@ -1473,13 +1487,14 @@ export default function App() {
           calisanlar={calisanlar} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
           cekler={cekler} setCekler={setCekler} giderAyarlari={appSettings.giderAyarlari || {}}
           services={liveServices} setServices={setServices} partSales={livePartSales} setPartSales={setPartSales} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
-          dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} giderKasaRaporVerisi={giderKasaRaporVerisi} />}
+          dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} giderKasaRaporVerisi={giderKasaRaporVerisi}
+          kasaKapsamDisi={kasaKapsamDisi} setKasaKapsamDisi={setKasaKapsamDisi} />}
         {activeTab === "analiz"    && <Analiz    customers={liveCustomers} services={liveServices} partSales={livePartSales} yedekParcaSatislar={liveYedekParcaSatislar} parts={liveParts} appSettings={appSettings} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents dealers={liveDealers} yedekParcaSatislar={liveYedekParcaSatislar} teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onEvrakKaydet={evrakKaydet} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}
         {activeTab === "servis"    && <ServisPanosu services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar} parts={liveParts} dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo} setPartStock={setPartStock} setPartStockLog={setPartStockLog} partStock={partStock} partStockLog={partStockLog} dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={serverMode === "active" && !serverOnline} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} kargoYetki={kargoYetki} partSales={livePartSales} setPartSales={setPartSales} kalipYetki={kalipYetki} appSettings={appSettings} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} onAyriPencere={window.appServisPano ? () => window.appServisPano.ac() : null} />}
         {activeTab === "harita"    && <Harita customers={liveCustomers} dealers={liveDealers} factory={factory} onAyriPencere={window.appHarita ? () => window.appHarita.ac() : null} onFirmaSec={haritadanMusteriAc} baslangicUlke={haritaUlke} baslangicIl={haritaIl} onDurumChange={haritaDurumChange} onFabrikaKonum={serverMode !== "active" ? (konum) => { setFactory(prev => ({ ...prev, haritaKonum: konum })); showToast("Fabrika pin konumu kaydedildi."); } : null} />}
-        {activeTab === "settings"  && <Settings  initialTab={settingsTab} onInitialTabConsumed={() => setSettingsTab(null)} customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} calisanlar={liveCalisanlar} setCalisanlar={setCalisanlar} rawCalisanlar={calisanlar} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} rawYedekParcaSatislar={yedekParcaSatislar} serverPermissions={effectivePermissions} giderYetki={giderYetki} giderVeriYetki={giderSekmesi} giderler={liveGiderler} setGiderler={setGiderler} rawGiderler={giderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} kasaHesaplari={kasaHesaplari} setKasaHesaplari={kasaSekmesi ? setKasaHesaplari : null} kasaVeriYetki={kasaSekmesi} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} cekler={cekler} setCekler={setCekler} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
+        {activeTab === "settings"  && <Settings  initialTab={settingsTab} onInitialTabConsumed={() => setSettingsTab(null)} customers={liveCustomers} services={liveServices} dealers={liveDealers} stock={liveStock} setStock={setStock} setCustomers={setCustomers} setServices={setServices} setDealers={setDealers} version={appVersion} appSettings={appSettings} setAppSettings={setAppSettings} customModels={liveCustomModels} setCustomModels={setCustomModels} standardModels={standardModels} setStandardModels={setStandardModels} factory={factory} setFactory={setFactory} kalipDefs={liveKalipDefs} setKalipDefs={setKalipDefs} partTypeDefs={livePartTypeDefs} setPartTypeDefs={setPartTypeDefs} rawPartTypeDefs={partTypeDefs} calisanlar={liveCalisanlar} setCalisanlar={setCalisanlar} rawCalisanlar={calisanlar} notes={liveNotes} setNotes={setNotes} parts={liveParts} setParts={setParts} partSales={livePartSales} setPartSales={setPartSales} payments={livePayments} setPayments={setPayments} partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast} rawCustomers={customers} rawServices={services} rawDealers={dealers} rawStock={stock} rawNotes={notes} rawParts={parts} rawPartSales={partSales} rawPayments={payments} rawKalipDefs={kalipDefs} rawCustomModels={customModels} rawTeklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} rawFaturalar={faturalar} rawUretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} rawGorusmeler={gorusmeler} setGorusmeler={setGorusmeler} rawDosyalar={dosyalar} setDosyalar={setDosyalar} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar} rawYedekParcaSatislar={yedekParcaSatislar} serverPermissions={effectivePermissions} giderYetki={giderYetki} giderVeriYetki={giderSekmesi} giderler={liveGiderler} setGiderler={setGiderler} rawGiderler={giderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} kasaHesaplari={kasaHesaplari} setKasaHesaplari={kasaSekmesi ? setKasaHesaplari : null} kasaKapsamDisi={kasaKapsamDisi} setKasaKapsamDisi={kasaSekmesi ? setKasaKapsamDisi : null} kasaVeriYetki={kasaSekmesi} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} cekler={cekler} setCekler={setCekler} appUpd={appUpd} onCheckUpdate={checkAppUpdate} onStartUpdate={startAppUpdate} />}
       </div>
       </div>
     </div>

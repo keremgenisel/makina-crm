@@ -245,7 +245,7 @@ export const GIDER_ACTION_GROUPS = [
   ]},
   // Spec 0024 C6/Q7: Kasa ekranı (hesaplar ve virman). Spec 0052 R11: Kasa sekmesi olmayan kullanıcıda etkisizdir.
   { grup: "Kasa ve hesaplar", items: [
-    { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil" },
+    { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme" }, // spec 0058 R9
     { id: "virman",     label: "Hesaplar arası virman" },
     { id: "avans",      label: "Çalışana avans ver ve sil" },
   ]},

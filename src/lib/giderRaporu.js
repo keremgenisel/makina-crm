@@ -40,7 +40,9 @@ const DURUM_AD = { odendi: "Ödendi", kismen: "Kısmen ödendi", odenmedi: "Öde
 //   factory, kdvRates }
 export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) => {
   const g = { giderler: [], hareketler: [], turler: [], tedarikciler: [], stock: [], customers: [], hesaplar: [], cekler: [], payments: [],
-    services: [], partSales: [], yedekParcaSatislar: [], dealers: [], satisVerisi: {}, kdvSecenek: {}, ...girdi };
+    services: [], partSales: [], yedekParcaSatislar: [], dealers: [], satisVerisi: {}, kdvSecenek: {},
+    // Spec 0058 R7, R15: kasa iş listesinden kapsam dışı bırakılanlar raporun hesapsız bölümünde de sayılmaz (null = bugünkü).
+    kasaKapsamDisi: null, ...girdi };
   const bas = `${ay}-01`, son = ayinSonGunu(ay);
   const aralik = { baslangic: bas, bitis: son };
   const turMap = turHaritasi(g.turler);
@@ -117,7 +119,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) =>
     });
   const ozet = hareketOzeti(g.hareketler, aralik, bakiyeler);
   const giderById = new Map(g.giderler.map(k => [String(k.id), k]));
-  const hsz = hesapsizOdemeler(g.hareketler, aralik);
+  const hsz = hesapsizOdemeler(g.hareketler, aralik, g.kasaKapsamDisi);
   // Triyaj (R31 istisnası, R18/R19/R21): personel ödemeleri ve avanslar satır satır yazılmaz; tek bir çalışanın elden
   // tutarı ya da avansı tarihiyle kâğıda düşerdi. İkisi birer toplu satırdır (adet + toplam), ayrıntı ekrandadır.
   const hesapsizListe = [];
@@ -132,7 +134,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) =>
   }
   if (personelOdeme.adet) hesapsizListe.push({ tarih: null, tutarK: personelOdeme.tutarK, etiket: `Personel ödemeleri · ${personelOdeme.adet} adet`, toplu: true });
   if (avansTop.adet) hesapsizListe.push({ tarih: null, tutarK: avansTop.tutarK, etiket: `Çalışan avansları · ${avansTop.adet} adet`, toplu: true });
-  const hszTah = hesapsizTahsilatlar(veri, g.hesaplar, aralik);
+  const hszTah = hesapsizTahsilatlar(veri, g.hesaplar, aralik, g.kasaKapsamDisi);
   let avansK = 0;
   for (const x of avansBorclari(hareketlerAySonu, g.giderler).values()) avansK += x.borcK;
   const kasa = {

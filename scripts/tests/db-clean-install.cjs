@@ -59,6 +59,8 @@ try {
           { id: 7013, hedef: "ekResmi", sira: 1, vade: "2026-07-31", tutar: 200, odendi: false, odemeTarihi: null }, { id: 7014, hedef: "ekElden", sira: 1, vade: "2026-07-31", tutar: 100, odendi: false, odemeTarihi: null }] }],
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
     uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }],
+    // Spec 0058: temiz kurulumda kasa_kapsam_disi tablosu.
+    kasaKapsamDisi: [{ id: 39, tur: "hareket", kaynak: null, kayitId: 38, zaman: "2026-10-01T10:00:00.000Z" }],
     // Spec 0040: temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu.
     cekler: [{ id: 36, paymentId: 37, no: "1", banka: "Z", tur: "hamiline", durum: "portfoy", gecmis: [] },
       // Spec 0049: temiz kurulumda çek tablosunun yeni sütunları.
@@ -114,6 +116,7 @@ check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (yedek
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (payment, blokaj)", (() => { const p = (blob.payments || []).find(x => x.id === 10); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31"; })());
 check("temiz kurulumda gider ek ödeme tablosu oluştu (spec 0023)", ((blob.giderler || []).find(x => x.id === 33)?.ekOdemeler || []).length === 1);
 check("spec 0054 AC-21: temiz kurulumda ek ödeme hedef satırları (ekResmi, ekElden) yazıldı", ((blob.giderler || []).find(x => x.id === 37)?.taksitler || []).map(x => x.hedef).join() === "ana,elden,ekResmi,ekElden");
+check("spec 0058 AC-14: temiz kurulumda kasa_kapsam_disi tablosu oluştu ve giriş yazıldı", (blob.kasaKapsamDisi || []).map(x => `${x.id}:${x.tur}:${x.kayitId}`).join() === "39:hareket:38");
 check("temiz kurulumda gider ödeme satırı tablosu oluştu ve kimlikler yazıldı (spec 0021)", ((blob.giderler || []).find(x => x.id === 33)?.taksitler || []).map(x => x.id).join() === "7001,7002");
 check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 1 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 1 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());

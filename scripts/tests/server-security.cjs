@@ -526,6 +526,26 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const vK = await gUst(kasasizTok);
   check("spec 0052 triyaj: Kasa'sız kullanıcı verilen çeki ödendi işaretleyemez → 403",
     (await postData({ ...vK, dataVersion: undefined, cekler: vK.cekler.map(c => c.id === 9660 ? { ...c, durum: "odendi" } : c) }, vK.dataVersion, kasasizTok)).status === 403);
+  // ── Spec 0058 R9, R12, R20 (AC-15, AC-19): kasa iş listesinden kapsam dışı bırakma ──
+  let kA = await gUst(adminTok);
+  await postData({ ...kA, dataVersion: undefined, services: [...kA.services, { id: 9701, customerId: 9600, date: "2026-09-11", type: "Garanti Dışı", servisUcreti: 500, currency: "TRY", odendi: true }],
+    kasaHesaplari: [...(kA.kasaHesaplari || []), { id: 9703, ad: "Kapsam Kasası", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }] }, kA.dataVersion, adminTok);
+  const kapsamGir = { id: 9702, tur: "tahsilat", kaynak: "servis", kayitId: 9701, zaman: "2026-10-01T10:00:00.000Z" };
+  const kKs = await gUst(kasasizTok);
+  check("spec 0058 AC-19: Kasa'sız kullanıcı kapsam dışı bırakamaz → 403",
+    (await postData({ ...kKs, dataVersion: undefined, kasaKapsamDisi: [...(kKs.kasaKapsamDisi || []), kapsamGir] }, kKs.dataVersion, kasasizTok)).status === 403);
+  const kCi = await gUst(ciroTok);
+  check("spec 0058 AC-19: kasa_hesap izni olmayan Kasa kullanıcısı kapsam dışı bırakamaz → 403",
+    (await postData({ ...kCi, dataVersion: undefined, kasaKapsamDisi: [...(kCi.kasaKapsamDisi || []), kapsamGir] }, kCi.dataVersion, ciroTok)).status === 403);
+  const kOd = await gUst(odemeTok);
+  check("spec 0058 AC-12 / AC-15: Kasa + kasa_hesap kullanıcısı kapsam dışı bırakır → 200; karar başka kullanıcıda da okunur",
+    (await postData({ ...kOd, dataVersion: undefined, kasaKapsamDisi: [...(kOd.kasaKapsamDisi || []), kapsamGir] }, kOd.dataVersion, odemeTok)).status === 200
+    && (await gUst(kasasizTok)).kasaKapsamDisi.some(g => g.id === 9702 && g.kayitId === 9701));
+  const kKs2 = await gUst(kasasizTok);
+  check("spec 0058 R20: Kasa'sız kullanıcı kayda hesap atayınca girişin silinmesi aynı yazımda kabul edilir → 200",
+    (await postData({ ...kKs2, dataVersion: undefined, services: kKs2.services.map(x => x.id === 9701 ? { ...x, hesapId: 9703 } : x),
+      kasaKapsamDisi: kKs2.kasaKapsamDisi.filter(g => g.id !== 9702) }, kKs2.dataVersion, kasasizTok)).status === 200
+    && !(await gUst(adminTok)).kasaKapsamDisi.some(g => g.id === 9702));
   const tK2 = await gUst(ciroTok);
   check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
     (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);

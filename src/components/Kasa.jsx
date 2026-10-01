@@ -4,7 +4,7 @@ import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { tl, turHaritasi, davranisOf } from "../lib/gider";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti } from "../lib/kasa";
+import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi } from "../lib/kasa";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
@@ -20,6 +20,10 @@ import { CekPortfoyu } from "./cek/CekPortfoyu";
 const PARA_BIRIMLERI = [{ value: "TRY", label: "TL" }, { value: "USD", label: "USD" }, { value: "EUR", label: "EUR" }];
 const SEMBOL = { TRY: "₺", USD: "$", EUR: "€" };
 const para = (n, pb) => fmtCur(n, pb || "TRY");
+// Spec 0058 R2, R8 (AC-28): ekranda birebir yazılan iki cümle.
+export const KAPSAM_DISI_ACIKLAMA = "Kapsam dışı bırakmak kaydı silmez ve hiçbir tutarı değiştirmez; yalnız bu listeden çıkarır.";
+export const KAPSAM_SUZGEC_FARKI = "Başlangıç tarihi geçici bir süzgeçtir, kapsam dışı bırakmak kalıcı bir karardır.";
+const BOS_KAPSAM = []; // sabit kimlik: her çizimde yeni dizi bellekteki özeti boşa düşürürdü (0051 triyaj)
 const bosHesap = () => ({ id: null, ad: "", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: "", acilisTarihi: today(), kapali: false });
 
 const HesapFormu = ({ hesap, hesaplar, hareketVar, onKaydet, onClose }) => {
@@ -133,6 +137,8 @@ export const Kasa = ({
   dealers = [], factory = null, kdvRates = undefined,
   // Spec 0047: Aylık Gider ve Kasa Raporu (Kasa yalnız kasa yetkisiyle çizilir).
   giderKasaRaporVerisi = null,
+  // Spec 0058: kasa iş listesinden kapsam dışı bırakılan hesapsız kayıtlar (setter yoksa salt okunur).
+  kasaKapsamDisi = BOS_KAPSAM, setKasaKapsamDisi = null,
 }) => {
   const [gorunum, setGorunum] = useState("hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
@@ -149,13 +155,18 @@ export const Kasa = ({
   // zaman görünür. "Hepsini göster" ekran içi geçici anahtardır (ayarı değiştirmez, hatırlanmaz, R7). Bakiye eşiği görmez.
   const esik = giderAyarlari?.hesapsizBaslangic || "";
   const [hepsiniGoster, setHepsiniGoster] = useState(false);
-  const hesapsizO = useMemo(() => hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, hepsiniGoster ? null : esik || null),
-    [hesapHareketleri, veri, kasaHesaplari, hepsiniGoster, esik]);
+  // Spec 0058 R13: önce kapsam dışı ayıklanır, sonra eşik; sayılar ve listeler yalnız kapsamdakileri gösterir.
+  const kapsamListesi = Array.isArray(kasaKapsamDisi) ? kasaKapsamDisi : BOS_KAPSAM;
+  const hesapsizO = useMemo(() => hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, hepsiniGoster ? null : esik || null, kapsamListesi),
+    [hesapHareketleri, veri, kasaHesaplari, hepsiniGoster, esik, kapsamListesi]);
   // Triyaj: eşik bilgisi bellekte; anahtar kapalıyken süzülmüş özetin kendisidir (aynı hesap ikinci kez yapılmaz).
-  const esikBilgisi = useMemo(() => (!esik ? null : hepsiniGoster ? hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, esik) : hesapsizO),
-    [esik, hepsiniGoster, hesapsizO, hesapHareketleri, veri, kasaHesaplari]);
-  const hesapsiz = hesapsizO.odeme, hesapsizTahsilat = hesapsizO.tahsilat;
+  const esikBilgisi = useMemo(() => (!esik ? null : hepsiniGoster ? hesapsizOzeti(hesapHareketleri, veri, kasaHesaplari, esik, kapsamListesi) : hesapsizO),
+    [esik, hepsiniGoster, hesapsizO, hesapHareketleri, veri, kasaHesaplari, kapsamListesi]);
+  const hesapsiz = hesapsizO.odeme, hesapsizTahsilat = hesapsizO.tahsilat, kapsamDisiO = hesapsizO.kapsamDisi;
   const [tahsilatListesiAcik, setTahsilatListesiAcik] = useState(false);
+  const [odemeListesiAcik, setOdemeListesiAcik] = useState(false);
+  const [kapsamDisiAcik, setKapsamDisiAcik] = useState(false);
+  const [topluOnay, setTopluOnay] = useState(null); // null | { tur: "odeme"|"tahsilat", satirlar }
   const siraliHesaplar = useMemo(() => [...kasaHesaplari].sort((a, b) => (a.kapali ? 1 : 0) - (b.kapali ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr")), [kasaHesaplari]);
   const seciliHesap = kasaHesaplari.find(h => String(h.id) === String(secili)) || siraliHesaplar[0] || null;
   const seciliBakiye = seciliHesap ? bakiyeler.get(String(seciliHesap.id)) : null;
@@ -242,6 +253,33 @@ export const Kasa = ({
     logAction({ serverPermissions, action: "duzenlendi", entity, entityId: k.kayit.id, entityName: k.firma, detail: { hesap: hesapById.get(String(hesapId))?.ad } });
     showToast("Tahsilat hesaba bağlandı.");
   };
+  // ── Spec 0058: kapsam dışı bırakma ve geri alma (R1–R5, R9, R10, R17, R21) ──
+  const kapsamYetkisi = !!setKasaKapsamDisi && canDo("kasa_hesap");
+  // R21 (Q6): işlem geçmişinde tahsilatta "tür · firma", ödemede tedarikçi ya da tür; avansta çalışan adı yazılmaz.
+  const kapsamAdi = (sat) => {
+    if (sat.kaynak && sat.kayit) return [sat.turAdi, sat.firma].filter(Boolean).join(" · ");
+    if (sat.tur === "avans") return "Avans";
+    const k = giderById.get(String(sat.giderId));
+    return k ? (tedById.get(String(k.tedarikciId))?.ad || turById.get(String(k.turId))?.ad || "Gider ödemesi") : "Gider ödemesi";
+  };
+  const kapsamDisiBirak = (satirlar, toplu = false) => {
+    if (!kapsamYetkisi || !satirlar.length) return;
+    const zaman = new Date().toISOString();
+    setKasaKapsamDisi(p => {
+      const var_ = new Set((p || []).map(kapsamGirisAnahtari));
+      return [...(p || []), ...satirlar.filter(sat => !var_.has(kapsamAnahtari(sat))).map(sat => ({ id: uid(), ...kapsamGirisi(sat), zaman }))];
+    });
+    if (toplu) logAction({ serverPermissions, action: "kapsam_disi", entity: "kasa_kapsam", entityName: `${satirlar.length} kayıt (toplu)`, detail: { adet: satirlar.length } });
+    else logAction({ serverPermissions, action: "kapsam_disi", entity: "kasa_kapsam", entityId: kapsamGirisi(satirlar[0]).kayitId, entityName: kapsamAdi(satirlar[0]) });
+    showToast(`${satirlar.length} kayıt kapsam dışı bırakıldı.`);
+  };
+  const kapsamaAl = (sat) => {
+    if (!kapsamYetkisi) return;
+    const anahtar = kapsamAnahtari(sat);
+    setKasaKapsamDisi(p => (p || []).filter(g => kapsamGirisAnahtari(g) !== anahtar));
+    logAction({ serverPermissions, action: "kapsama_alindi", entity: "kasa_kapsam", entityId: kapsamGirisi(sat).kayitId, entityName: kapsamAdi(sat) });
+    showToast("Kayıt listeye geri alındı.");
+  };
   const virmanSil = (m) => {
     setHesapHareketleri(p => p.filter(x => x.id !== m.id));
     logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar } });
@@ -253,7 +291,16 @@ export const Kasa = ({
     : <b style={{ color: b.bakiyeK < 0 ? "var(--red700, #b91c1c)" : "var(--n900, #0f172a)" }}>{para(b.bakiye, b.hesap.paraBirimi)}</b>);
   const acikHesapSayisi = kasaHesaplari.filter(h => !h.kapali).length;
   const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px 70px 150px 190px", gap: 10, alignItems: "center" };
-  const tIzgara = { display: "grid", gridTemplateColumns: "90px 150px minmax(0, 1.6fr) 120px 200px", gap: 10, alignItems: "center" };
+  const tIzgara = { display: "grid", gridTemplateColumns: "90px 150px minmax(0, 1.6fr) 120px 200px 130px", gap: 10, alignItems: "center" };
+  const oIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px", gap: 10, alignItems: "center" };
+  const odemeSatirlari = [...(hesapsiz.liste || [])];
+  const odemeTutari = (m) => (m.tutar == null ? "Tam kapatma (aktarılan)" : para(m.tutar, "TRY"));
+  const topluDugme = (tur, satirlar) => (kapsamYetkisi ? (
+    <Btn small variant="ghost" disabled={!satirlar.length} onClick={() => setTopluOnay({ tur, satirlar })}
+      aria-label={tur === "odeme" ? "Görünen ödemeleri kapsam dışı bırak" : "Görünen tahsilatları kapsam dışı bırak"}>
+      Görünen {satirlar.length} kaydı kapsam dışı bırak
+    </Btn>
+  ) : null);
   const hIzgara = { display: "grid", gridTemplateColumns: "90px 120px minmax(0, 1.6fr) 120px 120px 130px 40px", gap: 10, alignItems: "center" };
 
   return (
@@ -300,17 +347,67 @@ export const Kasa = ({
       )}
       {/* Spec 0044 R6, AC-24: gider tarafının hesapsız ödemeleri ile satış tahsilatları iki ayrı satır. */}
       <div data-testid="hesapsiz-sayilar" style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: "var(--n700)" }}>
-        <div data-testid="hesapsiz-odeme-satiri">Hesabı belirtilmemiş ödemeler: <b>{hesapsiz.adet}</b>{hesapsiz.gocAdet > 0 ? ` (${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı)` : ""}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span data-testid="hesapsiz-odeme-satiri">Hesabı belirtilmemiş ödemeler: <b>{hesapsiz.adet}</b>{hesapsiz.gocAdet > 0 ? ` (${hesapsiz.gocAdet} tanesi eski kayıtlardan aktarıldı)` : ""}</span>
+          {/* Spec 0058 R19: ödeme (ve hesapsız avans) listesi; tahsilat listesinin eşi. */}
+          {(hesapsiz.adet + hesapsiz.avansAdet > 0 || odemeListesiAcik) && <Btn small variant="ghost" onClick={() => setOdemeListesiAcik(a => !a)}>{odemeListesiAcik ? "Ödemeleri gizle" : "Ödemeleri göster"}</Btn>}
+        </div>
         <div data-testid="hesapsiz-tahsilat-satiri" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span>Hesabı belirtilmemiş tahsilatlar: <b>{hesapsizTahsilat.adet}</b></span>
-          {hesapsizTahsilat.adet > 0 && <Btn small variant="ghost" onClick={() => setTahsilatListesiAcik(a => !a)}>{tahsilatListesiAcik ? "Listeyi gizle" : "Listeyi göster"}</Btn>}
+          {(hesapsizTahsilat.adet > 0 || tahsilatListesiAcik) && <Btn small variant="ghost" onClick={() => setTahsilatListesiAcik(a => !a)}>{tahsilatListesiAcik ? "Listeyi gizle" : "Listeyi göster"}</Btn>}
         </div>
+        {kapsamDisiO && kapsamDisiO.toplam > 0 && (
+          <div data-testid="kapsam-disi-satiri" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span>Kapsam dışı bırakılanlar: <b>{kapsamDisiO.toplam}</b></span>
+            <Btn small variant="ghost" onClick={() => setKapsamDisiAcik(a => !a)}>{kapsamDisiAcik ? "Gizle" : "Göster"}</Btn>
+          </div>
+        )}
       </div>
+      {/* Spec 0058 R2, R8 (AC-11, AC-28): iki aracın farkı ve kararın etkisi ekranda yazılı. */}
+      {kapsamYetkisi && (tahsilatListesiAcik || odemeListesiAcik || (kapsamDisiO && kapsamDisiO.toplam > 0)) && (
+        <div data-testid="kapsam-disi-aciklama"><Ipucu>{KAPSAM_DISI_ACIKLAMA} {KAPSAM_SUZGEC_FARKI}</Ipucu></div>
+      )}
+      {odemeListesiAcik && (
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="hesapsiz-odemeler">
+          {!odemeSatirlari.length ? (
+            <div style={{ padding: 14 }}>
+              <BosDurum testId="bos-hesapsiz-odeme" baslik="Hesabı belirtilmemiş ödeme yok" />
+              <div style={{ marginTop: 8 }}>{topluDugme("odeme", [])}</div>
+            </div>
+          ) : (
+          <div style={{ minWidth: 640 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px 0" }}>{topluDugme("odeme", odemeSatirlari)}</div>
+            <div style={{ ...oIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+              <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span />
+            </div>
+            {odemeSatirlari.map(m => {
+              const a = satirAciklamasi({ hareket: m, tur: m.tur });
+              return (
+                <div key={m.id} data-testid="hesapsiz-odeme" style={{ ...oIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                  <span>{m.tarih ? fmtTR(m.tarih) : "Tarihsiz"}</span>
+                  <span>{a.tur}</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>
+                  <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{odemeTutari(m)}</span>
+                  <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([m])} aria-label={`Kapsam dışı bırak: ${a.metin}`}>Kapsam dışı bırak</Btn>}</span>
+                </div>
+              );
+            })}
+          </div>
+          )}
+        </KartBolum>
+      )}
+      {tahsilatListesiAcik && !hesapsizTahsilat.adet && (
+        <KartBolum varyant="kart" style={{ padding: 14 }} testId="hesapsiz-tahsilatlar">
+          <BosDurum testId="bos-hesapsiz-tahsilat" baslik="Hesabı belirtilmemiş tahsilat yok" />
+          <div style={{ marginTop: 8 }}>{topluDugme("tahsilat", [])}</div>
+        </KartBolum>
+      )}
       {tahsilatListesiAcik && hesapsizTahsilat.adet > 0 && (
         <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="hesapsiz-tahsilatlar">
-          <div style={{ minWidth: 720 }}>
+          <div style={{ minWidth: 850 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px 0" }}>{topluDugme("tahsilat", hesapsizTahsilat.liste)}</div>
             <div style={{ ...tIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-              <span>Tarih</span><span>Tür</span><span>Firma</span><span style={{ textAlign: "right" }}>Tutar</span><span>Hesap ata</span>
+              <span>Tarih</span><span>Tür</span><span>Firma</span><span style={{ textAlign: "right" }}>Tutar</span><span>Hesap ata</span><span />
             </div>
             {hesapsizTahsilat.liste.map(k => {
               const uygun = secilebilirHesaplar(kasaHesaplari, k.currency || "TRY");
@@ -329,9 +426,31 @@ export const Kasa = ({
                       </Select>
                     ) : <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{k.currency || "TRY"} hesabı yok</span>}
                   </span>
+                  <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([k])} aria-label={`Kapsam dışı bırak: ${k.firma}`}>Kapsam dışı bırak</Btn>}</span>
                 </div>
               );
             })}
+          </div>
+        </KartBolum>
+      )}
+      {/* Spec 0058 R3, R18: kapsam dışı bırakılanlar ayrı bölümde, sayısıyla; sıfırken hiç çizilmez. */}
+      {kapsamDisiAcik && kapsamDisiO && kapsamDisiO.toplam > 0 && (
+        <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="kapsam-disi-listesi">
+          <div style={{ minWidth: 640 }}>
+            <div style={{ ...oIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+              <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span />
+            </div>
+            {[...kapsamDisiO.tahsilatListe.map(k => ({ anahtar: kapsamAnahtari(k), sat: k, tarih: k.tarih, tur: k.turAdi, metin: k.firma, tutar: para(k.tutar, k.currency) })),
+              ...kapsamDisiO.odemeListe.map(m => { const a = satirAciklamasi({ hareket: m, tur: m.tur }); return { anahtar: kapsamAnahtari(m), sat: m, tarih: m.tarih, tur: a.tur, metin: a.metin, tutar: odemeTutari(m) }; })]
+              .map(x => (
+                <div key={x.anahtar} data-testid="kapsam-disi-kayit" style={{ ...oIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                  <span>{x.tarih ? fmtTR(x.tarih) : "Tarihsiz"}</span>
+                  <span>{x.tur}</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={x.metin}>{x.metin}</span>
+                  <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{x.tutar}</span>
+                  <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamaAl(x.sat)} aria-label={`Kapsama al: ${x.metin}`}>Kapsama al</Btn>}</span>
+                </div>
+              ))}
           </div>
         </KartBolum>
       )}
@@ -413,6 +532,14 @@ export const Kasa = ({
       {silinecek && (
         <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok; kalıcı olarak silinecek.`}
           confirmLabel="Hesabı Sil" onConfirm={sil} onCancel={() => setSilinecek(null)} />
+      )}
+      {/* Spec 0058 R4, Q5 (AC-6): toplu işlem o anda görünen listeyi etkiler; onay sayıyı ve eşiğin durumunu söyler. */}
+      {topluOnay && (
+        <ConfirmDialog title="Görünen kayıtlar kapsam dışı bırakılsın mı?" icon="check" confirmIcon="check" confirmLabel="Kapsam Dışı Bırak"
+          message={[`${topluOnay.satirlar.length} ${topluOnay.tur === "odeme" ? "ödeme" : "tahsilat"} kaydı kapsam dışı bırakılacak.`,
+            esik && !hepsiniGoster ? `Başlangıç tarihi süzgeci açık (${fmtTR(esik)}); yalnız listede görünen kayıtlar etkilenir.` : "Başlangıç tarihi süzgeci kapalı; listedeki bütün kayıtlar etkilenir.",
+            KAPSAM_DISI_ACIKLAMA].join(" ")}
+          onConfirm={() => { kapsamDisiBirak(topluOnay.satirlar, true); setTopluOnay(null); }} onCancel={() => setTopluOnay(null)} />
       )}
     </div>
   );

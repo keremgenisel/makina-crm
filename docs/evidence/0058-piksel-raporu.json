@@ -1,0 +1,510 @@
+[
+  {
+    "ad": "ayarlar-security-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-security-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesaplar-aydinlik.png",
+    "boyut": "2880x2120 ≠ 2880x2142",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesaplar-karanlik.png",
+    "boyut": "2880x2120 ≠ 2880x2142",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-aydinlik.png",
+    "boyut": "2880x1800 ≠ 2880x1808",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-hareketleri-kart-karanlik.png",
+    "boyut": "2880x1800 ≠ 2880x1808",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-aydinlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-karanlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-virman-aydinlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-virman-karanlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-calisan-avanslari-aydinlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-calisan-avanslari-karanlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 557297
+  },
+  {
+    "ad": "kasa-calisan-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 557004
+  },
+  {
+    "ad": "kasa-cek-portfoyu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-portfoyu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-tumu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Çekin arkasına tam ciro yazın: ciro edilenin unvanı, vergi kimlik numa"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-gecmis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-ekle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k",
+      "Elle eklenen çek gelir değildir: tahsilat kaydı yoktur, Finans'a ve ay"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-bagsiz-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-verilen-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-cek-yaz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek yazılınca seçilen kalemlerin borcu kapanır; hesap bakiyesi banka ç"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-aydinlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-verilen-cek-bakiye-karanlik.png",
+    "boyut": "2880x1822 ≠ 2880x1844",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kullanici-izin-kasa-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kullanici-izin-kasa-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kullanici-izin-kasa-ipucu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 24405
+  },
+  {
+    "ad": "kullanici-izin-kasa-ipucu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 24865
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-aydinlik.png",
+    "boyut": "2880x2300 ≠ 2880x2322",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-karanlik.png",
+    "boyut": "2880x2300 ≠ 2880x2322",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-aydinlik.png",
+    "boyut": "2880x2278 ≠ 2880x2316",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-karanlik.png",
+    "boyut": "2880x2278 ≠ 2880x2316",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-aydinlik.png",
+    "boyut": "2880x2278 ≠ 2880x2794",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-karanlik.png",
+    "boyut": "2880x2278 ≠ 2880x2794",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-kapsam-disi-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x2296",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-kapsam-disi-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x2296",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x2304",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x2304",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-aydinlik.png",
+    "boyut": "2880x2250 ≠ 2880x2266",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-karanlik.png",
+    "boyut": "2880x2250 ≠ 2880x2266",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-aydinlik.png",
+    "boyut": "2880x2358 ≠ 2880x2396",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-karanlik.png",
+    "boyut": "2880x2358 ≠ 2880x2396",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hareket-hedef-aydinlik.png",
+    "boyut": "2880x1882",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hareket-hedef-karanlik.png",
+    "boyut": "2880x1882",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-ekstre-hedef-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-ekstre-hedef-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-aydinlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesap-formu-tutar-karanlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x1834 ≠ 2880x1856",
+    "seritler": [
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  }
+]

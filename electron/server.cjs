@@ -167,6 +167,7 @@ const BOLUM_ADLARI = {
   uretimPartileri: "Üretim Partileri",
   kasaHesaplari: "Kasa ve Banka Hesapları", hesapHareketleri: "Hesap Hareketleri",
   cekler: "Çek Portföyü",
+  kasaKapsamDisi: "Kasa İş Listesi (kapsam dışı)",
 };
 
 function logSecurity({ ts, actor, action, target, ip, detail } = {}) {

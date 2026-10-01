@@ -141,6 +141,9 @@ dbmod.writeBlobToDb({
     { id: 974, tur: "avans", tarih: "2026-07-08", tutar: 3000, calisanId: 55, hesapId: null },
     { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null },
     { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 }],
+  // Spec 0058: kasa iş listesinden kapsam dışı bırakılanlar (tahsilat ve hareket girişi).
+  kasaKapsamDisi: [{ id: 9581, tur: "tahsilat", kaynak: "servis", kayitId: 4242, zaman: "2026-10-01T10:00:00.000Z" },
+    { id: 9582, tur: "hareket", kaynak: null, kayitId: 976, zaman: "2026-10-01T10:05:00.000Z" }],
   // Spec 0040: çek kaydı (yalnız kendi alanları, geçmiş JSON).
   cekler: [{ id: 991, paymentId: 900, no: "123456", banka: "Ziraat", kesideci: "Ali Veli", tur: "resmi", durum: "ciro",
     gecmis: [{ tarih: "2026-07-01", durum: "portfoy", not: "Alındı" }, { tarih: "2026-07-10", durum: "ciro", not: "Ciro: Demir Bant" }] },
@@ -311,6 +314,12 @@ check("servis ödeme yöntemi + kredi kartı taksit/komisyon snapshot roundtrip"
 check("partSale farklı teslimat adresi (Extra Kalıp) roundtrip; teslimatFarkli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.teslimatFarkli === true && p?.teslimatAd === "Şube Deposu" && p?.teslimatTel === "02123334455" && p?.teslimatAdres === "Sanayi Mah. 5. Sok No:12" && p?.teslimatUlke === "Türkiye" && p?.teslimatSehir === "İstanbul" && p?.teslimatIlce === "Tuzla"; })());
 check("partSale ödeme yöntemi (Extra Kalıp) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.yontem === "Kredi Kartı" && p?.tahsilEdildi === false; })());
 check("partSale kredi kartı taksit + komisyon snapshot (JSON) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.taksitSayisi === 3 && p?.kartKomisyonu?.oran === 7.47 && p?.kartKomisyonu?.toplamKesinti === 7.97 && p?.kartKomisyonu?.yansitildi === false; })());
+check("spec 0058 AC-14: kapsam dışı girişleri (tahsilat ve hareket) alanlarıyla tam turu", (() => {
+  const k = blob.kasaKapsamDisi || [];
+  const t = k.find(x => x.id === 9581), h = k.find(x => x.id === 9582);
+  return k.length === 2 && t?.tur === "tahsilat" && t.kaynak === "servis" && t.kayitId === 4242 && t.zaman === "2026-10-01T10:00:00.000Z"
+    && h?.tur === "hareket" && h.kaynak == null && h.kayitId === 976;
+})());
 check("spec 0024 R6: tahsilatın hesapId'si tam turu", (blob.payments || []).find(x => x.id === 900)?.hesapId === 97);
 check("payment kredi kartı taksit + komisyon snapshot (blokaj, yansitildi, bazTarih) roundtrip", (() => { const p = (blob.payments || []).find(x => x.id === 900); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31" && p?.kartKomisyonu?.yansitildi === true && p?.kartKomisyonu?.bazTarih === "2026-07-22"; })());
 check("yedek parça satışı kredi kartı taksit + komisyon snapshot roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 60.54; })());

@@ -254,3 +254,25 @@ describe("Spec 0044: formlarda hesap seçici", () => {
     expect(son[0]).toMatchObject({ odendi: true, hesapId: 51 });
   });
 });
+
+// Spec 0058 R5, R20 (AC-7, AC-25, AC-14): kapsam dışı bırakılmış hesapsız tahsilata müşteri detayından hesap atanınca giriş
+// AYNI kayıtta düşer (App'teki tek temizlik efekti); hesap atanmadan geri alınan ödemede giriş durur.
+describe("Spec 0058: kapsam dışı girişinin temizliği (gerçek App)", () => {
+  const KD = [{ id: 901, tur: "tahsilat", kaynak: "servis", kayitId: 800, zaman: "2026-10-01T10:00:00.000Z" }];
+  it("AC-7 / AC-25: ödeme geri alınıp hesapla yeniden işaretlenince giriş hesapla aynı kayıtta silinir", async () => {
+    const { kayitlar } = await baslat({ yuklenen: veri({ services: [{ ...SERVIS, odendi: true, tahsilatTarihi: `${buAy}-05` }], kasaKapsamDisi: KD }) });
+    menu("Müşteriler");
+    await waitFor(() => expect(screen.getByText("TAHSİLATLI FİRMA")).toBeTruthy());
+    fireEvent.click(screen.getByText("TAHSİLATLI FİRMA"));
+    await waitFor(() => expect(anahtar(0)).toBeTruthy());
+    fireEvent.click(anahtar(0)); // geri al: pencere açılmaz, hesap yok → giriş durur
+    await bekleKayit(kayitlar, k => k.services?.some(s => s.id === 800 && s.odendi === false));
+    expect(kayitlar.at(-1).kasaKapsamDisi.map(g => g.id)).toEqual([901]);
+    fireEvent.click(anahtar(0));
+    fireEvent.change(within(pencere()).getByLabelText("Tahsilat hesabı"), { target: { value: "51" } });
+    fireEvent.click(screen.getByText("Ödendi olarak kaydet"));
+    await bekleKayit(kayitlar, k => k.services?.some(s => s.id === 800 && s.hesapId === 51) && Array.isArray(k.kasaKapsamDisi) && k.kasaKapsamDisi.length === 0);
+    // Hesap atanmış ama giriş hâlâ duran bir ara kayıt gönderilmedi (aynı yazım).
+    expect(kayitlar.some(k => k.services?.some(s => s.id === 800 && s.hesapId === 51) && k.kasaKapsamDisi?.length)).toBe(false);
+  });
+});

@@ -29,7 +29,9 @@ export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "p
   // Spec 0024: kasa hesapları ve hesap hareketleri (ödeme, virman).
   "kasaHesaplari", "hesapHareketleri",
   // Spec 0040: çek portföyü (tahsilata bağlı).
-  "cekler"];
+  "cekler",
+  // Spec 0058 R14: kasa iş listesinden kapsam dışı bırakılan kayıtlar (satırın kaydına kimlikle bağlı).
+  "kasaKapsamDisi"];
 
 export function buildMergePlan(myData, serverData) {
   if (!myData || !serverData) return null;
@@ -116,6 +118,11 @@ export function buildMergePlan(myData, serverData) {
     ...(c.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, c.hesapId) } : {}),
     ...(c.alacakliId != null && c.alacakliTur === "tedarikci" ? { alacakliId: remapRef(maps.tedarikciler, c.alacakliId) } : {}),
     ...(c.alacakliId != null && c.alacakliTur === "calisan" ? { alacakliId: remapRef(maps.calisanlar, c.alacakliId) } : {}) }));
+  // Spec 0058 R14 (Q3): kapsam dışı girişi kaynağına göre kaydını izler (servis, Extra Kalıp, yedek parça ya da hareket).
+  // Bilinen sınır: birleştirme yalnız eklemeleri yeniden uygular; başka PC yazarken yapılan "kapsama al" geri gelebilir.
+  const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };
+  adds.kasaKapsamDisi = adds.kasaKapsamDisi.map(g => ({ ...g,
+    kayitId: remapRef(maps[g.tur === "hareket" ? "hesapHareketleri" : KAPSAM_HARITA[g.kaynak]] || new Map(), g.kayitId) }));
   adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
   // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
   // (Stok satırları birleştirilmediği için stok bağı burada ele alınmaz; stock MERGE_KEYS'te değil.)

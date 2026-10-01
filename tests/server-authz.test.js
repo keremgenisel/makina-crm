@@ -1174,3 +1174,56 @@ describe("spec 0052: bakiyeyi Kasa ekranından değiştiren kayıtlar Kasa sekme
     expect(sonuc(KASASIZ, eski, yeni).ok).toBe(true);
   });
 });
+
+// ── Spec 0058: kasa iş listesinden kapsam dışı bırakma (R9, R12, R20; AC-12, AC-19) ─────────────────────
+describe("spec 0058: kasaKapsamDisi bölümü Kasa sekmesi + kasa_hesap ister; temizlik silmesi serbest", () => {
+  const izin = (tabs, giderActions = ["gider_odeme", "kasa_hesap"]) => JSON.stringify({ tabs, giderActions, customerActions: [] });
+  const KASALI = izin(["gider", "finance", "kasa"]), KASASIZ = izin(["gider", "finance"]), FINANSSIZ = izin(["gider", "kasa"]),
+    IZINSIZ = izin(["gider", "finance", "kasa"], ["gider_odeme"]);
+  const g = { id: 801, tur: "tahsilat", kaynak: "servis", kayitId: 11, zaman: "2026-10-01T10:00:00.000Z" };
+  const sv = (o = {}) => ({ id: 11, customerId: 1, odendi: true, servisUcreti: 1000, hesapId: null, ...o });
+  const HES = [{ id: 51, ad: "Ziraat", paraBirimi: "TRY" }];
+  const yetki = (p, eski, yeni) => {
+    const bolumler = degisenBolumler(eski, yeni);
+    const a = yazmaYetkisiVar(p, "user", bolumler, eski, yeni), b = eylemDenetimi(eski, yeni, p, "user"), c = giderAynaEngeli(p, "user", bolumler, eski, yeni);
+    return a.ok && b.ok && !c;
+  };
+  it("eşlemeler R12'deki gibi", () => {
+    expect(BLOB_SECTIONS).toContain("kasaKapsamDisi");
+    expect(SECTION_GROUP.kasaKapsamDisi).toBe("giderActions");
+    expect(BOLUM_SEKMELERI.kasaKapsamDisi).toEqual(["kasa"]);
+    expect(GIDER_BOLUMLERI.has("kasaKapsamDisi")).toBe(true);
+    expect(EYLEM_IDLERI.kasaKapsamDisi).toEqual({ ekle: "kasa_hesap", sil: "kasa_hesap" });
+  });
+  it("AC-19 / AC-12: Kasa'lı ve kasa_hesap'lı kullanıcı ekler ve siler; Kasa'sız, Finans'sız ya da izinsiz kullanıcı 403", () => {
+    const ekle = [{ kasaKapsamDisi: [], services: [sv()] }, { kasaKapsamDisi: [g], services: [sv()] }];
+    const sil = [{ kasaKapsamDisi: [g], services: [sv()] }, { kasaKapsamDisi: [], services: [sv()] }];
+    for (const [e, y] of [ekle, sil]) {
+      expect(yetki(KASALI, e, y)).toBe(true);
+      expect(yetki(KASASIZ, e, y)).toBe(false);
+      expect(yetki(FINANSSIZ, e, y)).toBe(false);
+      expect(yetki(IZINSIZ, e, y)).toBe(false);
+      expect(yetki(JSON.stringify({ giderActions: ["kasa_hesap"] }), e, y)).toBe(false); // sekme listesi tanımsız (K6)
+    }
+    expect(eylemDenetimi(...ekle, IZINSIZ, "user")).toMatchObject({ ok: false, gerekli: "kasa_hesap" });
+    expect(eylemDenetimi(...ekle, KASASIZ, "user")).toMatchObject({ ok: false, gerekli: "kasa_sekmesi" });
+  });
+  it("R20: hesap atanan kaydın girişinin silinmesi temizliktir; Kasa'sız ve kasa_hesap'sız kullanıcının kaydı 403 almaz", () => {
+    const eski = { kasaKapsamDisi: [g], services: [sv()], kasaHesaplari: HES };
+    const yeni = { kasaKapsamDisi: [], services: [sv({ hesapId: 51 })], kasaHesaplari: HES };
+    const tahsilatci = JSON.stringify({ tabs: ["gider", "finance", "customers"], giderActions: ["gider_odeme"], customerActions: ["cust_service_edit"] });
+    expect(yetki(tahsilatci, eski, yeni)).toBe(true);
+    expect(yetki(KASASIZ, eski, yeni)).toBe(true);
+    // Kayıt daha önce kalıcı silinmiş (çöp boşaltıldı) ya da hareket hesaba bağlanmış: temizlik sonraki yazımda gelir.
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [g], services: [] }, { kasaKapsamDisi: [], services: [] })).toBe(true);
+    const gh = { id: 802, tur: "hareket", kaynak: null, kayitId: 70 };
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [gh], hesapHareketleri: [] }, { kasaKapsamDisi: [], hesapHareketleri: [] })).toBe(true);
+  });
+  it("R20: kaydı hâlâ hesapsızken silme, ekleme ile karışık yazım ya da var olan girişi değiştirme temizlik değildir", () => {
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [g], services: [sv()] }, { kasaKapsamDisi: [], services: [sv()] })).toBe(false);
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [g], services: [sv()], kasaHesaplari: HES }, { kasaKapsamDisi: [], services: [sv({ hesapId: 999 })], kasaHesaplari: HES })).toBe(false); // silinmiş hesap: hâlâ hesapsız
+    const yeniGiris = { ...g, id: 803, kayitId: 12 };
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [g], services: [sv()], kasaHesaplari: HES }, { kasaKapsamDisi: [yeniGiris], services: [sv({ hesapId: 51 })], kasaHesaplari: HES })).toBe(false);
+    expect(yetki(KASASIZ, { kasaKapsamDisi: [g, { ...g, id: 804, kayitId: 13 }], services: [sv()] }, { kasaKapsamDisi: [{ ...g, zaman: "x" }], services: [] })).toBe(false);
+  });
+});

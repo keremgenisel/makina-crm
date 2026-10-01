@@ -282,6 +282,11 @@ CREATE TABLE IF NOT EXISTS hesap_hareketleri (
   tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
   tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER
 );
+-- Spec 0058 R11, C2: kasa iş listesinden kapsam dışı bırakılan kayıtlar; tek liste, kayda kimlikle bağlı.
+CREATE TABLE IF NOT EXISTS kasa_kapsam_disi (
+  id INTEGER PRIMARY KEY,
+  tur TEXT, kaynak TEXT, kayitId INTEGER, zaman TEXT
+);
 CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
   ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT
@@ -875,6 +880,11 @@ function populateAll(conn, data, skip = new Set()) {
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
       m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null);
   }
+  if (Array.isArray(data.kasaKapsamDisi) && !skip.has("kasaKapsamDisi")) {
+    conn.prepare(`DELETE FROM kasa_kapsam_disi`).run();
+    const stmt = conn.prepare(`INSERT INTO kasa_kapsam_disi (id, tur, kaynak, kayitId, zaman) VALUES (?, ?, ?, ?, ?)`);
+    for (const g of data.kasaKapsamDisi) stmt.run(g.id, g.tur ?? null, g.kaynak ?? null, g.kayitId ?? null, g.zaman ?? null);
+  }
   // Spec 0040: çek kaydı yalnız kendi alanlarını taşır (Q2); geçmiş kimliksiz alt satırlar, tek JSON sütunu (R12).
   if (Array.isArray(data.cekler) && !skip.has("cekler")) {
     conn.prepare(`DELETE FROM cekler`).run();
@@ -944,7 +954,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri, data.cekler]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri, data.cekler, data.kasaKapsamDisi]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -1429,6 +1439,7 @@ function readBlobFromDb() {
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, ...rest }) => ({ ...rest, kapali: toBool(kapali) }));
   const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir) }));
+  const kasaKapsamDisi = db.prepare(`SELECT * FROM kasa_kapsam_disi`).all();
   // Spec 0049: boş kalan yeni alanlar blob'a hiç yazılmaz; eski (bağlı) çek kaydı okununca 0040'taki şekliyle aynı kalır
   // (sunucunun kayıt karşılaştırması null ile yokluğu ayırır).
   const cek0049 = new Set(CEKLER_0049_COLUMNS.map(([ad]) => ad));
@@ -1456,7 +1467,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
-    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi,
   };
 }
 

@@ -332,6 +332,13 @@ const D51_H = [
 const kasa51 = (o = {}) => kasaEkrani({ hesapHareketleri: D51_H, giderler: odemeleriUygula(D51_G, D51_H, turHaritasi(TURLER)), calisanlar: [CAL[0]], ...o });
 const kasaTahsilat = (o = {}) => kasaEkrani({ services: TH_SERVIS, partSales: TH_KALIP, yedekParcaSatislar: TH_YP, dealers: DEALERS, factory: { name: "Altuntaş Makina" },
   setServices: bos, setPartSales: bos, setYedekParcaSatislar: bos, ...o });
+// Spec 0058: kapsam dışı bırakma (durumlu: düğmeler gerçek setter'la çalışır). k0: açılışta kapsam dışı olanlar.
+function KasaKapsamEkrani({ k0 = [], ...o }) {
+  const [k, setK] = useState(k0);
+  return kasaTahsilat({ kasaKapsamDisi: k, setKasaKapsamDisi: setK, ...o });
+}
+const KAPSAM_K0 = [{ id: 5801, tur: "tahsilat", kaynak: "kalip", kayitId: 4211, zaman: "2026-09-30T10:00:00.000Z" },
+  { id: 5802, tur: "hareket", kaynak: null, kayitId: 4002, zaman: "2026-09-30T10:00:00.000Z" }];
 const TH_DETAY_SERVIS = thSv(4231, 601, "2026-09-25", 2500, { odendi: false, tahsilatTarihi: null });
 // Spec 0046: gider formunun ödeme bölümü (kasa yetkisi, çekler portföyde).
 const FORM_ODEME = { giderTurleri: TURLER, tedarikciler: TED, calisanlar: CAL, giderAyarlari: AYAR.giderAyarlari, onSave: bos, onCancel: bos,
@@ -610,6 +617,10 @@ const EKRANLAR = {
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
   "kasa-tahsilat-hareketleri": [kasaTahsilat(), ["~Ziraat Bankası"]],
   "kasa-hesapsiz-tahsilatlar": [kasaTahsilat(), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
+  // Spec 0058: hesapsız ödeme ve tahsilat listeleri, satırda ve topluca kapsam dışı; ayrı bölüm ve geri alma; toplu onay.
+  "kasa-0058-listeler": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Listeyi göster", "kaydir:Kapsam dışı bırakmak"]],
+  "kasa-0058-kapsam-disi": [<KasaKapsamEkrani k0={KAPSAM_K0} />, ["dugme:Göster", "kaydir:Kapsam dışı bırakılanlar"]],
+  "kasa-0058-toplu-onay": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Görünen"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],

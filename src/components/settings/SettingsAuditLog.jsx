@@ -12,7 +12,7 @@ const ENTITY_LABELS = {
   gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
   standart_gider: "Standart Genel Gider",
   // Kasa (spec 0024)
-  kasa_hesap: "Kasa/Banka Hesabı", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
+  kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
@@ -32,7 +32,7 @@ const ACTION_LABELS = {
   tekrar_uretildi: "Tekrarlayan Kalemler Oluşturuldu", tur_tasindi: "Tür Taşındı", tanim_kapatildi: "Tanım Kapatıldı",
   surum_eklendi: "Yeni Tutar Sürümü", surum_geri_alindi: "Sürüm Geri Alındı", sona_erdirildi: "Sona Erdirildi",
   // Kasa (spec 0024)
-  kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı", mahsup_edildi: "Avanstan Mahsup Edildi",
+  kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı", kapsam_disi: "Kapsam Dışı Bırakıldı", kapsama_alindi: "Kapsama Alındı", mahsup_edildi: "Avanstan Mahsup Edildi",
   // Çek portföyü (spec 0040)
   ciro_edildi: "Ciro Edildi", ciro_iptal: "Ciro İptal Edildi", karsiliksiz: "Karşılıksız İşaretlendi",
 };

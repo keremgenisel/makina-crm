@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml, NOT_GELIR_DEGIL, NOT_YONTEM, NOT_ANLIK, NOT_MAHSUP, NOT_HESAPSIZ, NOT_CEK_GECMISSIZ, KAYIT_YOK } from "../src/lib/giderRaporu";
-import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar } from "../src/lib/kasa";
+import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, hesapsizOzeti } from "../src/lib/kasa";
 import { cekDurumuAyinSonunda, cekAyOzeti } from "../src/lib/cek";
 import { giderKalemDogrula, turHaritasi, odemeleriUygula, hesaplaGiderRaporu, kdvKarsilastir, ayinSonGunu, HEDEF } from "../src/lib/gider";
 import { hesaplananKdvAylar } from "../src/lib/giderKdv";
@@ -272,5 +272,21 @@ describe("Spec 0054 AC-34: ek ödeme hedefleri 0047 raporunu değiştirmez", () 
     const belge = (k, h) => buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [k], hareketler: h, turler, tedarikciler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
     expect(belge(P, [])).toBe(belge(satirsiz, []));
     expect(belge(P, hareket(P.taksitler[0].id))).toBe(belge(satirsiz, hareket(null)));
+  });
+});
+
+// Spec 0058 R7, R15 (AC-9, AC-22): kasa iş listesinden kapsam dışı bırakılan hesapsız kayıtlar raporun hesapsız bölümünde de
+// sayılmaz; ekranla (hesapsizOzeti) aynı küme. Parametresiz rapor bugünkü belgeyi birebir verir.
+describe("Spec 0058 AC-9 / AC-22: kapsam dışı kayıtlar raporda sayılmaz", () => {
+  it("hesapsız ödeme ve avans kapsam dışı bırakılınca rapor sayıları ekranla aynı; boş liste parametresizle birebir", () => {
+    const once = R({});
+    expect(once.kasa.hesapsiz).toMatchObject({ odemeAdet: 1, avansAdet: 1 });
+    const kd = [{ id: 1, tur: "hareket", kaynak: null, kayitId: 104 }, { id: 2, tur: "hareket", kaynak: null, kayitId: 108 }];
+    const sonra = R({ kasaKapsamDisi: kd });
+    expect(sonra.kasa.hesapsiz).toMatchObject({ odemeAdet: 0, avansAdet: 0, liste: [] });
+    const ekran = hesapsizOzeti(H.filter(h => !h.tarih || (h.tarih >= "2026-09-01" && h.tarih <= "2026-09-30")), {}, HESAPLAR, null, kd);
+    expect([ekran.odeme.adet, ekran.odeme.avansAdet]).toEqual([sonra.kasa.hesapsiz.odemeAdet, sonra.kasa.hesapsiz.avansAdet]);
+    expect(HTML({ kasaKapsamDisi: [] })).toBe(HTML({}));
+    expect(sonra.gider.toplam ?? null).toEqual(once.gider.toplam ?? null); // gider tarafı değişmez (R2)
   });
 });

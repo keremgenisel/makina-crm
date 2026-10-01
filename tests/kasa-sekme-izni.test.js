@@ -80,7 +80,8 @@ describe("Spec 0052: sunucu eşlemesi ve önkoşul (R7, R8, R14)", () => {
     expect(sekmeEngelli({ tabs: ["gider", "kasa"] }, "kasaHesaplari")).toBe(true);
     expect(sekmeEngelli({ tabs: ["gider", "finance", "kasa"] }, "kasaHesaplari")).toBe(false);
     // Önkoşul yalnız hesap tanımlarına uygulanır; başka bölüm etkilenmez.
-    expect(Object.keys(ON_KOSUL_SEKMELERI)).toEqual(["kasaHesaplari"]);
+    // Spec 0058 R12 ile güncellendi: kasa iş listesi kararı da Kasa sekmesi + önkoşul ister.
+    expect(Object.keys(ON_KOSUL_SEKMELERI)).toEqual(["kasaHesaplari", "kasaKapsamDisi"]);
     expect(sekmeEngelli({ tabs: ["gider"] }, "giderler")).toBe(false);
   });
   it("AC-11: Kasa'sı olmayan gider kullanıcısı ödeme hareketi yazabilir (hesapHareketleri Giderler'de kalır)", () => {

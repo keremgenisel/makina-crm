@@ -73,3 +73,22 @@ describe("Spec 0052 triyaj bulgu 1: Kasa'sız kullanıcının geri yüklemesi Ka
     expect(app).toMatch(/kasaVeriYetki=\{kasaSekmesi\}/);
   });
 });
+
+// Spec 0058 AC-14, Q7: kasa iş listesi kararları Giderler paketiyle yedeğe yazılır ve Kasa'lı geri yüklemede gelir; Kasa'sız
+// kullanıcıda setter verilmez, bölüm bugünkü hâliyle kalır (sunucu Kasa sekmesi istediği için dokunsa kayıt 403 alırdı).
+describe("Spec 0058: kapsam dışı kayıtlarının yedeği", () => {
+  const KD_YEDEK = [{ id: 70, tur: "hareket", kaynak: null, kayitId: 10, zaman: "2026-10-01T10:00:00.000Z" }];
+  it("Kasa'lı: yedekten gelir; Kasa'sız: setter yok, dokunulmaz", async () => {
+    const y = { ...YEDEK, kasaKapsamDisi: KD_YEDEK };
+    window.crmStorage.restore = () => Promise.resolve(structuredClone(y));
+    const p = { ...temel(), setKasaHesaplari: vi.fn(), kasaKapsamDisi: [], setKasaKapsamDisi: vi.fn() };
+    render(<SettingsBackup {...p} giderYetki giderVeriYetki kasaVeriYetki />);
+    fireEvent.click(screen.getByRole("button", { name: /Yedekten Geri Yükle/ }));
+    await screen.findByText(/Geri yüklenecek bölümler/);
+    fireEvent.click(screen.getByRole("button", { name: /Evet, Geri Yükle/ }));
+    await waitFor(() => expect(p.setKasaKapsamDisi).toHaveBeenCalledWith(KD_YEDEK));
+    const kaynak = readFileSync("src/components/settings/SettingsBackup.jsx", "utf-8");
+    expect(kaynak).toMatch(/hesapHareketleri, cekler, kasaKapsamDisi, appSettings/); // yedeğe yazılır
+    expect(readFileSync("src/App.jsx", "utf-8")).toMatch(/setKasaKapsamDisi=\{kasaSekmesi \? setKasaKapsamDisi : null\}/);
+  });
+});

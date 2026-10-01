@@ -151,11 +151,24 @@ export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null) => {
 
 // R8, AC-32: hesabı belirtilmemiş ödemeler (göç dahil) ayrıca sayılır.
 // Spec 0047 R16, R31: aralık verilince yalnız aralıktaki hareketler sayılır ve `liste` (tarih sırası) döner.
-export const hesapsizOdemeler = (hareketler = [], aralik = null) => {
+// Spec 0058 R11, C2: kapsam dışı kaydı tek listede `{id, tur, kaynak, kayitId, zaman}`. Anahtar iki satır şeklini birden
+// adresler: tahsilat satırı `{kaynak, kayit}` → "tahsilat:<kaynak>:<id>", ödeme/avans satırı hareketin kendisi →
+// "hareket::<id>". Bölümlere (servis, Extra Kalıp, yedek parça, hareket) ayrı bayrak alanı yoktur.
+export const KAPSAM_TUR = { TAHSILAT: "tahsilat", HAREKET: "hareket" };
+export const kapsamAnahtari = (satir) => (satir?.kaynak && satir?.kayit
+  ? `${KAPSAM_TUR.TAHSILAT}:${satir.kaynak}:${satir.kayit.id}` : `${KAPSAM_TUR.HAREKET}::${satir?.id}`);
+export const kapsamGirisAnahtari = (g) => `${g?.tur}:${g?.tur === KAPSAM_TUR.TAHSILAT ? g?.kaynak || "" : ""}:${g?.kayitId}`;
+export const kapsamGirisi = (satir) => (satir?.kaynak && satir?.kayit
+  ? { tur: KAPSAM_TUR.TAHSILAT, kaynak: satir.kaynak, kayitId: satir.kayit.id } : { tur: KAPSAM_TUR.HAREKET, kaynak: null, kayitId: satir?.id });
+const kapsamKumesi = (kapsamDisi) => (Array.isArray(kapsamDisi) ? new Set(kapsamDisi.map(kapsamGirisAnahtari)) : null);
+// R15: kapsamDisi verilmezse (null) bugünkü çıktı birebir; verilirse kapsam dışı satırlar listeden ve sayılardan düşer.
+export const hesapsizOdemeler = (hareketler = [], aralik = null, kapsamDisi = null) => {
+  const kd = kapsamKumesi(kapsamDisi);
+  const kapsamda = (m) => !kd || !kd.has(kapsamAnahtari(m));
   // Spec 0040 R18: ciro hareketleri kasıtlı olarak hesapsızdır (çek portföyden çıkar); eksik veri listesine girmez.
-  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null && aralikta(m.tarih, aralik));
+  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null && aralikta(m.tarih, aralik) && kapsamda(m));
   // Spec 0024 B4: hesapsız avans da hiçbir bakiyeye girmez ve ayrıca sayılır.
-  const av = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null && aralikta(m.tarih, aralik));
+  const av = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null && aralikta(m.tarih, aralik) && kapsamda(m));
   const r = { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet: av.length };
   return aralik ? { ...r, liste: [...l, ...av].sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "")) } : r;
 };
@@ -176,8 +189,9 @@ export const hesapKullanimi = (hesapId, hareketler = [], veri = {}) => {
 // süren kart da listede kalır (hesap önceden atanır, Q10). Bize ait tutarı olmayan kayıt kapsam dışıdır (eksik veri değil).
 // Triyaj: hesaplar verilince, bağlı hesabı bulunmayan ya da para birimi kaydınkiyle uyuşmayan kayıt da listelenir (neden
 // "hesapYok" / "paraBirimi"); o kayıt hesapBakiyeleri'nde hiçbir bakiyeye girmez, yoksa hiçbir yerde görünmezdi.
-export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null) => {
+export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null, kapsamDisi = null) => {
   const v = veriOf(veri);
+  const kd = kapsamKumesi(kapsamDisi);
   const hesapById = hesaplar ? new Map(hesaplar.map(h => [String(h.id), h])) : null;
   const neden = (k) => {
     if (k.kayit.hesapId == null) return "hesapsiz";
@@ -186,7 +200,7 @@ export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null) =
     if (!h) return "hesapYok";
     return (h.paraBirimi || "TRY") !== (k.currency || "TRY") ? "paraBirimi" : null;
   };
-  const liste = satisKalemleri(v).filter(k => k.kayit.odendi === true && k.tutar > 0 && aralikta(k.tarih, aralik))
+  const liste = satisKalemleri(v).filter(k => k.kayit.odendi === true && k.tutar > 0 && aralikta(k.tarih, aralik) && (!kd || !kd.has(kapsamAnahtari(k))))
     .map(k => ({ ...k, neden: neden(k) })).filter(k => k.neden)
     .map(k => ({ ...k, turAdi: SATIS_KAYNAK_AD[k.kaynak], firma: firmaAdi(k.kaynak, k.kayit, v) }))
     .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
@@ -198,18 +212,56 @@ export const hesapsizTahsilatlar = (veri = {}, hesaplar = null, aralik = null) =
 // altında kalanlar nedene göre sayılır. Bakiye, 0047 raporu ve diğer tüketiciler eşiği hiç görmez (R6, C6, X6).
 // Yeni süzme yolu yok: hesapsizOdemeler / hesapsizTahsilatlar iki kez (hepsi ve süzülmüş) çağrılır (C2).
 const HEPSI = { baslangic: "", tarihsizDahil: true };
-export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik = null) => {
+// Spec 0058 R13: kapsamDisi verilince ÖNCE kapsam dışı ayıklanır (kalıcı karar), SONRA eşik uygulanır; `gizli` yalnız
+// kapsamdaki kayıtları sayar ve kapsam dışı kendi sayısıyla ve listesiyle ayrı döner (eşikten bağımsız). Okuma anında
+// çözülür: bugün hesapsız listede olmayan (çöpteki, hesap atanmış, silinmiş) kaydın girişi hiçbir yerde sayılmaz (R16).
+// kapsamDisi verilmezse çıktı birebir 0051'deki gibidir (AC-20).
+export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik = null, kapsamDisi = null) => {
   const aralik = esik ? { baslangic: esik, tarihsizDahil: true } : HEPSI;
-  const hepsiO = hesapsizOdemeler(hareketler, HEPSI), hepsiT = hesapsizTahsilatlar(veri, hesaplar, HEPSI);
-  const odeme = esik ? hesapsizOdemeler(hareketler, aralik) : hepsiO;
-  const tahsilat = esik ? hesapsizTahsilatlar(veri, hesaplar, aralik) : hepsiT;
+  const hepsiO = hesapsizOdemeler(hareketler, HEPSI, kapsamDisi), hepsiT = hesapsizTahsilatlar(veri, hesaplar, HEPSI, kapsamDisi);
+  const odeme = esik ? hesapsizOdemeler(hareketler, aralik, kapsamDisi) : hepsiO;
+  const tahsilat = esik ? hesapsizTahsilatlar(veri, hesaplar, aralik, kapsamDisi) : hepsiT;
   const nedenSay = (l) => l.reduce((a, k) => ({ ...a, [k.neden]: (a[k.neden] || 0) + 1 }), { hesapsiz: 0, hesapYok: 0, paraBirimi: 0 });
   const tH = nedenSay(hepsiT.liste), tS = nedenSay(tahsilat.liste);
   const gizli = { odeme: hepsiO.adet - odeme.adet, avans: hepsiO.avansAdet - odeme.avansAdet,
     tahsilat: { hesapsiz: tH.hesapsiz - tS.hesapsiz, hesapYok: tH.hesapYok - tS.hesapYok, paraBirimi: tH.paraBirimi - tS.paraBirimi } };
   gizli.toplam = gizli.odeme + gizli.avans + gizli.tahsilat.hesapsiz + gizli.tahsilat.hesapYok + gizli.tahsilat.paraBirimi;
   const tarihsiz = odeme.liste.filter(m => !m.tarih).length + tahsilat.liste.filter(k => !k.tarih).length;
-  return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz };
+  if (!Array.isArray(kapsamDisi)) return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz };
+  const kd = kapsamKumesi(kapsamDisi);
+  const tumO = hesapsizOdemeler(hareketler, HEPSI).liste.filter(m => kd.has(kapsamAnahtari(m)));
+  const tumT = hesapsizTahsilatlar(veri, hesaplar, HEPSI).liste.filter(k => kd.has(kapsamAnahtari(k)));
+  const kapsamDisiOzet = { odeme: tumO.filter(m => m.tur === "odeme").length, avans: tumO.filter(m => m.tur === "avans").length, tahsilat: tumT.length,
+    odemeListe: tumO, tahsilatListe: tumT };
+  kapsamDisiOzet.toplam = kapsamDisiOzet.odeme + kapsamDisiOzet.avans + kapsamDisiOzet.tahsilat;
+  return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz, kapsamDisi: kapsamDisiOzet };
+};
+
+// Spec 0058 R5, R16, R20: geçersiz girişlerin temizliği (App'teki tek efekt; aynı kayıt penceresinde yazılır). Düşer: kaydı
+// kalıcı olarak silinmiş (hiç bulunmayan) giriş; kaydına geçerli bir hesap atanmış tahsilat (hesap var ve para birimi
+// uyuyor, yani artık hesapsız değil; silinmiş/uyuşmayan hesap hâlâ hesapsızdır, giriş kalır); hesaplı ya da çeke bağlı
+// hareket. Çöpteki kaydın girişi KALIR (okuma anında yok sayılır, çöpten dönünce karar döner). Değişiklik yoksa aynı dizi.
+// Sunucu (serverAuth.kapsamGirisiGecersizMi) aynı kuralın daha gevşek hâlini (para birimine bakmadan) kabul eder.
+const KAPSAM_KAYNAK_BOLUM = { [SATIS_KAYNAK.SERVIS]: "services", [SATIS_KAYNAK.KALIP]: "partSales", [SATIS_KAYNAK.YEDEK]: "yedekParcaSatislar" };
+export const kapsamGirisiGecersizMi = (g, hareketler = [], veri = {}, hesaplar = []) => {
+  if (g?.tur === KAPSAM_TUR.HAREKET) {
+    const h = (hareketler || []).find(m => m && String(m.id) === String(g.kayitId));
+    return !h || h.hesapId != null || h.cekId != null;
+  }
+  const v = veriOf(veri);
+  const bolum = KAPSAM_KAYNAK_BOLUM[g?.kaynak];
+  if (!bolum) return true;
+  const r = (v[bolum] || []).find(x => x && String(x.id) === String(g.kayitId));
+  if (!r) return true;
+  if (r.deletedAt || r.hesapId == null) return false;
+  const hesap = (hesaplar || []).find(x => String(x.id) === String(r.hesapId));
+  if (!hesap) return false;
+  const kalem = satisKalemleri(v).find(k => k.kaynak === g.kaynak && String(k.kayit.id) === String(r.id));
+  return !kalem || (hesap.paraBirimi || "TRY") === (kalem.currency || "TRY");
+};
+export const kapsamDisiTemizle = (girisler = [], hareketler = [], veri = {}, hesaplar = []) => {
+  const kalan = (girisler || []).filter(g => !kapsamGirisiGecersizMi(g, hareketler, veri, hesaplar));
+  return kalan.length === (girisler || []).length ? girisler : kalan;
 };
 // R15 (Q8): boş = eşik yok; biçimsiz ya da takvimde olmayan tarih ve gelecek tarih reddedilir. Yürürlük ayından önce serbest.
 export const hesapsizBaslangicDogrula = (ham, bugun = yerelBugun()) => {

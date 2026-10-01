@@ -21,6 +21,8 @@ const BLOB_SECTIONS = [
   "kasaHesaplari", "hesapHareketleri",
   // Çek portföyü (spec 0040)
   "cekler",
+  // Kasa iş listesinden kapsam dışı bırakılanlar (spec 0058)
+  "kasaKapsamDisi",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -62,6 +64,8 @@ const SECTION_GROUP = {
   // Spec 0024 C6/Q7: hesaplar ve hareketler gider izin boyutunda; kendi eylem kimlikleri (kasa_hesap, gider_odeme, virman).
   kasaHesaplari: "giderActions",
   hesapHareketleri: "giderActions",
+  // Spec 0058 R12: kapsam dışı kaydı Kasa ekranının verisi; eylem kimliği kasa_hesap (yeni izin boyutu yok, C4).
+  kasaKapsamDisi: "giderActions",
 };
 
 // İzin nesnesindeki tüm grup anahtarları — kısıtlı kullanıcı tespiti için.
@@ -70,7 +74,7 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 // Gider bölümleri (spec 0001 C6 kural 3 + plan K6): bu uygulamanın "tabs tanımsız = serbest" kuralının
 // TEK istisnası. Sekme listesi tanımsız (veya izin gövdesi hiç olmayan) user rolü gider bölümlerini
 // YAZAMAZ; arayüzde de gider sekmesi yalnız açıkça verildiğinde görünür.
-const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri"]);
+const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "kasaKapsamDisi"]);
 
 // ── Sekme (tabs) düzeyi yazma kısıtı ────────────────────────────────────────────
 // REGRESYON: arayüzün "Kullanıcı Ekle" formu izin gövdesine YALNIZ {tabs:[...]} yazıyordu.
@@ -136,6 +140,8 @@ const BOLUM_SEKMELERI = {
   // Giderler'de kalır, çünkü gider formundan ve ödeme penceresinden de yazılır (Kasa'sız gider kullanıcısı öder).
   kasaHesaplari:    ["kasa"],
   hesapHareketleri: ["gider"],
+  // Spec 0058 R12: kasa iş listesi kararı Kasa sekmesine bağlı (önkoşul ON_KOSUL_SEKMELERI'nde).
+  kasaKapsamDisi:   ["kasa"],
   // Spec 0022 C5 (triyaj bulgu 3): parti tanımları yalnız Giderler sekmesinde yazılır. Makinayı partiye bağlamak
   // `stock` bölümündeki partiId alanıdır, bu bölüme dokunmaz; bu yüzden "stock" burada YOKTUR (eklenseydi etkisiz
   // kalırdı: gider bölümü olduğu için gider sekmesi olmayan kullanıcıyı K6 aynası zaten reddeder).
@@ -217,6 +223,7 @@ function grupEngelli(perms, group) {
 // arayüzde göremediği Kasa'nın verisini yazamasın diye istemcideki kasaSuz önkoşulu burada da uygulanır.
 const ON_KOSUL_SEKMELERI = {
   kasaHesaplari: ["gider", "finance"],
+  kasaKapsamDisi: ["gider", "finance"], // spec 0058 R12 (0052 deseni)
 };
 
 // Bir bölüm, kullanıcının açık sekmelerinden hiçbiri tarafından yazılamıyor mu?
@@ -298,7 +305,8 @@ function giderAynaEngeli(permissionsJson, role, changedSections, oldBlob, newBlo
   if (role === "admin") return null;
   const perms = parsePerms(permissionsJson);
   if (Array.isArray(perms?.tabs)) return null;
-  return (changedSections || []).find(s => GIDER_BOLUMLERI.has(s) && !giderZincirDegisikligiMi(s, oldBlob?.[s], newBlob?.[s])) || null;
+  return (changedSections || []).find(s => GIDER_BOLUMLERI.has(s) && !giderZincirDegisikligiMi(s, oldBlob?.[s], newBlob?.[s])
+    && !(s === "kasaKapsamDisi" && kapsamDisiTemizlikMi(oldBlob, newBlob))) || null;
 }
 
 // changedSections içindeki her bölüm için kullanıcının yazma izni var mı?
@@ -367,6 +375,31 @@ function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
 // Kasa yalnız Giderler ve Finans sekmeleri birlikte açıkken görünür; sekme listesi tanımsız kullanıcı gider sekmesini
 // görmez (0001 C6 kural 3), dolayısıyla Kasa'yı da. Spec 0052 R14: bu 0044 istisnası bilerek Kasa sekme iznine
 // BAĞLANMAZ; tahsilat hesabını gider + finans sekmeli kullanıcı atar.
+// Spec 0058 R20: kapsam dışı girişi yeni blob'a göre geçersiz mi (istemcideki kasa.kapsamGirisiGecersizMi'nin gevşek hâli:
+// para birimine bakmaz; yalnız bir girişin silinmesine izin verir, en kötü durumda kayıt iş listesine geri döner).
+const KAPSAM_KAYNAK_BOLUM = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };
+function kapsamGirisiGecersizMi(g, blob) {
+  if (g?.tur === "hareket") {
+    const h = (Array.isArray(blob?.hesapHareketleri) ? blob.hesapHareketleri : []).find(m => m && String(m.id) === String(g.kayitId));
+    return !h || h.hesapId != null || h.cekId != null;
+  }
+  const bolum = KAPSAM_KAYNAK_BOLUM[g?.kaynak];
+  if (!bolum) return true;
+  const r = (Array.isArray(blob?.[bolum]) ? blob[bolum] : []).find(x => x && String(x.id) === String(g.kayitId));
+  if (!r) return true;
+  if (r.deletedAt || r.hesapId == null) return false;
+  return (Array.isArray(blob?.kasaHesaplari) ? blob.kasaHesaplari : []).some(h => String(h.id) === String(r.hesapId));
+}
+// Yalnız silme olan (eklenen ya da değişen giriş yok) ve silinen her girişi geçersiz olan yazım: hesap atayan ama kasa_hesap
+// izni ya da Kasa sekmesi olmayan kullanıcının kaydı bu temizlik yüzünden 403 almasın.
+function kapsamDisiTemizlikMi(oldBlob, newBlob) {
+  const eski = Array.isArray(oldBlob?.kasaKapsamDisi) ? oldBlob.kasaKapsamDisi : null, yeni = Array.isArray(newBlob?.kasaKapsamDisi) ? newBlob.kasaKapsamDisi : null;
+  if (!eski || !yeni || yeni.length >= eski.length) return false;
+  const eskiById = new Map(eski.map(r => [r.id, r]));
+  for (const r of yeni) { const e = eskiById.get(r.id); if (!e || stableStringify(e) !== stableStringify(r)) return false; }
+  const yeniIdler = new Set(yeni.map(r => r.id));
+  return eski.filter(e => !yeniIdler.has(e.id)).every(e => kapsamGirisiGecersizMi(e, newBlob));
+}
 const kasaGorunurMu = (perms) => Array.isArray(perms?.tabs) && perms.tabs.includes("gider") && perms.tabs.includes("finance");
 function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlob) {
   if (role === "admin") return { ok: true };
@@ -378,6 +411,7 @@ function yazmaYetkisiVar(permissionsJson, role, changedSections, oldBlob, newBlo
     const group = SECTION_GROUP[section];
     if (!group) return { ok: false, reddedilenBolum: section }; // haritada yok → güvenli tarafta reddet
     if (tahsilatHesabiYalnizMi(section, oldBlob, newBlob) && kasaGorunurMu(perms)) continue;
+    if (section === "kasaKapsamDisi" && kapsamDisiTemizlikMi(oldBlob, newBlob)) continue; // spec 0058 R20
     // Gider bölümleri (C6, K6): Giderler sekmesi yoksa yalnız zincir değişikliği geçer (model adı taşıma,
     // çalışan silmede tanım kapatma), o da yazan Ayarlar sekmesi açıksa. Grup kısıtı (giderActions)
     // zincire uygulanmaz: zincir bir gider işlemi değil, Ayarlar işleminin yan etkisidir.
@@ -459,6 +493,7 @@ const EYLEM_IDLERI = {
   tedarikciler:     { ekle: "tedarikci_add", sil: "tedarikci_delete" },
   // Spec 0024 C6/Q7: ödemenin izni hareket bölümünün ekleme ve silmesindedir (kalemin odendi alanında değil).
   kasaHesaplari:    { ekle: "kasa_hesap", sil: "kasa_hesap" },
+  kasaKapsamDisi:   { ekle: "kasa_hesap", sil: "kasa_hesap" }, // spec 0058 R9, R12
   hesapHareketleri: { ekle: hareketIzni, sil: hareketIzni },
   teklifler: {
     ekle: (r) => (r?.type === "proforma" ? "evrak_proforma_add" : "evrak_teklif_add"),
@@ -484,7 +519,7 @@ const ALAN_IZINLERI = {
 // Spec 0024: bir hareketin izni türüne bağlı. Var olan hareketi düzenlemek de (tutar, hesap, hedef) aynı izni ister.
 // Spec 0024 B (B3): avans kendi iznine (`avans`) bağlı; mahsup bir gider borcunu kapattığı için `gider_odeme`.
 function hareketIzni(r) { return r?.tur === "virman" ? "virman" : r?.tur === "avans" ? "avans" : "gider_odeme"; }
-const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni };
+const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni, kasaKapsamDisi: () => "kasa_hesap" };
 
 // Spec 0052 triyaj bulgu 1: hesap bakiyesini yalnız Kasa ekranından değiştiren kayıtlar Kasa sekmesi ister (önkoşul
 // Giderler + Finans, ON_KOSUL_SEKMELERI ile aynı). Virman ve avans hareketi ile verilen (kendi) çek eklenemez, silinemez,
@@ -495,6 +530,7 @@ const kasaSekmesiVar = (perms) => Array.isArray(perms?.tabs) && ["kasa", ...ON_K
 const KASA_SEKMELI_KAYITLAR = {
   hesapHareketleri: (r) => KASA_SEKMELI_HAREKETLER.has(r?.tur),
   cekler: (r) => r?.yon === "verilen",
+  kasaKapsamDisi: () => true, // spec 0058 R12
 };
 function kasaKaydiDegistiMi(eski, yeni) {
   for (const [bolum, kasaKaydi] of Object.entries(KASA_SEKMELI_KAYITLAR)) {
@@ -506,7 +542,8 @@ function kasaKaydiDegistiMi(eski, yeni) {
       const e = eskiById.get(r.id);
       if ((kasaKaydi(r) || kasaKaydi(e)) && (!e || stableStringify(e) !== stableStringify(r))) return bolum;
     }
-    for (const e of eskiArr) if (kasaKaydi(e) && !yeniById.has(e.id)) return bolum;
+    // Spec 0058 R20: geçersiz (kaydına hesap atanmış ya da kaydı silinmiş) kapsam dışı girişinin silinmesi temizliktir.
+    for (const e of eskiArr) if (kasaKaydi(e) && !yeniById.has(e.id) && !(bolum === "kasaKapsamDisi" && kapsamGirisiGecersizMi(e, yeni))) return bolum;
   }
   return null;
 }
@@ -651,6 +688,7 @@ function eylemDenetimi(oldBlob, newBlob, permissionsJson, role) {
       const y = yeniById.get(r.id);
       if (y && !y.deletedAt) continue; // duruyor ve aktif → silme değil
       if (kaskadSilmeMi(section, r, eski, yeni, perms)) continue; // müşteri silme kaskadı (cust_delete yeter)
+      if (section === "kasaKapsamDisi" && kapsamGirisiGecersizMi(r, yeni)) continue; // spec 0058 R20: temizlik
       if (section === "cekler" && bagsizCek(r)) {
         if (!eylemIzinli(perms, "giderActions", "gider_odeme")) return { ok: false, reddedilenBolum: section, islem: "sil", gerekli: "gider_odeme" };
         continue;
@@ -782,6 +820,6 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 }
 
 module.exports = {
-  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
+  cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
   stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };
