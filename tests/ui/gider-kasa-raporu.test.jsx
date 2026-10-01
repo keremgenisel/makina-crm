@@ -41,25 +41,15 @@ describe("Spec 0047: rapor düğmesi", () => {
     render(<><GiderlerEkrani kasaYetki={false} /><FinansEkrani kasaYetki={false} /><KasaEkrani veri={null} /></>);
     expect(screen.queryAllByTestId("gider-kasa-raporu")).toHaveLength(0);
   });
-  it("AC-43 / AC-57 / AC-1: ay alanı varsayılan önceki ay; kalem listesi kutusu her açılışta açık; yazdırma önizlemesi çağrılır", () => {
+  // Spec 0055 R1, R9 ile güncellendi: kutu kaldırıldı (0047 AC-39 ve AC-57 0055'e devredildi); belge hep kalem listesiyle.
+  it("AC-43 / AC-1: ay alanı varsayılan önceki ay; yazdırma önizlemesi çağrılır ve belge kalem listesini içerir", () => {
     expect(oncekiAy("2026-01-10")).toBe("2025-12");
-    const { unmount } = render(<GiderKasaRaporuDugmesi veri={VERI()} kasaYetki />);
-    expect(screen.getByLabelText("Rapor ayı").value).toBe("2026-09");
-    fireEvent.click(screen.getByLabelText("Kalem listesi"));
-    expect(screen.getByLabelText("Kalem listesi").checked).toBe(false);
-    unmount();
     render(<GiderKasaRaporuDugmesi veri={VERI()} kasaYetki />);
-    expect(screen.getByLabelText("Kalem listesi").checked).toBe(true);
+    expect(screen.getByLabelText("Rapor ayı").value).toBe("2026-09");
     yazdir();
     expect(son()[0]).toContain("Eylül 2026 dönemi");
+    expect(son()[0]).toContain("Kalem listesi");
     expect(son()[2]).toBe("Gider-Kasa-Raporu-2026-09.pdf");
-  });
-  it("AC-39: kutu kapalıyken belge kalem listesiz", () => {
-    render(<GiderKasaRaporuDugmesi veri={VERI()} kasaYetki />);
-    fireEvent.click(screen.getByLabelText("Kalem listesi"));
-    yazdir();
-    expect(son()[0]).not.toContain("Kalem listesi");
-    expect(son()[0]).toContain("Gider türü kırılımı");
   });
   it("AC-28: rapor alındıktan sonra veri değişmez", () => {
     const veri = VERI();
@@ -108,4 +98,20 @@ describe("Spec 0047: üç ekran aynı belge", () => {
     render(<GiderlerEkrani />);
     expect(within(kap()).getByLabelText("Rapor ayı").value).toBe("2026-10"); // ekran bugünün ayında açılır
   });
+});
+
+// Spec 0055 R1, R9 (AC-1–AC-3, AC-13): "Kalem listesi" kutusu üç ekranda da yok; her ekranın belgesi kalem listesini içerir.
+describe("Spec 0055: kalem listesi kutusu kalktı", () => {
+  for (const [ad, Ekran] of [["Giderler", GiderlerEkrani], ["Kasa", KasaEkrani], ["Finans", FinansEkrani]]) {
+    it(`AC-1–AC-3 / AC-13: ${ad} ekranında kutu yok, rapor kalem listesiyle`, () => {
+      render(<Ekran />);
+      const k = kap();
+      const ayAlani = within(k).queryByLabelText("Rapor ayı");
+      if (ayAlani) fireEvent.change(ayAlani, { target: { value: "2026-09" } }); // kalemli ay
+      expect(within(k).queryByLabelText("Kalem listesi")).toBeNull();
+      expect(within(k).queryByRole("checkbox")).toBeNull();
+      yazdir(k);
+      expect(son()[0]).toContain("<h3>Kalem listesi");
+    });
+  }
 });

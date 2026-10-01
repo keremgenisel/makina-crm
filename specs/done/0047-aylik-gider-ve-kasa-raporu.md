@@ -140,7 +140,7 @@ tutar bu kâğıda çıkmıyor.**
   satır yazılmaz; her biri tek toplu satırdır ("Personel ödemeleri · n adet" ve "Çalışan avansları · n adet", toplam
   tutarla). Satır satır yazmak tek bir çalışanın elden tutarını ya da avansını tarihiyle kâğıda düşürüyordu (R18, R19, R21).
   Ayrıntı Giderler ve Kasa ekranlarındadır.
-- **R32.** **Kalem listesi isteğe bağlıdır**, varsayılan **açık**. Kapatıldığında belge kısalır, diğer
+- **R32.** ~~Kalem listesi isteğe bağlıdır~~ **(0055 ile geri alındı, 2026-10-01: seçenek kaldırıldı, liste hep gelir.)** Varsayılan **açık**. Kapatıldığında belge kısalır, diğer
   bölümler aynen kalır. Seçenek yazdırmadan önce görünür bir kutudur.
 - **R33.** Rapor düğmesi **tek bir paylaşılan bileşendir** ve yetki kapısı (gider yetkisi, Kasa'nın çift
   yetki kuralı, yayın perdesi) **tek yerde** hesaplanır; üç ekran aynı kapıyı kullanır.
@@ -376,7 +376,7 @@ tutar bu kâğıda çıkmıyor.**
 - **AC-36.** Tek para birimi varken tek blok çıkar ve belge bugünkü sadelikte kalır.
 - **AC-37.** Hesabı belirtilmemiş hareketler tarih, tutar ve kalemiyle listelenir.
 - **AC-38.** Hesabı belirtilmemiş hareket yokken o bölüm "yok" olarak geçilir, boş tablo çizilmez.
-- **AC-39.** Kalem listesi kutusu kapatıldığında belge o bölüm olmadan üretilir, diğer bölümler aynı kalır.
+- **AC-39.** ~~Kalem listesi kutusu kapatıldığında belge o bölüm olmadan üretilir, diğer bölümler aynı kalır.~~ **(0055 ile geri alındı, 2026-10-01: seçenek kaldırıldı, liste hep gelir; ölçüsü 0055 AC-4…AC-9.)**
 - **AC-40.** Üç ekrandaki düğme aynı yetki kapısından geçer; kapı kapalıyken üçünde de görünmez.
 
 ### Dosya yerleşimi, motor ve sınır durumları (R2 turu)
@@ -402,7 +402,7 @@ tutar bu kâğıda çıkmıyor.**
 - **AC-55.** Açılış tarihi seçili aydan sonra olan hesap raporda görünmez; açılış ayında açılış ayrı satırdır.
 - **AC-56.** Hareketi ve bakiyesi sıfır olan kapalı hesap listeye girmez; hareketi olan kapalı hesap
   "kapalı" ibaresiyle görünür.
-- **AC-57.** Kalem listesi kutusu her açılışta varsayılan açık gelir (durum hatırlanmaz).
+- **AC-57.** ~~Kalem listesi kutusu her açılışta varsayılan açık gelir (durum hatırlanmaz).~~ **(0055 ile geri alındı, 2026-10-01: kutu kaldırıldı; ölçüsü 0055 AC-1…AC-3.)**
 - **AC-58.** Hiç kaydı olmayan ay için rapor üretilir ve bölümler "Bu ayda kayıt yok" ile geçilir.
 - **AC-59.** Yürürlük ayından önceki bir ay seçilirse belge bunu açıklamayla yazar, boş tablo çizmez.
 - **AC-60.** Bir kalem çöpe atıldığında geçmiş ayın raporu da değişir; belgedeki uyarı bunu kapsar.

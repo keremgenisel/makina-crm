@@ -21,13 +21,11 @@ export const oncekiAy = (bugun = yerelBugun()) => {
 // çizmez. baslangicAy: ekranın tek aylık seçimi (Giderler "Ay" kipi) ilk açılışta ön doldurur (R3).
 export const GiderKasaRaporuDugmesi = ({ veri, kasaYetki = false, ay: disAy = null, baslangicAy = null }) => {
   const [ay, setAy] = useState(() => baslangicAy || oncekiAy());
-  // R43, AC-57: kutunun durumu hatırlanmaz, her açılışta açık.
-  const [kalemListesi, setKalemListesi] = useState(true);
   if (!giderKasaRaporuAcik({ kasaYetki }) || !veri) return null;
   const secili = disAy || ay;
   const yazdir = () => {
     if (!secili) return;
-    const html = buildGiderKasaRaporuHtml(giderKasaRaporu(veri, secili, { kalemListesi }));
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu(veri, secili));
     if (window.appPrint?.printHtml) window.appPrint.printHtml(html, null, `Gider-Kasa-Raporu-${secili}.pdf`);
   };
   return (
@@ -35,10 +33,7 @@ export const GiderKasaRaporuDugmesi = ({ veri, kasaYetki = false, ay: disAy = nu
       {disAy == null && (
         <input type="month" className="input" aria-label="Rapor ayı" value={ay} onChange={e => setAy(e.target.value)} style={{ width: 150, padding: "5px 8px" }} />
       )}
-      <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12.5, cursor: "pointer" }}>
-        <input type="checkbox" aria-label="Kalem listesi" checked={kalemListesi} onChange={e => setKalemListesi(e.target.checked)} />
-        Kalem listesi
-      </label>
+      {/* Spec 0055 R1: "Kalem listesi" kutusu kaldırıldı; rapor her zaman kalem listesiyle çıkar. */}
       <Btn small variant="ghost" onClick={yazdir} title="Seçili ayın gider ve kasa raporunu yazdır/PDF kaydet"><Icon name="print" size={13} /> Gider ve Kasa Raporu</Btn>
     </div>
   );

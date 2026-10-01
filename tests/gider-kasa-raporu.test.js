@@ -167,13 +167,10 @@ describe("Spec 0047: gider bölümü", () => {
     const fin = kdvKarsilastir(hesaplananKdvAylar(girdi().satisVerisi, ["2026-09"], { factoryName: "Altuntaş Makina" }), gr.indirilecekKdv);
     expect(r.gider.kdv).toEqual(fin);
   });
-  it("AC-10 / AC-39: kalem listesi tarih sırasıyla ve durumlu; kapatılınca yok, diğer bölümler aynı", () => {
+  // Spec 0055 R3, R9 ile güncellendi: seçenek kaldırıldı; "kapatılınca yok" iddiaları silindi (0047 AC-39 0055'e devredildi).
+  it("AC-10: kalem listesi tarih sırasıyla ve durumlu", () => {
     expect(r.gider.kalemler.map(k => k.tarih)).toEqual(["2026-09-01", "2026-09-05", "2026-09-06", "2026-09-15", null]);
     expect(r.gider.kalemler[0]).toMatchObject({ aciklama: "Eylül kirası", durum: "Ödenmedi" });
-    const kapali = R({}, "2026-09", { kalemListesi: false });
-    expect(kapali.gider.kalemler).toBeNull();
-    expect({ ...kapali.gider, kalemler: null }).toEqual({ ...r.gider, kalemler: null });
-    expect(HTML({}, "2026-09", { kalemListesi: false })).not.toContain("Kalem listesi");
   });
 });
 
@@ -288,5 +285,51 @@ describe("Spec 0058 AC-9 / AC-22: kapsam dışı kayıtlar raporda sayılmaz", (
     expect([ekran.odeme.adet, ekran.odeme.avansAdet]).toEqual([sonra.kasa.hesapsiz.odemeAdet, sonra.kasa.hesapsiz.avansAdet]);
     expect(HTML({ kasaKapsamDisi: [] })).toBe(HTML({}));
     expect(sonra.gider.toplam ?? null).toEqual(once.gider.toplam ?? null); // gider tarafı değişmez (R2)
+  });
+});
+
+// Spec 0055: kalem listesi seçeneği kaldırıldı, liste her raporda vardır.
+describe("Spec 0055: kalem listesi her zaman", () => {
+  const h = HTML({}, "2026-09");
+  it("AC-4 / AC-5 / AC-11: kalemli ayda bölüm var; sütunlar ve sıra aynı; personel satırı 'Ay geneli'", () => {
+    expect(h).toContain("<h3>Kalem listesi");
+    const bolum = h.slice(h.indexOf("<h3>Kalem listesi"));
+    for (const [i, b] of ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"].entries()) expect(bolum.indexOf(`>${b}<`), b).toBeGreaterThan(i ? bolum.indexOf(`>${["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"][i - 1]}<`) : -1);
+    expect(bolum).toContain("Ay geneli");
+  });
+  it("AC-6: personel kalemleri tek satır; çalışan adı listede yok", () => {
+    expect(R().gider.kalemler.filter(k => k.personel)).toHaveLength(1);
+    expect(h.slice(h.indexOf("<h3>Kalem listesi"))).not.toContain(AD);
+  });
+  it("AC-7: belgenin kalem listesi öncesi kısmı ve rakamları değişmedi (mevcut beklenenler aynen geçiyor; liste en sonda)", () => {
+    const once = h.slice(0, h.indexOf("<h3>Kalem listesi"));
+    expect(once).toContain("Gider türü kırılımı");
+    expect(once).not.toContain("Kalem listesi");
+    expect(h.indexOf("<h3>Kalem listesi")).toBeGreaterThan(h.indexOf("Ödeme yöntemi kırılımı"));
+  });
+  it("AC-8 / AC-12: fonksiyon seçenek almaz, dönüşte bayrak yok; motor, düğme ve bu test dosyası bayrağı anmaz", () => {
+    const BAYRAK = new RegExp(["kalem", "Listesi"].join(""));
+    expect(giderKasaRaporu.length).toBeLessThanOrEqual(2);
+    expect(Object.keys(R()).some(k => BAYRAK.test(k))).toBe(false);
+    for (const f of ["src/lib/giderRaporu.js", "src/components/rapor/GiderKasaRaporuDugmesi.jsx", "tests/gider-kasa-raporu.test.js"]) expect(readFileSync(f, "utf-8"), f).not.toMatch(BAYRAK);
+  });
+  it("AC-9: kalemsiz ayda kalem listesi başlığı ve boş tablo yok; gider bölümü 'Bu ayda kayıt yok' satırını gösterir", () => {
+    const bos = HTML({ giderler: [] }, "2026-09");
+    expect(bos).not.toContain("Kalem listesi");
+    expect(bos).toContain(KAYIT_YOK);
+    expect(R({ giderler: [] }, "2026-09").gider.bos).toBe(true);
+  });
+  it("AC-10 (0055): yürürlük öncesi ayda kalem listesi yok, açıklama paragrafı var", () => {
+    const once = HTML({ yururlukAy: "2026-10" }, "2026-09");
+    expect(once).not.toContain("Kalem listesi");
+    expect(once).toContain("Gider takibi bu aydan sonra yürürlüğe girdi");
+  });
+  it("AC-14 / AC-16: 0047'nin AC-39 ve AC-57'si 0055'e devredildi; CLAUDE.md eski cümleyi ve imzayı taşımıyor", () => {
+    const s = readFileSync("specs/done/0047-aylik-gider-ve-kasa-raporu.md", "utf-8");
+    for (const ac of ["AC-39", "AC-57"]) expect(s.split("\n").find(l => l.startsWith(`- **${ac}.**`)), ac).toMatch(/0055 ile geri alındı, 2026-10-01/);
+    const c = readFileSync("CLAUDE.md", "utf-8");
+    expect(c).not.toMatch(/kalem listesi kutusu her açılışta açık/);
+    expect(c).not.toMatch(new RegExp(["giderKasaRaporu\\(girdi, ay, \\{ kalem", "Listesi"].join("")));
+    expect(c).toMatch(/kalem listesi her raporda vardır/);
   });
 });

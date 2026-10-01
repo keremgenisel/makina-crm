@@ -381,6 +381,12 @@
         "rapor": "docs/evidence/0054-taban-piksel-raporu.json",
         "ekran": "giderler-0054-ek-pencere",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "ekran": "giderler-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
       }
     ],
     "src/components/Settings.jsx": [
@@ -976,6 +982,12 @@
         "rapor": "docs/evidence/0047-taban-piksel-raporu.json",
         "ekran": "finans-rapor-dugmesi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "ekran": "finans-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
       }
     ],
     "src/components/Notes.jsx": [
@@ -1575,6 +1587,12 @@
         "rapor": "docs/evidence/0056-taban-piksel-raporu.json",
         "ekran": "kasa-0056-sil-engel",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0055-piksel-raporu.json",
+        "ekran": "kasa-rapor-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0055 R1"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [

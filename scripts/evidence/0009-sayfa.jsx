@@ -668,7 +668,8 @@ const EKRANLAR = {
   "gider-formu-duzenle-plan-hatasi": [duzenle48(D48_TAKSITLI), ["doldur:Tutar=3000", "kaydir:Ödemeler gider listesindeki"]],
   // Spec 0047: Aylık Gider ve Kasa Raporu belgesi (beyaz kâğıt) ve üç ekrandaki düğme.
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
-  "gider-kasa-raporu-kalemsiz": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09", { kalemListesi: false })) }} />, []],
+  // Spec 0055: kalem listesi seçeneği kalktı; "-kalemsiz" ekranı yerine kalemsiz (boş) ayın belgesi (boş tablo basılmaz).
+  "gider-kasa-raporu-bos": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, giderler: [] }, "2026-09")) }} />, []],
   "giderler-rapor-dugmesi": [<GiderEkrani rapor={RAPOR_VERI} />, []],
   "kasa-rapor-dugmesi": [kasaEkrani({ giderKasaRaporVerisi: RAPOR_VERI }), []],
   "finans-rapor-dugmesi": [<FINANS rapor={RAPOR_VERI} />, []],

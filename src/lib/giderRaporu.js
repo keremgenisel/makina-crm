@@ -38,7 +38,8 @@ const DURUM_AD = { odendi: "Ödendi", kismen: "Kısmen ödendi", odenmedi: "Öde
 // girdi: { giderler (ham), hareketler, turler, tedarikciler, stock, customers, canliModeller, yururlukAy, esikGun,
 //   satisVerisi, kdvSecenek, hesaplar, cekler, payments (çekli), services, partSales, yedekParcaSatislar, dealers,
 //   factory, kdvRates }
-export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) => {
+// Spec 0055 R3: kalem listesi seçeneği kaldırıldı; liste her raporda vardır (0047 R32 geri alındı).
+export const giderKasaRaporu = (girdi = {}, ay) => {
   const g = { giderler: [], hareketler: [], turler: [], tedarikciler: [], stock: [], customers: [], hesaplar: [], cekler: [], payments: [],
     services: [], partSales: [], yedekParcaSatislar: [], dealers: [], satisVerisi: {}, kdvSecenek: {},
     // Spec 0058 R7, R15: kasa iş listesinden kapsam dışı bırakılanlar raporun hesapsız bölümünde de sayılmaz (null = bugünkü).
@@ -66,23 +67,21 @@ export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) =>
     const hToplam = (l) => l.reduce((a, o) => a + (o.odenecekK || 0), 0);
     const kdvHesaplanan = hesaplananKdvAylar(g.satisVerisi, [ay], g.kdvSecenek);
     const yontem = donemYontemKirilimi(gr.kalemler, hareketlerAySonu, turMap);
-    let kalemler = null;
-    if (kalemListesi) {
-      const genel = gr.kalemler.filter(k => davranisOf(k, turMap) !== DAVRANIS.PERSONEL)
-        .sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)) || Number(a.id) - Number(b.id))
-        .map(k => {
-          const dav = davranisOf(k, turMap);
-          return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
-            tedarikci: tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] };
-        });
-      const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
-      if (personel.length) {
-        const d = personel.map(odemeDurumu);
-        const durum = d.every(x => x === "odendi") ? "odendi" : d.every(x => x === "odenmedi") ? "odenmedi" : "kismen";
-        kalemler = [...genel, { tarih: null, tur: PERSONEL_ETIKETI, aciklama: PERSONEL_ETIKETI, tedarikci: "",
-          tutar: personel.reduce((a, k) => a + kurus(kalemTutari(k, DAVRANIS.PERSONEL)), 0) / 100, durum: DURUM_AD[durum], personel: true }];
-      } else kalemler = genel;
-    }
+    let kalemler;
+    const genel = gr.kalemler.filter(k => davranisOf(k, turMap) !== DAVRANIS.PERSONEL)
+      .sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)) || Number(a.id) - Number(b.id))
+      .map(k => {
+        const dav = davranisOf(k, turMap);
+        return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
+          tedarikci: tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] };
+      });
+    const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
+    if (personel.length) {
+      const d = personel.map(odemeDurumu);
+      const durum = d.every(x => x === "odendi") ? "odendi" : d.every(x => x === "odenmedi") ? "odenmedi" : "kismen";
+      kalemler = [...genel, { tarih: null, tur: PERSONEL_ETIKETI, aciklama: PERSONEL_ETIKETI, tedarikci: "",
+        tutar: personel.reduce((a, k) => a + kurus(kalemTutari(k, DAVRANIS.PERSONEL)), 0) / 100, durum: DURUM_AD[durum], personel: true }];
+    } else kalemler = genel;
     gider = {
       yururlukOncesi: false, bos: gr.bos,
       ozet: { toplam: gr.toplam, odenen: gr.odenen, odenmeyen: gr.odenmeyen, indirilecekKdv: gr.indirilecekKdv, stopaj: gr.stopajToplam },
@@ -145,7 +144,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { kalemListesi = true } = {}) =>
     cek: cekAyOzeti(g.cekler, g.payments, ay),
     avansK,
   };
-  return { ay, ayAdi: ayAdi(ay), bas, son, gider, kasa, kalemListesi };
+  return { ay, ayAdi: ayAdi(ay), bas, son, gider, kasa };
 };
 
 // ── HTML (beyaz kâğıt; C6) ──
@@ -184,8 +183,10 @@ export const buildGiderKasaRaporuHtml = (r) => {
       <h3>Ödeme yöntemi kırılımı <small>ayın kalemlerine yapılan ödemeler</small></h3>
       ${G.yontem.satirlar.length || G.yontem.personel ? tablo(["Yöntem", "Tutar"], [...G.yontem.satirlar.map(s => [esc(s.ad), tlp(s.tutar)]),
         ...(G.yontem.personel ? [["Personel ödemeleri", tlp(G.yontem.personel)]] : []), ["<b>Toplam</b>", `<b>${tlp(G.yontem.toplam)}</b>`]], [1]) : bosSatir}
-      ${G.kalemler ? `<h3>Kalem listesi <small>${donem}</small></h3>
-      ${tablo(["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [k.tarih ? esc(fmtTR(k.tarih)) : "Ay geneli", esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]), [4])}` : ""}`;
+      <h3>Kalem listesi <small>${donem}</small></h3>
+      ${G.kalemler.length ? tablo(["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [k.tarih ? esc(fmtTR(k.tarih)) : "Ay geneli", esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]), [4]) : bosSatir}`;
+      // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
+      // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
   }
   const blok = (b) => tablo(["Hesap", "Tür", "Ay açılışı", "Açılış kaydı", "Giren", "Çıkan", "Kapanış"],
     [...b.satirlar.map(s => [esc(s.ad) + (s.kapali ? " (kapalı)" : ""), esc(s.tur), kp(s.devredenK, b.paraBirimi), s.acilisSatiriK ? kp(s.acilisSatiriK, b.paraBirimi) : "—", kp(s.girenK, b.paraBirimi), kp(s.cikanK, b.paraBirimi), kp(s.kapanisK, b.paraBirimi)]),

@@ -1,0 +1,66 @@
+[
+  {
+    "ad": "gider-kasa-raporu-belge-aydinlik.png",
+    "boyut": "2880x4298",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-belge-karanlik.png",
+    "boyut": "2880x4298",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-bos-aydinlik.png",
+    "boyut": "2880x2446",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-kasa-raporu-bos-karanlik.png",
+    "boyut": "2880x2446",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 8459
+  },
+  {
+    "ad": "giderler-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 8460
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 7727
+  },
+  {
+    "ad": "kasa-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x1958",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 7727
+  },
+  {
+    "ad": "finans-rapor-dugmesi-aydinlik.png",
+    "boyut": "2880x3146",
+    "piksel": 12156
+  },
+  {
+    "ad": "finans-rapor-dugmesi-karanlik.png",
+    "boyut": "2880x3146",
+    "piksel": 12148
+  }
+]
