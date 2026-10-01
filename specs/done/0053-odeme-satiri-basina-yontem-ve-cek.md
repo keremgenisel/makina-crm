@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-09-30) |
+| **Durum** | Tamamlandı (commit `6ce79bc`, dal `feat/0053-odeme-satiri`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider formunun ödeme bölümü, ödeme kayıt penceresi, tekrarlayan gider tanımı |
 | **Bağımlı spec'ler** | 0023 (ek ödemeler) · 0040, 0049 (çek ve ciro) · 0041 (çok yöntemli ödeme) · 0042 (personelin iki hedefi) · 0046 (formdan hedef bazlı ödeme) · 0048 (düzenleme formunun canlı ödeme kutusu) · 0052 (Kasa sekme izni) |
-| **Revizyon** | R1 (2026-09-30): Takım Yöneticisi kararı, **her şey formda yapılacak**. Ödeme girişi düzenleme kipinde de açılır (0046 R15 geri alınır), ciro ve kendi çekimiz formda kullanılır, ödeme penceresi ile form **tek paylaşılan bileşen** olur. D bölümü (R15–R19) eklendi, eski X2 kaldırıldı, AC-23…AC-30 eklendi. R2 (2026-09-30): **hedef ile yöntem birbirinden bağımsızdır** kuralı eklendi (R20, C7); "elden" sözcüğünün iki anlamı Context'e yazıldı; çok satırlı ödemenin her gider türü için geçerli olduğu örneklendi (AC-31…AC-34). **R3 (QA turu, 2026-10-01):** geliştirici hazırlığı denetimi, 16 bulgu işlendi, 5'i bloklayıcıydı. Context'in "ödeme penceresinde çek yolu hiç yok" tespiti **yanlıştı** (0049 ile "Kendi çekiyle öde" düğmesi var, eksik olan yalnız ciro) ve iki tasarım tek yola indirildi (R10); birleşik bileşenin şekli ile mahsubun yeri yazıldı (R17); "Çek vadesi" etiketi uygulanamaz olduğu için kaldırıldı (R4); "en son kullanılan yöntem" için yardımcı tanımlandı (R23); 0048 ile çelişki çözüldü (R24). E bölümü (R23–R29) ve AC-36…AC-48 eklendi.<br>**R4 (2026-10-01, plan onayı):** tek giriş fonksiyonu `formOdemesi.odemeGirisiHazirla` ve tek bileşen `gider/OdemeGirisi.jsx` (Q8 ortak yazım `odemeGirisiYaz`); satır hedefe ve taksit sırasına bağlanır, taksit kimliği kayıt anında çözülür (yeni kalemde kimlik kayıtta doğar); taksitli hedef yeni kalemde pasif, düzenlemede yapı aynıysa taksit seçiciyle açık (Q1, R30); hedef katmanı `cokluOdemeDogrula`'da (Q2); çek satırı aynı hedefteki diğer satırlardan sonra kalanı kapatır (Q3); formda silme Kaydet'e kadar bekler (Q4); pencere hedefle açılınca o hedefe iner (Q5); mahsup kipi formda da (Q6); Anasayfa penceresine çek verisi (Q9); `DonemRaporu` ve doğrulama mesajındaki yöntem gösterimi de kalkar (Q10, R31); uçtan uca kontrol (Q12). F bölümü (R30–R32) eklendi. |
+| **Revizyon** | R1 (2026-09-30): Takım Yöneticisi kararı, **her şey formda yapılacak**. Ödeme girişi düzenleme kipinde de açılır (0046 R15 geri alınır), ciro ve kendi çekimiz formda kullanılır, ödeme penceresi ile form **tek paylaşılan bileşen** olur. D bölümü (R15–R19) eklendi, eski X2 kaldırıldı, AC-23…AC-30 eklendi. R2 (2026-09-30): **hedef ile yöntem birbirinden bağımsızdır** kuralı eklendi (R20, C7); "elden" sözcüğünün iki anlamı Context'e yazıldı; çok satırlı ödemenin her gider türü için geçerli olduğu örneklendi (AC-31…AC-34). **R3 (QA turu, 2026-10-01):** geliştirici hazırlığı denetimi, 16 bulgu işlendi, 5'i bloklayıcıydı. Context'in "ödeme penceresinde çek yolu hiç yok" tespiti **yanlıştı** (0049 ile "Kendi çekiyle öde" düğmesi var, eksik olan yalnız ciro) ve iki tasarım tek yola indirildi (R10); birleşik bileşenin şekli ile mahsubun yeri yazıldı (R17); "Çek vadesi" etiketi uygulanamaz olduğu için kaldırıldı (R4); "en son kullanılan yöntem" için yardımcı tanımlandı (R23); 0048 ile çelişki çözüldü (R24). E bölümü (R23–R29) ve AC-36…AC-48 eklendi.<br>**R4 (2026-10-01, plan onayı):** tek giriş fonksiyonu `formOdemesi.odemeGirisiHazirla` ve tek bileşen `gider/OdemeGirisi.jsx` (Q8 ortak yazım `odemeGirisiYaz`); satır hedefe ve taksit sırasına bağlanır, taksit kimliği kayıt anında çözülür (yeni kalemde kimlik kayıtta doğar); taksitli hedef yeni kalemde pasif, düzenlemede yapı aynıysa taksit seçiciyle açık (Q1, R30); hedef katmanı `cokluOdemeDogrula`'da (Q2); çek satırı aynı hedefteki diğer satırlardan sonra kalanı kapatır (Q3); formda silme Kaydet'e kadar bekler (Q4); pencere hedefle açılınca o hedefe iner (Q5); mahsup kipi formda da (Q6); Anasayfa penceresine çek verisi (Q9); `DonemRaporu` ve doğrulama mesajındaki yöntem gösterimi de kalkar (Q10, R31); uçtan uca kontrol (Q12). F bölümü (R30–R32) eklendi.<br>**R5 (2026-10-01, triyaj):** kanıt eşlemesi ve 0053 raporu tamamlandı, 0042'nin sözlük testi kalan örneğe bağlandı, aynı gün girilen ödemeler arasında son kullanılan yöntem giriş sırasıyla seçilir (kimlik değil). |
 
 ---
 
@@ -323,25 +323,25 @@ yöntemi, tutarı ve hesabıyla ödenebiliyor; ve çek, ödemenin girildiği **h
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Form ile pencere aynı doğrulama ve hareket üretim fonksiyonlarını çağırıyor ve **aynı bileşeni**
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Form ile pencere aynı doğrulama ve hareket üretim fonksiyonlarını çağırıyor ve **aynı bileşeni**
       çiziyor; R29'un üç ölçütü de testli (C2, AC-11, AC-28).
-- [ ] "Kendi çekiyle öde" düğmesi kaldırıldı ve çek üç yerde de satır yöntemi (AC-36, AC-37).
-- [ ] `sonKullanilanYontem` saf ve testli; ciro ile kendi çek varsayılan olarak gelmiyor (AC-38, AC-39).
-- [ ] 0048'in "Kaydedince ödenebilir" kısıtının formda kalktığı, pencerede kaldığı testle gösterildi
+- [x] "Kendi çekiyle öde" düğmesi kaldırıldı ve çek üç yerde de satır yöntemi (AC-36, AC-37).
+- [x] `sonKullanilanYontem` saf ve testli; ciro ile kendi çek varsayılan olarak gelmiyor (AC-38, AC-39).
+- [x] 0048'in "Kaydedince ödenebilir" kısıtının formda kalktığı, pencerede kaldığı testle gösterildi
       (R24, AC-40).
-- [ ] Kanıt eşlemesindeki kayıtlar `degisti` + onayla işaretlendi ve `kanit-eslemesi.test.js` yeşil (R28,
+- [x] Kanıt eşlemesindeki kayıtlar `degisti` + onayla işaretlendi ve `kanit-eslemesi.test.js` yeşil (R28,
       AC-48).
-- [ ] Kayıt tek işlem; ödeme hatasında kalem de kaydedilmiyor (C3, AC-22).
-- [ ] Kaldırılan alanın veride korunduğu ve göç yapılmadığı testle gösterildi (AC-4).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0053-*.jpg`): alansız form başlığı, iki satırlı hedef ödemesi,
+- [x] Kayıt tek işlem; ödeme hatasında kalem de kaydedilmiyor (C3, AC-22).
+- [x] Kaldırılan alanın veride korunduğu ve göç yapılmadığı testle gösterildi (AC-4).
+- [x] Görsel kanıt eklendi (`docs/evidence/0053-*.jpg`): alansız form başlığı, iki satırlı hedef ödemesi,
       ödeme penceresinde çek seçenekleri.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: yöntemin yalnız ödeme satırında olduğu, hedef başına çok satır ve çekin
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: yöntemin yalnız ödeme satırında olduğu, hedef başına çok satır ve çekin
       her ödeme yolundan kullanılabildiği.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -349,10 +349,10 @@ yöntemi, tutarı ve hesabıyla ödenebiliyor; ve çek, ödemenin girildiği **h
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 5 | R1 TY kararı (her şey formda), R2 hedef/yöntem bağımsızlığı, R3 QA turu (16 bulgu), R4 plan onayı (Q1–Q15; R30–R32), R5 triyaj. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (3 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Kanıt eşlemesinin ve 0053 raporunun eksikliği (CI kırmızı; çekim sürerken triyaja gelindi); 0042 sözlük testinin kaldırılan dosyaya bağlı kalması (CI kırmızı, uygulama sırasında tam takım koşulmadan sözlük düzenlendi); aynı günde kimlik sıralaması (0051 dersi tekrar edildi). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Spec'in bilinçli olarak geri aldığı davranışları (0041 varsayılan yöntem, 0042 tanım alanı ve tek pencerede iki hedef, 0046 R15, 0048 "Kaydedince ödenebilir", 0049 "Kendi çekiyle öde") bekleyen testler yeni kurala çevrildi; değişmemesi gereken 172 ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** İki ayrı editörü birleştirmek, ikisinin de dayandığı küçük yardımcıları (burada `Btn`'in `aria-label` iletmemesi, pencerenin hedef seçimi) yüzeye çıkarır; birleşmenin şekli spec'te envanterden yazıldığı için (R17) bunlar sürpriz değil iş kalemi oldu. İkincisi: bir yardımcıya "kalanları kapatan ayrı katman" eklemeden önce mevcut katmanın onu zaten zorunlu kılıp kılmadığı sorulmalı; hedef katmanı taksit katmanının sonucuydu ve eklense ölü kod olurdu. Üçüncüsü: 0051'de öğrenilen "kimlik sırası giriş sırası değildir" dersi yeni bir yardımcıda tekrarlandı; aynı tarihte sıralama gereken her yeni fonksiyon dizinin giriş sırasını kullanmalı. Dördüncüsü: görüntü aracının 10 dakikalık zaman aşımı büyük çekimleri sessizce keser; rapor yazılmadıysa çekim tamamlanmamıştır, sonuç günlükten değil rapordan okunmalı.

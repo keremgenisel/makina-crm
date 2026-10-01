@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0053-odeme-satiri-basina-yontem-ve-cek.md` (R4, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0053-odeme-satiri-basina-yontem-ve-cek.md` (R4, plan onayıyla) |
 | **Dal** | `feat/0053-odeme-satiri` (`feat/0052-kasa-sekme-izni` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q15) kabul |
 
