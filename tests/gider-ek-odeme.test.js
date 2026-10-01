@@ -70,8 +70,11 @@ describe("Spec 0023: ek ödeme satırları ve tek toplam (R1–R3, C5)", () => {
     const odenmis = odemeleriUygula([k], h, turMap)[0];
     const y = kayit({ ...odenmis, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30", ekOdemeler: [ek("ikramiye", "10.000")] });
     const z = odemeleriUygula([y], h, turMap)[0];
-    expect(z.taksitler.map(r => [r.hedef, r.tutar, r.odendi])).toEqual([["ana", 15000, true], ["ana", 25000, false], ["elden", 20000, false]]);
-    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.ANA).kalanK).toBe(2500000);
+    // Spec 0054 R1, R6 ile güncellendi: ikramiye maaşın taksitlerine binmez, kendi tek satırlı "ek resmi" hedefi olarak doğar;
+    // maaş taksitleri ve ödenmiş taksit aynen kalır (0023 C8 ödeme tarafında geri alındı).
+    expect(z.taksitler.map(r => [r.hedef, r.tutar, r.odendi])).toEqual([["ana", 15000, true], ["ana", 15000, false], ["elden", 20000, false], ["ekResmi", 10000, false]]);
+    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.ANA).kalanK).toBe(1500000);
+    expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.EK_RESMI).kalanK).toBe(1000000);
   });
 });
 

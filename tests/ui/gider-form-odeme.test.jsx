@@ -52,21 +52,21 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     render(<H />);
     personelAc();
     expect(satirlar().map(s => s.dataset.hedef)).toEqual(["ana", "elden"]);
-    fireEvent.click(L("Resmi ödendi"));
-    fireEvent.click(L("Elden ödendi"));
-    expect(L("Resmi hesabı").value).toBe("52");
-    expect(L("Elden hesabı").value).toBe("52");
-    expect(secenekler(L("Resmi hesabı"))).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)", "Kasa (Kasa)"]);
+    fireEvent.click(L("Maaş (resmi) ödendi"));
+    fireEvent.click(L("Maaş (elden) ödendi"));
+    expect(L("Maaş (resmi) hesabı").value).toBe("52");
+    expect(L("Maaş (elden) hesabı").value).toBe("52");
+    expect(secenekler(L("Maaş (resmi) hesabı"))).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)", "Kasa (Kasa)"]);
   });
   it("AC-2 / AC-3: resmi bankadan havaleyle, elden kasadan nakitle; iki ayrı hareket ve iki hesap ayrı düşer", () => {
     let st;
     render(<H onState={s => { st = s; }} />);
     personelAc();
-    fireEvent.click(L("Resmi ödendi"));
-    degis(L("Resmi ödeme yöntemi"), "Havale");
-    degis(L("Resmi hesabı"), "51");
-    fireEvent.click(L("Elden ödendi"));
-    degis(L("Elden ödeme yöntemi"), "Nakit");
+    fireEvent.click(L("Maaş (resmi) ödendi"));
+    degis(L("Maaş (resmi) ödeme yöntemi"), "Havale");
+    degis(L("Maaş (resmi) hesabı"), "51");
+    fireEvent.click(L("Maaş (elden) ödendi"));
+    degis(L("Maaş (elden) ödeme yöntemi"), "Nakit");
     kaydetBtn();
     const yeniler = st.hesapHareketleri.filter(h => h.id !== 900);
     expect(yeniler.map(h => [h.tutar, h.yontem, h.hesapId])).toEqual([[30000, "Havale", 51], [20000, "Nakit", 52]]);
@@ -148,12 +148,12 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     render(<H h0={[{ ...ONCEKI[0], yontem: "Havale" }]} onState={s => { st = s; }} />);
     personelAc();
     fireEvent.click(L("Hepsini ödendi işaretle"));
-    expect([L("Resmi ödeme tutarı").value, L("Elden ödeme tutarı").value]).toEqual(["30.000", "20.000"]);
-    expect([L("Resmi ödeme yöntemi").value, L("Elden hesabı").value]).toEqual(["Havale", "52"]);
-    degis(L("Elden ödeme yöntemi"), "Nakit");
-    fireEvent.click(screen.getByRole("button", { name: "Elden için başka yöntemle satır ekle" }));
+    expect([L("Maaş (resmi) ödeme tutarı").value, L("Maaş (elden) ödeme tutarı").value]).toEqual(["30.000", "20.000"]);
+    expect([L("Maaş (resmi) ödeme yöntemi").value, L("Maaş (elden) hesabı").value]).toEqual(["Havale", "52"]);
+    degis(L("Maaş (elden) ödeme yöntemi"), "Nakit");
+    fireEvent.click(screen.getByRole("button", { name: "Maaş (elden) için başka yöntemle satır ekle" }));
     fireEvent.click(L("Hepsini ödendi işaretle"));
-    expect(L("Elden ödeme yöntemi").value).toBe("Nakit");
+    expect(L("Maaş (elden) ödeme yöntemi").value).toBe("Nakit");
     expect(screen.getAllByTestId("form-odeme-satir")).toHaveLength(3);
     fireEvent.click(screen.getAllByTitle("Satırı kaldır").pop());
     kaydetBtn();
@@ -200,8 +200,8 @@ describe("Spec 0046: çek cirosu", () => {
     expect(satirlar()[1].textContent).toMatch(/Vergi dairesine çekle ödeme yapılmaz/);
     fireEvent.click(screen.getByText("İptal"));
     personelAc();
-    fireEvent.click(L("Elden ödendi"));
-    expect(secenekler(L("Elden ödeme yöntemi"))).not.toContain("Çek (ciro)");
+    fireEvent.click(L("Maaş (elden) ödendi"));
+    expect(secenekler(L("Maaş (elden) ödeme yöntemi"))).not.toContain("Çek (ciro)");
     expect(satirlar()[1].textContent).toMatch(/Elden ödeme çekle yapılmaz/);
   });
   it("AC-21: portföyde çek yokken neden okunur; yöntem değiştirilince kayıt yapılır", () => {
@@ -324,8 +324,8 @@ describe("Spec 0049 B: kendi çekimiz (gider formu ve ödeme penceresi)", () => 
     cleanup();
     render(<H />);
     personelAc();
-    fireEvent.click(L("Elden ödendi"));
-    expect(secenekler(L("Elden ödeme yöntemi"))).not.toContain("Çek (kendi)");
+    fireEvent.click(L("Maaş (elden) ödendi"));
+    expect(secenekler(L("Maaş (elden) ödeme yöntemi"))).not.toContain("Çek (kendi)");
   });
   // Spec 0053 R10, R15 (AC-26, AC-36): kendi çek satırın yöntemidir; mevcut gider düzenleme formundan kendi çekle ödenir.
   // Pencerede eski "Kendi çekiyle öde" düğmesi yoktur.

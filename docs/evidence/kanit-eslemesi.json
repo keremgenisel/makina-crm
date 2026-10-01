@@ -247,6 +247,30 @@
         "rapor": "docs/evidence/0053-taban-piksel-raporu.json",
         "ekran": "gider-formu-0053-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-0054-ek-hedef",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R4"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-ek-sonra",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R1"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-personel-makina",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -336,6 +360,12 @@
         "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
         "ekran": "giderler-kendi-cek-penceresi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-0054-ek-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R4"
       }
     ],
     "src/components/Settings.jsx": [
@@ -414,6 +444,11 @@
       {
         "rapor": "docs/evidence/0053-piksel-raporu.json",
         "ekran": "giderler-rapor",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-personel-ayrinti-acik",
         "beklenen": "ayni"
       }
     ],
@@ -538,6 +573,18 @@
         "rapor": "docs/evidence/0046-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-personel-odeme-plani",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-personel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -1442,6 +1489,18 @@
         "rapor": "docs/evidence/0053-taban-piksel-raporu.json",
         "ekran": "giderler-odeme-0053-cek",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-0054-ek-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R4"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-mahsup",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
       }
     ],
     "src/components/kasa/CalisanAvanslari.jsx": [
@@ -1659,6 +1718,24 @@
         "rapor": "docs/evidence/0053-taban-piksel-raporu.json",
         "ekran": "giderler-mahsup",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-0053-personel-elden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "gider-formu-0054-ek-hedef",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R4"
+      },
+      {
+        "rapor": "docs/evidence/0054-piksel-raporu.json",
+        "ekran": "giderler-mahsup",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0054 R16"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [

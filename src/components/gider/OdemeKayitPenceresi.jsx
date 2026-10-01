@@ -6,7 +6,7 @@ import { CIRO_YONTEMI } from "../../lib/cek";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi } from "../../lib/formOdemesi";
 import { Btn, Modal, Icon } from "../ui";
 import { Ipucu } from "../tasarim";
-import { tl2, hedefAdi, eldenHedefliMi } from "./GiderAlanlari";
+import { tl2, hedefAdi, cokHedefliMi } from "./GiderAlanlari";
 import { OdemeGirisi, ilkGiris } from "./OdemeGirisi";
 
 // Ödeme kayıt penceresi (spec 0024 R2, R17, R18; 0041; 0053 R10, R17). Listedeki ödeme anahtarı, kira anahtarları, Ödeme
@@ -43,7 +43,7 @@ export const OdemeKayitPenceresi = ({
   const alacakli = ciroAlacaklisi(kalem, turMap);
   const alacakliSerbest = alacakli.tur === "serbest";
   const alacakliAd = alacakli.tur === "calisan" ? (kalem.calisanAd || "") : alacakli.tur === "tedarikci" ? (tedarikciler.find(t => String(t.id) === String(kalem.tedarikciId))?.ad || "") : (giris.alacakliAd || "");
-  const iki = hedefler.some(h => h.hedef === HEDEF.ELDEN) || eldenHedefliMi(kalem.taksitler);
+  const iki = cokHedefliMi(kalem, davranis); // spec 0054 R16
   const baglam = { turMap, hesaplar, cekler, payments, hareketler, giderler, bugun, yururlukAy, alacakliAd, bosAtla: true, hedefAdi: (h) => hedefAdi(h, davranis, iki) };
   // 0040 R8: ciro fark uyarısı kayıttan önce de görünür (motordan olduğu gibi).
   const ciroSecili = giris.kip !== "mahsup" && giris.satirlar.some(r => r.yontem === CIRO_YONTEMI && r.cekId != null);

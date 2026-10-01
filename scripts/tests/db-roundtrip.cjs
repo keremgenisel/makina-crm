@@ -123,6 +123,13 @@ dbmod.writeBlobToDb({
       // Spec 0042: personelin iki ödeme hedefi (resmi = ana, elden); elden vadesi satırda (yeni sütun yok).
       taksitler: [{ id: 9011, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 43923.13, odendi: false, odemeTarihi: null },
         { id: 9012, hedef: "elden", sira: 1, vade: "2026-07-28", tutar: 18500, odendi: false, odemeTarihi: null }] },
+    // Spec 0054 AC-21: ek ödemenin iki ayrı hedefi (ekResmi, ekElden) taksit satırında; yeni sütun yok.
+    { id: 85, tarih: "2026-08-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [],
+      ekOdemeler: [{ tur: "prim", aciklama: "Ağustos", resmiTutar: 5000, eldenTutar: 4500 }],
+      taksitler: [{ id: 9021, hedef: "ana", sira: 1, vade: "2026-08-31", tutar: 30000, odendi: false, odemeTarihi: null },
+        { id: 9022, hedef: "elden", sira: 1, vade: "2026-08-28", tutar: 20000, odendi: false, odemeTarihi: null },
+        { id: 9023, hedef: "ekResmi", sira: 1, vade: "2026-08-31", tutar: 5000, odendi: false, odemeTarihi: null },
+        { id: 9024, hedef: "ekElden", sira: 1, vade: "2026-08-31", tutar: 4500, odendi: false, odemeTarihi: null }] },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
   // Spec 0024 A: kasa hesapları ve hareketler.
@@ -284,6 +291,7 @@ check("gider: model alt satırları sırasıyla roundtrip ve id taşımıyor", (
 check("spec 0042 AC-25 / AC-27: personelin elden hedef satırı (hedef, vade) roundtrip; kira satırları bozulmadı", (() => { const t = (blob.giderler || []).find(x => x.id === 83)?.taksitler || []; return t.length === 2 && t.map(x => x.hedef).join() === "ana,elden" && t[1].id === 9012 && t[1].vade === "2026-07-28" && t[1].tutar === 18500; })());
 check("spec 0021: gider ödeme satırları kimlik, hedef, sıra, vade, tutar ve durumlarıyla roundtrip (C8)", (() => { const t = (blob.giderler || []).find(x => x.id === 82)?.taksitler || []; return t.length === 3 && t.map(x => x.id).join() === "9001,9002,9003" && t[1].hedef === "stopaj" && t[1].sira === 1 && t[1].vade === "2026-08-26" && t[1].tutar === 2000 && t[1].odendi === true && t[1].odemeTarihi === "2026-08-20" && t[2].odendi === false && t[2].odemeTarihi === null; })());
 check("spec 0021: satırsız gider kalemi boş taksit dizisi döner", ((blob.giderler || []).find(x => x.id === 81)?.taksitler || null)?.length === 0);
+check("spec 0054 AC-21: dört hedefli personel satırları (ana, elden, ekResmi, ekElden) kimlik, vade ve tutarla roundtrip", (() => { const t = (blob.giderler || []).find(x => x.id === 85)?.taksitler || []; return t.map(x => x.hedef).join() === "ana,elden,ekResmi,ekElden" && t.map(x => x.id).join() === "9021,9022,9023,9024" && t[2].tutar === 5000 && t[3].tutar === 4500 && t[3].vade === "2026-08-31"; })());
 check("spec 0023: ek ödeme satırları sırasıyla, alanlarıyla ve kimliksiz roundtrip (AC-13, C7)", (() => { const e = (blob.giderler || []).find(x => x.id === 83)?.ekOdemeler || []; return e.length === 3 && e[0].tur === "fazlaCalisma" && e[0].aciklama === "Temmuz yoğunluğu" && e[0].resmiTutar === 4000 && e[0].eldenTutar === 1000 && e[1].resmiTutar == null && e[1].eldenTutar === 2500 && e[2].tur === "prim" && e.every(x => x.id === undefined); })());
 check("spec 0023: ek ödemesiz kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 81)?.ekOdemeler || null)?.length === 0);
 check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
@@ -368,7 +376,7 @@ const reopen = dbmod.readBlobFromDb();
 check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar || []).length === 3);
 check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
 check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
-check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 4 && (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
+check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 5 && /* spec 0054 kalemi 85 ile 5 */  (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
 check("reopen: ek ödeme satırları kalıcı (spec 0023 AC-13)", ((reopen.giderler || []).find(x => x.id === 83)?.ekOdemeler || []).length === 3);
 check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
 check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 3 && (reopen.standartGiderler || []).length === 2);

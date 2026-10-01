@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { Icon, Select } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, personelIkiHedef, tl } from "../../lib/gider";
+import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 
@@ -181,22 +181,25 @@ export const fmtTL = (n) => fmtCur(n, "TRY");
 export const STOPAJ_KDV_NOTU = "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV olmaz; şirketse KDV olur, stopaj olmaz. İkisi birlikte istisnai bir durumdur; doğruysa kaydedebilirsiniz.";
 // AC-14, R15: kalıcı bilgi satırı; sistem tespit yapmaz.
 export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olarak girmeyin: brüt kira zaten gider toplamındadır, vergi dairesine ödenen stopaj kira kaleminin vergi dairesi bölümünde izlenir.";
-export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
-// Spec 0042 R15, Q2: personelin resmi kısmı yalnız iki hedefli kalemde "Resmi" adını alır; tek hedefli personel
-// "Çalışana" der (elden parayı "Resmi" diye göstermemek için). ikiHedef: kalemin elden satırı/hedefi var mı.
-export const hedefAdi = (hedef, davranis, ikiHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
-  : hedef === HEDEF.ANA && davranis === DAVRANIS.PERSONEL ? (ikiHedef ? "Resmi" : "Çalışana") : HEDEF_AD[hedef]);
-export const eldenHedefliMi = (satirlar) => (satirlar || []).some(r => r.hedef === HEDEF.ELDEN);
+export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
+// Spec 0054 R8, R16 (0042 R15'i genişletir): personel adları hedef kimliğinden çözülür; birden çok hedefli kalemde ayırt edici
+// ("Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)"), tek hedefli kalemde (yalnız ek ödemeli ay dahil)
+// "Çalışana". cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar). TEK ad kaynağı.
+const PERSONEL_AD = { [HEDEF.ANA]: "Maaş (resmi)", [HEDEF.ELDEN]: "Maaş (elden)", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)" };
+export const hedefAdi = (hedef, davranis, cokHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
+  : davranis === DAVRANIS.PERSONEL && PERSONEL_AD[hedef] ? (cokHedef ? PERSONEL_AD[hedef] : "Çalışana") : HEDEF_AD[hedef]);
+// Ödeme satırlarından (taksitler) birden çok hedef var mı; satırı olmayan hedef sayılmaz.
+export const cokHedefliSatirlar = (satirlar) => new Set((satirlar || []).map(r => r.hedef || HEDEF.ANA)).size > 1;
 // Spec 0051 R8–R10 (Q4, Q5): bir ödeme hareketinin kapattığı hedefin etiketi. Yalnız birden çok ödeme hedefi olan kalemde
 // (stopajlı kira, resmi ve eldeni olan personel) yazılır; aksi hâlde null (bugünkü metin korunur, R11 dahil). Ad TEK
-// kaynaktan: hedefAdi; üçüncü parametre eldenHedefliMi, satırsız iki hedefli personelde personelIkiHedef (satır yok).
+// kaynaktan: hedefAdi; çok hedeflilik cokHedefliMi'den (spec 0054 R16: eski eldenHedefliMi || personelIkiHedef birleşimi
+// dört hedefte eksik kalıyordu; ek ödemesi olan ama eldeni olmayan kalem).
 // paylar: odemeYontemi.hareketHedefPaylari'nın o hareket için [{hedef, payK}]; iki hedefe bölünmüşse tutarlarıyla.
 export const cokHedefliMi = (kalem, davranis) => !!kalem && odemeHedefleri(kalem, davranis).filter(h => h.toplamK > 0).length > 1;
 export const hedefEtiketi = (kalem, davranis, paylar) => {
   if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
-  const iki = eldenHedefliMi(kalem.taksitler) || personelIkiHedef(kalem, davranis);
-  if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, iki);
-  return paylar.map(p => `${hedefAdi(p.hedef, davranis, iki)} ${tl2(tl(p.payK))}`).join(" + ");
+  if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, true);
+  return paylar.map(p => `${hedefAdi(p.hedef, davranis, true)} ${tl2(tl(p.payK))}`).join(" + ");
 };
 
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
@@ -206,7 +209,7 @@ const kismenMi = (r) => !r.odendi && (r._odenenK || 0) > 0;
 const satirKalani = (r) => Math.max(0, Math.round((Number(r.tutar) || 0) * 100) - (r._odenenK || 0)) / 100;
 export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) => {
   const hedefler = HEDEF_SIRASI.filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
-  const ikiHedef = eldenHedefliMi(satirlar);
+  const ikiHedef = cokHedefliSatirlar(satirlar);
   const izgara = { display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) minmax(0, 1fr) 130px", gap: 10, alignItems: "center" };
   return (
     <div data-testid={testId}>

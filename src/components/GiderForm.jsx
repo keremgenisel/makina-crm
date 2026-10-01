@@ -6,7 +6,7 @@ import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorc
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu, TAKSIT_PLANI_DEGISTI_NEDENI } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -115,7 +115,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const personelTutarlari = dav === DAVRANIS.PERSONEL ? { resmi: tutarCoz(form.resmiTutar).deger + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.resmiTutar).deger || 0), 0),
     elden: tutarCoz(form.eldenTutar).deger + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.eldenTutar).deger || 0), 0) } : null;
   const personelBolunmez = personelBolunmezMi(form.taksitler, dav);
-  const personelIki = !!personelTutarlari && personelTutarlari.resmi > 0 && personelTutarlari.elden > 0 && !personelBolunmez;
+  // Spec 0054 Q3 (AC-25): "Elden vadesi" yalnız ELDEN MAAŞI olan ve başka bir hedefi de olan kalemde; elden ek ödemenin vadesi
+  // kalemin ilk vadesidir (R17). personelIkiHedef motorda anlamı değişmeden kalır (R15).
+  const maasEldenK = tutarCoz(form.eldenTutar).deger;
+  const personelIki = !!personelTutarlari && maasEldenK > 0 && personelTutarlari.resmi + personelTutarlari.elden - maasEldenK > 0 && !personelBolunmez;
 
   // Spec 0046: ödeme satırları kayıttakiyle aynı motorun önizleme kaleminden (R1, R5, R6, R26); düzenlemede canlı kalemden.
   const onizlemeKalem = useMemo(() => ({
@@ -155,7 +158,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     const t = tedarikciler.find(x => String(x.id) === String(form.tedarikciId));
     return t ? t.ad : giris.alacakliAd;
   };
-  const iki = girisHedefleri.some(h => h.hedef === HEDEF.ELDEN);
+  const iki = cokHedefliMi(girisKalemi || onizlemeKalem, dav); // spec 0054 R16
   const odemePlani = { tarih: giris.tarih, kip: mahsupVar ? giris.kip : "odeme", satirlar: giris.satirlar, mahsup: giris.mahsup, alacakliAd: alacakliAdi(), silinenler: [...silinenler] };
   const odemeBaglami = { turMap, hesaplar, cekler, payments, hareketler: kalanHareketler, giderler, bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null, hedefAdi: (h) => hedefAdi(h, dav, iki) };
   // 0040 R8: ciro fark uyarısı motordan (ciroPlani) olduğu gibi, kayıttan önce de görünür.

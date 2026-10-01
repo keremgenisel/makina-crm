@@ -60,38 +60,40 @@ const NORMAL = { id: 20, tarih: "2026-09-01", turId: 4, tutar: 39500, kdvOrani: 
 describe("Spec 0048: personel ek ödemesi kutuya anında yansır", () => {
   // Spec 0053 R15, R24 (AC-40): formda ödeme kalem ile aynı yazımda girildiği için yeni doğan Elden hedefine de ödeme girilir;
   // 0048'in "Kaydedince ödenebilir" ibaresi formda yoktur (pencere yolunun bilgisi olarak motorda kalır).
-  it("AC-1 / AC-2 / AC-19 / AC-12 / AC-11 / AC-23 (0053 AC-40): elden ek ödeme eklenince Elden hedefi doğar ve hemen ödenebilir; kaldırılınca kalkar", () => {
+  // Spec 0054 R1, R4 ile güncellendi: elden ek ödeme maaş eldenine değil, kendi "Ek ödeme (elden)" hedefine düşer; formda hemen
+  // ödenebilir (0053 R24) ve kaldırılınca kalkar.
+  it("AC-1 / AC-2 / AC-19 / AC-12 / AC-11 / AC-23 (0053 AC-40, 0054 R1): elden ek ödeme kendi hedefi olarak doğar ve hemen ödenebilir; kaldırılınca kalkar", () => {
     render(<H g0={[PERS]} />);
     duzenle();
     expect(hedefler()).toEqual(["ana"]);
     expect(L("Çalışana ödendi")).toBeTruthy();
     ekEkle("", "9500");
-    expect(hedefler()).toEqual(["ana", "elden"]);
-    const e = satir("elden");
-    expect(e.textContent).toMatch(/Elden · 9\.500 ₺Ödenmedi/);
-    expect(L("Elden ödendi")).toBeTruthy();
+    expect(hedefler()).toEqual(["ana", "ekElden"]);
+    const e = satir("ekElden");
+    expect(e.textContent).toMatch(/Ek ödeme \(elden\) · 9\.500 ₺Ödenmedi/);
+    expect(L("Ek ödeme (elden) ödendi")).toBeTruthy();
     expect(screen.queryByTestId("form-odeme-kaydedince")).toBeNull();
     expect(e.textContent).toMatch(/maaş 0 ₺ \+ ek ödeme 9\.500 ₺/);
-    expect(satir("ana").textContent).not.toMatch(/ek ödeme/); // resmi tarafta ek ödeme yok: ipucu çizilmez
+    expect(satir("ana").textContent).not.toMatch(/ek ödeme/); // maaş hedefinde ek ödeme yok: ipucu çizilmez
     // AC-12: kutudaki hedef toplamı = plandaki o hedefin satırları.
-    expect(planToplami("Elden")).toBe("9.500 ₺");
-    expect(planToplami("Resmi")).toBe("30.000 ₺");
+    expect(planToplami("Ek ödeme (elden)")).toBe("9.500 ₺");
+    expect(planToplami("Maaş (resmi)")).toBe("30.000 ₺");
     fireEvent.click(L("Ek ödeme 1 sil"));
     expect(hedefler()).toEqual(["ana"]);
   });
-  it("AC-3 / AC-4 / AC-5 / AC-17: kısmen ödenmiş kalemde resmi ek ödeme ve maaş değişimi toplamı ve kalanı günceller; ödenen korunur", () => {
+  // Spec 0054 R4, R14 ile güncellendi: ödenen maaşta kalır; resmi ek ödeme kendi hedefinde açık doğar (Intent).
+  it("AC-3 / AC-4 / AC-5 / AC-17 (0054 R4): kısmen ödenmiş kalemde ek ödeme kendi hedefinde; maaş değişimi maaş hedefini günceller, ödenen korunur", () => {
     render(<H g0={[PERS]} h0={[od(700, 12000, 10)]} />);
     duzenle();
     expect(satir("ana").textContent).toMatch(/Çalışana · 30\.000 ₺Kısmen · kalan 18\.000 ₺/);
     ekEkle("5000", "");
-    expect(satir("ana").textContent).toMatch(/35\.000 ₺Kısmen · kalan 23\.000 ₺/);
-    expect(satir("ana").textContent).toMatch(/maaş 30\.000 ₺ \+ ek ödeme 5\.000 ₺/);
+    expect(satir("ana").textContent).toMatch(/Maaş \(resmi\) · 30\.000 ₺Kısmen · kalan 18\.000 ₺/);
+    expect(satir("ekResmi").textContent).toMatch(/Ek ödeme \(resmi\) · 5\.000 ₺Ödenmedi/);
     degis(L("Resmi işveren maliyeti"), "40000");
-    expect(satir("ana").textContent).toMatch(/45\.000 ₺Kısmen · kalan 33\.000 ₺/);
-    // Satırlıya geçiş: elden doğunca ödenen önce resmiye dağılır, kaybolmaz (Q1).
+    expect(satir("ana").textContent).toMatch(/40\.000 ₺Kısmen · kalan 28\.000 ₺/);
     ekEkle("", "2000");
-    expect(satir("ana").textContent).toMatch(/Resmi · 45\.000 ₺Kısmen · kalan 33\.000 ₺/);
-    expect(satir("elden").textContent).toMatch(/2\.000 ₺Ödenmedi/);
+    expect(satir("ana").textContent).toMatch(/Maaş \(resmi\) · 40\.000 ₺Kısmen · kalan 28\.000 ₺/);
+    expect(satir("ekElden").textContent).toMatch(/2\.000 ₺Ödenmedi/);
   });
   it("AC-9 / AC-27: bölünemeyen personel kaleminde tek hedef ve neden kutunun içinde, iki yerde aynı metin", () => {
     const k = { ...PERS, eldenTutar: 10000, taksitler: [{ id: 1001, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 20000 }, { id: 1002, hedef: "ana", sira: 2, vade: "2026-10-30", tutar: 20000 }] };

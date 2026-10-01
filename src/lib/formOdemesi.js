@@ -6,14 +6,17 @@
 import { cokluOdemeDogrula, mahsupDogrula, COKLU_ODEME_MAX_SATIR } from "./kasa";
 import { ciroAdaylari, ciroPlani, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
 import { parseMoney } from "./utils";
-import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, odemeHedefKalaniK, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
+import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, personelEkBolunmezMi, kalemPersonelAyrimi, odemeHedefKalaniK, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
 export const PASIF_TAKSIT_NEDENI = "Bu bölüm taksitli; taksitler kalem kaydedildikten sonra ödenir (düzenleme formundan ya da ödeme penceresinden).";
 export const HEPSI_TAKSITLI_NOTU = "Bu kalemin bütün ödemeleri taksitli; taksitler kalem kaydedildikten sonra ödenir (düzenleme formundan ya da ödeme penceresinden).";
 // Spec 0053 R30: düzenlemede taksit sayısı değişen hedefin taksit kimlikleri kayıtta yeniden kurulur.
 export const TAKSIT_PLANI_DEGISTI_NEDENI = "Taksit planı değişti; kaydettikten sonra ödeyin.";
 export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle ödeme yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
-  [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir." };
+  [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
+  // Spec 0054 R22: ek ödeme hedefleri ANA değildir (0053 R12).
+  [HEDEF.EK_RESMI]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir.",
+  [HEDEF.EK_ELDEN]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir." };
 export const KENDI_CEK_YALNIZ_ANA_NEDENI = "Kendi çekimiz yalnız ana alacaklıya verilir.";
 export const CEK_YOK_NOTU = "Portföyde ciro edilebilecek (TL, portföyde duran) çek yok; başka bir yöntem seçin.";
 
@@ -27,7 +30,7 @@ export const formOdemeHedefleri = (kalem, turMap) => {
   const dav = davranisOf(kalem, turMap);
   const satirli = satirliMi(kalem);
   const hedefler = odemeHedefleri(kalem, dav).filter(h => h.toplamK > 0);
-  const ikiHedef = hedefler.some(h => h.hedef === HEDEF.ELDEN);
+  const ayrim = kalemPersonelAyrimi(kalem, dav); // spec 0054: kırılım kalemin bugünkü hedef yapısından
   return hedefler
     .sort((a, b) => HEDEF_SIRASI.indexOf(a.hedef) - HEDEF_SIRASI.indexOf(b.hedef))
     .map(h => {
@@ -35,7 +38,7 @@ export const formOdemeHedefleri = (kalem, turMap) => {
       const pasif = satirlar.length > 1;
       const odenenK = satirli ? satirlar.reduce((a, r) => a + (r._odenenK != null ? r._odenenK : (r.odendi ? kurus(r.tutar) : 0)), 0)
         : (kalem._odenen ? (kalem._odenen[h.hedef] || 0) : (kalem.odendi ? h.toplamK : 0));
-      const kirilim = dav === DAVRANIS.PERSONEL && h.hedef !== HEDEF.STOPAJ ? personelHedefKirilimi(kalem, h.hedef, ikiHedef) : { maasK: null, ekOdemeK: null };
+      const kirilim = dav === DAVRANIS.PERSONEL && h.hedef !== HEDEF.STOPAJ ? personelHedefKirilimi(kalem, h.hedef, ayrim) : { maasK: null, ekOdemeK: null };
       // Spec 0053 R30: taksitli hedefin açık taksitleri (sıra, vade, kalan); düzenleme formu ve pencere taksit seçer.
       const acikTaksitler = satirlar.filter(r => Math.max(0, kurus(r.tutar) - (r._odenenK || 0)) > 0)
         .map(r => ({ id: r.id, sira: r.sira, vade: r.vade || null, kalanK: Math.max(0, kurus(r.tutar) - (r._odenenK || 0)) }));
@@ -55,9 +58,11 @@ export const duzenlemeOdemeDurumu = ({ canliKalem, kayitliKalem, turMap, planHat
   const kayitli = formOdemeHedefleri(kayitliKalem, turMap);
   const kayitliDav = kayitliKalem ? davranisOf(kayitliKalem, turMap) : null;
   const bolunmez = !!kayitliKalem && personelBolunmezMi(kayitliKalem.taksitler, kayitliDav);
+  // Spec 0054 R10, R21: kayıtlı satırlar ek ödemeyi içerdiği için ayrılamayan taraf (canlı ek ödemeyle).
+  const ekBolunmez = !!kayitliKalem && !!canliKalem && personelEkBolunmezMi(canliKalem, kayitliKalem.taksitler, kayitliDav);
   // R14: plan hatalıyken kutu kayıtlı hâli gösterir (taksitli kalem tek hedefe düşmesin); düğme bugünkü kuralla.
   if (planHatasi || !canliKalem) {
-    return { hedefler: kayitli.map(h => ({ ...h, dugme: h.kalanK > 0, kaydedinceOdenir: false, asimK: 0 })), kaybolanlar: [], planHatasi: !!planHatasi, turDegisti: false, bolunmez };
+    return { hedefler: kayitli.map(h => ({ ...h, dugme: h.kalanK > 0, kaydedinceOdenir: false, asimK: 0 })), kaybolanlar: [], planHatasi: !!planHatasi, turDegisti: false, bolunmez, ekBolunmez: false };
   }
   const canli = formOdemeHedefleri(canliKalem, turMap);
   const hedefler = canli.map(h => {
@@ -80,7 +85,7 @@ export const duzenlemeOdemeDurumu = ({ canliKalem, kayitliKalem, turMap, planHat
   const kaybolanlar = kayitli.filter(k => k.odenenK > 0 && !canli.some(h => h.hedef === k.hedef)).map(k => ({ hedef: k.hedef, odenenK: k.odenenK, toplamK: 0 }));
   // R15 (Q6): davranış değişti ve kayıtlı ödeme var.
   const turDegisti = kayitliDav != null && davranisOf(canliKalem, turMap) !== kayitliDav && kayitli.some(k => k.odenenK > 0);
-  return { hedefler, kaybolanlar, planHatasi: false, turDegisti, bolunmez };
+  return { hedefler, kaybolanlar, planHatasi: false, turDegisti, bolunmez, ekBolunmez };
 };
 
 // Q5: ciro edilebilecek çekler (portföyde, TL), vade sırasıyla.

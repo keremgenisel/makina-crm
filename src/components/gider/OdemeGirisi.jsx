@@ -5,10 +5,10 @@ import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
 import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 import { hepsiniOde, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, HEPSI_TAKSITLI_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
-import { PERSONEL_BOLUNMEZ_NEDENI } from "../../lib/gider";
+import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib/gider";
 import { Btn, Field, Input, Select, ConfirmDialog, Icon } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment, KartBolum, UyariSeridi } from "../tasarim";
-import { TutarInput, tl2, tutarMetni, ODEME_SECENEKLERI, hedefAdi, eldenHedefliMi, hedefEtiketi } from "./GiderAlanlari";
+import { TutarInput, tl2, tutarMetni, ODEME_SECENEKLERI, hedefAdi, cokHedefliMi, hedefEtiketi } from "./GiderAlanlari";
 
 // Spec 0053 R17: gider ödemesinin TEK editörü. Gider formu (kapsam "form", yeni kalem ve düzenleme) ve ödeme penceresi
 // (kapsam "pencere": listeden, Ödeme Planı'ndan, Anasayfa hatırlatıcısından) bu bileşeni çizer; doğrulama ve hareket üretimi
@@ -40,7 +40,8 @@ export const OdemeGirisi = ({
   const anahtarNo = useRef(1);
   const yeniAnahtar = () => `s${anahtarNo.current++}`;
   const [silinecek, setSilinecek] = useState(null);
-  const iki = hedefler.some(h => h.hedef === HEDEF.ELDEN) || eldenHedefliMi(kalem?.taksitler);
+  // Spec 0054 R16: ad tek kaynaktan; çok hedeflilik kalemin kendisinden (pencere tek hedefe inse de ad ayırt edicidir).
+  const iki = kalem ? cokHedefliMi(kalem, davranis) : hedefler.length > 1;
   const adOf = (hedef) => hedefAdi(hedef, davranis, iki);
   const onEkli = form || hedefler.length > 1;
   const lbl = (hedef, ad, n = 1) => `${onEkli ? `${adOf(hedef)} ${FORM_AD[ad]}` : buyuk(ad)}${n > 1 ? ` ${n}` : ""}`;
@@ -241,6 +242,8 @@ export const OdemeGirisi = ({
       {durum?.planHatasi && <div style={{ marginBottom: 8 }}><UyariSeridi aile="uyari" testId="form-odeme-plan-hatasi">{PLAN_HATASI_NOTU}</UyariSeridi></div>}
       {durum?.turDegisti && <div style={{ marginBottom: 8 }}><UyariSeridi aile="uyari" testId="form-odeme-tur-uyarisi">{TUR_DEGISTI_UYARISI}</UyariSeridi></div>}
       {bolunmezNotu && <div data-testid="form-odeme-bolunmez"><Ipucu>{PERSONEL_BOLUNMEZ_NEDENI}</Ipucu></div>}
+      {/* Spec 0054 R10, R21: ödenmiş maaş satırı ek ödemeyi içerdiği için ayrılamayan taraf. */}
+      {durum?.ekBolunmez && <div data-testid="form-odeme-ek-bolunmez"><Ipucu>{PERSONEL_EK_BOLUNMEZ_NEDENI}</Ipucu></div>}
       {mahsupVar && odemeYetkisi && (
         <div style={{ marginBottom: 12, maxWidth: 360 }}>
           <Segment ariaLabel="Kayıt türü" kip="dugme" options={[{ value: "odeme", label: "Ödeme" }, { value: "mahsup", label: "Avanstan mahsup" }]} value={giris.kip || "odeme"}

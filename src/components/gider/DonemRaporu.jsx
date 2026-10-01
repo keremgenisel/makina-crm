@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, EK_ODEME_TUR_AD, ekOdemeKurus } from "../../lib/gider";
+import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
-import { tl2, DavranisRozeti } from "./GiderAlanlari";
+import { tl2, DavranisRozeti, hedefAdi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
 import { PERSONEL_ODEMELERI, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 
@@ -169,8 +169,9 @@ export const BorcOzeti = ({ ozet }) => {
             <div style={{ marginTop: 6, fontSize: 12.5 }} data-testid="calisan-borc-ayrinti">
               {s.ayrinti.map(c => <div key={String(c.calisanId)} style={{ padding: "3px 0 3px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}><span>{c.ad}{c.vadesiGecti ? " · vadesi geçti" : ""}</span><b>{tl2(c.tutar)}</b></div>
-                {/* Spec 0042 R6, AC-8: resmi/elden kırılımı yalnız ayrıntı açıkken. */}
-                {c.elden > 0 && <div data-testid="calisan-hedef-kirilimi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Resmi {tl2(c.resmi)} · Elden {tl2(c.elden)}</div>}
+                {/* Spec 0042 R6, AC-8 + 0054 R20: hedef kırılımı (en çok dört) yalnız ayrıntı açıkken; ad tek kaynaktan (hedefAdi). */}
+                {HEDEF_SIRASI.filter(h => (c.hedefler?.[h] || 0) > 0).length > 1 && <div data-testid="calisan-hedef-kirilimi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>
+                  {HEDEF_SIRASI.filter(h => (c.hedefler?.[h] || 0) > 0).map(h => `${hedefAdi(h, DAVRANIS.PERSONEL, true)} ${tl2(c.hedefler[h])}`).join(" · ")}</div>}
               </div>)}
             </div>
           )}

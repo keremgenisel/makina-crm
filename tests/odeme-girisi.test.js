@@ -110,9 +110,10 @@ describe("Spec 0053 B: hedef başına birden çok ödeme satırı", () => {
       expect(src, f).not.toMatch(/cokluOdemeDogrula\(|ciroPlani\(|kendiCekPlani\(|mahsupDogrula\(/);
     }
   });
-  it("AC-20: ek ödemeler ayrı ödeme hedefi oluşturmaz; hedefler resmi ve elden, toplamlar ek ödemeyi içerir", () => {
+  // Spec 0054 R1 ile güncellendi (0053 X1 bu spec'e devredildi): ek ödeme maaştan ayrı hedeftir.
+  it("AC-20: ek ödemeler resmi/elden bileşeni başına ayrı hedef; hatırlatıcı kalem sayar", () => {
     const k = personel({ ekOdemeler: [{ tur: "prim", aciklama: "", resmiTutar: 0, eldenTutar: 4000 }, { tur: "fazlaCalisma", aciklama: "", resmiTutar: 2000, eldenTutar: 0 }] });
-    expect(formOdemeHedefleri(k, turMap).map(h => [h.hedef, h.toplamK])).toEqual([[HEDEF.ANA, 3200000], [HEDEF.ELDEN, 2400000]]);
+    expect(formOdemeHedefleri(k, turMap).map(h => [h.hedef, h.toplamK])).toEqual([[HEDEF.ANA, 3000000], [HEDEF.ELDEN, 2000000], [HEDEF.EK_RESMI, 200000], [HEDEF.EK_ELDEN, 400000]]);
     // Hatırlatıcı ve borç özeti bu işten önceki fonksiyonlardır; satır sayısı kalem başına bir (Q6, 0042).
     const hat = odemeHatirlatmalari([k], { turler, tedarikciler, yururlukAy: "2026-01", esikGun: 30 }, "2026-09-25");
     expect(hat.sayilar.gecmis + hat.sayilar.yaklasan).toBe(1);

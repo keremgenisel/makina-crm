@@ -63,6 +63,35 @@ describe("Spec 0042 AC-11: personel hedefleri çıktılara girmez", () => {
   });
 });
 
+// Spec 0054 R12, R19 (AC-19, AC-31): ek ödeme hedeflerinin değerleri, adları ve hedef hesabı hiçbir yazdırma ve dışa aktarma
+// çıktısına girmez. 0042'nin kayıtları (yukarıda) aynen kalır.
+describe("Spec 0054 AC-19 / AC-31: ek ödeme hedefleri çıktılara girmez", () => {
+  it("AC-31: çıktı dosyaları ek hedef değerlerini, adlarını ve personelHedefKirilimi'ni okumaz", () => {
+    const DESEN = /["']ekResmi["']|["']ekElden["']|HEDEF\.EK_RESMI|HEDEF\.EK_ELDEN|Ek ödeme \(resmi\)|Ek ödeme \(elden\)|Maaş \(resmi\)|Maaş \(elden\)|personelHedefKirilimi|personelHedefTutarlari|PERSONEL_HEDEFLERI/;
+    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx", "src/lib/giderRaporu.js"]) {
+      expect(oku(f), f).not.toMatch(DESEN);
+    }
+  });
+  it("AC-19: dört hedefli, ek ödemesi kısmen ödenmiş personelle üretilen aylık rapor hedef adı ve ek ödeme tutarı basmaz", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi, HEDEF } = await import("../src/lib/gider");
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 1;
+    const k = giderKalemDogrula({ id: 9, tarih: "2026-09-30", turId: 3, calisanId: 7, calisanAd: "Behiye Sarıkamışlıoğlu", resmiTutar: 43219, eldenTutar: 18765,
+      ekOdemeler: [{ tur: "prim", aciklama: "Yıl sonu primi", resmiTutar: 1357, eldenTutar: 2468 }], sonOdemeTarihi: "2026-10-05" }, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    expect(k.taksitler.map(t => t.hedef)).toEqual([HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN]);
+    const id = (h) => k.taksitler.find(t => t.hedef === h).id;
+    const hareketler = [{ id: 1, tur: "odeme", tarih: "2026-09-30", tutar: 1357, yontem: "Nakit", hesapId: null, giderId: 9, taksitId: id(HEDEF.EK_RESMI) },
+      { id: 2, tur: "odeme", tarih: "2026-09-30", tutar: 43219, yontem: "Nakit", hesapId: null, giderId: 9, taksitId: id(HEDEF.ANA) }];
+    // Ay toplamı (44.576) yazılabilir; ek hedefin tutarı ayrı satır olarak yazılmaz.
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [k], hareketler, turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
+    for (const yasak of ["Behiye", "Ek ödeme (resmi)", "Ek ödeme (elden)", "Maaş (resmi)", "Maaş (elden)", "ekResmi", "ekElden", "1.357", "2.468", "Yıl sonu"]) {
+      expect(html, yasak).not.toContain(yasak);
+    }
+    expect(html).toContain("Personel gideri");
+  });
+});
+
 // Spec 0047 (R22, R35, R36, C8): gider verisinin yazdırılması artık bir yerde serbest: Aylık Gider ve Kasa Raporu. Sınır
 // "toplam yazdırılır, çalışan bazlı tutar yazdırılmaz"dır ve kaynak taramasıyla ifade edilemez; koruma çıktı temellidir.
 // Yukarıdaki dört denetim GEVŞETİLMEDİ: rapor kurucusu printTemplates.js dışında, düğme gider/ klasörünün dışında.

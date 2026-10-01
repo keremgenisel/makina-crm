@@ -24,7 +24,7 @@ function Harness({ g0 = [], h0 = [], onState }) {
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }
 const satir = (id, hedef, tutar) => ({ id, hedef, sira: 1, vade: "2026-09-30", tutar, odendi: false, odemeTarihi: null });
-// Resmi 30.000 (ana) + elden 20.000: iki hedefli, satırlı personel kalemi.
+// Maaş \(resmi\) 30.000 (ana) + elden 20.000: iki hedefli, satırlı personel kalemi.
 const P = { id: 610, tarih: "2026-09-10", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, sonOdemeTarihi: "2026-09-30",
   taksitler: [satir(1, "ana", 30000), satir(2, "elden", 20000)] };
 const liste = () => screen.getByTestId("kalem-listesi");
@@ -48,8 +48,8 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
     expect(within(satirOf()).getByText("Kısmen ödendi 1/2")).toBeTruthy();
     fireEvent.click(within(satirOf()).getByText("Ödeme planı"));
     const plan = screen.getByTestId("odeme-plani-satirlari");
-    expect(plan.textContent).toMatch(/Resmi · ödendi/);
-    expect(plan.textContent).toMatch(/Elden · ödenmedi/);
+    expect(plan.textContent).toMatch(/Maaş \(resmi\) · ödendi/);
+    expect(plan.textContent).toMatch(/Maaş \(elden\) · ödenmedi/);
   });
   // Spec 0053 Q5/R17: pencere bir hedefe iner; iki hedef iki pencereden (ya da tek kayıtta düzenleme formundan, R15) ödenir.
   it("AC-21 / AC-3: iki hedef (Resmi, Elden) iki yöntemle; her pencere kendi hedefini çizer", () => {
@@ -94,6 +94,6 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
     const b = screen.getByTestId("borc-ozeti");
     expect(within(b).queryByTestId("calisan-hedef-kirilimi")).toBeNull();
     fireEvent.click(within(b).getByText(/Adları göster/));
-    expect(within(b).getByTestId("calisan-hedef-kirilimi").textContent).toBe("Resmi 30.000 ₺ · Elden 20.000 ₺");
+    expect(within(b).getByTestId("calisan-hedef-kirilimi").textContent).toBe("Maaş (resmi) 30.000 ₺ · Maaş (elden) 20.000 ₺"); // spec 0054 R16 adları
   });
 });

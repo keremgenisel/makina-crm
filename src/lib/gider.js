@@ -105,15 +105,34 @@ export const personelHedefKurus = (k) => {
     eldenK: kurus(k?.eldenTutar) + ek.reduce((a, e) => a + kurus(e?.eldenTutar), 0),
   };
 };
-// Spec 0048 R13: bir hedefin maaş ve ek ödeme kırılımı (personelHedefKurus ile aynı kaynak; toplamı hedefin toplamıdır).
-// ikiHedef false ise (tek hedefli ya da 0042 Q4 gereği bölünmez personel) hepsi ANA hedefe toplanır.
-export const personelHedefKirilimi = (k, hedef, ikiHedef) => {
+// Spec 0054 R1, R18 (0048 R13'ü genişletir): personelin dört ödeme hedefi (maaş resmi = ANA, maaş elden = ELDEN, ek ödeme
+// resmi = EK_RESMI, ek ödeme elden = EK_ELDEN) ve her hedefin maaş/ek ödeme kırılımı. TEK kaynak: hedef tutarı bu
+// fonksiyondan okunur (C2). ayrim: hangi bileşenin kendi hedefi olduğu ({ elden, ekResmi, ekElden }; true = ayrı hedef).
+// Ayrılmayan bileşen kendi tarafının maaş hedefine katılır (R21, Q2): ek resmi → ANA, ek elden → ELDEN (elden ayrı değilse
+// ANA), maaş elden → ANA. ayrim true = hepsi ayrı (TAM), false = hepsi ANA'da (tek hedef; 0048'in eski boolean çağrısı).
+export const PERSONEL_TAM_AYRIM = { elden: true, ekResmi: true, ekElden: true };
+const PERSONEL_TEK = { elden: false, ekResmi: false, ekElden: false };
+const ayrimOf = (a) => (a === true || a == null ? PERSONEL_TAM_AYRIM : a === false ? PERSONEL_TEK : a);
+export const personelHedefKirilimi = (k, hedef, ayrim = true) => {
+  const a = ayrimOf(ayrim);
   const ek = Array.isArray(k?.ekOdemeler) ? k.ekOdemeler : [];
   const maasR = kurus(k?.resmiTutar), maasE = kurus(k?.eldenTutar);
-  const ekR = ek.reduce((a, e) => a + kurus(e?.resmiTutar), 0), ekE = ek.reduce((a, e) => a + kurus(e?.eldenTutar), 0);
-  if (!ikiHedef) return hedef === HEDEF.ANA ? { maasK: maasR + maasE, ekOdemeK: ekR + ekE } : { maasK: 0, ekOdemeK: 0 };
-  return hedef === HEDEF.ELDEN ? { maasK: maasE, ekOdemeK: ekE } : { maasK: maasR, ekOdemeK: ekR };
+  const ekR = ek.reduce((t, e) => t + kurus(e?.resmiTutar), 0), ekE = ek.reduce((t, e) => t + kurus(e?.eldenTutar), 0);
+  const eldenTarafi = a.elden ? HEDEF.ELDEN : HEDEF.ANA;
+  const r = { [HEDEF.ANA]: { maasK: maasR, ekOdemeK: 0 }, [HEDEF.ELDEN]: { maasK: 0, ekOdemeK: 0 }, [HEDEF.EK_RESMI]: { maasK: 0, ekOdemeK: 0 }, [HEDEF.EK_ELDEN]: { maasK: 0, ekOdemeK: 0 } };
+  r[eldenTarafi].maasK += maasE;
+  r[a.ekResmi ? HEDEF.EK_RESMI : HEDEF.ANA].ekOdemeK += ekR;
+  r[a.ekElden ? HEDEF.EK_ELDEN : eldenTarafi].ekOdemeK += ekE;
+  return r[hedef] || { maasK: 0, ekOdemeK: 0 };
 };
+// Hedef tutarları (kuruş), PERSONEL_HEDEFLERI sırasıyla; personelHedefKirilimi'nden (R18).
+export const personelHedefTutarlari = (k, ayrim = true) => Object.fromEntries(PERSONEL_HEDEFLERI.map(h => {
+  const x = personelHedefKirilimi(k, h, ayrim);
+  return [h, x.maasK + x.ekOdemeK];
+}));
+// Spec 0054 R15: satırlı doğmanın kapısı sıfırdan büyük hedef sayısıdır (yalnız resmi maaş + resmi prim de iki hedeftir).
+// personelIkiHedef anlamı değişmeden kalır (resmi ve elden toplamları ikisi de > 0).
+export const personelCokHedef = (k, dav) => dav === DAVRANIS.PERSONEL && Object.values(personelHedefTutarlari(k)).filter(t => t > 0).length >= 2;
 export const personelIkiHedef = (k, dav) => {
   if (dav !== DAVRANIS.PERSONEL) return false;
   const p = personelHedefKurus(k);
@@ -139,8 +158,11 @@ export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && 
 // Satırı olan kalemde `odendi`, `odemeTarihi`, `sonOdemeTarihi` satırlardan türetilip yazılır (R3): vadesiGectiMi,
 // sunucunun `odendi` alan denetimi ve dönem raporu süzgeci değişmeden çalışır.
 // Spec 0042 C9: personelin elden kısmı ayrı hedef (ELDEN); resmi kısım ANA olarak kalır (kimlik değişmez, ad görünümde).
-export const HEDEF = { ANA: "ana", ELDEN: "elden", STOPAJ: "stopaj" };
-export const HEDEF_SIRASI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.STOPAJ];
+// Spec 0054 R14: ek ödeme maaştan ayrı iki hedef (resmi, elden). Sıra R9'un doğruluk kaynağıdır: satırsız kalemde ödeme bu
+// sırayla dolar, maaş önce kapanır, sonradan çıkan ek ödeme en sona düşer.
+export const HEDEF = { ANA: "ana", ELDEN: "elden", EK_RESMI: "ekResmi", EK_ELDEN: "ekElden", STOPAJ: "stopaj" };
+export const HEDEF_SIRASI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN, HEDEF.STOPAJ];
+export const PERSONEL_HEDEFLERI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN];
 export const VERGI_DAIRESI = "Vergi dairesi";
 export const satirliMi = (k) => Array.isArray(k?.taksitler) && k.taksitler.length > 0;
 const gunSayisi = (y, m) => new Date(y, m, 0).getDate();
@@ -161,19 +183,20 @@ export const esitBol = (toplamKurus, adet) => {
 export const taksitPlaniOlustur = (toplamKurus, sayi, ilkVade, { hedef = HEDEF.ANA, uid = varsayilanUid } = {}) =>
   esitBol(toplamKurus, sayi).map((t, i) => ({ id: uid(), hedef, sira: i + 1, vade: ayEkleGun(ilkVade, i), tutar: tl(t), odendi: false, odemeTarihi: null }));
 
-// bol: personeli iki hedefe böl (Q4: ödeme almış eski tek hedefli personel kalemi bölünmez → false).
-const hedefToplamKurus = (k, dav, hedef, { bol = true } = {}) => {
+// Spec 0054: personelde çok hedefli kalem hedeflerini personelHedefKirilimi'nden (ayrim ile) okur; tek hedefte hepsi ANA.
+const hedefToplamKurus = (k, dav, hedef, { ayrim = true } = {}) => {
   if (hedef === HEDEF.STOPAJ) return stopajKurus(k, dav);
-  if (bol && personelIkiHedef(k, dav)) { const p = personelHedefKurus(k); return hedef === HEDEF.ELDEN ? p.eldenK : p.resmiK; }
-  return hedef === HEDEF.ELDEN ? 0 : odenecekKurus(k, dav);
+  if (dav === DAVRANIS.PERSONEL && personelCokHedef(k, dav)) return personelHedefTutarlari(k, ayrim)[hedef] || 0;
+  return hedef === HEDEF.ANA ? odenecekKurus(k, dav) : 0;
 };
 // Satırsız kalemin hedefleri (okuma anı, R13 / 0042 Q1): ana (vadesi kalemin vadesi) + personelde elden (Q5: vadesi
 // resmi vadesi; yoksa eski kalemin elden kısmı hatırlatıcıdan düşerdi) + kirada stopaj (vadesi bilinmez, eski).
+// Spec 0054 R9 (satırsız dal): çok hedefli personel okuma anında dört hedefle (tutarı sıfır olan yok), HEDEF_SIRASI ile.
 const satirsizHedefler = (k, dav) => {
   const l = [];
-  if (personelIkiHedef(k, dav)) {
-    const p = personelHedefKurus(k);
-    l.push({ hedef: HEDEF.ANA, toplamK: p.resmiK, vade: k.sonOdemeTarihi || null, eski: false }, { hedef: HEDEF.ELDEN, toplamK: p.eldenK, vade: k.sonOdemeTarihi || null, eski: false });
+  if (personelCokHedef(k, dav)) {
+    const t = personelHedefTutarlari(k);
+    for (const h of PERSONEL_HEDEFLERI) if (t[h] > 0) l.push({ hedef: h, toplamK: t[h], vade: k.sonOdemeTarihi || null, eski: false });
   } else l.push({ hedef: HEDEF.ANA, toplamK: odenecekKurus(k, dav), vade: k.sonOdemeTarihi || null, eski: false });
   const stK = stopajKurus(k, dav);
   if (stK > 0) l.push({ hedef: HEDEF.STOPAJ, toplamK: stK, vade: null, eski: true });
@@ -271,6 +294,37 @@ const satirOdemeAlmis = (x) => x.odendi || (x._odenenK || 0) > 0;
 export const PERSONEL_BOLUNMEZ_NEDENI = "Bu kalem eski planla ödendiği için resmi ve elden olarak ayrılmaz.";
 export const personelBolunmezMi = (eskiSatirlar, dav) => dav === DAVRANIS.PERSONEL && Array.isArray(eskiSatirlar) && eskiSatirlar.length > 0
   && !eskiSatirlar.some(x => x.hedef === HEDEF.ELDEN) && eskiSatirlar.some(x => (x.hedef || HEDEF.ANA) === HEDEF.ANA && satirOdemeAlmis(x));
+// Spec 0054 R10, R21 (Q1): ek ödeme taraf başına ayrılır; bir tarafın (resmi = ANA, elden = ELDEN) ödeme almış satırlarının
+// tutarları yeni maaş hedefini aşıyorsa o satırlar ek ödemeyi zaten içeriyordur (eski plan) ve ayrılmaz: ayırmak satırı
+// ödenenin altına düşürür (planYenidenBol hatası). Ek hedef satırı zaten varsa (ayrılmış kalem) ayrım korunur.
+export const PERSONEL_EK_BOLUNMEZ_NEDENI = "Bu kalemin ödenmiş maaş satırı ek ödemeyi de içeriyor; ek ödeme ayrı bir bölüm olarak ödenmez.";
+export const personelAyrimi = (kayit, eskiSatirlar, dav) => {
+  if (dav !== DAVRANIS.PERSONEL) return PERSONEL_TAM_AYRIM;
+  const eski = Array.isArray(eskiSatirlar) ? eskiSatirlar : [];
+  const elden = !personelBolunmezMi(eski, dav);
+  const maasR = kurus(kayit?.resmiTutar), maasE = kurus(kayit?.eldenTutar);
+  const odenmisK = (h) => eski.filter(x => (x.hedef || HEDEF.ANA) === h && satirOdemeAlmis(x)).reduce((t, x) => t + kurus(x.tutar), 0);
+  const varMi = (h) => eski.some(x => x.hedef === h);
+  const anaAsar = odenmisK(HEDEF.ANA) > maasR + (elden ? 0 : maasE);
+  const ekResmi = varMi(HEDEF.EK_RESMI) || !anaAsar;
+  const ekElden = varMi(HEDEF.EK_ELDEN) || (elden ? odenmisK(HEDEF.ELDEN) <= maasE : !anaAsar);
+  return { elden, ekResmi, ekElden };
+};
+// Kayıtlı (ya da önizleme) kalemin bugünkü yapısı: satırlı kalemde hangi hedeflerin satırı varsa onlar ayrıdır; satırsız
+// kalemde çok hedefliyse hepsi ayrı (okuma anı, R9), tek hedefliyse hepsi ANA'da. Kırılım (0048 R13) bununla okunur.
+export const kalemPersonelAyrimi = (k, dav) => {
+  if (dav !== DAVRANIS.PERSONEL) return PERSONEL_TAM_AYRIM;
+  if (satirliMi(k)) { const v = (h) => k.taksitler.some(x => x.hedef === h); return { elden: v(HEDEF.ELDEN), ekResmi: v(HEDEF.EK_RESMI), ekElden: v(HEDEF.EK_ELDEN) }; }
+  return personelCokHedef(k, dav) ? PERSONEL_TAM_AYRIM : PERSONEL_TEK;
+};
+// Formun ve ödeme kutusunun nedeni: kalemin ek ödemesi olan bir taraf R21 gereği ayrılamıyor mu.
+export const personelEkBolunmezMi = (kayit, eskiSatirlar, dav) => {
+  if (dav !== DAVRANIS.PERSONEL) return false;
+  const a = personelAyrimi(kayit, eskiSatirlar, dav);
+  const ek = Array.isArray(kayit?.ekOdemeler) ? kayit.ekOdemeler : [];
+  const ekR = ek.reduce((t, e) => t + kurus(e?.resmiTutar), 0), ekE = ek.reduce((t, e) => t + kurus(e?.eldenTutar), 0);
+  return (ekR > 0 && !a.ekResmi) || (ekE > 0 && !a.ekElden);
+};
 export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, eskiSatirlar = null, eskiOdendi = false, eskiOdemeTarihi = null } = {}) => {
   const anaCoz = taksitSayisiCoz(plan.taksitSayisi);
   if (anaCoz.hata) return { hata: anaCoz.hata, alan: "taksitSayisi" };
@@ -278,12 +332,15 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   const stK = stopajKurus(kayit, dav);
   const kiraIkiHedef = dav === DAVRANIS.KIRA && stK > 0;
   const eski = Array.isArray(eskiSatirlar) ? eskiSatirlar : [];
-  // Spec 0042 R4, Q4: iki tutarlı personel kalemi resmi (ANA, taksitlenebilir) ve elden (tek satır) hedefleriyle doğar.
-  // Elden satırı olmayan eski satırlı personel kaleminin ana satırı ödeme almışsa bölünmez (hareketler ana satırlara bağlı).
+  // Spec 0042 R4, Q4 + 0054 R15, R21: çok hedefli personel kalemi maaş resmi (ANA, taksitlenebilir), maaş elden ve iki ek
+  // ödeme hedefiyle (üçü tek satır) doğar; taraf başına ayrılamayan bileşen maaş hedefinin içinde kalır (personelAyrimi).
   const odemeAlmis = satirOdemeAlmis;
-  const personelIki = personelIkiHedef(kayit, dav) && !personelBolunmezMi(eski, dav);
-  const hedefTop = (h) => hedefToplamKurus(kayit, dav, h, { bol: personelIki });
-  const vadeOf = (h) => (h === HEDEF.STOPAJ ? plan.stopajVade : h === HEDEF.ELDEN ? (plan.eldenVade || plan.ilkVade) : plan.ilkVade) || null;
+  const personelCok = personelCokHedef(kayit, dav);
+  const ayrim = personelCok ? personelAyrimi(kayit, eski, dav) : PERSONEL_TEK;
+  const hedefTop = (h) => hedefToplamKurus(kayit, dav, h, { ayrim });
+  // R17: ek ödeme hedeflerinin vadesi kalemin ilk vadesidir (ayrı vade alanı yok, X2).
+  const vadeOf = (h) => (h === HEDEF.STOPAJ ? plan.stopajVade : h === HEDEF.ELDEN ? (plan.eldenVade || plan.ilkVade)
+    : h === HEDEF.EK_RESMI || h === HEDEF.EK_ELDEN ? plan.ilkVade : plan.ilkVade) || null;
   const eskiHedef = (h) => {
     // Satırsız eski kalem ödenmişse (R13) yeni hedef satırları ödenmiş doğar; vade kalemin eski vadesidir
     // (triyaj bulgu 1: silinmesin).
@@ -293,17 +350,19 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   // Ana hedefte satır gerekir: kira iki hedefliyse, taksit istenmişse ya da daha önce ödenmiş bir ana satırı varsa
   // (triyaj bulgu 2: stopaj sıfıra çekilince kiraya verene yapılmış ödeme kaybolmasın).
   const anaOdenmisVar = eski.some(x => (x.hedef || HEDEF.ANA) === HEDEF.ANA && x.odendi);
-  const anaGerekli = kiraIkiHedef || personelIki || anaSayi >= 2 || anaOdenmisVar;
+  const anaGerekli = kiraIkiHedef || personelCok || anaSayi >= 2 || anaOdenmisVar;
   const satirlar = [];
   if (anaGerekli) {
     const r = planYenidenBol(eskiHedef(HEDEF.ANA), hedefTop(HEDEF.ANA), anaSayi, vadeOf(HEDEF.ANA), { hedef: HEDEF.ANA, uid });
     if (r.hata) return { hata: r.hata, alan: "taksitSayisi" };
     satirlar.push(...r.satirlar);
   }
-  // X7: elden hedefi taksitlendirilmez, tek satırdır; ödeme almış eski elden satırı korunur (tutar sıfıra çekilse de).
-  if (personelIki || eski.some(x => x.hedef === HEDEF.ELDEN && odemeAlmis(x))) {
-    const r = planYenidenBol(eskiHedef(HEDEF.ELDEN), hedefTop(HEDEF.ELDEN), 1, vadeOf(HEDEF.ELDEN), { hedef: HEDEF.ELDEN, uid });
-    if (r.hata) return { hata: r.hata, alan: "eldenTutar" };
+  // X7 + 0054 R6: elden ve ek ödeme hedefleri taksitlendirilmez, tek satırdır; ödeme almış eski satır korunur (tutar sıfıra
+  // çekilse de). planYenidenBol her hedefi kendi satırlarıyla böler, yani resmi maaşın taksitleri ek ödemeyi etkilemez.
+  for (const h of [HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN]) {
+    if (!((personelCok && hedefTop(h) > 0) || eski.some(x => x.hedef === h && odemeAlmis(x)))) continue;
+    const r = planYenidenBol(eskiHedef(h), hedefTop(h), 1, vadeOf(h), { hedef: h, uid });
+    if (r.hata) return { hata: r.hata, alan: h === HEDEF.ELDEN ? "eldenTutar" : "ekOdemeler" };
     satirlar.push(...r.satirlar);
   }
   if (kiraIkiHedef) {
@@ -820,10 +879,11 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
       if (h.hedef === HEDEF.STOPAJ) { vergi.tutar += o; vergi.adet++; vergi.vadesiGecti = vergi.vadesiGecti || gecti; vergi.kalemler.push(k); continue; }
       if (dav === DAVRANIS.PERSONEL) {
         const ck = String(k.calisanId);
-        if (!cal.has(ck)) cal.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", tutar: 0, resmi: 0, elden: 0, vadesiGecti: false, kalemler: [] });
+        if (!cal.has(ck)) cal.set(ck, { calisanId: k.calisanId, ad: k.calisanAd || "", tutar: 0, resmi: 0, elden: 0, hedefler: {}, vadesiGecti: false, kalemler: [] });
         // Spec 0042 R6, Q6: iki hedef aynı kalemi iki kez listelemez; resmi/elden kırılımı yalnız ayrıntıda gösterilir.
         const c = cal.get(ck); c.tutar += o; c.vadesiGecti = c.vadesiGecti || gecti;
-        if (h.hedef === HEDEF.ELDEN) c.elden += o; else c.resmi += o;
+        if (h.hedef === HEDEF.ELDEN || h.hedef === HEDEF.EK_ELDEN) c.elden += o; else c.resmi += o;
+        c.hedefler[h.hedef] = (c.hedefler[h.hedef] || 0) + o; // spec 0054 R20: dört hedefin kırılımı (ayrıntı açıkken)
         if (!c.kalemler.includes(k)) c.kalemler.push(k);
       } else if (k.tedarikciId && tedMap.has(String(k.tedarikciId))) {
         const tk = String(k.tedarikciId);
@@ -837,7 +897,7 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
   // Sentetik satır (R8): tedarikçi kaydı açtırmaz; genel toplama girer, tedarikçi kartına girmez.
   if (vergi.tutar > 0) satirlar.push({ tur: "vergiDairesi", ad: VERGI_DAIRESI, ...vergi, tutar: tl(vergi.tutar) });
   if (cal.size) {
-    const ayrinti = [...cal.values()].map(c => ({ ...c, tutar: tl(c.tutar), resmi: tl(c.resmi), elden: tl(c.elden) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+    const ayrinti = [...cal.values()].map(c => ({ ...c, tutar: tl(c.tutar), resmi: tl(c.resmi), elden: tl(c.elden), hedefler: Object.fromEntries(Object.entries(c.hedefler).map(([h, v]) => [h, tl(v)])) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
     satirlar.push({ tur: "calisanlar", ad: `Çalışanlar · ${cal.size} kişi`, kisi: cal.size, tutar: tl([...cal.values()].reduce((a, c) => a + c.tutar, 0)), vadesiGecti: ayrinti.some(c => c.vadesiGecti), ayrinti });
   }
   satirlar.sort((a, b) => b.tutar - a.tutar);

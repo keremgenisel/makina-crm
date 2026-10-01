@@ -259,3 +259,18 @@ describe("Spec 0051: başlangıç tarihi raporu etkilemez", () => {
     expect(readFileSync("src/lib/giderRaporu.js", "utf-8")).not.toMatch(/hesapsizBaslangic|hesapsizOzeti/);
   });
 });
+
+// Spec 0054 AC-34 (Q8): ek ödemenin ayrı hedef olması raporun hiçbir rakamını değiştirmez. Aynı personel kalemi
+// dört hedefli satırlarla ve satırsız (0042 öncesi biçim) verildiğinde, aynı ödemelerle belge birebir aynıdır.
+describe("Spec 0054 AC-34: ek ödeme hedefleri 0047 raporunu değiştirmez", () => {
+  it("dört hedefli ve satırsız personel kalemi aynı belgeyi üretir", () => {
+    const P = kayit({ id: 54, tarih: "2026-09-30", turId: 3, calisanId: 7, calisanAd: AD, resmiTutar: 30000, eldenTutar: 20000,
+      ekOdemeler: [{ tur: "prim", aciklama: "Prim", resmiTutar: 5000, eldenTutar: 4500 }], sonOdemeTarihi: "2026-10-05" });
+    expect(P.taksitler.map(t => t.hedef)).toEqual([HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN]);
+    const satirsiz = { ...P, taksitler: [] };
+    const hareket = (taksitId) => [{ id: 1, tur: "odeme", tarih: "2026-09-30", tutar: 30000, yontem: "Nakit", hesapId: null, giderId: 54, taksitId }];
+    const belge = (k, h) => buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [k], hareketler: h, turler, tedarikciler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
+    expect(belge(P, [])).toBe(belge(satirsiz, []));
+    expect(belge(P, hareket(P.taksitler[0].id))).toBe(belge(satirsiz, hareket(null)));
+  });
+});

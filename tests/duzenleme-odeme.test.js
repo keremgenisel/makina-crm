@@ -22,11 +22,14 @@ describe("Spec 0048: hedef nesnesinin genişlemesi (R12, R13, C2)", () => {
   });
   it("AC-11 / AC-23: personelde maaş ve ek ödeme kırılımı hedef başına; toplamı hedef toplamı; kirada ve normalde null", () => {
     const k = { ...PERS, eldenTutar: 10000, ekOdemeler: [{ tur: "prim", resmiTutar: 5000, eldenTutar: 0 }, { tur: "fazlaCalisma", resmiTutar: 0, eldenTutar: 2500 }] };
-    const [r, e] = formOdemeHedefleri(k, turMap);
-    expect(r).toMatchObject({ hedef: "ana", maasK: 3000000, ekOdemeK: 500000, toplamK: 3500000 });
-    expect(e).toMatchObject({ hedef: "elden", maasK: 1000000, ekOdemeK: 250000, toplamK: 1250000 });
+    // Spec 0054 R1, R18 ile güncellendi: ek ödeme kendi hedefidir; maaş hedeflerinde ek ödeme kırılımı sıfırdır.
+    const [r, e, er, ee] = formOdemeHedefleri(k, turMap);
+    expect(r).toMatchObject({ hedef: "ana", maasK: 3000000, ekOdemeK: 0, toplamK: 3000000 });
+    expect(e).toMatchObject({ hedef: "elden", maasK: 1000000, ekOdemeK: 0, toplamK: 1000000 });
+    expect(er).toMatchObject({ hedef: "ekResmi", maasK: 0, ekOdemeK: 500000, toplamK: 500000 });
+    expect(ee).toMatchObject({ hedef: "ekElden", maasK: 0, ekOdemeK: 250000, toplamK: 250000 });
     const p = personelHedefKurus(k);
-    expect(personelHedefKirilimi(k, HEDEF.ANA, true).maasK + personelHedefKirilimi(k, HEDEF.ANA, true).ekOdemeK).toBe(p.resmiK);
+    expect(personelHedefKirilimi(k, HEDEF.ANA, true).maasK + personelHedefKirilimi(k, HEDEF.EK_RESMI, true).ekOdemeK).toBe(p.resmiK);
     // Tek hedefli: hepsi ANA'da.
     expect(personelHedefKirilimi(k, HEDEF.ANA, false)).toEqual({ maasK: 4000000, ekOdemeK: 750000 });
     const kira = { id: 30, tarih: "2026-09-01", turId: 1, tutar: 25000, kdvOrani: 0, stopajOrani: 20 };
@@ -60,7 +63,9 @@ describe("Spec 0048: düzenleme kararları (duzenlemeOdemeDurumu)", () => {
     const h = [od(30000, 10)];
     expect(zengin(PERS, h).odendi).toBe(true);
     const d = durum(PERS, { ...PERS, ekOdemeler: [{ tur: "prim", resmiTutar: 4000, eldenTutar: 0 }] }, h);
-    expect(d.hedefler[0]).toMatchObject({ toplamK: 3400000, kalanK: 400000, dugme: true });
+    // Spec 0054 R4 ile güncellendi (Intent): maaş "Ödendi" kalır, prim kendi hedefinde açık doğar.
+    expect(d.hedefler[0]).toMatchObject({ hedef: "ana", toplamK: 3000000, kalanK: 0 });
+    expect(d.hedefler[1]).toMatchObject({ hedef: "ekResmi", toplamK: 400000, kalanK: 400000 });
   });
   it("AC-18: satırlı kalemde gerçek kimlikli satır ödenenini korur, yeni satır sıfır ödenmiş doğar", () => {
     const kayit = { ...NORMAL, taksitler: taksitler(20, [["ana", 20000], ["ana", 20000]]) };
@@ -114,9 +119,10 @@ describe("Spec 0048: düzenleme kararları (duzenlemeOdemeDurumu)", () => {
     expect(durum(NORMAL, personele, []).turDegisti).toBe(false);
     expect(durum(NORMAL, { ...NORMAL, tutar: 50000 }, h).turDegisti).toBe(false);
   });
-  it("AC-10: ek ödeme başına ayrı hedef oluşmaz", () => {
+  // Spec 0054 R7 ile güncellendi: ek ödemeler resmi/elden bileşeni başına tek hedefte toplanır (satır başına değil).
+  it("AC-10: ek ödeme başına ayrı hedef oluşmaz (en çok dört hedef)", () => {
     const k = { ...PERS, eldenTutar: 5000, ekOdemeler: [1, 2, 3].map(() => ({ tur: "prim", resmiTutar: 1000, eldenTutar: 1000 })) };
-    expect(formOdemeHedefleri(k, turMap).map(h => h.hedef)).toEqual(["ana", "elden"]);
+    expect(formOdemeHedefleri(k, turMap).map(h => [h.hedef, h.toplamK])).toEqual([["ana", 3000000], ["elden", 500000], ["ekResmi", 300000], ["ekElden", 300000]]);
   });
   it("AC-27 / R7: bölünmezlik nedeni tek sabitte; form ve ödeme kutusu onu okur, metin başka yerde yazılmaz", () => {
     const kayit = { ...PERS, eldenTutar: 10000, taksitler: taksitler(10, [["ana", 20000], ["ana", 20000]]) };

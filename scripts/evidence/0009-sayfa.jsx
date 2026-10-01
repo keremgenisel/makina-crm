@@ -347,6 +347,15 @@ const D48_HAR = [
   { id: 48103, tur: "odeme", tarih: "2026-09-15", tutar: 20000, hesapId: 401, giderId: 4803, taksitId: 48031, yontem: "Havale" },
   { id: 48104, tur: "odeme", tarih: "2026-09-15", tutar: 4000, hesapId: 401, giderId: 4804, taksitId: 48041, yontem: "Havale" },
 ];
+// Spec 0054: maaşı tamamen ödenmiş satırlı personel kalemi (ana + elden); ek ödeme sonradan eklenir (Intent).
+const D54_SATIR = (id, hedef, tutar) => ({ id, hedef, sira: 1, vade: "2026-09-30", tutar });
+const D54_PERS = { id: 5401, tarih: "2026-09-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, ekOdemeler: [], sonOdemeTarihi: "2026-09-30",
+  modelSatirlari: [], taksitler: [D54_SATIR(54011, "ana", 30000), D54_SATIR(54012, "elden", 20000)] };
+const D54_EKLI = { ...D54_PERS, ekOdemeler: [{ tur: "prim", aciklama: "Eylül primi", resmiTutar: 9500, eldenTutar: null }], taksitler: [...D54_PERS.taksitler, D54_SATIR(54013, "ekResmi", 9500)] };
+const D54_HAR = [
+  { id: 54101, tur: "odeme", tarih: "2026-09-15", tutar: 30000, hesapId: 401, giderId: 5401, taksitId: 54011, yontem: "Havale" },
+  { id: 54102, tur: "odeme", tarih: "2026-09-15", tutar: 20000, hesapId: 401, giderId: 5401, taksitId: 54012, yontem: "Nakit" },
+];
 const duzenle48 = (k) => <GiderForm kalem={odemeleriUygula([k], D48_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} hareketler={D48_HAR} hareketBolumu onHedefOde={bos} />;
 // Spec 0047: Aylık Gider ve Kasa Raporu (App'in tek memosunun karşılığı). Personel kalemleri çalışan adlarıyla verilir;
 // belgede yalnız "Personel gideri" görünmeli.
@@ -547,11 +556,17 @@ const EKRANLAR = {
   "gider-formu-0053-iki-satir": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,
     ["etiket:Tedarikçiye ödendi", "doldur:Tedarikçiye ödeme tutarı=20000", "dugme:Başka yöntemle satır ekle", "sec:Tedarikçiye ödeme yöntemi 2=Nakit", "kaydir:Ödeme tarihi"]],
   "gider-formu-0053-personel-elden": [<GiderForm kalem={{ turId: 3, calisanId: 21, resmiTutar: "30000", eldenTutar: "20000", tarih: "2026-09-20" }} {...FORM_ODEME} />,
-    ["etiket:Elden ödendi", "doldur:Elden ödeme tutarı=15000", "dugme:Başka yöntemle satır ekle", "sec:Elden ödeme yöntemi 2=Havale", "kaydir:Elden · "]],
+    // Spec 0054 R16: çok hedefli personelde hedef adları "Maaş (resmi)" / "Maaş (elden)" (adımların etiketleri buna göre).
+    ["etiket:Maaş (elden) ödendi", "doldur:Maaş (elden) ödeme tutarı=15000", "dugme:Başka yöntemle satır ekle", "sec:Maaş (elden) ödeme yöntemi 2=Havale", "kaydir:Maaş (elden) · "]],
   "gider-formu-0053-duzenle": [duzenle48(D48_PERS), ["etiket:Çalışana ödendi", "sec:Çalışana ödeme yöntemi=Nakit", "kaydir:Kayıtlı ödemeler"]],
   "gider-formu-0053-duzenle-ciro": [duzenle48(D48_TAKSITLI), ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ciro edilecek çek"]],
   "gider-formu-0053-mahsup": [<GiderForm kalem={odemeleriUygula([D48_PERS], D48_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} giderler={[D48_PERS]} hareketBolumu
     hareketler={[...D48_HAR, { id: 48105, tur: "avans", tarih: "2026-09-05", tutar: 6000, calisanId: 21, hesapId: 401 }]} />, ["dugme:Avanstan mahsup", "kaydir:Mahsup tarihi"]],
+  // Spec 0054: ödenmiş maaşa prim eklenir; maaş hedefleri "Ödendi" kalır, prim kendi hedefinde açık ve formdan ödenir;
+  // kaydedilmiş kalemde ek hedef Ödeme planından açılan pencereyle ödenir.
+  "gider-formu-0054-ek-hedef": [<GiderForm kalem={odemeleriUygula([D54_PERS], D54_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} hareketler={D54_HAR} hareketBolumu onHedefOde={bos} />,
+    ["dugme:Ek ödeme ekle", "doldur:Ek ödeme resmi 1=9500", "etiket:Ek ödeme (resmi) ödendi", "kaydir:Kayıtlı ödemeler"]],
+  "giderler-0054-ek-pencere": [<GiderEkrani g0={[D54_EKLI]} h0={D54_HAR} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı", "dugme:Ödeme gir"]],
   "giderler-odeme-0053-cek": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} cekli={{ cekler: CEKLER, setCekler: bos, payments: cekleriUygula(CEK_ODEMELER, CEKLER) }} />, ["dugme:Kısmen ödendi", "sec:Ödeme yöntemi=Çek (ciro)", "sec:Çek=3401"]],
   "giderler-tedarikci-ekstresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_B} />, ["Tedarikçiler", "dugme:Ekstre"]],
   // Spec 0040: çek portföyü, ciro, durum, geçmiş, çekle tahsilat.
@@ -613,7 +628,7 @@ const EKRANLAR = {
   "kasa-hesap-formu-tutar": [kasaEkrani(), ["dugme:Yeni Hesap", "doldur:Açılış bakiyesi=150000"]],
   // Spec 0046: gider formundan hedef bazlı ödeme ve çek cirosu.
   "gider-formu-odeme-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, resmiTutar: "30000", eldenTutar: "20000", tarih: "2026-09-20" }} {...FORM_ODEME} />,
-    ["Hepsini ödendi işaretle", "sec:Elden ödeme yöntemi=Nakit", "sec:Resmi hesabı=401", "kaydir:Ödeme tarihi"]],
+    ["Hepsini ödendi işaretle", "sec:Maaş (elden) ödeme yöntemi=Nakit", "sec:Maaş (resmi) hesabı=401", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-kira": [<GiderForm kalem={{ turId: 1, girisYonu: "brut", tutar: "20000", kdvOrani: "0", stopajOrani: "20", tedarikciId: 11, tarih: "2026-09-20", taksitSayisi: "3", sonOdemeTarihi: "2026-09-30" }} {...FORM_ODEME} />,
     ["etiket:Vergi dairesine (stopaj) ödendi", "sec:Vergi dairesine (stopaj) hesabı=402", "kaydir:Ödeme tarihi"]],
   "gider-formu-odeme-ciro": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,

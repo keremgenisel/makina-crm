@@ -78,20 +78,23 @@ describe("Spec 0051 B: hareket listesinde ödemenin kapattığı hedef", () => {
   it("AC-26 / AC-27 / AC-13: satırsız kirada bölünmüş ödeme iki hedefi tutarlarıyla, satırsız personel Resmi + Elden yazar", () => {
     render(<KasaEkrani />);
     var_(/Kiraya verene 8\.000 ₺ \+ Vergi dairesine \(stopaj\) 1\.000 ₺ · Ağustos kira/);
-    var_(/Hasan Çelik · Resmi 30\.000 ₺ \+ Elden 5\.000 ₺/);
+    var_(/Hasan Çelik · Maaş \(resmi\) 30\.000 ₺ \+ Maaş \(elden\) 5\.000 ₺/);
   });
   it("AC-14 / AC-15: normal kalemde metin değişmez; silinmiş kalemin ödemesi bugünkü metinle, hatasız", () => {
     render(<KasaEkrani />);
     var_(/Gider ödemesiYıldız Gayrimenkul · Sac(?! ·)/); // normal kalem: hedef yok
     var_(/Gider ödemesiSilinmiş gider/);
   });
-  it("AC-16 / AC-30: hedef adı yalnız hedefAdi'dan; ekranlarda kopya metin yok, üçüncü parametre eldenHedefliMi'den", () => {
+  // Spec 0054 R16 ile güncellendi: çok hedeflilik artık tek kaynaktan (cokHedefliMi); eski eldenHedefliMi || personelIkiHedef
+  // birleşimi dört hedefte eksik kaldığı için kaldırıldı.
+  it("AC-16 / AC-30: hedef adı yalnız hedefAdi'dan; ekranlarda kopya metin yok, çok hedeflilik cokHedefliMi'den", () => {
     for (const f of ["src/components/Kasa.jsx", "src/components/gider/EkstrePenceresi.jsx", "src/components/gider/OdemeKayitPenceresi.jsx"]) {
       const src = readFileSync(f, "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
       expect(src, f).not.toMatch(/"(Resmi|Elden|Kiraya verene|Vergi dairesine \(stopaj\))"/);
     }
-    const alanlar = readFileSync("src/components/gider/GiderAlanlari.jsx", "utf-8");
-    expect(alanlar).toMatch(/const iki = eldenHedefliMi\(kalem\.taksitler\) \|\| personelIkiHedef\(kalem, davranis\)/);
+    const alanlar = readFileSync("src/components/gider/GiderAlanlari.jsx", "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
+    expect(alanlar).not.toMatch(/eldenHedefliMi|personelIkiHedef/);
+    expect(alanlar).toMatch(/if \(!kalem \|\| !paylar\?\.length \|\| !cokHedefliMi\(kalem, davranis\)\) return null;/);
   });
 });
 
@@ -101,8 +104,8 @@ describe("Spec 0051 B: çalışan ekstresi ve ödeme penceresi", () => {
     const hs = [od(4, 22, 35000), MAHSUP];
     render(<EkstrePenceresi baslik="Hasan Çelik" tur="calisan" hesapla={() => calisanEkstresi(7, { giderler: [PERS], hareketler: hs, turler: TURLER })} hesapAdi={() => "Ziraat"} onClose={vi.fn()} />);
     const satirlar = screen.getAllByTestId("ekstre-satiri");
-    expect(satirlar.find(s => s.textContent.startsWith("20.09") || s.textContent.includes("Ödeme")).textContent).toMatch(/Resmi 30\.000 ₺ \+ Elden 5\.000 ₺/);
-    expect(satirlar.find(s => s.textContent.includes("Avanstan mahsup")).textContent).toMatch(/Avanstan mahsup.*Elden/);
+    expect(satirlar.find(s => s.textContent.startsWith("20.09") || s.textContent.includes("Ödeme")).textContent).toMatch(/Maaş \(resmi\) 30\.000 ₺ \+ Maaş \(elden\) 5\.000 ₺/);
+    expect(satirlar.find(s => s.textContent.includes("Avanstan mahsup")).textContent).toMatch(/Avanstan mahsup.*Maaş \(elden\)/); // spec 0054 R16 adı
   });
   it("R10 / Q2: ödeme penceresinin kayıtlı ödemelerinde satırsız kalem 'Kalem' yerine hedefi yazar; mahsup da", () => {
     const hs = [od(4, 22, 35000), MAHSUP];
@@ -110,8 +113,8 @@ describe("Spec 0051 B: çalışan ekstresi ve ödeme penceresi", () => {
     render(<OdemeKayitPenceresi kalem={kalem} davranis="personel" turAd="Personel" turMap={turMap} hareketler={hs} hesaplar={HESAP} odemeYetkisi
       bugun="2026-09-30" onKaydet={vi.fn()} onSil={vi.fn()} onClose={vi.fn()} giderler={[PERS]} />);
     const kayitlar = screen.getAllByTestId("odeme-kaydi").map(k => k.textContent);
-    expect(kayitlar.some(t => /Resmi 30\.000 ₺ \+ Elden 5\.000 ₺/.test(t))).toBe(true);
-    expect(kayitlar.some(t => /Avanstan mahsup · Elden/.test(t))).toBe(true);
+    expect(kayitlar.some(t => /Maaş \(resmi\) 30\.000 ₺ \+ Maaş \(elden\) 5\.000 ₺/.test(t))).toBe(true);
+    expect(kayitlar.some(t => /Avanstan mahsup · Maaş \(elden\)/.test(t))).toBe(true);
     expect(kayitlar.some(t => /Kalem/.test(t))).toBe(false);
   });
 });

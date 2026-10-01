@@ -6,10 +6,10 @@ import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
-  ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS, HEDEF,
+  ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
 } from "../lib/gider";
 import { odemeGirisiHazirla, odemeGirisiYaz } from "../lib/formOdemesi";
-import { hedefAdi as hedefAdiOf } from "./gider/GiderAlanlari";
+import { hedefAdi as hedefAdiOf, cokHedefliMi } from "./gider/GiderAlanlari";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog } from "./ui";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
@@ -131,7 +131,7 @@ export const Giderler = ({
     const kalanHareketler = (hesapHareketleri || []).filter(h => !sil.has(String(h.id)));
     const zengin = odemeleriUygula([kalemKayit], kalanHareketler, turMap)[0];
     const dav = turMap.get(String(kalemKayit.turId))?.davranis || DAVRANIS.NORMAL;
-    const iki = (zengin.taksitler || []).some(r => r.hedef === HEDEF.ELDEN);
+    const iki = cokHedefliMi(zengin, dav); // spec 0054 R16
     return odemeGirisiHazirla(zengin, { turMap, hesaplar: kasaHesaplari || [], cekler, payments, hareketler: kalanHareketler, giderler: giderlerHam, bugun, yururlukAy,
       ...plan, yeniCekId: uid(), hedefAdi: (h) => hedefAdiOf(h, dav, iki) });
   };
