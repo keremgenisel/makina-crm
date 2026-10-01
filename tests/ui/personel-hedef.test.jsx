@@ -30,10 +30,12 @@ const P = { id: 610, tarih: "2026-09-10", turId: 3, calisanId: 21, calisanAd: "H
 const liste = () => screen.getByTestId("kalem-listesi");
 const personelAc = () => fireEvent.click(within(liste()).getByText(/Çalışanları göster/));
 const satirOf = () => within(liste()).getByText("Hasan Çelik").closest("tr");
-const pencereAc = () => {
-  personelAc();
+// Spec 0053 plan Q5: Ödeme Planı satırından açılan pencere o satırın hedefine iner (0 = Resmi, 1 = Elden).
+const pencereAc = (i = 0) => {
+  if (!screen.queryByText("Hasan Çelik")) personelAc();
   fireEvent.click(within(satirOf()).getByText("Ödeme planı"));
-  fireEvent.click(within(screen.getByTestId("odeme-plani-satirlari")).getAllByText("Ödeme gir")[0]);
+  const dugmeler = within(screen.getByTestId("odeme-plani-satirlari")).getAllByText("Ödeme gir");
+  fireEvent.click(i === 1 ? dugmeler[dugmeler.length - 1] : dugmeler[0]);
   return screen.getByTestId("odeme-kayit-penceresi");
 };
 const degis = (el, value) => fireEvent.change(el, { target: { value } });
@@ -49,16 +51,17 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
     expect(plan.textContent).toMatch(/Resmi · ödendi/);
     expect(plan.textContent).toMatch(/Elden · ödenmedi/);
   });
-  it("AC-21 / AC-3: tek pencerede iki satır, iki hedef (Resmi, Elden), iki yöntem", () => {
+  // Spec 0053 Q5/R17: pencere bir hedefe iner; iki hedef iki pencereden (ya da tek kayıtta düzenleme formundan, R15) ödenir.
+  it("AC-21 / AC-3: iki hedef (Resmi, Elden) iki yöntemle; her pencere kendi hedefini çizer", () => {
     let st;
     render(<Harness g0={[P]} onState={s => { st = s; }} />);
-    const p = pencereAc();
-    expect(secenekler(within(p).getByLabelText("Taksit"))).toEqual(["Resmi", "Elden"]);
+    let p = pencereAc(0);
+    expect(p.textContent).not.toMatch(/Elden/);
     degis(within(p).getByLabelText("Ödeme yöntemi"), "Havale");
-    fireEvent.click(within(p).getByText(/Başka yöntemle satır ekle/));
-    degis(within(p).getByLabelText("Taksit 2"), "2");
-    expect(within(p).getByLabelText("Ödeme tutarı 2").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
-    degis(within(p).getByLabelText("Ödeme yöntemi 2"), "Nakit");
+    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    p = pencereAc(1);
+    expect(within(p).getByLabelText("Ödeme tutarı").value).toBe("20.000"); // spec 0045 R1: görünüm binlik noktalı
+    degis(within(p).getByLabelText("Ödeme yöntemi"), "Nakit");
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri.map(h => [h.taksitId, h.tutar, h.yontem])).toEqual([[1, 30000, "Havale"], [2, 20000, "Nakit"]]);
     expect(within(satirOf()).getByText(/^Ödendi/)).toBeTruthy(); // AC-5
@@ -66,22 +69,19 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
   it("AC-20: tutar seçili hedefin (Elden) kalanını aşamaz", () => {
     let st;
     render(<Harness g0={[P]} onState={s => { st = s; }} />);
-    const p = pencereAc();
-    degis(within(p).getByLabelText("Taksit"), "2");
+    const p = pencereAc(1);
     degis(within(p).getByLabelText("Ödeme tutarı"), "25.000");
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri).toEqual([]);
     expect(p.textContent).toMatch(/Kalandan fazla ödeme kaydedilemez \(kalan 20\.000,00 ₺\)/);
   });
-  it("AC-22: avanstan mahsupta hedef (Resmi / Elden) seçilir; varsayılan Resmi; avans sınırı değişmez", () => {
+  it("AC-22: avanstan mahsup pencerenin hedefine (Elden) bağlanır; avans sınırı değişmez", () => {
     let st;
     render(<Harness g0={[P]} h0={[{ id: 9, tur: "avans", tarih: "2026-09-01", tutar: 5000, calisanId: 21, hesapId: null }]} onState={s => { st = s; }} />);
-    const p = pencereAc();
+    const p = pencereAc(1);
     fireEvent.click(within(p).getByRole("button", { name: "Avanstan mahsup" }));
-    const t = within(p).getByLabelText("Taksit");
-    expect(secenekler(t)).toEqual(["Resmi", "Elden"]);
-    expect(t.value).toBe("1");
-    degis(t, "2");
+    // Spec 0053 R27: mahsup tek satır; pencere tek hedefe indiği için yer seçicisi çizilmez.
+    expect(within(p).queryByLabelText("Mahsup bölümü")).toBeNull();
     degis(within(p).getByLabelText("Ödeme tutarı"), "6.000");
     fireEvent.click(screen.getByText("Mahsubu Kaydet"));
     expect(p.textContent).toMatch(/Açık avans borcundan fazla mahsup edilemez/);

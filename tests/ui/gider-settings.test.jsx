@@ -154,20 +154,23 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     expect(screen.getByText("Bitiş ayı başlangıçtan önce olamaz.")).toBeTruthy();
     expect(st).toEqual([]);
   });
-  it("Spec 0042 AC-17 / AC-18: tanımda varsayılan ödeme yöntemi açılır listeden seçilir ve seçilen değer kaydedilir", () => {
+  // Spec 0053 R1, R3 bu 0042 testini ters çevirdi: yöntem yalnız ödeme satırında sorulur; tanım formunda alan yok. Yeni tanım
+  // yöntemsiz kaydedilir, eski tanımın değeri düzenlemede korunur (göç yok).
+  it("AC-2 / AC-4: tanım formunda ödeme yöntemi alanı yok; yeni tanım yöntemsiz, eski tanımın değeri düzenlemede korunur", () => {
     let st;
-    render(<TanimHarness onState={s => { st = s; }} />);
+    render(<TanimHarness t0={[{ id: 91, turId: 4, ad: "İnternet", tutar: 1250, odemeYontemi: "Havale", baslangicAy: "2026-01", uretilenAylar: [] }]} onState={s => { st = s; }} />);
     fireEvent.click(screen.getByText("Yeni Tanım"));
+    expect(screen.queryByLabelText("Varsayılan ödeme yöntemi")).toBeNull();
+    expect(screen.queryByText("Varsayılan ödeme yöntemi")).toBeNull();
     fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
-    fireEvent.change(screen.getByPlaceholderText("Örn. Fabrika binası kirası"), { target: { value: "İnternet" } });
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.250" } });
+    fireEvent.change(screen.getByPlaceholderText("Örn. Fabrika binası kirası"), { target: { value: "Su" } });
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "300" } });
     fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-09" } });
-    const sec = screen.getByLabelText("Varsayılan ödeme yöntemi");
-    expect(sec.tagName).toBe("SELECT");
-    expect(screen.queryByRole("radiogroup", { name: "Varsayılan ödeme yöntemi" })).toBeNull();
-    fireEvent.change(sec, { target: { value: "Havale" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(st[0].odemeYontemi).toBe("Havale");
+    expect(st.find(t => t.ad === "Su").odemeYontemi).toBe("");
+    fireEvent.click(screen.getAllByTitle("Düzenle")[0]);
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st.find(t => t.id === 91).odemeYontemi).toBe("Havale");
   });
   it("AC-16 (spec 0020 X5): tekrarlayan personel tanımında atama seçenekleri görünmez; normal tanımda görünür", () => {
     render(<TanimHarness calisanlar={[{ id: 7, ad: "Ali" }]} />);

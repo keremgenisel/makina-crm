@@ -83,10 +83,12 @@ describe("gider motoru: doğrulama", () => {
     expect(kayit.kdvOrani).toBe(0);
     expect(kayit.tedarikciId).toBeNull();
   });
-  it("AC-71: son ödeme tarihi gider tarihinden önceyse reddedilir; Çek'te etiket 'Çek vade tarihi'", () => {
+  // Spec 0053 R31 bu testin ikinci yarısını ters çevirdi: vade kalemin borç vadesidir, eski yöntem alanı "Çek" olsa da mesaj
+  // "Son ödeme tarihi" der.
+  it("AC-71: son ödeme tarihi gider tarihinden önceyse reddedilir; mesaj yöntemden bağımsız 'Son ödeme tarihi'", () => {
     const g = giderKalemDogrula({ tarih: "2026-09-03", turId: 1, tutar: 100, kdvOrani: 20, sonOdemeTarihi: "2026-09-01", odemeYontemi: "Çek" }, { turMap });
     expect(g.kayit).toBeNull();
-    expect(g.hatalar.find(h => h.alan === "sonOdemeTarihi").mesaj).toMatch(/^Çek vade tarihi/);
+    expect(g.hatalar.find(h => h.alan === "sonOdemeTarihi").mesaj).toMatch(/^Son ödeme tarihi/);
   });
   it("AC-70: vadesi boş kalem kaydedilir ve vadesi geçmiş sayılmaz", () => {
     const g = giderKalemDogrula({ tarih: "2026-09-03", turId: 1, tutar: 100, kdvOrani: 20 }, { turMap });

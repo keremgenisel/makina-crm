@@ -545,6 +545,23 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     && (await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9811 && h.cekId === 9802)
     && (await gUst(adminTok)).cekler.find(c => c.id === 9802)?.durum === "ciro");
 
+  // ── Spec 0053 AC-29 (plan Q12): düzenleme formundan kalem düzenlemesi + yeni ödeme + silinen ödeme tek yazımda ──
+  const fD = await gUst(formTok);
+  const fdOnce = (fD.hesapHareketleri || []).filter(h => h.giderId === 9810);
+  const fdYazim = await postData({ ...fD, dataVersion: undefined,
+    giderler: fD.giderler.map(k => k.id === 9810 ? { ...k, tutar: 2500, aciklama: "düzenlendi" } : k),
+    hesapHareketleri: [...(fD.hesapHareketleri || []).filter(h => h.id !== 9811 || h.cekId != null), { id: 9812, tur: "odeme", tarih: "2026-10-02", tutar: 300, yontem: "Nakit", giderId: 9810, taksitId: null, hesapId: null, aciklama: "prim" },
+      { id: 9813, tur: "odeme", tarih: "2026-10-02", tutar: 200, yontem: "Havale", giderId: 9810, taksitId: null, hesapId: null, aciklama: "" }] }, fD.dataVersion, formTok);
+  const fDs = await gUst(adminTok);
+  check("spec 0053 AC-29: kalem düzenlemesi + iki ödeme satırı tek yazımda → 200; üçü de kayıttan okunur",
+    fdYazim.status === 200 && fdOnce.length === 1 && fDs.giderler.find(k => k.id === 9810)?.aciklama === "düzenlendi"
+    && [9812, 9813].every(id => fDs.hesapHareketleri.some(h => h.id === id)));
+  const fD2 = await gUst(formTok);
+  check("spec 0053 AC-27: düzenlemede kayıtlı ödeme silmek (gider_odeme) kalem düzenlemesiyle tek yazımda → 200",
+    (await postData({ ...fD2, dataVersion: undefined, giderler: fD2.giderler.map(k => k.id === 9810 ? { ...k, aciklama: "silme ile" } : k),
+      hesapHareketleri: fD2.hesapHareketleri.filter(h => h.id !== 9813) }, fD2.dataVersion, formTok)).status === 200
+    && !(await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9813));
+
   // ── Spec 0006 AC-33: yalnız Evrak sekmeli kullanıcının "CRM'e Kaydet" yazımı ─────────
   let eA = await gUst(adminTok);
   await postData({ ...eA, dataVersion: undefined, customers: [...(eA.customers || []), { id: 9500, name: "Evrak Müşterisi", kaliplar: [] }],

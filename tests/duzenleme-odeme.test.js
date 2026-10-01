@@ -122,7 +122,7 @@ describe("Spec 0048: düzenleme kararları (duzenlemeOdemeDurumu)", () => {
     const kayit = { ...PERS, eldenTutar: 10000, taksitler: taksitler(10, [["ana", 20000], ["ana", 20000]]) };
     expect(durum(kayit, kayit, [od(20000, 10, { taksitId: 1001 })]).bolunmez).toBe(true);
     const metin = PERSONEL_BOLUNMEZ_NEDENI;
-    for (const f of ["src/components/GiderForm.jsx", "src/components/gider/OdemeFormSatirlari.jsx"]) {
+    for (const f of ["src/components/GiderForm.jsx", "src/components/gider/OdemeGirisi.jsx"]) { // spec 0053: tek ödeme editörü
       const src = fs.readFileSync(f, "utf-8");
       expect(src).toContain("PERSONEL_BOLUNMEZ_NEDENI");
       expect(src).not.toContain(metin);

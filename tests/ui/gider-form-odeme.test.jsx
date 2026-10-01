@@ -85,7 +85,7 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     degis(screen.getByLabelText("İlk taksitin vadesi"), "2026-09-30");
     const ana = satirlar()[0];
     expect(within(ana).queryByLabelText("Kiraya verene ödendi")).toBeNull();
-    expect(ana.textContent).toMatch(/taksitli; taksitler kayıttan sonra ödeme penceresinden ödenir/);
+    expect(ana.textContent).toMatch(/taksitli; taksitler kalem kaydedildikten sonra ödenir/); // spec 0053: form da öder
     fireEvent.click(L("Vergi dairesine (stopaj) ödendi"));
     degis(L("Vergi dairesine (stopaj) hesabı"), "51");
     kaydetBtn();
@@ -141,15 +141,21 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     expect(st.giderler).toEqual([]);
     expect(st.hesapHareketleri).toEqual(ONCEKI);
   });
-  it("AC-30: 'Hepsini ödendi işaretle' bütün satırları tam tutar, varsayılan yöntem ve hesapla doldurur; sonra tek satır değişir", () => {
+  // Spec 0053 R25 (AC-45): her hedefin İLK satırını son kullanılan yöntem ve hesapla doldurur; dolu satırlara ve ek satırlara
+  // dokunmaz (ikinci basış değişikliği geri almaz). Kalemin "Varsayılan ödeme yöntemi" alanı kalktı (R1).
+  it("AC-30 / 0053 AC-45: 'Hepsini ödendi işaretle' her hedefin ilk satırını doldurur; ikinci basış dolu satırlara dokunmaz", () => {
     let st;
-    render(<H onState={s => { st = s; }} />);
+    render(<H h0={[{ ...ONCEKI[0], yontem: "Havale" }]} onState={s => { st = s; }} />);
     personelAc();
-    degis(L("Varsayılan ödeme yöntemi"), "Havale");
     fireEvent.click(L("Hepsini ödendi işaretle"));
     expect([L("Resmi ödeme tutarı").value, L("Elden ödeme tutarı").value]).toEqual(["30.000", "20.000"]);
     expect([L("Resmi ödeme yöntemi").value, L("Elden hesabı").value]).toEqual(["Havale", "52"]);
     degis(L("Elden ödeme yöntemi"), "Nakit");
+    fireEvent.click(screen.getByRole("button", { name: "Elden için başka yöntemle satır ekle" }));
+    fireEvent.click(L("Hepsini ödendi işaretle"));
+    expect(L("Elden ödeme yöntemi").value).toBe("Nakit");
+    expect(screen.getAllByTestId("form-odeme-satir")).toHaveLength(3);
+    fireEvent.click(screen.getAllByTitle("Satırı kaldır").pop());
     kaydetBtn();
     expect(st.hesapHareketleri.filter(h => h.id !== 900).map(h => h.yontem)).toEqual(["Havale", "Nakit"]);
   });
@@ -247,20 +253,19 @@ describe("Spec 0046: izin ve düzenleme", () => {
   const KISMEN = { id: 700, tarih: "2026-09-10", turId: 4, tutar: 10000, kdvOrani: 0, tedarikciId: 11, sonOdemeTarihi: "2026-09-30", modelSatirlari: [] };
   const KISMI_ODEME = [{ id: 701, tur: "odeme", tarih: "2026-09-15", tutar: 4000, hesapId: 51, giderId: 700, taksitId: null, yontem: "Havale" }];
   const duzenle = () => fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Düzenle"));
-  it("AC-23 / AC-36 / AC-24: düzenlemede ödeme girişi yok; hedef 'Kısmen · kalan'; düğme pencereyi formun üstünde, kalan dolu açar", () => {
-    render(<H g0={[KISMEN]} h0={KISMI_ODEME} />);
+  // Spec 0053 R15 (0046 R15'i geri alır; AC-23): düzenleme formunda ödeme girilir ve kalemle aynı kayıtta yazılır.
+  it("0053 AC-23: düzenlemede hedef 'Kısmen · kalan'; ödeme formdan kalan dolu girilir ve kalemle birlikte kaydedilir", () => {
+    let st;
+    render(<H g0={[KISMEN]} h0={KISMI_ODEME} onState={s => { st = s; }} />);
     duzenle();
-    expect(screen.queryByTestId("form-odeme")).toBeNull();
     const d = screen.getByTestId("form-odeme-durum-satiri");
     expect(d.textContent).toMatch(/Tedarikçiye · 10\.000 ₺Kısmen · kalan 6\.000 ₺/);
-    fireEvent.click(within(d).getByText("Ödeme gir"));
-    const p = screen.getByTestId("odeme-kayit-penceresi");
-    expect(within(p).getByLabelText("Ödeme tutarı").value).toBe("6.000");
-    expect(screen.getByText("Gider Düzenle")).toBeTruthy(); // form açık kaldı
-    // Pencere formdan sonra çizilir (üstte).
-    const modallar = [...document.querySelectorAll(".modal-backdrop")];
-    expect(modallar[modallar.length - 1].contains(p)).toBe(true);
-    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    fireEvent.click(L("Tedarikçiye ödendi"));
+    expect(L("Tedarikçiye ödeme tutarı").value).toBe("6.000");
+    expect(screen.queryByTestId("odeme-kayit-penceresi")).toBeNull();
+    kaydetBtn();
+    expect(st.hesapHareketleri.filter(h => h.giderId === 700).map(h => h.tutar)).toEqual([4000, 6000]);
+    duzenle();
     expect(screen.getByTestId("form-odeme-durum-satiri").textContent).toMatch(/Ödendi/);
   });
   it("AC-37: gider_odeme izni yokken düğme yok, durum okunur", () => {
@@ -270,16 +275,19 @@ describe("Spec 0046: izin ve düzenleme", () => {
     expect(d.textContent).toMatch(/Kısmen · kalan 6\.000 ₺/);
     expect(within(d).queryByText("Ödeme gir")).toBeNull();
   });
-  it("triyaj (Q7): form açıkken pencereden ödenen taksit korunur; tutar ödenmiş taksitlerin altına düşürülünce kayıt reddedilir", () => {
+  // 0046 triyaj (Q7) korunur, artık formun kendi ödemesiyle: ödenmiş taksit kayıtta korunur; tutar ödenmiş taksitlerin altına
+  // düşürülünce kayıt reddedilir.
+  it("triyaj (Q7): formdan ödenen taksit korunur; tutar ödenmiş taksitlerin altına düşürülünce kayıt reddedilir", () => {
     let st;
     const TAKSITLI = { id: 710, tarih: "2026-09-10", turId: 4, tutar: 12000, kdvOrani: 0, tedarikciId: 11, sonOdemeTarihi: "2026-09-30", modelSatirlari: [],
       taksitler: [1, 2, 3].map(i => ({ id: 7100 + i, hedef: "ana", sira: i, vade: `2026-${String(8 + i).padStart(2, "0")}-30`, tutar: 4000, odendi: false, odemeTarihi: null }))};
     render(<H g0={[TAKSITLI]} h0={[]} onState={s => { st = s; }} />);
     duzenle();
-    fireEvent.click(within(screen.getByTestId("form-odeme-durum-satiri")).getByText("Ödeme gir"));
-    expect(within(screen.getByTestId("odeme-kayit-penceresi")).getByLabelText("Ödeme tutarı").value).toBe("4.000");
-    fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
+    fireEvent.click(L("Tedarikçiye ödendi"));
+    expect(L("Tedarikçiye ödeme tutarı").value).toBe("4.000");
+    kaydetBtn();
     expect(st.hesapHareketleri).toEqual([expect.objectContaining({ giderId: 710, taksitId: 7101, tutar: 4000 })]);
+    duzenle();
     degis(L("Tutar"), "3000");
     kaydetBtn();
     expect(screen.getAllByText(/Ödenmiş taksitlerin toplamı \(4\.000 ₺\) yeni ödenecek tutarı aşıyor/).length).toBeGreaterThan(0);
@@ -319,20 +327,24 @@ describe("Spec 0049 B: kendi çekimiz (gider formu ve ödeme penceresi)", () => 
     fireEvent.click(L("Elden ödendi"));
     expect(secenekler(L("Elden ödeme yöntemi"))).not.toContain("Çek (kendi)");
   });
-  it("Q7: ödeme penceresindeki 'Kendi çekiyle öde' ortak Çek Yaz penceresini bu kalemin alacaklısı ve kalanıyla açar", () => {
+  // Spec 0053 R10, R15 (AC-26, AC-36): kendi çek satırın yöntemidir; mevcut gider düzenleme formundan kendi çekle ödenir.
+  // Pencerede eski "Kendi çekiyle öde" düğmesi yoktur.
+  it("0053 AC-26 / AC-36: mevcut gider formdan kendi çekimizle ödenir; pencerede 'Kendi çekiyle öde' düğmesi yok", () => {
     let st;
     const KALEM = { id: 720, tarih: "2026-09-10", turId: 4, tutar: 10000, kdvOrani: 0, tedarikciId: 11, sonOdemeTarihi: "2026-09-30", modelSatirlari: [] };
     render(<H g0={[KALEM]} h0={[]} onState={s => { st = s; }} />);
+    fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödeme kaydet"));
+    expect(screen.queryByText("Kendi çekiyle öde")).toBeNull();
+    expect([...within(screen.getByTestId("odeme-kayit-penceresi")).getByLabelText("Ödeme yöntemi").querySelectorAll("option")].map(o => o.value)).toContain("Çek (kendi)");
+    fireEvent.click(screen.getByText("Vazgeç"));
     fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Düzenle"));
-    fireEvent.click(within(screen.getByTestId("form-odeme-durum-satiri")).getByText("Ödeme gir"));
-    fireEvent.click(screen.getByText("Kendi çekiyle öde"));
-    const Y = screen.getByTestId("cek-yaz-penceresi");
-    expect(screen.getAllByTestId("ciro-kalemi")).toHaveLength(1);
-    degis(within(Y).getByLabelText("Çek numarası"), "B-2");
-    degis(within(Y).getByLabelText("Banka hesabı"), "51");
-    degis(within(Y).getByLabelText("Çek vadesi"), "2026-10-20");
-    expect(within(Y).getByLabelText("Çek tutarı").value).toBe("10.000"); // kalemin kalanıyla ön dolu
-    fireEvent.click(screen.getByText("Çeki Yaz"));
+    fireEvent.click(L("Tedarikçiye ödendi"));
+    degis(L("Tedarikçiye ödeme yöntemi"), "Çek (kendi)");
+    degis(L("Tedarikçiye çek numarası"), "B-2");
+    degis(L("Tedarikçiye çek hesabı"), "51");
+    degis(L("Tedarikçiye çek vadesi"), "2026-10-20");
+    expect(L("Tedarikçiye ödeme tutarı").value).toBe("10.000"); // kalemin kalanıyla ön dolu
+    kaydetBtn();
     expect(st.cekler.find(c => c.no === "B-2")).toMatchObject({ yon: "verilen", tutar: 10000, alacakliAd: "Yıldız Gayrimenkul" });
     expect(st.hesapHareketleri).toEqual([expect.objectContaining({ giderId: 720, tutar: 10000, yontem: "Çek (kendi)" })]);
   });

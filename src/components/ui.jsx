@@ -356,8 +356,9 @@ export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id
 };
 // Not: type özniteliği bilerek eklenmez — mevcut davranış korunur (form içindeki bazı
 // Btn'ler varsayılan submit'e güveniyor olabilir). Görünüm + etkileşim durumları ui.css'te.
-export const Btn = ({ children, onClick, variant = "primary", small, disabled, title }) => (
-  <button onClick={onClick} disabled={disabled} title={title}
+// aria-label isteğe bağlı: yalnız görünen metni bağlamsız olan düğmeye (ör. hedef başına "Başka yöntemle satır ekle") ad verir.
+export const Btn = ({ children, onClick, variant = "primary", small, disabled, title, "aria-label": ariaLabel }) => (
+  <button onClick={onClick} disabled={disabled} title={title} aria-label={ariaLabel}
     className={`btn btn--${variant}${small ? " btn--sm" : ""}`}>
     {children}
   </button>

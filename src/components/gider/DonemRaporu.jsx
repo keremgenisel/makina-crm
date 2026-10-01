@@ -316,8 +316,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           ? <button type="button" onClick={() => onOdendi(k)} title={k.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{rozet}</button>
           : rozet}
         {kismen && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Ödenen {tl2((toplamK - kalanK) / 100)} · kalan {tl2(kalanK / 100)}</div>}
-        {/* Q9: vade etiketi kalemin varsayılan yöntemini okur ("çek vade"); bu bir yöntem iddiası değildir. */}
-        <YontemOzeti y={yontemKirilimlari?.get(String(k.id))} vade={k.sonOdemeTarihi ? `${k.odemeYontemi === "Çek" ? "çek vade" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : null} />
+        {/* Spec 0053 R31: vade kalemin borç vadesidir; kalemin eski yöntem alanı hiçbir ekranda okunmaz. */}
+        <YontemOzeti y={yontemKirilimlari?.get(String(k.id))} vade={k.sonOdemeTarihi ? `vade ${fmtTR(k.sonOdemeTarihi)}` : null} />
         {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
       </div>
     );

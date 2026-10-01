@@ -122,7 +122,7 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
-    {...(cekli ? { cekler: [], setCekler: bos, payments: [] } : {})} />;
+    {...(cekli ? { cekler: [], setCekler: bos, payments: [], ...(cekli.cekler ? cekli : {}) } : {})} />;
 }
 
 const DEALERS = [{ id: 3, name: "Ege Bayi", contact: "Veli Usta", phone: "0232 111", email: "ege@bayi.com", adres: "Bornova", country: "Türkiye", city: "İzmir", bayiMi: true }];
@@ -543,6 +543,16 @@ const EKRANLAR = {
   "kasa-avans-formu": [kasaB(), ["dugme:Avans Ver"]],
   "kasa-calisan-ekstresi": [kasaB({ calisanlar: [CAL[0]] }), ["dugme:Ekstre"]],
   "giderler-mahsup": [mahsupPenceresi(), ["dugme:Avanstan mahsup"]],
+  // Spec 0053: yöntem yalnız ödeme satırında, hedef başına çok satır, düzenleme formunda ödeme, çek her yoldan, mahsup formda.
+  "gider-formu-0053-iki-satir": [<GiderForm kalem={{ turId: 5, tutar: "30000", kdvOrani: "0", tedarikciId: 12, tarih: "2026-09-20", aciklama: "Sac" }} {...FORM_ODEME} />,
+    ["etiket:Tedarikçiye ödendi", "doldur:Tedarikçiye ödeme tutarı=20000", "dugme:Başka yöntemle satır ekle", "sec:Tedarikçiye ödeme yöntemi 2=Nakit", "kaydir:Ödeme tarihi"]],
+  "gider-formu-0053-personel-elden": [<GiderForm kalem={{ turId: 3, calisanId: 21, resmiTutar: "30000", eldenTutar: "20000", tarih: "2026-09-20" }} {...FORM_ODEME} />,
+    ["etiket:Elden ödendi", "doldur:Elden ödeme tutarı=15000", "dugme:Başka yöntemle satır ekle", "sec:Elden ödeme yöntemi 2=Havale", "kaydir:Elden · "]],
+  "gider-formu-0053-duzenle": [duzenle48(D48_PERS), ["etiket:Çalışana ödendi", "sec:Çalışana ödeme yöntemi=Nakit", "kaydir:Kayıtlı ödemeler"]],
+  "gider-formu-0053-duzenle-ciro": [duzenle48(D48_TAKSITLI), ["etiket:Tedarikçiye ödendi", "sec:Tedarikçiye ödeme yöntemi=Çek (ciro)", "sec:Tedarikçiye çek=3401", "kaydir:Ciro edilecek çek"]],
+  "gider-formu-0053-mahsup": [<GiderForm kalem={odemeleriUygula([D48_PERS], D48_HAR, turHaritasi(TURLER))[0]} {...FORM_ODEME} giderler={[D48_PERS]} hareketBolumu
+    hareketler={[...D48_HAR, { id: 48105, tur: "avans", tarih: "2026-09-05", tutar: 6000, calisanId: 21, hesapId: 401 }]} />, ["dugme:Avanstan mahsup", "kaydir:Mahsup tarihi"]],
+  "giderler-odeme-0053-cek": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} cekli={{ cekler: CEKLER, setCekler: bos, payments: cekleriUygula(CEK_ODEMELER, CEKLER) }} />, ["dugme:Kısmen ödendi", "sec:Ödeme yöntemi=Çek (ciro)", "sec:Çek=3401"]],
   "giderler-tedarikci-ekstresi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_B} />, ["Tedarikçiler", "dugme:Ekstre"]],
   // Spec 0040: çek portföyü, ciro, durum, geçmiş, çekle tahsilat.
   "kasa-cek-portfoyu": [kasaCek(), ["Çek Portföyü"]],

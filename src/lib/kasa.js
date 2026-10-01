@@ -285,6 +285,9 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false,
 // (R13): bir satır bile geçersizse kayit yoktur. hedefAdi(taksitId): hata metnindeki hedef adı (pencereden, Q7).
 export const COKLU_ODEME_MAX_SATIR = 10;
 const tlMetni = (k) => tl(k).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Spec 0053 R6: satırlı kalemde her hedef taksitlerinden oluşur, bu yüzden "aynı hedefe giden satırların toplamı" katmanı
+// taksit katmanının sonucudur (her taksidin toplamı kendi kalanını aşamazsa hedefin toplamı da aşamaz); hata metnindeki
+// hedef adı çağıranın hedefAdi(taksitId)'sinden gelir (tek satırlı hedefte "Elden", taksitli hedefte "Resmi 2/3. taksit").
 export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi = (id) => (id == null ? "Kalem" : "Taksit") } = {}) => {
   const hatalar = { satirlar: {}, hedefler: [] };
   const satirlar = Array.isArray(form?.satirlar) ? form.satirlar : [];
@@ -344,6 +347,20 @@ export const virmanDogrula = (form, hesaplar = []) => {
 };
 
 // Son kullanılan hesap (R17): en son tarihli ödeme hareketinin açık hesabı.
+// Spec 0053 R2, R23: yeni ödeme satırının ön yöntemi, en son tarihli ödemenin yöntemi. Ciro ve kendi çek elle seçilemediği
+// (yalnız çek işlemiyle atandığı) ve boş yöntem bir seçim olmadığı için atlanır; hiç yoksa boş ("Belirtilmemiş").
+const ELLE_SECILEMEYEN_YONTEMLER = new Set(["Çek (ciro)", "Çek (kendi)"]);
+// Triyaj bulgu 3: aynı tarihte kimlik sırası giriş sırası değildir (uid rastgele); yeni hareketler diziye sona eklendiği için
+// eşit tarihte dizideki son eleman en yenidir (0051'in kimlik sıralaması dersi).
+export const sonKullanilanYontem = (hareketler = []) => {
+  let son = null;
+  for (const m of hareketler || []) {
+    if (!m || m.tur !== "odeme" || !m.yontem || ELLE_SECILEMEYEN_YONTEMLER.has(m.yontem)) continue;
+    if (!son || (m.tarih || "") >= (son.tarih || "")) son = m;
+  }
+  return son ? son.yontem : "";
+};
+
 export const sonKullanilanHesap = (hareketler = [], hesaplar = []) => {
   const son = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId != null).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "") || Number(b.id) - Number(a.id))[0];
   const h = son && hesaplar.find(x => String(x.id) === String(son.hesapId) && !x.kapali && x.paraBirimi === "TRY");

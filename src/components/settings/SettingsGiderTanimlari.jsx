@@ -4,7 +4,7 @@ import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf } f
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
-import { TutarInput, AyInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { TutarInput, AyInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
@@ -216,14 +216,7 @@ export const SettingsGiderTanimlari = ({
               </Field>
             </>
           )}
-          {/* Spec 0041 R17: üretilen kaleme varsayılan olarak kopyalanır. */}
-          <Field label="Varsayılan ödeme yöntemi">
-            {/* Spec 0042 R9: beş seçenek → açılır liste (sözlük "Ne zaman açılır liste?"). */}
-            <Select aria-label="Varsayılan ödeme yöntemi" value={form.odemeYontemi} onChange={e => set({ odemeYontemi: e.target.value })}>
-              {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </Select>
-            <Ipucu>Üretilen kalemlerde yeni ödeme girilirken ön seçili gelir.</Ipucu>
-          </Field>
+          {/* Spec 0053 R1, R26: "Varsayılan ödeme yöntemi" kalktı; tanımın eski değeri kayıtta korunur, üretimde kopyalanmaz. */}
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><Field label="Başlangıç ayı *"><AyInput ariaLabel="Başlangıç ayı" value={form.baslangicAy} onChange={v => set({ baslangicAy: v })} /><HataMetni>{hatalar.baslangicAy}</HataMetni></Field></div>
             <div style={{ flex: 1 }}><Field label="Bitiş ayı"><AyInput ariaLabel="Bitiş ayı" value={form.bitisAy} onChange={v => set({ bitisAy: v })} /><HataMetni>{hatalar.bitisAy}</HataMetni><Ipucu>Opsiyonel, boşsa süresiz.</Ipucu></Field></div>

@@ -420,7 +420,7 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
 
   // Vade (R18, AC-71): tek alan; Çek'te etiket değişir.
   if (form.sonOdemeTarihi && form.tarih && form.sonOdemeTarihi < form.tarih) {
-    hata("sonOdemeTarihi", `${form.odemeYontemi === "Çek" ? "Çek vade tarihi" : "Son ödeme tarihi"} gider tarihinden önce olamaz.`);
+    hata("sonOdemeTarihi", "Son ödeme tarihi gider tarihinden önce olamaz."); // spec 0053 R31: vade kalemin borç vadesidir, yöntemden türemez
   }
   // Spec 0024 R3 (Q2): kalemin ödeme durumu saklanmaz, hareketten okunur (odemeleriUygula). Formdaki türetilmiş
   // durum yalnız satırsız eski kalemin tek satırını tohumlar (aşağıda eskiOdendi), kayda yazılmaz.
@@ -578,7 +578,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
     const dav = turMap?.get(String(t.turId))?.davranis || DAVRANIS.NORMAL;
     const kalem = {
       id: uid ? uid() : undefined, tarih, turId: t.turId, aciklama: t.ad || "", tanimId: t.id, donem: ay,
-      odendi: false, odemeTarihi: null, odemeYontemi: t.odemeYontemi || "", sonOdemeTarihi: null,
+      // Spec 0053 R26: yöntem ödemenin alanıdır; tanımdaki eski değer kopyalanmaz (veride kalır, okunmaz).
+      odendi: false, odemeTarihi: null, odemeYontemi: "", sonOdemeTarihi: null,
       tedarikciId: dav === DAVRANIS.PERSONEL ? null : (t.tedarikciId ?? null),
       atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [],
     };

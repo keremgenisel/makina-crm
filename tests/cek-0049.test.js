@@ -7,7 +7,7 @@ import {
 import { hesapBakiyeleri, odemeDogrula } from "../src/lib/kasa";
 import { odemeleriUygula, turHaritasi, odemeDurumu } from "../src/lib/gider";
 import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
-import { formOdemeHedefleri, formOdemesiHazirla, ciroCekleri } from "../src/lib/formOdemesi";
+import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri } from "../src/lib/formOdemesi";
 
 const turMap = turHaritasi([{ id: 1, ad: "Hammadde", davranis: "normal" }, { id: 3, ad: "Personel", davranis: "personel" }]);
 const HESAP = [{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 100000, kapali: false }];
@@ -74,8 +74,9 @@ describe("Spec 0049 A: elle çek ekleme", () => {
     const c = bagsiz();
     expect(ciroCekleri([c], []).map(x => x.cek.id)).toEqual([400]);
     const kalem = odemeleriUygula([{ ...KALEM, tutar: 12000 }], [], turMap)[0];
-    const r = formOdemesiHazirla(kalem, { turMap, tarih: "2026-09-20", satirlar: { ana: { isaretli: true, yontem: "Çek (ciro)", cekId: 400 } }, cekler: [c], payments: [], alacakliAd: "Demir" });
-    expect(r.hatalar.satir).toEqual({});
+    // Spec 0053: aynı motor, satır listesi biçimiyle (odemeGirisiHazirla).
+    const r = odemeGirisiHazirla(kalem, { turMap, tarih: "2026-09-20", satirlar: [{ anahtar: "a", hedef: "ana", yontem: "Çek (ciro)", cekId: 400 }], cekler: [c], payments: [], alacakliAd: "Demir" });
+    expect(r.hatalar.satirlar).toEqual({});
     expect(r.hareketler).toEqual([expect.objectContaining({ tutar: 10000, cekId: 400, hesapId: null })]);
     expect(r.cek.durum).toBe("ciro");
   });
@@ -187,13 +188,13 @@ describe("Spec 0049 B: kendi çekimiz", () => {
   });
   it("AC-20: gider formunun ANA satırından kendi çek yazılır; stopaj/elden satırında reddedilir", () => {
     const kalem = odemeleriUygula([KALEM], [], turMap)[0];
-    const r = formOdemesiHazirla(kalem, { turMap, tarih: "2026-09-20", hesaplar: HESAP, alacakliAd: "Demir Bant", yeniCekId: 950,
-      satirlar: { ana: { isaretli: true, yontem: KENDI_CEK_YONTEMI, tutar: "8000", cekNo: "B-1", cekHesapId: 51, cekVade: "2026-10-10" } } });
-    expect(r.hatalar.satir).toEqual({});
+    const r = odemeGirisiHazirla(kalem, { turMap, tarih: "2026-09-20", hesaplar: HESAP, alacakliAd: "Demir Bant", yeniCekId: 950,
+      satirlar: [{ anahtar: "a", hedef: "ana", yontem: KENDI_CEK_YONTEMI, tutar: "8000", cekNo: "B-1", cekHesapId: 51, cekVade: "2026-10-10" }] });
+    expect(r.hatalar.satirlar).toEqual({});
     expect(r.hareketler).toEqual([expect.objectContaining({ tutar: 8000, cekId: 950, hesapId: null, yontem: KENDI_CEK_YONTEMI })]);
     expect(r.cek).toMatchObject({ id: 950, yon: "verilen", no: "B-1", tutar: 8000, hesapId: 51 });
-    const eksik = formOdemesiHazirla(kalem, { turMap, tarih: "2026-09-20", hesaplar: HESAP, alacakliAd: "Demir Bant", satirlar: { ana: { isaretli: true, yontem: KENDI_CEK_YONTEMI, tutar: "8000", cekNo: "" } } });
-    expect(eksik.hatalar.satir.ana).toBe("Çek numarası girilmedi.");
+    const eksik = odemeGirisiHazirla(kalem, { turMap, tarih: "2026-09-20", hesaplar: HESAP, alacakliAd: "Demir Bant", satirlar: [{ anahtar: "a", hedef: "ana", yontem: KENDI_CEK_YONTEMI, tutar: "8000", cekNo: "" }] });
+    expect(eksik.hatalar.satirlar.a.cek).toBe("Çek numarası girilmedi.");
   });
   it("R9: 'Çek (kendi)' yöntemi elle seçilemez", () => {
     const kalem = odemeleriUygula([KALEM], [], turMap)[0];

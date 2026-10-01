@@ -9,6 +9,7 @@ import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { turHaritasi, DAVRANIS } from "../lib/gider";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
+import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { logAction } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
 
@@ -16,7 +17,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   // Ödeme hatırlatıcısı (spec 0003 R10): yalnız gider yetkisiyle; yetkisizde App boş dizi verir.
   giderYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null,
   // Spec 0024 R17: hatırlatıcıdaki "Ödendi" ödeme penceresini açar; ödeme hareket kaydıdır.
-  hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false }) => {
+  hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
+  // Spec 0053 R10, R14 (plan Q9): pencerede çek yöntemleri; App yalnız kasa yetkisiyle verir.
+  cekler = [], setCekler = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
@@ -32,11 +35,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const [hatOdeme, setHatOdeme] = useState(null); // null | {kalemId, hedef}
   const hatOdemeKalemi = hatOdeme ? giderler.find(k => k.id === hatOdeme.kalemId) || null : null;
   const hatirlatmaOdendi = (k, hedef) => setHatOdeme({ kalemId: k.id, hedef });
-  const hatOdemeKaydet = (kayitlar) => { // spec 0041: çok satırlı ödeme dizi olarak gelir
+  // Spec 0041 + 0053 R17: pencere doğrulanmış girişi ({hareketler, cek}) verir; ortak yazım (plan Q8) tek güncellemeyle.
+  const hatOdemeKaydet = (sonuc) => {
     const k = hatOdemeKalemi;
-    const yeni = kayitlar.map(kayit => ({ ...kayit, id: uid() }));
-    setHesapHareketleri?.(p => [...p, ...yeni]);
+    const yeni = odemeGirisiYaz(sonuc, { setHesapHareketleri, setCekler, uid });
     for (const kayit of yeni) logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null } });
+    if (sonuc.cek) logAction({ serverPermissions, action: sonuc.cek.yon === "verilen" ? "olusturuldu" : "ciro_edildi", entity: "cek", entityId: sonuc.cek.id, entityName: `${sonuc.cek.no} · ${sonuc.cek.banka}`, detail: { gider: k.id } });
     setHatOdeme(null);
   };
   const hatOdemeSil = (h) => {
@@ -587,7 +591,8 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <OdemeKayitPenceresi kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
           turAd={giderTurMap.get(String(hatOdemeKalemi.turId))?.ad || "Gider"} turMap={giderTurMap} hedef={{ hedef: hatOdeme.hedef }}
           hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}
-          bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null} />
+          bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null}
+          cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler} tedarikciler={tedarikciler} />
       )}
       {showDebtors && (
         <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>

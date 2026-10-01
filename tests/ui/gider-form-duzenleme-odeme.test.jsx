@@ -58,17 +58,19 @@ const PERS = { id: 10, tarih: "2026-09-01", turId: 3, calisanId: 21, resmiTutar:
 const NORMAL = { id: 20, tarih: "2026-09-01", turId: 4, tutar: 39500, kdvOrani: 0, tedarikciId: 11, sonOdemeTarihi: "2026-09-30", modelSatirlari: [] };
 
 describe("Spec 0048: personel ek ödemesi kutuya anında yansır", () => {
-  it("AC-1 / AC-2 / AC-19 / AC-12 / AC-11 / AC-23: elden ek ödeme eklenince Elden satırı doğar, düğme yerine ibare; kaldırılınca kalkar", () => {
+  // Spec 0053 R15, R24 (AC-40): formda ödeme kalem ile aynı yazımda girildiği için yeni doğan Elden hedefine de ödeme girilir;
+  // 0048'in "Kaydedince ödenebilir" ibaresi formda yoktur (pencere yolunun bilgisi olarak motorda kalır).
+  it("AC-1 / AC-2 / AC-19 / AC-12 / AC-11 / AC-23 (0053 AC-40): elden ek ödeme eklenince Elden hedefi doğar ve hemen ödenebilir; kaldırılınca kalkar", () => {
     render(<H g0={[PERS]} />);
     duzenle();
     expect(hedefler()).toEqual(["ana"]);
-    expect(within(satir("ana")).getByText("Ödeme gir")).toBeTruthy();
+    expect(L("Çalışana ödendi")).toBeTruthy();
     ekEkle("", "9500");
     expect(hedefler()).toEqual(["ana", "elden"]);
     const e = satir("elden");
     expect(e.textContent).toMatch(/Elden · 9\.500 ₺Ödenmedi/);
-    expect(within(e).queryByText("Ödeme gir")).toBeNull();
-    expect(within(e).getByTestId("form-odeme-kaydedince").textContent).toBe("Kaydedince ödenebilir");
+    expect(L("Elden ödendi")).toBeTruthy();
+    expect(screen.queryByTestId("form-odeme-kaydedince")).toBeNull();
     expect(e.textContent).toMatch(/maaş 0 ₺ \+ ek ödeme 9\.500 ₺/);
     expect(satir("ana").textContent).not.toMatch(/ek ödeme/); // resmi tarafta ek ödeme yok: ipucu çizilmez
     // AC-12: kutudaki hedef toplamı = plandaki o hedefin satırları.
@@ -110,25 +112,32 @@ describe("Spec 0048: aşım, düğme ve dallar", () => {
     const s = satir("ana");
     expect(s.textContent).toMatch(/30\.000 ₺Ödendi/);
     expect(s.textContent).toMatch(/Ödenen 39\.500 ₺, yeni toplam 30\.000 ₺/);
-    expect(within(s).queryByText("Ödeme gir")).toBeNull();
+    expect(screen.queryByLabelText("Tedarikçiye ödendi")).toBeNull(); // kalan 0: ödeme girilemez
     kaydetBtn();
     expect(st.giderler[0].tutar).toBe(30000);
     expect(st.hesapHareketleri).toHaveLength(1);
   });
-  it("AC-21: kayıtta tek satırken taksit sayısı ikiye çıkarılınca düğme yok, ibare var", () => {
+  // Spec 0053 R30: taksit sayısı bu düzenlemede değişen hedef pasiftir (taksit kimlikleri kayıtta yeniden kurulur).
+  it("AC-21 (0053 R30): kayıtta tek satırken taksit sayısı ikiye çıkarılınca ödeme girişi pasif ve nedenli", () => {
     render(<H g0={[NORMAL]} />);
     duzenle();
-    expect(within(satir("ana")).getByText("Ödeme gir")).toBeTruthy();
+    expect(L("Tedarikçiye ödendi")).toBeTruthy();
     degis(L("Taksit sayısı"), "2");
-    expect(within(satir("ana")).queryByText("Ödeme gir")).toBeNull();
-    expect(within(satir("ana")).getByTestId("form-odeme-kaydedince")).toBeTruthy();
+    expect(screen.queryByLabelText("Tedarikçiye ödendi")).toBeNull();
+    expect(screen.getByTestId("form-odeme-durumu").textContent).toMatch(/Taksit planı değişti; kaydettikten sonra ödeyin\./);
   });
-  it("AC-20 (Q3): yapısı değişmemiş taksitli hedefte düğme durur ve pencereyi açar", () => {
+  // Spec 0053 R15, R30: yapısı değişmemiş taksitli hedef formda taksit seçiciyle ödenir (pencere açılmaz).
+  it("AC-20 (Q3, 0053 R30): yapısı değişmemiş taksitli hedef formda taksit seçerek ödenir", () => {
+    let st;
     const k = { ...NORMAL, tutar: 40000, taksitler: [{ id: 2001, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 20000 }, { id: 2002, hedef: "ana", sira: 2, vade: "2026-10-30", tutar: 20000 }] };
-    render(<H g0={[k]} />);
+    render(<H g0={[k]} onState={s => { st = s; }} />);
     duzenle();
-    fireEvent.click(within(satir("ana")).getByText("Ödeme gir"));
-    expect(screen.getByTestId("odeme-kayit-penceresi")).toBeTruthy();
+    fireEvent.click(L("Tedarikçiye ödendi"));
+    expect(screen.queryByTestId("odeme-kayit-penceresi")).toBeNull();
+    degis(L("Tedarikçiye taksiti"), "2");
+    expect(L("Tedarikçiye ödeme tutarı").value).toBe("20.000");
+    kaydetBtn();
+    expect(st.hesapHareketleri).toEqual([expect.objectContaining({ giderId: 20, taksitId: 2002, tutar: 20000 })]);
   });
   it("AC-24: plan hatasında kutu kayıtlı hâli ibareyle gösterir; taksitli kalem tek hedefe düşmez", () => {
     const k = { ...NORMAL, tutar: 12000, taksitler: [1, 2, 3].map(i => ({ id: 3000 + i, hedef: "ana", sira: i, vade: "2026-09-30", tutar: 4000 })) };
@@ -176,7 +185,8 @@ describe("Spec 0048: aşım, düğme ve dallar", () => {
 describe("Spec 0048: triyaj, göçsüz eski kalemler", () => {
   const hepsindeDugme = (beklenen) => {
     expect(hedefler()).toEqual(beklenen);
-    for (const h of beklenen) expect(within(satir(h)).getByText("Ödeme gir")).toBeTruthy();
+    // Spec 0053 R15: "Ödeme gir" artık formun içindeki giriş (hedefin işareti); her hedefte açık.
+    for (const h of beklenen) expect(within(screen.getAllByTestId("form-odeme-satiri").find(b => b.dataset.hedef === h)).getByText("Ödeme gir")).toBeTruthy();
     expect(screen.queryByTestId("form-odeme-kaydedince")).toBeNull();
   };
   it("eski satırsız iki hedefli personel (0042 öncesi) hiçbir şey değiştirilmeden açılınca her hedefte 'Ödeme gir' durur", () => {

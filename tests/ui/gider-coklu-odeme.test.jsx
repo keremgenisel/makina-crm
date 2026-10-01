@@ -48,7 +48,9 @@ describe("Spec 0041: çok satırlı ödeme penceresi (R5, R6, R12–R14)", () =>
     let st;
     render(<Harness g0={[KALEM]} onState={s => { st = s; }} />);
     const p = pencereAc("Kompresör");
-    expect(within(p).getByLabelText("Ödeme yöntemi").value).toBe("Havale"); // AC-7
+    // Spec 0053 R2, R23 (AC-39): ön yöntem son kullanılan ödemeden gelir; kalemin eski yöntem alanı (Havale) artık okunmaz.
+    // Bu kalemin hiç ödemesi olmadığı için boştur ("Belirtilmemiş"). 0041 AC-7'nin "kalemin varsayılanı" beklentisi böyle değişti.
+    expect(within(p).getByLabelText("Ödeme yöntemi").value).toBe("");
     degis(within(p).getByLabelText("Ödeme tutarı"), "7.000");
     degis(within(p).getByLabelText("Ödeme yöntemi"), "Nakit");
     degis(within(p).getByLabelText("Hesap"), "1");
@@ -70,7 +72,7 @@ describe("Spec 0041: çok satırlı ödeme penceresi (R5, R6, R12–R14)", () =>
     degis(within(p).getByLabelText("Ödeme tutarı 2"), "6.000");
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri).toEqual([]);
-    expect(screen.getByTestId("odeme-kayit-penceresi").textContent).toMatch(/Satırların toplamı kalemin kalanını aşıyor/);
+    expect(screen.getByTestId("odeme-kayit-penceresi").textContent).toMatch(/satırların toplamı kalemin kalanını aşıyor/); // spec 0053 R6: hedefin adıyla
     cleanup();
     render(<Harness g0={[KALEM]} onState={s => { st = s; }} />);
     const p2 = pencereAc("Kompresör");
@@ -107,11 +109,14 @@ describe("Spec 0041: çok satırlı ödeme penceresi (R5, R6, R12–R14)", () =>
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri.map(h => h.tutar)).toEqual([1000]);
   });
-  it("AC-11: yöntem listesinde 'Çek (ciro)' yok; pencere Çek Portföyü'nü gösterir", () => {
+  // Spec 0053 R10, R14: çek yöntemleri satırın yöntemidir ve yalnız kasa yetkisiyle çizilir; eski "Çek Portföyü'nden ciro edin"
+  // yönlendirmesi ve "Kendi çekiyle öde" düğmesi kalktı. Bu harness kasa yetkisi vermez.
+  it("AC-11: kasa yetkisi yokken yöntem listesinde 'Çek (ciro)' ve 'Çek (kendi)' yok; eski yönlendirme ve düğme yok", () => {
     render(<Harness g0={[KALEM]} />);
     const p = pencereAc("Kompresör");
     expect([...within(p).getByLabelText("Ödeme yöntemi").querySelectorAll("option")].map(o => o.value)).not.toContain("Çek (ciro)");
-    expect(p.textContent).toMatch(/Kasa › Çek Portföyü'nden çeki ciro edin/);
+    expect([...within(p).getByLabelText("Ödeme yöntemi").querySelectorAll("option")].map(o => o.value)).not.toContain("Çek (kendi)");
+    expect(p.textContent).not.toMatch(/Kasa › Çek Portföyü'nden çeki ciro edin|Kendi çekiyle öde/);
   });
   it("AC-21: 'Avanstan mahsup' kipi tek satırlıdır (satır ekleme yok)", () => {
     const P = { id: 610, tarih: "2026-09-10", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 0 };

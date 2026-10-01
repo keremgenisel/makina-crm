@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { today, getKdvRateForDate } from "../lib/utils";
+import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
-import { secilebilirHesaplar, sonKullanilanHesap } from "../lib/kasa";
-import { formOdemeHedefleri, formOdemesiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
+import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
+import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu, TAKSIT_PLANI_DEGISTI_NEDENI } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
-import { OdemeFormSatirlari, OdemeDurumSatirlari } from "./gider/OdemeFormSatirlari";
-import { TutarInput, AtamaAlani, ODEME_SECENEKLERI, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari } from "./gider/GiderAlanlari";
+import { OdemeGirisi } from "./gider/OdemeGirisi";
+import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -39,9 +39,9 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
   giderler = [], giderAyarlari = {}, kdvRates, odemeDegistirebilir = true, onSave, onCancel,
-  // Spec 0046: yeni kalemde hedef bazlı ödeme (hesap yalnız kasa yetkisiyle); ciro yalnız kasa yetkisi ve çek yazıcısıyla.
-  // Düzenlemede hedef durumu ve ödeme penceresini açan düğme (onHedefOde).
-  hesaplar = [], hareketler = [], hesapSecimi = false, cekler = [], payments = [], ciroYetkisi = false, onHedefOde = null,
+  // Spec 0046 + 0053 R15: yeni kalemde ve düzenlemede hedef bazlı ödeme (hesap yalnız kasa yetkisiyle); çek yöntemleri yalnız
+  // kasa yetkisi ve çek yazıcısıyla (R14).
+  hesaplar = [], hareketler = [], hesapSecimi = false, cekler = [], payments = [], ciroYetkisi = false,
   // Spec 0048 Q7: hareket bölümü var mı (0024 öncesi sunucuda yok). Yoksa düzenleme kutusu saklı ödeme durumuyla çizilir.
   hareketBolumu = false }) => {
   const [form, setForm] = useState(() => formdanKalem(kalem, { giderAyarlari, kdvRates }));
@@ -53,8 +53,12 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     setForm(f => ({ ...f, taksitler: kalem.taksitler || [], odendi: kalem.odendi, odemeTarihi: kalem.odemeTarihi || "", _odenen: kalem._odenen }));
   }, [kalem?.id, kalem?.taksitler, kalem?.odendi, kalem?.odemeTarihi, kalem?._odenen]);
   const varsayilanHesap = hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar) ?? "") : "";
-  const [odeme, setOdeme] = useState(() => ({ tarih: today(), hepsi: false, satirlar: {}, alacakliAd: "" }));
-  const [odemeHatalari, setOdemeHatalari] = useState({ satir: {}, genel: [] });
+  // Spec 0053: ödeme girişi (OdemeGirisi) ve formda silinmek üzere işaretlenen kayıtlı ödemeler (Kaydet'e kadar bekler, plan Q4).
+  const [giris, setGiris] = useState(() => ({ tarih: today(), kip: "odeme", satirlar: [], mahsup: { tutar: "", aciklama: "" }, alacakliAd: "" }));
+  const [silinenler, setSilinenler] = useState(() => new Set());
+  const [odemeHatalari, setOdemeHatalari] = useState(null);
+  const varsayilanYontem = sonKullanilanYontem(hareketler);
+  const kalanHareketler = useMemo(() => (silinenler.size ? hareketler.filter(h => !silinenler.has(String(h.id))) : hareketler), [hareketler, silinenler]);
   const uygunHesaplar = useMemo(() => secilebilirHesaplar(hesaplar, "TRY"), [hesaplar]);
   const [hatalar, setHatalar] = useState([]);
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
@@ -123,31 +127,40 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   }), [form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme]);
   const yeniKalem = form.id == null;
   const odemeHedefListesi = useMemo(() => (form.turId === "" || !yeniKalem ? [] : formOdemeHedefleri(onizlemeKalem, turMap)), [yeniKalem, onizlemeKalem, turMap, form.turId]);
+  // Spec 0053 R15, R24: düzenlemede canlı kalem, gerçek kimliğiyle kayıtlı (silinmek üzere işaretlenmemiş) hareketlerden zenginleşir.
+  const canliKalem = useMemo(() => {
+    if (yeniKalem || form.turId === "" || onizleme.hata) return null;
+    const ham = { ...onizlemeKalem, id: form.id };
+    return hareketBolumu ? odemeleriUygula([ham], kalanHareketler, turMap)[0] : { ...ham, _odenen: form._odenen, odendi: form.odendi };
+  }, [yeniKalem, form.turId, form.id, form._odenen, form.odendi, onizleme.hata, onizlemeKalem, hareketBolumu, kalanHareketler, turMap]);
   // Spec 0048 (R1, R2, R11, Q1): düzenlemede kutu canlı önizleme kaleminden çizilir. Ödenen tutar form durumundan değil,
   // kalemin gerçek kimliğiyle kayıtlı hareketlerin kaydın motorundan (odemeleriUygula) geçirilmesinden gelir: kaydedince
   // listede görünecek durumun kendisi. Hareket bölümü yoksa (Q7) saklı durum taşınır.
   const duzenlemeDurumu = useMemo(() => {
     if (yeniKalem || form.turId === "") return null;
-    let canli = null;
-    if (!onizleme.hata) {
-      const ham = { ...onizlemeKalem, id: form.id };
-      canli = hareketBolumu ? odemeleriUygula([ham], hareketler, turMap)[0] : { ...ham, _odenen: form._odenen, odendi: form.odendi };
-    }
-    return duzenlemeOdemeDurumu({ canliKalem: canli, kayitliKalem: kalem, turMap, planHatasi: !!onizleme.hata });
-  }, [yeniKalem, form.turId, form.id, form._odenen, form.odendi, onizleme.hata, onizlemeKalem, hareketBolumu, hareketler, turMap, kalem]);
+    return duzenlemeOdemeDurumu({ canliKalem, kayitliKalem: kalem, turMap, planHatasi: !!onizleme.hata });
+  }, [yeniKalem, form.turId, canliKalem, onizleme.hata, turMap, kalem]);
+  // R30: düzenlemede taksitli hedef, taksit sayısı kayıtlıyla aynıysa taksit seçiciyle açık; değiştiyse pasif ve nedenli.
+  const girisHedefleri = yeniKalem ? odemeHedefListesi
+    : (duzenlemeDurumu?.hedefler || []).map(h => (h.taksitli ? { ...h, pasif: !!h.taksitPlaniDegisti || !!duzenlemeDurumu.planHatasi, neden: h.taksitPlaniDegisti ? TAKSIT_PLANI_DEGISTI_NEDENI : h.neden } : h));
+  const girisKalemi = yeniKalem ? onizlemeKalem : canliKalem;
+  const avansK = dav === DAVRANIS.PERSONEL && form.calisanId !== "" ? avansBorcuK(numId(form.calisanId), kalanHareketler, giderler) : 0;
+  const mahsupVar = odemeDegistirebilir && avansK > 0 && girisHedefleri.some(h => !h.pasif && h.kalanK > 0)
+    && mahsupKapsamda({ tarih: form.tarih }, { bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null });
   const bolunmezNotu = personelBolunmez && personelTutarlari.resmi > 0 && personelTutarlari.elden > 0;
   const cekSatirlari = useMemo(() => (ciroYetkisi ? ciroCekleri(cekler, payments) : []), [ciroYetkisi, cekler, payments]);
   const alacakliSerbest = ciroAlacaklisi({ turId: numId(form.turId), tedarikciId: numId(form.tedarikciId) }, turMap).tur === "serbest";
   const alacakliAdi = () => {
     if (dav === DAVRANIS.PERSONEL) return secilenCalisan?.ad || "";
     const t = tedarikciler.find(x => String(x.id) === String(form.tedarikciId));
-    return t ? t.ad : odeme.alacakliAd;
+    return t ? t.ad : giris.alacakliAd;
   };
-  const odemePlani = { tarih: odeme.tarih, satirlar: odeme.satirlar, alacakliAd: alacakliAdi() };
-  const odemeBaglami = { turMap, hesaplar, cekler, payments };
-  // R12: ciro fark uyarısı motordan (ciroPlani) olduğu gibi, kayıttan önce de görünür.
-  const ciroSecili = Object.values(odeme.satirlar).some(x => x?.isaretli && x.yontem === CIRO_YONTEMI && x.cekId != null);
-  const ciroUyari = ciroSecili ? formOdemesiHazirla(onizlemeKalem, { ...odemeBaglami, ...odemePlani, satirlar: Object.fromEntries(Object.entries(odeme.satirlar).filter(([, x]) => x?.yontem === CIRO_YONTEMI)) }).uyari : null;
+  const iki = girisHedefleri.some(h => h.hedef === HEDEF.ELDEN);
+  const odemePlani = { tarih: giris.tarih, kip: mahsupVar ? giris.kip : "odeme", satirlar: giris.satirlar, mahsup: giris.mahsup, alacakliAd: alacakliAdi(), silinenler: [...silinenler] };
+  const odemeBaglami = { turMap, hesaplar, cekler, payments, hareketler: kalanHareketler, giderler, bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null, hedefAdi: (h) => hedefAdi(h, dav, iki) };
+  // 0040 R8: ciro fark uyarısı motordan (ciroPlani) olduğu gibi, kayıttan önce de görünür.
+  const ciroSecili = giris.kip !== "mahsup" && giris.satirlar.some(x => x.yontem === CIRO_YONTEMI && x.cekId != null);
+  const ciroUyari = ciroSecili && girisKalemi ? odemeGirisiHazirla(odemeleriUygula([{ ...girisKalemi }], yeniKalem ? [] : kalanHareketler, turMap)[0], { ...odemeBaglami, ...odemePlani, kip: "odeme" }).uyari : null;
 
   const kaydet = () => {
     const ham = {
@@ -161,20 +174,22 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     delete kayit._kdvElle;
     if (dav === DAVRANIS.PERSONEL) kayit.calisanAd = secilenCalisan?.ad || kayit.calisanAd || "";
     if (dav !== DAVRANIS.PERSONEL) kayit.aciklama = String(form.aciklama || "").trim();
-    // Spec 0046 R17, AC-27: ödeme satırları kayıttan ÖNCE doğrulanır (geçici kalem kimliğiyle); hata varsa kalem de kaydedilmez.
-    // Kayıt ödeme durumu taşımaz (0024 R3); ödeme ayrı hareketlerdir ve Giderler aynı fonksiyonu gerçek kimlikle çağırır.
-    const odemeVar = yeniKalem && odemeDegistirebilir && Object.values(odeme.satirlar).some(x => x?.isaretli);
+    // Spec 0046 R17 + 0053 R18, R24, AC-22: ödeme girişi kayıttan ÖNCE doğrulanır (yeni kalemde geçici kimlikle, düzenlemede
+    // kaydın kendisiyle); hata varsa kalem de kaydedilmez. Kayıt ödeme durumu taşımaz (0024 R3); Giderler aynı fonksiyonu
+    // gerçek kalemle yeniden çağırır ve kalem, hareketler, silinenler ve çeki tek işleyicide yazar.
+    const odemeVar = odemeDegistirebilir && (odemePlani.kip === "mahsup" ? String(giris.mahsup?.tutar ?? "").trim() !== "" : giris.satirlar.length > 0 || silinenler.size > 0);
     if (odemeVar) {
-      const r = formOdemesiHazirla({ ...kayit, id: "__yeni__" }, { ...odemeBaglami, ...odemePlani });
+      const deneme = odemeleriUygula([{ ...kayit, id: yeniKalem ? "__yeni__" : kayit.id }], yeniKalem ? [] : kalanHareketler, turMap)[0];
+      const r = odemeGirisiHazirla(deneme, { ...odemeBaglami, ...odemePlani });
       setOdemeHatalari(r.hatalar);
       if (!r.hareketler) return;
     }
     onSave(kayit, odemeVar ? odemePlani : null);
   };
 
-  const cekMi = form.odemeYontemi === "Çek";
   const taksitli = Number(form.taksitSayisi) >= 2;
-  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? "Kiraya verene son ödeme" : cekMi ? "Çek vade tarihi" : "Son ödeme tarihi";
+  // Spec 0053 R4: vade kalemin borç vadesidir; ödeme yönteminden türemez ("Çek vade tarihi" dalı kalktı).
+  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? "Kiraya verene son ödeme" : "Son ödeme tarihi";
   const sayac = new Set(hatalar.map(h => h.alan)).size;
   return (
     <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} wide
@@ -297,14 +312,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         )}
       </div>
 
-      {/* Spec 0041 R2, R16: alan bir varsayılandır; kalemin nasıl ödendiğini ödemeler belirler (kod adı değişmez, X7).
-          Spec 0042 R9, R10: beş seçenek → açılır liste (docs/tasarim-sozlugu.md "Ne zaman açılır liste?"). */}
-      <Field label="Varsayılan ödeme yöntemi">
-        <Select aria-label="Varsayılan ödeme yöntemi" value={form.odemeYontemi} onChange={e => set({ odemeYontemi: e.target.value })}>
-          {ODEME_SECENEKLERI.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </Select>
-        <Ipucu>Yeni ödeme girilirken ön seçili gelir. Kalemin nasıl ödendiğini ödemeler belirler.</Ipucu>
-      </Field>
+      {/* Spec 0053 R1, R3: "Varsayılan ödeme yöntemi" kalktı; yöntem yalnız ödeme satırında sorulur. Kalemin kayıtlı alanı
+          form durumunda korunur ve kayıtta aynen geri yazılır (göç yok). */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <div style={{ width: 130 }}>
           <Field label="Taksit sayısı">
@@ -358,14 +367,16 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         </Field>
       )}
 
-      {yeniKalem ? (odemeDegistirebilir && (
-        <OdemeFormSatirlari hedefler={odemeHedefListesi} davranis={dav} odeme={odeme} setOdeme={setOdeme} hesaplar={uygunHesaplar} hesapSecimi={hesapSecimi}
-          ciroYetkisi={ciroYetkisi} cekSatirlari={cekSatirlari} alacakliSerbest={alacakliSerbest} varsayilanYontem={form.odemeYontemi || ""}
-          varsayilanHesap={varsayilanHesap} hatalar={odemeHatalari} uyari={ciroUyari} />
-      )) : (
-        <div data-testid="odeme-durumu-turetilen">
-          <OdemeDurumSatirlari durum={duzenlemeDurumu} davranis={dav} bolunmezNotu={bolunmezNotu}
-            onHedefOde={odemeDegistirebilir && onHedefOde ? (h) => onHedefOde(kalem, h) : null} />
+      {/* Spec 0053 R15, R17: yeni kalemde ve düzenlemede aynı ödeme editörü (OdemeGirisi, kapsam "form"). */}
+      {form.turId !== "" && (yeniKalem ? odemeDegistirebilir : !!duzenlemeDurumu) && (
+        <div data-testid={yeniKalem ? undefined : "odeme-durumu-turetilen"}>
+          <OdemeGirisi kapsam="form" kalem={yeniKalem ? null : canliKalem} hedefler={girisHedefleri} davranis={dav} turMap={turMap} giris={giris} setGiris={setGiris}
+            hatalar={odemeHatalari} uyari={ciroUyari} hesaplar={uygunHesaplar} hesapSecimi={hesapSecimi} ciroYetkisi={ciroYetkisi} cekSatirlari={cekSatirlari}
+            alacakliSerbest={alacakliSerbest} varsayilanYontem={varsayilanYontem} varsayilanHesap={varsayilanHesap} odemeYetkisi={odemeDegistirebilir}
+            mahsupVar={mahsupVar} avansK={avansK} hareketler={hareketler} kayitliGoster={!yeniKalem}
+            onSil={odemeDegistirebilir && !yeniKalem ? (h) => setSilinenler(s0 => new Set([...s0, String(h.id)])) : null}
+            silinenler={silinenler} onSilGeriAl={(h) => setSilinenler(s0 => { const n = new Set(s0); n.delete(String(h.id)); return n; })}
+            durum={yeniKalem ? null : duzenlemeDurumu} bolunmezNotu={!yeniKalem && bolunmezNotu} />
         </div>
       )}
 

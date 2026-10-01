@@ -1,7 +1,7 @@
 // Spec 0046: gider formundan hedef bazlı ödeme ve çek cirosu (saf motor, lib/formOdemesi.js).
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { formOdemeHedefleri, formOdemesiHazirla, hepsiniOde, ciroCekleri, CIRO_YALNIZ_ANA_NEDENI, PASIF_TAKSIT_NEDENI } from "../src/lib/formOdemesi";
+import { formOdemeHedefleri, odemeGirisiHazirla, hepsiniOde, ciroCekleri, CIRO_YALNIZ_ANA_NEDENI, PASIF_TAKSIT_NEDENI } from "../src/lib/formOdemesi";
 import { cokluOdemeDogrula, hesapBakiyeleri } from "../src/lib/kasa";
 import { ciroAdaylari, ciroPlani } from "../src/lib/cek";
 import { giderKalemDogrula, turHaritasi, odemeleriUygula, odemeDurumu, hesaplaGiderRaporu, HEDEF } from "../src/lib/gider";
@@ -20,7 +20,11 @@ const H = [{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiye
   { id: 53, ad: "Dolar", tur: "banka", paraBirimi: "USD" }, { id: 54, ad: "Eski", tur: "banka", paraBirimi: "TRY", kapali: true }];
 const T = "2026-09-20";
 const s = (tutar, o = {}) => ({ isaretli: true, tutar, yontem: "Havale", hesapId: 51, cekId: null, ...o });
-const hazirla = (k, satirlar, o = {}) => formOdemesiHazirla(k, { turMap, tarih: T, satirlar, hesaplar: H, ...o });
+// Spec 0053: 0046'nın hedef haritası biçimi ({ [hedef]: {isaretli, ...} }) yeni satır listesine çevrilir ve AYNI motor
+// (odemeGirisiHazirla) çağrılır; 0046'nın beklentileri aynen sınanır. Satır hatası hedefin ilk mesajına indirilir.
+const listeye = (harita) => (Array.isArray(harita) ? harita : Object.entries(harita).filter(([, x]) => x?.isaretli !== false).map(([hedef, x]) => ({ anahtar: hedef, hedef, sira: null, ...x })));
+const sonucu = (r) => ({ ...r, hatalar: { ...r.hatalar, satir: Object.fromEntries(Object.entries(r.hatalar.satirlar).map(([a, h]) => [a, Object.values(h)[0]])) } });
+const hazirla = (k, satirlar, o = {}) => sonucu(odemeGirisiHazirla(k, { turMap, tarih: T, satirlar: listeye(satirlar), hesaplar: H, ...o }));
 // Çek: portföyde 12.000 TL.
 const odeme = (id, tutar, o = {}) => ({ id, customerId: 1, tarih: "2026-09-01", tutar, currency: "TRY", yontem: "Çek", vadeTarihi: "2026-10-15", ...o });
 const cek = (id, paymentId, o = {}) => ({ id, paymentId, no: "123456", banka: "Ziraat", kesideci: "Ali", tur: "hamiline", durum: "portfoy", gecmis: [], ...o });
@@ -93,10 +97,12 @@ describe("Spec 0046: ödeme hareketleri", () => {
     expect(form).toEqual(pencere);
     const motor = readFileSync("src/lib/formOdemesi.js", "utf8");
     expect(motor).toMatch(/cokluOdemeDogrula\(/);
-    expect(readFileSync("src/components/gider/OdemeKayitPenceresi.jsx", "utf8")).toMatch(/cokluOdemeDogrula\(/);
+    // Spec 0053 R29: pencere ve form aynı giriş fonksiyonunu (odemeGirisiHazirla) çağırır; o da cokluOdemeDogrula'yı.
+    expect(readFileSync("src/components/gider/OdemeKayitPenceresi.jsx", "utf8")).toMatch(/odemeGirisiHazirla\(/);
+    expect(readFileSync("src/components/GiderForm.jsx", "utf8")).toMatch(/odemeGirisiHazirla\(/);
   });
   it("AC-40: 'Hepsini ödendi' yolu 0024 R17'yi korur: satırlı kalemde her satıra kendi tutarı, satırsızda ödenecek tutarın tamamı", () => {
-    const tam = (k) => formOdemesiHazirla(k, { turMap, tarih: T, satirlar: hepsiniOde(formOdemeHedefleri(k, turMap), { yontem: "Havale", hesapId: 51 }), hesaplar: H }).hareketler;
+    const tam = (k) => odemeGirisiHazirla(k, { turMap, tarih: T, satirlar: hepsiniOde([], formOdemeHedefleri(k, turMap), { yontem: "Havale", hesapId: 51 }), hesaplar: H }).hareketler;
     // Eski tamOdemeHareketleri'nin beklenen çıktıları (0024 R17): {tur, tarih, tutar, yontem, hesapId, giderId, taksitId, aciklama}.
     const kr = kira();
     expect(tam(kr)).toEqual(kr.taksitler.map(r => ({ tur: "odeme", tarih: T, tutar: r.tutar, yontem: "Havale", hesapId: 51, giderId: 2, taksitId: r.id, aciklama: "" })));
@@ -144,7 +150,7 @@ describe("Spec 0046: çek cirosu", () => {
     const m = readFileSync("src/lib/formOdemesi.js", "utf8");
     expect(m).toMatch(/ciroAdaylari\(/);
     expect(m).toMatch(/ciroPlani\(/);
-    for (const f of ["src/components/GiderForm.jsx", "src/components/gider/OdemeFormSatirlari.jsx", "src/components/Giderler.jsx"]) {
+    for (const f of ["src/components/GiderForm.jsx", "src/components/gider/OdemeGirisi.jsx", "src/components/gider/OdemeKayitPenceresi.jsx", "src/components/Giderler.jsx"]) {
       expect(readFileSync(f, "utf8"), f).not.toMatch(/ciroPlani\(|CEK_DURUM\.CIRO|durum: "ciro"/);
     }
   });
@@ -153,7 +159,7 @@ describe("Spec 0046: çek cirosu", () => {
 describe("Spec 0046: gider tarafı değişmez (C5)", () => {
   it("AC-28: dönem raporu ve makina maliyeti ödemeli ve ödemesiz aynı", () => {
     const k = kira();
-    const hareketler = hazirla(k, hepsiniOde(formOdemeHedefleri(k, turMap), { yontem: "Havale", hesapId: 51 })).hareketler.map((h, i) => ({ ...h, id: i + 1 }));
+    const hareketler = hazirla(k, hepsiniOde([], formOdemeHedefleri(k, turMap), { yontem: "Havale", hesapId: 51 })).hareketler.map((h, i) => ({ ...h, id: i + 1 }));
     const rapor = (g) => hesaplaGiderRaporu({ giderler: g, turler, tedarikciler }, { baslangic: "2026-09-01", bitis: "2026-09-30" }, { bugun: "2026-09-25" });
     const odenmis = odemeleriUygula([k], hareketler, turMap);
     const a = rapor([k]), b = rapor(odenmis);
