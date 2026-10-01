@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Taslak |
+| **Durum** | Tamamlandı (commit `cea1b45`, dal `feat/0056-deneme-donemi`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa ekranı (hesap listesi ve formu), gider ayarları, hesap bağı taşıyan bölümler |
@@ -255,21 +255,21 @@ taşınabiliyor; dönem bitince 0024'ün korumaları **kendiliğinden** geri gel
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Dönem kapısı tek saf fonksiyonda (`denemeDonemiAcik`) ve `yerelBugun` ile; ekranlar kendi tarih
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Dönem kapısı tek saf fonksiyonda (`denemeDonemiAcik`) ve `yerelBugun` ile; ekranlar kendi tarih
       karşılaştırmasını yazmaz (R1, AC-27).
-- [ ] Hedef hesap koşulları (para birimi, virman, verilen çek) testli (AC-19, AC-20, AC-22).
-- [ ] Sunucu istisnası `payments` ve `cekler` için genişletildi ve uçtan uca testte sabitlendi (AC-23).
-- [ ] Taşıma ve silmenin tek yazımda gittiği testle gösterildi (AC-24).
-- [ ] Altı bağ türünün hepsi testle kapsandı (AC-12).
-- [ ] Taşıma ve hesapsız bırakmanın hiçbir kaydı silmediği ve borçları değiştirmediği testle gösterildi
+- [x] Hedef hesap koşulları (para birimi, virman, verilen çek) testli (AC-19, AC-20, AC-22).
+- [x] Sunucu istisnası `payments` ve `cekler` için genişletildi ve uçtan uca testte sabitlendi (AC-23).
+- [x] Taşıma ve silmenin tek yazımda gittiği testle gösterildi (AC-24).
+- [x] Altı bağ türünün hepsi testle kapsandı (AC-12).
+- [x] Taşıma ve hesapsız bırakmanın hiçbir kaydı silmediği ve borçları değiştirmediği testle gösterildi
       (AC-10, AC-11).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0056-*.jpg`): deneme dönemi ibaresi, silme onayı ve iki yol.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: deneme dönemi kapısı, 0024 R16'nın tarihe bağlı askısı ve kaldırma yolu.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Görsel kanıt eklendi (`docs/evidence/0056-*.jpg`): deneme dönemi ibaresi, silme onayı ve iki yol.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: deneme dönemi kapısı, 0024 R16'nın tarihe bağlı askısı ve kaldırma yolu.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -277,10 +277,10 @@ taşınabiliyor; dönem bitince 0024'ün korumaları **kendiliğinden** geri gel
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (15 bulgu, 5'i bloklayıcı), R2 plan onayı (Q1–Q7; R25–R27). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Bir triyaj turu (2 bulgu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Silme penceresinin kanıt kaydı yoktu (CI kırmızı; kanıt çekimi sürerken triyaja gelindi); sunucudaki taşıma istisnası deneme dönemine bağlı değildi (R4/C4 sunucuda geçerli değildi). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Dönem varsayılan açık olduğu için "hareketi olan hesap silinemez" testleri dönem kapalı ayarla koşuldu (bilinçli); çek portföyü ekranları 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Arayüzde tarihe bağlanan bir gevşetme, sunucuya da gevşetme ekliyorsa kapı iki tarafa birden konmalı; "dönem bitince korumalar kendiliğinden döner" vaadi yalnız düğmeleri değil sunucunun kabul ettiği yazımları da kapsar ve sunucu kapısı kayıtlı ayardan okunmalı (aynı yazımda açılamasın). İkincisi: varsayılanı "açık" olan, gerçek tarihe bağlı bir kapı, testleri saate bağımlı yapar; bugün geçen testler 2027'de kırılırdı. Kapıya bağlı her test ya sahte saat ya da açık uçlu bir tarih kullanmalı. Üçüncüsü: kanıt yeni bir pencere eklendiğinde yalnız o pencereyi değil, ona yer açan komşu öğeleri de gösterir; "N hareket" yazısının kırılması ancak çekimde görüldü. Dördüncüsü (tekrar eden): kanıt kaydı CI'yı kırar; yeni tasarım dosyası ekleyen işte kanıt çekimi uygulamanın parçası sayılmalı, sona bırakılmamalı.
