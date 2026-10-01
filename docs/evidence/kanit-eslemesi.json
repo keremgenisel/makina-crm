@@ -393,16 +393,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kilit-gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-1, AC-38"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kilit-odeme-penceresi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-2, AC-38"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0064-piksel-raporu.json",
@@ -437,16 +435,14 @@
         "ekran": "ayarlar-calisanlar"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kilit-katalog-paneli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-10, AC-38"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kilit-cop-kutusu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-12, AC-38"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0064-piksel-raporu.json",
@@ -762,10 +758,9 @@
         "ekran": "ayarlar-backup"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kilit-geri-yukleme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-13, AC-38"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0064-piksel-raporu.json",
@@ -1981,10 +1976,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "rapor": "docs/evidence/0064-taban-piksel-raporu.json",
         "ekran": "kasa-avans-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-42 (triyaj bulgu 5)"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0064-piksel-raporu.json",

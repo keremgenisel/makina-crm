@@ -1,0 +1,82 @@
+[
+  {
+    "ad": "kasa-avans-formu-aydinlik.png",
+    "boyut": "2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-avans-formu-karanlik.png",
+    "boyut": "2880x1946",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-gider-formu-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-gider-formu-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-odeme-penceresi-aydinlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-odeme-penceresi-karanlik.png",
+    "boyut": "2880x3284",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-katalog-paneli-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-katalog-paneli-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-cop-kutusu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-cop-kutusu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-geri-yukleme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-geri-yukleme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0064-eksik-kayit-kilitleri.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0064-eksik-kayit-kilitleri.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0064-kilit` (`feat/0059-rapor-detay` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q11) kabul |
 

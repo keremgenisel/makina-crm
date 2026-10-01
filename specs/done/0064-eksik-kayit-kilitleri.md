@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `6e112f2`, dal `feat/0064-kilit`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler ve Kasa'nın bütün pencereleri, çek portföyü, Ayarlar > Katalog, Ayarlar > Giderler/Firma/Uygulama, Çöp Kutusu, Sahipsiz Kayıtlar, yedekten geri yükleme |
@@ -381,29 +381,29 @@ iki kullanıcı aynı kayda girdiğinde ikincisi bugünkü "başkası düzenliyo
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kilit alanı listesi tek yerde; kaynak taraması aynı kaydı iki ayrı alan adıyla kilitleyen pencere
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kilit alanı listesi tek yerde; kaynak taraması aynı kaydı iki ayrı alan adıyla kilitleyen pencere
       olmadığını doğruluyor (AC-22).
-- [ ] İki kullanıcı senaryosu testle sürülüyor: aynı kaleme iki ödeme girişi denemesi **Giderler'den ve
+- [x] İki kullanıcı senaryosu testle sürülüyor: aynı kaleme iki ödeme girişi denemesi **Giderler'den ve
       Anasayfa'dan** engellenir (AC-2, AC-24).
-- [ ] Mahsupta iki kilidin birlikte arandığı testle gösterildi (R20, AC-26).
-- [ ] Katalog panelinde ikinci kullanıcının **ekleme de** yapamadığı testle gösterildi (R7, AC-11).
-- [ ] Geri yükleme ön denetimi ve devralma döngüsü testle sürüldü; sunucuya yeni uç nokta eklenmedi
+- [x] Mahsupta iki kilidin birlikte arandığı testle gösterildi (R20, AC-26).
+- [x] Katalog panelinde ikinci kullanıcının **ekleme de** yapamadığı testle gösterildi (R7, AC-11).
+- [x] Geri yükleme ön denetimi ve devralma döngüsü testle sürüldü; sunucuya yeni uç nokta eklenmedi
       (R13, AC-16, AC-32, AC-33).
-- [ ] Sunucu, DB, izin ve birleştirmenin değişmediği testle gösterildi; `merge.js` dokunulmadı
+- [x] Sunucu, DB, izin ve birleştirmenin değişmediği testle gösterildi; `merge.js` dokunulmadı
       (AC-23, AC-36).
-- [ ] `useLock` ve `LockConflict` değişmedi; JSDoc listesi tek listeye atıf yapıyor (C6, R22, AC-34).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0064-*.jpg` + `0064-piksel-raporu.json`): sahte çakışma
+- [x] `useLock` ve `LockConflict` değişmedi; JSDoc listesi tek listeye atıf yapıyor (C6, R22, AC-34).
+- [x] Görsel kanıt eklendi (`docs/evidence/0064-*.jpg` + `0064-piksel-raporu.json`): sahte çakışma
       durumuyla kilitli gider formu, kilitli ödeme penceresi, kilitli katalog paneli ve Çöp Kutusu kilidi;
       kayıtları `kanit-eslemesi.json`'a girdi (R23, AC-38).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: kilit alanlarının tam listesi ve tek kaynağı, hangi pencerelerin aynı alanı
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: kilit alanlarının tam listesi ve tek kaynağı, hangi pencerelerin aynı alanı
       paylaştığı (özellikle gider kaleminin dört penceresi), panel ve araç kilitlerinin açılışta alındığı,
       anlık işlemlerin Servis Panosu emsalini kullandığı ve katalogdaki ekleme kaybının panel kilidiyle
       kapandığı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -411,10 +411,10 @@ iki kullanıcı aynı kayda girdiğinde ikincisi bugünkü "başkası düzenliyo
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | R1 QA turu (18 bulgu, 3'ü bloklayıcı), R2 plan onayı (Q1–Q11; R25–R35), R3 triyaj (R36–R38, AC-39…AC-42; ciro ve Çek Yaz'ın kalem kilidi spec'in kapsam boşluğuydu). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 7 bulgu (ikisi yüksek: kilit listesi tek abone, ciro/Çek Yaz kalem kilidi). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 7 / 0 | Yedisi de gerçekti; kanıt bulgusu araç çalıştırılmadan inceleme yapıldığı içindi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Avans formunun boş açılması bilinçli değişiklik (AC-42, TY onaylı); 226 mevcut ekran 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Paylaşılan bir köprü aboneliğini (onLocksChanged) ikinci kez kullanmadan önce köprünün kaç aboneyi taşıdığına bakılmalı; tek aboneye göre yazılmış köprü sessizce birini bayatlatır ve sahte kilit servisiyle yazılan testler olayı hiç tetiklemediği için bunu görmez. İkincisi: kilit kapsamını "hangi pencere hangi kaydı açar" diye değil "hangi yazım hangi kayda dokunur" diye çıkarmak gerekir; ciro çeki kilitliyordu ama yazdığı ödeme kalemi korumasızdı.
