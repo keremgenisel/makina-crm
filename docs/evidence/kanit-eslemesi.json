@@ -15,6 +15,11 @@
         "rapor": "docs/evidence/0030-taban-piksel-raporu.json",
         "ekran": "katalog-calisan",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "ayarlar-calisanlar",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Documents.jsx": [
@@ -386,6 +391,28 @@
         "rapor": "docs/evidence/0055-taban-piksel-raporu.json",
         "ekran": "giderler-rapor-dugmesi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kilit-gider-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-1, AC-38"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kilit-odeme-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-2, AC-38"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "giderler-rapor",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Settings.jsx": [
@@ -408,6 +435,28 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-calisanlar"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kilit-katalog-paneli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-10, AC-38"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kilit-cop-kutusu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-12, AC-38"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "ayarlar-models",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -657,6 +706,11 @@
         "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
         "ekran": "giderler-standart-tutar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "giderler-standart",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/Tedarikciler.jsx": [
@@ -677,6 +731,11 @@
       {
         "rapor": "docs/evidence/0050-taban-piksel-raporu.json",
         "ekran": "giderler-tedarikci-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "giderler-tedarikciler",
         "beklenen": "ayni"
       }
     ],
@@ -701,6 +760,17 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-backup"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kilit-geri-yukleme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-13, AC-38"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "ayarlar-backup",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsCompany.jsx": [
@@ -870,6 +940,11 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-trash"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -1463,6 +1538,11 @@
         "rapor": "docs/evidence/0050-taban-piksel-raporu.json",
         "ekran": "giderler-uretim-partisi-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "giderler-uretim-partileri",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Kasa.jsx": [
@@ -1745,6 +1825,11 @@
         "rapor": "docs/evidence/0055-taban-piksel-raporu.json",
         "ekran": "kasa-rapor-dugmesi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kasa-bos",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -1894,6 +1979,17 @@
         "rapor": "docs/evidence/0056-taban-piksel-raporu.json",
         "ekran": "kasa-calisan-ekstresi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kasa-avans-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-01 · spec 0064 AC-42 (triyaj bulgu 5)"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kasa-calisan-avanslari",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/EkstrePenceresi.jsx": [
@@ -1992,6 +2088,11 @@
       {
         "rapor": "docs/evidence/0049-taban-piksel-raporu.json",
         "ekran": "kasa-cek-verilen",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
         "beklenen": "ayni"
       }
     ],
@@ -2188,6 +2289,11 @@
       {
         "rapor": "docs/evidence/0057-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-taksitli",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0064-piksel-raporu.json",
+        "ekran": "gider-formu-0053-mahsup",
         "beklenen": "ayni"
       }
     ],

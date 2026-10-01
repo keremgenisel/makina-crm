@@ -3,7 +3,10 @@ import { uid, today, fmtTR } from "../../lib/utils";
 import { tl } from "../../lib/gider";
 import { avansDogrula, avansBorclari, avansSilinebilirMi, calisanEkstresi, secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
 import { logAction } from "../../lib/audit";
-import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "../ui";
+import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
+import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { KartBolum, BosDurum, HataMetni, Ipucu } from "../tasarim";
 import { TutarInput, tl2, ODEME_SECENEKLERI } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
@@ -15,21 +18,28 @@ import { EkstrePenceresi } from "../gider/EkstrePenceresi";
 const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
   const canli = calisanlar.filter(c => !c.deletedAt);
   const uygun = secilebilirHesaplar(hesaplar, "TRY");
-  const [form, setForm] = useState({ calisanId: canli[0]?.id ?? "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" });
+  const [form, setForm] = useState({ calisanId: "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" });
   const [hatalar, setHatalar] = useState({});
   const set = (p) => setForm(f => ({ ...f, ...p }));
+  // Spec 0064 R5, C7 (AC-25, AC-37): kilit SEÇİLEN çalışana bağlanır; seçim değişince eskisi bırakılır, yenisi alınır.
+  // Çalışan seçilmemişken kimlik boştur (yeni kayıt sayılmaz, kilit alınmaz). Triyaj (bulgu 5): form çalışan seçili
+  // AÇILMAZ; yoksa kimse seçmeden ilk çalışanın kilidi alınır, onun mahsubu ve Ayarlar düzenlemesi başkalarında kilitli görünürdü.
+  const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = useLock("calisan", form.calisanId === "" || form.calisanId == null ? null : form.calisanId);
   const kaydet = () => {
+    if (calisanKilidi) return;
     const r = avansDogrula(form, { calisanlar, hesaplar });
     if (!r.kayit) { setHatalar(r.hatalar); return; }
     onKaydet(r.kayit);
   };
   return (
     <Modal title="Avans Ver" onClose={onClose} wide
-      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Avansı Kaydet</Btn></div>}>
+      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!calisanKilidi}><Icon name="check" size={14} /> Avansı Kaydet</Btn></div>}>
+      {calisanKilidi && <LockConflict lockedBy={calisanKilidi.lockedBy} lockedAt={calisanKilidi.lockedAt} onForce={calisanKilidiDevral} onCancel={onClose} />}
       <div data-testid="avans-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>
           <Field label="Çalışan">
             <Select value={form.calisanId} onChange={e => set({ calisanId: canli.find(c => String(c.id) === e.target.value)?.id ?? "" })}>
+              <option value="">Çalışan seçin</option>
               {canli.map(c => <option key={c.id} value={c.id}>{c.ad}</option>)}
             </Select>
           </Field>
@@ -70,8 +80,10 @@ const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
 
 export const CalisanAvanslari = ({
   calisanlar = [], hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], giderler = [], giderTurleri = [],
-  yururlukAy = null, bugun = today(), canDo = () => true, serverPermissions = null, showToast = () => {},
+  yururlukAy = null, bugun = today(), canDo = () => true, serverPermissions = null, showToast = () => {}, aktifKullanici = "",
 }) => {
+  // Spec 0064 R14 (AC-18): ekstreden avans silme anlık işlemdir; çalışan başkasının kilidindeyse reddedilir.
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const [formAcik, setFormAcik] = useState(false);
   const [ekstreId, setEkstreId] = useState(null);
   const [silinecek, setSilinecek] = useState(null);
@@ -91,6 +103,8 @@ export const CalisanAvanslari = ({
   };
   const avansSil = () => {
     const m = silinecek;
+    const kilit = baskasiKilitli("calisan", m.calisanId);
+    if (kilit) { setSilinecek(null); showToast(kilitRedMesaji(kilit), "err"); return; }
     setHesapHareketleri(p => p.filter(x => x.id !== m.id));
     logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: calisanById.get(String(m.calisanId))?.ad || "", detail: { tutar: m.tutar } });
     setSilinecek(null);

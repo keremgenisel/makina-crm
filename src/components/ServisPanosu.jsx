@@ -15,6 +15,7 @@ import { KargoKart, KargoDetayModal } from "./KargoPanosu";
 import { aliciAd } from "./stock/TahsisModal";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
 import { yeniYedekParcaSatisCoklu, kargoPlanlandiMi } from "../lib/yedekParcaSatis";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 import { useLock } from "../hooks/useLock";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
 
@@ -117,21 +118,8 @@ export const ServisPanosu = ({
   const [planAcik, setPlanAcik] = useState(false);
   // Aktif kayıt kilitleri (başka kullanıcı bir kaydı düzenliyorsa). Kutu sürükleme anlık bir işlem
   // olduğu için modal gibi hard-lock TUTMAYIZ; bunun yerine sürükleme anında "başkası düzenliyor mu"
-  // diye bu listeye bakıp reddederiz (yumuşak koruma). Liste sunucudan gelir, kilit değişince yenilenir.
-  const [kilitler, setKilitler] = useState([]);
-  useEffect(() => {
-    if (!window.crmLocks?.list) return;
-    let active = true;
-    const yenile = () => window.crmLocks.list().then(r => { if (active) setKilitler(Array.isArray(r) ? r : []); }).catch(() => {});
-    yenile();
-    const off = window.appServer?.onLocksChanged?.(yenile);
-    return () => { active = false; if (typeof off === "function") off(); };
-  }, []);
-  // entityType + id kümesi için, AKTİF kullanıcıdan BAŞKASININ tuttuğu kilidi döndürür (yoksa null).
-  const baskasiKilitli = (entityType, ids) => {
-    const set = new Set((Array.isArray(ids) ? ids : [ids]).map(String));
-    return kilitler.find(k => k.entity_type === entityType && set.has(String(k.entity_id)) && k.locked_by !== aktifKullanici) || null;
-  };
+  // diye canlı listeye bakıp reddederiz (yumuşak koruma). Spec 0064 R28: liste ve denetim ortak kancada.
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const kilitReddet = (k) => showToast(`Bu kayıt "${k.locked_by}" tarafından düzenleniyor, taşınamadı.`, "err");
 
   // Servis DÜZENLERKEN, o servisin müşterisi için kilit al — müşteri detayındaki düzenlemeyle

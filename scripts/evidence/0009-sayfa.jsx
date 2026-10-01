@@ -57,6 +57,22 @@ if (ekran === "ayarlar-server-istemci") {
   // Diğer çağrılar etkisiz: on* abonelikleri boş iptal fonksiyonu, geri kalanı null döndürür.
   window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
 }
+// Spec 0064 R34: kilitli ekranlar. Görüntü aracı ikinci kullanıcıyı simüle edemez; kilit köprüsü sahte kurulur ve listelenen
+// alanlar (ayar panelinde panel kimliğiyle) başka kullanıcının ("ayse") elindedir. Yalnız "kilit-*" ekranlarında.
+if (ekran.startsWith("kilit-")) {
+  const KILITLI = { "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [] }[ekran] || [];
+  const kilitli = (t, id) => KILITLI.includes(t) || KILITLI.includes(`${t}:${id}`);
+  window.crmLocks = {
+    acquire: async (t, id, force) => (kilitli(t, id) && !force ? { ok: false, lockedBy: "ayse", lockedAt: "2026-09-23T09:55:00" } : { ok: true }),
+    release: async () => {}, releaseAll: async () => {},
+    list: async () => (ekran === "kilit-geri-yukleme" ? [{ entity_type: "gider", entity_id: "9001", locked_by: "ayse" }, { entity_type: "ayar", entity_id: "trash", locked_by: "mehmet" }] : []),
+  };
+  if (ekran === "kilit-geri-yukleme") {
+    // Yalnız geri yükleme dosya seçicisi yanıtlanır; diğer çağrılar etkisiz (null).
+    const yedek = { app: "altunmak-crm", schemaVersion: 3, exportedAt: "2026-09-20T10:00:00Z", customers: [], services: [], dealers: [], stock: [] };
+    window.crmStorage = new Proxy({ restore: async () => yedek }, { get: (o, k) => o[k] ?? (async () => null) });
+  }
+}
 // Spec 0043: kenar çubuğu yalnız App kabuğunda çizilir; "uygulama-menu-*" ekranları gerçek App'i örnek veriyle açar.
 // Makine yereli menü tercihleri (dar kip, grup durumu) ve tek çocuklu kullanıcı App ilk çizilmeden kurulur.
 const UYGULAMA = ekran.startsWith("uygulama-menu");
@@ -691,6 +707,12 @@ const EKRANLAR = {
     setCustomers={bos} showToast={bos} openDetailId={3} kalipDefs={[{ id: 1, ad: "Hamburger" }]} kasaHesaplari={KASA_HESAPLAR} tahsilatHesapVarsayilan={() => 402} />,
     ["dugme:Bayi Aracılığıyla Kalıp Satışı", "doldur:Firma adı, model veya seri no ile ara...=Kutu", "~Kutu Gıda", "ara:Kalıp ara...=Ham>Hamburger", "doldur:Kalıp fiyatı 1=2000",
       "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
+  // Spec 0064 R34: kilitli gider formu, ödeme penceresi, katalog paneli, Çöp Kutusu ve geri yükleme ön denetimi.
+  "kilit-gider-formu": [<GiderEkrani />, ["baslik:Düzenle"]],
+  "kilit-odeme-penceresi": [<GiderEkrani />, ["baslik:Ödeme kaydet"]],
+  "kilit-katalog-paneli": [ayarlar("models"), []],
+  "kilit-cop-kutusu": [ayarlar("trash"), []],
+  "kilit-geri-yukleme": [ayarlar("backup"), ["dugme:Yedekten Geri Yükle", "dugme:Evet, Geri Yükle"]],
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
 };

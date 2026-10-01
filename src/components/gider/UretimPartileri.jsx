@@ -2,7 +2,8 @@ import { useState } from "react";
 import { uid, simdiYerel } from "../../lib/utils";
 import { partiDogrula, partiKapanisUygula, partiMakinaSayisi } from "../../lib/uretimPartisi";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 import { AyInput, tl2 } from "./GiderAlanlari";
 import { KartBolum, BosDurum, HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
@@ -18,6 +19,11 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
   const [form, setForm] = useState(null);
   const [hatalar, setHatalar] = useState({});
   const [sil, setSil] = useState(null);
+  // Spec 0064 R4: üretim partisi formu ve silme onayı aynı partinin kilidini paylaşır (yeni partide kilit yok).
+  const kilitId = form?.id ?? sil?.p?.id ?? null;
+  const { lockConflict: partiKilidi, forceAcquire: partiKilidiDevral } = useLock("uretim_partisi", kilitId);
+  const kilitli = !!(partiKilidi && kilitId != null);
+  const kilitKapat = () => { setForm(null); setSil(null); };
   const ozet = new Map((makinaMaliyet?.partiler || []).map(p => [String(p.id), p]));
   const yetki = canDo("gider_tanim");
 
@@ -88,7 +94,12 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
         </KartBolum>
       )}
 
-      {form && (
+      {kilitli && (
+        <Modal title={form ? "Üretim Partisini Düzenle" : "Üretim Partisi"} onClose={kilitKapat}>
+          <LockConflict lockedBy={partiKilidi.lockedBy} lockedAt={partiKilidi.lockedAt} onForce={partiKilidiDevral} onCancel={kilitKapat} />
+        </Modal>
+      )}
+      {form && !kilitli && (
         <Modal title={form.id == null ? "Yeni Üretim Partisi" : "Üretim Partisini Düzenle"} onClose={() => setForm(null)} wide
           footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></div>}>
           <Field label="Parti adı veya numarası *"><Input aria-label="Parti adı" value={form.ad} onChange={e => setForm(f => ({ ...f, ad: e.target.value }))} placeholder="Örn. 2026-1" /><HataMetni>{hatalar.ad}</HataMetni></Field>
@@ -105,7 +116,7 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
           <Field label="Açıklama"><Input aria-label="Açıklama" value={form.aciklama || ""} onChange={e => setForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Opsiyonel (ör. 70 makinalık bahar üretimi)" /></Field>
         </Modal>
       )}
-      {sil && (
+      {sil && !kilitli && (
         <ConfirmDialog title="Üretim partisi silinsin mi?"
           message={`“${sil.p.ad}” partisi kalıcı olarak silinecek. ${sil.n} makina bu partiye bağlı; silinince bu makinaların ortak gider payı üretildikleri ayın kuralına döner.`}
           onConfirm={silOnayla} onCancel={() => setSil(null)} />

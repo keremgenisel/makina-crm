@@ -5,9 +5,11 @@ import { kasaGocuHareketleri } from "../../../electron/kasaGocuSaf.mjs";
 import { odemeleriAyikla } from "../../lib/cek";
 import { kasaKayitlariniKoru, kasaHareketiMi, kasaCekiMi } from "../../lib/yedekKasa";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
+import { baskaKilitler, kilitleriDevral, kilitleriBirak, DEVRALMA_SINIR_MESAJI, devralmaHataMesaji } from "../../lib/kilitDevralma";
 import { KartBolum } from "../tasarim";
 
 export const SettingsBackup = ({
+  aktifKullanici = "",
   customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar = [], notes, parts, partSales, payments,
   teklifler = [], faturalar = [], partStock = [], partStockLog = [], uretimFormlari = [],
   gorusmeler = [], setGorusmeler = null, rawDosyalar = [], setDosyalar = null,
@@ -178,6 +180,26 @@ export const SettingsBackup = ({
     setRestoreData(res.data);
   };
 
+  // Spec 0064 R13 (AC-16, AC-32, AC-33): geri yüklemeden önce başka kullanıcıların açık kayıtları (kilitleri) denetlenir;
+  // varsa sahibi ve kaydın insan okunur adı yazılır, işlem yapılmaz. "Devralarak devam" her kilidi sırayla zorla alır,
+  // hepsi alınmadıkça geri yükleme başlamaz; bitince devralınan kilitler bırakılır (R32). Kilit servisi yoksa (yerel
+  // kip) denetim atlanır. Bu denetim başkasının yarım işini görünür kılar; verinin korunması dataVersion ve yedektedir.
+  const [kilitDurumu, setKilitDurumu] = useState(null); // null | { liste, hata, calisiyor }
+  const geriYukle = async () => {
+    if (window.crmLocks?.list) {
+      const liste = baskaKilitler(await window.crmLocks.list().catch(() => []), aktifKullanici);
+      if (liste.length) { setKilitDurumu({ liste, hata: "", calisiyor: false }); return; }
+    }
+    await applyRestore();
+  };
+  const devralVeDevamEt = async () => {
+    setKilitDurumu(d => ({ ...d, calisiyor: true, hata: "" }));
+    const r = await kilitleriDevral(kilitDurumu.liste, window.crmLocks);
+    if (r.sinirAsildi) { setKilitDurumu(d => ({ ...d, calisiyor: false, hata: DEVRALMA_SINIR_MESAJI })); return; }
+    if (r.basarisiz) { await kilitleriBirak(r.alinan, window.crmLocks); setKilitDurumu(d => ({ ...d, calisiyor: false, hata: devralmaHataMesaji(r.basarisiz) })); return; }
+    setKilitDurumu(null);
+    try { await applyRestore(); } finally { await kilitleriBirak(r.alinan, window.crmLocks); }
+  };
   const applyRestore = async () => {
     const tamGeriYukleme = RESTORE_PAKETLERI.every(pk => restorePaketler.has(pk.id));
     const sec = (id) => (id === "gider" && giderGizliPaket ? tamGeriYukleme : restorePaketler.has(id));
@@ -455,9 +477,21 @@ export const SettingsBackup = ({
           <div style={{ fontSize: 13, color: "var(--red600, #dc2626)", fontWeight: 600, marginBottom: 20 }}>
             ⚠ Seçilen bölümlerdeki mevcut veriler yedekteki verilerle değiştirilecek. Bu işlem geri alınamaz.
           </div>
+          {kilitDurumu && (
+            <div data-testid="geri-yukleme-kilitleri" style={{ marginBottom: 16, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--ambBr, #fde68a)", background: "var(--ambBg, #fffbeb)", fontSize: 13 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Başka kullanıcıların açık kayıtları var; geri yükleme yapılmadı.</div>
+              <ul style={{ margin: "0 0 8px", paddingLeft: 18 }}>
+                {kilitDurumu.liste.map(k => <li key={`${k.alan}:${k.id}`}>{k.etiket} · <b>{k.sahip}</b></li>)}
+              </ul>
+              <div style={{ color: "var(--n600, #475569)" }}>Devam ederseniz bu kayıtların kilidi sizin adınıza devralınır ve geri yükleme bitince bırakılır; o kullanıcıların açık pencereleri kilidi yeniden almaya çalışır.</div>
+              {kilitDurumu.hata && <div role="alert" style={{ color: "var(--red700, #b91c1c)", marginTop: 6, fontWeight: 600 }}>{kilitDurumu.hata}</div>}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={() => setRestoreData(null)}>Vazgeç</Btn>
-            <Btn variant="danger" onClick={applyRestore} disabled={restorePaketler.size === 0}><Icon name="check" size={14} /> Evet, Geri Yükle</Btn>
+            <Btn variant="ghost" onClick={() => { setKilitDurumu(null); setRestoreData(null); }}>Vazgeç</Btn>
+            {kilitDurumu
+              ? <Btn variant="danger" onClick={devralVeDevamEt} disabled={kilitDurumu.calisiyor}><Icon name="check" size={14} /> Devralarak Devam Et</Btn>
+              : <Btn variant="danger" onClick={geriYukle} disabled={restorePaketler.size === 0}><Icon name="check" size={14} /> Evet, Geri Yükle</Btn>}
           </div>
         </Modal>
       )}

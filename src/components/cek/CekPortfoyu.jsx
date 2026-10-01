@@ -8,9 +8,12 @@ import {
   CEK_DURUM, CEK_DURUM_AD, CEK_TURLERI, CEK_TUR_AD, PORTFOY_NOTU, BAGSIZ_TAHSIL_NOTU, bagsizCekSilinebilirMi, yeniBagsizCek, bagliCekler,
   VERILEN_DURUM, verilenCekSatirlari, verilenCekOdendi, verilenCekOdemeGeriAl, verilenCekKapat,
 } from "../../lib/cek";
+import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
+import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { CekEklePenceresi } from "./CekEklePenceresi";
 import { hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
-import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon } from "../ui";
+import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon, LockConflict } from "../ui";
 import { KartBolum, BosDurum, UyariSeridi, Segment, HataMetni, Ipucu } from "../tasarim";
 import { tl2 } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
@@ -156,6 +159,7 @@ const GecmisPenceresi = ({ satir, musteriAdi, hareketler, giderler, onClose }) =
 export const CekPortfoyu = ({
   cekler = [], setCekler, payments = [], customers = [], giderler = [], giderTurleri = [], tedarikciler = [], calisanlar = [],
   hesapHareketleri = [], setHesapHareketleri = null, giderAyarlari = {}, serverPermissions = null, showToast = () => {}, hesaplar = [],
+  aktifKullanici,
 }) => {
   const [yon, setYon] = useState("alinan");
   const [vSuzgec, setVSuzgec] = useState("yazildi");
@@ -175,6 +179,17 @@ export const CekPortfoyu = ({
   const [ciroSatiri, setCiroSatiri] = useState(null);
   const [durumSatiri, setDurumSatiri] = useState(null);
   const [gecmisSatiri, setGecmisSatiri] = useState(null);
+  // Spec 0064 R2, R25 (AC-4, AC-5): ciro, durum, geçmiş, silme ve verilen çekin durum / geçmiş pencereleri aynı çekin TEK
+  // kilidini paylaşır (pencereleri açan burada). Yeni çek (Çek Ekle, kendi çekimizi yaz) kimliksizdir, kilit alınmaz.
+  const kilitCekId = ciroSatiri?.cek?.id ?? durumSatiri?.cek?.id ?? gecmisSatiri?.cek?.id ?? silinecek?.cek?.id ?? vDurum?.id ?? vGecmis?.id ?? null;
+  const { lockConflict: cekKilidi, forceAcquire: cekKilidiDevral } = useLock("cek", kilitCekId);
+  const cekKilitli = !!(cekKilidi && kilitCekId != null);
+  const kilitKapat = () => { setCiroSatiri(null); setDurumSatiri(null); setGecmisSatiri(null); setSilinecek(null); setVDurum(null); setVGecmis(null); };
+  const kilitEkrani = cekKilitli && (
+    <Modal title="Çek" onClose={kilitKapat}>
+      <LockConflict lockedBy={cekKilidi.lockedBy} lockedAt={cekKilidi.lockedAt} onForce={cekKilidiDevral} onCancel={kilitKapat} />
+    </Modal>
+  );
   const bugun = today();
   const durumlar = suzgec === "elde" ? null : suzgec === "tumu" ? new Set(Object.values(CEK_DURUM)) : new Set([suzgec]);
   const { satirlar, toplamK } = useMemo(() => portfoySatirlari(cekler, payments, { durumlar, tur, bugun, esikGun: hatirlatmaEsigi(giderAyarlari) }),
@@ -194,7 +209,17 @@ export const CekPortfoyu = ({
   const cekYaz = (yeni) => setCekler(p => p.map(c => (c.id === yeni.id ? yeni : c)));
   const log = (action, cek, detail = {}) => logAction({ serverPermissions, action, entity: "cek", entityId: cek.id, entityName: `${cek.no} · ${cek.banka}`, detail });
 
+  // Spec 0064 R36 (triyaj bulgu 2): ciro ve "Çek Yaz" seçilen gider kalemlerine ödeme hareketi yazar; kilitledikleri çekin
+  // kendisidir. Kalemlerden biri başkasının elindeyse (ödeme penceresi, gider formu) kayıt anında reddedilir (R14 deseni);
+  // yoksa iki kullanıcı aynı kalemi aynı anda kapatırdı (iki yeni hareket birleştirmeden sağ çıkar).
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
+  const kalemKilidi = (plan) => {
+    const k = baskasiKilitli("gider", (plan.hareketler || []).map(h => h.giderId));
+    if (k) showToast(kilitRedMesaji(k), "err");
+    return !!k;
+  };
   const ciroKaydet = (plan) => {
+    if (kalemKilidi(plan)) return;
     const hareketler = cekPlaniniYaz(plan, { setHesapHareketleri, setCekler });
     log("ciro_edildi", plan.cek, { hareket: hareketler.length, tutar: hareketler.reduce((a, h) => a + h.tutar, 0) });
     setCiroSatiri(null);
@@ -221,6 +246,7 @@ export const CekPortfoyu = ({
   const bekleyen = useMemo(() => verilenCekSatirlari(cekler, { bugun, esikGun: esik }), [cekler, bugun, esik]);
   const hesapAdi = (id) => hesaplar.find(h => String(h.id) === String(id))?.ad || "Silinmiş hesap";
   const yazKaydet = (plan) => {
+    if (kalemKilidi(plan)) return;
     const hareketler = cekPlaniniYaz(plan, { setHesapHareketleri, setCekler });
     log("olusturuldu", plan.cek, { verilen: true, hareket: hareketler.length, tutar: plan.cek.tutar }); setYaz(false);
     showToast(plan.uyari ? "Çek yazıldı. Fark hiçbir borcu kapatmadı." : "Çek yazıldı; borç kapandı.");
@@ -268,8 +294,9 @@ export const CekPortfoyu = ({
       )}
       {yaz && <CiroPenceresi kip="kendi" hesaplar={hesaplar} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
         onKaydet={yazKaydet} onClose={() => setYaz(false)} />}
-      {vDurum && <VerilenDurumPenceresi cek={vDurum} hareketler={hesapHareketleri || []} hesapAdi={hesapAdi(vDurum.hesapId)} onDegistir={vDurumYaz} onKapat={vKapat} onClose={() => setVDurum(null)} />}
-      {vGecmis && <VerilenGecmisPenceresi cek={vGecmis} hesapAdi={hesapAdi(vGecmis.hesapId)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setVGecmis(null)} />}
+      {kilitEkrani}
+      {vDurum && !cekKilitli && <VerilenDurumPenceresi cek={vDurum} hareketler={hesapHareketleri || []} hesapAdi={hesapAdi(vDurum.hesapId)} onDegistir={vDurumYaz} onKapat={vKapat} onClose={() => setVDurum(null)} />}
+      {vGecmis && !cekKilitli && <VerilenGecmisPenceresi cek={vGecmis} hesapAdi={hesapAdi(vGecmis.hesapId)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setVGecmis(null)} />}
     </>
   );
 
@@ -321,14 +348,15 @@ export const CekPortfoyu = ({
           </div>
         </KartBolum>
       )}
-      {ciroSatiri && <CiroPenceresi satir={ciroSatiri} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+      {kilitEkrani}
+      {ciroSatiri && !cekKilitli && <CiroPenceresi satir={ciroSatiri} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
         onKaydet={ciroKaydet} onClose={() => setCiroSatiri(null)} />}
-      {durumSatiri && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={satirIzni(durumSatiri)} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
+      {durumSatiri && !cekKilitli && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={satirIzni(durumSatiri)} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
       {ekle && <CekEklePenceresi cekler={bagliCekler(cekler, payments)} customers={customers} onKaydet={ekleKaydet} onClose={() => setEkle(false)} />}
-      {silinecek && <ConfirmDialog title="Çek silinsin mi?" confirmLabel="Sil"
+      {silinecek && !cekKilitli && <ConfirmDialog title="Çek silinsin mi?" confirmLabel="Sil"
         message={silinecek.cek.durum === CEK_DURUM.CIRO ? "Ciro edilmiş çek silinemez; önce ciroyu iptal edin." : `Çek ${silinecek.cek.no} · ${silinecek.cek.banka} portföyden kalıcı olarak silinir.`}
         onConfirm={sil} onCancel={() => setSilinecek(null)} />}
-      {gecmisSatiri && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={kimden(gecmisSatiri.bilgi)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
+      {gecmisSatiri && !cekKilitli && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={kimden(gecmisSatiri.bilgi)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
       </>)}
     </div>
   );

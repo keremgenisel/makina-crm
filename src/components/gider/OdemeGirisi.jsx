@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { fmtTR, parseMoney } from "../../lib/utils";
 import { tl, hedefOdemeleri, HEDEF } from "../../lib/gider";
 import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
@@ -6,7 +6,8 @@ import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 import { hepsiniOde, satirSiralariniEsle, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, CEK_DAGITIM_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
 import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib/gider";
-import { Btn, Field, Input, Select, ConfirmDialog, Icon } from "../ui";
+import { Btn, Field, Input, Select, ConfirmDialog, Icon, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 import { HataMetni, Ipucu, BolumBasligi, Segment, KartBolum, UyariSeridi } from "../tasarim";
 import { TutarInput, tl2, tutarMetni, ODEME_SECENEKLERI, hedefAdi, cokHedefliMi, hedefEtiketi } from "./GiderAlanlari";
 
@@ -29,6 +30,8 @@ const cekEtiketi = (s) => [s.cek.no, s.cek.banka, s.cek.kesideci, para(s.tutarK)
 const satirTutarK = (r) => { const t = parseMoney(r?.tutar); return Number.isFinite(t) && t > 0 ? Math.round(t * 100) : 0; };
 const tutarOf = (k) => (k > 0 ? tutarMetni(tl(k)) : "");
 
+// Spec 0064 R20: mahsup kipinde çalışanın kilidi başkasındayken kayıt yapılmaz.
+export const MAHSUP_KILITLI_HATASI = "Bu çalışanın avansı başka bir kullanıcıda açık; mahsup kaydedilemez.";
 export const OdemeGirisi = ({
   kapsam = "pencere", kalem, hedefler = [], davranis, turMap, giris, setGiris, hatalar = null, uyari = null,
   hesaplar = [], hesapSecimi = false, ciroYetkisi = false, cekSatirlari = [], alacakliSerbest = false,
@@ -47,6 +50,15 @@ export const OdemeGirisi = ({
   const lbl = (hedef, ad, n = 1) => `${onEkli ? `${adOf(hedef)} ${FORM_AD[ad]}` : buyuk(ad)}${n > 1 ? ` ${n}` : ""}`;
   const satirlar = giris.satirlar || [];
   const mahsupKipi = mahsupVar && giris.kip === "mahsup";
+  // Spec 0064 R20 (AC-26): mahsup bir çalışanın açık avansını tüketir; kalem kilidine (pencereyi açan ebeveyn) ek olarak
+  // mahsup kipi açıkken çalışanın kilidi de alınır. Çakışmada mahsup alanı yerine LockConflict çizilir ve giriş
+  // `mahsupKilitli` taşır; form ve pencere bu durumda mahsubu kaydetmez (MAHSUP_KILITLI_HATASI).
+  const { lockConflict: mahsupKilidi, forceAcquire: mahsupKilidiDevral } = useLock("calisan", mahsupKipi && kalem?.calisanId != null ? kalem.calisanId : null);
+  // Boyamadan önce (senkron) yazılır: çakışma ekranı görünür olduğu anda kaydet düğmesi de işareti görür.
+  useLayoutEffect(() => {
+    const kilitli = !!(mahsupKipi && mahsupKilidi);
+    setGiris(g => (!!g.mahsupKilitli === kilitli ? g : { ...g, mahsupKilitli: kilitli }));
+  }, [mahsupKipi, mahsupKilidi]);
   const setSatir = (anahtar, patch) => setGiris(g => ({ ...g, satirlar: g.satirlar.map(r => (r.anahtar === anahtar ? { ...r, ...patch } : r)) }));
   // Satırın hedefi/taksiti için kalan: hedefin (taksitli hedefte seçili taksitin) kalanı eksi aynı yere giden diğer satırlar.
   const yerKalaniK = (h, sira, haric = null) => {
@@ -272,7 +284,11 @@ export const OdemeGirisi = ({
       )}
       {(hatalar?.genel || []).map((m, i) => <HataMetni key={`g${i}`}>{m}</HataMetni>)}
       {(hatalar?.hedefler || []).map((m, i) => <HataMetni key={`h${i}`}>{m}</HataMetni>)}
-      {mahsupKipi ? (
+      {mahsupKipi && mahsupKilidi ? (
+        <div data-testid="mahsup-kilitli">
+          <LockConflict lockedBy={mahsupKilidi.lockedBy} lockedAt={mahsupKilidi.lockedAt} onForce={mahsupKilidiDevral} onCancel={() => kipSec("odeme")} />
+        </div>
+      ) : mahsupKipi ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
           {mahsupYerleri.length > 1 && (
             <div style={{ gridColumn: "1 / -1" }}>

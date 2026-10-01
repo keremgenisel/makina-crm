@@ -46,6 +46,8 @@ describe("Spec 0024 B: Kasa › Çalışan avansları (R9, R11, C8)", () => {
     render(<KasaHarness onState={s => { h = s; }} />);
     fireEvent.click(screen.getByText("Avans Ver"));
     const f = screen.getByTestId("avans-formu");
+    // Spec 0064 triyaj (bulgu 5): form çalışan seçili açılmaz; seçim zorunlu.
+    fireEvent.change(within(f).getByLabelText("Çalışan"), { target: { value: "7" } });
     fireEvent.change(screen.getByLabelText("Avans tutarı"), { target: { value: "8.000" } });
     fireEvent.change(within(f).getByLabelText("Hesap"), { target: { value: "1" } });
     fireEvent.click(screen.getByText("Avansı Kaydet"));
@@ -58,7 +60,7 @@ describe("Spec 0024 B: Kasa › Çalışan avansları (R9, R11, C8)", () => {
     render(<KasaHarness h0={[{ ...AVANS, id: 62, calisanId: 8 }]} />);
     expect(within(avansSatiri("Eski Usta")).getByText("Silinmiş")).toBeTruthy();
     fireEvent.click(screen.getByText("Avans Ver"));
-    expect([...within(screen.getByTestId("avans-formu")).getByLabelText("Çalışan").querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hasan Çelik"]);
+    expect([...within(screen.getByTestId("avans-formu")).getByLabelText("Çalışan").querySelectorAll("option")].map(o => o.textContent)).toEqual(["Çalışan seçin", "Hasan Çelik"]);
   });
   it("AC-17: çalışan ekstresi avans ve maaşı tek net sütunda verir; avans ekstreden silinir", () => {
     let h;

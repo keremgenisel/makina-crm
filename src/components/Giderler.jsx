@@ -11,7 +11,8 @@ import {
 import { odemeGirisiHazirla, odemeGirisiYaz } from "../lib/formOdemesi";
 import { hedefAdi as hedefAdiOf, cokHedefliMi } from "./gider/GiderAlanlari";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
-import { Icon, Btn, ConfirmDialog } from "./ui";
+import { Icon, Btn, ConfirmDialog, Modal, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { GiderForm } from "./GiderForm";
 import { tl2 } from "./gider/GiderAlanlari";
@@ -40,6 +41,7 @@ export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
   standartGiderler = [], setStandartGiderler, uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
+  aktifKullanici = "", // spec 0064 R14: anlık işlem denetimi (standart gider "son sürümü geri al")
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
   makinaMaliyet = null,
@@ -179,8 +181,16 @@ export const Giderler = ({
   const [planKalemId, setPlanKalemId] = useState(null);
   const planKalemi = planKalemId == null ? null : giderler.find(k => k.id === planKalemId) || null;
   const satirIsaretle = (k, r) => { setPlanKalemId(null); setOdemeHedefi({ kalemId: k.id, hedef: { taksitId: r.id } }); };
+  // Spec 0064 R1, R25: gider formu, ödeme penceresi ve ödeme planı (ödendi ve hedef anahtarları pencere açar) aynı kalemin
+  // TEK kilidini paylaşır; kilit burada, pencereleri açan ebeveynde alınır ki iç pencere kapanınca dıştaki kilitsiz kalmasın.
+  // Yeni kalemde kimlik yok, kilit alınmaz (R17).
   const hedefDegistir = (k, hedef) => setOdemeHedefi({ kalemId: k.id, hedef: { hedef } });
   // Spec 0041 R5, R13 + 0053 R17: pencere doğrulanmış girişi ({hareketler, cek}) verir; hepsi tek güncellemeyle yazılır.
+  // Triyaj (bulgu 3): çöpe taşıma onayı da aynı kilidi alır; yoksa başkasının ödeme penceresi açıkken kalem çöpe gider,
+  // o kullanıcı çöpteki kaleme ödeme yazardı (Kasa hesap, tedarikçi, parti ve standart gider silmesiyle aynı kural).
+  const kilitKalemId = odemeHedefi?.kalemId ?? form?.kalemId ?? planKalemId ?? silinecek?.id ?? null;
+  const { lockConflict: giderKilidi, forceAcquire: giderKilidiDevral } = useLock("gider", kilitKalemId);
+  const kilitKapat = () => { setOdemeHedefi(null); setForm(null); setPlanKalemId(null); setSilinecek(null); };
   const odemeKaydet = (sonuc) => {
     const yazilan = odemeleriYaz(odemeKalemi, sonuc);
     showToast(yazilan[0]?.tur === "mahsup" ? "Avans mahsup edildi." : sonuc.cek ? (sonuc.cek.yon === "verilen" ? "Çek yazıldı; borç kapandı." : "Çek ciro edildi.") : yazilan.length > 1 ? `${yazilan.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
@@ -193,6 +203,7 @@ export const Giderler = ({
     showToast("Ödeme silindi.");
   };
   const sil = () => {
+    if (giderKilidi) return;
     const k = silinecek;
     setGiderler(p => withDeleted(p, x => x.id === k.id));
     logAction({ serverPermissions, action: "silindi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "" });
@@ -330,9 +341,14 @@ export const Giderler = ({
           makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
       {gorunum === "standart" && (
-        <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
+        <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
       )}
 
+      {giderKilidi && kilitKalemId != null ? (
+        <Modal title={odemeHedefi ? "Ödeme Kaydet" : form ? "Gideri Düzenle" : planKalemId != null ? "Ödeme Planı" : "Gideri Sil"} onClose={kilitKapat}>
+          <LockConflict lockedBy={giderKilidi.lockedBy} lockedAt={giderKilidi.lockedAt} onForce={giderKilidiDevral} onCancel={kilitKapat} />
+        </Modal>
+      ) : (<>
       {planKalemi && (
         <OdemePlaniPenceresi kalem={planKalemi} davranis={turMap.get(String(planKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(planKalemi.turId))?.ad || "Gider"}
           odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
@@ -355,6 +371,7 @@ export const Giderler = ({
         <ConfirmDialog title="Gider silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli “${silinecek.aciklama || silinecek.calisanAd || "gider"}” kalemi Çöp Kutusu'na taşınacak. 30 gün içinde geri alınabilir.${silinecek.tanimId != null ? " Tekrarlayan tanımdan geldiği için o ay yeniden üretilmez." : ""}`}
           confirmLabel="Çöp Kutusuna Taşı" onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
+      </>)}
     </div>
   );
 };

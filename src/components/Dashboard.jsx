@@ -3,7 +3,8 @@ import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServis
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
-import { StatCard, Modal, Btn, Icon } from "./ui";
+import { StatCard, Modal, Btn, Icon, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
 import { useBugun } from "../hooks/useBugun";
 import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
@@ -34,6 +35,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const giderTurMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
   const [hatOdeme, setHatOdeme] = useState(null); // null | {kalemId, hedef}
   const hatOdemeKalemi = hatOdeme ? giderler.find(k => k.id === hatOdeme.kalemId) || null : null;
+  // Spec 0064 R1 (AC-24): Anasayfa'nın ödeme penceresi Giderler'deki pencerelerle AYNI gider kalemi kilidini alır; aynı
+  // kaleme biri Giderler'den öbürü Anasayfa'dan ödeme giremez.
+  const { lockConflict: hatKilidi, forceAcquire: hatKilidiDevral } = useLock("gider", hatOdeme?.kalemId ?? null);
   const hatirlatmaOdendi = (k, hedef) => setHatOdeme({ kalemId: k.id, hedef });
   // Spec 0041 + 0053 R17: pencere doğrulanmış girişi ({hareketler, cek}) verir; ortak yazım (plan Q8) tek güncellemeyle.
   const hatOdemeKaydet = (sonuc) => {
@@ -587,7 +591,12 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         <OdemeHatirlatmaPenceresi sonuc={hatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setHesapHareketleri} onOdendi={hatirlatmaOdendi}
           onGiderlereGit={onGoGiderHatirlatma ? () => { setShowHatirlatma(false); onGoGiderHatirlatma(); } : null} onClose={() => setShowHatirlatma(false)} />
       )}
-      {hatOdemeKalemi && (
+      {hatOdemeKalemi && hatKilidi && (
+        <Modal title="Ödeme Kaydet" onClose={() => setHatOdeme(null)}>
+          <LockConflict lockedBy={hatKilidi.lockedBy} lockedAt={hatKilidi.lockedAt} onForce={hatKilidiDevral} onCancel={() => setHatOdeme(null)} />
+        </Modal>
+      )}
+      {hatOdemeKalemi && !hatKilidi && (
         <OdemeKayitPenceresi kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
           turAd={giderTurMap.get(String(hatOdemeKalemi.turId))?.ad || "Gider"} turMap={giderTurMap} hedef={{ hedef: hatOdeme.hedef }}
           hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}

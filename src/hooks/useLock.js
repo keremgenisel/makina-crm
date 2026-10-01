@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 /**
- * entityType: 'customer' | 'dealer' | 'stock' | 'note' | 'teklif' | 'fatura' | 'service' | 'part_sale'
+ * entityType: kilit alanı; TEK liste src/lib/kilitAlanlari.js (KILIT_ALANLARI). Spec 0064 R22: burada elle sayılmaz.
  * entityId: number | string | null (null = yeni kayıt, kilit alınmaz)
  *
  * Döndürür:

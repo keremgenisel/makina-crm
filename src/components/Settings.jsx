@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { parsePermissions, makeCanDo } from "../lib/permissions";
-import { Icon } from "./ui";
+import { Icon, LockConflict } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
@@ -33,6 +33,8 @@ import { SettingsSecurityLog } from "./settings/SettingsSecurityLog";
 import { SettingsSecurityStatus } from "./settings/SettingsSecurityStatus";
 import { GiderTurManager } from "./settings/GiderTurManager";
 import { SettingsGiderTanimlari } from "./settings/SettingsGiderTanimlari";
+import { useLock } from "../hooks/useLock";
+import { AYAR_KILITLI, AYAR_SALT_OKUNUR } from "../lib/kilitAlanlari";
 import { SettingsGider } from "./settings/SettingsGider";
 
 // Sol menü grupları gen-crm yapısı örnek alınarak düzenlendi: Sunucu artık Güvenlik'ten ayrı kendi
@@ -54,7 +56,7 @@ const SETTINGS_GROUPS = [
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
 ];
 
-export const Settings = ({ customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
+export const Settings = ({ aktifKullanici = "", customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   partTypeDefs = [], setPartTypeDefs = null, rawPartTypeDefs = [],
   calisanlar = [], setCalisanlar = null, rawCalisanlar = [],
@@ -85,6 +87,16 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
   })).filter(g => g.items.length > 0);
   const giderCanDo = makeCanDo(serverPermissions, "giderActions");
   const canSeeDanger = isAdmin || !clientVisible || clientVisible.includes("danger");
+  // Spec 0064 R7, R9, R11, R12, R13, R31 (AC-10…AC-15, AC-28…AC-30): veri yazan panel açılınca `ayar` + panel kimliğiyle
+  // kilitlenir, sekme değişince bırakılır; salt okunur paneller kilit almaz. Katalog panelinde de kilit panel düzeyindedir
+  // (ekleme kaybı ve düzenleme yarışı birlikte kapanır). "Geri Dön" ilk görünen salt okunur panele geçer.
+  const { lockConflict: ayarKilidi, forceAcquire: ayarKilidiDevral } = useLock("ayar", AYAR_KILITLI[settingsTab] ? settingsTab : null);
+  const ayarKilitli = !!(ayarKilidi && AYAR_KILITLI[settingsTab]);
+  const ayarKilidiGeriDon = () => {
+    const gorunen = visibleGroups.flatMap(g => g.items.map(it => it.id));
+    const hedef = AYAR_SALT_OKUNUR.find(id => gorunen.includes(id));
+    if (hedef) setSettingsTab(hedef);
+  };
 
   // Sol menü grupları açılır-kapanır akordeon: aynı anda tek grup açık; aktif sekmenin grubu başta açık.
   const grupAdi = (tabId) => SETTINGS_GROUPS.find(g => g.items.some(i => i.id === tabId))?.grup ?? null;
@@ -180,6 +192,11 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
         </div>
       )}
 
+      {ayarKilitli ? (
+        <div data-testid="ayar-kilitli" style={{ maxWidth: 720 }}>
+          <LockConflict lockedBy={ayarKilidi.lockedBy} lockedAt={ayarKilidi.lockedAt} onForce={ayarKilidiDevral} onCancel={ayarKilidiGeriDon} />
+        </div>
+      ) : (<>
       {settingsTab === "app" && <SettingsApp version={version} flash={flash} appUpd={appUpd} onCheckUpdate={onCheckUpdate} onStartUpdate={onStartUpdate} />}
       {settingsTab === "musteri" && <SettingsMusteri appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
       {settingsTab === "servispano" && <SettingsServisPanosu appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
@@ -187,7 +204,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
       {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} setCustomers={setCustomers} setServices={setServices} flash={flash} />}
 
       {settingsTab === "backup" && (
-        <SettingsBackup
+        <SettingsBackup aktifKullanici={aktifKullanici}
           customers={customers} services={services} dealers={dealers} stock={stock} customModels={customModels} standardModels={standardModels}
           factory={factory} kalipDefs={kalipDefs} partTypeDefs={partTypeDefs} calisanlar={calisanlar} notes={notes} parts={parts} partSales={partSales} payments={payments}
           teklifler={rawTeklifler} faturalar={rawFaturalar} partStock={partStock} partStockLog={partStockLog}
@@ -351,6 +368,7 @@ export const Settings = ({ customers, services, dealers, stock = [], setStock, s
          rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
          rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}/>
       )}
+      </>)}
         </div>{/* /sağ içerik */}
       </div>{/* /flex kapsayıcı */}
     </div>

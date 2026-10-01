@@ -2,20 +2,30 @@ import { useState, Fragment } from "react";
 import { uid, today } from "../../lib/utils";
 import { standartYeni, standartTutarDegistir, standartSonSurumuGeriAl, standartSonaErdir, standartAdDegistir, standartGrupSil, standartGruplar, standartGiderAyi, ayOf, ayEkle } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
+import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { TutarInput, AyInput, tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 
 // Giderler › Standart Genel Giderler (spec 0001 R22, AC-92…AC-96; plan K37). Bütçe/varsayım listesi:
 // dönem gider raporunun HİÇBİR toplamına girmez (hesaplaGiderRaporu bu listeyi almaz); yalnız makina
 // maliyeti (0002) tüketir. Tutar değişikliği her zaman yeni sürümdür; eski sürüm kendi döneminde kalır.
-export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, canDo = () => true, showToast = () => {}, serverPermissions }) => {
+export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, canDo = () => true, showToast = () => {}, serverPermissions, aktifKullanici = "" }) => {
   const buAy = ayOf(today());
   const [yeni, setYeni] = useState({ ad: "", tutar: "", baslangicAy: buAy });
   const [hata, setHata] = useState("");
   const [islem, setIslem] = useState(null); // {tur:"tutar"|"ad"|"bitir", grup, deger...}
   const [silinecek, setSilinecek] = useState(null);
   const [acik, setAcik] = useState(null);
+  // Plan notu (spec 0064 R33): grubun tutar / ad / sona erdirme penceresi ve silme onayı aynı grubun kilidini paylaşır;
+  // "son sürümü geri al" anlık işlemdir, grup başkasının kilidindeyse reddedilir (R14).
+  const kilitId = islem?.grup?.grupId ?? silinecek?.grupId ?? null;
+  const { lockConflict: grupKilidi, forceAcquire: grupKilidiDevral } = useLock("standart_gider", kilitId);
+  const kilitli = !!(grupKilidi && kilitId != null);
+  const kilitKapat = () => { setIslem(null); setSilinecek(null); };
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const yonetebilir = canDo("gider_tanim");
   const gruplar = standartGruplar(standartGiderler, buAy);
   const buAyToplam = standartGiderAyi(standartGiderler, buAy).toplam;
@@ -37,7 +47,12 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
     if (islem.tur === "ad") uygula(standartAdDegistir(standartGiderler, g.grupId, islem.ad), "Ad güncellendi.", { action: "duzenlendi", entityId: g.grupId, entityName: islem.ad });
     if (islem.tur === "bitir") uygula(standartSonaErdir(standartGiderler, g.grupId, islem.ay), "Sona erdirildi.", { action: "sona_erdirildi", entityId: g.grupId, entityName: g.ad });
   };
-  const geriAl = (g) => uygula(standartSonSurumuGeriAl(standartGiderler, g.grupId), "Son sürüm geri alındı.", { action: "surum_geri_alindi", entityId: g.grupId, entityName: g.ad });
+  const geriAl = (g) => {
+    const k = baskasiKilitli("standart_gider", g.grupId);
+    if (k) { showToast(kilitRedMesaji(k, g.ad), "err"); return; }
+    geriAlUygula(g);
+  };
+  const geriAlUygula = (g) => uygula(standartSonSurumuGeriAl(standartGiderler, g.grupId), "Son sürüm geri alındı.", { action: "surum_geri_alindi", entityId: g.grupId, entityName: g.ad });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }} data-testid="standart-giderler">
@@ -93,7 +108,12 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
         )}
       </div>
 
-      {islem && (
+      {kilitli && (
+        <Modal title="Standart Genel Gider" onClose={kilitKapat}>
+          <LockConflict lockedBy={grupKilidi.lockedBy} lockedAt={grupKilidi.lockedAt} onForce={grupKilidiDevral} onCancel={kilitKapat} />
+        </Modal>
+      )}
+      {islem && !kilitli && (
         <Modal title={islem.tur === "tutar" ? `“${islem.grup.ad}” için yeni tutar` : islem.tur === "ad" ? "Adı değiştir" : `“${islem.grup.ad}” sona erdir`} onClose={() => setIslem(null)}
           footer={<><Btn variant="ghost" onClick={() => setIslem(null)}>İptal</Btn><Btn onClick={islemKaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           {islem.tur === "tutar" && <>
@@ -106,7 +126,7 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
           <HataMetni>{islem.hata}</HataMetni>
         </Modal>
       )}
-      {silinecek && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) kalıcı olarak silinecek. Çöp kutusuna düşmez.`}
+      {silinecek && !kilitli && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) kalıcı olarak silinecek. Çöp kutusuna düşmez.`}
         onConfirm={() => { uygula(standartGrupSil(standartGiderler, silinecek.grupId), "Silindi.", { action: "silindi", entityId: silinecek.grupId, entityName: silinecek.ad }); setSilinecek(null); }}
         onCancel={() => setSilinecek(null)} />}
     </div>

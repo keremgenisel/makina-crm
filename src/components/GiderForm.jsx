@@ -5,7 +5,7 @@ import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
-import { OdemeGirisi } from "./gider/OdemeGirisi";
+import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
 import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
@@ -180,6 +180,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     // Spec 0046 R17 + 0053 R18, R24, AC-22: ödeme girişi kayıttan ÖNCE doğrulanır (yeni kalemde geçici kimlikle, düzenlemede
     // kaydın kendisiyle); hata varsa kalem de kaydedilmez. Kayıt ödeme durumu taşımaz (0024 R3); Giderler aynı fonksiyonu
     // gerçek kalemle yeniden çağırır ve kalem, hareketler, silinenler ve çeki tek işleyicide yazar.
+    if (odemeDegistirebilir && odemePlani.kip === "mahsup" && giris.mahsupKilitli) { setOdemeHatalari({ genel: [MAHSUP_KILITLI_HATASI] }); return; } // spec 0064 R20
     const odemeVar = odemeDegistirebilir && (odemePlani.kip === "mahsup" ? String(giris.mahsup?.tutar ?? "").trim() !== "" : giris.satirlar.length > 0 || silinenler.size > 0);
     if (odemeVar) {
       const deneme = odemeleriUygula([{ ...kayit, id: yeniKalem ? "__yeni__" : kayit.id }], yeniKalem ? [] : kalanHareketler, turMap)[0];

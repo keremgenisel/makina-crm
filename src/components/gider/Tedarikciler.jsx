@@ -2,7 +2,8 @@ import { useState } from "react";
 import { uid } from "../../lib/utils";
 import { tedarikciAdHatasi, tedarikciKullanim } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "../ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { useLock } from "../../hooks/useLock";
 import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
@@ -23,6 +24,11 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   const hesapAdi = (id) => { const h = kasaHesaplari.find(x => String(x.id) === String(id)); return h ? h.ad : id == null ? "Hesap belirtilmedi" : "Silinmiş hesap"; };
   const [hata, setHata] = useState("");
   const [sil, setSil] = useState(null);
+  // Spec 0064 R4: tedarikçi formu ve silme penceresi aynı tedarikçinin kilidini paylaşır (yeni tedarikçide kilit yok).
+  const kilitId = form?.id ?? sil?.t?.id ?? null;
+  const { lockConflict: tedKilidi, forceAcquire: tedKilidiDevral } = useLock("tedarikci", kilitId);
+  const kilitli = !!(tedKilidi && kilitId != null);
+  const kilitKapat = () => { setForm(null); setSil(null); };
   const harcama = new Map((rapor?.tedarikciKirilimi?.satirlar || []).map(s => [String(s.tedarikciId), s]));
 
   const ac = (t) => { setHata(""); setForm(t ? { ...BOS, ...t } : { ...BOS }); };
@@ -86,7 +92,12 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
         </div>
       )}
 
-      {form && (
+      {kilitli && (
+        <Modal title={form ? "Tedarikçiyi Düzenle" : "Tedarikçi"} onClose={kilitKapat}>
+          <LockConflict lockedBy={tedKilidi.lockedBy} lockedAt={tedKilidi.lockedAt} onForce={tedKilidiDevral} onCancel={kilitKapat} />
+        </Modal>
+      )}
+      {form && !kilitli && (
         <Modal title={form.id == null ? "Yeni Tedarikçi" : "Tedarikçiyi Düzenle"} onClose={() => setForm(null)} wide
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           <Field label="Ad *"><Input value={form.ad} onChange={e => { setForm(f => ({ ...f, ad: e.target.value })); setHata(""); }} placeholder="Tedarikçi adı" /><HataMetni>{hata}</HataMetni></Field>
@@ -98,7 +109,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
           <Ipucu>Yalnız ad zorunludur. Aynı ad (büyük ve küçük harf farkı dahil) ikinci kez girilemez.</Ipucu>
         </Modal>
       )}
-      {sil && (sil.k.kalem + sil.k.tanim > 0 ? (
+      {sil && !kilitli && (sil.k.kalem + sil.k.tanim > 0 ? (
         <Modal title={`“${sil.t.ad}” silinemez`} onClose={() => setSil(null)} footer={<Btn onClick={() => setSil(null)}>Tamam</Btn>}>
           <div style={{ fontSize: 13, lineHeight: 1.6 }}>
             Bu tedarikçi <b>{sil.k.kalem} gider kaleminde</b>{sil.k.cop ? <> kullanılıyor, <b>{sil.k.cop}’i çöp kutusunda</b></> : " kullanılıyor"}{sil.k.tanim ? <> ve <b>{sil.k.tanim} tekrarlayan tanımda</b> geçiyor</> : null}.

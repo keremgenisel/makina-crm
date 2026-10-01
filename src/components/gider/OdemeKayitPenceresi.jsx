@@ -7,7 +7,7 @@ import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi } f
 import { Btn, Modal, Icon } from "../ui";
 import { Ipucu } from "../tasarim";
 import { tl2, hedefAdi, cokHedefliMi } from "./GiderAlanlari";
-import { OdemeGirisi, ilkGiris } from "./OdemeGirisi";
+import { OdemeGirisi, ilkGiris, MAHSUP_KILITLI_HATASI } from "./OdemeGirisi";
 
 // Ödeme kayıt penceresi (spec 0024 R2, R17, R18; 0041; 0053 R10, R17). Listedeki ödeme anahtarı, kira anahtarları, Ödeme
 // Planı satırları ve Anasayfa hatırlatıcısındaki "Ödendi" bu pencereyi açar. Spec 0053 R17: pencere, gider formundaki ödeme
@@ -51,6 +51,7 @@ export const OdemeKayitPenceresi = ({
   const ciroUyarisi = useMemo(() => (ciroSecili ? odemeGirisiHazirla(kalem, { ...baglam, tarih: giris.tarih, kip: "odeme", satirlar: giris.satirlar }).uyari : null),
     [ciroSecili, kalem, giris, cekler, payments, alacakliAd]);
   const kaydet = () => {
+    if (mahsupVar && giris.kip === "mahsup" && giris.mahsupKilitli) { setHatalar({ genel: [MAHSUP_KILITLI_HATASI] }); return; } // spec 0064 R20
     const r = odemeGirisiHazirla(kalem, { ...baglam, tarih: giris.tarih, kip: mahsupVar ? giris.kip : "odeme", satirlar: giris.satirlar, mahsup: giris.mahsup, yeniCekId: uid() });
     if (!r.hareketler) { setHatalar(r.hatalar); return; }
     if (!r.hareketler.length) { setHatalar({ ...r.hatalar, genel: ["En az bir satırın tutarını girin."] }); return; }

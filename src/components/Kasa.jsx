@@ -8,7 +8,10 @@ import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyele
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
-import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog } from "./ui";
+import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
+import { useKilitListesi } from "../hooks/useKilitListesi";
+import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
@@ -83,18 +86,23 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose }) => {
   const acik = hesaplar.filter(h => !h.kapali);
   const [form, setForm] = useState({ hesapId: acik[0]?.id ?? "", karsiHesapId: "", tarih: today(), tutar: "", aciklama: "" });
   const [hatalar, setHatalar] = useState({});
+  // Spec 0064 R6, R26 (AC-8, AC-27): yalnız KAYNAK hesap kilitlenir; kimlik formda seçildiği için kilit burada, seçim
+  // değişince yenisi alınır. Hedef hesap kilitlenmez.
+  const { lockConflict: kaynakKilidi, forceAcquire: kaynakKilidiDevral } = useLock("kasa_hesap", form.hesapId === "" || form.hesapId == null ? null : form.hesapId);
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   const cikan = acik.find(h => String(h.id) === String(form.hesapId));
   const girenler = cikan ? secilebilirHesaplar(acik, cikan.paraBirimi).filter(h => String(h.id) !== String(cikan.id)) : [];
   const idBul = (v) => acik.find(h => String(h.id) === v)?.id ?? "";
   const kaydet = () => {
+    if (kaynakKilidi) return;
     const r = virmanDogrula(form, hesaplar);
     if (!r.kayit) { setHatalar(r.hatalar); return; }
     onKaydet(r.kayit);
   };
   return (
     <Modal title="Virman" onClose={onClose} wide
-      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Virmanı Kaydet</Btn></div>}>
+      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!kaynakKilidi}><Icon name="check" size={14} /> Virmanı Kaydet</Btn></div>}>
+      {kaynakKilidi && <LockConflict lockedBy={kaynakKilidi.lockedBy} lockedAt={kaynakKilidi.lockedAt} onForce={kaynakKilidiDevral} onCancel={onClose} />}
       <div data-testid="virman-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>
           <Field label="Çıkan hesap">
@@ -135,6 +143,8 @@ export const Kasa = ({
   giderler = [], giderTurleri = [], tedarikciler = [], serverPermissions = null, showToast = () => {},
   // Spec 0024 B: çalışan avansları (silinmişler dahil, C8) ve ekstre kapsamı için yürürlük ayı.
   calisanlar = [], yururlukAy = null,
+  // Spec 0064 R14, R15: anlık işlemlerde "başkasının kilidinde mi" denetimi için oturumdaki kullanıcı.
+  aktifKullanici = "",
   // Spec 0040: çek portföyü görünümü.
   cekler = [], setCekler = null, giderAyarlari = {},
   // Spec 0044: servis, Extra Kalıp ve yedek parça tahsilatları (bakiye, hesapsız liste ve hesap ataması).
@@ -229,14 +239,30 @@ export const Kasa = ({
     }
     setHesapFormu(null);
   };
+  // Spec 0064 R14, R28, R29 (AC-17, AC-18): pencere açmayan anlık işlemler kilit TUTMAZ; kayıt başka kullanıcının
+  // kilidindeyse işlem reddedilir (Servis Panosu emsali). Kendi kilidi engel değildir.
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
+  const kilitReddet = (k) => { showToast(kilitRedMesaji(k), "err"); return true; };
+  const kilitliMi = (alan, id) => { const k = id == null ? null : baskasiKilitli(alan, id); return k ? kilitReddet(k) : false; };
+  // R29: kapsam dışı satırı kendi kaydının kilidine bakar (servis → müşteri, Extra Kalıp, yedek parça, gider kalemi, çalışan).
+  const kapsamKilidi = (sat) => {
+    if (sat?.kaynak && sat?.kayit) {
+      if (sat.kaynak === SATIS_KAYNAK.SERVIS) return ["customer", sat.kayit.customerId];
+      if (sat.kaynak === SATIS_KAYNAK.KALIP) return ["part_sale", sat.kayit.id];
+      return ["yedek_parca", sat.kayit.id];
+    }
+    return sat?.tur === "avans" ? ["calisan", sat.calisanId] : ["gider", sat?.giderId];
+  };
   // R16, AC-24: kapatılan hesap yeni harekette seçilemez, geçmişi durur; yeniden açılabilir.
   const kapatAc = (h) => {
+    if (kilitliMi("kasa_hesap", h.id)) return;
     setKasaHesaplari(p => p.map(x => (x.id === h.id ? { ...x, kapali: !x.kapali } : x)));
     logAction({ serverPermissions, action: h.kapali ? "acildi" : "kapatildi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad });
     showToast(h.kapali ? "Hesap yeniden açıldı." : "Hesap kapatıldı.");
   };
   const sil = () => {
     const h = silinecek;
+    if (kilitliMi("kasa_hesap", h.id)) { setSilinecek(null); return; }
     setKasaHesaplari(p => p.filter(x => x.id !== h.id));
     logAction({ serverPermissions, action: "silindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad });
     setSilinecek(null);
@@ -247,6 +273,9 @@ export const Kasa = ({
   const denemeBitis = denemeDonemiBitisi(giderAyarlari);
   const deneme = denemeDonemiAcik(giderAyarlari, bugun);
   const [tasinacak, setTasinacak] = useState(null); // silinecek hareketli hesap
+  // Spec 0064 R3, R25 (AC-6): hesap formu ve hesap silme / taşıma penceresi aynı hesabın TEK kilidini paylaşır.
+  const kilitHesapId = hesapFormu?.hesap?.id ?? tasinacak?.id ?? null;
+  const { lockConflict: hesapKilidi, forceAcquire: hesapKilidiDevral } = useLock("kasa_hesap", kilitHesapId);
   const tasimaPlani = useMemo(() => (tasinacak ? hesapTasimaPlani(tasinacak, hesapHareketleri, veri, kasaHesaplari,
     { hesapAdi: (id) => hesapById.get(String(id))?.ad || "Silinmiş hesap", tarihYaz: (t) => (t ? fmtTR(t) : "Tarihsiz") }) : null),
   [tasinacak, hesapHareketleri, veri, kasaHesaplari, hesapById]);
@@ -283,6 +312,7 @@ export const Kasa = ({
   const hesapAta = (k, hesapId) => {
     const [yaz, entity] = TAHSILAT_YAZICI[k.kaynak] || [];
     if (!yaz || hesapId == null) return;
+    if (kilitliMi(...kapsamKilidi(k))) return; // spec 0064 R14: satış kaydı başkasındaysa hesap atanmaz
     yaz(p => p.map(r => (r.id === k.kayit.id ? { ...r, hesapId } : r)));
     logAction({ serverPermissions, action: "duzenlendi", entity, entityId: k.kayit.id, entityName: k.firma, detail: { hesap: hesapById.get(String(hesapId))?.ad } });
     showToast("Tahsilat hesaba bağlandı.");
@@ -298,6 +328,8 @@ export const Kasa = ({
   };
   const kapsamDisiBirak = (satirlar, toplu = false) => {
     if (!kapsamYetkisi || !satirlar.length) return;
+    // R29: toplu işlemde tek satır başkasının kilidindeyse işlem bütünüyle reddedilir.
+    for (const sat of satirlar) { const [alan, id] = kapsamKilidi(sat); if (kilitliMi(alan, id)) return; }
     const zaman = new Date().toISOString();
     setKasaKapsamDisi(p => {
       const var_ = new Set((p || []).map(kapsamGirisAnahtari));
@@ -309,12 +341,14 @@ export const Kasa = ({
   };
   const kapsamaAl = (sat) => {
     if (!kapsamYetkisi) return;
+    if (kilitliMi(...kapsamKilidi(sat))) return;
     const anahtar = kapsamAnahtari(sat);
     setKasaKapsamDisi(p => (p || []).filter(g => kapsamGirisAnahtari(g) !== anahtar));
     logAction({ serverPermissions, action: "kapsama_alindi", entity: "kasa_kapsam", entityId: kapsamGirisi(sat).kayitId, entityName: kapsamAdi(sat) });
     showToast("Kayıt listeye geri alındı.");
   };
   const virmanSil = (m) => {
+    if (kilitliMi("kasa_hesap", m.hesapId)) return; // spec 0064 R14: kaynak hesap başkasındaysa silinmez
     setHesapHareketleri(p => p.filter(x => x.id !== m.id));
     logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar } });
     showToast("Virman silindi.");
@@ -356,7 +390,7 @@ export const Kasa = ({
       {gorunum === "cek" ? (
         <CekPortfoyu cekler={cekler} setCekler={setCekler} payments={payments} customers={customers} giderler={giderler} giderTurleri={giderTurleri}
           tedarikciler={tedarikciler} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
-          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} />
+          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} aktifKullanici={aktifKullanici} />
       ) : (<>
       {/* Spec 0056 R3 (AC-2, AC-31): deneme dönemi geçici bir hâldir; bitiş ayardan. */}
       {deneme && <UyariSeridi aile="uyari" testId="deneme-donemi">{denemeDonemiMetni(denemeBitis)}</UyariSeridi>}
@@ -561,16 +595,21 @@ export const Kasa = ({
         </>
       )}
 
-      <CalisanAvanslari calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
+      <CalisanAvanslari aktifKullanici={aktifKullanici} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
         giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
       </>)}
 
-      {hesapFormu && (
+      {kilitHesapId != null && hesapKilidi && (
+        <Modal title={hesapFormu ? "Hesabı Düzenle" : `Hesabı Sil: ${tasinacak?.ad || ""}`} onClose={() => { setHesapFormu(null); setTasinacak(null); }}>
+          <LockConflict lockedBy={hesapKilidi.lockedBy} lockedAt={hesapKilidi.lockedAt} onForce={hesapKilidiDevral} onCancel={() => { setHesapFormu(null); setTasinacak(null); }} />
+        </Modal>
+      )}
+      {hesapFormu && !(kilitHesapId != null && hesapKilidi) && (
         <HesapFormu hesap={hesapFormu.hesap} hesaplar={kasaHesaplari} hareketVar={!!hesapFormu.hesap && hesapKullanimi(hesapFormu.hesap.id, hesapHareketleri, veri) > 0}
           onKaydet={hesapKaydet} onClose={() => setHesapFormu(null)} />
       )}
       {virmanAcik && <VirmanFormu hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}
-      {tasinacak && tasimaPlani && (
+      {tasinacak && tasimaPlani && !hesapKilidi && (
         <HesapSilPenceresi hesap={tasinacak} plan={tasimaPlani} onTasi={tasiVeSil} onHesapsiz={() => tasiVeSil(null)} onClose={() => setTasinacak(null)} />
       )}
       {silinecek && (

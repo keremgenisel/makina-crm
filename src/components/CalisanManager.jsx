@@ -3,7 +3,8 @@ import { uid, today } from "../lib/utils";
 import { tutarCoz, tanimKapat, acikTanimMi, ayOf, tl } from "../lib/gider";
 import { avansBorcuK } from "../lib/kasa";
 import { logAction } from "../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog } from "./ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { useLock } from "../hooks/useLock";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { TutarInput, tl2, tutarMetni } from "./gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "./tasarim";
@@ -68,6 +69,9 @@ export const CalisanManager = ({
     setFormHata("");
     saveEdit();
   };
+  // Spec 0064 R5, R30 (AC-7): panel `ayar` + `calisanlar` kilidini Settings alır; satır düzenlemesi ayrıca çalışanın
+  // `calisan` kilidini alır (Kasa'da aynı çalışana avans girilirken adı değişmesin).
+  const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = useLock("calisan", editId);
   const editAc = (c) => { setFormHata(""); startEdit(maliyetAcik ? { ...c, resmiMaliyet: tutarMetni(c.resmiMaliyet), eldenMaliyet: tutarMetni(c.eldenMaliyet) } : c); };
 
   const varsayilanKaydet = () => {
@@ -182,10 +186,11 @@ export const CalisanManager = ({
 
       {editId !== null && (
         <Modal title="Çalışanı Düzenle" onClose={cancelEdit}
-          footer={<div style={{ display: "flex", gap: 8 }}>
+          footer={calisanKilidi ? null : <div style={{ display: "flex", gap: 8 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
             <Btn onClick={submitEdit}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>}>
+          {calisanKilidi ? <LockConflict lockedBy={calisanKilidi.lockedBy} lockedAt={calisanKilidi.lockedAt} onForce={calisanKilidiDevral} onCancel={cancelEdit} /> : (<>
           <Field label="Ad Soyad">
             <Input value={editForm.ad || ""} onChange={e => setEditForm(p => ({ ...p, ad: e.target.value }))} placeholder="Ad Soyad" />
             <HataMetni>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</HataMetni>
@@ -200,6 +205,7 @@ export const CalisanManager = ({
             <Ipucu>Boş bırakılan bileşen sıfır sayılır. Tutar yalnız tekrarlayan personel tanımının girdisidir; kaydedilmiş kalemler değişmez.</Ipucu>
             <HataMetni>{formHata}</HataMetni>
           </>}
+          </>)}
         </Modal>
       )}
     </div>
