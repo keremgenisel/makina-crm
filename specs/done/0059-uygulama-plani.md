@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0059-gider-kasa-raporu-detay-ve-tasarim.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0059-gider-kasa-raporu-detay-ve-tasarim.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0059-rapor-detay` (`feat/0063-tahsilat-hesap` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q14) kabul |
 
@@ -88,3 +88,4 @@ Q1 R31 · Q2 R32 · Q3 R33 · Q4–Q6 R34 · Q7 R35 · Q8 R36 · Q9 R37 · Q10 R
   kovası liste almaz; `hareketOzeti` tahsilat satırı ham kaydı ve hesap nesnesini taşımaz (`hesapId`, `hesapAd`).
   (6) Hesapsız çek hareketinde hesap sütunu yöntemin kendisidir ("Çek (ciro)", R36). (7) AC-1 başlık listesi ve AC-12
   satırları tam eşitlikle. Kanıtın üç rapor ekranı yeniden çekildi.
+- **Kapanış:** taban `0059-taban-piksel-raporu.json` (3 rapor ekranı × 2 tema, 0 piksel).

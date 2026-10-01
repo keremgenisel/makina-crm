@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-10-01, Takım Yöneticisi) |
+| **Durum** | Tamamlandı (commit `66c42a3`, dal `feat/0059-rapor-detay`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Aylık Gider ve Kasa Raporu (motor ve şablon), paylaşılan yazdırma sunumu |
@@ -339,26 +339,27 @@ besleniyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Ortak sunum modülü kuruldu; iki belgede kopya stil kalmadı (R2, AC-3).
-- [ ] Ortak modül `tests/gider-gizlilik.test.js`'in taranan dosya listesine eklendi (R19, AC-4).
-- [ ] `hedefEtiketi` ve `cokHedefliMi` `src/lib/odemeYontemi.js`'e taşındı, `GiderAlanlari.jsx` yeniden
-      dışa veriyor; 0051 ve 0054 testleri değişmeden geçti (R20, AC-23, AC-24).
-- [ ] `hareketOzeti` ve `cekAyOzeti` opt-in `liste` ile genişletildi; parametresiz çağrının çıktısı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Ortak sunum modülü kuruldu; iki belgede kopya stil kalmadı (R2, AC-3).
+- [x] Ortak modül `tests/gider-gizlilik.test.js`'in taranan dosya listesine eklendi (R19, AC-4).
+- [x] `hedefEtiketi` ve `cokHedefliMi` `src/lib/odemeYontemi.js`'e taşındı, `GiderAlanlari.jsx` yeniden
+      dışa veriyor; 0051 ve 0054 testleri değişmeden geçti (R20, AC-23, AC-24). *Not: 0051'in tanımın yerini
+      arayan tek kaynak taraması yeni yere bakacak şekilde güncellendi; davranış testleri değişmedi (plan §6).*
+- [x] `hareketOzeti` ve `cekAyOzeti` opt-in `liste` ile genişletildi; parametresiz çağrının çıktısı
       birebir aynı (R21, AC-25).
-- [ ] Gizlilik kaynak taraması ve çıktı temelli testi birlikte yeşil; dört hedefli personel senaryosu yeni
+- [x] Gizlilik kaynak taraması ve çıktı temelli testi birlikte yeşil; dört hedefli personel senaryosu yeni
       tablolarla da temiz (AC-4, AC-18, AC-32).
-- [ ] Faaliyet raporunun çıktısının **dize olarak** değişmediği testle gösterildi (R23, AC-5).
-- [ ] Rakamların ve hesapsız listelerin değişmediği çapraz testle gösterildi (AC-19, AC-14).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0059-*.jpg` + `0059-piksel-raporu.json`, yeni taban): araçtaki
+- [x] Faaliyet raporunun çıktısının **dize olarak** değişmediği testle gösterildi (R23, AC-5).
+- [x] Rakamların ve hesapsız listelerin değişmediği çapraz testle gösterildi (AC-19, AC-14).
+- [x] Görsel kanıt eklendi (`docs/evidence/0059-*.jpg` + `0059-piksel-raporu.json`, yeni taban): araçtaki
       `gider-kasa-raporu-belge` ekranının farkı bilinçlidir ve yeni detay tablolarını gösterir (R23).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: ortak sunum modülü, iki raporun aynı dili kullandığı, hedef etiketinin saf
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: ortak sunum modülü, iki raporun aynı dili kullandığı, hedef etiketinin saf
       kitaplığa taşındığı, motorların opt-in `liste` genişlemesi ve personelin her tabloda tek satır
       olduğu (hedef hücresi boş).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -366,10 +367,10 @@ besleniyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 QA turu (17 bulgu, 3'ü bloklayıcı), R2 plan onayı (Q1–Q14; R31–R41). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: silinmiş kalem ödemesinin tek satır basılması (gizlilik), aynı adlı tedarikçi gruplaması, etiket para biçimi, iç çağrı israfı, motor temizlikleri, R36 yorumu, gevşek iki test. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 7 / 0 | Yedi kod/test bulgusunun hepsi gerçekti; sekizinci (çalışma alanı) analistin dosyalarıydı, kapsam dışı bırakıldı. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Faaliyet raporu altın dizeyle birebir, gider rapor nesnesi altın JSON ile aynı; 216 gider/kasa/finans görüntüsü 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir belgenin dilini değiştirirken "önce ve sonra aynı" iddiası en ucuz altın çıktıyla ölçülür: faaliyet raporunun HTML'i ve gider raporunun nesnesi değişiklikten önce HEAD'den alınınca yeniden düzenleme güvenle yapıldı. Gizlilikte ise "personel mi?" sorusu kaydın kendisinden sorulduğunda kayıt silinince cevap kayboluyor; kimliği bilinmeyen kaydın ödemesi de kişi bazlı sayılıp toplu satıra indirilmeli. Gruplamalar ad değil kimlikle yapılmalı.
