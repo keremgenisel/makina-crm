@@ -129,10 +129,15 @@ const aralikta = (tarih, aralik) => !aralik
 // Spec 0047 R13, R14 (Kasa bölümü): aralıktaki hareketlerin türe göre sayısı ve tutarı; tahsilatlar aralıklı bakiye
 // satırlarından (bakiyeye giren para, dört kaynak; 0044), ödeme yöntemi kırılımı aralıkta yapılan ödeme hareketlerinden.
 // Mahsup para hareketi değildir (0024 R10) ama sayılır. Tutarsız göç hareketinin tutarı 0 sayılır.
-export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null) => {
+// Spec 0059 R21 (AC-25): `{ liste: true }` verilince dört hareket türü ayın hareketlerini (tarih, sonra giriş sırası) ve
+// tahsilat hesap satırlarını (`tahsilat.liste`: tarih, hesap, kaynak, tür adı, firma, giren, para birimi) döndürür; listeler
+// rapor tablolarının tek kaynağıdır. Parametresiz çağrı bugünkü çıktıyı birebir verir. Triyaj: satır ham kaydı ve hesap
+// nesnesini taşımaz (ham müşteri/servis kaydı rapor nesnesine sızmasın); yalnız hesabın kimliği ve adı.
+export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null, { liste = false } = {}) => {
   const tur = (t) => { const l = hareketler.filter(m => m && m.tur === t && aralikta(m.tarih, aralik)); return { adet: l.length, tutarK: l.reduce((a, m) => a + kurus(m.tutar), 0), liste: l }; };
   const odeme = tur("odeme"), virman = tur("virman"), avans = tur("avans"), mahsup = tur("mahsup");
   const tahsilat = { adet: 0, tutarK: 0, kaynaklar: {} };
+  const tahsilatListe = [];
   for (const x of bakiyeler ? bakiyeler.values() : []) {
     for (const s of x.aralik?.satirlar || []) {
       if (!s.tahsilat) continue;
@@ -140,11 +145,15 @@ export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null) => {
       tahsilat.adet++; tahsilat.tutarK += s.girenK;
       const k = tahsilat.kaynaklar[kaynak] || (tahsilat.kaynaklar[kaynak] = { adet: 0, tutarK: 0 });
       k.adet++; k.tutarK += s.girenK;
+      if (liste) tahsilatListe.push({ tarih: s.tarih, hesapId: x.hesap.id, hesapAd: x.hesap.ad, kaynak, turAdi: s.turAdi, firma: s.firma, tutarK: s.girenK, paraBirimi: x.hesap.paraBirimi || "TRY" });
     }
   }
   const yontem = new Map();
   for (const m of odeme.liste) { const y = m.yontem || "Belirtilmemiş"; yontem.set(y, (yontem.get(y) || 0) + kurus(m.tutar)); }
-  const strip = ({ liste, ...r }) => r;
+  const sirali = (l) => l.map((m, i) => [m, i]).sort((a, b) => String(a[0].tarih || "").localeCompare(String(b[0].tarih || "")) || a[1] - b[1]).map(x => x[0]);
+  const strip = liste ? ({ liste: l, ...r }) => ({ ...r, liste: sirali(l) }) : ({ liste: _l, ...r }) => r;
+  if (liste) tahsilat.liste = tahsilatListe.map((t, i) => [t, i])
+    .sort((a, b) => String(a[0].tarih || "").localeCompare(String(b[0].tarih || "")) || String(a[0].hesapAd).localeCompare(String(b[0].hesapAd), "tr") || a[1] - b[1]).map(x => x[0]);
   return { odeme: strip(odeme), virman: strip(virman), avans: strip(avans), mahsup: strip(mahsup), tahsilat,
     yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK) };
 };

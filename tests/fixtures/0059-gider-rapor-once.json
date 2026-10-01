@@ -1,0 +1,840 @@
+{
+ "2026-08": {
+  "ay": "2026-08",
+  "ayAdi": "Ağustos 2026",
+  "bas": "2026-08-01",
+  "son": "2026-08-31",
+  "gider": {
+   "yururlukOncesi": false,
+   "bos": false,
+   "ozet": {
+    "toplam": 4000,
+    "odenen": 4000,
+    "odenmeyen": 0,
+    "indirilecekKdv": 800,
+    "stopaj": 0
+   },
+   "turler": [
+    {
+     "ad": "Hammadde",
+     "adet": 1,
+     "toplam": 4000
+    }
+   ],
+   "tedarikciler": {
+    "satirlar": [
+     {
+      "ad": "Demir Bant",
+      "harcama": 4000,
+      "acikBorc": 0
+     }
+    ],
+    "secilmemis": {
+     "harcama": 0,
+     "adet": 0,
+     "acikBorc": 0
+    },
+    "toplamHarcama": 4000,
+    "toplamBorc": 0
+   },
+   "odemeDurumu": {
+    "gecmisAdet": 0,
+    "gecmisTutar": 0,
+    "yaklasanAdet": 0,
+    "yaklasanTutar": 0,
+    "esikGun": 7
+   },
+   "kovalar": {
+    "makina": 0,
+    "model": 0,
+    "dagitma": 0,
+    "ortak": 4000
+   },
+   "kdv": {
+    "hesaplananTL": 0,
+    "indirilecek": 800,
+    "fark": -800,
+    "odenecek": 0,
+    "devreden": 800,
+    "haricTutarlar": []
+   },
+   "yontem": {
+    "satirlar": [
+     {
+      "ad": "Havale",
+      "tutar": 4800
+     }
+    ],
+    "personel": 0,
+    "toplam": 4800
+   },
+   "kalemler": [
+    {
+     "tarih": "2026-08-12",
+     "tur": "Hammadde",
+     "aciklama": "Ağustos sacı",
+     "tedarikci": "Demir Bant",
+     "tutar": 4000,
+     "durum": "Ödendi"
+    }
+   ]
+  },
+  "kasa": {
+   "bloklar": [
+    {
+     "paraBirimi": "TRY",
+     "satirlar": [
+      {
+       "ad": "Ziraat",
+       "tur": "Banka",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 10000000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 980000,
+       "kapanisK": 9020000
+      }
+     ],
+     "toplam": {
+      "devredenK": 10000000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 980000,
+      "kapanisK": 9020000
+     }
+    },
+    {
+     "paraBirimi": "EUR",
+     "satirlar": [
+      {
+       "ad": "Euro Hesap",
+       "tur": "Banka",
+       "paraBirimi": "EUR",
+       "kapali": false,
+       "devredenK": 0,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 0
+      }
+     ],
+     "toplam": {
+      "devredenK": 0,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 0
+     }
+    },
+    {
+     "paraBirimi": "USD",
+     "satirlar": [
+      {
+       "ad": "Döviz",
+       "tur": "Banka",
+       "paraBirimi": "USD",
+       "kapali": false,
+       "devredenK": 100000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 100000
+      }
+     ],
+     "toplam": {
+      "devredenK": 100000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 100000
+     }
+    }
+   ],
+   "ozet": {
+    "odeme": {
+     "adet": 2,
+     "tutarK": 980000
+    },
+    "virman": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "avans": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "mahsup": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "tahsilat": {
+     "adet": 0,
+     "tutarK": 0,
+     "kaynaklar": []
+    },
+    "yontemKirilimi": [
+     {
+      "ad": "Havale",
+      "tutarK": 980000
+     }
+    ]
+   },
+   "hesapsiz": {
+    "odemeAdet": 0,
+    "avansAdet": 0,
+    "liste": [],
+    "tahsilatAdet": 0,
+    "tahsilatlar": []
+   },
+   "cek": {
+    "elde": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 400000
+     }
+    },
+    "tahsil": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "ciro": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "karsiliksiz": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "gecmisYokAdet": 1
+   },
+   "avansK": 0
+  }
+ },
+ "2026-09": {
+  "ay": "2026-09",
+  "ayAdi": "Eylül 2026",
+  "bas": "2026-09-01",
+  "son": "2026-09-30",
+  "gider": {
+   "yururlukOncesi": false,
+   "bos": false,
+   "ozet": {
+    "toplam": 87233,
+    "odenen": 13000,
+    "odenmeyen": 74233,
+    "indirilecekKdv": 2000,
+    "stopaj": 4000
+   },
+   "turler": [
+    {
+     "ad": "Kira",
+     "adet": 1,
+     "toplam": 20000
+    },
+    {
+     "ad": "Hammadde",
+     "adet": 4,
+     "toplam": 16000
+    },
+    {
+     "ad": "Personel gideri",
+     "adet": null,
+     "toplam": 51233
+    }
+   ],
+   "tedarikciler": {
+    "satirlar": [
+     {
+      "ad": "Yıldız Gayrimenkul",
+      "harcama": 20000,
+      "acikBorc": 16000
+     },
+     {
+      "ad": "Demir Bant",
+      "harcama": 12000,
+      "acikBorc": 0
+     },
+     {
+      "ad": "A<B Ticaret",
+      "harcama": 3000,
+      "acikBorc": 3000
+     }
+    ],
+    "secilmemis": {
+     "harcama": 1000,
+     "adet": 1,
+     "acikBorc": 0
+    },
+    "toplamHarcama": 36000,
+    "toplamBorc": 19000
+   },
+   "odemeDurumu": {
+    "gecmisAdet": 2,
+    "gecmisTutar": 19000,
+    "yaklasanAdet": 1,
+    "yaklasanTutar": 19122,
+    "esikGun": 7
+   },
+   "kovalar": {
+    "makina": 0,
+    "model": 0,
+    "dagitma": 0,
+    "ortak": 87233
+   },
+   "kdv": {
+    "hesaplananTL": 200,
+    "indirilecek": 2000,
+    "fark": -1800,
+    "odenecek": 0,
+    "devreden": 1800,
+    "haricTutarlar": []
+   },
+   "yontem": {
+    "satirlar": [
+     {
+      "ad": "Havale",
+      "tutar": 16000
+     },
+     {
+      "ad": "Çek (ciro)",
+      "tutar": 2000
+     },
+     {
+      "ad": "Belirtilmemiş",
+      "tutar": 1000
+     }
+    ],
+    "personel": 32111,
+    "toplam": 51111
+   },
+   "kalemler": [
+    {
+     "tarih": "2026-09-01",
+     "tur": "Kira",
+     "aciklama": "Eylül kirası",
+     "tedarikci": "Yıldız Gayrimenkul",
+     "tutar": 20000,
+     "durum": "Kısmen ödendi"
+    },
+    {
+     "tarih": "2026-09-03",
+     "tur": "Hammadde",
+     "aciklama": "Vida & somun",
+     "tedarikci": "A<B Ticaret",
+     "tutar": 3000,
+     "durum": "Ödenmedi"
+    },
+    {
+     "tarih": "2026-09-05",
+     "tur": "Hammadde",
+     "aciklama": "Sac levha",
+     "tedarikci": "Demir Bant",
+     "tutar": 10000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": "2026-09-06",
+     "tur": "Hammadde",
+     "aciklama": "Bant",
+     "tedarikci": "Demir Bant",
+     "tutar": 2000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": "2026-09-15",
+     "tur": "Hammadde",
+     "aciklama": "Temizlik",
+     "tedarikci": "",
+     "tutar": 1000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": null,
+     "tur": "Personel gideri",
+     "aciklama": "Personel gideri",
+     "tedarikci": "",
+     "tutar": 51233,
+     "durum": "Kısmen ödendi",
+     "personel": true
+    }
+   ]
+  },
+  "kasa": {
+   "bloklar": [
+    {
+     "paraBirimi": "TRY",
+     "satirlar": [
+      {
+       "ad": "Kasa",
+       "tur": "Kasa",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 0,
+       "acilisSatiriK": 2000000,
+       "girenK": 500000,
+       "cikanK": 3645600,
+       "kapanisK": -1145600
+      },
+      {
+       "ad": "Ziraat",
+       "tur": "Banka",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 9020000,
+       "acilisSatiriK": 0,
+       "girenK": 820000,
+       "cikanK": 2100000,
+       "kapanisK": 7740000
+      }
+     ],
+     "toplam": {
+      "devredenK": 9020000,
+      "acilisSatiriK": 2000000,
+      "girenK": 1320000,
+      "cikanK": 5745600,
+      "kapanisK": 6594400
+     }
+    },
+    {
+     "paraBirimi": "EUR",
+     "satirlar": [
+      {
+       "ad": "Euro Hesap",
+       "tur": "Banka",
+       "paraBirimi": "EUR",
+       "kapali": false,
+       "devredenK": 0,
+       "acilisSatiriK": 0,
+       "girenK": 150000,
+       "cikanK": 0,
+       "kapanisK": 150000
+      }
+     ],
+     "toplam": {
+      "devredenK": 0,
+      "acilisSatiriK": 0,
+      "girenK": 150000,
+      "cikanK": 0,
+      "kapanisK": 150000
+     }
+    },
+    {
+     "paraBirimi": "USD",
+     "satirlar": [
+      {
+       "ad": "Döviz",
+       "tur": "Banka",
+       "paraBirimi": "USD",
+       "kapali": false,
+       "devredenK": 100000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 100000
+      }
+     ],
+     "toplam": {
+      "devredenK": 100000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 100000
+     }
+    }
+   ],
+   "ozet": {
+    "odeme": {
+     "adet": 5,
+     "tutarK": 5245600
+    },
+    "virman": {
+     "adet": 1,
+     "tutarK": 500000
+    },
+    "avans": {
+     "adet": 2,
+     "tutarK": 350000
+    },
+    "mahsup": {
+     "adet": 1,
+     "tutarK": 100000
+    },
+    "tahsilat": {
+     "adet": 3,
+     "tutarK": 970000,
+     "kaynaklar": [
+      {
+       "ad": "Makina tahsilatı",
+       "adet": 2,
+       "tutarK": 850000
+      },
+      {
+       "ad": "Servis tahsilatı",
+       "adet": 1,
+       "tutarK": 120000
+      }
+     ]
+    },
+    "yontemKirilimi": [
+     {
+      "ad": "Nakit",
+      "tutarK": 3345600
+     },
+     {
+      "ad": "Havale",
+      "tutarK": 1600000
+     },
+     {
+      "ad": "Çek (ciro)",
+      "tutarK": 200000
+     },
+     {
+      "ad": "Belirtilmemiş",
+      "tutarK": 100000
+     }
+    ]
+   },
+   "hesapsiz": {
+    "odemeAdet": 1,
+    "avansAdet": 1,
+    "liste": [
+     {
+      "tarih": "2026-09-20",
+      "tutarK": 100000,
+      "etiket": "Temizlik"
+     },
+     {
+      "tarih": null,
+      "tutarK": 50000,
+      "etiket": "Çalışan avansları · 1 adet",
+      "toplu": true
+     }
+    ],
+    "tahsilatAdet": 1,
+    "tahsilatlar": [
+     {
+      "tarih": "2026-09-19",
+      "ad": "Extra Kalıp tahsilatı",
+      "firma": "Kutu Gıda",
+      "tutarK": 50000,
+      "paraBirimi": "TRY"
+     }
+    ]
+   },
+   "cek": {
+    "elde": {
+     "adet": 3,
+     "tutarK": {
+      "TRY": 1150000
+     }
+    },
+    "tahsil": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 400000
+     }
+    },
+    "ciro": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 200000
+     }
+    },
+    "karsiliksiz": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 300000
+     }
+    },
+    "gecmisYokAdet": 1
+   },
+   "avansK": 250000
+  }
+ },
+ "2026-10": {
+  "ay": "2026-10",
+  "ayAdi": "Ekim 2026",
+  "bas": "2026-10-01",
+  "son": "2026-10-31",
+  "gider": {
+   "yururlukOncesi": false,
+   "bos": false,
+   "ozet": {
+    "toplam": 999,
+    "odenen": 0,
+    "odenmeyen": 999,
+    "indirilecekKdv": 0,
+    "stopaj": 0
+   },
+   "turler": [
+    {
+     "ad": "Hammadde",
+     "adet": 1,
+     "toplam": 999
+    }
+   ],
+   "tedarikciler": {
+    "satirlar": [
+     {
+      "ad": "A<B Ticaret",
+      "harcama": 0,
+      "acikBorc": 3000
+     }
+    ],
+    "secilmemis": {
+     "harcama": 999,
+     "adet": 1,
+     "acikBorc": 999
+    },
+    "toplamHarcama": 999,
+    "toplamBorc": 3999
+   },
+   "odemeDurumu": {
+    "gecmisAdet": 2,
+    "gecmisTutar": 22122,
+    "yaklasanAdet": 0,
+    "yaklasanTutar": 0,
+    "esikGun": 7
+   },
+   "kovalar": {
+    "makina": 0,
+    "model": 0,
+    "dagitma": 0,
+    "ortak": 999
+   },
+   "kdv": {
+    "hesaplananTL": 0,
+    "indirilecek": 0,
+    "fark": 0,
+    "odenecek": 0,
+    "devreden": 0,
+    "haricTutarlar": []
+   },
+   "yontem": {
+    "satirlar": [],
+    "personel": 0,
+    "toplam": 0
+   },
+   "kalemler": [
+    {
+     "tarih": "2026-10-02",
+     "tur": "Hammadde",
+     "aciklama": "Ekim kalemi",
+     "tedarikci": "",
+     "tutar": 999,
+     "durum": "Ödenmedi"
+    }
+   ]
+  },
+  "kasa": {
+   "bloklar": [
+    {
+     "paraBirimi": "TRY",
+     "satirlar": [
+      {
+       "ad": "Kasa",
+       "tur": "Kasa",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": -1145600,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": -1145600
+      },
+      {
+       "ad": "Ziraat",
+       "tur": "Banka",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 7740000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 1600000,
+       "kapanisK": 6140000
+      }
+     ],
+     "toplam": {
+      "devredenK": 6594400,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 1600000,
+      "kapanisK": 4994400
+     }
+    },
+    {
+     "paraBirimi": "EUR",
+     "satirlar": [
+      {
+       "ad": "Euro Hesap",
+       "tur": "Banka",
+       "paraBirimi": "EUR",
+       "kapali": false,
+       "devredenK": 150000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 150000
+      }
+     ],
+     "toplam": {
+      "devredenK": 150000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 150000
+     }
+    },
+    {
+     "paraBirimi": "USD",
+     "satirlar": [
+      {
+       "ad": "Döviz",
+       "tur": "Banka",
+       "paraBirimi": "USD",
+       "kapali": false,
+       "devredenK": 100000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 100000
+      }
+     ],
+     "toplam": {
+      "devredenK": 100000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 100000
+     }
+    }
+   ],
+   "ozet": {
+    "odeme": {
+     "adet": 1,
+     "tutarK": 1600000
+    },
+    "virman": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "avans": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "mahsup": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "tahsilat": {
+     "adet": 0,
+     "tutarK": 0,
+     "kaynaklar": []
+    },
+    "yontemKirilimi": [
+     {
+      "ad": "Havale",
+      "tutarK": 1600000
+     }
+    ]
+   },
+   "hesapsiz": {
+    "odemeAdet": 0,
+    "avansAdet": 0,
+    "liste": [],
+    "tahsilatAdet": 0,
+    "tahsilatlar": []
+   },
+   "cek": {
+    "elde": {
+     "adet": 2,
+     "tutarK": {
+      "TRY": 650000
+     }
+    },
+    "tahsil": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 500000
+     }
+    },
+    "ciro": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "karsiliksiz": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "gecmisYokAdet": 1
+   },
+   "avansK": 250000
+  }
+ },
+ "2025-12": {
+  "ay": "2025-12",
+  "ayAdi": "Aralık 2025",
+  "bas": "2025-12-01",
+  "son": "2025-12-31",
+  "gider": {
+   "yururlukOncesi": true
+  },
+  "kasa": {
+   "bloklar": [],
+   "ozet": {
+    "odeme": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "virman": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "avans": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "mahsup": {
+     "adet": 0,
+     "tutarK": 0
+    },
+    "tahsilat": {
+     "adet": 0,
+     "tutarK": 0,
+     "kaynaklar": []
+    },
+    "yontemKirilimi": []
+   },
+   "hesapsiz": {
+    "odemeAdet": 0,
+    "avansAdet": 0,
+    "liste": [],
+    "tahsilatAdet": 0,
+    "tahsilatlar": []
+   },
+   "cek": {
+    "elde": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 400000
+     }
+    },
+    "tahsil": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "ciro": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "karsiliksiz": {
+     "adet": 0,
+     "tutarK": {}
+    },
+    "gecmisYokAdet": 1
+   },
+   "avansK": 0
+  }
+ }
+}

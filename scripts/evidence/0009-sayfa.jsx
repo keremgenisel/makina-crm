@@ -32,6 +32,7 @@ import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPencer
 import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
+import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
 import App from "../../src/App";
 import { UserManager } from "../../src/components/settings/UserManager";
 
@@ -670,6 +671,8 @@ const EKRANLAR = {
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
   // Spec 0055: kalem listesi seçeneği kalktı; "-kalemsiz" ekranı yerine kalemsiz (boş) ayın belgesi (boş tablo basılmaz).
   "gider-kasa-raporu-bos": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, giderler: [] }, "2026-09")) }} />, []],
+  // Spec 0059: detay tabloları (geciken kalem, kira hedefli ödeme, EUR tahsilat, ay içi çekler, virman) ve geçen ay eki.
+  "gider-kasa-raporu-detay": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_0059_GIRDI(), "2026-09")) }} />, []],
   "giderler-rapor-dugmesi": [<GiderEkrani rapor={RAPOR_VERI} />, []],
   "kasa-rapor-dugmesi": [kasaEkrani({ giderKasaRaporVerisi: RAPOR_VERI }), []],
   "finans-rapor-dugmesi": [<FINANS rapor={RAPOR_VERI} />, []],

@@ -10,13 +10,17 @@
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
 import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd } from "./gider";
-import { odemeHatirlatmalari } from "./odemeHatirlatma";
+import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { hesaplananKdvAylar } from "./giderKdv";
-import { donemYontemKirilimi } from "./odemeYontemi";
+import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
 import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, HESAP_TUR_AD } from "./kasa";
 import { cekAyOzeti } from "./cek";
 import { SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { fmtTR, fmtCur } from "./utils";
+// Triyaj: bölünmüş hedef etiketindeki tutar belgenin para biçimiyle (fmtCur, kuruşsuz); ekranda tl2 kalır.
+const etiketTutari = (payK) => fmtCur(tl(payK));
+import { oncekiAyStr } from "./aylikRapor";
+import { st, gecenAyEki, detayTablo, bolum, altBaslik, belgeAcilis, ayrac, not, bosNot, gun } from "./raporSunumu";
 
 export const RAPOR_BASLIGI = "Aylık Gider ve Kasa Raporu";
 export const NOT_GELIR_DEGIL = "Kasa bölümü nakit hareketlerini gösterir, gelir raporu değildir; Finans'ın Aylık Faaliyet Raporu'ndaki ciroyla toplanmaz.";
@@ -39,7 +43,12 @@ const DURUM_AD = { odendi: "Ödendi", kismen: "Kısmen ödendi", odenmedi: "Öde
 //   satisVerisi, kdvSecenek, hesaplar, cekler, payments (çekli), services, partSales, yedekParcaSatislar, dealers,
 //   factory, kdvRates }
 // Spec 0055 R3: kalem listesi seçeneği kaldırıldı; liste her raporda vardır (0047 R32 geri alındı).
-export const giderKasaRaporu = (girdi = {}, ay) => {
+// Spec 0059 R6, R7, R34: geçen ay karşılaştırması BURADA, aynı motor ve aynı dönem kilidiyle hesaplanır (üç ekranın düğmesi
+// aynı belgeyi üretir); iç çağrı `_onceki: false` ile özyinelemeyi keser ve yalnız özet rakamları taşınır. Önceki ay yürürlük
+// ayından önceyse `onceki = { yururlukOncesi: true }` (karşılaştırma basılmaz); yürürlükte ama kayıtsızsa sıfırla basılır.
+export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
+  // Triyaj: iç (önceki ay) çağrı yalnız özet rakamları taşır; detay listeleri hiç kurulmaz.
+  const detay = _onceki;
   const g = { giderler: [], hareketler: [], turler: [], tedarikciler: [], stock: [], customers: [], hesaplar: [], cekler: [], payments: [],
     services: [], partSales: [], yedekParcaSatislar: [], dealers: [], satisVerisi: {}, kdvSecenek: {},
     // Spec 0058 R7, R15: kasa iş listesinden kapsam dışı bırakılanlar raporun hesapsız bölümünde de sayılmaz (null = bugünkü).
@@ -51,6 +60,7 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
   // Q1: ay sonuna kadarki hareketler; kalem ödeme durumu bunlardan türer.
   const hareketlerAySonu = (g.hareketler || []).filter(h => h && (!h.tarih || h.tarih <= son));
   const giderlerAySonu = odemeleriUygula(g.giderler, hareketlerAySonu, turMap);
+  const giderAySonuById = new Map(giderlerAySonu.map(k => [String(k.id), k]));
 
   // ── Gider bölümü ──
   const gr = hesaplaGiderRaporu({ giderler: giderlerAySonu, turler: g.turler, tedarikciler: g.tedarikciler, stock: g.stock, customers: g.customers,
@@ -68,9 +78,9 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
     const kdvHesaplanan = hesaplananKdvAylar(g.satisVerisi, [ay], g.kdvSecenek);
     const yontem = donemYontemKirilimi(gr.kalemler, hareketlerAySonu, turMap);
     let kalemler;
-    const genel = gr.kalemler.filter(k => davranisOf(k, turMap) !== DAVRANIS.PERSONEL)
-      .sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)) || Number(a.id) - Number(b.id))
-      .map(k => {
+    const genelKalemler = gr.kalemler.filter(k => davranisOf(k, turMap) !== DAVRANIS.PERSONEL)
+      .sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)) || Number(a.id) - Number(b.id));
+    const genel = genelKalemler.map(k => {
         const dav = davranisOf(k, turMap);
         return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
           tedarikci: tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] };
@@ -82,6 +92,31 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
       kalemler = [...genel, { tarih: null, tur: PERSONEL_ETIKETI, aciklama: PERSONEL_ETIKETI, tedarikci: "",
         tutar: personel.reduce((a, k) => a + kurus(kalemTutari(k, DAVRANIS.PERSONEL)), 0) / 100, durum: DURUM_AD[durum], personel: true }];
     } else kalemler = genel;
+    // Spec 0059 R8, R35 (AC-9, AC-16, AC-31): vadesi geçmiş ve yaklaşan kalemler bölüm satırlarından. Hatırlatıcı satırının
+    // kalem nesnesi OKUNMAZ: tarih ve tür kimlikle ay sonu kalem haritasından çözülür; personel satırı zaten toplu gelir ve
+    // hiçbir taraf adı taşımaz. Gün ay sonuna göredir (dönem kilidi).
+    const vadeSatirlari = (satirlar) => satirlar.map(v => {
+      if (v.tur === "personel") return { personel: true, tarih: null, tur: PERSONEL_ETIKETI, tedarikci: "", adet: v.adet, kalanK: kurus(v.odenecek), vade: v.vade, gun: gunFarki(son, v.vade) };
+      const kk = giderAySonuById.get(String(v.id));
+      return { tarih: kk?.tarih || null, tur: turMap.get(String(kk?.turId))?.ad || "(türsüz)", tedarikci: v.taraf, kalanK: v.odenecekK, vade: v.vade, gun: v.gunFarki };
+    });
+    // Spec 0059 R9, R39 (AC-10, AC-27): tedarikçi kırılımının altındaki kalemler kalem listesinden gruplanır (yeni hesap yok).
+    // Triyaj: gruplama tedarikçi KİMLİĞİYLE yapılır, ad yalnız başlıktır (aynı adlı iki tedarikçi bir tabloda karışmasın).
+    // Silinmiş ya da seçilmemiş tedarikçi "Tedarikçi seçilmemiş" grubuna düşer (kalem listesinde tedarikçi boş görünür).
+    const tedarikciKalemleri = [];
+    if (detay) {
+      const tedGrup = new Map();
+      genel.forEach((kl, i) => {
+        const id = genelKalemler[i].tedarikciId;
+        const key = id != null && tedMap.has(String(id)) ? String(id) : "";
+        if (!tedGrup.has(key)) tedGrup.set(key, []);
+        tedGrup.get(key).push(kl);
+      });
+      const tedSira = gr.tedarikciKirilimi.satirlar.map(t => String(t.tedarikciId)).filter(id => tedGrup.has(id));
+      for (const id of tedGrup.keys()) if (id && !tedSira.includes(id)) tedSira.push(id);
+      if (tedGrup.has("")) tedSira.push("");
+      for (const id of tedSira) tedarikciKalemleri.push({ ad: id ? tedMap.get(id).ad : "Tedarikçi seçilmemiş", kalemler: tedGrup.get(id) });
+    }
     gider = {
       yururlukOncesi: false, bos: gr.bos,
       ozet: { toplam: gr.toplam, odenen: gr.odenen, odenmeyen: gr.odenmeyen, indirilecekKdv: gr.indirilecekKdv, stopaj: gr.stopajToplam },
@@ -93,6 +128,8 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
       kdv: kdvKarsilastir(kdvHesaplanan, gr.indirilecekKdv),
       yontem: { satirlar: yontem.satirlar.map(s => ({ ad: s.yontem, tutar: tl(s.tutarK) })), personel: tl(yontem.personelK), toplam: tl(yontem.toplamK) },
       kalemler,
+      vadeler: detay ? { gecmis: vadeSatirlari(h.gecmisSatirlar), yaklasan: vadeSatirlari(h.yaklasanSatirlar) } : { gecmis: [], yaklasan: [] },
+      tedarikciKalemleri,
     };
   }
 
@@ -134,6 +171,38 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
   if (personelOdeme.adet) hesapsizListe.push({ tarih: null, tutarK: personelOdeme.tutarK, etiket: `Personel ödemeleri · ${personelOdeme.adet} adet`, toplu: true });
   if (avansTop.adet) hesapsizListe.push({ tarih: null, tutarK: avansTop.tutarK, etiket: `Çalışan avansları · ${avansTop.adet} adet`, toplu: true });
   const hszTah = hesapsizTahsilatlar(veri, g.hesaplar, aralik, g.kasaKapsamDisi);
+  // Spec 0059 R10, R11, R21, R36, R37 (AC-11, AC-12, AC-17, AC-29): ayın hareket listeleri motorun opt-in listesinden.
+  // Yalnız `odeme` satır satır yazılır; personel ödemeleri, avans ve mahsup birer "Ay geneli" toplu satırdır (C9) ve
+  // hedef etiketi yalnız personel DIŞI kalemde basılır (R10 b).
+  const ozetL = hareketOzeti(g.hareketler, aralik, bakiyeler, { liste: detay });
+  const hesapById = new Map(g.hesaplar.map(x => [String(x.id), x]));
+  const hesapAd = (id) => hesapById.get(String(id))?.ad || "Silinmiş hesap";
+  const paylarCache = new Map();
+  const paylarOf = (k) => {
+    if (!paylarCache.has(String(k.id))) paylarCache.set(String(k.id), hareketHedefPaylari(k, hareketlerAySonu, turMap));
+    return paylarCache.get(String(k.id));
+  };
+  const odemeler = [];
+  const personelTop = { adet: 0, tutarK: 0 };
+  // Triyaj: kalemi kalıcı silinmiş ödeme kimin ödemesi olduğu bilinemediği için (personel olabilir) tarihli satır olarak
+  // basılmaz; "Silinmiş kalem ödemeleri" toplu satırına iner (R15, AC-17).
+  const silinmisTop = { adet: 0, tutarK: 0 };
+  for (const m of detay ? ozetL.odeme.liste : []) {
+    const k = giderById.get(String(m.giderId));
+    if (!k) { silinmisTop.adet++; silinmisTop.tutarK += kurus(m.tutar); continue; }
+    const dav = davranisOf(k, turMap);
+    if (dav === DAVRANIS.PERSONEL) { personelTop.adet++; personelTop.tutarK += kurus(m.tutar); continue; }
+    // R36: hesapsız çek hareketinde hesap sütunu yöntemin kendisidir ("Çek (ciro)" / "Çek (kendi)").
+    odemeler.push({ tarih: m.tarih, hesap: m.hesapId != null ? hesapAd(m.hesapId) : m.cekId != null ? (String(m.yontem || "").trim() || "Çek") : "Hesapsız", yontem: String(m.yontem || "").trim() || YONTEM_BELIRSIZ,
+      kalem: kalemGorunenAd(k, dav) || turMap.get(String(k.turId))?.ad || "Gider", hedef: hedefEtiketi(k, dav, paylarOf(k).get(String(m.id)), etiketTutari) || "",
+      tutarK: kurus(m.tutar), ...(m.tamKapatir && (m.tutar == null || m.tutar === "") ? { tamami: true } : {}) });
+  }
+  const toplu = (etiket, l) => (l.adet ? [{ tarih: null, toplu: true, kalem: `${etiket} · ${l.adet} adet`, tutarK: l.tutarK }] : []);
+  if (detay) odemeler.push(...toplu("Personel ödemeleri", personelTop), ...toplu("Silinmiş kalem ödemeleri", silinmisTop), ...toplu("Çalışan avansları", ozetL.avans), ...toplu("Avanstan mahsup", ozetL.mahsup));
+  const virmanlar = (ozetL.virman.liste || []).map(m => ({ tarih: m.tarih, kaynak: hesapAd(m.hesapId), hedef: hesapAd(m.karsiHesapId), tutarK: kurus(m.tutar),
+    paraBirimi: hesapById.get(String(m.hesapId))?.paraBirimi || "TRY" }));
+  const tahsilatlar = (ozetL.tahsilat.liste || []).map(t => ({ tarih: t.tarih, hesap: t.hesapAd, kaynak: t.kaynak === "makina" ? "Makina tahsilatı" : SATIS_KAYNAK_AD[t.kaynak] || t.turAdi || t.kaynak,
+    firma: t.firma || "", tutarK: t.tutarK, paraBirimi: t.paraBirimi }));
   let avansK = 0;
   for (const x of avansBorclari(hareketlerAySonu, g.giderler).values()) avansK += x.borcK;
   const kasa = {
@@ -141,93 +210,144 @@ export const giderKasaRaporu = (girdi = {}, ay) => {
     ozet: { ...ozet, tahsilat: { ...ozet.tahsilat, kaynaklar: Object.entries(ozet.tahsilat.kaynaklar).map(([kaynak, v]) => ({ ad: kaynak === "makina" ? "Makina tahsilatı" : SATIS_KAYNAK_AD[kaynak] || kaynak, ...v })) } },
     hesapsiz: { odemeAdet: hsz.adet, avansAdet: hsz.avansAdet, liste: hesapsizListe,
       tahsilatAdet: hszTah.adet, tahsilatlar: hszTah.liste.map(k => ({ tarih: k.tarih, ad: k.turAdi, firma: k.firma, tutarK: kurus(k.tutar), paraBirimi: k.currency || "TRY" })) },
-    cek: cekAyOzeti(g.cekler, g.payments, ay),
+    cek: cekAyOzeti(g.cekler, g.payments, ay, { liste: detay }),
     avansK,
+    odemeler, virmanlar, tahsilatlar,
   };
-  return { ay, ayAdi: ayAdi(ay), bas, son, gider, kasa };
+  let onceki = null;
+  if (_onceki) {
+    const oAy = oncekiAyStr(ay);
+    if (g.yururlukAy && oAy < g.yururlukAy) onceki = { ay: oAy, yururlukOncesi: true };
+    else {
+      const o = giderKasaRaporu(girdi, oAy, { _onceki: false });
+      onceki = { ay: oAy, yururlukOncesi: false, gider: o.gider.yururlukOncesi ? null : o.gider.ozet,
+        kasa: Object.fromEntries(o.kasa.bloklar.map(b => [b.paraBirimi, { girenK: b.toplam.girenK, cikanK: b.toplam.cikanK, kapanisK: b.toplam.kapanisK }])) };
+    }
+  }
+  const f = g.factory || {};
+  const firma = { name: f.name, evrakFirmaAdi: f.evrakFirmaAdi, adres: f.adres, city: f.city, country: f.country, phone: f.phone, email: f.email, web: f.web };
+  return { ay, ayAdi: ayAdi(ay), bas, son, gider, kasa, onceki, firma };
 };
 
 // ── HTML (beyaz kâğıt; C6) ──
+// Spec 0059 R1–R3, R33: Aylık Faaliyet Raporu'nun sunum dili (src/lib/raporSunumu.js): üst başlık bandı, koyu şeritli
+// bölüm kutuları, istatistik satırları, "geçen ay" eki ve detay tabloları. Para gösterimi bugünkü fmtCur biçimidir (R1).
+// Kaçışlama sözleşmesi (R22): bütün hücreler burada esc / tlp ile kaçışlanır; ortak modül kaçışlamaz.
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const tlp = (n, pb = "TRY") => esc(fmtCur(Number(n) || 0, pb));
 const kp = (k, pb = "TRY") => tlp(tl(k || 0), pb);
-const tablo = (basliklar, satirlar, sag = []) => `<table><thead><tr>${basliklar.map((b, i) => `<th${sag.includes(i) ? ' class="r"' : ""}>${esc(b)}</th>`).join("")}</tr></thead><tbody>${satirlar.map(r => `<tr>${r.map((c, i) => `<td${sag.includes(i) ? ' class="r"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-const bosSatir = `<p class="bos">${esc(KAYIT_YOK)}</p>`;
+const bosSatir = bosNot(esc(KAYIT_YOK));
 const pbTutarlari = (m) => Object.entries(m || {}).map(([pb, k]) => kp(k, pb)).join(" · ") || kp(0);
+const R = "right", SOL = "left";
+const tablo = (baslik, basliklar, satirlar, hizalar) => detayTablo(esc(baslik), basliklar.map(esc), satirlar, hizalar);
+const stTablo = (satirlar) => `<table>${satirlar.join("")}</table>`;
+const tarihHucre = (t) => (t ? esc(gun(t)) : "Ay geneli");
+export const GUN_NOTU = (son) => `Gün sütunu ay sonuna (${fmtTR(son)}) göre ölçülür, bugüne göre değil.`;
 
 export const buildGiderKasaRaporuHtml = (r) => {
-  const donem = `${esc(r.ayAdi)} dönemi (${esc(fmtTR(r.bas))} – ${esc(fmtTR(r.son))})`;
+  const donem = `${esc(fmtTR(r.bas))} – ${esc(fmtTR(r.son))}`;
   const itibariyla = `${esc(fmtTR(r.son))} itibarıyla`;
   const G = r.gider, K = r.kasa;
+  // R7, R34: önceki ay yürürlük öncesiyse ek basılmaz; değilse önceki ayın rakamı (kayıtsızsa sıfır).
+  const onc = r.onceki && !r.onceki.yururlukOncesi ? r.onceki : null;
+  const gaG = gecenAyEki(onc?.gider ? onc.gider : null);
+  const gaK = gecenAyEki(onc ? onc.kasa : null);
+
   let gider;
-  if (G.yururlukOncesi) gider = `<p class="bos">Gider takibi bu aydan sonra yürürlüğe girdi; ${esc(r.ayAdi)} için gider rakamı üretilmez.</p>`;
-  else if (G.bos) gider = bosSatir;
+  if (G.yururlukOncesi) gider = bolum("GİDER", "", bosNot(`Gider takibi bu aydan sonra yürürlüğe girdi; ${esc(r.ayAdi)} için gider rakamı üretilmez.`));
+  else if (G.bos) gider = bolum("GİDER", "", bosSatir);
   else {
-    const o = G.ozet;
-    gider = `
-      <h3>Özet <small>${donem}</small></h3>
-      ${tablo(["Toplam gider", "Ödenen", "Ödenmeyen", "İndirilecek KDV", "Kesilen stopaj"], [[tlp(o.toplam), tlp(o.odenen), tlp(o.odenmeyen), tlp(o.indirilecekKdv), tlp(o.stopaj)]], [0, 1, 2, 3, 4])}
-      <h3>Gider türü kırılımı <small>${donem}</small></h3>
-      ${tablo(["Tür", "Kalem", "Toplam"], G.turler.map(t => [esc(t.ad), t.adet == null ? "—" : String(t.adet), tlp(t.toplam)]), [1, 2])}
-      <h3>Tedarikçi kırılımı <small>harcama dönem, açık borç ${itibariyla}</small></h3>
-      ${tablo(["Tedarikçi", "Harcama", "Açık borç"], [...G.tedarikciler.satirlar.map(t => [esc(t.ad), tlp(t.harcama), tlp(t.acikBorc)]),
+    const o = G.ozet, oo = onc?.gider;
+    const ozetKutu = bolum("GİDER · ÖZET", `Toplam ${tlp(o.toplam)}`, `
+      ${not(donem)}
+      ${stTablo([st("Toplam gider", tlp(o.toplam) + gaG(tlp(oo?.toplam))), st("Ödenen", tlp(o.odenen) + gaG(tlp(oo?.odenen))),
+        st("Ödenmeyen", tlp(o.odenmeyen) + gaG(tlp(oo?.odenmeyen))), st("İndirilecek KDV", tlp(o.indirilecekKdv) + gaG(tlp(oo?.indirilecekKdv))),
+        st("Kesilen stopaj", tlp(o.stopaj) + gaG(tlp(oo?.stopaj)))])}`);
+    const turKutu = bolum("GİDER · TÜR KIRILIMI", donem,
+      tablo("TÜRLER", ["Tür", "Kalem", "Toplam"], G.turler.map(t => [esc(t.ad), t.adet == null ? "—" : String(t.adet), tlp(t.toplam)]), [SOL, R, R]) || bosSatir);
+    const tedKutu = bolum("GİDER · TEDARİKÇİ KIRILIMI", `harcama dönem, açık borç ${itibariyla}`, `
+      ${tablo("TEDARİKÇİLER", ["Tedarikçi", "Harcama", "Açık borç"], [...G.tedarikciler.satirlar.map(t => [esc(t.ad), tlp(t.harcama), tlp(t.acikBorc)]),
         ...(G.tedarikciler.secilmemis.adet ? [["Tedarikçi seçilmemiş", tlp(G.tedarikciler.secilmemis.harcama), tlp(G.tedarikciler.secilmemis.acikBorc)]] : []),
-        ["<b>Toplam</b>", `<b>${tlp(G.tedarikciler.toplamHarcama)}</b>`, `<b>${tlp(G.tedarikciler.toplamBorc)}</b>`]], [1, 2])}
-      <h3>Ödeme durumu <small>${itibariyla}</small></h3>
-      ${tablo(["", "Kalem", "Tutar"], [["Vadesi geçmiş", String(G.odemeDurumu.gecmisAdet), tlp(G.odemeDurumu.gecmisTutar)],
-        [`Yaklaşan (ay sonundan sonraki ${G.odemeDurumu.esikGun} gün)`, String(G.odemeDurumu.yaklasanAdet), tlp(G.odemeDurumu.yaklasanTutar)]], [1, 2])}
-      <h3>Maliyet dağılımı <small>${donem}</small></h3>
-      ${tablo(["Makinaya", "Modele", "Dağıtılmayan", "Ortak", "Toplam"], [[tlp(G.kovalar.makina), tlp(G.kovalar.model), tlp(G.kovalar.dagitma), tlp(G.kovalar.ortak), tlp(G.ozet.toplam)]], [0, 1, 2, 3, 4])}
-      <h3>KDV karşılaştırması <small>${donem}</small></h3>
-      ${tablo(["Hesaplanan satış KDV'si", "İndirilecek gider KDV'si", "Fark"], [[tlp(G.kdv.hesaplananTL), tlp(G.kdv.indirilecek), tlp(G.kdv.fark)]], [0, 1, 2])}
-      <h3>Ödeme yöntemi kırılımı <small>ayın kalemlerine yapılan ödemeler</small></h3>
-      ${G.yontem.satirlar.length || G.yontem.personel ? tablo(["Yöntem", "Tutar"], [...G.yontem.satirlar.map(s => [esc(s.ad), tlp(s.tutar)]),
-        ...(G.yontem.personel ? [["Personel ödemeleri", tlp(G.yontem.personel)]] : []), ["<b>Toplam</b>", `<b>${tlp(G.yontem.toplam)}</b>`]], [1]) : bosSatir}
-      <h3>Kalem listesi <small>${donem}</small></h3>
-      ${G.kalemler.length ? tablo(["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [k.tarih ? esc(fmtTR(k.tarih)) : "Ay geneli", esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]), [4]) : bosSatir}`;
+        ["<b>Toplam</b>", `<b>${tlp(G.tedarikciler.toplamHarcama)}</b>`, `<b>${tlp(G.tedarikciler.toplamBorc)}</b>`]], [SOL, R, R])}
+      ${G.tedarikciKalemleri.map(t => tablo(`${t.ad} · bu ayın kalemleri`, ["Tarih", "Tür", "Açıklama", "Tutar", "Durum"],
+        t.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), tlp(k.tutar), esc(k.durum)]), [SOL, SOL, SOL, R, SOL])).join("")}`);
+    const vadeTablo = (baslik, l) => tablo(baslik, ["Tarih", "Tür", "Tedarikçi", "Kalan", "Vade", "Gün"],
+      l.map(v => [tarihHucre(v.tarih), esc(v.personel ? `${v.tur} · ${v.adet} kalem` : v.tur), esc(v.tedarikci), kp(v.kalanK), esc(gun(v.vade)), esc(gunFarkiMetni(v.gun))]), [SOL, SOL, SOL, R, SOL, R]);
+    const vadeVar = G.vadeler.gecmis.length + G.vadeler.yaklasan.length > 0;
+    const durumKutu = bolum("GİDER · ÖDEME DURUMU", itibariyla, `
+      ${stTablo([st("Vadesi geçmiş", `${G.odemeDurumu.gecmisAdet} kalem · ${tlp(G.odemeDurumu.gecmisTutar)}`),
+        st(`Yaklaşan (ay sonundan sonraki ${G.odemeDurumu.esikGun} gün)`, `${G.odemeDurumu.yaklasanAdet} kalem · ${tlp(G.odemeDurumu.yaklasanTutar)}`)])}
+      ${vadeTablo("VADESİ GEÇMİŞ KALEMLER", G.vadeler.gecmis)}
+      ${vadeTablo("YAKLAŞAN KALEMLER", G.vadeler.yaklasan)}
+      ${vadeVar ? not(esc(GUN_NOTU(r.son))) : ""}`);
+    const kovaKutu = bolum("GİDER · MALİYET DAĞILIMI", donem, stTablo([st("Makinaya", tlp(G.kovalar.makina)), st("Modele", tlp(G.kovalar.model)),
+      st("Dağıtılmayan", tlp(G.kovalar.dagitma)), st("Ortak", tlp(G.kovalar.ortak)), st("Toplam", tlp(G.ozet.toplam))]));
+    const kdvKutu = bolum("GİDER · KDV KARŞILAŞTIRMASI", donem, stTablo([st("Hesaplanan satış KDV'si", tlp(G.kdv.hesaplananTL)),
+      st("İndirilecek gider KDV'si", tlp(G.kdv.indirilecek)), st("Fark", tlp(G.kdv.fark))]));
+    const yontemKutu = bolum("GİDER · ÖDEME YÖNTEMİ KIRILIMI", "ayın kalemlerine yapılan ödemeler",
+      G.yontem.satirlar.length || G.yontem.personel ? tablo("YÖNTEMLER", ["Yöntem", "Tutar"], [...G.yontem.satirlar.map(s => [esc(s.ad), tlp(s.tutar)]),
+        ...(G.yontem.personel ? [["Personel ödemeleri", tlp(G.yontem.personel)]] : []), ["<b>Toplam</b>", `<b>${tlp(G.yontem.toplam)}</b>`]], [SOL, R]) : bosSatir);
+    const kalemKutu = bolum("GİDER · KALEM LİSTESİ", donem,
+      tablo("KALEMLER", ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]),
+        [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
+    gider = [ozetKutu, turKutu, tedKutu, durumKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
-  const blok = (b) => tablo(["Hesap", "Tür", "Ay açılışı", "Açılış kaydı", "Giren", "Çıkan", "Kapanış"],
+
+  // ── Kasa ──
+  const ozetPb = K.bloklar.map(b => {
+    const oo = onc?.kasa?.[b.paraBirimi] || { girenK: 0, cikanK: 0, kapanisK: 0 };
+    return `${K.bloklar.length > 1 ? altBaslik(esc(b.paraBirimi)) : ""}${stTablo([st("Kasaya giren", kp(b.toplam.girenK, b.paraBirimi) + gaK(kp(oo.girenK, b.paraBirimi))),
+      st("Kasadan çıkan", kp(b.toplam.cikanK, b.paraBirimi) + gaK(kp(oo.cikanK, b.paraBirimi))),
+      st("Ay sonu toplam bakiye", kp(b.toplam.kapanisK, b.paraBirimi) + gaK(kp(oo.kapanisK, b.paraBirimi)))])}`;
+  }).join("");
+  const blok = (b) => tablo(K.bloklar.length > 1 ? b.paraBirimi : "NAKİT HAREKETLERİ", ["Hesap", "Tür", "Ay açılışı", "Açılış kaydı", "Giren", "Çıkan", "Kapanış"],
     [...b.satirlar.map(s => [esc(s.ad) + (s.kapali ? " (kapalı)" : ""), esc(s.tur), kp(s.devredenK, b.paraBirimi), s.acilisSatiriK ? kp(s.acilisSatiriK, b.paraBirimi) : "—", kp(s.girenK, b.paraBirimi), kp(s.cikanK, b.paraBirimi), kp(s.kapanisK, b.paraBirimi)]),
-      ...(b.satirlar.length > 1 ? [["<b>Toplam</b>", "", `<b>${kp(b.toplam.devredenK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.acilisSatiriK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.girenK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.cikanK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.kapanisK, b.paraBirimi)}</b>`]] : [])], [2, 3, 4, 5, 6]);
+      ...(b.satirlar.length > 1 ? [["<b>Toplam</b>", "", `<b>${kp(b.toplam.devredenK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.acilisSatiriK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.girenK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.cikanK, b.paraBirimi)}</b>`, `<b>${kp(b.toplam.kapanisK, b.paraBirimi)}</b>`]] : [])],
+    [SOL, SOL, R, R, R, R, R]);
   const oz = K.ozet;
-  const kasa = `
-      <h3>Hesaplar: nakit hareketleri <small>${donem}, kapanış ${itibariyla}</small></h3>
-      ${K.bloklar.length ? K.bloklar.map(b => (K.bloklar.length > 1 ? `<h4>${esc(b.paraBirimi)}</h4>` : "") + blok(b)).join("") : bosSatir}
-      <h3>Hareket özeti <small>${donem}</small></h3>
-      ${!(oz.odeme.adet + oz.tahsilat.adet + oz.virman.adet + oz.avans.adet + oz.mahsup.adet) ? bosSatir : tablo(["Hareket", "Adet", "Tutar"], [["Ödeme", String(oz.odeme.adet), kp(oz.odeme.tutarK)], ["Tahsilat (hesaba giren)", String(oz.tahsilat.adet), kp(oz.tahsilat.tutarK)],
+  const kasaOzet = K.bloklar.length ? bolum("KASA · ÖZET", `kapanış ${itibariyla}`, ozetPb) : "";
+  const hesapKutu = bolum("KASA · HESAPLAR", `${donem}, kapanış ${itibariyla}`, K.bloklar.length ? K.bloklar.map(blok).join("") : bosSatir);
+  const hareketKutu = bolum("KASA · HAREKET ÖZETİ", donem, `
+      ${!(oz.odeme.adet + oz.tahsilat.adet + oz.virman.adet + oz.avans.adet + oz.mahsup.adet) ? bosSatir : tablo("HAREKETLER", ["Hareket", "Adet", "Tutar"], [["Ödeme", String(oz.odeme.adet), kp(oz.odeme.tutarK)], ["Tahsilat (hesaba giren)", String(oz.tahsilat.adet), kp(oz.tahsilat.tutarK)],
         ...oz.tahsilat.kaynaklar.map(k => [`&nbsp;&nbsp;${esc(k.ad)}`, String(k.adet), kp(k.tutarK)]),
-        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)], ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)]], [1, 2])}
-      <p class="not">${esc(NOT_MAHSUP)}</p>
-      <h3>Ödeme yöntemi kırılımı <small>ay içinde yapılan ödeme hareketleri</small></h3>
-      ${oz.yontemKirilimi.length ? tablo(["Yöntem", "Tutar"], [...oz.yontemKirilimi.map(y => [esc(y.ad), kp(y.tutarK)]), ["<b>Toplam</b>", `<b>${kp(oz.odeme.tutarK)}</b>`]], [1]) : bosSatir}
-      <p class="not">${esc(NOT_YONTEM)}</p>
-      <h3>Hesabı belirtilmemiş hareketler <small>${donem}</small></h3>
-      ${K.hesapsiz.liste.length ? tablo(["Tarih", "Kalem", "Tutar"], K.hesapsiz.liste.map(x => [x.tarih ? esc(fmtTR(x.tarih)) : "Ay geneli", esc(x.etiket), x.tamami ? "Tamamı (eski kayıt)" : kp(x.tutarK)]), [2]) : `<p class="bos">Hesabı belirtilmemiş ödeme ya da avans yok.</p>`}
-      <h4>Hesabı belirtilmemiş tahsilatlar</h4>
-      ${K.hesapsiz.tahsilatlar.length ? tablo(["Tarih", "Tahsilat", "Firma", "Tutar"], K.hesapsiz.tahsilatlar.map(x => [esc(fmtTR(x.tarih)), esc(x.ad), esc(x.firma), kp(x.tutarK, x.paraBirimi)]), [3]) : `<p class="bos">Hesabı belirtilmemiş tahsilat yok.</p>`}
-      <p class="not">${esc(NOT_HESAPSIZ)} ${esc(NOT_CIRO)}</p>
-      <h3>Çek portföyü <small>elde olan ${itibariyla}, diğerleri ${donem}</small></h3>
-      ${tablo(["", "Adet", "Tutar"], [["Ay sonunda elde", String(K.cek.elde.adet), pbTutarlari(K.cek.elde.tutarK)], ["Ay içinde tahsil edilen", String(K.cek.tahsil.adet), pbTutarlari(K.cek.tahsil.tutarK)],
-        ["Ay içinde ciro edilen", String(K.cek.ciro.adet), pbTutarlari(K.cek.ciro.tutarK)], ["Ay içinde karşılıksız çıkan", String(K.cek.karsiliksiz.adet), pbTutarlari(K.cek.karsiliksiz.tutarK)]], [1, 2])}
-      ${K.cek.gecmisYokAdet ? `<p class="not">${esc(NOT_CEK_GECMISSIZ)}</p>` : ""}
-      <h3>Açık çalışan avansı <small>${itibariyla}</small></h3>
-      <p><b>${kp(K.avansK)}</b></p>`;
-  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>${esc(RAPOR_BASLIGI)} ${esc(r.ay)}</title>
-<style>
-  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#0f172a;background:#fff;margin:24px;font-size:12px}
-  h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #0f172a;padding-bottom:4px}
-  h3{font-size:13px;margin:16px 0 6px} h3 small{font-weight:400;color:#475569;margin-left:6px} h4{font-size:12px;margin:10px 0 4px}
-  table{width:100%;border-collapse:collapse;margin-bottom:6px} th,td{border:1px solid #cbd5e1;padding:4px 6px;text-align:left} th{background:#f1f5f9}
-  .r{text-align:right;font-variant-numeric:tabular-nums} .bos{color:#475569;font-style:italic} .not{color:#475569;font-size:11px;margin:4px 0}
-  .ust{color:#475569} @media print{body{margin:10mm}}
-</style></head><body>
-  <h1>${esc(RAPOR_BASLIGI)}</h1>
-  <div class="ust">${donem}</div>
-  <p class="not">${esc(NOT_ANLIK)}</p>
-  <h2>Gider</h2>${gider}
-  <h2>Kasa</h2>
-  <p class="not">${esc(NOT_GELIR_DEGIL)}</p>${kasa}
+        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)], ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)]], [SOL, R, R])}
+      ${not(esc(NOT_MAHSUP))}`);
+  // Spec 0059 R10, R14 (AC-11, AC-15, AC-29): yeni tablolar boşsa hiç basılmaz; ikisi de boşsa kutu da basılmaz.
+  const odemeTablo = tablo("ÖDEME HAREKETLERİ", ["Tarih", "Hesap", "Yöntem", "Kalem", "Hedef", "Tutar"],
+    K.odemeler.map(m => [tarihHucre(m.tarih), m.toplu ? "" : esc(m.hesap), m.toplu ? "" : esc(m.yontem), esc(m.kalem), m.toplu ? "" : esc(m.hedef), m.tamami ? "Tamamı (eski kayıt)" : kp(m.tutarK)]),
+    [SOL, SOL, SOL, SOL, SOL, R]);
+  const virmanTablo = tablo("VİRMANLAR", ["Tarih", "Kaynak hesap", "Hedef hesap", "Tutar"], K.virmanlar.map(v => [tarihHucre(v.tarih), esc(v.kaynak), esc(v.hedef), kp(v.tutarK, v.paraBirimi)]), [SOL, SOL, SOL, R]);
+  const odemeKutu = odemeTablo || virmanTablo ? bolum("KASA · AYIN ÖDEME HAREKETLERİ", donem, odemeTablo + virmanTablo) : "";
+  const tahsilatTablo = tablo("TAHSİLATLAR", ["Tarih", "Hesap", "Kaynak", "Firma", "Tutar", "Para birimi"],
+    K.tahsilatlar.map(t => [tarihHucre(t.tarih), esc(t.hesap), esc(t.kaynak), esc(t.firma), kp(t.tutarK, t.paraBirimi), esc(t.paraBirimi)]), [SOL, SOL, SOL, SOL, R, SOL]);
+  const tahsilatKutu = tahsilatTablo ? bolum("KASA · AYIN TAHSİLAT HAREKETLERİ", `${donem}, yalnız hesaba girenler`, tahsilatTablo) : "";
+  const yontemKutu = bolum("KASA · ÖDEME YÖNTEMİ KIRILIMI", "ay içinde yapılan ödeme hareketleri", `
+      ${oz.yontemKirilimi.length ? tablo("YÖNTEMLER", ["Yöntem", "Tutar"], [...oz.yontemKirilimi.map(y => [esc(y.ad), kp(y.tutarK)]), ["<b>Toplam</b>", `<b>${kp(oz.odeme.tutarK)}</b>`]], [SOL, R]) : bosSatir}
+      ${not(esc(NOT_YONTEM))}`);
+  const hesapsizKutu = bolum("KASA · HESABI BELİRTİLMEMİŞ HAREKETLER", donem, `
+      ${K.hesapsiz.liste.length ? tablo("ÖDEMELER VE AVANSLAR", ["Tarih", "Kalem", "Tutar"], K.hesapsiz.liste.map(x => [x.tarih ? esc(gun(x.tarih)) : "Ay geneli", esc(x.etiket), x.tamami ? "Tamamı (eski kayıt)" : kp(x.tutarK)]), [SOL, SOL, R]) : bosNot("Hesabı belirtilmemiş ödeme ya da avans yok.")}
+      ${K.hesapsiz.tahsilatlar.length ? tablo("HESABI BELİRTİLMEMİŞ TAHSİLATLAR", ["Tarih", "Tahsilat", "Firma", "Tutar"], K.hesapsiz.tahsilatlar.map(x => [esc(gun(x.tarih)), esc(x.ad), esc(x.firma), kp(x.tutarK, x.paraBirimi)]), [SOL, SOL, SOL, R]) : `${altBaslik("HESABI BELİRTİLMEMİŞ TAHSİLATLAR")}${bosNot("Hesabı belirtilmemiş tahsilat yok.")}`}
+      ${not(`${esc(NOT_HESAPSIZ)} ${esc(NOT_CIRO)}`)}`);
+  // Spec 0059 R12, R38 (AC-13, AC-30): dört satır her zaman; kova listeleri motordan (aynı ay iptal edilen ciro yok).
+  const cekTablo = (baslik, l) => tablo(baslik, ["Tarih", "Numara", "Banka", "Vade", "Tutar"], (l || []).map(c => [esc(gun(c.tarih)), esc(c.no), esc(c.banka), c.vade ? esc(gun(c.vade)) : "—", kp(c.tutarK, c.currency)]), [SOL, SOL, SOL, SOL, R]);
+  const cekKutu = bolum("KASA · ÇEK PORTFÖYÜ", `elde olan ${itibariyla}, diğerleri ${donem}`, `
+      ${stTablo([st("Ay sonunda elde", `${K.cek.elde.adet} adet · ${pbTutarlari(K.cek.elde.tutarK)}`), st("Ay içinde tahsil edilen", `${K.cek.tahsil.adet} adet · ${pbTutarlari(K.cek.tahsil.tutarK)}`),
+        st("Ay içinde ciro edilen", `${K.cek.ciro.adet} adet · ${pbTutarlari(K.cek.ciro.tutarK)}`), st("Ay içinde karşılıksız çıkan", `${K.cek.karsiliksiz.adet} adet · ${pbTutarlari(K.cek.karsiliksiz.tutarK)}`)])}
+      ${cekTablo("AY İÇİNDE TAHSİL EDİLEN ÇEKLER", K.cek.tahsil.liste)}
+      ${cekTablo("AY İÇİNDE CİRO EDİLEN ÇEKLER", K.cek.ciro.liste)}
+      ${cekTablo("AY İÇİNDE KARŞILIKSIZ ÇIKAN ÇEKLER", K.cek.karsiliksiz.liste)}
+      ${K.cek.gecmisYokAdet ? not(esc(NOT_CEK_GECMISSIZ)) : ""}`);
+  const avansKutu = bolum("KASA · AÇIK ÇALIŞAN AVANSI", itibariyla, stTablo([st("Açık avans toplamı", kp(K.avansK))]));
+  const kasa = [kasaOzet, hesapKutu, hareketKutu, odemeKutu, tahsilatKutu, yontemKutu, hesapsizKutu, cekKutu, avansKutu].join("");
+
+  const firma = r.firma ? Object.fromEntries(Object.entries(r.firma).map(([k, v]) => [k, v == null ? v : esc(v)])) : null;
+  return `${belgeAcilis({ title: esc(`${RAPOR_BASLIGI} ${r.ay}`), baslik: esc(RAPOR_BASLIGI), ust: `${esc(r.ayAdi)} dönemi`, donem, factory: firma,
+    ekStil: "@media print{body{margin:10mm auto;}}" })}
+  ${not(esc(NOT_ANLIK))}
+  ${ayrac("GİDER")}${gider}
+  ${ayrac("KASA")}
+  ${not(esc(NOT_GELIR_DEGIL))}${kasa}
 </body></html>`;
 };

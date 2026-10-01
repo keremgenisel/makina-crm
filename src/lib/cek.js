@@ -365,13 +365,19 @@ export const cekDurumuAyinSonunda = (cek, tarih) => {
 // Ay özeti: ay sonunda elde duran (portföy + tahsile) çekler; ay içinde tahsil edilen, ciro edilen, karşılıksız çıkan
 // çekler gecmis tarihlerinden. Tutar çek bilgisinden (bağlıda tahsilat, bağsızda çekin kendisi; 0049), para birimine göre
 // ayrı (kur çevrimi yok). Silinmiş tahsilatın çeki sayılmaz.
-export const cekAyOzeti = (cekler = [], payments = [], ay) => {
+// Spec 0059 R21 (AC-25, AC-26): `{ liste: true }` ay içi kovalarına (tahsil, ciro, karşılıksız) `liste` ekler ({id, no,
+// banka, tutarK, currency, vade, tarih}); "aynı ay iptal edilen ciro sayılmaz" kuralı burada tek yerde durur, rapor
+// `gecmis`'i yeniden yürümez. Elde kovası liste almaz (raporda yalnız adet ve tutar). Parametresiz çağrı birebir bugünkü.
+export const cekAyOzeti = (cekler = [], payments = [], ay, { liste = false } = {}) => {
   const bas = `${ay}-01`, [y, m] = String(ay).split("-").map(Number);
   const son = `${ay}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
   const pById = tahsilatHaritasi(payments);
-  const kova = () => ({ adet: 0, tutarK: {} });
-  const r = { elde: kova(), tahsil: kova(), ciro: kova(), karsiliksiz: kova(), gecmisYokAdet: 0 };
-  const ekle = (k, b) => { k.adet++; k.tutarK[b.currency] = (k.tutarK[b.currency] || 0) + b.tutarK; };
+  const kova = (listeli) => (listeli ? { adet: 0, tutarK: {}, liste: [] } : { adet: 0, tutarK: {} });
+  const r = { elde: kova(false), tahsil: kova(liste), ciro: kova(liste), karsiliksiz: kova(liste), gecmisYokAdet: 0 };
+  const ekle = (k, b, c = null, tarih = null) => {
+    k.adet++; k.tutarK[b.currency] = (k.tutarK[b.currency] || 0) + b.tutarK;
+    if (k.liste) k.liste.push({ id: c.id, no: c.no || "", banka: c.banka || "", tutarK: b.tutarK, currency: b.currency, vade: b.vade || "", tarih });
+  };
   for (const c of cekler) {
     // Spec 0049 Q9: bağsız alınan çek de portföydedir; verilen çek bu özete girmez.
     if (!c || yonOf(c) !== CEK_YON.ALINAN) continue;
@@ -384,14 +390,15 @@ export const cekAyOzeti = (cekler = [], payments = [], ay) => {
     for (let i = 0; i < gecmis.length; i++) {
       const g = gecmis[i];
       if (!g?.tarih || g.tarih < bas || g.tarih > son) continue;
-      if (g.durum === CEK_DURUM.TAHSIL) ekle(r.tahsil, p);
+      if (g.durum === CEK_DURUM.TAHSIL) ekle(r.tahsil, p, c, g.tarih);
       else if (g.durum === CEK_DURUM.CIRO) {
         // Triyaj: aynı ay içinde iptal edilip portföye dönen ciro sayılmaz (yoksa çek hem "ciro edilen" hem "elde" görünür).
         const sonraki = gecmis[i + 1];
-        if (!(sonraki && sonraki.tarih && sonraki.tarih <= son && sonraki.durum === CEK_DURUM.PORTFOY)) ekle(r.ciro, p);
+        if (!(sonraki && sonraki.tarih && sonraki.tarih <= son && sonraki.durum === CEK_DURUM.PORTFOY)) ekle(r.ciro, p, c, g.tarih);
       }
-      else if (g.durum === CEK_DURUM.KARSILIKSIZ) ekle(r.karsiliksiz, p);
+      else if (g.durum === CEK_DURUM.KARSILIKSIZ) ekle(r.karsiliksiz, p, c, g.tarih);
     }
   }
+  if (liste) for (const k of [r.tahsil, r.ciro, r.karsiliksiz]) k.liste.sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)) || String(a.no).localeCompare(String(b.no), "tr"));
   return r;
 };

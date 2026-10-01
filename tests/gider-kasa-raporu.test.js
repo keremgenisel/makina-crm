@@ -128,7 +128,9 @@ describe("Spec 0047: gider bölümü", () => {
   const r = R();
   it("AC-3 / AC-32 / AC-34 / AC-18: başlık ayı ve aralığı yazar; bölüm başlıkları dönem ya da ay sonu itibarıyla; notlar", () => {
     const h = HTML();
-    expect(h).toContain("Eylül 2026 dönemi (01/09/2026 – 30/09/2026)");
+    // Spec 0059 R33 ile güncellendi: üst başlık bandında ay ve "Dönem:" satırı (faaliyet raporunun dili).
+    expect(h).toContain("Eylül 2026 dönemi");
+    expect(h).toContain("Dönem: 01/09/2026 – 30/09/2026");
     expect(h).toMatch(/30\/09\/2026 itibarıyla/);
     for (const not of [NOT_ANLIK, NOT_GELIR_DEGIL, NOT_YONTEM, NOT_MAHSUP]) expect(h).toContain(not);
     expect(h).toContain(NOT_HESAPSIZ);
@@ -197,7 +199,8 @@ describe("Spec 0047: kasa bölümü", () => {
   });
   it("AC-37: tutarsız göç hareketi (tamKapatir) ₺0 değil 'Tamamı (eski kayıt)' yazılır", () => {
     const h = HTML({ hareketler: [...H, { id: 160, tur: "odeme", tarih: "2026-09-21", tutar: null, tamKapatir: true, kaynak: "goc", hesapId: null, giderId: 6, taksitId: null }] });
-    expect(h).toMatch(/Bant<\/td><td class="r">Tamamı \(eski kayıt\)/);
+    // Spec 0059 R33 ile güncellendi: ortak tablo işaretlemesi (sağa hizalı hücre).
+    expect(h).toMatch(/Bant<\/td><td style="text-align:right;[^"]*">Tamamı \(eski kayıt\)/);
   });
   it("AC-37 / AC-38: hesapsız hareketler tarih, kalem ve tutarla; yokken 'yok'", () => {
     // Triyaj: avans (ve personel ödemesi) satır satır değil, toplu satır.
@@ -222,7 +225,7 @@ describe("Spec 0047: dönem kilidi ve sınır durumları", () => {
   it("AC-59: yürürlük öncesi ay açıklamayla, gider tabloları yok", () => {
     const h = HTML({ yururlukAy: "2026-10" }, "2026-09");
     expect(h).toMatch(/Gider takibi bu aydan sonra yürürlüğe girdi/);
-    expect(h).not.toContain("Gider türü kırılımı");
+    expect(h).not.toContain("GİDER · TÜR KIRILIMI");
   });
   it("AC-60: çöpe atılan kalem geçmiş ayın raporunu değiştirir; belge uyarısı bunu söyler", () => {
     const cop = HTML({ giderler: GIDERLER.map(k => (k.id === 1 ? { ...k, deletedAt: "2026-10-15" } : k)) });
@@ -289,23 +292,24 @@ describe("Spec 0058 AC-9 / AC-22: kapsam dışı kayıtlar raporda sayılmaz", (
 });
 
 // Spec 0055: kalem listesi seçeneği kaldırıldı, liste her raporda vardır.
+// Spec 0059 R33 ile güncellendi: bölüm başlıkları ortak dilde büyük harf ("GİDER · KALEM LİSTESİ").
 describe("Spec 0055: kalem listesi her zaman", () => {
   const h = HTML({}, "2026-09");
   it("AC-4 / AC-5 / AC-11: kalemli ayda bölüm var; sütunlar ve sıra aynı; personel satırı 'Ay geneli'", () => {
-    expect(h).toContain("<h3>Kalem listesi");
-    const bolum = h.slice(h.indexOf("<h3>Kalem listesi"));
+    expect(h).toContain("GİDER · KALEM LİSTESİ");
+    const bolum = h.slice(h.indexOf("GİDER · KALEM LİSTESİ"));
     for (const [i, b] of ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"].entries()) expect(bolum.indexOf(`>${b}<`), b).toBeGreaterThan(i ? bolum.indexOf(`>${["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"][i - 1]}<`) : -1);
     expect(bolum).toContain("Ay geneli");
   });
   it("AC-6: personel kalemleri tek satır; çalışan adı listede yok", () => {
     expect(R().gider.kalemler.filter(k => k.personel)).toHaveLength(1);
-    expect(h.slice(h.indexOf("<h3>Kalem listesi"))).not.toContain(AD);
+    expect(h.slice(h.indexOf("GİDER · KALEM LİSTESİ"))).not.toContain(AD);
   });
   it("AC-7: belgenin kalem listesi öncesi kısmı ve rakamları değişmedi (mevcut beklenenler aynen geçiyor; liste en sonda)", () => {
-    const once = h.slice(0, h.indexOf("<h3>Kalem listesi"));
-    expect(once).toContain("Gider türü kırılımı");
-    expect(once).not.toContain("Kalem listesi");
-    expect(h.indexOf("<h3>Kalem listesi")).toBeGreaterThan(h.indexOf("Ödeme yöntemi kırılımı"));
+    const once = h.slice(0, h.indexOf("GİDER · KALEM LİSTESİ"));
+    expect(once).toContain("GİDER · TÜR KIRILIMI");
+    expect(once).not.toContain("KALEM LİSTESİ");
+    expect(h.indexOf("GİDER · KALEM LİSTESİ")).toBeGreaterThan(h.indexOf("GİDER · ÖDEME YÖNTEMİ KIRILIMI"));
   });
   it("AC-8 / AC-12: fonksiyon seçenek almaz, dönüşte bayrak yok; motor, düğme ve bu test dosyası bayrağı anmaz", () => {
     const BAYRAK = new RegExp(["kalem", "Listesi"].join(""));
@@ -315,13 +319,13 @@ describe("Spec 0055: kalem listesi her zaman", () => {
   });
   it("AC-9: kalemsiz ayda kalem listesi başlığı ve boş tablo yok; gider bölümü 'Bu ayda kayıt yok' satırını gösterir", () => {
     const bos = HTML({ giderler: [] }, "2026-09");
-    expect(bos).not.toContain("Kalem listesi");
+    expect(bos).not.toContain("KALEM LİSTESİ");
     expect(bos).toContain(KAYIT_YOK);
     expect(R({ giderler: [] }, "2026-09").gider.bos).toBe(true);
   });
   it("AC-10 (0055): yürürlük öncesi ayda kalem listesi yok, açıklama paragrafı var", () => {
     const once = HTML({ yururlukAy: "2026-10" }, "2026-09");
-    expect(once).not.toContain("Kalem listesi");
+    expect(once).not.toContain("KALEM LİSTESİ");
     expect(once).toContain("Gider takibi bu aydan sonra yürürlüğe girdi");
   });
   it("AC-14 / AC-16: 0047'nin AC-39 ve AC-57'si 0055'e devredildi; CLAUDE.md eski cümleyi ve imzayı taşımıyor", () => {

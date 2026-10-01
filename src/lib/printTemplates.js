@@ -1,4 +1,5 @@
 import LOGO from "../assets/logo.avif?inline";
+import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
@@ -1595,17 +1596,10 @@ export function buildAylikRaporHtml(rapor, factory) {
   // Rakam ile para birimi hiçbir zaman ayrı satıra düşmesin (dar sütunlarda "150.875 / TL" kırılıyordu):
   // her tutar tek bir nowrap span'ı. Metin içeriği "150.875 TL" olarak değişmez.
   const paraSatir = (obj) => Object.entries(obj || {}).filter(([, v]) => v > 0)
-    .map(([cur, v]) => `<span style="white-space:nowrap">${v.toLocaleString("tr-TR", { maximumFractionDigits: 0 })} ${cur === "TRY" ? "TL" : cur}</span>`).join(" + ") || "—";
-  const kutu = (baslik, icerik) => `
-    <div style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;">
-      <div style="background:#1a1a1a;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 12px;">${baslik}</div>
-      <div style="padding:10px 12px;">${icerik}</div>
-    </div>`;
-  const st = (label, deger) => `<tr><td style="padding:3px 8px 3px 0;color:#64748b;font-size:11px;">${label}</td><td style="padding:3px 0;font-weight:700;font-size:12px;">${deger}</td></tr>`;
+    .map(([cur, v]) => `<span style="white-space:nowrap">${sayi(v)} ${cur === "TRY" ? "TL" : cur}</span>`).join(" + ") || "—";
   // Önceki ay karşılaştırma eki: satır değerinin yanına küçük gri "geçen ay: X"
   const o = rapor.onceki || null;
-  const ga = (val) => o ? `<span style="font-weight:400;color:#94a3b8;font-size:10px;"> · geçen ay: ${val}</span>` : "";
-  const altBaslik = (t) => `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;">${t}</div>`;
+  const ga = gecenAyEki(o);
 
   const modelRows = (rapor.modelKirilimi || []).map(m =>
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${m.model}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${m.adet} adet</td><td style="padding:3px 0;font-size:11px;text-align:right;color:#475569;">${paraSatir(m.gelir)}</td></tr>`).join("");
@@ -1617,15 +1611,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     `<tr><td style="padding:3px 8px 3px 0;font-size:11px;">${x.yontem}</td><td style="padding:3px 8px;font-size:11px;text-align:right;color:#64748b;">${x.adet} kayıt</td><td style="padding:3px 0;font-size:11px;text-align:right;font-weight:700;">${paraSatir(x.tutar)}</td></tr>`).join("");
 
   // ── Firma firma detay tabloları ──
-  const gun = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return mm ? `${mm[3]}.${mm[2]}.${mm[1]}` : (iso || "—"); };
   // Detay tablosu: başlık + kolon başlıkları + satırlar (hücreler HTML). Boşsa hiç basılmaz.
-  const detayTablo = (baslik, basliklar, satirlar, hizalar = []) => {
-    if (!satirlar || !satirlar.length) return "";
-    const hiza = (i) => hizalar[i] || "left";
-    const th = basliklar.map((h, i) => `<th style="text-align:${hiza(i)};padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;">${h}</th>`).join("");
-    const tr = satirlar.map(hucreler => `<tr>${hucreler.map((c, i) => `<td style="text-align:${hiza(i)};padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;">${c ?? "—"}</td>`).join("")}</tr>`).join("");
-    return `${altBaslik(baslik)}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
-  };
 
   const satisDetayTablo = detayTablo("SATILAN MAKİNALAR (firma firma · eskiden yeniye)", ["Firma", "Tarih", "Model", "Fatura", "Tutar"],
     (rapor.satisDetay || []).map(r => [r.firma, gun(r.tarih), r.model, r.faturaTipi, paraSatir(r.tutar)]), ["left", "left", "left", "left", "right"]);
@@ -1671,19 +1657,6 @@ export function buildAylikRaporHtml(rapor, factory) {
     (rapor.kkBlokajda || []).map(x => [x.firma, x.kaynak, gun(x.tarih), gun(x.hesabaGecis), paraSatir(x.tutar)]), ["left", "left", "left", "left", "right"]);
 
   // ── Bölüm kabuğu: koyu başlık çubuğu (sol ad + sağ tutar) + rozet satırı + gövde ──
-  const rozet = (metin, tur) => {
-    const s = { haric: "background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;", dahil: "background:#ecfdf7;border:1px solid #b8e6da;color:#0f766e;", now: "background:#fbf3e8;border:1px solid #eddcc2;color:#8a6d2b;", "": "background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;" }[tur || ""];
-    return `<span style="display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;${s}">${metin}</span>`;
-  };
-  const rozetSatiri = (...arr) => `<div style="margin-bottom:6px;">${arr.filter(Boolean).join(" ")}</div>`;
-  const bolum = (baslik, sag, icerik) => `
-    <div style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;">
-      <div style="background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
-        <span style="font-weight:700;font-size:11.5px;letter-spacing:.4px;">${baslik}</span>
-        <span style="font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;">${sag || ""}</span>
-      </div>
-      <div style="padding:10px 12px;">${icerik}</div>
-    </div>`;
   const netKdvBaslik = (net, kdv) => `Net <b style="color:#fff;">${paraSatir(net)}</b> · KDV ${paraSatir(kdv)}`;
   const komVar = Object.values(rapor.bankaKomisyonuTutar || {}).some(v => v > 0);
 
@@ -1731,25 +1704,7 @@ export function buildAylikRaporHtml(rapor, factory) {
       </div>
     </div>`;
 
-  return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
-<title>Aylık Rapor ${rapor.ayEtiketi}</title>
-<style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}</style>
-</head><body>
-  <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:16px;">
-    <div>
-      <div style="font-size:18px;font-weight:800;">Aylık Faaliyet Raporu</div>
-      <div style="font-size:13px;color:#475569;">${rapor.ayEtiketi}</div>
-      <div style="font-size:11px;color:#94a3b8;">Dönem: ${rapor.donem}</div>
-    </div>
-    <div style="text-align:right;font-size:11px;color:#64748b;">
-      <div style="font-weight:700;font-size:13px;color:#1a1a1a;">${factory?.evrakFirmaAdi || factory?.name || "Altuntaş Makina"}</div>
-      ${factory?.adres ? `<div>${factory.adres}</div>` : ""}
-      ${[factory?.city, factory?.country].filter(Boolean).length ? `<div>${[factory?.city, factory?.country].filter(Boolean).join(", ")}</div>` : ""}
-      ${[factory?.phone, factory?.email].filter(Boolean).length ? `<div>${[factory?.phone, factory?.email].filter(Boolean).join("  ·  ")}</div>` : ""}
-      ${factory?.web ? `<div>${factory.web}</div>` : ""}
-      <div>Oluşturma: ${rapor.olusturmaTarihi}</div>
-    </div>
-  </div>
+  return `${belgeAcilis({ title: `Aylık Rapor ${rapor.ayEtiketi}`, baslik: "Aylık Faaliyet Raporu", ust: rapor.ayEtiketi, donem: rapor.donem, factory, sonSatir: `Oluşturma: ${rapor.olusturmaTarihi}` })}
 
   ${ozetKutusu}
 

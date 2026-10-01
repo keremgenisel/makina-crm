@@ -1,6 +1,6 @@
 // Spec 0041: gider ödemesinin yöntemi ödemenin alanıdır (C2). Kalemin `odemeYontemi` alanı yalnız yeni ödemenin
 // varsayılanıdır (R2); kalemin "nasıl ödendiği" burada ödemelerden türetilir ve saklanmaz. Saf motor, React'sız.
-import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, DAVRANIS, HEDEF, HEDEF_SIRASI, KALEM_KAPATAN_TURLER } from "./gider";
+import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, tl, DAVRANIS, HEDEF, HEDEF_SIRASI, KALEM_KAPATAN_TURLER } from "./gider";
 
 export const YONTEM_MAHSUP = "Avanstan mahsup"; // R15: bir yöntem değil kapatma biçimi, kırılımda ayrı satır
 export const YONTEM_BELIRSIZ = "Belirtilmemiş";  // R11: yöntemi boş ödeme (göçten gelen taksit hareketi dahil)
@@ -122,4 +122,28 @@ export const donemYontemKirilimi = (kalemler, hareketler, turMap) => {
   const satirlar = topla(genel), personelSatirlar = topla(personel);
   const toplam = (l) => l.reduce((a, s) => a + s.tutarK, 0);
   return { satirlar, personelSatirlar, personelK: toplam(personelSatirlar), toplamK: toplam(satirlar) + toplam(personelSatirlar), gocVar };
+};
+
+// ── Spec 0059 R20, R31: ödeme hedefinin adı ve etiketi (GiderAlanlari.jsx'ten taşındı, orada yeniden dışa verilir) ──
+export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n) || 0) + " ₺";
+export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
+// Spec 0054 R8, R16 (0042 R15'i genişletir): personel adları hedef kimliğinden çözülür; birden çok hedefli kalemde ayırt edici
+// ("Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)"), tek hedefli kalemde (yalnız ek ödemeli ay dahil)
+// "Çalışana". cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar). TEK ad kaynağı.
+const PERSONEL_AD = { [HEDEF.ANA]: "Maaş (resmi)", [HEDEF.ELDEN]: "Maaş (elden)", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)" };
+export const hedefAdi = (hedef, davranis, cokHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
+  : davranis === DAVRANIS.PERSONEL && PERSONEL_AD[hedef] ? (cokHedef ? PERSONEL_AD[hedef] : "Çalışana") : HEDEF_AD[hedef]);
+// Ödeme satırlarından (taksitler) birden çok hedef var mı; satırı olmayan hedef sayılmaz.
+export const cokHedefliSatirlar = (satirlar) => new Set((satirlar || []).map(r => r.hedef || HEDEF.ANA)).size > 1;
+// Spec 0051 R8–R10 (Q4, Q5): bir ödeme hareketinin kapattığı hedefin etiketi. Yalnız birden çok ödeme hedefi olan kalemde
+// (stopajlı kira, resmi ve eldeni olan personel) yazılır; aksi hâlde null (bugünkü metin korunur, R11 dahil). Ad TEK
+// kaynaktan: hedefAdi; çok hedeflilik cokHedefliMi'den (spec 0054 R16: eski eldenHedefliMi || personelIkiHedef birleşimi
+// dört hedefte eksik kalıyordu; ek ödemesi olan ama eldeni olmayan kalem).
+// paylar: odemeYontemi.hareketHedefPaylari'nın o hareket için [{hedef, payK}]; iki hedefe bölünmüşse tutarlarıyla.
+// Spec 0059 triyaj: tutarBicimi (kuruş → metin) çağıranındır; ekranlar varsayılan tl2'yi, rapor belgenin fmtCur biçimini verir.
+export const cokHedefliMi = (kalem, davranis) => !!kalem && odemeHedefleri(kalem, davranis).filter(h => h.toplamK > 0).length > 1;
+export const hedefEtiketi = (kalem, davranis, paylar, tutarBicimi = (payK) => tl2(tl(payK))) => {
+  if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
+  if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, true);
+  return paylar.map(p => `${hedefAdi(p.hedef, davranis, true)} ${tutarBicimi(p.payK)}`).join(" + ");
 };

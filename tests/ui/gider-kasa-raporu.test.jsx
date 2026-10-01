@@ -48,7 +48,7 @@ describe("Spec 0047: rapor düğmesi", () => {
     expect(screen.getByLabelText("Rapor ayı").value).toBe("2026-09");
     yazdir();
     expect(son()[0]).toContain("Eylül 2026 dönemi");
-    expect(son()[0]).toContain("Kalem listesi");
+    expect(son()[0]).toContain("KALEM LİSTESİ"); // spec 0059 R33 ile güncellendi
     expect(son()[2]).toBe("Gider-Kasa-Raporu-2026-09.pdf");
   });
   it("AC-28: rapor alındıktan sonra veri değişmez", () => {
@@ -111,7 +111,28 @@ describe("Spec 0055: kalem listesi kutusu kalktı", () => {
       expect(within(k).queryByLabelText("Kalem listesi")).toBeNull();
       expect(within(k).queryByRole("checkbox")).toBeNull();
       yazdir(k);
-      expect(son()[0]).toContain("<h3>Kalem listesi");
+      expect(son()[0]).toContain("GİDER · KALEM LİSTESİ"); // spec 0059 R33 ile güncellendi
     });
   }
+});
+
+// Spec 0059 R6 (AC-21): geçen ay karşılaştırması motorda hesaplanır; üç ekranın düğmesi aynı ay için aynı karşılaştırmalı
+// belgeyi üretir (ikinci çağrı ekranda değil).
+describe("Spec 0059: üç ekran aynı karşılaştırmalı belge", () => {
+  it("AC-21: Giderler, Kasa ve Finans eylül belgesinde aynı 'geçen ay' ekleri", () => {
+    const belge = (Ekran) => {
+      cleanup(); window.appPrint = { printHtml: vi.fn() };
+      render(<Ekran />);
+      const ay = within(kap()).queryByLabelText("Rapor ayı");
+      if (ay) fireEvent.change(ay, { target: { value: "2026-09" } });
+      else fireEvent.change([...document.querySelectorAll('input[type="month"]')].find(el => !kap().contains(el)), { target: { value: "2026-09" } });
+      yazdir(kap());
+      return son()[0];
+    };
+    const g = belge(GiderlerEkrani), k = belge(KasaEkrani), f = belge(FinansEkrani);
+    expect(g).toContain("geçen ay: ");
+    expect((g.match(/geçen ay: /g) || []).length).toBeGreaterThanOrEqual(5);
+    expect(k).toBe(g);
+    expect(f).toBe(g);
+  });
 });

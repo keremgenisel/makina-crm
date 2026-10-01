@@ -4,11 +4,14 @@ import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
+// Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
+// yeniden dışa verilir, çağıranlar değişmez. TEK tanım odemeYontemi.js'tedir.
+import { tl2, HEDEF_AD, hedefAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi } from "../../lib/odemeYontemi";
+export { tl2, HEDEF_AD, hedefAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi };
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
 // atama/tutar bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.
 
-export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n) || 0) + " ₺";
 // Kuruşlu tutar girişi: MoneyInput yalnız tam sayı aldığı için (ör. 39.223,13 işveren maliyeti) ayrı
 // bileşen. Durum ham metni tutar; sayıya çevirme ve doğrulama kayıtta tutarCoz ile yapılır (AC-2).
 // Spec 0045: görünüm binlik noktalıdır, imleç korunur (lib/tutarGirdisi.js, tek yer). Oran alanı (sym "%") ayraç
@@ -181,27 +184,6 @@ export const fmtTL = (n) => fmtCur(n, "TRY");
 export const STOPAJ_KDV_NOTU = "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV olmaz; şirketse KDV olur, stopaj olmaz. İkisi birlikte istisnai bir durumdur; doğruysa kaydedebilirsiniz.";
 // AC-14, R15: kalıcı bilgi satırı; sistem tespit yapmaz.
 export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olarak girmeyin: brüt kira zaten gider toplamındadır, vergi dairesine ödenen stopaj kira kaleminin vergi dairesi bölümünde izlenir.";
-export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
-// Spec 0054 R8, R16 (0042 R15'i genişletir): personel adları hedef kimliğinden çözülür; birden çok hedefli kalemde ayırt edici
-// ("Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)"), tek hedefli kalemde (yalnız ek ödemeli ay dahil)
-// "Çalışana". cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar). TEK ad kaynağı.
-const PERSONEL_AD = { [HEDEF.ANA]: "Maaş (resmi)", [HEDEF.ELDEN]: "Maaş (elden)", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)" };
-export const hedefAdi = (hedef, davranis, cokHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
-  : davranis === DAVRANIS.PERSONEL && PERSONEL_AD[hedef] ? (cokHedef ? PERSONEL_AD[hedef] : "Çalışana") : HEDEF_AD[hedef]);
-// Ödeme satırlarından (taksitler) birden çok hedef var mı; satırı olmayan hedef sayılmaz.
-export const cokHedefliSatirlar = (satirlar) => new Set((satirlar || []).map(r => r.hedef || HEDEF.ANA)).size > 1;
-// Spec 0051 R8–R10 (Q4, Q5): bir ödeme hareketinin kapattığı hedefin etiketi. Yalnız birden çok ödeme hedefi olan kalemde
-// (stopajlı kira, resmi ve eldeni olan personel) yazılır; aksi hâlde null (bugünkü metin korunur, R11 dahil). Ad TEK
-// kaynaktan: hedefAdi; çok hedeflilik cokHedefliMi'den (spec 0054 R16: eski eldenHedefliMi || personelIkiHedef birleşimi
-// dört hedefte eksik kalıyordu; ek ödemesi olan ama eldeni olmayan kalem).
-// paylar: odemeYontemi.hareketHedefPaylari'nın o hareket için [{hedef, payK}]; iki hedefe bölünmüşse tutarlarıyla.
-export const cokHedefliMi = (kalem, davranis) => !!kalem && odemeHedefleri(kalem, davranis).filter(h => h.toplamK > 0).length > 1;
-export const hedefEtiketi = (kalem, davranis, paylar) => {
-  if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
-  if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, true);
-  return paylar.map(p => `${hedefAdi(p.hedef, davranis, true)} ${tl2(tl(p.payK))}`).join(" + ");
-};
-
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
 // satırın durum hücresi düğmedir (gider_odeme).
 // Spec 0024 R18: taksit kısmen ödenebilir; _odenenK okuma anında hareketlerden gelir (odemeleriUygula).

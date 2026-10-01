@@ -92,9 +92,11 @@ describe("Spec 0051 B: hareket listesinde ödemenin kapattığı hedef", () => {
       const src = readFileSync(f, "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
       expect(src, f).not.toMatch(/"(Resmi|Elden|Kiraya verene|Vergi dairesine \(stopaj\))"/);
     }
-    const alanlar = readFileSync("src/components/gider/GiderAlanlari.jsx", "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
+    // Spec 0059 R31 ile güncellendi: tanım saf kitaplığa (odemeYontemi.js) taşındı, GiderAlanlari.jsx yeniden dışa verir.
+    const alanlar = readFileSync("src/lib/odemeYontemi.js", "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
     expect(alanlar).not.toMatch(/eldenHedefliMi|personelIkiHedef/);
     expect(alanlar).toMatch(/if \(!kalem \|\| !paylar\?\.length \|\| !cokHedefliMi\(kalem, davranis\)\) return null;/);
+    expect(readFileSync("src/components/gider/GiderAlanlari.jsx", "utf-8")).toMatch(/export \{[^}]*hedefEtiketi[^}]*\}/);
   });
 });
 

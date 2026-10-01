@@ -14,6 +14,10 @@ describe("AC-56 / spec 0047 AC-25: personel tutarı yazdırma ve dışa aktarmay
   it("yazdırma şablonları (printTemplates.js) gider/personel alanlarını okumaz", () => {
     expect(oku("src/lib/printTemplates.js")).not.toMatch(YASAKLI);
   });
+  // Spec 0059 R19, R32 (AC-4): iki raporun ortak sunum modülü hiçbir veri alanı adı bilmez; printTemplates.js ile aynı denetim.
+  it("ortak sunum modülü (raporSunumu.js) gider/personel alanlarını okumaz", () => {
+    expect(oku("src/lib/raporSunumu.js")).not.toMatch(YASAKLI);
+  });
   it("aylık rapor motoru gider verisi almaz (X14: rapor şablonu 0002 ile birlikte değişecek)", () => {
     expect(oku("src/lib/aylikRapor.js")).not.toMatch(YASAKLI);
   });
@@ -31,7 +35,7 @@ describe("AC-56 / spec 0047 AC-25: personel tutarı yazdırma ve dışa aktarmay
 // hiçbir yazdırma, e-posta veya dışa aktarma üreticisine girmez. Maliyet yalnız ekranda (MakinaMaliyetDetay) çizilir.
 describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktılara girmez", () => {
   const MALIYET = /makinaMaliyet|hesaplaMakinaMaliyetleri|makinaKarlilik|karlilikOzeti|dogrudanKalemler|malzemePaylari|kalemGorunenAd|PERSONEL_ETIKETI|Personel gideri|atamaTur|modelSatirlari|kovaDagilimi|kalemKovalariKurus/;
-  it.each(["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/lib/mailTemplates.js", "src/components/settings/SettingsExport.jsx",
+  it.each(["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/aylikRapor.js", "src/lib/mailTemplates.js", "src/components/settings/SettingsExport.jsx",
     "src/components/settings/csvUtils.js", "src/components/Finance.jsx", "src/components/Documents.jsx", "src/components/stock/UretimFormu.jsx"])(
     "%s atama ve makina maliyeti alanlarını okumaz", (f) => {
       expect(oku(f)).not.toMatch(MALIYET);
@@ -47,7 +51,7 @@ describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktı
 describe("Spec 0041 AC-27: yöntem kırılımı yazdırma ve dışa aktarmaya girmez", () => {
   it("AC-27: çıktı dosyaları yöntem motorunu ve gider ödeme hareketlerini okumaz", () => {
     const YONTEM = /odemeYontemi|yontemKirilimi|donemYontemKirilimi|hareketPaylari|hesapHareketleri/;
-    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
+    for (const f of ["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
       expect(oku(f)).not.toMatch(YONTEM);
     }
   });
@@ -57,7 +61,7 @@ describe("Spec 0041 AC-27: yöntem kırılımı yazdırma ve dışa aktarmaya gi
 describe("Spec 0042 AC-11: personel hedefleri çıktılara girmez", () => {
   it("AC-11: çıktı dosyaları HEDEF.ELDEN değerini, hedef adlarını ve personel hedef hesabını okumaz", () => {
     const HEDEF_DESEN = /HEDEF\.ELDEN|["']elden["']|hedefAdi|personelHedefKurus|HEDEF_AD\b/;
-    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
+    for (const f of ["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx"]) {
       expect(oku(f)).not.toMatch(HEDEF_DESEN);
     }
   });
@@ -68,7 +72,7 @@ describe("Spec 0042 AC-11: personel hedefleri çıktılara girmez", () => {
 describe("Spec 0054 AC-19 / AC-31: ek ödeme hedefleri çıktılara girmez", () => {
   it("AC-31: çıktı dosyaları ek hedef değerlerini, adlarını ve personelHedefKirilimi'ni okumaz", () => {
     const DESEN = /["']ekResmi["']|["']ekElden["']|HEDEF\.EK_RESMI|HEDEF\.EK_ELDEN|Ek ödeme \(resmi\)|Ek ödeme \(elden\)|Maaş \(resmi\)|Maaş \(elden\)|personelHedefKirilimi|personelHedefTutarlari|PERSONEL_HEDEFLERI/;
-    for (const f of ["src/lib/printTemplates.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx", "src/lib/giderRaporu.js"]) {
+    for (const f of ["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/aylikRapor.js", "src/components/settings/SettingsExport.jsx", "src/lib/giderRaporu.js"]) {
       expect(oku(f), f).not.toMatch(DESEN);
     }
   });
@@ -100,6 +104,7 @@ describe("Spec 0047: Aylık Gider ve Kasa Raporu gizliliği", () => {
     expect(readdirSync(path.join(root, "src/components/gider"))).not.toContain("GiderKasaRaporuDugmesi.jsx");
     expect(oku("src/components/rapor/GiderKasaRaporuDugmesi.jsx")).toMatch(/printHtml/);
     expect(oku("src/lib/printTemplates.js")).not.toMatch(/giderKasaRaporu|GiderKasa/);
+    expect(oku("src/lib/raporSunumu.js")).not.toMatch(/giderKasaRaporu|GiderKasa/); // spec 0059 R19
     expect(oku("src/components/Giderler.jsx")).toMatch(/GiderKasaRaporuDugmesi/);
   });
   it("AC-24: ayırt edici çalışan verisiyle üretilen raporun çıktısında ad, resmi/elden tutarı, ek ödeme, tek tek hesapsız ödeme ve avans yok", async () => {
@@ -126,5 +131,67 @@ describe("Spec 0047: Aylık Gider ve Kasa Raporu gizliliği", () => {
     expect(html).toContain("Personel gideri");
     expect(html).toContain("Personel ödemeleri · 2 adet");
     expect(html).toContain("Çalışan avansları · 2 adet");
+  });
+});
+
+// Spec 0059 R8, R10, R15, R16 (AC-16, AC-17, AC-18, AC-32): yeni detay tablolarında (vadesi geçmiş / yaklaşan kalemler, ödeme
+// hareketleri, virman, tahsilat, çek, tedarikçi kalemleri) çalışan adı ve kişi bazlı tutar yok; personel, avans ve mahsup
+// birer toplu satır ve personel satırının hedef hücresi boş. Koruma çıktı temellidir, kaynak taraması destektir.
+describe("Spec 0059: yeni detay tabloları gizliliği", () => {
+  it("AC-16 / AC-17 / AC-18: ayırt edici çalışanla üretilen belgede ad, maaş ve prim tutarı, hedef adı yok; personel toplu satır", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { girdi, GIDERLER, H, AD } = await import("./fixtures/0059-veri");
+    // Personel kalemi vadesi geçmiş olsun ki vadesi geçmiş tablosuna da girsin.
+    const giderler = GIDERLER.map(k => (k.id === 4 ? { ...k, sonOdemeTarihi: "2026-09-25", taksitler: k.taksitler.map(t => ({ ...t, vade: "2026-09-25" })) } : k));
+    const r = giderKasaRaporu(girdi({ giderler }), "2026-09");
+    const html = buildGiderKasaRaporuHtml(r);
+    for (const yasak of [AD, "Zümrüt", "Kaplanoğlu", "31.111", "17.777", "2.345", "Eylül primi", "Resmi", "Elden", "Maaş (", "Ek ödeme ("]) expect(html, yasak).not.toContain(yasak);
+    const personelVade = r.gider.vadeler.gecmis.find(v => v.personel);
+    expect(personelVade).toMatchObject({ tur: "Personel gideri", tedarikci: "", tarih: null });
+    for (const kisim of [r.gider.vadeler, r.kasa.odemeler, r.gider.tedarikciKalemleri]) expect(JSON.stringify(kisim)).not.toContain("Zümrüt");
+    const toplu = r.kasa.odemeler.filter(m => m.toplu);
+    expect(toplu.map(m => m.kalem)).toEqual(["Personel ödemeleri · 1 adet", "Çalışan avansları · 2 adet", "Avanstan mahsup · 1 adet"]);
+    expect(toplu.every(m => !m.hedef && m.tarih === null)).toBe(true);
+    expect(html).toMatch(/Ay geneli<\/td><td[^>]*><\/td><td[^>]*><\/td><td[^>]*>Personel ödemeleri · 1 adet<\/td><td[^>]*><\/td>/);
+  });
+  it("AC-16: rapor kurucusu hatırlatıcının kalem nesnesini okumaz; taraf adı yalnız personel dışı satırda", () => {
+    const kod = oku("src/lib/giderRaporu.js").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
+    expect(kod).not.toMatch(/\b(v|oge|o)\.kalem\b/);
+    const taraf = kod.split("\n").filter(l => /\.taraf\b/.test(l));
+    expect(taraf).toHaveLength(1);
+    expect(taraf[0]).toContain("tedarikci: v.taraf");
+    expect(kod).toMatch(/if \(v\.tur === "personel"\) return \{ personel: true, [^}]*tedarikci: ""/);
+  });
+  it("AC-32: dört hedefli, ek ödemesi kısmen ödenmiş personelle yeni tablolar da hedef adı ve ek tutar basmaz", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi, HEDEF } = await import("../src/lib/gider");
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 1;
+    const k = giderKalemDogrula({ id: 9, tarih: "2026-09-30", turId: 3, calisanId: 7, calisanAd: "Behiye Sarıkamışlıoğlu", resmiTutar: 43219, eldenTutar: 18765,
+      ekOdemeler: [{ tur: "prim", aciklama: "Yıl sonu primi", resmiTutar: 1357, eldenTutar: 2468 }], sonOdemeTarihi: "2026-09-30" }, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    const id = (h) => k.taksitler.find(t => t.hedef === h).id;
+    const hareketler = [{ id: 1, tur: "odeme", tarih: "2026-09-30", tutar: 1357, yontem: "Nakit", hesapId: 5, giderId: 9, taksitId: id(HEDEF.EK_RESMI) },
+      { id: 2, tur: "odeme", tarih: "2026-09-30", tutar: 43219, yontem: "Nakit", hesapId: 5, giderId: 9, taksitId: id(HEDEF.ANA) }];
+    const hesaplar = [{ id: 5, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-01-01" }];
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [k], hareketler, turler, yururlukAy: "2026-01", hesaplar }, "2026-09"));
+    for (const yasak of ["Behiye", "Ek ödeme (resmi)", "Ek ödeme (elden)", "Maaş (resmi)", "Maaş (elden)", "ekResmi", "ekElden", "1.357", "2.468", "43.219", "Yıl sonu"]) {
+      expect(html, yasak).not.toContain(yasak);
+    }
+    expect(html).toContain("Personel ödemeleri · 2 adet");
+  });
+});
+
+// Spec 0059 triyaj bulgu 1: kalemi kalıcı silinmiş ödeme (çöpten kalıcı silinen personel kalemi dahil) tarihli satır olarak
+// basılmaz; "Silinmiş kalem ödemeleri" toplu satırına iner, kişinin tutarı kâğıda düşmez.
+describe("Spec 0059 triyaj: silinmiş kalemin ödemesi", () => {
+  it("AC-17: personel kalemi kalıcı silinince ödemesi ödeme tablosunda tek satır ve tutarıyla basılmaz", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { girdi, GIDERLER } = await import("./fixtures/0059-veri");
+    const r = giderKasaRaporu(girdi({ giderler: GIDERLER.filter(k => k.id !== 4) }), "2026-09");
+    expect(r.kasa.odemeler.filter(m => !m.toplu).some(m => m.kalem === "Silinmiş gider")).toBe(false);
+    expect(r.kasa.odemeler.find(m => m.toplu && m.kalem.startsWith("Silinmiş kalem ödemeleri"))).toMatchObject({ tarih: null, kalem: "Silinmiş kalem ödemeleri · 1 adet" });
+    const html = buildGiderKasaRaporuHtml(r);
+    expect(html).not.toMatch(/30\/09\/2026<\/td><td[^>]*>Kasa<\/td><td[^>]*>Nakit<\/td>/);
+    expect(html).toMatch(/Ay geneli<\/td><td[^>]*><\/td><td[^>]*><\/td><td[^>]*>Silinmiş kalem ödemeleri · 1 adet<\/td>/);
   });
 });
