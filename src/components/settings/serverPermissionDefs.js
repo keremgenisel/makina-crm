@@ -244,11 +244,23 @@ export const GIDER_ACTION_GROUPS = [
     { id: "tedarikci_delete", label: "Tedarikçi sil" },
   ]},
   // Spec 0024 C6/Q7: Kasa ekranı (hesaplar ve virman). Spec 0052 R11: Kasa sekmesi olmayan kullanıcıda etkisizdir.
-  { grup: "Kasa ve hesaplar", items: [
+  // Spec 0066 R1: izin ekranında kendi "Kasa işlemleri" akordeonunda; grup adı başlığı tekrarlamasın diye "Hesaplar ve hareketler".
+  { grup: "Hesaplar ve hareketler", items: [
     { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme" }, // spec 0058 R9
     { id: "virman",     label: "Hesaplar arası virman" },
     { id: "avans",      label: "Çalışana avans ver ve sil" },
   ]},
 ];
+
+// Spec 0066 R4, R14, R15: izin ekranının Gider ve Kasa akordeonları aynı listenin iki süzülmüş görünümüdür. İçinde
+// KASA_EYLEM_IDLERI kimliği olan grup bütün olarak Kasa akordeonuna gider; ad eşleşmesi ve ayrı bayrak yok. İki
+// akordeon da aynı `giderActions` dizisini yazar (izin boyutu değişmedi, R3).
+export const kasaGrubuMu = (g) => g.items.some(i => KASA_EYLEM_IDLERI.has(i.id));
+export const GIDER_AKORDEON_GRUPLARI = GIDER_ACTION_GROUPS.filter(g => !kasaGrubuMu(g));
+export const KASA_AKORDEON_GRUPLARI = GIDER_ACTION_GROUPS.filter(kasaGrubuMu);
+// Spec 0066 R5, R9, R17: ortak "özelleştir" anahtarı ve tek dizi gerçeği ekranda yazılı.
+export const GIDER_KASA_ORTAK_NOT = "Bu ayar Gider ve Kasa işlemlerini birlikte yönetir; birini özelleştirmek ikisini de özelleştirir.";
+export const GIDER_VARSAYILAN_METNI = "Varsayılan (Giderler sekmesi açıksa tüm gider ve kasa işlemleri açık)";
+export const KASA_VARSAYILAN_METNI = "Varsayılan (Kasa sekmesi açıksa tüm kasa ve gider işlemleri açık)";
 
 export const DANGER_SECTION = { id: "danger", label: "Uygulamayı Kaldır", grup: "Tehlikeli Bölge" };

@@ -70,3 +70,58 @@ describe("izin tanım verisi tutarlılığı", () => {
     expect(custIds).toContain("cust_yedek_parca_delete");
   });
 });
+
+// Spec 0066: Kasa işlemleri izin ekranında Gider'den ayrı akordeonda; aynı GIDER_ACTION_GROUPS'un iki görünümü.
+import * as Defs from "../src/components/settings/serverPermissionDefs.js";
+import { readFileSync, readdirSync } from "node:fs";
+describe("Spec 0066: Gider ve Kasa akordeonlarının ayrımı (R4, R10, R14, R15)", () => {
+  const ids = (gruplar) => gruplar.flatMap(g => g.items.map(i => i.id));
+  it("AC-12: Kasa akordeonunun kimlikleri KASA_EYLEM_IDLERI ile birebir eşit", () => {
+    expect(new Set(ids(Defs.KASA_AKORDEON_GRUPLARI))).toEqual(Defs.KASA_EYLEM_IDLERI);
+    expect(ids(Defs.KASA_AKORDEON_GRUPLARI)).toHaveLength(Defs.KASA_EYLEM_IDLERI.size);
+  });
+  it("AC-13: Gider akordeonuna hiçbir kasa kimliği sızmaz", () => {
+    expect(ids(Defs.GIDER_AKORDEON_GRUPLARI).filter(id => Defs.KASA_EYLEM_IDLERI.has(id))).toEqual([]);
+  });
+  it("AC-14 / AC-23: iki görünümün birleşimi GIDER_ACTION_GROUPS'un tamamı; ikisi de aynı diziden süzülür (kasaGrubuMu)", () => {
+    expect([...Defs.GIDER_AKORDEON_GRUPLARI, ...Defs.KASA_AKORDEON_GRUPLARI].map(g => g.grup).sort())
+      .toEqual(Defs.GIDER_ACTION_GROUPS.map(g => g.grup).sort());
+    expect(new Set([...ids(Defs.GIDER_AKORDEON_GRUPLARI), ...ids(Defs.KASA_AKORDEON_GRUPLARI)])).toEqual(new Set(ids(Defs.GIDER_ACTION_GROUPS)));
+    for (const g of Defs.KASA_AKORDEON_GRUPLARI) expect(Defs.GIDER_ACTION_GROUPS).toContain(g);
+    expect(Defs.GIDER_ACTION_GROUPS.filter(Defs.kasaGrubuMu)).toEqual(Defs.KASA_AKORDEON_GRUPLARI);
+  });
+  it("AC-20: gider ve kasa akordeonlarının grup adları birebir (R1: \"Kasa ve hesaplar\" → \"Hesaplar ve hareketler\")", () => {
+    expect(Defs.GIDER_AKORDEON_GRUPLARI.map(g => g.grup)).toEqual(["Kalem işlemleri", "Tanım yönetimi", "Tedarikçi yönetimi"]);
+    expect(Defs.KASA_AKORDEON_GRUPLARI.map(g => g.grup)).toEqual(["Hesaplar ve hareketler"]);
+  });
+  it("AC-21: kutu etiketleri ve kimlikleri bu işten önceki hâliyle birebir aynı", () => {
+    expect(Defs.GIDER_ACTION_GROUPS.flatMap(g => g.items)).toEqual([
+      { id: "gider_add", label: "Gider ekle" },
+      { id: "gider_edit", label: "Gider düzenle" },
+      { id: "gider_delete", label: "Gider sil (çöp kutusuna)" },
+      { id: "gider_odeme", label: "Ödeme kaydet ve sil" },
+      { id: "gider_tekrar_uret", label: "Tekrarlayan kalemleri oluştur" },
+      { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları, standart genel giderler ve çalışan maliyetleri" },
+      { id: "tedarikci_add", label: "Tedarikçi ekle" },
+      { id: "tedarikci_edit", label: "Tedarikçi düzenle" },
+      { id: "tedarikci_delete", label: "Tedarikçi sil" },
+      { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme" },
+      { id: "virman", label: "Hesaplar arası virman" },
+      { id: "avans", label: "Çalışana avans ver ve sil" },
+    ]);
+  });
+  it("AC-8 / AC-11: tek tanım; ad eşleşmesi ve yeni bayrak yok", () => {
+    const kaynak = (f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf-8");
+    const defs = kaynak("src/components/settings/serverPermissionDefs.js");
+    expect(defs.match(/export const GIDER_ACTION_GROUPS = /g)).toHaveLength(1);
+    expect(defs).not.toMatch(/\bkasa:\s*true/);
+    const um = kaynak("src/components/settings/UserManager.jsx");
+    expect(um.match(/const allGiderActionIds = /g)).toHaveLength(1);
+    expect(um).not.toMatch(/Hesaplar ve hareketler|Kasa ve hesaplar|g\.grup ===|\.kasa === true/);
+    // Listeyi tanımlayan tek dosya defs'tir; başka hiçbir kaynak gider/kasa izin listesini kopyalamaz.
+    const tara = (d) => readdirSync(new URL(`../${d}`, import.meta.url), { withFileTypes: true })
+      .flatMap(e => (e.isDirectory() ? tara(`${d}/${e.name}`) : /\.(jsx?|cjs)$/.test(e.name) ? [`${d}/${e.name}`] : []));
+    const kopyalar = tara("src").filter(f => /"kasa_hesap"/.test(kaynak(f)) && /"gider_add"/.test(kaynak(f)) && /label:/.test(kaynak(f)));
+    expect(kopyalar).toEqual(["src/components/settings/serverPermissionDefs.js"]);
+  });
+});

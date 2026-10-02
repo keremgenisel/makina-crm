@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Modal, PasswordInput, Btn, ConfirmDialog } from "../ui";
 import {
-  ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION, VARSAYILAN_KAPALI_SEKMELER, KASA_EYLEM_IDLERI, KASA_ETKISIZ_IPUCU,
+  ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION, VARSAYILAN_KAPALI_SEKMELER, KASA_ETKISIZ_IPUCU,
+  GIDER_AKORDEON_GRUPLARI, KASA_AKORDEON_GRUPLARI, GIDER_KASA_ORTAK_NOT, GIDER_VARSAYILAN_METNI, KASA_VARSAYILAN_METNI,
   CUSTOMER_ACTION_GROUPS, DEALER_ACTION_GROUPS, STOCK_ACTION_GROUPS,
   EVRAK_ACTION_GROUPS, NOT_ACTION_GROUPS, FINANCE_ACTION_GROUPS, GIDER_ACTION_GROUPS,
   parseTabPerms, parseSettingsPerms, parseCustomerActionsPerms, parseDealerActionsPerms,
   parseStockActionsPerms, parseEvrakActionsPerms, parseNotActionsPerms, parseFinanceActionsPerms, parseGiderActionsPerms,
 } from "./serverPermissionDefs";
+import { gorunurSekmeler } from "../../lib/permissions";
 
 // Kullanıcı yönetimi paneli (sunucu modunda). SettingsServer.jsx'ten ayrıldı: kullanıcı
 // listeleme/ekleme/silme, rol/sekme/işlem izinleri düzenleme, şifre değiştirme, oturum
@@ -176,9 +178,13 @@ export function UserManager({ flash, settingsGroups = [] }) {
   const servisPanoGrubuMu = (g) => g.servisPano === true;
   // Spec 0052 R11: Kasa'nın eylem kutuları Kasa sekmesi olmayan kullanıcıda da çizilir ve işaretlenebilir (izin ekranı
   // bir bağımlılık ağacı değildir); etkisiz oldukları tek satırla söylenir, Kasa sonradan açılınca izinler hazırdır.
-  const giderGruplari = GIDER_ACTION_GROUPS.map(g => (g.items.some(i => KASA_EYLEM_IDLERI.has(i.id)) && !editTabs.includes("kasa") ? { ...g, ipucu: KASA_ETKISIZ_IPUCU } : g));
-  // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans,
-  // Evrak, Notlar, Servis Panosu, Ayarlar. (Anasayfa/Harita'nın işlem izni yok.)
+  // Spec 0066 R6, R16: ipucu yalnız Kasa akordeonunda ve koşulu 0052'nin görünürlük kuralının kendisi (kasa + Giderler +
+  // Finans), elle yeniden yazılmaz.
+  const kasaGorunur = gorunurSekmeler(ALL_TABS, "active", { role: "user", permissions: JSON.stringify({ tabs: editTabs }) }).some(t => t.id === "kasa");
+  const kasaGruplari = KASA_AKORDEON_GRUPLARI.map(g => (kasaGorunur ? g : { ...g, ipucu: KASA_ETKISIZ_IPUCU }));
+  const giderOn = (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); };
+  // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans, Gider, Kasa,
+  // Evrak, Notlar, Servis Panosu, Ayarlar (spec 0066 AC-19). (Anasayfa/Harita'nın işlem izni yok.)
   const permSections = [
     { key: "customer", title: "Müşteri işlemleri", on: editActionsOn, selected: editActions, setSelected: setEditActions,
       setOn: (v) => { setEditActionsOn(v); if (v) setEditActions([...allActionIds]); }, groups: CUSTOMER_ACTION_GROUPS.filter(g => !servisPanoGrubuMu(g)), ...yesil },
@@ -189,9 +195,12 @@ export function UserManager({ flash, settingsGroups = [] }) {
     { key: "finance", title: "Finans işlemleri", on: editFinanceActionsOn, selected: editFinanceActions, setSelected: setEditFinanceActions,
       setOn: (v) => { setEditFinanceActionsOn(v); if (v) setEditFinanceActions([...allFinanceActionIds]); }, groups: FINANCE_ACTION_GROUPS, ...yesil },
     // Gider işlemleri (spec 0001): yalnız "Giderler" sekmesi açıkça verilmiş kullanıcıda etkilidir.
+    // Spec 0066 R1–R7, C5: Kasa işlemleri kendi akordeonunda, Gider'in hemen arkasında; ikisi aynı giderActions dizisini
+    // ve aynı üç durumu paylaşır (ayrı durum yazılmaz, kısmi dizi kaydedilirdi). Ortak anahtar ekranda yazılı (ortakNot).
     { key: "gider", title: "Gider işlemleri", on: editGiderActionsOn, selected: editGiderActions, setSelected: setEditGiderActions,
-      setOn: (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); }, groups: giderGruplari, ...yesil,
-      emptyText: "Varsayılan (Giderler sekmesi açıksa tüm gider işlemleri açık)" },
+      setOn: giderOn, groups: GIDER_AKORDEON_GRUPLARI, ...yesil, emptyText: GIDER_VARSAYILAN_METNI, ortakNot: GIDER_KASA_ORTAK_NOT },
+    { key: "kasa", title: "Kasa işlemleri", on: editGiderActionsOn, selected: editGiderActions, setSelected: setEditGiderActions,
+      setOn: giderOn, groups: kasaGruplari, ...yesil, emptyText: KASA_VARSAYILAN_METNI, ortakNot: GIDER_KASA_ORTAK_NOT },
     { key: "evrak", title: "Evrak işlemleri", on: editEvrakActionsOn, selected: editEvrakActions, setSelected: setEditEvrakActions,
       setOn: (v) => { setEditEvrakActionsOn(v); if (v) setEditEvrakActions([...allEvrakActionIds]); }, groups: EVRAK_ACTION_GROUPS, ...yesil },
     { key: "not", title: "Notlar işlemleri", on: editNotActionsOn, selected: editNotActions, setSelected: setEditNotActions,
@@ -236,6 +245,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                 style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--n600, #475569)" }}>Bu kullanıcı için özelleştir</span>
             </label>
+            {sec.ortakNot && <div data-testid={`ortak-anahtar-notu-${sec.key}`} style={{ fontSize: 11.5, color: "var(--n500, #64748b)", margin: "-4px 0 10px 4px" }}>{sec.ortakNot}</div>}
             {!sec.on ? (
               <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", paddingLeft: 4 }}>{sec.emptyText}</div>
             ) : sec.flatItems ? (

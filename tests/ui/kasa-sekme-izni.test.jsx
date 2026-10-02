@@ -32,7 +32,8 @@ const duzenle = async (ad) => {
   fireEvent.click(within(satir(ad)).getByText("Düzenle"));
 };
 const kasaKutusu = () => screen.getByLabelText(/^Kasa/);
-const giderAkordeonu = () => fireEvent.click(screen.getByText("Gider işlemleri"));
+// Spec 0066 R1 ile güncellendi: kasa kutuları ve etkisizlik ipucu artık kendi "Kasa işlemleri" akordeonunda.
+const kasaAkordeonu = () => fireEvent.click(screen.getByText("Kasa işlemleri"));
 const kaydedilenSekmeler = (istekler) => JSON.parse(istekler.filter(r => r.method === "PATCH").pop().body.permissions).tabs;
 
 describe("Spec 0052: izin ekranı", () => {
@@ -64,7 +65,7 @@ describe("Spec 0052: izin ekranı", () => {
   it("AC-24: Kasa'sı olmayan kullanıcıda kasa_hesap / virman / avans kutuları çizilir ve etkisizlik ipucu görünür", async () => {
     yonetici();
     await duzenle("veli");
-    giderAkordeonu();
+    kasaAkordeonu();
     expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme")).toBeTruthy();
     expect(screen.getByText("Hesaplar arası virman")).toBeTruthy();
     expect(screen.getByText("Çalışana avans ver ve sil")).toBeTruthy();
@@ -79,7 +80,7 @@ describe("Spec 0052: izin ekranı", () => {
   it("AC-24: Kasa'sı olan kullanıcıda ipucu yok", async () => {
     yonetici([{ ...ESKI, permissions: JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["kasa_hesap"] }) }]);
     await duzenle("ali");
-    giderAkordeonu();
+    kasaAkordeonu();
     expect(screen.getByText("Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme")).toBeTruthy();
     expect(screen.queryByTestId("kasa-etkisiz-ipucu")).toBeNull();
   });

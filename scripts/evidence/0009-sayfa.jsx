@@ -686,7 +686,9 @@ const EKRANLAR = {
   "uygulama-menu-kasasiz": [<App />, ["Giderler"]],
   "uygulama-menu-kasali": [<App />, ["Giderler"]],
   "kullanici-izin-kasa": [<UserManager flash={bos} />, ["dugme:Düzenle"]],
-  "kullanici-izin-kasa-ipucu": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Gider işlemleri", "kaydir:Kasa ve hesaplar"]],
+  // Spec 0066 R21: kasa kutuları ve ipucu kendi "Kasa işlemleri" akordeonunda.
+  "kullanici-izin-kasa-ipucu": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Kasa işlemleri", "kaydir:Hesaplar ve hareketler"]],
+  "kullanici-izin-kasa-0066": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Gider işlemleri", "tikla:Kasa işlemleri", "kaydir:Tedarikçi yönetimi"]],
   "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Spec 0044: tahsilatın hesabı. Kasa hareketlerinde tahsilat satırları, hesapsız tahsilat listesi, Ödendi anahtarının penceresi,
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
