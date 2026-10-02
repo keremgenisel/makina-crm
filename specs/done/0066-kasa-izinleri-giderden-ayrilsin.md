@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `169e508`, dal `feat/0066-kasa-izin`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar > Sunucu > Kullanıcı Yönetimi > İşlem İzinleri (yalnız izin ekranı) |
@@ -231,25 +231,25 @@ ayrı ayrı okuyabiliyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kaynak taraması izin listesinin tek yerde olduğunu ve ayrı durum yazılmadığını doğruluyor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kaynak taraması izin listesinin tek yerde olduğunu ve ayrı durum yazılmadığını doğruluyor
       (AC-8, AC-15).
-- [ ] `tests/server-permission-defs.test.js`'e üç ayrım iddiası eklendi ve grup adı listesi güncellendi
+- [x] `tests/server-permission-defs.test.js`'e üç ayrım iddiası eklendi ve grup adı listesi güncellendi
       (R10, R1, AC-12, AC-13, AC-14, AC-20).
-- [ ] İzin dizisinin dokunulmadan kaydedildiğinde birebir aynı kaldığı testle gösterildi (R11, AC-9).
-- [ ] `serverAuth.cjs` diff'i boş ve sunucu yetki testleri dokunulmadan yeşil (R12, AC-10).
-- [ ] İpucunun koşulu 0052'nin görünürlük kuralını yansıtıyor ve yalnız bir kez çiziliyor
+- [x] İzin dizisinin dokunulmadan kaydedildiğinde birebir aynı kaldığı testle gösterildi (R11, AC-9).
+- [x] `serverAuth.cjs` diff'i boş ve sunucu yetki testleri dokunulmadan yeşil (R12, AC-10).
+- [x] İpucunun koşulu 0052'nin görünürlük kuralını yansıtıyor ve yalnız bir kez çiziliyor
       (R6, AC-7, AC-16, AC-17, AC-18).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0066-*.jpg` + `0066-piksel-raporu.json`, yeni taban): iki ayrı
+- [x] Görsel kanıt eklendi (`docs/evidence/0066-*.jpg` + `0066-piksel-raporu.json`, yeni taban): iki ayrı
       akordeon birlikte (R13, AC-22).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: Kasa izinlerinin ekranda ayrı akordeonda olduğu, boyutun yine
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: Kasa izinlerinin ekranda ayrı akordeonda olduğu, boyutun yine
       `giderActions` olduğu ve nedeni, ayrımın `KASA_EYLEM_IDLERI` ile yapıldığı, iki akordeonun durumlarını
       paylaştığı; ayrıca **eskimiş** "Servis Panosu ayrımı grup adına göre süzülüyor" cümlesi düzeltildi
       (gerçekte `servisPano: true` bayrağı).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -257,10 +257,10 @@ ayrı ayrı okuyabiliyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı (Q1–Q7; R15–R21, AC-23…AC-26); R19 R1'deki yanlış iddiayı düzeltti (test gider grup adlarını sabitlemiyordu). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: eskimiş sıra yorumu düzeltildi; AC-24 test adı ölçtüğü durumla netleştirildi. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | İkisi de küçük ve gerçek (yorum, test adı); davranış bulgusu yok. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam çekimde değişen yalnız izin ekranları; `serverAuth.cjs` diff'i boş, sunucu yetki testleri dokunulmadan yeşil. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in "şu test zaten şunu sabitliyor" iddiaları da kod iddiasıdır ve doğrulanmalıdır; R1 gider grup adlarının testte sabit olduğunu söylüyordu, değildi. İkincisi: bir koşulu "tek kurala bağladık, tanımsız durumu da kapsar" diye yazarken o durumun ekranda gerçekten oluşup oluşmadığına bakılmalı; burada sekme listesi tanımsız kullanıcı ekrana hiç gelmiyordu (varsayılan sekmelerle açılıyor).

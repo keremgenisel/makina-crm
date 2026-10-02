@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0066-kasa-izinleri-giderden-ayrilsin.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0066-kasa-izinleri-giderden-ayrilsin.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0066-kasa-izin` (`feat/0062-sayfalama` kapanışından sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-02: bütün öneriler (Q1–Q7) kabul |
 
