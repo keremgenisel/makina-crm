@@ -15,6 +15,8 @@ import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
 import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, HESAP_TUR_AD } from "./kasa";
 import { cekAyOzeti } from "./cek";
+import { acikKalemler } from "./acikKalemler";
+import { YAS_SIRA } from "./yaslandirma";
 import { SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { fmtTR, fmtCur } from "./utils";
 // Triyaj: bölünmüş hedef etiketindeki tutar belgenin para biçimiyle (fmtCur, kuruşsuz); ekranda tl2 kalır.
@@ -29,6 +31,9 @@ export const NOT_ANLIK = "Bu rapor yazdırıldığı andaki veriyle üretilmişt
 export const NOT_HESAPSIZ = "Hesabı belirtilmemiş hareketler hiçbir hesabın bakiyesine girmez; rapordaki bakiye ile gerçek bakiye arasındaki fark buradan doğabilir. Personel ödemeleri ve çalışan avansları toplu yazılır; ayrıntı Giderler ve Kasa ekranlarındadır.";
 export const NOT_MAHSUP = "Mahsup para hareketi değildir, hiçbir bakiyeye girmez.";
 // Spec 0060 R11, R16, R20: tür toplamı tek tutardır (bileşenler ayrı yazılmaz); çalışan adı ve kişi bazlı tutar yazılmaz.
+// Spec 0061 R14, R16: yaş ay sonundan sayılır (Aylık Faaliyet Raporu'nun alacak yaşlandırması rapor anından sayar; fark
+// bilinçlidir). Vadesi girilmemiş kalemler de dahildir; personel tek satırdır.
+export const NOT_YASLANDIRMA = "Yaş, kalemin gider tarihinden ay sonuna kadar geçen gündür; vadesi girilmemiş kalemler dahildir. Personel tek satırdır, çalışan adı ve kişi bazlı tutar yazılmaz.";
 export const NOT_EK_ODEME = "Tutarlar tür bazında toplamdır; çalışan adı, kişi bazlı tutar ve ödeme biçimi ayrımı yazılmaz.";
 export const NOT_CIRO = "Ciro hareketleri kasıtlı olarak hesapsızdır ve bu sayıya girmez; ciro edilen çekler çek bölümündedir.";
 export const NOT_CEK_GECMISSIZ = "Geçmişi kaydedilmemiş eski çeklerde güncel durum kullanıldı.";
@@ -92,6 +97,13 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     // alan okumaz; tür toplamı resmi + elden tek tutardır, çalışan ve açıklama taşımaz).
     const ekOdemeTurleri = ekOdemeTurToplamlari(personel).map(t => ({ ad: t.ad, tutar: tl(t.toplamK) }));
     const so = stopajOzeti(gr.kalemler, turMap);
+    // Spec 0061 R13, R14, R16, R32 (AC-19, AC-20): açık kalemlerin yaşlandırması, ay sonu itibarıyla (ödeme durumu ay sonu,
+    // yaş ay sonundan). Taraf kırılımında çalışanlar motorun tek "Çalışanlar" satırıdır; kişi kırılımı (ayrinti) okunmaz.
+    const acik = acikKalemler(giderlerAySonu, { turler: g.turler, tedarikciler: g.tedarikciler, yururlukAy: g.yururlukAy }, son);
+    const yaslandirma = acik.kalemAdet ? {
+      kovalar: acik.kovalar.filter(x => x.kalemAdet).map(x => ({ ad: x.ad, kalemAdet: x.kalemAdet, kalanK: x.kalanK })), toplamK: acik.toplamK,
+      gruplar: acik.taraflar.map(x => ({ ad: x.ad, kovalarK: YAS_SIRA.map(a => x.kovalar[a]), toplamK: x.toplamK })),
+    } : null;
     if (personel.length) {
       const d = personel.map(odemeDurumu);
       const durum = d.every(x => x === "odendi") ? "odendi" : d.every(x => x === "odenmedi") ? "odenmedi" : "kismen";
@@ -136,6 +148,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       // kırılım resmi/elden ayrımını ve tek çalışanlı ayda kişinin maaşını açığa çıkarırdı (R16, AC-21). Toplu satır kalır.
       yontem: { satirlar: yontem.satirlar.map(s => ({ ad: s.yontem, tutar: tl(s.tutarK) })), personel: tl(yontem.personelK), toplam: tl(yontem.toplamK) },
       ekOdemeTurleri,
+      yaslandirma,
       stopaj: so.kesilenK > 0 ? { kesilen: tl(so.kesilenK), odenen: tl(so.odenenK), acik: tl(so.acikK) } : null,
       kalemler,
       vadeler: detay ? { gecmis: vadeSatirlari(h.gecmisSatirlar), yaklasan: vadeSatirlari(h.yaklasanSatirlar) } : { gecmis: [], yaklasan: [] },
@@ -292,6 +305,13 @@ export const buildGiderKasaRaporuHtml = (r) => {
       ${vadeTablo("VADESİ GEÇMİŞ KALEMLER", G.vadeler.gecmis)}
       ${vadeTablo("YAKLAŞAN KALEMLER", G.vadeler.yaklasan)}
       ${vadeVar ? not(esc(GUN_NOTU(r.son))) : ""}`);
+    // Spec 0061 R13, R15, R31 (AC-19, AC-21, AC-33, AC-42): yaşlandırma kutusu ödeme durumundan sonra; boşsa basılmaz.
+    const Y = G.yaslandirma;
+    const yasPay = (k) => (Y.toplamK ? `%${Math.round(k / Y.toplamK * 100)}` : "—");
+    const yasKutu = Y ? bolum("GİDER · AÇIK KALEMLER YAŞLANDIRMASI", `yaş gider tarihinden, ${itibariyla}`, `
+      ${tablo("KOVALAR", ["Yaş aralığı", "Kalem", "Kalan", "Pay"], Y.kovalar.map(x => [esc(x.ad), String(x.kalemAdet), kp(x.kalanK), yasPay(x.kalanK)]), [SOL, R, R, R])}
+      ${tablo("TARAFLAR", ["Taraf", ...YAS_SIRA, "Toplam"], Y.gruplar.map(x => [esc(x.ad), ...x.kovalarK.map(k => (k ? kp(k) : "—")), kp(x.toplamK)]), [SOL, R, R, R, R, R])}
+      ${not(esc(NOT_YASLANDIRMA))}`) : "";
     const kovaKutu = bolum("GİDER · MALİYET DAĞILIMI", donem, stTablo([st("Makinaya", tlp(G.kovalar.makina)), st("Modele", tlp(G.kovalar.model)),
       st("Dağıtılmayan", tlp(G.kovalar.dagitma)), st("Ortak", tlp(G.kovalar.ortak)), st("Toplam", tlp(G.ozet.toplam))]));
     const kdvKutu = bolum("GİDER · KDV KARŞILAŞTIRMASI", donem, stTablo([st("Hesaplanan satış KDV'si", tlp(G.kdv.hesaplananTL)),
@@ -312,7 +332,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
         [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
-    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, stopajKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
+    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
 
   // ── Kasa ──

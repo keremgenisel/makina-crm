@@ -18,6 +18,7 @@ import { GiderForm } from "./GiderForm";
 import { tl2 } from "./gider/GiderAlanlari";
 import { Segment, BosDurum, UyariSeridi } from "./tasarim";
 import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi, YontemKirilimi } from "./gider/DonemRaporu";
+import { AcikKalemler } from "./gider/AcikKalemler";
 import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
@@ -81,6 +82,11 @@ export const Giderler = ({
   const hatirlatma = useMemo(() => odemeHatirlatmalari(giderler, { turler: giderTurleri, tedarikciler, yururlukAy, esikGun: hatirlatmaEsigi(giderAyarlari) }, bugun),
     [giderler, giderTurleri, tedarikciler, yururlukAy, giderAyarlari, bugun]);
   const hatirlatmaModu = gorunum === "rapor" && odemeFiltre === "hatirlatma";
+  // Spec 0061 R1, R20, R30 (C9): açık kalemler kipi ödeme süzgecinin değeri DEĞİL, ayrı bir durumdur; yalnız Dönem Raporu'nda,
+  // hatırlatma kipiyle birbirini dışlar, kaydedilmez.
+  const [acikKalemlerSecili, setAcikKalemlerSecili] = useState(false);
+  const acikKalemlerModu = gorunum === "rapor" && acikKalemlerSecili && !hatirlatmaModu;
+  const donemsizKip = hatirlatmaModu || acikKalemlerModu;
   const hatirlatmaKalemleri = useMemo(() => giderler.filter(k => hatirlatma.kalemIdleri.has(String(k.id))), [giderler, hatirlatma]);
   const baslangic = mod === "ay" ? `${ay}-01` : aralik.bas;
   const bitis = mod === "ay" ? ayinSonGunu(ay) : aralik.bit;
@@ -253,20 +259,30 @@ export const Giderler = ({
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ minWidth: 0, flex: "1 1 460px", maxWidth: 800 }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>
+        {/* Spec 0061 (TY kararı 2026-10-02): sekme çubuğu sıkışıp iki satıra bölünmez; sağ grup (hatırlatma, açık kalemler,
+            dönem seçici) sığmazsa bütün olarak alt satıra iner. Dar pencerede sekmeler yine en çok pencere genişliğinde kalır. */}
+        <div style={{ minWidth: 0, flex: "0 0 auto", maxWidth: "100%" }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           {/* Spec 0003 R8, triyaj bulgu 1: süzgeç listenin DIŞINDA da erişilebilir; seçili ay boşken (her ayın başı)
               veya yürürlük öncesiyken liste hiç çizilmediği için yalnız liste içindeki seçenek yetmez. */}
           {gorunum === "rapor" && (
             <button type="button" aria-pressed={hatirlatmaModu} data-testid="hatirlatma-dugmesi"
-              onClick={() => setOdemeFiltre(hatirlatmaModu ? "" : "hatirlatma")}
+              onClick={() => { setAcikKalemlerSecili(false); setOdemeFiltre(hatirlatmaModu ? "" : "hatirlatma"); }}
               style={{ border: `1px solid ${hatirlatmaModu ? "var(--amb600, #d97706)" : "var(--n300, #cbd5e1)"}`, background: hatirlatmaModu ? "var(--ambBg, #fffbeb)" : "var(--surface, #ffffff)",
                 color: "var(--n900, #0f172a)", borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               {hatirlatmaModu ? "Hatırlatma kapsamını kapat" : "Hatırlatma kapsamı"} ({hatirlatma.kalemIdleri.size})
             </button>
           )}
-          {!DONEMSIZ.has(gorunum) && (hatirlatmaModu
-            ? <fieldset disabled aria-label="Dönem seçici (hatırlatma kapsamında devre dışı)" style={{ border: 0, padding: 0, margin: 0, opacity: 0.45 }}>{donemSecici}</fieldset>
+          {gorunum === "rapor" && (
+            <button type="button" aria-pressed={acikKalemlerModu} data-testid="acik-kalemler-dugmesi"
+              onClick={() => { if (!acikKalemlerModu && hatirlatmaModu) setOdemeFiltre(""); setAcikKalemlerSecili(!acikKalemlerModu); }}
+              style={{ border: `1px solid ${acikKalemlerModu ? "var(--amb600, #d97706)" : "var(--n300, #cbd5e1)"}`, background: acikKalemlerModu ? "var(--ambBg, #fffbeb)" : "var(--surface, #ffffff)",
+                color: "var(--n900, #0f172a)", borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {acikKalemlerModu ? "Açık kalemleri kapat" : "Açık kalemler (tüm dönemler)"}
+            </button>
+          )}
+          {!DONEMSIZ.has(gorunum) && (donemsizKip
+            ? <fieldset disabled aria-label={`Dönem seçici (${hatirlatmaModu ? "hatırlatma kapsamında" : "açık kalemlerde"} devre dışı)`} style={{ border: 0, padding: 0, margin: 0, opacity: 0.45 }}>{donemSecici}</fieldset>
             : donemSecici)}
         </div>
       </div>
@@ -286,7 +302,17 @@ export const Giderler = ({
             odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
       )}
-      {gorunum === "rapor" && rapor && !hatirlatmaModu && (
+      {/* Spec 0061 R1, R21, R22: kip açıkken kapsam ibaresi, açık kalemler tablosu ve dönemden bağımsız borç kartı; dönem kartları gizli. */}
+      {acikKalemlerModu && (
+        <>
+          <UyariSeridi aile="bilgi" testId="acik-kalemler-modu" baslik="Açık kalemler (tüm dönemler)"
+            metin="Dönem filtresi devre dışı: yürürlük ayından bugüne kadarki bütün ödenmemiş kalemler, ödeme hedefi başına. Yaş gider tarihinden sayılır; vade ayrı sütundadır." />
+          <AcikKalemler giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} yururlukAy={yururlukAy} bugun={bugun} canDo={canDo}
+            onHedefOde={odemeGirisi ? (kalemId, hedef) => setOdemeHedefi({ kalemId, hedef: { hedef } }) : null} />
+          <BorcOzeti ozet={borc} />
+        </>
+      )}
+      {gorunum === "rapor" && rapor && !donemsizKip && (
         rapor.yururlukOncesi ? (
           <>
             <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`} />

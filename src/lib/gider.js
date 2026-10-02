@@ -889,6 +889,9 @@ export const hesaplaGiderRaporu = (
 };
 
 // "Kime ne kadar borçluyuz" (R19, K30): dönemden bağımsız, tutara göre çoktan aza.
+// Spec 0061 R2, R17 (AC-27): borç kapsamının TEK tanımı. borcOzeti ve açık kalemler motoru bunu çağırır; çöpteki, ödenmiş,
+// tarihsiz, yürürlük öncesi ve gider tarihi `bugun`den sonra olan kalem kapsam dışıdır (ödenecek 0 hedef düzeyinde düşer).
+export const borcKapsamindaMi = (k, { esik = "", bugun = null } = {}) => !(k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || (bugun && k.tarih > bugun));
 export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yururlukAy = null } = {}, bugun) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
@@ -898,7 +901,7 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
   const secilmemis = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
   const vergi = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
   for (const k of giderler) {
-    if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || (bugun && k.tarih > bugun)) continue;
+    if (!borcKapsamindaMi(k, { esik, bugun })) continue;
     const dav = davranisOf(k, turMap);
     // Spec 0021 R4, R8: ödeme hedefi başına kalan tutar; stopaj vergi dairesi satırına gider.
     for (const h of odemeHedefleri(k, dav)) {

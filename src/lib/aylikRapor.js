@@ -12,6 +12,8 @@ import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
 import { sahipsizHaric } from "./sahipsiz";
 import { satisTahsilatKalemleri } from "./satisTahsilat";
+import { yasKovaAdi, YAS_SIRA } from "./yaslandirma";
+
 
 const paraEkle = (obj, cur, v) => { const k = cur || "TRY"; obj[k] = (obj[k] || 0) + (parseMoney(v) || 0); };
 // Tek kayıt için tek para birimli tutar nesnesi ({TRY:...} gibi) — detay satırlarında kullanılır
@@ -377,8 +379,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   // kovasına dağıt; kova başına toplam tutar + kaç ayrı firma. Referans tarih rapor anı (bugün).
   const bugunMs = Date.now();
   const yasGunu = (iso) => { if (!iso) return null; const d = new Date(iso); return isNaN(d.getTime()) ? null : Math.floor((bugunMs - d.getTime()) / 86400000); };
-  const yasKovaAdi = (g) => g == null ? "90+ gün" : g <= 30 ? "0-30 gün" : g <= 60 ? "31-60 gün" : g <= 90 ? "61-90 gün" : "90+ gün";
-  const YAS_SIRA = ["0-30 gün", "31-60 gün", "61-90 gün", "90+ gün"];
+  // Spec 0061 R8, C8: kova adı ve sırası ortak yardımcıdan (yaslandirma.js); yaş referansı burada rapor anıdır (R14).
   const yasMap = {};
   const yasEkle = (firmKey, date, cur, v) => {
     const ad = yasKovaAdi(yasGunu(date));

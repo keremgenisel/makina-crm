@@ -131,6 +131,8 @@ const G0060 = [
   k0060({ id: 604, tarih: "2026-09-04", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 10000, taksitSayisi: 6, sonOdemeTarihi: "2026-09-30",
     ekOdemeler: [{ tur: "prim", aciklama: "", resmiTutar: 2000, eldenTutar: 1000 }, { tur: "ikramiye", aciklama: "", resmiTutar: 0, eldenTutar: 500 }] }),
 ];
+// Spec 0061 R24: açık kalemler kipi için vadesi girilmemiş eski bir kalem (yaş 90+).
+const G0061 = [...G0060, k0060({ id: 605, tarih: "2026-06-15", turId: 5, tutar: 4000, kdvOrani: 0, tedarikciId: 12, aciklama: "Eski sac" })];
 const t0060 = (id, h) => G0060.find(x => x.id === id).taksitler.filter(t => t.hedef === h);
 const H0060 = [
   { id: 1, tur: "odeme", tarih: "2026-09-15", tutar: t0060(601, "stopaj")[0].tutar, hesapId: 1, giderId: 601, taksitId: t0060(601, "stopaj")[0].id, yontem: "Havale" },
@@ -719,6 +721,9 @@ const EKRANLAR = {
   // Spec 0060 R1, R2, R6: kalem listesinde hedef başına rozet ve personel grubunun açılmış kırılımı.
   "giderler-0060-hedef-rozetleri": [<GiderEkrani g0={G0060} h0={H0060} />, ["kaydir:Gider Kalemleri"]],
   "giderler-0060-personel-acik": [<GiderEkrani g0={G0060} h0={H0060} />, ["dugme:Çalışanları göster", "kaydir:Gider Kalemleri"]],
+  // Spec 0061 R24: açık kalemler kipi (tüm dönemler) ve bir kovaya süzülmüş hâli.
+  "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],
+  "giderler-acik-kalemler-kova": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)", "dugme:90+ gün"]],
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
   // Spec 0055: kalem listesi seçeneği kalktı; "-kalemsiz" ekranı yerine kalemsiz (boş) ayın belgesi (boş tablo basılmaz).
   "gider-kasa-raporu-bos": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, giderler: [] }, "2026-09")) }} />, []],

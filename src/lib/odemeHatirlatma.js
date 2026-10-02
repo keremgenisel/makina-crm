@@ -5,7 +5,7 @@
 // "Vadesi geçmiş" kuralı YENİDEN YAZILMAZ: 0001'in vadesiGectiMi'si çağrılır (C2). Bu dosya yalnız "yaklaşan"
 // (bugün ≤ vade ≤ bugün + eşik) kavramını ekler. Anasayfa kartı, liste penceresi ve Giderler süzgeci aynı
 // fonksiyonu aynı `bugun` ve eşikle kullanır, sayılar bu yüzden ayrışamaz (AC-14).
-import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
+import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, borcKapsamindaMi, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
 
 export const HATIRLATMA_ESIK_VARSAYILAN = 7;
 export const HATIRLATMA_ESIK_MAX = 365;
@@ -85,7 +85,8 @@ export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler =
   // toplamı, vade en yakın ödenmemiş taksitin vadesidir; kalem düzeyinde vade aranmaz (AC-24). Vadesi bilinmeyen
   // hedef (eski kiranın stopajı, R13) girmez. Kartın iki sayısı KALEM sayar (R14, T6): kalem en acil kovaya girer.
   for (const k of giderler) {
-    if (k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || k.tarih > bugun) continue;
+    // Spec 0061 R17 (AC-27): kapsam borç özetiyle aynı tek kuraldan; hatırlatıcının farkı aşağıdaki vade şartıdır (R18).
+    if (!borcKapsamindaMi(k, { esik, bugun })) continue;
     const dav = davranisOf(k, turMap);
     const personel = dav === DAVRANIS.PERSONEL;
     const acikHedefler = odemeHedefleri(k, dav).filter(h => !h.odendi && h.kalanK > 0 && h.vade);

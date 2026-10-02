@@ -204,3 +204,24 @@ describe("Spec 0059 triyaj: silinmiş kalemin ödemesi", () => {
     expect(html).toMatch(/Ay geneli<\/td><td[^>]*><\/td><td[^>]*><\/td><td[^>]*>Silinmiş kalem ödemeleri · 1 adet<\/td>/);
   });
 });
+
+// Spec 0061 R16, C7 (AC-22, AC-37): açık kalemler yaşlandırması da çıktı temelli korunur. Ayırt edici iki çalışanın açık
+// maaşıyla üretilen belgenin yaşlandırma kutusunda ad ve kişi bazlı tutar yok; "Çalışanlar" tek satır.
+describe("Spec 0061: yaşlandırma tablosu gizliliği", () => {
+  it("AC-22 / AC-37: ayırt edici adlarla yaşlandırma kutusunda ad ve kişi bazlı tutar yok, çalışanlar tek satır", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi } = await import("../src/lib/gider");
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 1;
+    const kayit = (f) => giderKalemDogrula(f, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    const a = kayit({ id: 9, tarih: "2026-07-31", turId: 3, calisanId: 7, calisanAd: "Behiye Sarıkamışlıoğlu", resmiTutar: 43219, eldenTutar: 18765 });
+    const b = kayit({ id: 10, tarih: "2026-09-30", turId: 3, calisanId: 8, calisanAd: "Yusuf Demirkazık", resmiTutar: 25000, eldenTutar: 6543 });
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [a, b], hareketler: [], turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
+    const i = html.indexOf("GİDER · AÇIK KALEMLER YAŞLANDIRMASI");
+    expect(i).toBeGreaterThan(0);
+    const kutu = html.slice(i, html.indexOf("GİDER · MALİYET DAĞILIMI", i));
+    for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "Yusuf", "Demirkazık", "43.219", "18.765", "25.000", "6.543", "Resmi", "Elden"]) expect(kutu, yasak).not.toContain(yasak);
+    expect((kutu.match(/>Çalışanlar</g) || []).length).toBe(1);
+    for (const yasak of ["Behiye", "Yusuf"]) expect(html, yasak).not.toContain(yasak);
+  });
+});

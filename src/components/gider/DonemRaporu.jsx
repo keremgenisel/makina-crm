@@ -16,7 +16,7 @@ const Rozet = ({ children, renk = "gri", title }) => {
   return <span title={title} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: r[0], background: r[1], border: `1px solid ${r[2]}`, borderRadius: 999, padding: "1px 8px", whiteSpace: "nowrap" }}>{children}</span>;
 };
 export { Rozet };
-const AcKapa = ({ acik, onClick, children }) => (
+export const AcKapa = ({ acik, onClick, children }) => (
   <button type="button" onClick={onClick} aria-expanded={acik}
     style={{ background: "none", border: "none", padding: 0, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", gap: 4, alignItems: "center" }}>
     {acik ? "▾" : "▸"} {children}

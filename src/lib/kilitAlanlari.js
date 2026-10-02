@@ -57,6 +57,7 @@ export const AYAR_SALT_OKUNUR = ["securitystatus", "export", "sentmail", "auditl
 // listesinde de olmayan dosya testi düşürür (yeni bir pencere kilitsiz doğmasın).
 export const KILITSIZ_DOSYALAR = {
   "src/components/gider/DonemRaporu.jsx": "salt okunur rapor görünümü",
+  "src/components/gider/AcikKalemler.jsx": "salt okunur liste (spec 0061); \"Ödeme kaydet\" Giderler'in gider kilitli ödeme penceresini açar",
   "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari) anlık denetiminden geçer",
   "src/components/gider/FiyatOnerisi.jsx": "salt okunur hesap",
   "src/components/gider/GiderAlanlari.jsx": "paylaşılan alanlar; pencereyi açan kilitler",
