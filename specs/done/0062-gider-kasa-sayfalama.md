@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `b7c1955`, dal `feat/0062-sayfalama`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler (kalem listesi, makina kârlılığı, makina ve model, tedarikçiler), Kasa (hesap hareketleri, hesabı belirtilmemiş kayıtlar, çek portföyü, ekstre), ödeme hatırlatma penceresi |
@@ -338,28 +338,28 @@ tam listeyi basıyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kaynak taraması: gider, kasa ve çek klasörlerinde elle yazılmış sayfalama kalmadı (AC-12).
-- [ ] Hangi listenin hangi kancayı kullandığı tabloyla gösterildi (R11, AC-26).
-- [ ] Sayfa sıfırlamanın beş durumu testle sabitlendi ve hiçbir yerde boş sayfa kalmadı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kaynak taraması: gider, kasa ve çek klasörlerinde elle yazılmış sayfalama kalmadı (AC-12).
+- [x] Hangi listenin hangi kancayı kullandığı tabloyla gösterildi (R11, AC-26).
+- [x] Sayfa sıfırlamanın beş durumu testle sabitlendi ve hiçbir yerde boş sayfa kalmadı
       (R13, AC-27, AC-28, AC-29, AC-30).
-- [ ] Toplamların sayfadan bağımsızlığı testle sabitlendi (AC-17, AC-32, AC-33).
-- [ ] Toplu işlemin kapsamı ve **metni** düzeltildi: "Listedeki {n} kayıt"; `Kasa.jsx`'teki 0058 yorumu
+- [x] Toplamların sayfadan bağımsızlığı testle sabitlendi (AC-17, AC-32, AC-33).
+- [x] Toplu işlemin kapsamı ve **metni** düzeltildi: "Listedeki {n} kayıt"; `Kasa.jsx`'teki 0058 yorumu
       güncellendi (R17, C8, AC-20).
-- [ ] Bakiye değerlerinin dilimlemeyle yeniden hesaplanmadığı testle sabitlendi (AC-21).
-- [ ] Kasa hareket listesinin sıra değişikliği görsel kanıtla gösterildi, kanıt kayıtları
+- [x] Bakiye değerlerinin dilimlemeyle yeniden hesaplanmadığı testle sabitlendi (AC-21).
+- [x] Kasa hareket listesinin sıra değişikliği görsel kanıtla gösterildi, kanıt kayıtları
       `beklenen: "degisti"` + onay aldı ve sürüm notuna yazıldı (R19, R22, AC-37).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0062-*.jpg` + `0062-piksel-raporu.json`, yeni taban):
+- [x] Görsel kanıt eklendi (`docs/evidence/0062-*.jpg` + `0062-piksel-raporu.json`, yeni taban):
       sayfalanan listeler ve her biri için "Sonraki ›" ile üretilen **sayfa 2** görünümleri
       (R23, AC-38).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: gider ve kasa listelerinin sayfalandığı, sayfa boyutu kuralı (10 / pencere
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: gider ve kasa listelerinin sayfalandığı, sayfa boyutu kuralı (10 / pencere
       içi 5, istisnai 15), hangi listenin hangi kancayı kullandığı, süzgeç sıfırlamanın çağırana ait
       olduğu, toplam ve toplu işlem kapsamının sayfadan bağımsız olduğu ve Kasa hareket listesinin artık
       en yeni üstte sıralandığı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -367,10 +367,10 @@ tam listeyi basıyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı (Q1–Q10; R26–R34, AC-39…AC-45). Uygulamada R28 netleşti: aç/kapa anahtarları sayfayı korur (grup satırı her sayfada olabilir). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 2 bulgu. Kanca kırpılan sayfayı saklamıyordu (liste boşalıp dolunca eski sayfaya atlıyordu); görsel kanıt bulgusu triyajdan önce tamamlanmıştı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 1 / 1 | Kanca bulgusu gerçek; kanıt bulgusu triyajın eski bir anı görmesinden (rapor ve kayıtlar diskteydi). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam önce/sonra çekiminde 526 görüntünün 514'ü 0 piksel; kalan 6 ekran bilinçli (R17, R19, R31) ve onaylı. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Paylaşılan bir kancaya "sayfa 1'e dön" eklerken üç ayrı olay vardır: süzgeç değişimi, liste küçülmesi ve aç/kapa. Spec ilk ikisini yazmıştı ama kırpmanın kalıcı mı geçici mi olduğunu ve aç/kapanın sayfayı korumasını söylemiyordu; ikisi de uygulamada ve triyajda ortaya çıktı. Sıfırlama kuralı yazılırken her olayın sayfaya etkisi tek tek tanımlanmalı. İkincisi: R11'in liste ↔ kanca eşlemesi koda bakılmadan yazılmıştı (Tedarikçiler'de arama yok, Gider Kalemleri satır kümesi); bu tür tablolar spec aşamasında kodla doğrulanmalı.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0062-gider-kasa-sayfalama.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0062-gider-kasa-sayfalama.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0062-sayfalama` (`feat/0061-acik-kalemler` kapanışından sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-02: bütün öneriler (Q1–Q10) kabul |
 

@@ -1,0 +1,482 @@
+[
+  {
+    "ad": "giderler-uretim-partileri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-uretim-partileri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-uretim-partisi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-uretim-partisi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-karlilik-parti-aydinlik.png",
+    "boyut": "2880x2272",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-karlilik-parti-karanlik.png",
+    "boyut": "2880x2272",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-model-parti-degisim-aydinlik.png",
+    "boyut": "2880x1948",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-model-parti-degisim-karanlik.png",
+    "boyut": "2880x1948",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesaplar-aydinlik.png",
+    "boyut": "2880x2244",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hesaplar-karanlik.png",
+    "boyut": "2880x2244",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-tedarikci-ekstresi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-aydinlik.png",
+    "boyut": "2880x2424",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-tahsilat-hareketleri-karanlik.png",
+    "boyut": "2880x2424",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0058-listeler-aydinlik.png",
+    "boyut": "2880x2896",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0058-listeler-karanlik.png",
+    "boyut": "2880x2896",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-aydinlik.png",
+    "boyut": "2880x2406",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0058-toplu-onay-karanlik.png",
+    "boyut": "2880x2406",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hareket-hedef-aydinlik.png",
+    "boyut": "2880x1984",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-hareket-hedef-karanlik.png",
+    "boyut": "2880x1984",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hareketler-aydinlik.png",
+    "boyut": "2880x2198",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hareketler-karanlik.png",
+    "boyut": "2880x2198",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hareketler-sayfa2-aydinlik.png",
+    "boyut": "2880x1814",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hareketler-sayfa2-karanlik.png",
+    "boyut": "2880x1814",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-odemeler-aydinlik.png",
+    "boyut": "2880x3188",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-odemeler-karanlik.png",
+    "boyut": "2880x3188",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-odemeler-sayfa2-aydinlik.png",
+    "boyut": "2880x2500",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-odemeler-sayfa2-karanlik.png",
+    "boyut": "2880x2500",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-aydinlik.png",
+    "boyut": "2880x3398",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-karanlik.png",
+    "boyut": "2880x3398",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-sayfa2-aydinlik.png",
+    "boyut": "2880x2542",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-sayfa2-karanlik.png",
+    "boyut": "2880x2542",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-kapsam-disi-aydinlik.png",
+    "boyut": "2880x3158",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-kapsam-disi-karanlik.png",
+    "boyut": "2880x3158",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-kapsam-disi-sayfa2-aydinlik.png",
+    "boyut": "2880x2470",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-kapsam-disi-sayfa2-karanlik.png",
+    "boyut": "2880x2470",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-alinan-aydinlik.png",
+    "boyut": "2880x2366",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-alinan-karanlik.png",
+    "boyut": "2880x2366",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-alinan-sayfa2-aydinlik.png",
+    "boyut": "2880x1912",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-alinan-sayfa2-karanlik.png",
+    "boyut": "2880x1912",
+    "seritler": [
+      "Bu ekran müşteri tahsilat çeklerini ve portföye elle eklenen çekleri k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-verilen-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-verilen-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-verilen-sayfa2-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kasa-0062-cek-verilen-sayfa2-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-kalemler-aydinlik.png",
+    "boyut": "2880x4268",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-kalemler-karanlik.png",
+    "boyut": "2880x4268",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-kalemler-sayfa2-aydinlik.png",
+    "boyut": "2880x4202",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-kalemler-sayfa2-karanlik.png",
+    "boyut": "2880x4202",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-karlilik-aydinlik.png",
+    "boyut": "2880x3100",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-karlilik-karanlik.png",
+    "boyut": "2880x3100",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-karlilik-sayfa2-aydinlik.png",
+    "boyut": "2880x2462",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-karlilik-sayfa2-karanlik.png",
+    "boyut": "2880x2462",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-makina-model-aydinlik.png",
+    "boyut": "2880x3630",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-makina-model-karanlik.png",
+    "boyut": "2880x3630",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-makina-model-sayfa2-aydinlik.png",
+    "boyut": "2880x2142",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-makina-model-sayfa2-karanlik.png",
+    "boyut": "2880x2142",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-tedarikciler-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-tedarikciler-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-tedarikciler-sayfa2-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-tedarikciler-sayfa2-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-acik-kalemler-aydinlik.png",
+    "boyut": "2880x2976",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-acik-kalemler-karanlik.png",
+    "boyut": "2880x2976",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-acik-kalemler-sayfa2-aydinlik.png",
+    "boyut": "2880x2976",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-acik-kalemler-sayfa2-karanlik.png",
+    "boyut": "2880x2976",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-ekstre-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-ekstre-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-ekstre-sayfa2-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0062-ekstre-sayfa2-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]
