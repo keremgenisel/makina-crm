@@ -68,12 +68,10 @@ describe("Makina Kârlılığı alt görünümü", () => {
     expect(within(d).getByText("75.000 ₺")).toBeTruthy();
   });
   it("spec 0050 AC-12: Makina Kârlılığı'ndaki maliyet detayı açık gelir, katlama yok", () => {
-    localStorage.setItem("maliyetKutusuAcik", "0"); // müşteri detayındaki tercih buraya uygulanmaz
     ciz(hesapla({ customers: [mus(1, { komisyon: 15000 })], giderler: [{ id: 1, tarih: "2026-03-15", turId: 1, tutar: 60000 }] }));
     fireEvent.click(screen.getByText("Firma 1").closest("tr"));
     expect(within(screen.getByTestId("maliyet-detay")).getByText("Satış bedeli")).toBeTruthy();
-    expect(screen.queryByTestId("maliyet-kar-kutusu")).toBeNull();
-    localStorage.clear();
+    expect(screen.queryByTestId("maliyet-kar-kutusu")).toBeNull(); // spec 0067: kutu artık hiçbir yerde yok
   });
   it("AC-7 / AC-36: parça hariç notu ve kullanılan kaynak yazar", () => {
     ciz(hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } }));

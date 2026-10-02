@@ -73,11 +73,13 @@ pencere kısalıyor; müşteri detayındaki maliyet kutusu isteyene açılıyor,
   0016'nın **denetimli** katlanan kartı olur (`acik` / `onAcikDegis`): durumu `CustomerDetailModal` tutar,
   böylece üç katlanan kart (Görüşmeler, Dosyalar, Maliyet) aynı biçimde çalışır ve ileride "dışarıdan aç"
   ihtiyacı doğarsa desen hazırdır (C2).
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **R9.** Açık ya da kapalı olduğu bu bilgisayarda hatırlanır; kullanıcı ayarı değildir, sunucuya gitmez.
   Anahtar `localStorage` **`maliyetKutusuAcik`** (`"1"` / `"0"`), 0043'ün `maliIslerAcik` ve `sidebarDar`
   deseni. Okuma ve yazma **tek yerde** olur ve `try/catch` ile sarılır (özel pencerede `localStorage`
   erişimi hata verebilir); okunamazsa varsayılan **kapalı**. Durum **makina değişiminde korunur** (görünüm
   tercihidir, kayda bağlı değil).
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **R10.** Kapalıyken kutunun başlığı ve `altBaslik` olarak tek satır açıklama görünür kalır: "Makinanın
   maliyeti, satış bedeli ve kârı". **Rakam gösterilmez**, yoksa katlamanın amacı olan kısalık kaybolur.
 - **R11.** Kutunun içeriği, hesabı ve görünürlük kuralı (yalnız gider yetkisi) **değişmez**; yalnız
@@ -188,10 +190,15 @@ pencere kısalıyor; müşteri detayındaki maliyet kutusu isteyene açılıyor,
   yerleşimle, Electron testinde yapılır (R13).
 - **AC-8.** Müşteri detayı açıldığında "Maliyet ve Kâr" kutusu kapalıdır; başlığı ve "Makinanın maliyeti,
   satış bedeli ve kârı" açıklaması görünür, hiçbir rakam görünmez.
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-9.** Başlığa tıklanınca kutu açılır, içeriği bugünküyle aynıdır.
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-10.** Kutunun açık ya da kapalı olduğu uygulama kapanıp açıldığında korunur.
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-11.** Gider yetkisi olmayan kullanıcıda kutu hiç çizilmez (bugünkü kural).
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-12.** Giderler › Makina Kârlılığı'ndaki maliyet detayı açık gelmeye devam eder.
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki kutu kaldırıldı; Makina Kârlılığı'ndaki detay açık gelmeye devam eder ve müşteri detayındaki tercih artık yok (testteki `maliyetKutusuAcik` kurulumu kaldırıldı).
 - **AC-13.** Müşteri detayının diğer bölümlerinin açık/kapalı davranışı değişmez.
 
 ### QA turunda eklenen kriterler
@@ -207,7 +214,9 @@ pencere kısalıyor; müşteri detayındaki maliyet kutusu isteyene açılıyor,
   (R19).
 - **AC-20.** Maliyet kutusunun durumu `localStorage` `maliyetKutusuAcik` ile tutulur; erişim hata verirse
   kutu kapalı açılır ve uygulama çökmez (R9).
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-21.** Soldaki listeden makina değiştirilince kutunun açık/kapalı durumu korunur (R9).
+  > **Not (2026-10-02, spec 0067 R11):** müşteri detayındaki "Maliyet ve Kâr" kutusu bütünüyle kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda); bu madde ve `maliyetKutusuAcik` tercihi artık geçerli değil.
 - **AC-22.** Kutu denetimli katlanan karttır: durumu `CustomerDetailModal` tutar (R8, C2).
 - **AC-23.** Müşteri ve bayi detay modallarının genişliği değişmez; `bayi-modal-layout.test.js` aynen geçer
   (X6).

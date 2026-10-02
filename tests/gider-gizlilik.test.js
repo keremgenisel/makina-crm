@@ -45,10 +45,12 @@ describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktı
     "%s atama ve makina maliyeti alanlarını okumaz", (f) => {
       expect(oku(f)).not.toMatch(MALIYET);
     });
-  it("müşteri detayında makina maliyeti yalnız ekrandaki maliyet kutusuna verilir, yazdırma yollarına girmez", () => {
-    const satirlar = oku("src/components/customers/CustomerDetailModal.jsx").split("\n").filter(l => /makinaKarlilik\(/.test(l));
-    expect(satirlar).toHaveLength(1);
-    expect(satirlar[0]).toContain("<MakinaMaliyetDetay detay={makinaKarlilik(");
+  // Spec 0067 R12 c (AC-17): iddia güçlendirildi. Maliyet kutusu müşteri detayından kaldırıldı; detay makina maliyetini hiç
+  // hesaplamaz ve maliyet bileşenini içe almaz, yani maliyet ne ekrana ne yazdırma yollarına buradan girer.
+  it("müşteri detayı makina maliyetini hiç okumaz (makinaKarlilik çağrısı ve MakinaMaliyetDetay yok)", () => {
+    const s = oku("src/components/customers/CustomerDetailModal.jsx");
+    expect(s.split("\n").filter(l => /makinaKarlilik\(/.test(l))).toHaveLength(0);
+    expect(s).not.toMatch(/MakinaMaliyetDetay|makinaMaliyet/);
   });
 });
 

@@ -41,8 +41,6 @@ import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
 import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle } from "../../lib/kalipSatisi";
-import { MakinaMaliyetDetay } from "../gider/MakinaMaliyetDetay";
-import { makinaKarlilik } from "../../lib/makinaMaliyeti";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -73,8 +71,8 @@ export const CustomerDetailModal = ({
   showToast,
   kalipDefs = [], partTypeDefs = [], yedekParcaSatislar = [], setYedekParcaSatislar = null,
   onGoYedekParca = null,
-  // Spec 0002 (R15, R26): maliyet ve kâr kutusu yalnız gider yetkisiyle; hesap App'te bir kez yapılır.
-  giderYetki = false, makinaMaliyet = null, rates = null,
+  // Spec 0067 R6, R8, R22: "Maliyet ve Kâr" kutusu müşteri detayından kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda);
+  // maliyet verisi, kurlar ve onları kapılayan gider yetkisi bu bileşene artık gelmez.
   // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
   kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040 R1, R2, C10, C12: çek kaydı tahsilatla birlikte doğar (perde inikken de); çeke bağlı tahsilatın "tahsil
@@ -482,10 +480,6 @@ export const CustomerDetailModal = ({
   // ── Görüşme kayıtları: telefon/ziyaret notları + takip tarihi ("aranacaklar") ──
   const [gorusmeForm, setGorusmeForm] = useState(null);
   const [gorusmelerAcik, setGorusmelerAcik] = useState(false); // akordeon: varsayılan kapalı
-  // Spec 0050 R8, R9: "Maliyet ve Kâr" denetimli katlanan kart; varsayılan kapalı, bu bilgisayarda hatırlanır (sidebarDar
-  // deseni). Tek okuma (başlatıcı) ve tek yazma (değiştirici); localStorage erişim hatası kutuyu kapalı bırakır.
-  const [maliyetAcik, setMaliyetAcik] = useState(() => { try { return localStorage.getItem("maliyetKutusuAcik") === "1"; } catch { return false; } });
-  const maliyetDegis = () => setMaliyetAcik(v => { const n = !v; try { localStorage.setItem("maliyetKutusuAcik", n ? "1" : "0"); } catch { /* yoksay */ } return n; });
   // Genel arama / anasayfa "Aranacaklar": bu görüşmeye odaklan → akordeonu aç + satıra kaydır + vurgula.
   const gorusmeOdakRef = useRef(null);
   useEffect(() => {
@@ -1067,12 +1061,6 @@ export const CustomerDetailModal = ({
                 );
               })}
             </div>
-            {giderYetki && makinaMaliyet && isCustomer && (
-              <KartBolum varyant="kart" baslikStili="baslik" collapsible testId="maliyet-kar-kutusu" style={{ marginBottom: 16 }}
-                acik={maliyetAcik} onAcikDegis={maliyetDegis} title="Maliyet ve Kâr" altBaslik="Makinanın maliyeti, satış bedeli ve kârı">
-                <MakinaMaliyetDetay detay={makinaKarlilik(makinaMaliyet, `musteri:${detailView.id}`, rates)} />
-              </KartBolum>
-            )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
               <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

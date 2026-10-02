@@ -74,6 +74,7 @@ biçimde anlıyor. Hiçbir listenin içeriği, sıralaması veya sayfalaması de
   açar); Makina Geçmişi'nin ikonu düşer, "n olay" alt başlık olur; Sahiplik Geçmişi beyaz kart; makinalar kenar çubuğu
   yalnız başlık alır. "KALIPLAR" ve "BU FİRMANIN MAKİNALARI" başlıkları "Kalıplar", "Bu Firmanın Makinaları" yazılır (harf
   büyüklüğü görünümdür, metin değişikliği sayılmaz).
+  > **Not (2026-10-02, spec 0067 R11, R12 a):** 0050 bu sözleşmeye müşteri detayındaki "Maliyet ve Kâr" kutusunu eklemişti; kutu 0067 ile kaldırıldı ve `tests/liste-kaynak.test.js` taramasından çıktı (kart sayısı 4 → 3).
 - **R10.** Kapsam yedi ekran ve bunların detay bölümleridir: müşteri detayındaki geçmiş ve ödeme bölümleri,
   bayi detayındaki servis ve satış bölümleri, stok alt sekmeleri, evrak listeleri, notlar, analiz kutuları.
 

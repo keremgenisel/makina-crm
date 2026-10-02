@@ -6,8 +6,8 @@ import {
 import { tl2 } from "./GiderAlanlari";
 import { Rozet } from "./DonemRaporu";
 
-// Tek makinanın maliyet ve kâr kırılımı (spec 0002 R6, AC-8). Giderler › Makina Kârlılığı satır detayı ve
-// müşteri detayındaki "Maliyet ve Kâr" kutusu AYNI bileşeni kullanır. Rakamlar makinaKarlilik'ten gelir.
+// Tek makinanın maliyet ve kâr kırılımı (spec 0002 R6, AC-8). Giderler › Makina Kârlılığı satır detayında kullanılır
+// (spec 0067 R6: müşteri detayındaki kutu kaldırıldı). Rakamlar makinaKarlilik'ten gelir.
 // Kalem adları motordan etiketli gelir: personel kalemi "Personel gideri" (spec 0020 R8); model havuzu satırı
 // personelin model dağılımını da taşır, etiketi bu yüzden işçiliği kapsar (spec 0020 R11).
 const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };

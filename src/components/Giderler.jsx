@@ -333,6 +333,13 @@ export const Giderler = ({
                   <StatKart etiket="Kesilen kira stopajı" deger={tl2(rapor.stopajToplam)} alt={`${rapor.stopajSatirlari.length} kira kalemi`} renk="#b45309" />
                   <StatKart etiket="İndirilecek KDV" deger={tl2(rapor.indirilecekKdv)} alt="Ödeme durumundan bağımsız" renk="#16a34a" />
                 </div>
+                {/* Spec 0067 R1, R2: kalem listesi özet kartlarının hemen altında, borç özeti onun altında tam genişlik; kovalar
+                    ve kırılım kartları sonra (açık kalemler kipinin sırası). KalemListesi props'u değişmedi (R16). */}
+                <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
+                  standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
+                  onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
+                <BorcOzeti ozet={borc} />
                 <KovaKarti rapor={rapor} />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
                   <TurKirilimi rapor={rapor} />
@@ -341,12 +348,7 @@ export const Giderler = ({
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TedarikciKirilimi rapor={rapor} />
                   {donemKirilimi && <YontemKirilimi kirilim={donemKirilimi} />}
-                  <BorcOzeti ozet={borc} />
                 </div>
-                <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
-                  standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
-                  onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
               </>
             )}
             {rapor.bos && <BorcOzeti ozet={borc} />}

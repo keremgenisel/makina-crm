@@ -147,11 +147,12 @@ export const TedarikciKirilimi = ({ rapor }) => {
   );
 };
 
-// Kime ne kadar borçluyuz (R19, K30, AC-72/73/86). Dönemden bağımsız; çalışanlar tek satırda, kapalı.
+// Kime ne kadar borçluyuz (R19, K30, AC-72/73/86). Dönemden bağımsız; çalışanlar tek satırda, kapalı. Spec 0067 R21: hiçbir
+// yerde satır içinde değil; flex tabanı yok, içeriği kadar ve tam genişlik çizilir.
 export const BorcOzeti = ({ ozet }) => {
   const [acik, setAcik] = useState(false);
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="Kime Ne Kadar Borçluyuz" altBaslik="Seçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemler" style={{ flex: "2 1 300px", minWidth: 0 }} testId="borc-ozeti">
+    <KartBolum varyant="kart" baslikStili="baslik" title="Kime Ne Kadar Borçluyuz" altBaslik="Seçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemler" style={{ minWidth: 0 }} testId="borc-ozeti">
       {ozet.satirlar.length === 0 && <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Ödenmemiş borç yok.</div>}
       {ozet.satirlar.map(s => (
         <div key={s.tur + (s.tedarikciId ?? "")} style={{ padding: "9px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>

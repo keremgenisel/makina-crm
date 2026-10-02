@@ -21,7 +21,8 @@ const olc = `(() => {
     alt: { top: ar.top, bottom: ar.bottom, sonCocuk: alt !== icerik, dugme: !!kaydet },
     belgeTasma: document.documentElement.scrollWidth > innerWidth + 1,
     satir: document.querySelectorAll('[aria-label^="Ödeme tutarı"]').length,
-    ekstreSatir: document.querySelectorAll('[data-testid="ekstre-satiri"]').length, ciroKalem: document.querySelectorAll('[data-testid="ciro-kalemi"]').length };
+    ekstreSatir: document.querySelectorAll('[data-testid="ekstre-satiri"]').length,
+    sayfalama: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Sonraki ›")), ciroKalem: document.querySelectorAll('[data-testid="ciro-kalemi"]').length };
 })()`;
 
 let win = null;
@@ -56,7 +57,8 @@ app.whenReady().then(async () => {
         check(`${ad}: pencere ekranın yüksekliğine sığıyor (94vh)`, s.kap.top >= -0.5 && s.kap.bottom <= s.pencere.h + 0.5 && s.kap.bottom - s.kap.top <= s.pencere.h * 0.94 + 1, JSON.stringify(s.kap));
         check(`${ad}: alt düğme satırı pencerenin altında ve ekranda (AC-3)`, s.alt.sonCocuk && s.alt.dugme && s.alt.bottom <= s.pencere.h + 0.5 && s.alt.bottom <= s.kap.bottom + 0.5, JSON.stringify(s.alt));
         if (p === "gider" && genislik === 1280) check(`${ad}: pencere tam 900 px (geniş sınıf)`, Math.abs(s.kap.width - 900) < 1, `${s.kap.width}`);
-        if (p === "ekstre") check(`${ad}: ekstre tablosu satırlarıyla çizildi`, s.ekstreSatir >= 8, `satır: ${s.ekstreSatir}`);
+        // Spec 0062 R31 ile güncellendi: ekstre pencere içi liste olarak 5 satırla sayfalanır (sekiz satırlık veri iki sayfa).
+        if (p === "ekstre") check(`${ad}: ekstre tablosu satırlarıyla ve sayfalama çubuğuyla çizildi`, s.ekstreSatir === 5 && s.sayfalama, `satır: ${s.ekstreSatir}, çubuk: ${s.sayfalama}`);
         if (p === "ciro") check(`${ad}: dağıtım ızgarası kalemleriyle çizildi`, s.ciroKalem === 4, `kalem: ${s.ciroKalem}`);
         if (p === "odeme") {
           check(`${ad}: on ödeme satırı çizildi`, s.satir === 10, `satır: ${s.satir}`);
