@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `ced9635`, dal `feat/0061-acik-kalemler`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler (Dönem Raporu'nun ödeme süzgeci, kalem listesi), Aylık Gider ve Kasa Raporu |
@@ -328,29 +328,29 @@ okunuyor; hangi borcun ne zamandan kaldığı ve nerede biriktiği hem ekranda h
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kapsam kuralı `borcKapsamindaMi` yardımcısına çıkarıldı; `borcOzeti` de onu çağırıyor ve ikinci
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kapsam kuralı `borcKapsamindaMi` yardımcısına çıkarıldı; `borcOzeti` de onu çağırıyor ve ikinci
       kapsam tanımı yok (R17, AC-27, kaynak taraması).
-- [ ] Kova tanımı tek yardımcıda; Aylık Faaliyet Raporu da onu çağırıyor ve çıktısı değişmedi
+- [x] Kova tanımı tek yardımcıda; Aylık Faaliyet Raporu da onu çağırıyor ve çıktısı değişmedi
       (R8, AC-28, AC-34).
-- [ ] Yaş `gunFarki` ile hesaplanıyor; motor `new Date()` / `Date.now()` okumuyor (R6, AC-29).
-- [ ] Personel varsayılan kapalı; adlar yalnız anahtar açılınca görünüyor ve raporda hiç geçmiyor
+- [x] Yaş `gunFarki` ile hesaplanıyor; motor `new Date()` / `Date.now()` okumuyor (R6, AC-29).
+- [x] Personel varsayılan kapalı; adlar yalnız anahtar açılınca görünüyor ve raporda hiç geçmiyor
       (C7, AC-7, AC-37).
-- [ ] Toplamın borç özetiyle eşitliği çapraz testle sabitlendi (AC-17, süzme kapalıyken).
-- [ ] Hatırlatıcının ve `odemeFiltre`'nin değişmediği testle gösterildi (AC-18, AC-24).
-- [ ] Gün dönümü testi var ve saat dilimi sabitlendi (`TZ = "Europe/Istanbul"`, 0003'ün dersi; R25).
-- [ ] Çıktı temelli gizlilik testi yaşlandırma tablosunu kapsıyor (AC-22, AC-37).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0061-*.jpg` + `0061-piksel-raporu.json`, yeni taban): yeni
+- [x] Toplamın borç özetiyle eşitliği çapraz testle sabitlendi (AC-17, süzme kapalıyken).
+- [x] Hatırlatıcının ve `odemeFiltre`'nin değişmediği testle gösterildi (AC-18, AC-24).
+- [x] Gün dönümü testi var ve saat dilimi sabitlendi (`TZ = "Europe/Istanbul"`, 0003'ün dersi; R25).
+- [x] Çıktı temelli gizlilik testi yaşlandırma tablosunu kapsıyor (AC-22, AC-37).
+- [x] Görsel kanıt eklendi (`docs/evidence/0061-*.jpg` + `0061-piksel-raporu.json`, yeni taban): yeni
       `giderler-acik-kalemler` ve `giderler-acik-kalemler-kova` ekranları ile `gider-kasa-raporu-belge`
       ekranından raporun yaşlandırma bölümü (R24, AC-38).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: açık kalemler kipi (ayrı durum, yeni tablo, hangi kartların kaldığı), yaşın
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: açık kalemler kipi (ayrı durum, yeni tablo, hangi kartların kaldığı), yaşın
       gider tarihinden `gunFarki` ile sayıldığı, kova tanımının iki raporda paylaşıldığı ve iki belgenin yaş
       referansının bilinçli olarak farklı olduğu, personelin varsayılan kapalı kaldığı, hatırlatıcı ile bu
       listenin hangi soruya baktığı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -358,10 +358,10 @@ okunuyor; hangi borcun ne zamandan kaldığı ve nerede biriktiği hem ekranda h
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | R2 plan onayı (Q1–Q10; R27–R35, AC-39…AC-42). Uygulamada TY'ye bir yerleşim kararı soruldu (sekme çubuğu bölünmez, sağ grup alt satıra iner); spec metnini değiştirmedi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 3 bulgu (çapraz sayılar süzgece uymuyordu, motorda tekrarlı hedef hesabı, süzgeçte önbelleksiz özet). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçekti; biri kullanıcıyı yanıltan sayı, ikisi performans. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Faaliyet raporunun yaşlandırması ve hatırlatıcı birebir aynı; Giderler başlık yerleşimi bilinçli değişti (TY onaylı). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Yeni sekme açmıyoruz, düğme ekliyoruz" kararı yerleşim yükünü ortadan kaldırmıyor; zaten dolu bir başlık satırına eklenen her öğe komşusunu sıkıştırır. Sekme/süzgeç çubuğuna komşu bir şey eklenecekse spec'te başlık satırının o genişlikte nasıl kırılacağı yazılmalı. İkincisi: bir "kapsam tek yerde" kuralı yazılırken mevcut bütün kopyalar taranmalı; hatırlatıcıdaki ikinci kopya ancak kaynak taraması yazılınca görüldü.

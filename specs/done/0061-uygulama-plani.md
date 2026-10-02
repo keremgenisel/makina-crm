@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0061-acik-kalemler-ve-yaslandirma.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0061-acik-kalemler-ve-yaslandirma.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0061-acik-kalemler` (`feat/0060-hedef-adlari` kapanışından sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-02: bütün öneriler (Q1–Q10) kabul; 0060 önce kapatıldı (8ae43df, 8268e54) |
 
