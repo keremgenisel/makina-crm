@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0068-veri-izlenebilirligi-ve-geri-alinabilirlik-denetimi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0068-veri-izlenebilirligi-ve-geri-alinabilirlik-denetimi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0068-cop-kutusu` (`feat/0067-kutu-duzeni` kapanışından sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-02: bütün öneriler (Q1–Q9) kabul |
 

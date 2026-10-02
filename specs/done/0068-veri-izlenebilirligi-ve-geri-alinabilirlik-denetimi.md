@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `78f40c9`, dal `feat/0068-cop-kutusu`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar > Sunucu > İşlem Geçmişi, Veri Yönetimi (dışa aktarma, içe aktarma, Çöp Kutusu), tedarikçi ve üretim partisi silme |
@@ -338,34 +338,34 @@ geri alınabilir silmeler çöp kutusunda ve kalıcı silmeler onay penceresinde
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Etiket kapsamı testi **tek yönlü** eklendi ve eksik etikette kırıldığı gösterildi; beklenti kümeye
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Etiket kapsamı testi **tek yönlü** eklendi ve eksik etikette kırıldığı gösterildi; beklenti kümeye
       bağlı (AC-2, AC-3, AC-4, AC-34).
-- [ ] Çek çıktısı hem çıktı temelli gizlilik testine hem kaynak taramasına dahil; `SettingsExport.jsx`'te
+- [x] Çek çıktısı hem çıktı temelli gizlilik testine hem kaynak taramasına dahil; `SettingsExport.jsx`'te
       `tedarikciler` dizesi yok (AC-7, AC-31).
-- [ ] İki `deletedAt` sütunu **dört yere** eklendi; `db-roundtrip` ve `db-clean-install` kapsıyor ve
+- [x] İki `deletedAt` sütunu **dört yere** eklendi; `db-roundtrip` ve `db-clean-install` kapsıyor ve
       kapanıp açıldığında çöptekiler çöpte kalıyor (R9b, AC-20, AC-21).
-- [ ] `serverAuth.cjs` değişmedi; gider + ayarlar sekmeli kullanıcının geri alması ve yalnız ayarlar
+- [x] `serverAuth.cjs` değişmedi; gider + ayarlar sekmeli kullanıcının geri alması ve yalnız ayarlar
       sekmelinin reddi `server-authz` ve `server-security` ile gösterildi (R15, AC-22).
-- [ ] Soft-delete'in izin denetimi üzerindeki etkisi kabul edilen sınır olarak yazıldı; `ALAN_IZINLERI`
+- [x] Soft-delete'in izin denetimi üzerindeki etkisi kabul edilen sınır olarak yazıldı; `ALAN_IZINLERI`
       dokunulmadı (R16, AC-25, AC-36).
-- [ ] App canlı/ham dizi ayrımı yapıldı ve hiçbir yer canlı listeyi geri yazmıyor (C8, AC-27, AC-28).
-- [ ] Çöp Kutusu'nun beş dokunma noktası tamamlandı (iki satır, restore/purge, `emptyTrash`,
+- [x] App canlı/ham dizi ayrımı yapıldı ve hiçbir yer canlı listeyi geri yazmıyor (C8, AC-27, AC-28).
+- [x] Çöp Kutusu'nun beş dokunma noktası tamamlandı (iki satır, restore/purge, `emptyTrash`,
       `purgeOldTrash`, `raw*` prop'ları) (R11, AC-33).
-- [ ] Rakamların değişmediği çapraz testle gösterildi: kayıt **çöpte** dururken çıktı, kayıt hiç yokmuş
+- [x] Rakamların değişmediği çapraz testle gösterildi: kayıt **çöpte** dururken çıktı, kayıt hiç yokmuş
       gibi üretilen çıktıyla aynı (AC-19, AC-29, AC-30).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0068-*.jpg` + `0068-piksel-raporu.json`, yeni taban): İşlem
+- [x] Görsel kanıt eklendi (`docs/evidence/0068-*.jpg` + `0068-piksel-raporu.json`, yeni taban): İşlem
       Geçmişi'nde etiketli parti satırı, Dışa Aktar'da çek seçeneği, İçe Aktar'da kapsam yazısı, Çöp
       Kutusu'nda tedarikçi ve parti satırı ile kalıcı silme bilgi satırı; etkilenen kayıtlar
       `beklenen: "degisti"` + onay aldı ve `done`'a taşınırken `ayni`ye çevrilecek (R19, AC-35).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: 0001 bölümündeki "`tedarikciler`" ve 0022 bölümündeki
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: 0001 bölümündeki "`tedarikciler`" ve 0022 bölümündeki
       "`uretimPartileri` … (tablo `uretim_partileri`, **kalıcı silme**)" ifadeleri soft-delete'e göre
       düzeltildi, Çöp Kutusu kapsam listesine iki tür eklendi, kalıcı silinen bölümlerin listesi, sekme
       eşlemesinin bilinçli olarak değişmediği ve etiket kapsamı testinin varlığı yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -373,10 +373,10 @@ geri alınabilir silmeler çöp kutusunda ve kalıcı silmeler onay penceresinde
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | R2 plan onayı (Q1–Q9; R15, R8, R6 yerinde düzeltildi, R20–R26). R3 uygulamada: R16 (sunucu çöpe atmayı silme sayıyor) ve R27 (çalışan alacaklı). Triyajda R27 TY kararıyla genişledi (çalışana giden çek tamamen çıkar). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: çalışana giden çekin tutar ve tarihi çıktıdaydı (gizlilik); plan tablosunda olmayan test dosyası; kanıt bulgusu triyajdan önce tamamlanmıştı. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 1 | Gizlilik açığı ve belge hatası gerçek; görsel kanıt bulgusu triyajın eski bir anı görmesinden (rapor ve kayıtlar diskteydi). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam çekimde değişen ekranlar bilinçli ve onaylı; Electron dahil bütün testler yeşil. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Denetim spec'inin kendisi de denetlenmeli: R15 (403), R16 (soft-delete izni atlar), tedarikçi gerekçesi ve "Tüm Kayıtlar"ın yeri dört ayrı yanlış tespitti ve hepsi koda bakılınca ya da sunucu bir testle ölçülünce ortaya çıktı; R15 uygulansaydı bir güvenlik kararı sessizce geri alınacaktı. İkincisi: gizlilik sınırı "ad" ile değil "kişi bazlı ödeme" ile tanımlıdır; adı gizlemek tutar ve tarih ortada kaldıkça yetmez, gizlilik testleri ayırt edici tutar ve tarihleri de aramalı.
