@@ -13,7 +13,8 @@ import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { CekEklePenceresi } from "./CekEklePenceresi";
 import { hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
-import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon, LockConflict } from "../ui";
+import { Btn, Field, Input, Select, Modal, ConfirmDialog, Icon, LockConflict, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { KartBolum, BosDurum, UyariSeridi, Segment, HataMetni, Ipucu } from "../tasarim";
 import { tl2 } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
@@ -243,6 +244,10 @@ export const CekPortfoyu = ({
   // ── Spec 0049 B: verilen çekler ──
   const esik = hatirlatmaEsigi(giderAyarlari);
   const verilen = useMemo(() => verilenCekSatirlari(cekler, { durumlar: VERILEN_DURUMLAR[vSuzgec], bugun, esikGun: esik }), [cekler, vSuzgec, bugun, esik]);
+  // Spec 0062 R3, R13, R24, R28: iki liste iki ayrı sayfa durumu; sekme ve süzgeç değişince 1. sayfa. Toplamlar bütün
+  // listeden (R16).
+  const { page: aPage, setPage: setAPage, paged: aPaged, perPage: aPer } = usePagination(satirlar, 10, `${yon}|${suzgec}|${tur}`);
+  const { page: vPage, setPage: setVPage, paged: vPaged, perPage: vPer } = usePagination(verilen.satirlar, 10, `${yon}|${vSuzgec}`);
   const bekleyen = useMemo(() => verilenCekSatirlari(cekler, { bugun, esikGun: esik }), [cekler, bugun, esik]);
   const hesapAdi = (id) => hesaplar.find(h => String(h.id) === String(id))?.ad || "Silinmiş hesap";
   const yazKaydet = (plan) => {
@@ -275,7 +280,7 @@ export const CekPortfoyu = ({
             <div style={{ ...vIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
               <span>Vade</span><span>Çek</span><span>Kime</span><span style={{ textAlign: "right" }}>Tutar</span><span>Durum</span><span />
             </div>
-            {verilen.satirlar.map(s => (
+            {vPaged.map(s => (
               <div key={s.cek.id} data-testid="verilen-cek-satiri" style={{ ...vIzgara, padding: "9px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)",
                 background: s.gecti ? "var(--redBg, #fef2f2)" : s.yaklasan ? "var(--ambBg, #fffbeb)" : "transparent" }}>
                 <span>{s.vade ? fmtTR(s.vade) : "—"}{s.gecti && <div><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}{s.yaklasan && <div><Rozet renk="turuncu">Yaklaşıyor</Rozet></div>}</span>
@@ -292,6 +297,7 @@ export const CekPortfoyu = ({
           </div>
         </KartBolum>
       )}
+      <Pagination total={verilen.satirlar.length} page={vPage} setPage={setVPage} perPage={vPer} />
       {yaz && <CiroPenceresi kip="kendi" hesaplar={hesaplar} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
         onKaydet={yazKaydet} onClose={() => setYaz(false)} />}
       {kilitEkrani}
@@ -323,7 +329,7 @@ export const CekPortfoyu = ({
             <div style={{ ...izgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
               <span>Vade</span><span>Çek</span><span>Kimden</span><span>Tür</span><span style={{ textAlign: "right" }}>Tutar</span><span>Durum</span><span />
             </div>
-            {satirlar.map(s => {
+            {aPaged.map(s => {
               const tlDisi = s.currency !== "TRY";
               return (
                 <div key={s.cek.id} data-testid="cek-satiri" style={{ ...izgara, padding: "9px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)",
@@ -348,6 +354,7 @@ export const CekPortfoyu = ({
           </div>
         </KartBolum>
       )}
+      <Pagination total={satirlar.length} page={aPage} setPage={setAPage} perPage={aPer} />
       {kilitEkrani}
       {ciroSatiri && !cekKilitli && <CiroPenceresi satir={ciroSatiri} giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
         onKaydet={ciroKaydet} onClose={() => setCiroSatiri(null)} />}

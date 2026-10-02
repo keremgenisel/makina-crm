@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { fmtTR, fmtCur } from "../../lib/utils";
 import { karlilikOzeti, makinaKarlilik, marjBicim, carpanBicim } from "../../lib/makinaMaliyeti";
-import { Modal } from "../ui";
+import { Modal, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
 import { StatKart, Rozet } from "./DonemRaporu";
@@ -22,6 +23,8 @@ const td = { padding: "8px 6px", fontSize: 13, textAlign: "right", fontVariantNu
 export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, modeller = [] }) => {
   const oz = useMemo(() => karlilikOzeti(sonuc, { baslangic, bitis, rates }), [sonuc, baslangic, bitis, rates]);
   const [detayAnahtar, setDetayAnahtar] = useState(null);
+  // Spec 0062 R5, R13: satırlar sayfalanır, dönem değişince 1. sayfa; "Dönem toplamı" bütün satırlardan (oz.toplam, R16).
+  const { page, setPage, paged, perPage } = usePagination(oz.satirlar, 10, `${baslangic}|${bitis}`);
   const standart = oz.kaynak === "standart";
 
   return (
@@ -45,7 +48,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
                   <th style={{ ...th, textAlign: "left" }}>Makina</th><th style={th}>Satış</th><th style={th}>Satış bedeli</th><th style={th}>Toplam maliyet</th><th style={th}>Kâr</th><th style={th}>Marj</th><th style={th}>Çarpan</th>
                 </tr></thead>
                 <tbody>
-                  {oz.satirlar.map(d => (
+                  {paged.map(d => (
                     <tr key={d.anahtar} onClick={() => setDetayAnahtar(d.anahtar)} style={{ cursor: "pointer", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                       <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}>
                         <b>{d.makina.ad || "—"}</b>
@@ -70,6 +73,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
                 </tbody>
               </table>
             </div>
+            <Pagination total={oz.satirlar.length} page={page} setPage={setPage} perPage={perPage} />
           </KartBolum>
         </>
       )}

@@ -141,13 +141,13 @@ const H0060 = [
   { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
 ];
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
   const [partiler, setPartiler] = useState(p0);
   const [tanimlar, setTanimlar] = useState(t0);
-  const [ted, setTed] = useState(TED);
+  const [ted, setTed] = useState(tedler);
   const [standart, setStandart] = useState(STANDART);
   const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: musteriler, stock: stok, partStockLog: [], giderler, giderTurleri: turler, standartGiderler: standart,
     standardModels: MODELLER, customModels: [], giderAyarlari: ayar.giderAyarlari, uretimPartileri: partiler }, { bugun: "2026-09-23" });
@@ -451,6 +451,30 @@ function FormEkrani({ Bilesen, ilk, ...props }) {
 // Spec 0050: Electron'un varsayılan oturumu localStorage'ı çekimler arasında tutar; maliyet kutusunun tercihi her sayfa
 // açılışında sıfırlanır ki "kapalı" ekranı belirleyici olsun.
 try { localStorage.removeItem("maliyetKutusuAcik"); } catch { /* yoksay */ }
+// Spec 0062: sayfalanan listeler, sayfa boyutunun üstünde satırla (her biri için "Sonraki ›" ile sayfa 2 ekranı).
+const gun62 = (n) => `2026-09-${String(n).padStart(2, "0")}`;
+const KASA62 = { kasaHesaplari: [KASA_HESAPLAR[0]], hesapHareketleri: [], giderler: [],
+  payments: Array.from({ length: 14 }, (_, i) => ({ id: 6201 + i, customerId: i % 2 ? 500 : 501, tarih: gun62(i + 1), tutar: 1000 * (i + 1), currency: "TRY", yontem: "Havale", hesapId: 401 })) };
+const H62 = Array.from({ length: 12 }, (_, i) => odm(6301 + i, 1, 100, gun62(i + 1), { hesapId: null, yontem: "Nakit" }));
+const SV62 = Array.from({ length: 12 }, (_, i) => thSv(6401 + i, i % 2 ? 500 : 501, gun62(i + 1), 1000 + 100 * i, { hesapId: null }));
+const K62 = SV62.map((x, i) => ({ id: 6501 + i, tur: "tahsilat", kaynak: "servis", kayitId: x.id, zaman: "2026-09-22T10:00:00.000Z" }));
+const kasaHesapsiz62 = (o = {}) => <KasaKapsamEkrani services={SV62} partSales={[]} yedekParcaSatislar={[]} hesapHareketleri={H62}
+  giderler={odemeleriUygula(TAKSIT_GIDERLER, H62, TUR_MAP)} {...o} />;
+const CEK62 = [...CEKLER,
+  ...Array.from({ length: 12 }, (_, i) => ({ ...BAGSIZ_CEK, id: 6601 + i, no: `B-${6601 + i}`, vadeTarihi: `2026-11-${String(i + 1).padStart(2, "0")}`, tutar: 5000 + 500 * i })),
+  ...Array.from({ length: 12 }, (_, i) => ({ ...VERILEN_CEKLER[0], id: 6701 + i, no: `A-${6701 + i}`, vadeTarihi: `2026-10-${String(i + 1).padStart(2, "0")}`, tutar: 3000 + 250 * i }))];
+const MUS62 = Array.from({ length: 12 }, (_, i) => ({ id: 6801 + i, name: `Firma ${String(i + 1).padStart(2, "0")}`, model: i % 2 ? "AK100" : "AK120_DSC", serialNo: `S62-${i + 1}`,
+  currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 200000 + 5000 * i, fabrikaSatisBedeli: 190000 + 5000 * i, installDate: gun62(i + 2), uretimTarihi: "2026-08-15", kalanBorc: 0 }));
+const G62 = [...GIDERLER,
+  ...MUS62.map((m, i) => k(6901 + i, { turId: 5, tutar: 3000 + 100 * i, tedarikciId: 11, aciklama: `Özel parça ${i + 1}`, tarih: gun62(i + 1), sonOdemeTarihi: gun62(i + 5),
+    atamaTur: "makina", makinaTur: "musteri", makinaId: m.id })),
+  ...Array.from({ length: 6 }, (_, i) => k(6951 + i, { turId: 4, tutar: 900 + 10 * i, tedarikciId: 12, aciklama: `Sarf ${i + 1}`, tarih: gun62(14 + i), sonOdemeTarihi: gun62(24 + i) }))];
+const TED62 = [...TED, ...Array.from({ length: 11 }, (_, i) => ({ id: 6001 + i, ad: `Tedarikçi ${String(i + 1).padStart(2, "0")}`, yetkili: "Satış", telefon: "0332 000 00 00" }))];
+const gider62 = (o = {}) => <GiderEkrani g0={G62} musteriler={[...MUSTERILER, ...MUS62]} h0={[]} {...o} />;
+const hatirlatma62 = <Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+  giderYetki giderler={G62} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />;
+const sayfa2 = (adimlar) => [...adimlar, "dugme:Sonraki ›"];
+
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
@@ -675,7 +699,7 @@ const EKRANLAR = {
   // Spec 0058: hesapsız ödeme ve tahsilat listeleri, satırda ve topluca kapsam dışı; ayrı bölüm ve geri alma; toplu onay.
   "kasa-0058-listeler": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Listeyi göster", "kaydir:Kapsam dışı bırakmak"]],
   "kasa-0058-kapsam-disi": [<KasaKapsamEkrani k0={KAPSAM_K0} />, ["dugme:Göster", "kaydir:Kapsam dışı bırakılanlar"]],
-  "kasa-0058-toplu-onay": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Görünen"]],
+  "kasa-0058-toplu-onay": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:kaydı kapsam dışı bırak"]], // spec 0062 R17: etiket "Listedeki"; adım iki metinde de bulur
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],
@@ -722,6 +746,33 @@ const EKRANLAR = {
   "giderler-0060-hedef-rozetleri": [<GiderEkrani g0={G0060} h0={H0060} />, ["kaydir:Gider Kalemleri"]],
   "giderler-0060-personel-acik": [<GiderEkrani g0={G0060} h0={H0060} />, ["dugme:Çalışanları göster", "kaydir:Gider Kalemleri"]],
   // Spec 0061 R24: açık kalemler kipi (tüm dönemler) ve bir kovaya süzülmüş hâli.
+  // Spec 0062: sayfalama (R1–R10, R23).
+  "kasa-0062-hareketler": [kasaEkrani(KASA62), []],
+  "kasa-0062-hareketler-sayfa2": [kasaEkrani(KASA62), sayfa2([])],
+  "kasa-0062-hesapsiz-odemeler": [kasaHesapsiz62(), ["dugme:Ödemeleri göster"]],
+  "kasa-0062-hesapsiz-odemeler-sayfa2": [kasaHesapsiz62(), sayfa2(["dugme:Ödemeleri göster"])],
+  "kasa-0062-hesapsiz-tahsilatlar": [kasaHesapsiz62(), ["dugme:Listeyi göster"]],
+  "kasa-0062-hesapsiz-tahsilatlar-sayfa2": [kasaHesapsiz62(), sayfa2(["dugme:Listeyi göster"])],
+  "kasa-0062-kapsam-disi": [kasaHesapsiz62({ k0: K62 }), ["dugme:Göster", "kaydir:Kapsam dışı bırakılanlar"]],
+  "kasa-0062-kapsam-disi-sayfa2": [kasaHesapsiz62({ k0: K62 }), sayfa2(["dugme:Göster"])],
+  "kasa-0062-cek-alinan": [kasaCek({ cekler: CEK62 }), ["Çek Portföyü"]],
+  "kasa-0062-cek-alinan-sayfa2": [kasaCek({ cekler: CEK62 }), sayfa2(["Çek Portföyü"])],
+  "kasa-0062-cek-verilen": [kasaCek({ cekler: CEK62 }), ["Çek Portföyü", "Verilen çekler"]],
+  "kasa-0062-cek-verilen-sayfa2": [kasaCek({ cekler: CEK62 }), sayfa2(["Çek Portföyü", "Verilen çekler"])],
+  "giderler-0062-kalemler": [gider62(), ["kaydir:Gider Kalemleri"]],
+  "giderler-0062-kalemler-sayfa2": [gider62(), [...sayfa2([]), "kaydir:Gider Kalemleri"]],
+  "giderler-0062-karlilik": [gider62(), ["Makina Kârlılığı"]],
+  "giderler-0062-karlilik-sayfa2": [gider62(), sayfa2(["Makina Kârlılığı"])],
+  "giderler-0062-makina-model": [gider62(), ["Makina ve Model"]],
+  "giderler-0062-makina-model-sayfa2": [gider62(), sayfa2(["Makina ve Model"])],
+  "giderler-0062-tedarikciler": [gider62({ tedler: TED62 }), ["Tedarikçiler"]],
+  "giderler-0062-tedarikciler-sayfa2": [gider62({ tedler: TED62 }), sayfa2(["Tedarikçiler"])],
+  "giderler-0062-acik-kalemler": [gider62(), ["dugme:Açık kalemler (tüm dönemler)", "kaydir:Taraf"]],
+  "giderler-0062-acik-kalemler-sayfa2": [gider62(), [...sayfa2(["dugme:Açık kalemler (tüm dönemler)"]), "kaydir:Gider tarihi"]],
+  "giderler-0062-ekstre": [gider62(), ["Tedarikçiler", "dugme:Ekstre"]],
+  "giderler-0062-ekstre-sayfa2": [gider62(), sayfa2(["Tedarikçiler", "dugme:Ekstre"])],
+  "anasayfa-0062-hatirlatma": [hatirlatma62, ["Gider Ödemeleri"]],
+  "anasayfa-0062-hatirlatma-sayfa2": [hatirlatma62, [...sayfa2(["Gider Ödemeleri"]), "kaydir:Yaklaşan ("]], // son "Sonraki ›" yaklaşan bölümün
   "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],
   "giderler-acik-kalemler-kova": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)", "dugme:90+ gün"]],
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { uid } from "../../lib/utils";
 import { tedarikciAdHatasi, tedarikciKullanim } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { useLock } from "../../hooks/useLock";
 import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
@@ -50,6 +51,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
     showToast("Tedarikçi silindi.");
   };
   const sirali = [...tedarikciler].sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+  // Spec 0062 R7, R26 (b): arama kutusu yok; usePagination ile sayfalanır.
+  const { page, setPage, paged, perPage } = usePagination(sirali, 10);
   const alan = (ad, key, ph) => <Field label={ad}><Input value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} /></Field>;
 
   return (
@@ -60,7 +63,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
       </div>
       {sirali.length === 0 ? (
         <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: "var(--n500, #64748b)" }}>Henüz tedarikçi yok. Tedarikçi seçimi opsiyoneldir; seçilmeyen kalemler raporda “tedarikçi seçilmemiş” grubunda toplanır.</div>
-      ) : (
+      ) : (<>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 720 }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
@@ -69,7 +72,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
               <th style={{ padding: "9px 12px", textAlign: "right" }}>Açık borç<div style={{ textTransform: "none", fontWeight: 500 }}>tüm dönemler</div></th><th />
             </tr></thead>
             <tbody>
-              {sirali.map(t => {
+              {paged.map(t => {
                 const k = tedarikciKullanim(t.id, giderler, giderTanimlari);
                 const h = harcama.get(String(t.id));
                 return (
@@ -90,7 +93,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
             </tbody>
           </table>
         </div>
-      )}
+        <Pagination total={sirali.length} page={page} setPage={setPage} perPage={perPage} />
+      </>)}
 
       {kilitli && (
         <Modal title={form ? "Tedarikçiyi Düzenle" : "Tedarikçi"} onClose={kilitKapat}>

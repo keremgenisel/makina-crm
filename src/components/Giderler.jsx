@@ -91,6 +91,8 @@ export const Giderler = ({
   const baslangic = mod === "ay" ? `${ay}-01` : aralik.bas;
   const bitis = mod === "ay" ? ayinSonGunu(ay) : aralik.bit;
   const aralikGecerli = !!baslangic && !!bitis && baslangic <= bitis;
+  // Spec 0062 R13 (AC-28): dönem (Ay ↔ Tarih Aralığı dahil) değişince sayfalı listeler 1. sayfaya döner.
+  const donemAnahtari = `${mod}|${baslangic}|${bitis}`;
   const donemEtiketi = mod === "ay" ? ayAdi(ay) : `${fmtTR(aralik.bas)} – ${fmtTR(aralik.bit)}`;
 
   const rapor = useMemo(() => (aralikGecerli ? hesaplaGiderRaporu(
@@ -299,7 +301,7 @@ export const Giderler = ({
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
             onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
+            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
         </>
       )}
       {/* Spec 0061 R1, R21, R22: kip açıkken kapsam ibaresi, açık kalemler tablosu ve dönemden bağımsız borç kartı; dönem kartları gizli. */}
@@ -344,7 +346,7 @@ export const Giderler = ({
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
               </>
             )}
             {rapor.bos && <BorcOzeti ozet={borc} />}
@@ -353,7 +355,7 @@ export const Giderler = ({
       )}
       {gorunum === "makina" && rapor && (rapor.yururlukOncesi
         ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
-        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
+        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari={donemAnahtari} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}

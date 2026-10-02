@@ -8,7 +8,8 @@ import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyele
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
-import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
+import { usePagination } from "../hooks/usePagination";
 import { useLock } from "../hooks/useLock";
 import { useKilitListesi } from "../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
@@ -366,10 +367,23 @@ export const Kasa = ({
   const oIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px", gap: 10, alignItems: "center" };
   const odemeSatirlari = [...(hesapsiz.liste || [])];
   const odemeTutari = (m) => (m.tutar == null ? "Tam kapatma (aktarılan)" : para(m.tutar, "TRY"));
+  // Spec 0062 R1, R2, R19, R24, R29, R34: dört liste ayrı sayfa durumu (10). Hareketler en yeni üstte: motor sırasının tam
+  // tersi, bakiye motorun satır değeri (yeniden hesap yok, R18); hesap seçimi değişince 1. sayfa. Hesapsız listeler motorun
+  // sırasında (en yeni üstte), "Hepsini göster" değişince 1. sayfa. Toplu işlem sayfaya değil listenin tamamına (R17).
+  const hareketlerTers = useMemo(() => (seciliBakiye ? [...seciliBakiye.satirlar].reverse() : []), [seciliBakiye]);
+  const hareketSayfasi = usePagination(hareketlerTers, 10, String(seciliHesap?.id ?? ""));
+  const odemeSayfasi = usePagination(odemeSatirlari, 10, String(hepsiniGoster));
+  const tahsilatListesi = hesapsizTahsilat.liste || [];
+  const tahsilatSayfasi = usePagination(tahsilatListesi, 10, String(hepsiniGoster));
+  const kapsamDisiSatirlari = kapsamDisiO ? [
+    ...kapsamDisiO.tahsilatListe.map(k => ({ anahtar: kapsamAnahtari(k), sat: k, tarih: k.tarih, tur: k.turAdi, metin: k.firma, tutar: para(k.tutar, k.currency) })),
+    ...kapsamDisiO.odemeListe.map(m => { const a = satirAciklamasi({ hareket: m, tur: m.tur }); return { anahtar: kapsamAnahtari(m), sat: m, tarih: m.tarih, tur: a.tur, metin: a.metin, tutar: odemeTutari(m) }; }),
+  ] : [];
+  const kapsamSayfasi = usePagination(kapsamDisiSatirlari, 10);
   const topluDugme = (tur, satirlar) => (kapsamYetkisi ? (
     <Btn small variant="ghost" disabled={!satirlar.length} onClick={() => setTopluOnay({ tur, satirlar })}
-      aria-label={tur === "odeme" ? "Görünen ödemeleri kapsam dışı bırak" : "Görünen tahsilatları kapsam dışı bırak"}>
-      Görünen {satirlar.length} kaydı kapsam dışı bırak
+      aria-label={tur === "odeme" ? "Listedeki ödemeleri kapsam dışı bırak" : "Listedeki tahsilatları kapsam dışı bırak"}>
+      Listedeki {satirlar.length} kaydı kapsam dışı bırak
     </Btn>
   ) : null);
   const hIzgara = { display: "grid", gridTemplateColumns: "90px 120px minmax(0, 1.6fr) 120px 120px 130px 40px", gap: 10, alignItems: "center" };
@@ -453,7 +467,7 @@ export const Kasa = ({
             <div style={{ ...oIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
               <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span />
             </div>
-            {odemeSatirlari.map(m => {
+            {odemeSayfasi.paged.map(m => {
               const a = satirAciklamasi({ hareket: m, tur: m.tur });
               return (
                 <div key={m.id} data-testid="hesapsiz-odeme" style={{ ...oIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
@@ -465,6 +479,7 @@ export const Kasa = ({
                 </div>
               );
             })}
+            <Pagination total={odemeSatirlari.length} page={odemeSayfasi.page} setPage={odemeSayfasi.setPage} perPage={odemeSayfasi.perPage} />
           </div>
           )}
         </KartBolum>
@@ -482,7 +497,7 @@ export const Kasa = ({
             <div style={{ ...tIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
               <span>Tarih</span><span>Tür</span><span>Firma</span><span style={{ textAlign: "right" }}>Tutar</span><span>Hesap ata</span><span />
             </div>
-            {hesapsizTahsilat.liste.map(k => {
+            {tahsilatSayfasi.paged.map(k => {
               const uygun = secilebilirHesaplar(kasaHesaplari, k.currency || "TRY");
               const yazabilir = !!TAHSILAT_YAZICI[k.kaynak]?.[0];
               return (
@@ -503,6 +518,7 @@ export const Kasa = ({
                 </div>
               );
             })}
+            <Pagination total={tahsilatListesi.length} page={tahsilatSayfasi.page} setPage={tahsilatSayfasi.setPage} perPage={tahsilatSayfasi.perPage} />
           </div>
         </KartBolum>
       )}
@@ -513,9 +529,7 @@ export const Kasa = ({
             <div style={{ ...oIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
               <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span />
             </div>
-            {[...kapsamDisiO.tahsilatListe.map(k => ({ anahtar: kapsamAnahtari(k), sat: k, tarih: k.tarih, tur: k.turAdi, metin: k.firma, tutar: para(k.tutar, k.currency) })),
-              ...kapsamDisiO.odemeListe.map(m => { const a = satirAciklamasi({ hareket: m, tur: m.tur }); return { anahtar: kapsamAnahtari(m), sat: m, tarih: m.tarih, tur: a.tur, metin: a.metin, tutar: odemeTutari(m) }; })]
-              .map(x => (
+            {kapsamSayfasi.paged.map(x => (
                 <div key={x.anahtar} data-testid="kapsam-disi-kayit" style={{ ...oIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{x.tarih ? fmtTR(x.tarih) : "Tarihsiz"}</span>
                   <span>{x.tur}</span>
@@ -524,6 +538,7 @@ export const Kasa = ({
                   <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamaAl(x.sat)} aria-label={`Kapsama al: ${x.metin}`}>Kapsama al</Btn>}</span>
                 </div>
               ))}
+            <Pagination total={kapsamDisiSatirlari.length} page={kapsamSayfasi.page} setPage={kapsamSayfasi.setPage} perPage={kapsamSayfasi.perPage} />
           </div>
         </KartBolum>
       )}
@@ -576,7 +591,7 @@ export const Kasa = ({
                   <div style={{ ...hIzgara, padding: "8px 0", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
                     <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Giren</span><span style={{ textAlign: "right" }}>Çıkan</span><span style={{ textAlign: "right" }}>{seciliHesap.tur === "kart" ? "Bakiye (borç −)" : "Bakiye"}</span><span />
                   </div>
-                  {seciliBakiye.satirlar.map((s, i) => {
+                  {hareketSayfasi.paged.map((s, i) => {
                     const a = satirAciklamasi(s);
                     return (
                       <div key={`${s.tur}-${s.hareket?.id ?? s.tahsilat?.id ?? s.cek?.id}-${i}`} data-testid="hareket-satiri" style={{ ...hIzgara, padding: "8px 0", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
@@ -590,6 +605,7 @@ export const Kasa = ({
                       </div>
                     );
                   })}
+                  <Pagination total={hareketlerTers.length} page={hareketSayfasi.page} setPage={hareketSayfasi.setPage} perPage={hareketSayfasi.perPage} />
                 </div>
               )}
             </KartBolum>
@@ -618,11 +634,11 @@ export const Kasa = ({
         <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok; kalıcı olarak silinecek.`}
           confirmLabel="Hesabı Sil" onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
-      {/* Spec 0058 R4, Q5 (AC-6): toplu işlem o anda görünen listeyi etkiler; onay sayıyı ve eşiğin durumunu söyler. */}
+      {/* Spec 0058 R4, Q5 (AC-6): toplu işlem listenin tamamını etkiler (sayfayı değil, spec 0062 R17); onay sayıyı ve eşiğin durumunu söyler. */}
       {topluOnay && (
-        <ConfirmDialog title="Görünen kayıtlar kapsam dışı bırakılsın mı?" icon="check" confirmIcon="check" confirmLabel="Kapsam Dışı Bırak"
+        <ConfirmDialog title="Listedeki kayıtlar kapsam dışı bırakılsın mı?" icon="check" confirmIcon="check" confirmLabel="Kapsam Dışı Bırak"
           message={[`${topluOnay.satirlar.length} ${topluOnay.tur === "odeme" ? "ödeme" : "tahsilat"} kaydı kapsam dışı bırakılacak.`,
-            esik && !hepsiniGoster ? `Başlangıç tarihi süzgeci açık (${fmtTR(esik)}); yalnız listede görünen kayıtlar etkilenir.` : "Başlangıç tarihi süzgeci kapalı; listedeki bütün kayıtlar etkilenir.",
+            esik && !hepsiniGoster ? `Başlangıç tarihi süzgeci açık (${fmtTR(esik)}); yalnız başlangıç tarihinden sonraki kayıtlar etkilenir; listenin bütün sayfaları dahil.` : "Başlangıç tarihi süzgeci kapalı; listedeki bütün kayıtlar, bütün sayfalarıyla etkilenir.",
             KAPSAM_DISI_ACIKLAMA].join(" ")}
           onConfirm={() => { kapsamDisiBirak(topluOnay.satirlar, true); setTopluOnay(null); }} onCancel={() => setTopluOnay(null)} />
       )}

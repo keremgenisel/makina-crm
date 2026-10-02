@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:264`
+**Örnek:** `src/components/Giderler.jsx:266`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:482` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
@@ -118,7 +118,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:69` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:70` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
@@ -166,7 +166,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:325`
+**Örnek:** `src/components/Giderler.jsx:327`
 **Örnek:** `src/components/Customers.jsx:516` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -188,7 +188,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:291`
+**Örnek:** `src/components/Giderler.jsx:293`
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -288,6 +288,25 @@ ekranda kendiliğinden küçülür (`width: 100%`), içerik pencerenin içinde k
 Kuruşlu tutar alanı `TutarInput` (`src/components/gider/GiderAlanlari.jsx`) yazarken binlik noktası gösterir, imleci
 korur; biçimleme ve çözümleme yalnız `src/lib/tutarGirdisi.js`'tedir. Form durumu ham metni tutar ("80000",
 "1234,56"). Oran alanı `sym="%"` ile çizilir ve ayraç almaz. Tam sayılı `MoneyInput` (`ui.jsx`) ayrıdır (0045 X1).
+
+## Sayfalama (spec 0062)
+
+Tanım gereği büyüyen her liste paylaşılan `Pagination` (`ui.jsx`) ve `usePagination` / `useFilteredList` kancalarıyla
+sayfalanır; elle pager yazılmaz.
+
+- **Boyut:** tam sayfa listede **10**, pencere içi listede **5**; 15 yalnız Evrak ve Parça Stoğu kadar yoğun tablolarda,
+  gerekçesi yazılarak. Yeni değer uydurulmaz.
+- **Kanca:** motor çıktısı ya da kendi süzme durumu olan liste `usePagination(liste, boyut, sifirlamaAnahtari)`; arama
+  kutusunu hook'a bırakan liste `useFilteredList`. Süzgeç, seçim ya da dönem değişince sayfa 1'e dönmesi gereken listede
+  bu değerler **sıfırlama anahtarına** yazılır (efekt ve elle `setPage(1)` yazılmaz). Aç/kapa anahtarları (personel
+  grubu, "Adları göster") anahtara girmez: grup satırı herhangi bir sayfada olabilir.
+- **Satır kümesi:** grup satırı olan listede çizilen satırlar sayfalanır (grup tek satır, açılınca çocukları kümeye
+  girer); başlıktaki kayıt sayısı veri gerçeği olarak kalır.
+- **Toplamlar ve toplu işlemler sayfaya bağlanmaz:** toplam, kart ve bakiye bütün listeden okunur; toplu düğme bütün
+  listeye uygulanır ve metni "Listedeki n kayıt" der ("Görünen" denmez).
+- **Boş ve tek sayfa:** liste boşsa bugünkü boş durum, tek sayfaysa çubuğu `Pagination`'ın kendisi gizler; ekranda ek
+  koşul yazılmaz. Aynı ekrandaki iki liste iki ayrı sayfa durumu tutar.
+- **Yazdırma ve dışa aktarma sayfalamayı görmez.**
 
 ## Bilinen borç
 

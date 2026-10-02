@@ -81,12 +81,13 @@ describe("Spec 0058: satır satır kapsam dışı ve geri alma (AC-1–AC-5, AC-
 });
 
 describe("Spec 0058: toplu işlem (AC-6, AC-27)", () => {
-  it("AC-6: onay sayıyı, eşiğin açık olduğunu ve R2 cümlesini söyler; yalnız görünen küme etkilenir", () => {
+  it("AC-6: onay sayıyı, eşiğin açık olduğunu ve R2 cümlesini söyler; yalnız eşik sonrası küme etkilenir", () => {
+    // Spec 0062 R17 ile güncellendi: etiket "Görünen" değil "Listedeki" (sayfalama gelince "görünen" sayfa sanılırdı).
     let st;
     render(<H esik="2026-06-01" onState={s => { st = s; }} />);
     tahsilatlariAc();
     expect(screen.getAllByTestId("hesapsiz-tahsilat")).toHaveLength(1); // eşik sonrası yalnız 32
-    fireEvent.click(screen.getByLabelText("Görünen tahsilatları kapsam dışı bırak"));
+    fireEvent.click(screen.getByLabelText("Listedeki tahsilatları kapsam dışı bırak"));
     const onay = screen.getByText(/kaydı kapsam dışı bırakılacak/).textContent;
     expect(onay).toMatch(/^1 tahsilat kaydı kapsam dışı bırakılacak\./);
     expect(onay).toMatch(/Başlangıç tarihi süzgeci açık \(01\/06\/2026\)/);
@@ -98,11 +99,11 @@ describe("Spec 0058: toplu işlem (AC-6, AC-27)", () => {
   it("AC-6 / AC-27: eşik kapalıyken onay bunu söyler; liste boşalınca BosDurum ve pasif toplu düğme", () => {
     render(<H />);
     odemeleriAc();
-    fireEvent.click(screen.getByLabelText("Görünen ödemeleri kapsam dışı bırak"));
+    fireEvent.click(screen.getByLabelText("Listedeki ödemeleri kapsam dışı bırak"));
     expect(screen.getByText(/kaydı kapsam dışı bırakılacak/).textContent).toMatch(/^3 ödeme kaydı kapsam dışı bırakılacak\. Başlangıç tarihi süzgeci kapalı/);
     fireEvent.click(screen.getByText("Kapsam Dışı Bırak"));
     expect(screen.getByTestId("bos-hesapsiz-odeme")).toBeTruthy();
-    expect(screen.getByLabelText("Görünen ödemeleri kapsam dışı bırak").disabled).toBe(true);
+    expect(screen.getByLabelText("Listedeki ödemeleri kapsam dışı bırak").disabled).toBe(true);
     expect(sayi("kapsam-disi-satiri")).toMatch(/Kapsam dışı bırakılanlar: 3/);
   });
 });
@@ -113,7 +114,7 @@ describe("Spec 0058: izin ve etiketler (AC-12, AC-26)", () => {
     tahsilatlariAc();
     odemeleriAc();
     expect(screen.queryAllByText("Kapsam dışı bırak")).toEqual([]);
-    expect(screen.queryByLabelText("Görünen ödemeleri kapsam dışı bırak")).toBeNull();
+    expect(screen.queryByLabelText("Listedeki ödemeleri kapsam dışı bırak")).toBeNull();
     fireEvent.click(screen.getByText("Göster"));
     expect(screen.queryAllByText("Kapsama al")).toEqual([]);
     expect(screen.queryByTestId("kapsam-disi-aciklama")).toBeNull();

@@ -5,6 +5,8 @@ import { acikKalemler, acikOzet } from "../../lib/acikKalemler";
 import { YAS_SIRA } from "../../lib/yaslandirma";
 import { gunFarki, gunFarkiMetni } from "../../lib/odemeHatirlatma";
 import { KartBolum, BosDurum } from "../tasarim";
+import { Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { tl2, hedefBasligi } from "./GiderAlanlari";
 import { Rozet, AcKapa } from "./DonemRaporu";
 
@@ -26,12 +28,19 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
   const satirlar = useMemo(() => (kova ? r.satirlar.filter(s => s.kova === kova) : r.satirlar), [r, kova]);
   const ozet = useMemo(() => acikOzet(satirlar), [satirlar]);
   const yetki = !!onHedefOde && canDo("gider_odeme");
+  // Spec 0062 R10, R13, R32: çizilen satır kümesi sayfalanır (genel satırlar, personel toplu satırı, adlar açıksa çalışan
+  // satırları); kova süzmesi değişince 1. sayfa. Kartlar, taraf tablosu ve toplam bütün süzülmüş kümeden (R16).
+  const cizim = useMemo(() => {
+    const genelS = satirlar.filter(s => !s.personel), personelS = satirlar.filter(s => s.personel);
+    return [...genelS.map(s => ({ tip: "satir", s })), ...(personelS.length ? [{ tip: "toplu" }] : []),
+      ...(adlarAcik ? personelS.map(s => ({ tip: "cocuk", s })) : [])];
+  }, [satirlar, adlarAcik]);
+  const { page, setPage, paged, perPage } = usePagination(cizim, 10, kova || "");
 
   // R22 (AC-26): açık kalem yoksa tablo ve kova kartları yok, tek boş durum kutusu.
   if (!r.satirlar.length) {
     return <BosDurum testId="bos-acik-kalemler" baslik="Açık kalem yok" metin="Yürürlük ayından bugüne kadar ödenmemiş gider kalemi bulunmuyor." />;
   }
-  const genel = satirlar.filter(s => !s.personel);
   const personel = satirlar.filter(s => s.personel);
   const personelOzet = acikOzet(personel).taraflar[0] || null;
 
@@ -108,9 +117,8 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
             {["Taraf", "Kalem", "Gider tarihi", "Vade", "Yaş (gün)", "Kalan", "Durum", ""].map((h, i) => <th key={i} style={{ ...th, textAlign: i === 4 || i === 5 ? "right" : "left" }}>{h}</th>)}
           </tr></thead>
           <tbody>
-            {genel.map(s => satir(s))}
-            {personelOzet && (
-              <tr data-testid="acik-personel-toplu">
+            {paged.map(x => x.tip === "satir" ? satir(x.s) : x.tip === "cocuk" ? satir(x.s, true) : personelOzet && (
+              <tr key="personel-toplu" data-testid="acik-personel-toplu">
                 <td style={td}><b>Çalışanlar</b> · {personelOzet.kisi} kişi
                   <div><AcKapa acik={adlarAcik} onClick={() => setAdlarAcik(a => !a)}>{adlarAcik ? "Adları gizle" : "Adları göster"}</AcKapa></div></td>
                 <td style={td}><div style={{ fontWeight: 600 }}>Personel gideri</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{personelOzet.kalemAdet} kalem · {kovaMetni(personelOzet.kovalar)}</div></td>
@@ -118,8 +126,7 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
                 <td style={{ ...tdR, fontWeight: 700 }}>{tl2(tl(personelOzet.toplamK))}</td>
                 <td style={td} /><td style={td} />
               </tr>
-            )}
-            {adlarAcik && personel.map(s => satir(s, true))}
+            ))}
           </tbody>
           <tfoot><tr style={{ borderTop: "1px solid var(--n200, #e2e8f0)" }}>
             <td style={{ ...td, fontWeight: 700 }} colSpan={5} data-testid="acik-toplam-etiket">{kova ? `Seçili kovada (${kova}) toplam` : "Toplam açık borç"}</td>
@@ -127,6 +134,7 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
             <td style={{ ...td, fontSize: 11.5, color: "var(--n500, #64748b)" }} colSpan={2}>{ozet.kalemAdet} kalem</td>
           </tr></tfoot>
         </table>
+        <Pagination total={cizim.length} page={page} setPage={setPage} perPage={perPage} />
       </KartBolum>
     </div>
   );

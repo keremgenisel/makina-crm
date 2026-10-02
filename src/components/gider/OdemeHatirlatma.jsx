@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { fmtTR } from "../../lib/utils";
 import { gunFarkiMetni } from "../../lib/odemeHatirlatma";
-import { Btn, Icon, Modal } from "../ui";
+import { Btn, Icon, Modal, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { tl2, hedefAdi } from "./GiderAlanlari";
 import { DAVRANIS } from "../../lib/gider";
 
@@ -49,6 +50,12 @@ const KalemSatiri = ({ o, bolum, odendiYetkisi, onOdendi, girinti = false }) => 
 
 const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
   const [acik, setAcik] = useState({});
+  // Spec 0062 R9, R24, R31, R32: bölüm başına ayrı sayfa (5); personel grup satırı tek satır, açılınca çalışan satırları
+  // satır kümesine girer. Bölüm başlığındaki sayı bütün listeden. Aç/kapa sayfayı korur (grup satırı her sayfada olabilir, R28).
+  const cizim = satirlar.flatMap(s => (s.tur === "personel"
+    ? [{ tip: "personel", s }, ...(acik.personel ? s.kalemler.map(o => ({ tip: "cocuk", o })) : [])]
+    : [{ tip: "kalem", o: s }]));
+  const { page, setPage, paged, perPage } = usePagination(cizim, 5);
   if (!satirlar.length) return null;
   return (
     <div data-testid={`hatirlatma-bolum-${bolum}`} style={{ background: renk[bolum][0], border: `1px solid ${renk[bolum][1]}`, borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
@@ -57,22 +64,21 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
         <span>Borcun tarafı</span><span style={{ textAlign: "right" }}>Ödenecek tutar</span><span>Vade</span><span>Gün</span><span />
       </div>
       <div style={{ background: "var(--surface, #ffffff)" }}>
-        {satirlar.map(s => s.tur === "personel" ? (
-          <div key="personel">
-            <div data-testid="hatirlatma-personel" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", background: "var(--purBg3)" }}>
-              <div>
-                <b>Çalışanlar · {s.adet} kalem</b>
-                <div><button type="button" aria-expanded={!!acik.personel} onClick={() => setAcik(a => ({ ...a, personel: !a.personel }))}
-                  style={{ background: "none", border: "none", padding: 0, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  {acik.personel ? "▾ Çalışanları gizle" : "▸ Çalışanları göster"}</button></div>
-              </div>
-              <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(s.odenecek)}</b>
-              <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.kalemler[0].gunFarki)}</span><span />
+        {paged.map(x => x.tip === "personel" ? (() => { const s = x.s; return (
+          <div key="personel" data-testid="hatirlatma-personel" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", background: "var(--purBg3)" }}>
+            <div>
+              <b>Çalışanlar · {s.adet} kalem</b>
+              <div><button type="button" aria-expanded={!!acik.personel} onClick={() => setAcik(a => ({ ...a, personel: !a.personel }))}
+                style={{ background: "none", border: "none", padding: 0, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {acik.personel ? "▾ Çalışanları gizle" : "▸ Çalışanları göster"}</button></div>
             </div>
-            {acik.personel && s.kalemler.map(o => <KalemSatiri key={o.anahtar || o.id} o={o} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} girinti />)}
+            <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(s.odenecek)}</b>
+            <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.kalemler[0].gunFarki)}</span><span />
           </div>
-        ) : <KalemSatiri key={s.anahtar || s.id} o={s} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} />)}
+        ); })()
+          : <KalemSatiri key={x.o.anahtar || x.o.id} o={x.o} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} girinti={x.tip === "cocuk"} />)}
       </div>
+      <div style={{ background: "var(--surface, #ffffff)" }}><Pagination total={cizim.length} page={page} setPage={setPage} perPage={perPage} /></div>
     </div>
   );
 };

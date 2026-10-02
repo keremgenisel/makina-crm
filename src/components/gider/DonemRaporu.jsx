@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Icon, Btn } from "../ui";
+import { Icon, Btn, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
@@ -230,7 +231,7 @@ const YontemOzeti = ({ y, vade }) => {
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
 export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
-  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null }) => {
+  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, donemAnahtari = "" }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
   const [yerelFiltre, setYerelFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
   const filtre = odemeFiltre === undefined ? yerelFiltre : { ...yerelFiltre, odeme: odemeFiltre };
@@ -259,6 +260,11 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const diger = suz.filter(k => dav(k) !== DAVRANIS.PERSONEL);
   const toplam = suz.reduce((a, k) => a + kalemTutari(k, dav(k)), 0);
   const kdvTop = suz.reduce((a, k) => a + kalemKdv(k, dav(k)), 0);
+  // Spec 0062 R4, R13, R20, R26 (a), R32: çizilen satırlar (personel grup satırı, açıksa çalışan satırları, diğer kalemler)
+  // sayfalanır; dönem ve süzgeçler değişince 1. sayfa, personel aç/kapa sayfayı korur. Başlıktaki kalem sayısı ve alt toplam
+  // bütün süzülmüş kalemlerden (R16).
+  const cizim = [...(personel.length ? [{ tip: "grup" }] : []), ...(personelAcik ? personel : []).map(k => ({ tip: "kalem", k })), ...diger.map(k => ({ tip: "kalem", k }))];
+  const { page, setPage, paged, perPage } = usePagination(cizim, 10, `${donemAnahtari}|${filtre.tur}|${filtre.ted}|${filtre.odeme}|${filtre.ara}`);
 
   const atamaHucre = (k) => {
     if (!atanabilirMi(dav(k)) || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
@@ -392,8 +398,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
             {["Tarih", "Tür", "Açıklama · Tedarikçi", "Atama", "KDV hariç", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{h}</th>)}
           </tr></thead>
           <tbody>
-            {personel.length > 0 && (
-              <tr style={{ background: "var(--purBg3)" }}>
+            {paged.map(x => (x.tip === "kalem" ? satir(x.k) : (
+              <tr key="personel-grup" style={{ background: "var(--purBg3)" }}>
                 <td style={{ ...td, color: "var(--n600, #475569)" }}>{personel.length === 1 ? fmtTR(personel[0].tarih) : ""}</td>
                 <td style={td}><DavranisRozeti davranis="personel" /></td>
                 <td style={td} colSpan={2}>
@@ -406,9 +412,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
                 <td style={td}>{personel.some(k => !k.odendi) ? <Rozet renk="kirmizi">{personel.filter(k => !k.odendi).length} ödenmemiş</Rozet> : <Rozet renk="yesil">Tümü ödendi</Rozet>}</td>
                 <td style={td} />
               </tr>
-            )}
-            {personelAcik && personel.map(satir)}
-            {diger.map(satir)}
+            )))}
             {suz.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: "center", color: "var(--n500, #64748b)", padding: 20 }}>Filtreye uyan kalem yok.</td></tr>}
           </tbody>
           <tfoot><tr style={{ background: "var(--n100, #f8fafc)" }}>
@@ -418,6 +422,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </tr></tfoot>
         </table>
       </div>
+      <Pagination total={cizim.length} page={page} setPage={setPage} perPage={perPage} />
     </KartBolum>
   );
 };

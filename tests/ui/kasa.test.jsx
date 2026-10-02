@@ -48,9 +48,10 @@ describe("Kasa: hesaplar (R1, C5)", () => {
     render(<Harness h0={[hesap(1, "Ziraat", { acilisBakiyesi: 10000 })]} m0={m0} p0={p0} />);
     expect(satirOf("Ziraat").textContent).toMatch(/13\.800/);
     const satirlar = within(screen.getByTestId("hesap-hareketleri")).getAllByTestId("hareket-satiri");
+    // Spec 0062 R19 ile güncellendi: liste en yeni üstte; yürüyen bakiye motorun satır değeri (tarih sırasıyla hesaplanır).
     expect(satirlar.map(s => s.textContent)).toEqual([
-      expect.stringMatching(/05\/09\/2026Tahsilat.*Örnek Gıda.*15\.000/),
       expect.stringMatching(/10\/09\/2026Gider ödemesi.*Bölge Elektrik.*Eylül faturası.*13\.800/),
+      expect.stringMatching(/05\/09\/2026Tahsilat.*Örnek Gıda.*15\.000/),
     ]);
   });
   it("AC-24: hareketi olan hesap silinemez, kapatılabilir; kapalı hesap listede kalır; hareketsiz hesap silinir", () => {

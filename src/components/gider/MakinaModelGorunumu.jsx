@@ -2,6 +2,8 @@ import { fmtTR } from "../../lib/utils";
 import { kalemTutari, kalemGorunenAd } from "../../lib/gider";
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
+import { Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { StatKart, Rozet } from "./DonemRaporu";
 
 // Giderler › Makina ve Model (spec 0001 R7, R8, R20, R21; plan K3, K26, K33–K35). Salt görünümdür:
@@ -10,7 +12,9 @@ import { StatKart, Rozet } from "./DonemRaporu";
 // (spec 0020 R8, AC-9, AC-15).
 const satirStil = { display: "grid", gridTemplateColumns: "100px minmax(0, 1fr) 120px", gap: 12, padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13, alignItems: "center" };
 
-export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [] }) => {
+export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [], donemAnahtari }) => {
+  // Spec 0062 R6, R13: makina listesi sayfalanır, dönem değişince 1. sayfa; kova kartları bütün rapordan (R16).
+  const { page, setPage, paged, perPage } = usePagination(rapor.makinaBazli, 10, donemAnahtari);
   const k = rapor.kovalar;
   const dav = (x) => turMap.get(String(x.turId))?.davranis;
   const tutar = (x) => kalemTutari(x, dav(x));
@@ -27,7 +31,7 @@ export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [] }) =>
 
       <KartBolum varyant="kart" baslikStili="baslik" title="Makinaya atanmış giderler" altBaslik="Stoktaki makinaya yapılan atama, makina stoktan seçilerek satılınca o satışa takip edilir." baslikBosluk={10} baslikRengi="inherit">
         {rapor.makinaBazli.length === 0 && <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bu dönemde makinaya atanmış gider yok.</div>}
-        {rapor.makinaBazli.map(m => (
+        {paged.map(m => (
           <div key={m.anahtar} style={{ borderTop: "1px solid var(--n150, #f1f5f9)", padding: "10px 0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div>
@@ -42,6 +46,7 @@ export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [] }) =>
             {m.kalemler.map(x => <div key={x.id} style={satirStil}><span style={{ color: "var(--n600, #475569)" }}>{fmtTR(x.tarih)}</span><span>{ad(x) || "—"}</span><b style={{ textAlign: "right" }}>{tl2(tutar(x))}</b></div>)}
           </div>
         ))}
+        <Pagination total={rapor.makinaBazli.length} page={page} setPage={setPage} perPage={perPage} />
       </KartBolum>
 
       <KartBolum varyant="kart" baslikStili="baslik" title="Modele atanmış giderler" altBaslik="Aynı modele birden fazla kalem atanırsa adetler toplanmaz; makina başına tutar satır bazında gösterilir." baslikBosluk={10} baslikRengi="inherit">

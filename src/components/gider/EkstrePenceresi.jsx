@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { fmtTR } from "../../lib/utils";
 import { tl, DAVRANIS } from "../../lib/gider";
-import { Btn, Modal, Input, Field, Icon } from "../ui";
+import { Btn, Modal, Input, Field, Icon, Pagination } from "../ui";
+import { usePagination } from "../../hooks/usePagination";
 import { BosDurum, Ipucu } from "../tasarim";
 import { tl2, hedefEtiketi } from "./GiderAlanlari";
 import { Rozet } from "./DonemRaporu";
@@ -15,6 +16,9 @@ const para = (k) => tl2(tl(k));
 export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapAdi = () => "", onAvansSil = null, onClose }) => {
   const [aralik, setAralik] = useState({ bas: "", bit: "" });
   const e = hesapla(aralik);
+  // Spec 0062 R8, R30, R31: pencere içi 5 satır; sıra eskiden yeniye kalır, tarih aralığı değişince 1. sayfa. Son bakiye
+  // ve devir motorun bütün sonucundan (R16); devir satırı yalnız 1. sayfada.
+  const { page, setPage, paged, perPage } = usePagination(e.satirlar, 5, `${aralik.bas}|${aralik.bit}`);
   const calisan = tur === "calisan";
   const aciklama = (s) => {
     const k = s.kalem;
@@ -60,13 +64,13 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
               <div style={{ ...izgara, fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", padding: "0 0 6px", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
                 <span>Tarih</span><span>İşlem</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span style={{ textAlign: "right" }}>{calisan ? "Net bakiye" : "Bakiye"}</span><span />
               </div>
-              {e.devirK != null && (
+              {e.devirK != null && page === 1 && (
                 <div data-testid="ekstre-devir" style={{ ...izgara, fontSize: 13, padding: "7px 0", borderTop: "1px solid var(--n150, #f1f5f9)", color: "var(--n600, #475569)" }}>
                   <span>{fmtTR(aralik.bas)}</span><span>Devreden bakiye</span><span /><span /><b style={{ textAlign: "right" }}>{para(e.devirK)}</b><span />
                 </div>
               )}
-              {e.satirlar.map((s, i) => (
-                <div key={i} data-testid="ekstre-satiri" style={{ ...izgara, fontSize: 13, padding: "7px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+              {paged.map((s, i) => (
+                <div key={(page - 1) * perPage + i} data-testid="ekstre-satiri" style={{ ...izgara, fontSize: 13, padding: "7px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{fmtTR(s.tarih)}</span>
                   <span>{ISLEM_AD[s.tur] || s.tur}{s.goc && <div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Eski kayıttan aktarıldı</div>}</span>
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={aciklama(s)}>{aciklama(s)}</span>
@@ -76,6 +80,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
                 </div>
               ))}
             </div>
+            <Pagination total={e.satirlar.length} page={page} setPage={setPage} perPage={perPage} />
           </div>
         )}
         <Ipucu>{calisan
