@@ -13,7 +13,7 @@ import { useLock } from "../hooks/useLock";
 import { useKilitListesi } from "../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
-import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi, taksitAdi } from "./gider/GiderAlanlari";
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
@@ -220,7 +220,9 @@ export const Kasa = ({
     const k = giderById.get(String(m.giderId));
     const taraf = k ? (k.calisanAd || tedById.get(String(k.tedarikciId))?.ad || turById.get(String(k.turId))?.ad || "Gider") : "Silinmiş gider";
     // Spec 0051 R8, R9: ödemenin kapattığı hedef (kira stopajında vergi dairesi, personelde resmi/elden); çözülemezse yok (R11).
-    const hedef = k ? hedefEtiketi(k, davranisOf(k, turMap), hedefPaylari.get(String(m.id))) : null;
+    // Spec 0060 R4, R35 (AC-7, AC-29): taksite bağlı ödemede ödeme penceresiyle aynı taksit adı ("… 2/6. taksit") önce gelir.
+    const kDav = k ? davranisOf(k, turMap) : null;
+    const hedef = k ? (taksitAdi(k, m.taksitId, kDav) || hedefEtiketi(k, kDav, hedefPaylari.get(String(m.id)))) : null;
     return { tur: "Gider ödemesi", metin: [taraf, hedef, k?.aciklama, m.aciklama].filter(Boolean).join(" · ") };
   };
 

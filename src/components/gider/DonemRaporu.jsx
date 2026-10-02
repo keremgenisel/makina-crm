@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus } from "../../lib/gider";
+import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
-import { tl2, DavranisRozeti, hedefAdi } from "./GiderAlanlari";
+import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
 import { PERSONEL_ODEMELERI, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
 
@@ -273,29 +273,42 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     if (!cz) return <div><span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span><div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Atandığı makina silinmiş veya takip edilemiyor</div></div>;
     return <div><div style={{ fontWeight: 600 }}>{[cz.model, cz.seri].filter(Boolean).join(" · ")}</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{cz.tur === "stok" ? "Makina Stoğu" : `${cz.ad}${cz.stoktanTakip ? " (stoktan satıldı)" : ""}`}</div></div>;
   };
-  // Spec 0021: ödeme satırı olan kalemde durum satırlardan gelir (AC-6). Taksitsiz kira iki anahtarla (kiraya veren,
-  // vergi dairesi) işaretlenir; taksitli hedef "Ödeme planı" penceresinden.
+  // Spec 0021: ödeme satırı olan kalemde durum satırlardan gelir (AC-6). Spec 0060 R1, R2 (AC-1, AC-4, AC-24): birden çok
+  // ödeme hedefi olan kalemde (stopajlı kira, çok hedefli personel) taksitli olsa da hedef başına rozet çizilir; ölçüt
+  // taksit sayısı değil hedef sayısıdır (cokHedefliMi). Tek hedefli kalem bugünkü toplu rozetini korur.
   const planliHucre = (k) => {
     const d = dav(k), durum = odemeDurumu(k);
     const hedefler = odemeHedefleri(k, d);
-    const tekSatirliKira = d === DAVRANIS.KIRA && hedefler.every(h => h.toplamAdet === 1);
+    const hedefBasina = cokHedefliMi(k, d);
     const yetki = canDo("gider_odeme");
+    // Spec 0060 R6, R7 (AC-9): ek ödeme hedefinin yanında o hedefin kapattığı türlerin adları (tutarsız): resmi rozetinde resmi
+    // tutarı olan türler, elden rozetinde elden tutarı olanlar (triyaj); tutarlı kırılım kalem satırında.
+    const ekTurleri = (bilesen) => (d === DAVRANIS.PERSONEL ? ekOdemeTurToplamlari([k], { bilesen }).map(t => t.ad).join(", ") : "");
     const hedefRozeti = (h) => {
-      const ad = h.hedef === HEDEF.STOPAJ ? "Vergi dairesi" : "Kiraya veren";
+      // R3, R29: ad tek tablodan, yalın hâl (taksitsiz kirada bugünkü "Kiraya veren" / "Vergi dairesi" ile birebir, AC-40).
+      const ad = hedefBasligi(h.hedef, d, true);
       const kismen = !h.odendi && h.kalanK < h.toplamK;
-      const r = <Rozet renk={h.odendi ? "yesil" : kismen ? "turuncu" : "kirmizi"}>{ad}: {h.odendi ? "Ödendi" : kismen ? `Kısmen · kalan ${tl2(h.kalanK / 100)}` : "Ödenmedi"}</Rozet>;
-      return yetki && onHedefDegistir
-        ? <button key={h.hedef} type="button" onClick={() => onHedefDegistir(k, h.hedef)} title={h.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{r}</button>
-        : <span key={h.hedef}>{r}</span>;
+      // R2, R34 (AC-25): taksitli hedefin rozeti kısa ("Kısmen 2/6"); taksitsiz hedefte bugünkü metin.
+      const metin = h.toplamAdet > 1
+        ? `${h.odendi ? "Ödendi" : kismen ? "Kısmen" : "Ödenmedi"} ${h.odenenAdet}/${h.toplamAdet}`
+        : h.odendi ? "Ödendi" : kismen ? `Kısmen · kalan ${tl2(h.kalanK / 100)}` : "Ödenmedi";
+      const r = <Rozet renk={h.odendi ? "yesil" : kismen ? "turuncu" : "kirmizi"}>{ad}: {metin}</Rozet>;
+      const ozet = h.hedef === HEDEF.EK_RESMI ? ekTurleri("resmi") : h.hedef === HEDEF.EK_ELDEN ? ekTurleri("elden") : "";
+      const ek = ozet ? <span data-testid="ek-odeme-tur-ozeti" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginLeft: 6 }}>{ozet}</span> : null;
+      // AC-3/AC-40: ek özeti olmayan rozet bugünkü öğenin kendisidir (button/span, sarmalayıcı yok; görünüm birebir).
+      const rozet = (testId) => (yetki && onHedefDegistir
+        ? <button key={h.hedef} type="button" data-testid={testId} onClick={() => onHedefDegistir(k, h.hedef)} title={h.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>{r}</button>
+        : <span key={h.hedef} data-testid={testId}>{r}</span>);
+      return ek ? <div key={h.hedef} data-testid="hedef-rozeti">{rozet(undefined)}{ek}</div> : rozet("hedef-rozeti");
     };
     const acikAna = hedefler.find(h => h.hedef === HEDEF.ANA && !h.odendi);
     return (
       <div data-testid="odeme-hucre-planli">
-        {tekSatirliKira
-          ? <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>{hedefler.map(hedefRozeti)}</div>
+        {hedefBasina
+          ? <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>{hedefler.filter(h => h.toplamK > 0).map(hedefRozeti)}</div>
           : <Rozet renk={durum === "odendi" ? "yesil" : durum === "kismen" ? "turuncu" : "kirmizi"}>
             {durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"} {k.taksitler.filter(r => r.odendi).length}/{k.taksitler.length}</Rozet>}
-        {!tekSatirliKira && durum === "kismen" && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Kalan {tl2(hedefler.reduce((a, h) => a + h.kalanK, 0) / 100)}</div>}
+        {!hedefBasina && durum === "kismen" && <div data-testid="kismen-ozet" style={{ fontSize: 11.5, color: "var(--orTx, #c2410c)", marginTop: 3 }}>Kalan {tl2(hedefler.reduce((a, h) => a + h.kalanK, 0) / 100)}</div>}
         <YontemOzeti y={yontemKirilimlari?.get(String(k.id))} vade={k.sonOdemeTarihi && !k.odendi ? `${acikAna?.toplamAdet > 1 ? "sonraki taksit" : "vade"} ${fmtTR(k.sonOdemeTarihi)}` : null} />
         {onOdemePlani && <button type="button" onClick={() => onOdemePlani(k)} style={{ background: "none", border: "none", padding: 0, marginTop: 4, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ödeme planı</button>}
         {vadesiGectiMi(k, bugun) && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}
@@ -343,7 +356,9 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <td style={td}>
           <div style={{ fontWeight: 600 }}>{d === DAVRANIS.PERSONEL ? k.calisanAd : (k.aciklama || <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}>Açıklama yok</span>)}</div>
           {d !== DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: ted ? "var(--n700, #334155)" : "var(--n500, #64748b)", marginTop: 2 }}>{ted ? ted.ad : "Tedarikçi seçilmemiş"}</div>}
-          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)} · Elden {tl2(k.eldenTutar)}{ekOdemeKurus(k) > 0 ? ` · Ek ödeme ${tl2(ekOdemeKurus(k) / 100)}` : ""}</div>}
+          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)} · Elden {tl2(k.eldenTutar)}{ekOdemeKurus(k) > 0 ? ` · Ek ödeme ${tl2(ekOdemeKurus(k) / 100)}` : ""}
+            {/* Spec 0060 R6 (AC-8): ek ödemeler türüyle ve tutarıyla; satır yalnız personel grubu açıkken çizilir (K21, AC-36). */}
+            {ekOdemeKurus(k) > 0 && <span data-testid="ek-odeme-tur-kirilimi"> ({ekOdemeTurToplamlari([k]).map(t => `${t.ad} ${tl2(t.toplamK / 100)}`).join(", ")})</span>}</div>}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
             {d === DAVRANIS.KIRA && <Rozet renk={k.girisYonu === "net" ? "mavi" : "turuncu"}>{k.girisYonu === "net" ? "Net girildi" : "Brüt girildi"}</Rozet>}
             {d === DAVRANIS.KIRA && <span style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Stopaj %{k.stopajOrani ?? 0}: {tl2(kalemStopaj(k, d))} · Net {tl2(k.netTutar ?? (kalemTutari(k, d) - kalemStopaj(k, d)))}</span>}

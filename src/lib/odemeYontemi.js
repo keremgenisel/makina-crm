@@ -126,13 +126,27 @@ export const donemYontemKirilimi = (kalemler, hareketler, turMap) => {
 
 // ── Spec 0059 R20, R31: ödeme hedefinin adı ve etiketi (GiderAlanlari.jsx'ten taşındı, orada yeniden dışa verilir) ──
 export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n) || 0) + " ₺";
-export const HEDEF_AD = { [HEDEF.ANA]: "Tedarikçiye", [HEDEF.ELDEN]: "Elden", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)", [HEDEF.STOPAJ]: "Vergi dairesine (stopaj)" };
-// Spec 0054 R8, R16 (0042 R15'i genişletir): personel adları hedef kimliğinden çözülür; birden çok hedefli kalemde ayırt edici
-// ("Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)"), tek hedefli kalemde (yalnız ek ödemeli ay dahil)
-// "Çalışana". cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar). TEK ad kaynağı.
-const PERSONEL_AD = { [HEDEF.ANA]: "Maaş (resmi)", [HEDEF.ELDEN]: "Maaş (elden)", [HEDEF.EK_RESMI]: "Ek ödeme (resmi)", [HEDEF.EK_ELDEN]: "Ek ödeme (elden)" };
-export const hedefAdi = (hedef, davranis, cokHedef = false) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? "Kiraya verene"
-  : davranis === DAVRANIS.PERSONEL && PERSONEL_AD[hedef] ? (cokHedef ? PERSONEL_AD[hedef] : "Çalışana") : HEDEF_AD[hedef]);
+// Spec 0060 R3, R29 (AC-27): hedef adlarının TEK tablosu, iki hâl. `yonelme` ödeme cümlesi ve hata metni içindir
+// ("Kiraya verene", "Vergi dairesine (stopaj)"); `yalin` rozet ve başlık içindir ("Kiraya veren", "Vergi dairesi").
+// İkinci bir ad listesi açmayın; ekranlar hedefAdi / hedefBasligi / taksitAdi'yi çağırır (kaynak taraması var).
+// `gider.VERGI_DAIRESI` borç özetindeki TARAF adıdır, bu tablodaki stopaj HEDEF adı ayrı kavramdır (R24).
+const ad = (yonelme, yalin = yonelme) => ({ yonelme, yalin });
+export const HEDEF_ADLARI = {
+  genel: { [HEDEF.ANA]: ad("Tedarikçiye", "Tedarikçi"), [HEDEF.ELDEN]: ad("Elden"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"),
+    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
+  kira: { [HEDEF.ANA]: ad("Kiraya verene", "Kiraya veren") },
+  // Spec 0054 R8, R16 (0042 R15'i genişletir): birden çok hedefli personelde ayırt edici adlar, tek hedefli personelde "Çalışan".
+  personel: { [HEDEF.ANA]: ad("Maaş (resmi)"), [HEDEF.ELDEN]: ad("Maaş (elden)"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"), [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)") },
+  personelTek: ad("Çalışana", "Çalışan"),
+};
+// Geriye dönük: genel tablonun yönelme hâli (eski HEDEF_AD).
+export const HEDEF_AD = Object.fromEntries(Object.entries(HEDEF_ADLARI.genel).map(([k, v]) => [k, v.yonelme]));
+const hedefAdKaydi = (hedef, davranis, cokHedef) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? HEDEF_ADLARI.kira[HEDEF.ANA]
+  : davranis === DAVRANIS.PERSONEL && HEDEF_ADLARI.personel[hedef] ? (cokHedef ? HEDEF_ADLARI.personel[hedef] : HEDEF_ADLARI.personelTek)
+  : HEDEF_ADLARI.genel[hedef]);
+// cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar).
+export const hedefAdi = (hedef, davranis, cokHedef = false) => hedefAdKaydi(hedef, davranis, cokHedef)?.yonelme;
+export const hedefBasligi = (hedef, davranis, cokHedef = false) => hedefAdKaydi(hedef, davranis, cokHedef)?.yalin;
 // Ödeme satırlarından (taksitler) birden çok hedef var mı; satırı olmayan hedef sayılmaz.
 export const cokHedefliSatirlar = (satirlar) => new Set((satirlar || []).map(r => r.hedef || HEDEF.ANA)).size > 1;
 // Spec 0051 R8–R10 (Q4, Q5): bir ödeme hareketinin kapattığı hedefin etiketi. Yalnız birden çok ödeme hedefi olan kalemde
@@ -142,6 +156,15 @@ export const cokHedefliSatirlar = (satirlar) => new Set((satirlar || []).map(r =
 // paylar: odemeYontemi.hareketHedefPaylari'nın o hareket için [{hedef, payK}]; iki hedefe bölünmüşse tutarlarıyla.
 // Spec 0059 triyaj: tutarBicimi (kuruş → metin) çağıranındır; ekranlar varsayılan tl2'yi, rapor belgenin fmtCur biçimini verir.
 export const cokHedefliMi = (kalem, davranis) => !!kalem && odemeHedefleri(kalem, davranis).filter(h => h.toplamK > 0).length > 1;
+// Spec 0060 R4, R35 (AC-29): bir taksit satırının adı, ödeme penceresi ve Kasa hareket listesi için TEK kaynak (OdemeGirisi'nden
+// taşındı). Hedefin birden çok taksiti varsa "Ad n/m. taksit", tek satırlı hedefte yalnız ad; satır bulunamazsa null.
+export const taksitAdi = (kalem, taksitId, davranis) => {
+  const r = (kalem?.taksitler || []).find(x => String(x.id) === String(taksitId));
+  if (!r) return null;
+  const h = r.hedef || HEDEF.ANA;
+  const n = kalem.taksitler.filter(x => (x.hedef || HEDEF.ANA) === h).length;
+  return `${hedefAdi(h, davranis, cokHedefliMi(kalem, davranis))}${n > 1 ? ` ${r.sira}/${n}. taksit` : ""}`;
+};
 export const hedefEtiketi = (kalem, davranis, paylar, tutarBicimi = (payK) => tl2(tl(payK))) => {
   if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
   if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, true);

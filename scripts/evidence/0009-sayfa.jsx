@@ -29,7 +29,7 @@ import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDeta
 import * as Tasarim from "../../src/components/tasarim";
 import { Kasa } from "../../src/components/Kasa";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
-import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
+import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
@@ -121,6 +121,23 @@ const TANIMLAR = [{ id: 71, ad: "Fabrika kirası", turId: 1, tutar: 25000, kdvOr
 const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, baslangicAy: "2026-06" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
+// Spec 0060 R1, R2: taksitli stopajlı kira, taksitsiz stopajlı kira, tek hedefli taksitli kalem, dört hedefli personel.
+let n0060 = 9600;
+const k0060 = (f) => giderKalemDogrula(f, { turMap: turHaritasi(TURLER), tedarikciler: TED, uid: () => ++n0060 }).kayit;
+const G0060 = [
+  k0060({ id: 601, tarih: "2026-09-01", turId: 1, girisYonu: "brut", tutar: 25000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Eylül kira", sonOdemeTarihi: "2026-09-10", stopajTaksitSayisi: 2, stopajVade: "2026-09-20" }),
+  k0060({ id: 602, tarih: "2026-09-02", turId: 1, girisYonu: "brut", tutar: 10000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Depo kirası", sonOdemeTarihi: "2026-09-10" }),
+  k0060({ id: 603, tarih: "2026-09-03", turId: 5, tutar: 6000, kdvOrani: 0, tedarikciId: 12, aciklama: "Sac", taksitSayisi: 3, sonOdemeTarihi: "2026-09-10" }),
+  k0060({ id: 604, tarih: "2026-09-04", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 10000, taksitSayisi: 6, sonOdemeTarihi: "2026-09-30",
+    ekOdemeler: [{ tur: "prim", aciklama: "", resmiTutar: 2000, eldenTutar: 1000 }, { tur: "ikramiye", aciklama: "", resmiTutar: 0, eldenTutar: 500 }] }),
+];
+const t0060 = (id, h) => G0060.find(x => x.id === id).taksitler.filter(t => t.hedef === h);
+const H0060 = [
+  { id: 1, tur: "odeme", tarih: "2026-09-15", tutar: t0060(601, "stopaj")[0].tutar, hesapId: 1, giderId: 601, taksitId: t0060(601, "stopaj")[0].id, yontem: "Havale" },
+  { id: 2, tur: "odeme", tarih: "2026-09-15", tutar: t0060(602, "stopaj")[0].tutar, hesapId: 1, giderId: 602, taksitId: t0060(602, "stopaj")[0].id, yontem: "Havale" },
+  { id: 3, tur: "odeme", tarih: "2026-09-15", tutar: t0060(604, "ana")[0].tutar, hesapId: 1, giderId: 604, taksitId: t0060(604, "ana")[0].id, yontem: "Havale" },
+  { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
+];
 
 function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false }) {
   const [giderler, setGiderler] = useState(g0);
@@ -699,6 +716,9 @@ const EKRANLAR = {
   "gider-formu-duzenle-bolunmez": [duzenle48(D48_BOLUNMEZ), ["kaydir:Ödemeler gider listesindeki"]],
   "gider-formu-duzenle-plan-hatasi": [duzenle48(D48_TAKSITLI), ["doldur:Tutar=3000", "kaydir:Ödemeler gider listesindeki"]],
   // Spec 0047: Aylık Gider ve Kasa Raporu belgesi (beyaz kâğıt) ve üç ekrandaki düğme.
+  // Spec 0060 R1, R2, R6: kalem listesinde hedef başına rozet ve personel grubunun açılmış kırılımı.
+  "giderler-0060-hedef-rozetleri": [<GiderEkrani g0={G0060} h0={H0060} />, ["kaydir:Gider Kalemleri"]],
+  "giderler-0060-personel-acik": [<GiderEkrani g0={G0060} h0={H0060} />, ["dugme:Çalışanları göster", "kaydir:Gider Kalemleri"]],
   "gider-kasa-raporu-belge": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu(RAPOR_VERI, "2026-09")) }} />, []],
   // Spec 0055: kalem listesi seçeneği kalktı; "-kalemsiz" ekranı yerine kalemsiz (boş) ayın belgesi (boş tablo basılmaz).
   "gider-kasa-raporu-bos": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, giderler: [] }, "2026-09")) }} />, []],

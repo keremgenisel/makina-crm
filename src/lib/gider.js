@@ -256,6 +256,35 @@ export const odemeHedefleri = (k, dav = DAVRANIS.NORMAL) => {
     return { ...h, kalanK, odendi: kalanK === 0, odenenAdet: kalanK === 0 ? 1 : 0, toplamAdet: 1, taksitli: false };
   });
 };
+// Spec 0060 R11, R16, C2 (AC-13, AC-35): ek ödemelerin TÜR bazında toplamı (resmi + elden tek tutar; kişi, açıklama ve
+// resmi/elden ayrımı yok). Kalem listesinin satırı ([k]) ve Aylık Gider ve Kasa Raporu (dönemin kalemleri) bu fonksiyonu
+// çağırır; ikinci bir toplama yazılmaz. Sıra EK_ODEME_TURLERI'nin sırasıdır (deterministik), toplamı 0 olan tür dönmez.
+// Triyaj (bulgu 1): `bilesen` ("resmi" | "elden") verilirse yalnız o bileşen toplanır; ek ödeme hedeflerinin rozeti (resmi /
+// elden) kendi kapattığı türleri böyle gösterir. Verilmezse resmi + elden (rapor ve kalem satırı).
+export const ekOdemeTurToplamlari = (kalemler, { bilesen = null } = {}) => {
+  const t = new Map();
+  const tutarOf = (e) => (bilesen === "resmi" ? kurus(e?.resmiTutar) : bilesen === "elden" ? kurus(e?.eldenTutar) : ekSatirKurus(e));
+  for (const k of kalemler || []) for (const e of Array.isArray(k?.ekOdemeler) ? k.ekOdemeler : []) {
+    if (!EK_ODEME_TUR_AD[e?.tur]) continue;
+    t.set(e.tur, (t.get(e.tur) || 0) + tutarOf(e));
+  }
+  return EK_ODEME_TURLERI.filter(x => (t.get(x.value) || 0) > 0).map(x => ({ tur: x.value, ad: x.label, toplamK: t.get(x.value) }));
+};
+// Spec 0060 R12, R31, C2 (AC-14, AC-30, AC-41): kira kalemlerinin stopajı; kesilen = ödenen + açık. Kapsam verilen kalemlerdir
+// (rapor ayın kalemlerini ay sonu ödeme durumuyla verir). Açık, stopaj hedefinin kalanıdır (odemeHedefleri).
+export const stopajOzeti = (kalemler, turMap) => {
+  let kesilenK = 0, acikK = 0;
+  for (const k of kalemler || []) {
+    const dav = davranisOf(k, turMap);
+    if (dav !== DAVRANIS.KIRA) continue;
+    const kes = stopajKurus(k, dav);
+    if (!(kes > 0)) continue;
+    kesilenK += kes;
+    const h = odemeHedefleri(k, dav).find(x => x.hedef === HEDEF.STOPAJ);
+    acikK += Math.min(kes, h ? h.kalanK : kes);
+  }
+  return { kesilenK, odenenK: kesilenK - acikK, acikK };
+};
 export const hedefGecti = (h, bugun) => !h.odendi && !!h.vade && !!bugun && h.vade < bugun;
 // R3: "odendi" | "kismen" | "odenmedi". Satırsız kalemde ikili.
 export const odemeDurumu = (k) => {

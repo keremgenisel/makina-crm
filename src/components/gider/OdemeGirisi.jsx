@@ -3,7 +3,7 @@ import { fmtTR, parseMoney } from "../../lib/utils";
 import { tl, hedefOdemeleri, HEDEF } from "../../lib/gider";
 import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
 import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
-import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
+import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU, taksitAdi as ortakTaksitAdi } from "../../lib/odemeYontemi";
 import { hepsiniOde, satirSiralariniEsle, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, CEK_DAGITIM_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
 import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib/gider";
 import { Btn, Field, Input, Select, ConfirmDialog, Icon, LockConflict } from "../ui";
@@ -88,12 +88,8 @@ export const OdemeGirisi = ({
   const paylar = useMemo(() => (odemeler.length ? new Map(hareketPaylari(kalem, hareketler, turMap).map(p => [String(p.hareket.id), p.payK])) : new Map()), [odemeler.length, kalem, hareketler, turMap]);
   const hedefPaylari = useMemo(() => (odemeler.length ? hareketHedefPaylari(kalem, hareketler, turMap) : new Map()), [odemeler.length, kalem, hareketler, turMap]);
   const kirilim = useMemo(() => (odemeler.length ? yontemKirilimi(kalem, hareketler, turMap) : { karar: "yok" }), [odemeler.length, kalem, hareketler, turMap]);
-  const taksitAdi = (id) => {
-    const r = (kalem?.taksitler || []).find(x => String(x.id) === String(id));
-    if (!r) return null;
-    const n = kalem.taksitler.filter(x => (x.hedef || HEDEF.ANA) === (r.hedef || HEDEF.ANA)).length;
-    return `${adOf(r.hedef || HEDEF.ANA)}${n > 1 ? ` ${r.sira}/${n}. taksit` : ""}`;
-  };
+  // Spec 0060 R4, R35: taksit adı tek kaynaktan (Kasa hareket listesiyle aynı).
+  const taksitAdi = (id) => ortakTaksitAdi(kalem, id, davranis);
   const hesapAdi = (id) => {
     const h = hesaplar.find(x => String(x.id) === String(id));
     return h ? `${h.ad} (${HESAP_TUR_AD[h.tur] || h.tur})` : "Hesap belirtilmedi";

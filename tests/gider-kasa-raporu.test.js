@@ -238,9 +238,14 @@ describe("Spec 0047: gizlilik (çıktı temelli, R22)", () => {
   const h = HTML();
   it("AC-19 / AC-21 / AC-22 / AC-23 / AC-24: çalışan adı, resmi/elden, ek ödeme ve kişi bazlı avans çıktıda yok", () => {
     // Kasa bölümündeki nakit hareket tutarları çalışan kırılımı değildir; yasak olan ad, resmi/elden bileşeni ve ek ödeme.
+    // Spec 0060 R28 (AC-39) ile güncellendi: yasaklar tür bazında ek ödeme kutusu DIŞINDAKİ belgeye aynen uygulanır; kutuda
+    // yalnız tür adı ve tür toplamı olabilir (ad, açıklama, resmi/elden yok).
+    const disi = h.replace(/<!--ek-odeme-->[\s\S]*?<!--\/ek-odeme-->/, "");
     for (const yasak of ["Zümrüt", "Kaplanoğlu", "31.111", "17.777", "2.345", "Resmi", "Elden", "elden", "Prim", "primi", "Fazla mesai", "ikramiye"]) {
-      expect(h, yasak).not.toContain(yasak);
+      expect(disi, yasak).not.toContain(yasak);
     }
+    const kutu = (h.match(/<!--ek-odeme-->[\s\S]*?<!--\/ek-odeme-->/) || [""])[0];
+    for (const yasak of ["Zümrüt", "Kaplanoğlu", "31.111", "17.777", "Resmi", "Elden", "elden", "primi"]) expect(kutu, yasak).not.toContain(yasak);
     expect(h).toContain("Personel gideri");
   });
   it("R35 / C2: rapor kurucusu motorları çağırır, ikinci hesap yazmaz", () => {

@@ -6,8 +6,8 @@ import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
 // yeniden dışa verilir, çağıranlar değişmez. TEK tanım odemeYontemi.js'tedir.
-import { tl2, HEDEF_AD, hedefAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi } from "../../lib/odemeYontemi";
-export { tl2, HEDEF_AD, hedefAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi };
+import { tl2, HEDEF_AD, HEDEF_ADLARI, hedefAdi, hedefBasligi, taksitAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi } from "../../lib/odemeYontemi";
+export { tl2, HEDEF_AD, HEDEF_ADLARI, hedefAdi, hedefBasligi, taksitAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi };
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
 // atama/tutar bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.

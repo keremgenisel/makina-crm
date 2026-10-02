@@ -44,7 +44,8 @@ describe("Spec 0059: ortak sunum dili (R1–R3)", () => {
   it("AC-1: gider ve kasa bölümleri faaliyet raporunun koyu şeritli kutusuyla çizilir; eski düz başlıklar yok", () => {
     // Triyaj ile sıkılaştırıldı: her şeridin başlığı tam liste olarak ve sırasıyla denetlenir.
     const basliklar = [...h.matchAll(/<div style="background:#211d19;color:#fff;padding:7px 12px;[^"]*">\s*<span style="font-weight:700;font-size:11.5px;letter-spacing:.4px;">([^<]*)<\/span>/g)].map(m => m[1]);
-    expect(basliklar).toEqual(["GİDER · ÖZET", "GİDER · TÜR KIRILIMI", "GİDER · TEDARİKÇİ KIRILIMI", "GİDER · ÖDEME DURUMU", "GİDER · MALİYET DAĞILIMI",
+    // Spec 0060 ile güncellendi: tür bazında ek ödeme (R11) ve stopaj (R12) kutuları eklendi; diğer şeritler ve sıraları aynı.
+    expect(basliklar).toEqual(["GİDER · ÖZET", "GİDER · TÜR KIRILIMI", "GİDER · EK ÖDEMELER (TÜR BAZINDA)", "GİDER · TEDARİKÇİ KIRILIMI", "GİDER · ÖDEME DURUMU", "GİDER · STOPAJ", "GİDER · MALİYET DAĞILIMI",
       "GİDER · KDV KARŞILAŞTIRMASI", "GİDER · ÖDEME YÖNTEMİ KIRILIMI", "GİDER · KALEM LİSTESİ", "KASA · ÖZET", "KASA · HESAPLAR", "KASA · HAREKET ÖZETİ",
       "KASA · AYIN ÖDEME HAREKETLERİ", "KASA · AYIN TAHSİLAT HAREKETLERİ", "KASA · ÖDEME YÖNTEMİ KIRILIMI", "KASA · HESABI BELİRTİLMEMİŞ HAREKETLER",
       "KASA · ÇEK PORTFÖYÜ", "KASA · AÇIK ÇALIŞAN AVANSI"]);
@@ -166,6 +167,9 @@ describe("Spec 0059: detay tabloları (R8–R13, R21)", () => {
       delete y.onceki; delete y.firma;
       if (y.gider && !y.gider.yururlukOncesi) { delete y.gider.vadeler; delete y.gider.tedarikciKalemleri; }
       delete y.kasa.odemeler; delete y.kasa.virmanlar; delete y.kasa.tahsilatlar;
+      // Spec 0060: yeni alanlar (tür bazında ek ödeme, stopaj özeti, ay içi avans) altın çıktıda yok.
+      if (y.gider && !y.gider.yururlukOncesi) { delete y.gider.ekOdemeTurleri; delete y.gider.stopaj; }
+      delete y.kasa.avansAy;
       for (const k of ["elde", "tahsil", "ciro", "karsiliksiz"]) delete y.kasa.cek[k].liste;
       return y;
     };

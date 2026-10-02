@@ -6,7 +6,7 @@ import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorc
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -193,7 +193,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
 
   const taksitli = Number(form.taksitSayisi) >= 2;
   // Spec 0053 R4: vade kalemin borç vadesidir; ödeme yönteminden türemez ("Çek vade tarihi" dalı kalktı).
-  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? "Kiraya verene son ödeme" : "Son ödeme tarihi";
+  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? `${hedefAdi(HEDEF.ANA, DAVRANIS.KIRA)} son ödeme` : "Son ödeme tarihi"; // spec 0060 R30: ad tablodan
   const sayac = new Set(hatalar.map(h => h.alan)).size;
   return (
     <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} wide
@@ -302,8 +302,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             {[["Brüt kira", tl2(kira.brut)], ["Stopaj", `− ${tl2(kira.stopaj)}`], ["Net kira", tl2(kira.net)], ["KDV", `+ ${tl2(kira.kdv)}`]].map(([a, b]) => (
               <div key={a} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid #fde7d4" }}><span>{a}</span><b>{b}</b></div>
             ))}
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, padding: "8px 0", borderBottom: "1px solid #fde7d4" }}><span>Tedarikçiye ödenecek <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>net + KDV</span></span><b>{tl2(kira.nakit)}</b></div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0" }}><span>Vergi dairesine (stopaj)</span><b style={{ color: "var(--amb700, #b45309)" }}>{tl2(kira.stopaj)}</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, padding: "8px 0", borderBottom: "1px solid #fde7d4" }}><span>{hedefAdi(HEDEF.ANA, DAVRANIS.KIRA)} ödenecek <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>net + KDV</span></span><b>{tl2(kira.nakit)}</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0" }}><span>{hedefAdi(HEDEF.STOPAJ, DAVRANIS.KIRA)}</span><b style={{ color: "var(--amb700, #b45309)" }}>{tl2(kira.stopaj)}</b></div>
             <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Gider toplamına giren: <b>{tl2(kira.brut)}</b> (brüt)</div>
           </div>
         )}
@@ -347,7 +347,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         )}
       </div>
       {stopajVar && (
-        <KartBolum varyant="kart" baslikStili="baslik" title="Vergi dairesi (stopaj)" altBaslik={`Kesilen stopaj ${tl2(kira.stopaj)} kiraya verene değil vergi dairesine ödenir; ayrı izlenir.`} testId="stopaj-bolumu" style={{ marginBottom: 12, padding: 14 }}>
+        <KartBolum varyant="kart" baslikStili="baslik" title={`${hedefBasligi(HEDEF.STOPAJ, DAVRANIS.KIRA)} (stopaj)`} altBaslik={`Kesilen stopaj ${tl2(kira.stopaj)} kiraya verene değil vergi dairesine ödenir; ayrı izlenir.`} testId="stopaj-bolumu" style={{ marginBottom: 12, padding: 14 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <div style={{ width: 130 }}>
               <Field label="Stopaj taksit sayısı"><Input aria-label="Stopaj taksit sayısı" type="number" min="1" max="60" value={form.stopajTaksitSayisi} onChange={e => set({ stopajTaksitSayisi: e.target.value })} /><HataMetni>{hata("stopajTaksitSayisi")}</HataMetni></Field>

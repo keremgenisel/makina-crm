@@ -45,7 +45,8 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
   it("AC-4: yalnız resmi ödenince listede 'Kısmen ödendi 1/2'; Ödeme planında hedefler Resmi ve Elden adıyla", () => {
     render(<Harness g0={[P]} h0={[{ id: 1, tur: "odeme", tarih: "2026-09-20", tutar: 30000, yontem: "Havale", giderId: 610, taksitId: 1 }]} />);
     personelAc();
-    expect(within(satirOf()).getByText("Kısmen ödendi 1/2")).toBeTruthy();
+    // Spec 0060 R2 ile güncellendi: çok hedefli personel kaleminde toplu "Kısmen ödendi 1/2" yerine hedef başına rozet.
+    expect(within(satirOf()).getAllByTestId("hedef-rozeti").map(r => r.textContent)).toEqual(["Maaş (resmi): Ödendi", "Maaş (elden): Ödenmedi"]);
     fireEvent.click(within(satirOf()).getByText("Ödeme planı"));
     const plan = screen.getByTestId("odeme-plani-satirlari");
     expect(plan.textContent).toMatch(/Maaş \(resmi\) · ödendi/);
@@ -64,7 +65,8 @@ describe("Spec 0042: iki hedefli personel arayüzü", () => {
     degis(within(p).getByLabelText("Ödeme yöntemi"), "Nakit");
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     expect(st.hesapHareketleri.map(h => [h.taksitId, h.tutar, h.yontem])).toEqual([[1, 30000, "Havale"], [2, 20000, "Nakit"]]);
-    expect(within(satirOf()).getByText(/^Ödendi/)).toBeTruthy(); // AC-5
+    // Spec 0060 R2 ile güncellendi: iki hedefin rozeti de "Ödendi" (eskiden toplu "Ödendi n/m").
+    expect(within(satirOf()).getAllByTestId("hedef-rozeti").every(r => /: Ödendi$/.test(r.textContent))).toBe(true); // AC-5
   });
   it("AC-20: tutar seçili hedefin (Elden) kalanını aşamaz", () => {
     let st;

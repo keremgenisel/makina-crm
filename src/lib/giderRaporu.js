@@ -9,7 +9,7 @@
 //
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
-import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd } from "./gider";
+import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti } from "./gider";
 import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
@@ -28,6 +28,8 @@ export const NOT_YONTEM = "Gider bölümü ayın kalemlerine yapılan ödemeleri
 export const NOT_ANLIK = "Bu rapor yazdırıldığı andaki veriyle üretilmiştir. Bu aya sonradan kayıt girilir, silinir ya da çöpe atılırsa rakamlar değişir.";
 export const NOT_HESAPSIZ = "Hesabı belirtilmemiş hareketler hiçbir hesabın bakiyesine girmez; rapordaki bakiye ile gerçek bakiye arasındaki fark buradan doğabilir. Personel ödemeleri ve çalışan avansları toplu yazılır; ayrıntı Giderler ve Kasa ekranlarındadır.";
 export const NOT_MAHSUP = "Mahsup para hareketi değildir, hiçbir bakiyeye girmez.";
+// Spec 0060 R11, R16, R20: tür toplamı tek tutardır (bileşenler ayrı yazılmaz); çalışan adı ve kişi bazlı tutar yazılmaz.
+export const NOT_EK_ODEME = "Tutarlar tür bazında toplamdır; çalışan adı, kişi bazlı tutar ve ödeme biçimi ayrımı yazılmaz.";
 export const NOT_CIRO = "Ciro hareketleri kasıtlı olarak hesapsızdır ve bu sayıya girmez; ciro edilen çekler çek bölümündedir.";
 export const NOT_CEK_GECMISSIZ = "Geçmişi kaydedilmemiş eski çeklerde güncel durum kullanıldı.";
 export const KAYIT_YOK = "Bu ayda kayıt yok";
@@ -86,6 +88,10 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
           tedarikci: tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] };
       });
     const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
+    // Spec 0060 R11, R12, R16, R28, R31, C2: tür bazında ek ödeme toplamı ve stopaj özeti saf motordan (bu dosya kişi bazlı
+    // alan okumaz; tür toplamı resmi + elden tek tutardır, çalışan ve açıklama taşımaz).
+    const ekOdemeTurleri = ekOdemeTurToplamlari(personel).map(t => ({ ad: t.ad, tutar: tl(t.toplamK) }));
+    const so = stopajOzeti(gr.kalemler, turMap);
     if (personel.length) {
       const d = personel.map(odemeDurumu);
       const durum = d.every(x => x === "odendi") ? "odendi" : d.every(x => x === "odenmedi") ? "odenmedi" : "kismen";
@@ -126,7 +132,11 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       odemeDurumu: { gecmisAdet: h.sayilar.gecmis, gecmisTutar: tl(hToplam(h.gecmis)), yaklasanAdet: h.sayilar.yaklasan, yaklasanTutar: tl(hToplam(h.yaklasan)), esikGun: h.esikGun },
       kovalar: gr.kovalar,
       kdv: kdvKarsilastir(kdvHesaplanan, gr.indirilecekKdv),
+      // Spec 0060 R3 revizyonu (X8): personel ödemelerinin yöntem kırılımı rapora GİRMEZ; elden genelde nakit ödendiği için
+      // kırılım resmi/elden ayrımını ve tek çalışanlı ayda kişinin maaşını açığa çıkarırdı (R16, AC-21). Toplu satır kalır.
       yontem: { satirlar: yontem.satirlar.map(s => ({ ad: s.yontem, tutar: tl(s.tutarK) })), personel: tl(yontem.personelK), toplam: tl(yontem.toplamK) },
+      ekOdemeTurleri,
+      stopaj: so.kesilenK > 0 ? { kesilen: tl(so.kesilenK), odenen: tl(so.odenenK), acik: tl(so.acikK) } : null,
       kalemler,
       vadeler: detay ? { gecmis: vadeSatirlari(h.gecmisSatirlar), yaklasan: vadeSatirlari(h.yaklasanSatirlar) } : { gecmis: [], yaklasan: [] },
       tedarikciKalemleri,
@@ -212,6 +222,8 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       tahsilatAdet: hszTah.adet, tahsilatlar: hszTah.liste.map(k => ({ tarih: k.tarih, ad: k.turAdi, firma: k.firma, tutarK: kurus(k.tutar), paraBirimi: k.currency || "TRY" })) },
     cek: cekAyOzeti(g.cekler, g.payments, ay, { liste: detay }),
     avansK,
+    // Spec 0060 R13, R33: ay içinde verilen ve mahsup edilen avans (hareket özetinin toplamları, kişi bilgisi yok).
+    avansAy: { verilenK: ozet.avans.tutarK, mahsupK: ozet.mahsup.tutarK },
     odemeler, virmanlar, tahsilatlar,
   };
   let onceki = null;
@@ -287,12 +299,20 @@ export const buildGiderKasaRaporuHtml = (r) => {
     const yontemKutu = bolum("GİDER · ÖDEME YÖNTEMİ KIRILIMI", "ayın kalemlerine yapılan ödemeler",
       G.yontem.satirlar.length || G.yontem.personel ? tablo("YÖNTEMLER", ["Yöntem", "Tutar"], [...G.yontem.satirlar.map(s => [esc(s.ad), tlp(s.tutar)]),
         ...(G.yontem.personel ? [["Personel ödemeleri", tlp(G.yontem.personel)]] : []), ["<b>Toplam</b>", `<b>${tlp(G.yontem.toplam)}</b>`]], [SOL, R]) : bosSatir);
+    // Spec 0060 R11, R15, R28 (AC-13, AC-17, AC-35, AC-39): ek ödemeler tür bazında tek toplamla; boşsa kutu basılmaz. Kutu
+    // `data-bolum="ek-odeme"` ile işaretlidir (gizlilik testleri kutunun dışına eski yasakları aynen uygular).
+    const ekKutu = (G.ekOdemeTurleri || []).length ? `<!--ek-odeme--><div data-bolum="ek-odeme">${bolum("GİDER · EK ÖDEMELER (TÜR BAZINDA)", donem, `
+      ${tablo("EK ÖDEMELER", ["Tür", "Toplam"], G.ekOdemeTurleri.map(t => [esc(t.ad), tlp(t.tutar)]), [SOL, R])}
+      ${not(esc(NOT_EK_ODEME))}`)}</div><!--/ek-odeme-->` : "";
+    // Spec 0060 R12, R15, R31 (AC-14, AC-17, AC-41): ayın kira stopajı; kesilen = ödenen + açık. Stopaj yoksa basılmaz.
+    const stopajKutu = G.stopaj ? bolum("GİDER · STOPAJ", `kesilen ${donem}, ödeme durumu ${itibariyla}`, stTablo([st("Kesilen stopaj", tlp(G.stopaj.kesilen)),
+      st("Ödenen", tlp(G.stopaj.odenen)), st("Ay sonunda açık", tlp(G.stopaj.acik))])) : "";
     const kalemKutu = bolum("GİDER · KALEM LİSTESİ", donem,
       tablo("KALEMLER", ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]),
         [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
-    gider = [ozetKutu, turKutu, tedKutu, durumKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
+    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, stopajKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
 
   // ── Kasa ──
@@ -339,7 +359,10 @@ export const buildGiderKasaRaporuHtml = (r) => {
       ${cekTablo("AY İÇİNDE CİRO EDİLEN ÇEKLER", K.cek.ciro.liste)}
       ${cekTablo("AY İÇİNDE KARŞILIKSIZ ÇIKAN ÇEKLER", K.cek.karsiliksiz.liste)}
       ${K.cek.gecmisYokAdet ? not(esc(NOT_CEK_GECMISSIZ)) : ""}`);
-  const avansKutu = bolum("KASA · AÇIK ÇALIŞAN AVANSI", itibariyla, stTablo([st("Açık avans toplamı", kp(K.avansK))]));
+  // Spec 0060 R13, R33 (AC-15, AC-42): başlık ve "Açık avans toplamı" satırı aynen (sıfırken de basılır); ay içi verilen ve
+  // mahsup edilen satırları eklenir.
+  const avansKutu = bolum("KASA · AÇIK ÇALIŞAN AVANSI", itibariyla, stTablo([st("Ay içinde verilen", kp(K.avansAy?.verilenK || 0)),
+    st("Ay içinde mahsup edilen", kp(K.avansAy?.mahsupK || 0)), st("Açık avans toplamı", kp(K.avansK))]));
   const kasa = [kasaOzet, hesapKutu, hareketKutu, odemeKutu, tahsilatKutu, yontemKutu, hesapsizKutu, cekKutu, avansKutu].join("");
 
   const firma = r.firma ? Object.fromEntries(Object.entries(r.firma).map(([k, v]) => [k, v == null ? v : esc(v)])) : null;

@@ -10,6 +10,11 @@ const oku = (p) => readFileSync(path.join(root, p), "utf-8");
 // Spec 0023: çalışan ek ödemeleri (alan, tablo ve tür kodu) de listede; listeye eklenmeyen ad testi yeşil bırakıp sızabilirdi.
 const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma/;
 
+// Spec 0060 R28: Aylık Gider ve Kasa Raporu'nun tür bazında ek ödeme kutusu (yorum işaretleriyle sınırlı) ve onun dışı.
+const EK_KUTU = /<!--ek-odeme-->[\s\S]*?<!--\/ek-odeme-->/;
+const ekKutusuz = (h) => h.replace(EK_KUTU, "");
+const ekKutusu = (h) => (h.match(EK_KUTU) || [""])[0];
+
 describe("AC-56 / spec 0047 AC-25: personel tutarı yazdırma ve dışa aktarmaya girmez (müşteri şablonları, aylık rapor ve dışa aktarma gider alanlarını okumamaya devam eder)", () => {
   it("yazdırma şablonları (printTemplates.js) gider/personel alanlarını okumaz", () => {
     expect(oku("src/lib/printTemplates.js")).not.toMatch(YASAKLI);
@@ -125,8 +130,10 @@ describe("Spec 0047: Aylık Gider ve Kasa Raporu gizliliği", () => {
       { id: 4, tur: "odeme", tarih: "2026-09-30", tutar: 6543, yontem: "", hesapId: null, giderId: 10, taksitId: elden(yusuf) },
     ];
     const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [behiye, yusuf], hareketler, turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
-    for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "Yusuf", "Demirkazık", "43.219", "18.765", "21.233", "6.543", "1.357", "2.468", "4.321", "1.200", "Cumartesi", "mesai", "Resmi", "Elden"]) {
-      expect(html, yasak).not.toContain(yasak);
+    for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "Yusuf", "Demirkazık", "43.219", "18.765", "21.233", "6.543", "1.357", "2.468", "4.321", "1.200", "Cumartesi", "Cumartesi mesaisi", "Resmi", "Elden"]) {
+      // Spec 0060 R21 (AC-32) ile daraltıldı: "mesai" → "Cumartesi mesaisi" (tür adı "Fazla mesai" serbest; açıklama yasak).
+      // R28 (AC-39): eski yasaklar ek ödeme kutusu DIŞINDAKİ belgeye aynen uygulanır.
+      expect(ekKutusuz(html), yasak).not.toContain(yasak);
     }
     expect(html).toContain("Personel gideri");
     expect(html).toContain("Personel ödemeleri · 2 adet");
@@ -145,7 +152,9 @@ describe("Spec 0059: yeni detay tabloları gizliliği", () => {
     const giderler = GIDERLER.map(k => (k.id === 4 ? { ...k, sonOdemeTarihi: "2026-09-25", taksitler: k.taksitler.map(t => ({ ...t, vade: "2026-09-25" })) } : k));
     const r = giderKasaRaporu(girdi({ giderler }), "2026-09");
     const html = buildGiderKasaRaporuHtml(r);
-    for (const yasak of [AD, "Zümrüt", "Kaplanoğlu", "31.111", "17.777", "2.345", "Eylül primi", "Resmi", "Elden", "Maaş (", "Ek ödeme ("]) expect(html, yasak).not.toContain(yasak);
+    // Spec 0060 R28 (AC-39): eski yasaklar ek ödeme kutusu dışındaki belgeye aynen; kutu ayrıca sınanır (yalnız tür + toplam).
+    for (const yasak of [AD, "Zümrüt", "Kaplanoğlu", "31.111", "17.777", "2.345", "Eylül primi", "Resmi", "Elden", "Maaş (", "Ek ödeme ("]) expect(ekKutusuz(html), yasak).not.toContain(yasak);
+    for (const yasak of [AD, "Zümrüt", "31.111", "17.777", "Eylül primi", "Resmi", "Elden", "Maaş (", "Ek ödeme ("]) expect(ekKutusu(html), yasak).not.toContain(yasak);
     const personelVade = r.gider.vadeler.gecmis.find(v => v.personel);
     expect(personelVade).toMatchObject({ tur: "Personel gideri", tedarikci: "", tarih: null });
     for (const kisim of [r.gider.vadeler, r.kasa.odemeler, r.gider.tedarikciKalemleri]) expect(JSON.stringify(kisim)).not.toContain("Zümrüt");
