@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `5e65f95`, dal `feat/0067-kutu-duzeni`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler > Dönem Raporu (kutu sırası), müşteri detay modalı (maliyet ve kâr kutusu) |
@@ -269,27 +269,27 @@
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kaynak taraması kaldırılan yerel tercihin ve ölü kodun kalmadığını doğruluyor (AC-11, AC-18).
-- [ ] R12'nin üç testi ele alındı: 0016 taramasından satır çıkarıldı, `ui/customer-maliyet-kutusu.test.jsx`
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kaynak taraması kaldırılan yerel tercihin ve ölü kodun kalmadığını doğruluyor (AC-11, AC-18).
+- [x] R12'nin üç testi ele alındı: 0016 taramasından satır çıkarıldı, `ui/customer-maliyet-kutusu.test.jsx`
       silindi, 0020'nin gizlilik iddiası **sıfır satır** olarak güçlendirildi (AC-15, AC-16, AC-17).
-- [ ] `specs/done/0050-*.md` ve 0016'nın ilgili maddelerine tarihli not düşüldü (R11, AC-24).
-- [ ] `makinaMaliyet` prop zinciri temizlendi, `rates` korundu, App'teki memo yerinde (AC-20, AC-21).
-- [ ] Maliyet ve kârlılık rakamlarının değişmediği çapraz testle gösterildi (AC-10, AC-27).
-- [ ] İki boş durumun ve iki kipin düzeni testle sabitlendi (AC-6, AC-7, AC-29).
-- [ ] Kart satırının yerleşimi **Electron'da** 1280 ve 1024 px'te ölçüldü (AC-4).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0067-*.jpg` + `0067-piksel-raporu.json`, yeni taban): yeni kutu
+- [x] `specs/done/0050-*.md` ve 0016'nın ilgili maddelerine tarihli not düşüldü (R11, AC-24).
+- [x] `makinaMaliyet` prop zinciri temizlendi, `rates` korundu, App'teki memo yerinde (AC-20, AC-21).
+- [x] Maliyet ve kârlılık rakamlarının değişmediği çapraz testle gösterildi (AC-10, AC-27).
+- [x] İki boş durumun ve iki kipin düzeni testle sabitlendi (AC-6, AC-7, AC-29).
+- [x] Kart satırının yerleşimi **Electron'da** 1280 ve 1024 px'te ölçüldü (AC-4).
+- [x] Görsel kanıt eklendi (`docs/evidence/0067-*.jpg` + `0067-piksel-raporu.json`, yeni taban): yeni kutu
       sırası ve maliyet kutusu olmayan müşteri detayı. Tam çekimde değişen her ekran (Dönem Raporu'nu çizen Giderler
       ekranları, borç özeti yüksekliği değişen boş durum / yürürlük öncesi / uygulama menüsü ekranları,
       `musteri-detay-0067`) `beklenen: "degisti"` + onay aldı ve `done`'a taşınırken `ayni`ye çevrilecek; R13'ün saydığı
       beş müşteri detayı ekranı 0 piksel kaldı ve `ayni` kaydedildi (R19, AC-25, AC-26).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: Dönem Raporu'nun kutu sırası; 0002 bölümündeki "müşteri detayında Maliyet
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: Dönem Raporu'nun kutu sırası; 0002 bölümündeki "müşteri detayında Maliyet
       ve Kâr kutusu (iki yer AYNI bileşen)" cümlesi ve 0050 bölümündeki maliyet kutusu paragrafı
       (varsayılan kapalı, `maliyetKutusuAcik`, görüntü aracının silme adımı) düzeltildi (AC-30).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -297,10 +297,10 @@
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (Q1–Q6; R19–R24, AC-31…AC-35). R3 uygulamada: R25 (`rapor.bos` dalı borç özetini zaten çiziyor); triyajda R4, AC-6, AC-29, X7, Context, AC-25 ve DoD bu bilgiye göre doğrudan düzeltildi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: spec metninin R25 ve R19 sonrası güncellenmemiş yerleri (yalnız belge). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | Tek bulgu gerçek (çelişen spec metni); kod bulgusu yok. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Tam çekimde değişen 40 ekranın hepsi bilinçli (R1, R21, R6) ve onaylı; motor diff'i boş. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Bu işte 0062'den kalan bir kaçan hata (Electron ekstre yerleşim testi) bulunup düzeltildi; 0062'ye işlendi. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'teki "bugün şöyle davranıyor" tespitleri (R4'ün boş durum iddiası, R13'ün etkilenen ekran listesi) koddan ve görüntü aracından doğrulanmadan yazılmıştı ve ikisi de yanlış çıktı; bu tür tespitler tahmin değil ölçüm olmalı (kanıt listesi için tam çekim, davranış için tek bir render). İkincisi: bir düzeltme maddesi (R25) eklendiğinde onu çelişen maddeleri yerinde düzeltmek gerekir; "böyle okunur" notu sonraki okuyucuyu yanıltır. Üçüncüsü: önceki bir işin Electron testleri bu işte koşulunca kırık çıktı; görünüm değiştiren her işte Electron yerleşim testleri de koşulmalı.

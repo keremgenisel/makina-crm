@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0067-gider-kutu-duzeni-ve-maliyet-kutusu.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0067-gider-kutu-duzeni-ve-maliyet-kutusu.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0067-kutu-duzeni` (`feat/0066-kasa-izin` kapanışından sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-02: bütün öneriler (Q1–Q6) kabul |
 
