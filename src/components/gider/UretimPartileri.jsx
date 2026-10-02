@@ -11,7 +11,8 @@ import { Rozet } from "./DonemRaporu";
 // Giderler › Üretim Partileri (spec 0022 R1, R3, R7, R11; plan P5, P8). Parti yalnız maliyet dağıtımının
 // tabanıdır (C7): kapsadığı ayların ortak gideri partinin makinalarına eşit bölünür. Rakamlar App'te bir kez
 // hesaplanan makina maliyetinden gelir (tek motor, C1). Tanım, kapatma ve silme `gider_tanim` ister (C5).
-// Silme kalıcıdır; makina bağı okuma anında çözüldüğü için alan temizlenmez (R11).
+// Spec 0068 R9: silme çöp kutusuna taşır; makina bağı okuma anında çözüldüğü için alan temizlenmez (0022 R11) ve parti geri
+// alınınca bağ kendiliğinden döner. Liste canlı dizidir; yazım tam dizi üzerinde işlevsel güncelleyiciyle (C8).
 const BOS = { id: null, ad: "", baslangicAy: "", bitisAy: null, aciklama: "" };
 const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };
 
@@ -42,12 +43,14 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
     showToast(yeni ? "Üretim partisi eklendi." : son.bitisAy && !eski?.bitisAy ? "Parti kapatıldı: maliyetlerdeki “geçici” ibaresi kalktı." : "Üretim partisi güncellendi.");
   };
   const silOnayla = () => {
-    setUretimPartileri(p => p.filter(x => x.id !== sil.p.id));
+    const zaman = new Date().toISOString();
+    setUretimPartileri(p => p.map(x => (x.id === sil.p.id ? { ...x, deletedAt: zaman } : x)));
     logAction({ serverPermissions, action: "silindi", entity: "uretim_partisi", entityId: sil.p.id, entityName: sil.p.ad });
     setSil(null);
-    showToast("Üretim partisi silindi.");
+    showToast("Üretim partisi çöp kutusuna taşındı.");
   };
-  const sirali = [...uretimPartileri].sort((a, b) => (a.baslangicAy !== b.baslangicAy ? (a.baslangicAy < b.baslangicAy ? 1 : -1) : String(a.ad).localeCompare(String(b.ad), "tr")));
+  // Spec 0068 C8: liste canlı kayıtlardır (ham dizi gelse de çöptekiler çizilmez).
+  const sirali = uretimPartileri.filter(p => !p.deletedAt).sort((a, b) => (a.baslangicAy !== b.baslangicAy ? (a.baslangicAy < b.baslangicAy ? 1 : -1) : String(a.ad).localeCompare(String(b.ad), "tr")));
   const th = { padding: "9px 12px" }, td = { padding: "10px 12px", borderTop: "1px solid var(--n150, #f1f5f9)", verticalAlign: "top" };
 
   return (
@@ -118,7 +121,7 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
       )}
       {sil && !kilitli && (
         <ConfirmDialog title="Üretim partisi silinsin mi?"
-          message={`“${sil.p.ad}” partisi kalıcı olarak silinecek. ${sil.n} makina bu partiye bağlı; silinince bu makinaların ortak gider payı üretildikleri ayın kuralına döner.`}
+          message={`“${sil.p.ad}” partisi çöp kutusuna taşınacak. ${sil.n} makina bu partiye bağlı; parti çöpteyken bu makinaların ortak gider payı üretildikleri ayın kuralına döner, geri alınınca parti dağıtımı geri gelir.`}
           onConfirm={silOnayla} onCancel={() => setSil(null)} />
       )}
     </div>

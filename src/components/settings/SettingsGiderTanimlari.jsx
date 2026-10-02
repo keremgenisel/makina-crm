@@ -6,6 +6,7 @@ import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
 import { TutarInput, AyInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
+import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
@@ -232,7 +233,7 @@ export const SettingsGiderTanimlari = ({
         </Modal>
       )}
       {silinecek && (
-        <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı kalıcı olarak silinecek (çöp kutusuna düşmez). Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
+        <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı silinecek. ${KALICI_SILME_NOTU} Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
           onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
     </KartBolum>

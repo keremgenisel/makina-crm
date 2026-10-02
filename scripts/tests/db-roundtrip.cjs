@@ -103,7 +103,7 @@ dbmod.writeBlobToDb({
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz", resmiMaliyet: 39223.13, eldenMaliyet: 15000 }, { id: 72, ad: "Mehmet Demir" }],
   // Gider kaydı (spec 0001): tür (meta JSON), tedarikçi, tekrarlayan tanım (JSON satırlar), kalem (model alt tablosu), standart gider.
   giderTurleri: [{ id: 41, ad: "Fabrika kirası", davranis: "kira" }, { id: 42, ad: "Personel", davranis: "personel" }, { id: 43, ad: "Hammadde", davranis: "normal" }],
-  tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli" }],
+  tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
   giderTanimlari: [
     { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false },
@@ -154,7 +154,7 @@ dbmod.writeBlobToDb({
       tarih: "2026-09-02", alacakliTur: "tedarikci", alacakliId: 71, alacakliAd: "Demir Bant", hesapId: 97, aciklama: "Eylül", gecmis: [] }],
   // Spec 0022: üretim partileri (biri kapalı, kapanış anlık görüntüsüyle).
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
-    { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "" }],
+    { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki parti
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
   partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
@@ -241,6 +241,10 @@ check("spec 0006: yedek parça teklifId/teklifKalemId ve Extra Kalıp teklifKale
 })());
 check("customer.brutKg tam turu", (blob.customers || []).find(c => c.id === 500)?.brutKg === 850);
 // Spec 0002 C4: satış kuru (REAL) ve üretim tarihi (TEXT) satış kaydında; geri dönen stok satırının özgün üretim tarihi.
+check("spec 0068 AC-20: tedarikçi ve üretim partisi deletedAt tam turu; canlı partide null", (() => {
+  const t = (blob.tedarikciler || [])[0], p = (blob.uretimPartileri || []);
+  return t?.deletedAt === "2026-10-01T09:00:00.000Z" && p.find(x => x.id === 96)?.deletedAt === "2026-10-01T09:00:00.000Z" && p.find(x => x.id === 95)?.deletedAt == null;
+})());
 check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSON, açık partide null)", (() => {
   const p = (blob.uretimPartileri || []);
   const k = p.find(x => x.id === 95), a = p.find(x => x.id === 96);
@@ -394,6 +398,7 @@ check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)
 check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 5 && /* spec 0054 kalemi 85 ile 5 */  (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
 check("reopen: ek ödeme satırları kalıcı (spec 0023 AC-13)", ((reopen.giderler || []).find(x => x.id === 83)?.ekOdemeler || []).length === 3);
 check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
+check("spec 0068 AC-21: yeniden açılışta çöpteki tedarikçi ve parti çöpte kalır", (reopen.tedarikciler || [])[0]?.deletedAt === "2026-10-01T09:00:00.000Z" && (reopen.uretimPartileri || []).find(x => x.id === 96)?.deletedAt === "2026-10-01T09:00:00.000Z");
 check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 3 && (reopen.standartGiderler || []).length === 2);
 check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
 

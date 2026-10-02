@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { parsePermissions, makeCanDo } from "../lib/permissions";
+import { withoutDeleted } from "../lib/utils";
 import { Icon, LockConflict } from "./ui";
 import { ModelsManager } from "./ModelsManager";
 import { KalipManager } from "./KalipManager";
@@ -36,6 +37,7 @@ import { SettingsGiderTanimlari } from "./settings/SettingsGiderTanimlari";
 import { useLock } from "../hooks/useLock";
 import { AYAR_KILITLI, AYAR_SALT_OKUNUR } from "../lib/kilitAlanlari";
 import { SettingsGider } from "./settings/SettingsGider";
+import { KALICI_SILME_NOTU } from "../lib/copKutusu";
 
 // Sol menü grupları gen-crm yapısı örnek alınarak düzenlendi: Sunucu artık Güvenlik'ten ayrı kendi
 // grubunda (server + kullanıcı/işlem geçmişi); Güvenlik yalnız şifre + güvenlik durumu; firma
@@ -290,14 +292,14 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
 
       {giderYetki && settingsTab === "gidertur" && (
         <KartBolum title="Gider Türleri" icon="gider">
-          <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır. Tür silme kalıcıdır, çöp kutusuna düşmez.</div>
+          <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır. Tür silindiğinde: {KALICI_SILME_NOTU}</div>
           <GiderTurManager giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} giderler={rawGiderler} setGiderler={setGiderler}
             giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
         </KartBolum>
       )}
       {giderYetki && settingsTab === "gidertanim" && (
         <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}
-          tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers} modeller={[...standardModels, ...customModels]}
+          tedarikciler={withoutDeleted(tedarikciler)} calisanlar={calisanlar} stock={stock} customers={customers} modeller={[...standardModels, ...customModels]}
           showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
       )}
       {giderYetki && settingsTab === "giderayar" && (
@@ -324,7 +326,8 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           customers={customers} services={services} dealers={dealers} stock={stock} partSales={partSales} payments={payments}
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
-         gorusmeler={rawGorusmeler} calisanlar={calisanlar} yedekParcaSatislar={yedekParcaSatislar} serverPermissions={serverPermissions}/>
+         gorusmeler={rawGorusmeler} calisanlar={calisanlar} yedekParcaSatislar={yedekParcaSatislar} serverPermissions={serverPermissions}
+         cekler={kasaVeriYetki && giderYetki ? cekler : null} />
       )}
 
       {settingsTab === "import" && (
@@ -366,7 +369,9 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
          rawPartTypeDefs={rawPartTypeDefs} setPartTypeDefs={setPartTypeDefs}
          rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}
          rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
-         rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}/>
+         rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}
+         rawTedarikciler={tedarikciler} setTedarikciler={setTedarikciler} rawUretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
+         serverPermissions={serverPermissions}/>
       )}
       </>)}
         </div>{/* /sağ içerik */}

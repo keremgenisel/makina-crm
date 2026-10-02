@@ -18,6 +18,7 @@ import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi, taksitAdi } from ".
 import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
+import { KALICI_SILME_NOTU } from "../lib/copKutusu";
 
 // Kasa üst sekmesi (spec 0024 A; R1, R7, R8, R15, R16; C1, C5, C6). Hesaplar (kasa, banka, kredi kartı), yürüyen
 // bakiyeli hareket listesi ve virman. Bakiye saklanmaz, hareketlerden türer (lib/kasa.js). Yalnız gider yetkisi +
@@ -631,7 +632,7 @@ export const Kasa = ({
         <HesapSilPenceresi hesap={tasinacak} plan={tasimaPlani} onTasi={tasiVeSil} onHesapsiz={() => tasiVeSil(null)} onClose={() => setTasinacak(null)} />
       )}
       {silinecek && (
-        <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok; kalıcı olarak silinecek.`}
+        <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok. ${KALICI_SILME_NOTU}`}
           confirmLabel="Hesabı Sil" onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
       {/* Spec 0058 R4, Q5 (AC-6): toplu işlem listenin tamamını etkiler (sayfayı değil, spec 0062 R17); onay sayıyı ve eşiğin durumunu söyler. */}

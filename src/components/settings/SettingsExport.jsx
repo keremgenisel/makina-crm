@@ -9,6 +9,7 @@ import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT
 import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { hareketTipAdi } from "../../lib/stokHareketi";
 import { useMailSender, MailComposeModal } from "../MailCompose";
+import { cekBilgisi, tahsilatHaritasi, yonOf, CEK_DURUM_AD, CEK_TUR_AD } from "../../lib/cek";
 
 // Kredi kartı taksit/komisyon export yardımcıları (payments/servis/Extra Kalıp/Yedek Parça'da ortak).
 // taksit 1 = "Tek Çekim"; komisyon = kartKomisyonu.toplamKesinti (banka kesintisi). Kredi kartı değilse boş.
@@ -129,7 +130,24 @@ export const finansOzetiSatirlari = (oz, services = [], tarih = new Date().toLoc
   ];
 };
 
-export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], yedekParcaSatislar = [], serverPermissions = null }) => {
+// Spec 0068 R3–R5 (AC-5, AC-6): çek portföyü satırı. Çek bilgisi tek okuma yoluyla (cekBilgisi: bağlı çekte tutar, vade ve
+// alınma tarihi tahsilattan, bağsızda çekin kendi alanlarından). İki taraf sütunu ayrıdır; verilen çekin alacaklısı çekin
+// kendi alacakliAd alanından okunur (gider/kasa bölümleri bu dosyaya girmez, gizlilik taraması). Alacaklısı çalışan olan çek
+// (çalışana ciro ya da kendi çekimizle çalışana ödeme) HİÇ listelenmez: tek kişiye yapılmış ödemedir ve 0047 gizlilik sınırı
+// çalışan adını da kişi bazlı ödemeyi de (tutar, tarih) çıktıdan dışlar (R27, TY kararı 2026-10-02: tamamen çıkar). Tahsilatı
+// çöpte olan bağlı çek listelenmez (portföyle aynı kural).
+export const CEK_EXPORT_HEAD = ["Yön", "Çek No", "Banka", "Keşideci", "Tür", "Tutar", "Para Birimi", "Vade", "Alınma / Yazılma Tarihi", "Durum", "Müşteri / Kimden", "Alacaklı", "Tahsilata Bağlı"];
+export const cekExportRow = (c, pById, customers = []) => {
+  if (c?.alacakliTur === "calisan") return null;
+  const b = cekBilgisi(c, pById);
+  if (!b) return null;
+  const verilen = yonOf(c) === "verilen";
+  const musteri = b.customerId != null ? (customers.find(x => String(x.id) === String(b.customerId))?.name || "") : "";
+  return [verilen ? "Verilen" : "Alınan", c.no || "", c.banka || "", c.kesideci || "", CEK_TUR_AD[c.tur] || c.tur || "", b.tutarK / 100, b.currency, b.vade, b.tarih,
+    CEK_DURUM_AD[c.durum] || c.durum || "", verilen ? "" : (musteri || b.kimden || ""), c.alacakliAd || "", b.bagli ? "Evet" : "Hayır"];
+};
+
+export const SettingsExport = ({ customers, services, dealers, stock, partSales, payments, notes, parts, faturalar = [], appSettings, factory = null, flash, teklifler = [], uretimFormlari = [], partStock = [], partStockLog = [], gorusmeler = [], calisanlar = [], yedekParcaSatislar = [], serverPermissions = null, cekler = null }) => {
   const [exportTooltip, setExportTooltip] = useState(null); // tablodaki üzerine gelinen rapor başlığı (native title yerine elle çizilen tooltip)
 
   // ── Dışa aktarımları e-posta ile gönder (CSV/XLSX, içerik otomatik ek olarak eklenir) ──
@@ -419,6 +437,18 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       downloadCSV(rows, "yedek-parca-satislari.csv"); flash("ok", "Yedek parça satışları CSV olarak indirildi.");
     }
   };
+  // Spec 0068 R3, R24: çek portföyü (yalnız kasa yetkisiyle cekler gelir; null ise rapor listelenmez).
+  const cekSatirlari = () => { const pById = tahsilatHaritasi(payments); return (cekler || []).map(c => cekExportRow(c, pById, customers)).filter(Boolean); };
+  const exportCekler = async (mode = "download") => {
+    const rows = [CEK_EXPORT_HEAD, ...cekSatirlari()];
+    try {
+      if (mode === "email") { const b64 = await xlsxToBase64(rows, "Çekler"); openExportMailXLSXBase64(b64, "cek-portfoyu.xlsx", "Çek Portföyü"); return; }
+      await downloadXlsx(rows, "cek-portfoyu.xlsx", "Çekler"); flash("ok", "Çek portföyü Excel olarak indirildi.");
+    } catch {
+      if (mode === "email") { openExportMailCSV(rows, "cek-portfoyu.csv", "Çek Portföyü"); return; }
+      downloadCSV(rows, "cek-portfoyu.csv"); flash("ok", "Çek portföyü CSV olarak indirildi.");
+    }
+  };
   // Tüm kayıtları İÇE AKTARMA ŞABLONU formatında tek Excel'de dışa aktar (geri yüklenebilir)
   const exportAllTemplate = async (mode = "download") => {
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -498,6 +528,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
           <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>Tüm Kayıtları İndir (Şablon Formatı)</div>
           <div style={{ fontSize: 12.5, marginBottom: 14, lineHeight: 1.5, opacity: .95 }}>
             Tüm müşteriler ve servis geçmişleri tek Excel dosyasında, <b>içe aktarma şablonuyla aynı sütun düzeninde</b>. Bu dosyayı düzenleyip tekrar İçe Aktar'dan yükleyebilirsiniz. ({customers.length} müşteri)
+            <div data-testid="tum-kayitlar-kapsam" style={{ marginTop: 6 }}>Yalnız müşteri (makina) ve servis kayıtlarını içerir; gider, kasa, çek, stok ve belgeler bu dosyada yoktur, onların yolu yedeklemedir.</div>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button onClick={() => exportAllTemplate("download")}
@@ -518,6 +549,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
             { title: "Servis Kayıtları", desc: `Tüm servis talepleri (${services.length} kayıt).`, onClick: exportServices },
             { title: "Extra Kalıp Satışları", desc: `Sonradan verilen/satılan kalıplar (${partSales.length} kayıt).`, onClick: exportPartSales },
             { title: "Ödemeler / Kapora", desc: `Tüm kapora/ödeme geçmişi (${payments.length} kayıt).`, onClick: exportPayments },
+            ...(Array.isArray(cekler) ? [{ title: "Çek Portföyü", desc: `Alınan ve verilen çekler; numara, banka, tutar, vade, durum (${cekSatirlari().length} kayıt).`, onClick: exportCekler }] : []),
           ] },
           { group: "Finans", items: [
             { title: "Finans Özeti", desc: "Toplam satış, komisyon, servis geliri, net toplam ve kalan alacak.", onClick: exportFinance },

@@ -47,6 +47,8 @@ const SILICI_STOKSUZ = JSON.stringify({ tabs: ["dashboard", "customers"], stockA
 // yalnız Ayarlar'ı açık kullanıcı (tedarikçi yazamamalı). Sekme listesi tanımsız eski kullanıcı: izin null.
 const GIDERCI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "gider_edit"] });
 const AYARCI = JSON.stringify({ tabs: ["settings"] });
+// Spec 0068: Çöp Kutusu kullanıcısı (Giderler + Ayarlar, tedarikçi silme ve gider tanımı izniyle).
+const COPCU = JSON.stringify({ tabs: ["gider", "settings"], giderActions: ["tedarikci_delete", "gider_tanim"] });
 // Yalnız tekrarlayan kalem üretme izni (triyaj bulgu 7: tanimId eklemek serbest kalem izni sayılmamalı).
 const URETICI = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_tekrar_uret"] });
 // Spec 0052: hesap tanımı yazmak Kasa sekmesi + önkoşul (Giderler ve Finans) ister; ödemeci üçüne de sahip.
@@ -98,6 +100,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("cirocu",      bcrypt.hashSync("ciro1234", 10), "user", CIROCU);
   dbmod.createUser("formodemeci", bcrypt.hashSync("form1234", 10), "user", FORM_ODEMECI);
   dbmod.createUser("cirosuz",     bcrypt.hashSync("ciro1234", 10), "user", CIROSUZ);
+  dbmod.createUser("copcu",       bcrypt.hashSync("copcu123", 10), "user", COPCU);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
   // Spec 0006 C8: yalnız Evrak sekmeli kullanıcı (CRM'e Kaydet): gereken eylem izinleriyle / kalıp izni olmadan.
@@ -460,6 +463,35 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("gider: yalnız izinli yazımlar kalıcı (9003 var, düzeltilmiş, ödenmemiş, model adı taşınmış; 9001/9004/9020 yok)",
     gSon.giderler.some(k => k.id === 9003 && k.aciklama === "düzeltildi" && k.odendi === false && k.modelSatirlari?.[0]?.modelAd === "AK100_SON")
     && !gSon.giderler.some(k => k.id === 9001 || k.id === 9004 || k.id === 9020) && gSon.giderler.some(k => k.id === 9011) && !(gSon.tedarikciler || []).length);
+
+  // ── Spec 0068 R15, R16 (AC-21, AC-22, AC-25, AC-26): tedarikçi çöp kutusuna gider; sunucu değişmedi ─────────────
+  {
+    const Z = "2026-10-01T09:00:00.000Z";
+    const tedarikci = { id: 9070, ad: "Çöp Ltd" };
+    const ad0 = await gUst(adminTok);
+    check("spec 0068: admin tedarikçi ekler → 200", (await postData({ ...ad0, dataVersion: undefined, tedarikciler: [...(ad0.tedarikciler || []), tedarikci] }, ad0.dataVersion, adminTok)).status === 200);
+    const gG3 = await gUst(gidTok);
+    check("spec 0068 AC-25: tedarikci_delete'siz kullanıcı çöpe atamaz → 403",
+      (await postData({ ...gG3, dataVersion: undefined, tedarikciler: gG3.tedarikciler.map(t => t.id === 9070 ? { ...t, deletedAt: Z } : t) }, gG3.dataVersion, gidTok)).status === 403);
+    const copTok = (await login("copcu", "copcu123")).body.token;
+    let gC = await gUst(copTok);
+    check("spec 0068: Giderler + Ayarlar kullanıcısı tedarikçiyi çöpe atar → 200",
+      (await postData({ ...gC, dataVersion: undefined, tedarikciler: gC.tedarikciler.map(t => t.id === 9070 ? { ...t, deletedAt: Z } : t) }, gC.dataVersion, copTok)).status === 200);
+    gC = await gUst(copTok);
+    check("spec 0068 AC-21: çöpteki tedarikçi kayıttan deletedAt ile okunur", gC.tedarikciler.find(t => t.id === 9070)?.deletedAt === Z);
+    const gA3 = await gUst(ayarTok);
+    check("spec 0068 AC-22: yalnız Ayarlar sekmeli kullanıcı geri alamaz (eşleme değişmedi) → 403",
+      (await postData({ ...gA3, dataVersion: undefined, tedarikciler: gA3.tedarikciler.map(t => t.id === 9070 ? { ...t, deletedAt: undefined } : t) }, gA3.dataVersion, ayarTok)).status === 403);
+    check("spec 0068 AC-22: Giderler + Ayarlar kullanıcısı Çöp Kutusu'ndan geri alır → 200 (403 yok)",
+      (await postData({ ...gC, dataVersion: undefined, tedarikciler: gC.tedarikciler.map(t => t.id === 9070 ? { ...t, deletedAt: undefined } : t) }, gC.dataVersion, copTok)).status === 200);
+    gC = await gUst(copTok);
+    check("spec 0068: geri alınan tedarikçi canlı", gC.tedarikciler.find(t => t.id === 9070)?.deletedAt == null);
+    await postData({ ...gC, dataVersion: undefined, tedarikciler: gC.tedarikciler.map(t => t.id === 9070 ? { ...t, deletedAt: Z } : t) }, gC.dataVersion, copTok);
+    gC = await gUst(copTok);
+    check("spec 0068 AC-26: çöpteki tedarikçi kalıcı silinir → 200",
+      (await postData({ ...gC, dataVersion: undefined, tedarikciler: gC.tedarikciler.filter(t => t.id !== 9070) }, gC.dataVersion, copTok)).status === 200
+      && !(await gUst(adminTok)).tedarikciler.some(t => t.id === 9070));
+  }
 
   // ── Spec 0040: çek portföyü (AC-20, AC-33, AC-34) ─────────────────────────────
   let cA = await gUst(adminTok);

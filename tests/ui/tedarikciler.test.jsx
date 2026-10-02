@@ -43,12 +43,14 @@ describe("Tedarikçiler (R13)", () => {
     fireEvent.click(screen.getByText("Tamam"));
     expect(st).toHaveLength(1);
   });
-  it("AC-45 / R12: kullanılmayan tedarikçi kalıcı silinir", () => {
+  it("AC-45 / R12: kullanılmayan tedarikçi silinir (spec 0068 R8 ile güncellendi: çöp kutusuna taşınır, listeden çıkar)", () => {
     let st;
     render(<TedHarness t0={[{ id: 1, ad: "Boş Firma" }]} onState={s => { st = s; }} />);
     fireEvent.click(within(satir("Boş Firma")).getByTitle("Sil"));
+    expect(screen.getByText(/çöp kutusuna taşınacak/)).toBeTruthy();
     fireEvent.click(screen.getByText("Evet, Sil"));
-    expect(st).toEqual([]);
+    expect(st).toEqual([expect.objectContaining({ id: 1, ad: "Boş Firma", deletedAt: expect.any(String) })]);
+    expect(screen.queryByText("Boş Firma")).toBeNull();
   });
   it("AC-46: ad değişince bağlı kalemler yeni adla görünür (bağ kimlikle)", () => {
     const kalem = { id: 5, tarih: "2026-09-10", turId: 4, tutar: 100, kdvOrani: 20, tedarikciId: 1, aciklama: "Sac" };

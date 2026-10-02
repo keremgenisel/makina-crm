@@ -70,6 +70,7 @@ kaça mal oldu" sorusu, üretimin kaç aya yayıldığından bağımsız olarak 
   parti bulunamazsa makina aylık kurala düşer, böylece çöpten geri alma bağı geri getirir. Parti silme
   **kalıcıdır** (tedarikçi ve gider türü deseni), çöp kutusuna düşmez; onaydaki sayı bilgilendiricidir,
   silmeyi engellemez.
+  > **Not (2026-10-02, spec 0068 R9):** parti silmesi artık çöp kutusuna taşınır ve geri alınabilir (tedarikçi de öyle); motorun `canliPartiler` süzmesi sayesinde çöpteki partinin makinaları bu maddedeki gibi aylık kurala düşer, geri alınınca parti dağıtımı döner.
 - **R12.** **Partili makina, üretildiği ayın üretim sayısına girmez**: payını partiden alır ve ayın
   bölmesinde parti bir hak sahibi olarak yer alır (R4). Bu kural, 0002 R1c'nin "üretim sayısı" tanımıyla
   bu spec'in tabanının çakışmasını önler; makinanın üretim tarihi partisiyle çelişirse **parti kazanır**,

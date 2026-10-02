@@ -10,6 +10,8 @@ import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri } from "../../lib/cek";
+import { makeCanDo } from "../../lib/permissions";
+import { KALICI_SILME_NOTU, KALICI_SILINEN_BOLUMLER, geriAlmaAdCakismasi } from "../../lib/copKutusu";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -24,6 +26,9 @@ export const SettingsTrash = ({
   // Yetkisiz kullanıcının "çöpü boşalt"ı giderlere dokunmaz; yoksa göremediği kaydı siler ve sunucu
   // gider bölümü yazımını reddettiği için tüm kayıt 403 alırdı.
   rawGiderler = [], setGiderler = null, giderTurleri = [], giderYetki = false,
+  // Spec 0068 R8, R9, R11, R21: tedarikçi ve üretim partisi de çöp kutusuna gider. Satırlar gider satırlarıyla aynı kapıda
+  // (gider yetkisi); geri alma ve kalıcı silme silme izniyle (tedarikçide tedarikci_delete, partide gider_tanim).
+  rawTedarikciler = [], setTedarikciler = null, rawUretimPartileri = [], setUretimPartileri = null, serverPermissions = null,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -187,6 +192,24 @@ export const SettingsTrash = ({
   };
   const restoreGider = (g) => { setGiderler?.(p => p.map(x => x.id === g.id ? { ...x, deletedAt: undefined } : x)); showToast("Gider kalemi geri alındı; raporlara aynı tutarla döner."); };
   const purgeGider = (g) => { setGiderler?.(p => p.filter(x => x.id !== g.id)); showToast("Gider kalemi kalıcı olarak silindi."); };
+  const giderCanDo = makeCanDo(serverPermissions, "giderActions");
+  const tedarikciYetki = giderYetki && !!setTedarikciler && giderCanDo("tedarikci_delete");
+  const partiYetki = giderYetki && !!setUretimPartileri && giderCanDo("gider_tanim");
+  // R20: aynı adda canlı kayıt varsa geri alma yapılmaz, nedeni söylenir.
+  const restoreTedarikci = (t) => {
+    const h = geriAlmaAdCakismasi(t, rawTedarikciler, "tedarikçi");
+    if (h) { showToast(h, "err"); return; }
+    setTedarikciler(p => p.map(x => (x.id === t.id ? { ...x, deletedAt: undefined } : x)));
+    showToast("Tedarikçi geri alındı.");
+  };
+  const purgeTedarikci = (t) => { setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi."); };
+  const restoreParti = (u) => {
+    const h = geriAlmaAdCakismasi(u, rawUretimPartileri, "parti");
+    if (h) { showToast(h, "err"); return; }
+    setUretimPartileri(p => p.map(x => (x.id === u.id ? { ...x, deletedAt: undefined } : x)));
+    showToast("Üretim partisi geri alındı; makinaların parti dağıtımı geri geldi.");
+  };
+  const purgeParti = (u) => { setUretimPartileri(p => p.filter(x => x.id !== u.id)); showToast("Üretim partisi kalıcı olarak silindi."); };
   const purgeYedekParca = (s) => { setYedekParcaSatislar?.(p => p.filter(x => x.id !== s.id)); showToast("Yedek parça satışı kalıcı olarak silindi."); };
   const emptyTrash = () => {
     // Çöpten kalıcı silinecek müşterilerin id'leri — bunlara bağlı görüşme/dosyalar kendileri
@@ -220,6 +243,9 @@ export const SettingsTrash = ({
     setCalisanlar?.(p => p.filter(x => !x.deletedAt));
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
     if (giderYetki && rawGiderler.some(x => x.deletedAt)) setGiderler?.(p => p.filter(x => !x.deletedAt));
+    // Spec 0068 R11 (AC-15, AC-33): yalnız görebildiği ve silme izni olan kullanıcının boşaltması dokunur (gider satırlarıyla aynı ilke).
+    if (tedarikciYetki && rawTedarikciler.some(x => x.deletedAt)) setTedarikciler(p => p.filter(x => !x.deletedAt));
+    if (partiYetki && rawUretimPartileri.some(x => x.deletedAt)) setUretimPartileri(p => p.filter(x => !x.deletedAt));
     showToast(korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
       ? `Çöp kutusu boşaltıldı; ciro edilmiş çeke bağlı ${rawPayments.filter(korunanOdeme).length} tahsilat (ve müşterisi) çöpte bırakıldı. Önce ciroyu iptal edin.`
       : "Çöp kutusu boşaltıldı.");
@@ -264,9 +290,14 @@ export const SettingsTrash = ({
         const ozet = tur?.davranis === "personel" ? (g.calisanAd || "Personel") : `${g.aciklama || "—"} · ${fmtCur(g.tutar || 0, "TRY")}`;
         items.push({ key: `gider-${g.id}`, type: "Gider", label: `${tur?.ad || "Gider"} · ${ozet} · ${fmtTR(g.tarih)}`, deletedAt: g.deletedAt, restore: () => restoreGider(g), purge: () => purgeGider(g) });
       });
+      // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
+      rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
+        restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki ? () => purgeTedarikci(t) : null }));
+      rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
+        restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
     }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawGiderler, giderTurleri, giderYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
+  }, [rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });
@@ -277,6 +308,12 @@ export const SettingsTrash = ({
         <div className="section-desc">
           Silinen kayıtlar buraya taşınır ve <b>30 gün</b> sonra otomatik olarak kalıcı silinir. Bu süre içinde geri alabilirsiniz.
         </div>
+        {/* Spec 0068 R13 (AC-17): kalıcı silinen (gider ve kasa) bölümleri söyleyen tek satır; metin tek sabitten, yalnız gider yetkisiyle. */}
+        {giderYetki && (
+          <div data-testid="kalici-silme-notu" className="section-desc" style={{ marginTop: -4 }}>
+            {KALICI_SILINEN_BOLUMLER} silinince: {KALICI_SILME_NOTU}
+          </div>
+        )}
         {trashItems.length > 0 && (
           <div style={{ marginBottom: 14 }}>
             <Btn variant="danger" onClick={() => setConfirmEmptyTrash(true)}>
@@ -311,8 +348,8 @@ export const SettingsTrash = ({
                         <td style={{ padding: "10px 16px", fontSize: 12, color: "var(--n500, #64748b)" }}>{item.deletedAt ? fmtTR(item.deletedAt.slice(0, 10)) : "—"}</td>
                         <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                            <Btn small variant="ghost" onClick={item.restore}><Icon name="refresh" size={12} /> Geri Al</Btn>
-                            <Btn small variant="danger" onClick={() => setConfirmPurge(item)}><Icon name="trash" size={12} /> Kalıcı Sil</Btn>
+                            {item.restore && <Btn small variant="ghost" onClick={item.restore}><Icon name="refresh" size={12} /> Geri Al</Btn>}
+                            {item.purge && <Btn small variant="danger" onClick={() => setConfirmPurge(item)}><Icon name="trash" size={12} /> Kalıcı Sil</Btn>}
                           </div>
                         </td>
                       </tr>

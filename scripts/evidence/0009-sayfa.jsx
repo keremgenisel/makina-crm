@@ -38,6 +38,15 @@ import { UserManager } from "../../src/components/settings/UserManager";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
+if (ekran === "ayarlar-0068-auditlog") {
+  // Spec 0068 R1: İşlem Geçmişi'nde üretim partisi satırı okunur adla (yerel IPC köprüsü sahte).
+  const SATIRLAR = [
+    { ts: "2026-09-23T09:30:00.000Z", username: "muhasebe", role: "user", action: "silindi", entity: "uretim_partisi", entity_id: 901, entity_name: "2026-1", detail: "" },
+    { ts: "2026-09-23T09:10:00.000Z", username: "muhasebe", role: "user", action: "olusturuldu", entity: "uretim_partisi", entity_id: 902, entity_name: "2026-2", detail: "" },
+    { ts: "2026-09-22T16:00:00.000Z", username: "admin", role: "admin", action: "silindi", entity: "tedarikci", entity_id: 13, entity_name: "Akın Hırdavat", detail: "" },
+  ];
+  window.auditLog = { get: async (q = {}) => ({ ok: true, rows: SATIRLAR.slice(q.offset || 0, (q.offset || 0) + (q.limit || 10)), total: SATIRLAR.length }) };
+}
 if (ekran.startsWith("kullanici-izin-kasa")) {
   // Spec 0052: izin ekranı. Geri doldurulmuş (Kasa'lı) ve Kasa'sı kaldırılmış iki kullanıcı; ikincisi düzenlemede açılır.
   const KULLANICILAR = [
@@ -173,7 +182,7 @@ function EvrakEkrani({ teklif }) {
     geoData={{}} loadingGeo={false} serverPermissions={null} dealers={DEALERS} yedekParcaSatislar={[]} onEvrakKaydet={bos} />;
 }
 
-const ayarlar = (tab) => (
+const ayarlar = (tab, o = {}) => (
   <Settings initialTab={tab} onInitialTabConsumed={bos} customers={MUSTERILER} services={[]} dealers={DEALERS} stock={[]} setStock={bos} setCustomers={bos}
     setServices={bos} setDealers={bos} version="3.39.0" appSettings={AYAR} setAppSettings={bos} customModels={[]} setCustomModels={bos}
     standardModels={MODELLER} setStandardModels={bos} factory={{ name: "Altuntaş Makina", city: "Konya" }} setFactory={bos} kalipDefs={[{ id: 1, ad: "Hamburger" }]} setKalipDefs={bos}
@@ -184,7 +193,7 @@ const ayarlar = (tab) => (
     rawGorusmeler={[]} setGorusmeler={bos} rawDosyalar={[]} setDosyalar={bos} yedekParcaSatislar={[]} setYedekParcaSatislar={bos} rawYedekParcaSatislar={[]}
     serverPermissions={null} giderYetki giderVeriYetki giderler={GIDERLER} setGiderler={bos} rawGiderler={[...GIDERLER, k(99, { deletedAt: "2026-09-20T10:00:00Z", aciklama: "Silinen" })]}
     giderTanimlari={TANIMLAR} setGiderTanimlari={bos} giderTurleri={TURLER} setGiderTurleri={bos} tedarikciler={TED} setTedarikciler={bos}
-    standartGiderler={STANDART} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} />
+    standartGiderler={STANDART} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} {...o} />
 );
 
 const FINANS = ({ rapor = null }) => (
@@ -472,6 +481,11 @@ const gider62 = (o = {}) => <GiderEkrani g0={G62} musteriler={[...MUSTERILER, ..
 const hatirlatma62 = <Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   giderYetki giderler={G62} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />;
 const sayfa2 = (adimlar) => [...adimlar, "dugme:Sonraki ›"];
+// Spec 0068: Çöp Kutusu'nda tedarikçi ve üretim partisi; Dışa Aktar'da çek raporu (kasa yetkisiyle).
+const COP_TED = [...TED, { id: 13, ad: "Akın Hırdavat", yetkili: "Murat", deletedAt: "2026-09-22T16:00:00.000Z" }];
+const COP_PARTI = [{ id: 903, ad: "2026-0", baslangicAy: "2026-03", bitisAy: "2026-05", deletedAt: "2026-09-21T11:00:00.000Z" }];
+const CEK68 = [{ id: 6801, yon: "alinan", paymentId: null, no: "0445566", banka: "Vakıfbank", kesideci: "Kaya Ltd.", tur: "hamiline", durum: "portfoy", tutar: 12500, currency: "TRY",
+  vadeTarihi: "2026-11-30", tarih: "2026-09-12", kimden: "Kaya Ltd.", gecmis: [] }];
 
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -770,6 +784,12 @@ const EKRANLAR = {
   "giderler-0062-acik-kalemler-sayfa2": [gider62(), [...sayfa2(["dugme:Açık kalemler (tüm dönemler)"]), "kaydir:Gider tarihi"]],
   "giderler-0062-ekstre": [gider62(), ["Tedarikçiler", "dugme:Ekstre"]],
   "giderler-0062-ekstre-sayfa2": [gider62(), sayfa2(["Tedarikçiler", "dugme:Ekstre"])],
+  // Spec 0068: Çöp Kutusu satırları ve kalıcı silme bilgi satırı, İşlem Geçmişi parti etiketi, çek raporu, iki silme penceresi.
+  "ayarlar-0068-trash": [ayarlar("trash", { tedarikciler: COP_TED, uretimPartileri: COP_PARTI, setUretimPartileri: bos }), []],
+  "ayarlar-0068-auditlog": [ayarlar("auditlog"), []],
+  "ayarlar-0068-export-cek": [ayarlar("export", { kasaVeriYetki: true, cekler: CEK68 }), ["tikla:Müşteri & Servis (5)"]],
+  "giderler-0068-tedarikci-sil": [<GiderEkrani tedler={[{ id: 14, ad: "Akın Hırdavat" }, ...TED]} />, ["Tedarikçiler", "baslik:Sil"]],
+  "giderler-0068-parti-sil": partiEkrani(["Üretim Partileri", "baslik:Sil"]),
   "anasayfa-0062-hatirlatma": [hatirlatma62, ["Gider Ödemeleri"]],
   "anasayfa-0062-hatirlatma-sayfa2": [hatirlatma62, [...sayfa2(["Gider Ödemeleri"]), "kaydir:Yaklaşan ("]], // son "Sonraki ›" yaklaşan bölümün
   "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],

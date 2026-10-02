@@ -1341,3 +1341,30 @@ describe("spec 0056 triyaj: sunucudaki taşıma istisnası dönem bitince kapan�
     expect(hesapTasimaYazimiMi(e, { ...y, appSettings: { giderAyarlari: { denemeDonemiBitis: "2099-01-01" } } })).toBe(false);
   });
 });
+
+// Spec 0068 R15, R16, C4 (AC-22, AC-24, AC-26): tedarikçi ve üretim partisi çöp kutusuna gider; sunucu değişmedi.
+describe("Spec 0068: tedarikçi ve üretim partisinde çöpe atma, geri alma ve kalıcı silme", () => {
+  const ZAMAN = "2026-10-01T09:00:00.000Z";
+  const giderAyarci = JSON.stringify({ tabs: ["gider", "settings"] });
+  const yalnizAyarci = JSON.stringify({ tabs: ["settings"] });
+  it("AC-22: gider + ayarlar sekmeli kullanıcı Çöp Kutusu'ndan geri alır (403 yok); yalnız ayarlar sekmeli kullanıcı yazamaz", () => {
+    for (const [b, k] of [["tedarikciler", { id: 5, ad: "A" }], ["uretimPartileri", { id: 6, ad: "P", baslangicAy: "2026-07" }]]) {
+      const eski = { [b]: [{ ...k, deletedAt: ZAMAN }] }, yeni = { [b]: [{ ...k }] };
+      expect(yazmaYetkisiVar(giderAyarci, "user", [b], eski, yeni).ok, b).toBe(true);
+      expect(eylemDenetimi(eski, yeni, giderAyarci, "user").ok, b).toBe(true);
+      expect(yazmaYetkisiVar(yalnizAyarci, "user", [b], eski, yeni).ok, b).toBe(false);
+    }
+  });
+  it("AC-24 / R16: çöpe atma (deletedAt damgası) sunucuda silme sayılır ve silme iznini ister; yeni izin kimliği yok (giderler ile aynı)", () => {
+    const p = (g) => JSON.stringify({ tabs: ["gider"], giderActions: g });
+    expect(eylemDenetimi({ tedarikciler: [{ id: 5, ad: "A" }] }, { tedarikciler: [{ id: 5, ad: "A", deletedAt: ZAMAN }] }, p(["tedarikci_edit"]), "user").gerekli).toBe("tedarikci_delete");
+    expect(eylemDenetimi({ tedarikciler: [{ id: 5, ad: "A" }] }, { tedarikciler: [{ id: 5, ad: "A", deletedAt: ZAMAN }] }, p(["tedarikci_delete"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ uretimPartileri: [{ id: 6 }] }, { uretimPartileri: [{ id: 6, deletedAt: ZAMAN }] }, p(["gider_edit"]), "user").gerekli).toBe("gider_tanim");
+  });
+  it("AC-26 / R16: geri alma ve çöpteki kaydın kalıcı silinmesi bölüm düzeyinde geçer (giderler ile aynı kabul edilen sınır; arayüz silme izniyle kapılar)", () => {
+    const p = JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add"] });
+    expect(eylemDenetimi({ tedarikciler: [{ id: 5, ad: "A", deletedAt: ZAMAN }] }, { tedarikciler: [{ id: 5, ad: "A" }] }, p, "user").ok).toBe(true);
+    expect(eylemDenetimi({ tedarikciler: [{ id: 5, ad: "A", deletedAt: ZAMAN }] }, { tedarikciler: [] }, p, "user").ok).toBe(true);
+    expect(eylemDenetimi({ uretimPartileri: [{ id: 6, deletedAt: ZAMAN }] }, { uretimPartileri: [] }, p, "user").ok).toBe(true);
+});
+});

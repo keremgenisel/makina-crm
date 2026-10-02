@@ -227,3 +227,24 @@ describe("Spec 0061: yaşlandırma tablosu gizliliği", () => {
     for (const yasak of ["Behiye", "Yusuf"]) expect(html, yasak).not.toContain(yasak);
   });
 });
+
+// Spec 0068 R5, R27 (AC-7, AC-43): çek dışa aktarması çıktı temelli denetlenir. Alacaklısı çalışan olan çek (çalışana ciro
+// ya da kendi çekimizle çalışana ödeme) hiç listelenmez: ad, tutar, tarih ve vade çıktıya girmez (TY kararı: tamamen çıkar).
+// Ayırt edici değerler 0059 fixture'ındaki çalışanın adı ve resmi maaşı. Tedarikçi alacaklı adıyla görünür.
+describe("Spec 0068: çek dışa aktarması gizlilik sınırını aşmaz", () => {
+  it("AC-7 / AC-43: çalışana giden çek satırı yok; adı, tutarı, tarihi ve vadesi çıktıda geçmez", async () => {
+    const { cekExportRow } = await import("../src/components/settings/SettingsExport.jsx");
+    const cekler = [
+      { id: 1, yon: "verilen", paymentId: null, no: "A-9", banka: "Ziraat", durum: "yazildi", tutar: 31111, tarih: "2026-09-10", vadeTarihi: "2026-10-17",
+        alacakliTur: "calisan", alacakliId: 21, alacakliAd: "Zümrüt Kaplanoğlu" },
+      { id: 2, paymentId: null, no: "C-7", banka: "Garanti", durum: "ciro", tutar: 17777, currency: "TRY", tarih: "2026-08-03", vadeTarihi: "2026-09-29",
+        alacakliTur: "calisan", alacakliId: 21, alacakliAd: "Zümrüt Kaplanoğlu" },
+      { id: 3, paymentId: null, no: "B1", banka: "Vakıf", durum: "ciro", tutar: 100, currency: "TRY", alacakliTur: "tedarikci", alacakliId: 11, alacakliAd: "Demir Bant" },
+    ];
+    const satirlar = cekler.map(c => cekExportRow(c, new Map(), [])).filter(Boolean);
+    expect(satirlar).toHaveLength(1);
+    expect(satirlar[0][11]).toBe("Demir Bant");
+    const metin = satirlar.map(s => s.join("|")).join("\n");
+    for (const yasak of [/Zümrüt|Kaplanoğlu|Çalışan/, /31111|31\.111|17777|17\.777/, /2026-09-10|2026-10-17|2026-08-03|2026-09-29/, /A-9|C-7/]) expect(metin).not.toMatch(yasak);
+  });
+});

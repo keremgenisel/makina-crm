@@ -773,6 +773,18 @@
         "rapor": "docs/evidence/0064-piksel-raporu.json",
         "ekran": "ayarlar-trash",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R22"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R22"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -1298,6 +1310,12 @@
         "rapor": "docs/evidence/0062-piksel-raporu.json",
         "ekran": "giderler-tedarikciler",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "giderler-0068-tedarikci-sil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R8"
       }
     ],
     "src/components/settings/GiderTurManager.jsx": [
@@ -1309,6 +1327,12 @@
         "rapor": "docs/evidence/0045-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R22"
       }
     ],
     "src/components/settings/SettingsApp.jsx": [
@@ -1364,6 +1388,18 @@
         "rapor": "docs/evidence/0065-piksel-raporu.json",
         "ekran": "ayarlar-export",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-export",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R6"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-0068-export-cek",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R3"
       }
     ],
     "src/components/settings/SettingsGider.jsx": [
@@ -1412,6 +1448,12 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-import"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-import",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R6"
       }
     ],
     "src/components/settings/SettingsKdv.jsx": [
@@ -1515,6 +1557,18 @@
         "rapor": "docs/evidence/0065-piksel-raporu.json",
         "ekran": "ayarlar-trash",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R13"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "ayarlar-0068-trash",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R11"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -2183,6 +2237,12 @@
         "rapor": "docs/evidence/0064-piksel-raporu.json",
         "ekran": "giderler-uretim-partileri",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0068-piksel-raporu.json",
+        "ekran": "giderler-0068-parti-sil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-02 · spec 0068 R9"
       }
     ],
     "src/components/Kasa.jsx": [

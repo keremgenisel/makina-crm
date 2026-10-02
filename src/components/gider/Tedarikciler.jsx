@@ -13,7 +13,8 @@ import { tedarikciEkstresi } from "../../lib/kasa";
 
 // Giderler › Tedarikçiler (spec 0001 R13, AC-40/44/45/46/62; plan K16). Ayarlar'da DEĞİL, bu sekmede
 // yönetilir: settings izni olan ama gider yetkisi olmayan kullanıcı listeyi görmesin (AC-48).
-// Silme kalıcıdır (R12); kullanımdaki tedarikçi (çöpteki kalemler ve tanımlar dahil) silinemez.
+// Spec 0068 R8: silme çöp kutusuna taşır (geri alınabilir); kullanımdaki tedarikçi (çöpteki kalemler ve tanımlar dahil)
+// bugünkü gibi silinemez. Liste canlı dizidir; yazım her zaman tam dizi üzerinde işlevsel güncelleyiciyle (C8).
 const BOS = { id: null, ad: "", yetkili: "", telefon: "", eposta: "", vergiDairesi: "", vergiNo: "", adres: "", not: "" };
 
 export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
@@ -45,12 +46,14 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   };
   const silAc = (t) => setSil({ t, k: tedarikciKullanim(t.id, giderler, giderTanimlari) });
   const silOnayla = () => {
-    setTedarikciler(p => p.filter(x => x.id !== sil.t.id));
+    const zaman = new Date().toISOString();
+    setTedarikciler(p => p.map(x => (x.id === sil.t.id ? { ...x, deletedAt: zaman } : x)));
     logAction({ serverPermissions, action: "silindi", entity: "tedarikci", entityId: sil.t.id, entityName: sil.t.ad });
     setSil(null);
-    showToast("Tedarikçi silindi.");
+    showToast("Tedarikçi çöp kutusuna taşındı.");
   };
-  const sirali = [...tedarikciler].sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+  // Spec 0068 C8: liste canlı kayıtlardır (App canlı diziyi verir; ham dizi gelse de çöptekiler çizilmez).
+  const sirali = tedarikciler.filter(t => !t.deletedAt).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   // Spec 0062 R7, R26 (b): arama kutusu yok; usePagination ile sayfalanır.
   const { page, setPage, paged, perPage } = usePagination(sirali, 10);
   const alan = (ad, key, ph) => <Field label={ad}><Input value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} /></Field>;
@@ -58,7 +61,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   return (
     <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, overflow: "hidden" }} data-testid="tedarikciler">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderBottom: "1px solid var(--n200, #e2e8f0)", gap: 10, flexWrap: "wrap" }}>
-        <b>Tedarikçiler <span style={{ color: "var(--n500, #64748b)", fontWeight: 500, fontSize: 13 }}>· {tedarikciler.length}</span></b>
+        <b>Tedarikçiler <span style={{ color: "var(--n500, #64748b)", fontWeight: 500, fontSize: 13 }}>· {sirali.length}</span></b>
         {canDo("tedarikci_add") && <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> Yeni Tedarikçi</Btn>}
       </div>
       {sirali.length === 0 ? (
@@ -122,7 +125,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
           </div>
         </Modal>
       ) : (
-        <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” kalıcı olarak silinecek (çöp kutusuna düşmez).`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
+        <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” çöp kutusuna taşınacak; Ayarlar › Çöp Kutusu'ndan geri alınabilir.`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
       ))}
       {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)} onClose={() => setEkstre(null)} />}
     </div>

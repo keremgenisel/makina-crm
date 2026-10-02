@@ -5,6 +5,7 @@ import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal } from "../ui";
 import { DavranisRozeti, DAVRANIS_AD } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
+import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Gider türleri (spec 0001 R2, plan K12/K13). Davranış (normal / kira / personel) tür oluşturulurken
 // seçilir; tür kullanıma girince davranışı kilitlenir (ad serbest). Silme kalıcıdır (R12): kullanımdaki
@@ -157,7 +158,7 @@ export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler =
             footer={engelli
               ? <Btn onClick={() => setSil(null)}>Tamam</Btn>
               : <><Btn variant="ghost" onClick={() => setSil(null)}>İptal</Btn><Btn variant="danger" onClick={silOnayla}><Icon name="trash" size={14} /> {kullanimda ? "Taşı ve Sil" : "Sil"}</Btn></>}>
-            {!kullanimda && <div style={{ fontSize: 13 }}>Bu tür hiçbir kalemde veya tanımda kullanılmıyor. Silme kalıcıdır, çöp kutusuna düşmez.</div>}
+            {!kullanimda && <div style={{ fontSize: 13 }}>Bu tür hiçbir kalemde veya tanımda kullanılmıyor. {KALICI_SILME_NOTU}</div>}
             {kullanimda && (
               <div style={{ fontSize: 13, lineHeight: 1.6 }}>
                 Bu türe bağlı <b>{sil.kullanim.kalem} gider kalemi</b>{sil.kullanim.cop ? ` (${sil.kullanim.cop}’i çöpte)` : ""}{sil.kullanim.tanim ? <> ve <b>{sil.kullanim.tanim} tekrarlayan tanım</b></> : null} var. Hiçbir kalem türsüz kalamaz.
@@ -172,7 +173,7 @@ export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler =
                         {sil.hedefler.map(h => <option key={h.id} value={h.id}>{h.ad}</option>)}
                       </Select>
                     </Field>
-                    <Ipucu>Listede yalnız {DAVRANIS_AD[sil.tur.davranis]} davranışlı türler var ({sil.hedefler.length}). Tür silme kalıcıdır, çöpe düşmez.</Ipucu>
+                    <Ipucu>Listede yalnız {DAVRANIS_AD[sil.tur.davranis]} davranışlı türler var ({sil.hedefler.length}). {KALICI_SILME_NOTU}</Ipucu>
                   </div>
                 )}
               </div>

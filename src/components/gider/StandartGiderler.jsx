@@ -8,6 +8,7 @@ import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { TutarInput, AyInput, tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
+import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Giderler › Standart Genel Giderler (spec 0001 R22, AC-92…AC-96; plan K37). Bütçe/varsayım listesi:
 // dönem gider raporunun HİÇBİR toplamına girmez (hesaplaGiderRaporu bu listeyi almaz); yalnız makina
@@ -126,7 +127,7 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
           <HataMetni>{islem.hata}</HataMetni>
         </Modal>
       )}
-      {silinecek && !kilitli && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) kalıcı olarak silinecek. Çöp kutusuna düşmez.`}
+      {silinecek && !kilitli && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) silinecek. ${KALICI_SILME_NOTU}`}
         onConfirm={() => { uygula(standartGrupSil(standartGiderler, silinecek.grupId), "Silindi.", { action: "silindi", entityId: silinecek.grupId, entityName: silinecek.ad }); setSilinecek(null); }}
         onCancel={() => setSilinecek(null)} />}
     </div>

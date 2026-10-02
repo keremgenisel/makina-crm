@@ -84,15 +84,16 @@ describe("Giderler › Üretim Partileri (R1, R11, C5)", () => {
     expect(within(satir()).getByText("4.000 ₺")).toBeTruthy();
     expect(within(satir()).getByText("2.000 ₺")).toBeTruthy();
   });
-  it("AC-14: silme onayında etkilenen makina sayısı yazar; silinince liste boşalır", () => {
+  it("AC-14: silme onayında etkilenen makina sayısı yazar; silinince liste boşalır (spec 0068 R9 ile güncellendi: çöp kutusuna taşınır)", () => {
     let st;
     render(<GiderHarness p0={[{ id: 1, ad: "Silinecek", baslangicAy: "2026-01", bitisAy: "2026-02" }]} stock={[stk(1, { partiId: 1 }), stk(2, { partiId: 1 })]}
       customers={[{ id: 9, name: "F", model: "AK100", partiId: 1, installDate: "2026-04-01" }]} onState={s => { st = s; }} />);
     partilerSekmesi();
     fireEvent.click(within(screen.getByTestId("parti-satiri")).getByTitle("Sil"));
-    expect(screen.getByText(/3 makina bu partiye bağlı; silinince bu makinaların ortak gider payı üretildikleri ayın kuralına döner/)).toBeTruthy();
+    expect(screen.getByText(/3 makina bu partiye bağlı; parti çöpteyken bu makinaların ortak gider payı üretildikleri ayın kuralına döner, geri alınınca parti dağıtımı geri gelir/)).toBeTruthy();
     fireEvent.click(screen.getByText("Evet, Sil"));
-    expect(st.uretimPartileri).toEqual([]);
+    expect(st.uretimPartileri).toEqual([expect.objectContaining({ id: 1, deletedAt: expect.any(String) })]);
+    expect(screen.queryByTestId("parti-satiri")).toBeNull();
   });
   it("C5: gider_tanim yoksa parti ekleme, düzenleme ve silme düğmeleri çizilmez", () => {
     const perms = { role: "user", permissions: JSON.stringify({ tabs: ["gider"], giderActions: ["gider_add", "gider_edit"] }) };

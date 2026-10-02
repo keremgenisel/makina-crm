@@ -47,7 +47,7 @@ try {
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }],
-    tedarikciler: [{ id: 31, ad: "Tedarikçi A" }],
+    tedarikciler: [{ id: 31, ad: "Tedarikçi A" }, { id: 39, ad: "Çöpteki", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b
     giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [] }],
     giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
       ekOdemeler: [{ tur: "ikramiye", aciklama: "Bayram", resmiTutar: 500, eldenTutar: null }],
@@ -58,7 +58,7 @@ try {
         taksitler: [{ id: 7011, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 1000, odendi: false, odemeTarihi: null }, { id: 7012, hedef: "elden", sira: 1, vade: "2026-07-31", tutar: 800, odendi: false, odemeTarihi: null },
           { id: 7013, hedef: "ekResmi", sira: 1, vade: "2026-07-31", tutar: 200, odendi: false, odemeTarihi: null }, { id: 7014, hedef: "ekElden", sira: 1, vade: "2026-07-31", tutar: 100, odendi: false, odemeTarihi: null }] }],
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
-    uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }],
+    uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }, { id: 40, ad: "P0", baslangicAy: "2026-06", bitisAy: null, deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b
     // Spec 0058: temiz kurulumda kasa_kapsam_disi tablosu.
     kasaKapsamDisi: [{ id: 39, tur: "hareket", kaynak: null, kayitId: 38, zaman: "2026-10-01T10:00:00.000Z" }],
     // Spec 0040: temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu.
@@ -91,7 +91,8 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
   const ok = t?.aliciTipi === "bayi" && t?.dealerId === 2 && t?.nihaiMusteriId === 1 && t?.uretilenKalemler?.[0] === "a" && y?.teklifId === 9 && y?.teklifKalemId === "a";
   return ok;
 })());
-check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 1 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
+check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 2 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
+check("spec 0068 AC-20: temiz kurulumda tedarikciler ve uretim_partileri deletedAt sütunu oluştu", (blob.tedarikciler || []).find(x => x.id === 39)?.deletedAt === "2026-10-01T09:00:00.000Z" && (blob.uretimPartileri || []).find(x => x.id === 40)?.deletedAt === "2026-10-01T09:00:00.000Z");
 check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
 check("temiz kurulumda cekler tablosunun 0049 sütunları oluştu (AC-25)", (blob.cekler || []).find(c => c.id === 38)?.hesapId === 5 && (blob.cekler || []).find(c => c.id === 38)?.tutar === 100);
 check("temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu oluştu (spec 0040)", (blob.cekler || [])[0]?.no === "1" && (blob.hesapHareketleri || [])[0]?.cekId === 36);
@@ -118,7 +119,7 @@ check("temiz kurulumda gider ek ödeme tablosu oluştu (spec 0023)", ((blob.gide
 check("spec 0054 AC-21: temiz kurulumda ek ödeme hedef satırları (ekResmi, ekElden) yazıldı", ((blob.giderler || []).find(x => x.id === 37)?.taksitler || []).map(x => x.hedef).join() === "ana,elden,ekResmi,ekElden");
 check("spec 0058 AC-14: temiz kurulumda kasa_kapsam_disi tablosu oluştu ve giriş yazıldı", (blob.kasaKapsamDisi || []).map(x => `${x.id}:${x.tur}:${x.kayitId}`).join() === "39:hareket:38");
 check("temiz kurulumda gider ödeme satırı tablosu oluştu ve kimlikler yazıldı (spec 0021)", ((blob.giderler || []).find(x => x.id === 33)?.taksitler || []).map(x => x.id).join() === "7001,7002");
-check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 1 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 1 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
+check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 2 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 1 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());
 
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli

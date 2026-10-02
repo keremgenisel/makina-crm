@@ -19,6 +19,7 @@ import { KartBolum, BosDurum, UyariSeridi, Segment, HataMetni, Ipucu } from "../
 import { tl2 } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
 import { CiroPenceresi, cekPlaniniYaz } from "./CiroPenceresi";
+import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Kasa › Çek Portföyü (spec 0040 R3, R10–R17; Q5, Q10; AC-3–AC-5, AC-7, AC-14–AC-16, AC-26–AC-29). Elde bulunan çekler
 // (portföyde + tahsile verildi) vade sırasıyla ve toplamıyla; süzgeçle diğer durumlar. Durum değişikliği `cust_payment_edit`,
@@ -361,7 +362,7 @@ export const CekPortfoyu = ({
       {durumSatiri && !cekKilitli && <DurumPenceresi satir={durumSatiri} hareketler={hesapHareketleri || []} izin={satirIzni(durumSatiri)} onDegistir={durumYaz} onKarsiliksiz={karsiliksiz} onCiroIptal={iptal} onClose={() => setDurumSatiri(null)} />}
       {ekle && <CekEklePenceresi cekler={bagliCekler(cekler, payments)} customers={customers} onKaydet={ekleKaydet} onClose={() => setEkle(false)} />}
       {silinecek && !cekKilitli && <ConfirmDialog title="Çek silinsin mi?" confirmLabel="Sil"
-        message={silinecek.cek.durum === CEK_DURUM.CIRO ? "Ciro edilmiş çek silinemez; önce ciroyu iptal edin." : `Çek ${silinecek.cek.no} · ${silinecek.cek.banka} portföyden kalıcı olarak silinir.`}
+        message={silinecek.cek.durum === CEK_DURUM.CIRO ? "Ciro edilmiş çek silinemez; önce ciroyu iptal edin." : `Çek ${silinecek.cek.no} · ${silinecek.cek.banka} portföyden silinecek. ${KALICI_SILME_NOTU}`}
         onConfirm={sil} onCancel={() => setSilinecek(null)} />}
       {gecmisSatiri && !cekKilitli && <GecmisPenceresi satir={gecmisSatiri} musteriAdi={kimden(gecmisSatiri.bilgi)} hareketler={hesapHareketleri || []} giderler={giderler} onClose={() => setGecmisSatiri(null)} />}
       </>)}

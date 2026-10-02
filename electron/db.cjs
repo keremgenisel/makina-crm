@@ -262,7 +262,7 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
 -- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
 CREATE TABLE IF NOT EXISTS uretim_partileri (
   id INTEGER PRIMARY KEY,
-  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT
+  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT, deletedAt TEXT
 );
 -- Kasa (spec 0024 A): hesaplar ve hesap hareketleri. Bakiye saklanmaz, hareketlerden türetilir (C1).
 -- Hareket türleri: "odeme" (gider ödemesi: giderId, taksitId?; tamKapatir = göçten gelen tam kapatma) ve "virman".
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS kasa_kapsam_disi (
 );
 CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
-  ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT
+  ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT, deletedAt TEXT
 );
 CREATE TABLE IF NOT EXISTS standart_giderler (
   id INTEGER PRIMARY KEY,
@@ -529,7 +529,8 @@ const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift
 // sütun olmadığı için, daha önce kaydedilen deletedAt değerleri SQLite'a hiç yazılmıyor ve
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis"];
+// Spec 0068 R8, R9, R9b: tedarikçi ve üretim partisi de çöp kutusuna gider (önceden kalıcı siliniyordu).
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis", "tedarikciler", "uretim_partileri"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -895,13 +896,13 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
-    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null);
+    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null, p.deletedAt ?? null);
   }
   if (Array.isArray(data.tedarikciler) && !skip.has("tedarikciler")) {
     conn.prepare(`DELETE FROM tedarikciler`).run();
-    const stmt = conn.prepare(`INSERT INTO tedarikciler (id, ad, yetkili, telefon, eposta, vergiDairesi, vergiNo, adres, notField) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const t of data.tedarikciler) stmt.run(t.id, t.ad ?? null, t.yetkili ?? null, t.telefon ?? null, t.eposta ?? null, t.vergiDairesi ?? null, t.vergiNo ?? null, t.adres ?? null, t.not ?? null);
+    const stmt = conn.prepare(`INSERT INTO tedarikciler (id, ad, yetkili, telefon, eposta, vergiDairesi, vergiNo, adres, notField, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const t of data.tedarikciler) stmt.run(t.id, t.ad ?? null, t.yetkili ?? null, t.telefon ?? null, t.eposta ?? null, t.vergiDairesi ?? null, t.vergiNo ?? null, t.adres ?? null, t.not ?? null, t.deletedAt ?? null);
   }
   if (Array.isArray(data.standartGiderler) && !skip.has("standartGiderler")) {
     conn.prepare(`DELETE FROM standart_giderler`).run();

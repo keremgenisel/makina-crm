@@ -362,6 +362,10 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   return (
     <>
       <KartBolum title="Müşteri İçe Aktar (Excel / CSV)" icon="box">
+        {/* Spec 0068 R6 (AC-8): şablonun ne yazdığı açıkça; başka bölümlere dokunmaz (eklemeli yazım, R7). */}
+        <div data-testid="ice-aktarma-kapsam" className="section-desc" style={{ fontWeight: 600 }}>
+          İçe aktarma yalnız müşteri (makina) ve servis kayıtlarını, yedek parça şablonu da yalnız yedek parça ve parça tiplerini <b>ekler</b>; gider, kasa, çek, stok, belgeler ve diğer hiçbir bölüme dokunmaz, var olan kayıtları silmez.
+        </div>
         <div className="section-desc">
           Eski müşteri verilerinizi toplu olarak içe aktarın. <b>1)</b> Excel şablonunu indirin. <b>2)</b> Verilerinizi şablondaki sütun sırasına göre doldurun (Excel'de kaydedin, .xlsx olarak kalabilir). <b>3)</b> Aşağıdan yükleyin, önizlemeyi kontrol edip onaylayın. Hem Excel (.xlsx, .xls) hem CSV dosyaları desteklenir.
         </div>
