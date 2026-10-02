@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0060-odeme-hedefi-adlari-ve-personel-detayi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0060-odeme-hedefi-adlari-ve-personel-detayi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0060-hedef-adlari` (`feat/0065-stok-hareketi` üstünden) |
 | **Onay** | Takım Yöneticisi, 2026-10-01: bütün öneriler (Q1–Q10) kabul |
 

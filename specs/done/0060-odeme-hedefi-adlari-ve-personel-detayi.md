@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı · uygulamada |
+| **Durum** | Tamamlandı (commit `8ae43df`, dal `feat/0060-hedef-adlari`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler (kalem listesi, dönem raporu), Kasa hareket listesi, çalışan ekstresi, ödeme penceresi, Aylık Gider ve Kasa Raporu |
@@ -365,28 +365,28 @@ olduğu yazıyor (kiraya veren mi vergi dairesi mi, maaş mı prim mi ikramiye m
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hedef adı tek tablodan geliyor; `hedefAdi` (yönelme) ve `hedefBasligi` (yalın) aynı tablodan türüyor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hedef adı tek tablodan geliyor; `hedefAdi` (yönelme) ve `hedefBasligi` (yalın) aynı tablodan türüyor
       ve yerel ad sabitleri kaldırıldı (R3, AC-6, AC-27, kaynak taraması).
-- [ ] **Hiçbir kaynak taraması gevşetilmedi**; tek daraltma çıktı testindeki yasak dizenin
+- [x] **Hiçbir kaynak taraması gevşetilmedi**; tek daraltma çıktı testindeki yasak dizenin
       `"mesai"` yerine `"Cumartesi mesaisi"` olmasıdır (R17, R21, AC-22, AC-32).
-- [ ] `giderRaporu.js`'in üç kaynak kısıtı (`v.kalem` yok, tek `.taraf`, personel dalının biçimi) yeşil
+- [x] `giderRaporu.js`'in üç kaynak kısıtı (`v.kalem` yok, tek `.taraf`, personel dalının biçimi) yeşil
       (R23, AC-34).
-- [ ] Mevcut toplu satır metinleri, `Ay geneli` satır kalıbı ve "Açık çalışan avansı" bölümü korundu
+- [x] Mevcut toplu satır metinleri, `Ay geneli` satır kalıbı ve "Açık çalışan avansı" bölümü korundu
       (R13, R22, AC-33, AC-37).
-- [ ] R8 ve R9'un bugünkü davranışı regresyon testiyle sabitlendi (AC-10, AC-11).
-- [ ] Çıktı temelli gizlilik testi yeni bölümleri kapsıyor (AC-20, AC-21, AC-35).
-- [ ] Raporun bugünkü toplamlarının değişmediği çapraz testle gösterildi (AC-18).
-- [ ] Görsel kanıt eklendi (`docs/evidence/0060-*.jpg` + `0060-piksel-raporu.json`, yeni taban): araçtaki
+- [x] R8 ve R9'un bugünkü davranışı regresyon testiyle sabitlendi (AC-10, AC-11).
+- [x] Çıktı temelli gizlilik testi yeni bölümleri kapsıyor (AC-20, AC-21, AC-35).
+- [x] Raporun bugünkü toplamlarının değişmediği çapraz testle gösterildi (AC-18).
+- [x] Görsel kanıt eklendi (`docs/evidence/0060-*.jpg` + `0060-piksel-raporu.json`, yeni taban): araçtaki
       `gider-kasa-raporu-belge` ekranından raporun yeni bölümleri, Giderler ekranlarından taksitli stopajın
       yeni rozetleri ve personel kaleminin açılmış grup kırılımı (R26, AC-38).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: hedef adının tek tablosu ve iki hâli, rozet koşulunun hedef sayısına
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: hedef adının tek tablosu ve iki hâli, rozet koşulunun hedef sayısına
       bakması, ek ödeme türünün görüldüğü yerler (K21 kapalı grup kuralı dahil), gizlilik sınırının yeni
       çizgisi (tür bazında evet, kişi bazında hayır) ve kaynak yasaklarının gevşetilmediği.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -394,10 +394,10 @@ olduğu yazıyor (kiraya veren mi vergi dairesi mi, maaş mı prim mi ikramiye m
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (Q1–Q10; R28–R35, AC-39…AC-42; R17 düzeltildi), R3 uygulamada bulunan çelişki (R14 rapordan çıkarıldı, X8). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 4 bulgu (ek ödeme özeti hedef başına değildi, kira özetinde elle ad, AC-5/AC-23 adlı test, plan satırı). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dördü de gerçekti; biri doğruluk (yanlış tür özeti), üçü kapsam/belge. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Toplu rozet → hedef rozetleri ve rapor şerit listesi bilinçli değişti (TY onaylı); taksitsiz kira 0 piksel. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir gizlilik sınırını "tür bazında evet" diye çizerken her yeni kırılımın tek kişilik durumda neyi açığa çıkardığı ayrıca sorulmalı: yöntem kırılımı tür bazında görünüyordu ama elden = nakit olduğu için resmi/elden ayrımını taşıyordu ve ancak mevcut sabit sayılı test düşünce görüldü. İkincisi: "tek daraltma" gibi bir iddiayı spec'e yazmadan önce bütün test dosyalarındaki yasak listeleri taranmalı; aynı sınırı koruyan üç ayrı test vardı.
