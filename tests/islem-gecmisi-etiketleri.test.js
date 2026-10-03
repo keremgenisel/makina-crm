@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const kok = resolve(__dirname, "..");
 const oku = (f) => readFileSync(resolve(kok, f), "utf-8");
@@ -22,7 +23,7 @@ export const kullanilanAdlar = () => {
   const ent = new Set(), act = new Set(), dinamik = new Set();
   const topla = (blok, f) => {
     for (const [alan, hedef] of [["entity", ent], ["action", act]]) {
-      for (const m of blok.matchAll(new RegExp(`\\b${alan}:\\s*([^,}\\n]+)`, "g"))) {
+      for (const m of blok.matchAll(new RegExp(`\\b${regexKacis(alan)}:\\s*([^,}\\n]+)`, "g"))) {
         const ifade = m[1].replace(/(===|!==)\s*"[^"]*"/g, "");
         const sabitler = [...ifade.matchAll(/"([a-z0-9_]+)"/g)].map(x => x[1]);
         if (sabitler.length) sabitler.forEach(x => hedef.add(x));

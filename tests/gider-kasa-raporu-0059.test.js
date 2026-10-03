@@ -33,6 +33,7 @@ import * as odemeYontemi from "../src/lib/odemeYontemi";
 import * as giderAlanlari from "../src/components/gider/GiderAlanlari";
 import { girdi, H, HESAPLAR, PAYMENTS, CEKLER, CUSTOMERS, SERVICES, PART_SALES, K2, GIDERLER, tedarikciler, ana, stopaj } from "./fixtures/0059-veri";
 import { SATIS_KAYNAK_AD } from "../src/lib/satisTahsilat";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const R = (o, ay = "2026-09") => giderKasaRaporu(girdi(o), ay);
 const HTML = (o, ay) => buildGiderKasaRaporuHtml(R(o, ay));
@@ -80,7 +81,7 @@ describe("Spec 0059: geçen ay karşılaştırması (R5–R7)", () => {
     expect(r.onceki.gider).toMatchObject({ toplam: 4000, odenen: 4000, odenmeyen: 0, indirilecekKdv: 800 });
     const h = buildGiderKasaRaporuHtml(r);
     for (const sat of ["Toplam gider", "Ödenen", "Ödenmeyen", "İndirilecek KDV", "Kesilen stopaj", "Kasaya giren", "Kasadan çıkan", "Ay sonu toplam bakiye"]) {
-      expect(h, sat).toMatch(new RegExp(`${sat}</td><td[^>]*>[^<]*<span[^>]*> · geçen ay: `));
+      expect(h, sat).toMatch(new RegExp(`${regexKacis(sat)}</td><td[^>]*>[^<]*<span[^>]*> · geçen ay: `));
     }
     expect(h).toContain("geçen ay: ₺4.000");
   });

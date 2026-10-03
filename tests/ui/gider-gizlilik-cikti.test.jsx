@@ -22,6 +22,7 @@ vi.mock("xlsx", () => ({
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { hesaplaAylikRapor } from "../../src/lib/aylikRapor";
 import { buildAylikRaporHtml, buildServiceFormHtml, buildMachineReportHtml } from "../../src/lib/printTemplates";
+import { regexKacis } from "../yardimci/regexKacis.js";
 
 afterEach(() => { cleanup(); yakalanan.length = 0; });
 
@@ -40,7 +41,7 @@ describe("AC-56: çıktılarda personel tutarı yok (çıktı bazlı)", () => {
   it("tüm CSV/XLSX dışa aktarmaları (her rapor + Tümünü İndir) personel tutarı içermez", async () => {
     render(<SettingsExport customers={customers} services={services} dealers={[]} stock={[]} partSales={[]} payments={[]} notes={[]} parts={[]}
       appSettings={{}} flash={vi.fn()} calisanlar={calisanlar} giderler={giderler} giderTanimlari={giderTanimlari} />);
-    for (const g of ["Müşteri & Servis", "Finans", "Diğer"]) fireEvent.click(screen.getByText(new RegExp(`^${g} \\(`)));
+    for (const g of ["Müşteri & Servis", "Finans", "Diğer"]) fireEvent.click(screen.getByText(new RegExp(`^${regexKacis(g)} \\(`)));
     const indir = screen.getAllByTitle("İndir");
     expect(indir.length).toBeGreaterThan(15);
     indir.forEach(b => fireEvent.click(b));
@@ -76,7 +77,7 @@ describe("Spec 0023 AC-12: ek ödeme tutarları çıktılarda yok", () => {
   it("CSV/XLSX dışa aktarmaları ve aylık rapor ek ödeme içermez", async () => {
     render(<SettingsExport customers={customers} services={services} dealers={[]} stock={[]} partSales={[]} payments={[]} notes={[]} parts={[]}
       appSettings={{}} flash={vi.fn()} calisanlar={calisanlar} giderler={ekGiderler} giderTanimlari={giderTanimlari} />);
-    for (const g of ["Müşteri & Servis", "Finans", "Diğer"]) fireEvent.click(screen.getByText(new RegExp(`^${g} \\(`)));
+    for (const g of ["Müşteri & Servis", "Finans", "Diğer"]) fireEvent.click(screen.getByText(new RegExp(`^${regexKacis(g)} \\(`)));
     const indir = screen.getAllByTitle("İndir");
     indir.forEach(b => fireEvent.click(b));
     fireEvent.click(screen.getByText("Tümünü İndir"));

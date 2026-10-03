@@ -9,6 +9,7 @@ import { yerelBugun, kalipBorcTarafi } from "../../src/lib/utils";
 import { hesapBakiyeleri } from "../../src/lib/kasa";
 import { Customers } from "../../src/components/Customers";
 import { SimpleDealers } from "../../src/components/SimpleDealers";
+import { regexKacis } from "../yardimci/regexKacis.js";
 
 const perde = vi.hoisted(() => ({ indi: false }));
 vi.mock("../../src/lib/yayinPerdesi", () => ({ GIDER_PERDESI: true, giderPerdesiIndi: () => perde.indi }));
@@ -406,7 +407,7 @@ describe("Spec 0063 kanıt kriterleri", async () => {
       for (const t of ["aydinlik", "karanlik"]) expect(taban.find(x => x.ad === `${k.ekran}-${t}.png`)?.piksel, `taban ${k.ekran}-${t}`).toBe(0);
     } else {
       expect(k.beklenen).toBe("degisti");
-      expect(k.onay).toMatch(new RegExp(`^Takım Yöneticisi · \\d{4}-\\d{2}-\\d{2} · spec 0063 ${madde}$`));
+      expect(k.onay).toMatch(new RegExp(`^Takım Yöneticisi · \\d{4}-\\d{2}-\\d{2} · spec 0063 ${regexKacis(madde)}$`));
     }
   };
   const YENI = ["musteri-formu-ilk-odeme", "bayi-yedek-parca-formu", "bayi-kalip-formu", "musteri-tahsilat-hesap-satir"];

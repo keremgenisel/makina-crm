@@ -2,6 +2,7 @@
 // için Ayarlar'dan girilen TR/EN varsayılanın yeni belgeye dolması.
 import { describe, it, expect } from "vitest";
 import { makeEmpty } from "../src/components/Documents";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const cfg = (fieldDefaults) => ({ teklif: { fieldDefaults }, proforma: { fieldDefaults } });
 
@@ -26,7 +27,7 @@ describe("makeEmpty — proforma no (belge detayından düzenlenebilir olması i
   it("yeni proforma yıl bazlı bir no ile gelir", () => {
     const f = makeEmpty("proforma", [], null, "TR", null);
     const yil = new Date().getFullYear();
-    expect(f.no).toMatch(new RegExp(`^${yil}-\\d{5}$`));
+    expect(f.no).toMatch(new RegExp(`^${regexKacis(yil)}-\\d{5}$`));
   });
 
   it("proforma no'su teklif sırasından bağımsız artar (kendi tipinin sırası)", () => {

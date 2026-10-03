@@ -4,6 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const kok = path.join(__dirname, "..");
 const oku = (f) => readFileSync(path.join(kok, f), "utf-8");
@@ -24,7 +25,7 @@ const KAPSAM = [
 
 describe("tek tanım", () => {
   it.each(ALTI)("AC-1 / AC-4 / AC-9: %s yalnız tasarim.jsx'te tanımlı", (ad) => {
-    const tanimlayan = SRC.filter(f => new RegExp(`(?:export\\s+)?(?:const|function)\\s+${ad}\\b\\s*=?`).test(oku(f)));
+    const tanimlayan = SRC.filter(f => new RegExp(`(?:export\\s+)?(?:const|function)\\s+${regexKacis(ad)}\\b\\s*=?`).test(oku(f)));
     expect(tanimlayan).toEqual([TASARIM]);
   });
   it("AC-9: Ayarlar'ın eski bölüm bileşeni kalmadı; ikinci bir kart bileşeni yok", () => {

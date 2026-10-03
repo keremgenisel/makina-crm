@@ -12,6 +12,7 @@ import { StandartGiderler } from "../../src/components/gider/StandartGiderler";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { ServiceForm } from "../../src/components/ServiceForm";
+import { regexKacis } from "../yardimci/regexKacis.js";
 
 afterEach(cleanup);
 
@@ -58,7 +59,7 @@ describe("Spec 0045: form pencerelerinde düğme boşluğu", () => {
     expect(kap.style.gap).toBe("8px");
     const metinler = dugmeMetinleri(kap);
     expect(metinler[0]).toBe(ikincil);
-    expect(metinler[metinler.length - 1]).toMatch(new RegExp(bir));
+    expect(metinler[metinler.length - 1]).toMatch(new RegExp(regexKacis(bir)));
     expect(kap.style.justifyContent).toBe("flex-end");
   });
   it("AC-14: kullanıcı yönetiminin 2FA sıfırlama penceresi düğmelerini parçayla (sarmalayıcısız) Modal'a verir; boşluğu kaptan alır", () => {

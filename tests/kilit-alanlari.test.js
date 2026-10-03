@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { KILIT_ALANLARI, AYAR_KILITLI, AYAR_SALT_OKUNUR, KILITSIZ_DOSYALAR, AYAR_PANEL_DOSYALARI, kilitEtiketi } from "../src/lib/kilitAlanlari";
 import { MERGE_KEYS } from "../src/lib/merge";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const oku = (f) => readFileSync(f, "utf-8");
 const kod = (f) => oku(f).split("\n").filter(l => !l.trim().startsWith("//") && !l.trim().startsWith("*")).join("\n");
@@ -31,7 +32,7 @@ describe("Spec 0064: kilit alanlarının tek listesi (R19)", () => {
     for (const [alan, { etiket, pencereler }] of Object.entries(KILIT_ALANLARI)) {
       expect(etiket, alan).toBeTruthy();
       for (const f of pencereler) expect(existsSync(f), `${alan}: ${f}`).toBe(true);
-      const kullanan = pencereler.some(f => new RegExp(`(useLock|baskasiKilitli)\\(\\s*["']${alan}["']`).test(kod(f)) || (alan === "ayar" && /useLock\("ayar"/.test(kod(f))));
+      const kullanan = pencereler.some(f => new RegExp(`(useLock|baskasiKilitli)\\(\\s*["']${regexKacis(alan)}["']`).test(kod(f)) || (alan === "ayar" && /useLock\("ayar"/.test(kod(f))));
       expect(kullanan, alan).toBe(true);
     }
   });
@@ -74,7 +75,7 @@ describe("Spec 0064: Ayarlar panelleri (R9, R27)", () => {
     for (const id of AYAR_SALT_OKUNUR) expect(AYAR_KILITLI[id], id).toBeUndefined();
     // Kimlikler Settings.jsx'teki gerçek sekme kimlikleridir.
     const settings = oku("src/components/Settings.jsx");
-    for (const id of Object.keys(AYAR_KILITLI)) expect(settings, id).toMatch(new RegExp(`id: "${id}"`));
+    for (const id of Object.keys(AYAR_KILITLI)) expect(settings, id).toMatch(new RegExp(`id: "${regexKacis(id)}"`));
   });
 });
 

@@ -11,6 +11,7 @@ import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { Tedarikciler } from "../../src/components/gider/Tedarikciler";
 import { Kasa } from "../../src/components/Kasa";
 import { KALICI_SILME_NOTU } from "../../src/lib/copKutusu";
+import { regexKacis } from "../yardimci/regexKacis.js";
 
 afterEach(() => { cleanup(); delete window.auditLog; });
 const noop = () => {};
@@ -105,7 +106,7 @@ describe("Spec 0068 A, B: işlem geçmişi, içe aktarma, kalıcı silme pencere
     render(<Kasa kasaHesaplari={[hesap]} setKasaHesaplari={noop} hesapHareketleri={[]} setHesapHareketleri={noop} payments={[]} customers={[]} giderler={[]} giderTurleri={[]}
       tedarikciler={[]} showToast={noop} giderAyarlari={{ denemeDonemiBitis: "" }} />);
     fireEvent.click(within(screen.getAllByTestId("hesap-satiri")[0]).getByTitle("Sil"));
-    expect(screen.getByText(new RegExp(KALICI_SILME_NOTU))).toBeTruthy();
+    expect(screen.getByText(new RegExp(regexKacis(KALICI_SILME_NOTU)))).toBeTruthy();
   });
   it("AC-5 / AC-41: çek raporu yalnız cekler verildiğinde (kasa yetkisi) listelenir", () => {
     const ortak = { customers: [], services: [], dealers: [], stock: [], partSales: [], payments: [], notes: [], parts: [], appSettings: {}, flash: noop };

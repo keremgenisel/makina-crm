@@ -8,6 +8,7 @@ import {
 } from "../src/lib/gider";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 import { hesaplaMakinaMaliyetleri } from "../src/lib/makinaMaliyeti";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const TUR = [{ id: 1, ad: "Elektrik", davranis: "normal" }, { id: 2, ad: "Kira", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" }];
 const turMap = turHaritasi(TUR);
@@ -184,7 +185,7 @@ describe("Spec 0024 bulgu 3: eski ödeme işaretleyicileri kaldırıldı", () =>
     const kok = path.join(__dirname, "..", "src");
     const gez = (d) => readdirSync(d).flatMap(a => { const f = path.join(d, a); return statSync(f).isDirectory() ? gez(f) : /\.jsx?$/.test(a) ? [f] : []; });
     const kod = (f) => readFileSync(f, "utf-8").replace(/\/\/[^\n]*/g, "");
-    for (const f of gez(kok)) for (const ad of ESKI) expect(kod(f), `${f}: ${ad}`).not.toMatch(new RegExp(`\\b${ad}\\b`));
+    for (const f of gez(kok)) for (const ad of ESKI) expect(kod(f), `${f}: ${ad}`).not.toMatch(new RegExp(`\\b${regexKacis(ad)}\\b`));
     expect(kod(path.join(kok, "components", "Dashboard.jsx"))).not.toMatch(/\bsetGiderler\b/);
   });
 });

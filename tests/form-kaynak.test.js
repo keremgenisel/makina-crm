@@ -4,6 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { regexKacis } from "./yardimci/regexKacis.js";
 
 const KOK = path.join(__dirname, "..");
 const oku = (d) => readFileSync(path.join(KOK, d), "utf-8");
@@ -89,10 +90,32 @@ const BUYUK_HARF_ISTISNA = {
   [C + "CalisanManager.jsx"]: 1,       // tablo başlığı
 };
 
+// Başlık düz metindir: bütün düzenli ifade karakterleri kaçışlanır (CodeQL alert #44; eskiden yalnız "/" kaçışlanıyordu).
+const bolumBasligiDeseni = (ad) => new RegExp(`<BolumBasligi[^>]*>\\s*${regexKacis(ad)}`);
+
+describe("başlık deseni düz metni birebir arar (CodeQL alert #44)", () => {
+  it("nokta ya da parantez içeren başlık yalnız kendisiyle eşleşir; eski yalnız-'/' kaçışı yanlış eşleşiyordu", () => {
+    const eski = (ad) => new RegExp(`<BolumBasligi[^>]*>\\s*${ad.replace(/[/]/g, "\\/")}`);
+    // Parantez: eski desende grup olur, parantezsiz metni de bulur (yanlış geçer).
+    expect("<BolumBasligi>İlk Ödeme Kapora/Ödeme").toMatch(eski("İlk Ödeme (Kapora/Ödeme)"));
+    expect("<BolumBasligi>İlk Ödeme Kapora/Ödeme").not.toMatch(bolumBasligiDeseni("İlk Ödeme (Kapora/Ödeme)"));
+    expect("<BolumBasligi>İlk Ödeme (Kapora/Ödeme)").toMatch(bolumBasligiDeseni("İlk Ödeme (Kapora/Ödeme)"));
+    // Nokta: eski desende her karakterle eşleşir.
+    expect("<BolumBasligi>Altuntas AxSx").toMatch(eski("Altuntas A.S."));
+    expect("<BolumBasligi>Altuntas AxSx").not.toMatch(bolumBasligiDeseni("Altuntas A.S."));
+    expect("<BolumBasligi>Altuntas A.S.").toMatch(bolumBasligiDeseni("Altuntas A.S."));
+  });
+  it("yardımcı bütün düzenli ifade karakterlerini kaçışlar", () => {
+    const zor = "a.b*c+d?e^f$g{h}i(j)k|l[m]n\\o/p-q";
+    expect(new RegExp(`^${regexKacis(zor)}$`).test(zor)).toBe(true);
+    expect(new RegExp(`^${regexKacis("a.b")}$`).test("axb")).toBe(false);
+  });
+});
+
 describe("AC-6: bölüm başlıkları BolumBasligi ile, yerel büyük harfli başlık bloğu yok", () => {
   it.each(BASLIK)("%s: %s", (d, ad) => {
     const s = oku(C + d);
-    expect(s).toMatch(new RegExp(`<BolumBasligi[^>]*>\\s*${ad.replace(/[/]/g, "\\/")}`));
+    expect(s).toMatch(bolumBasligiDeseni(ad));
   });
   it("kapsam formlarında textTransform uppercase yalnız adlandırılmış istisnalarda", () => {
     for (const d of FORMLAR) {

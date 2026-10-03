@@ -3,6 +3,7 @@
 // ve yeşildi; dönüşümden sonra da aynı kalmalı. Düğmeler rolden bağımsız, erişilebilir adıyla sorgulanır.
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { regexKacis } from "../yardimci/regexKacis.js";
 
 const analizCagrilari = vi.hoisted(() => []);
 vi.mock("../../src/lib/analiz", async (orijinal) => {
@@ -33,7 +34,7 @@ describe("Finans tarih aralığı", () => {
     finans();
     for (const [s, n] of [["Tüm Zamanlar", 4], ["Bu Ay", 1], ["Bu Yıl", 2], ["Geçen Yıl", 1]]) {
       fireEvent.click(dugme(s));
-      expect(donem(), s).toMatch(new RegExp(`${s} · ${n} satış kaydı`));
+      expect(donem(), s).toMatch(new RegExp(`${regexKacis(s)} · ${n} satış kaydı`));
     }
   });
   it("AC-6: Finans'ta tarih aralığı yetkisi olmayan kullanıcıya o seçenek görünmez", () => {
