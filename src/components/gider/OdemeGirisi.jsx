@@ -269,13 +269,18 @@ export const OdemeGirisi = ({
         </div>
       )}
       {odemeYetkisi && (
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 6 }}>
-          <div style={{ width: 200 }}>
-            <Field label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"}><Input aria-label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"} type="date" value={giris.tarih || ""} onChange={e => setGiris(g => ({ ...g, tarih: e.target.value }))} /></Field>
-          </div>
-          {form && !mahsupKipi && cizilebilir.some(h => h.kalanK > 0) && (
-            <Btn small variant="ghost" onClick={hepsi} aria-label="Hepsini ödendi işaretle"><Icon name="check" size={12} /> Hepsini ödendi işaretle</Btn>
-          )}
+        <div style={{ marginBottom: 6 }}>
+          {/* Düğme tarih kutusunun yanında, kutuya göre dikeyde ortalı (etiket satırı hizaya girmez). */}
+          <Field label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"}>
+            <div data-testid="odeme-tarihi-satiri" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ width: 200 }}>
+                <Input aria-label={mahsupKipi ? "Mahsup tarihi" : "Ödeme tarihi"} type="date" value={giris.tarih || ""} onChange={e => setGiris(g => ({ ...g, tarih: e.target.value }))} />
+              </div>
+              {form && !mahsupKipi && cizilebilir.some(h => h.kalanK > 0) && (
+                <Btn small variant="ghost" onClick={hepsi} aria-label="Hepsini ödendi işaretle"><Icon name="check" size={12} /> Hepsini ödendi işaretle</Btn>
+              )}
+            </div>
+          </Field>
         </div>
       )}
       {(hatalar?.genel || []).map((m, i) => <HataMetni key={`g${i}`}>{m}</HataMetni>)}

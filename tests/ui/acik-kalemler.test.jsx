@@ -119,6 +119,18 @@ describe("Spec 0061 B: yaşlandırma ekranı", () => {
     expect(t.some(x => /^Çalışanlar · 1 kişi/.test(x) && /40\.000/.test(x))).toBe(true);
     expect(screen.getByTestId("acik-taraf-kirilimi").textContent).not.toContain("Hasan Çelik");
   });
+  // Kullanıcı isteği (2026-10-03): "Kimde Ne Kadar Eski Borç Var" başlığı kart kenarına dayanmasın; kart, "Kime Ne Kadar
+  // Borçluyuz" gibi kendi iç boşluğunu taşır, geniş tablo yalnız kendi sarmalayıcısında kayar.
+  it("taraf kırılımı kartı iç boşluğunu korur; tablo kendi içinde kayar", () => {
+    render(<H />);
+    ac();
+    const kart = screen.getByTestId("acik-taraf-kirilimi");
+    expect(kart.style.padding).toBe("18px");
+    expect(within(kart).getByText("Kimde Ne Kadar Eski Borç Var")).toBeTruthy();
+    const sar = within(kart).getByTestId("acik-taraf-tablo");
+    expect(sar.style.overflowX).toBe("auto");
+    expect(sar.querySelector("table")).toBeTruthy();
+  });
   it("AC-13: vadesi geçmiş ve vadesiz sayıları kovalardan ayrı, kalem sayar", () => {
     render(<H />);
     ac();

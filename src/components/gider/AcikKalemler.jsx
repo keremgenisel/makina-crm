@@ -89,7 +89,9 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
       </div>
 
       {/* R11, R26: taraf kırılımı (kova dağılımı); çalışanlar tek satır, adlar anahtarla. */}
-      <KartBolum varyant="kart" baslikStili="baslik" title="Kimde Ne Kadar Eski Borç Var" altBaslik="Taraf başına kova dağılımı (yaş gider tarihinden)" testId="acik-taraf-kirilimi" style={{ padding: 0, overflow: "auto" }}>
+      <KartBolum varyant="kart" baslikStili="baslik" title="Kimde Ne Kadar Eski Borç Var" altBaslik="Taraf başına kova dağılımı (yaş gider tarihinden)" testId="acik-taraf-kirilimi" style={{ minWidth: 0 }}>
+        {/* Başlık kartın kendi iç boşluğuyla (Kime Ne Kadar Borçluyuz gibi); geniş tablo yalnız kendi içinde kayar. */}
+        <div data-testid="acik-taraf-tablo" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
             <th style={th}>Taraf</th>{YAS_SIRA.map(a => <th key={a} style={{ ...th, textAlign: "right" }}>{a}</th>)}<th style={{ ...th, textAlign: "right" }}>Toplam</th>
@@ -108,6 +110,7 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
             ))}
           </tbody>
         </table>
+        </div>
       </KartBolum>
 
       {/* R3, R4, R20, R28: hedef satırlı liste; personel varsayılan tek toplu satır. */}

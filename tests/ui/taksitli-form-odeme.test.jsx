@@ -111,6 +111,20 @@ describe("Spec 0057: yeni kalemde taksitli hedef (AC-1–AC-5, AC-7, AC-13, AC-1
   });
 });
 
+// Kullanıcı isteği (2026-10-03): "Hepsini ödendi işaretle" tarih kutusunun yanında, kutuya göre dikeyde ortalı durur.
+describe("Ödeme kutusu yerleşimi: tarih ve 'Hepsini ödendi işaretle'", () => {
+  it("düğme tarih kutusuyla aynı satırda; satır dikeyde ortalar (etiket hizaya girmez)", () => {
+    render(<H />);
+    yeniAlti();
+    const satir = screen.getByTestId("odeme-tarihi-satiri");
+    expect(within(satir).getByLabelText("Ödeme tarihi")).toBeTruthy();
+    expect(within(satir).getByRole("button", { name: "Hepsini ödendi işaretle" })).toBeTruthy();
+    expect(satir.style.display).toBe("flex");
+    expect(satir.style.alignItems).toBe("center");
+    expect(within(satir).queryByText("Ödeme tarihi", { selector: "label" })).toBeNull();
+  });
+});
+
 // Triyaj bulgusu: taksit sayısı 1 iken eklenen satırın sırası boştur; sayı sonra artırılınca satır en yakın açık taksite
 // eşlenmeli (seçicinin gösterdiği = kaydın bağlandığı), yoksa kayıt "taksite bağlanır" + "kalan 0,00" hatasıyla duruyordu.
 describe("Spec 0057 triyaj: satır eklendikten sonra taksit sayısı artırılır", () => {
