@@ -140,8 +140,8 @@ takvimden bağımsız olarak yeşil.
   tema değişkenine bağlı olmayan sabit renk var. Bunların 190'ı meşru (`printTemplates.js` 109 ve
   `uretimFormPrint.js` 5 yazdırma çıktısı içindir, `theme.js` 81 paletin kendi tanımıdır); geriye 15 dosyada
   75 satır kalıyor ve her biri tek tek bakmayı gerektiriyor (bir kısmı bilinçli olabilir). Bu spec yalnız R1 ve
-  R2'de adı geçenleri düzeltir; geri kalanı **0031** olarak sıraya alındı. R3'ün koruma testi tanımsız
-  *değişkenleri* yakalar, çıplak rengi yakalamaz; o koruma 0031 yapılırsa genişletilir.
+  R2'de adı geçenleri düzeltir; geri kalanı **0025** (eski 0031) olarak sıraya alındı. R3'ün koruma testi tanımsız
+  *değişkenleri* yakalar, çıplak rengi yakalamaz; o koruma 0025 yapılırsa genişletilir.
 - **X2.** Karanlık tema paletinin yeniden tasarlanması — *neden:* mevcut palet korunur, iş yalnız eksik
   bağlantıları tamamlar.
 - **X3.** Yazdırma çıktılarının karanlık temaya uyarlanması — *neden:* çıktılar her zaman beyaz kâğıt

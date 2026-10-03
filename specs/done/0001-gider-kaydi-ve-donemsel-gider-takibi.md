@@ -270,7 +270,7 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   ödemenin birden çok faturaya dağıtılması, kasa ve banka hesapları, mutabakat — *neden:* kullanıcı
   tedarikçilerine fatura fatura ödüyor, dolayısıyla "bu tedarikçiye ne kadar borcumuz var" sorusu kalem
   bazlı ödeme durumundan türetilebiliyor (R14). Defter kurmak, bu soruyu cevaplamak için gerekmiyor.
-  Ödeme biçimi toplu ödemeye kayarsa bu karar kendi spec'iyle yeniden açılır (0004, henüz yazılmadı).
+  Ödeme biçimi toplu ödemeye kayarsa bu karar kendi spec'iyle yeniden açılır (0024, eski 0004).
 - **X5.** Bordro kırılımı (brüt, net, SGK, gelir vergisi) — *neden:* çalışan başına tek işveren maliyeti
   rakamı kararlaştırıldı.
 - **X6.** Kira dışındaki stopaj türleri — *neden:* kullanıcı yalnız kira stopajı takip ediyor.
@@ -301,6 +301,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   *neden:* rapor şablonu 0002'nin kârlılık bölümüyle birlikte tek seferde değişmeli; aynı dosyayı iki ayrı işte
   değiştirmek gereksiz çakışma üretir. **Personel kırılımı için bu karar kalıcıdır:** ileride gider bölümü
   eklense bile çalışan bazlı tutarlar ve elden bileşen hiçbir yazdırma çıktısına girmez (C7b).
+  **Güncelleme (24.09.2026):** bu iş 0002'ye devredilmişti, 0002 R5 turunda oradan da çıkarıldı (0002 X10):
+  aylık rapor `fin_rapor` eylem iziyle alınıyor ve bu izin gider yetkisinden bağımsız, dolayısıyla rapora
+  gider veya kârlılık bölümü eklemek C7b'yi deler. Konu kendi spec'ine bırakıldı.
 - **X15.** Servisteki "dış tedarik" parçaların otomatik olarak gider kalemine dönüşmesi — *neden:* bunlar
   bugün servis kaydının içinde yaşıyor (`ServiceForm.jsx:56-60`) ve gider olarak kaydedilmiyor. Bağlamak,
   servis formunu ve stok düşümünü etkiler; önce gider modülü gerçek kullanımda otursun. Kullanıcı isterse
@@ -317,9 +320,9 @@ hesaplanabilir hâle gelir, ancak maliyet hesabının kendisi ayrı bir iştir (
   yansıtma modeli gider tarafına uygulanmaz; gider kartla ödendiğinde komisyonu satıcı öder, bizi bağlamaz.
 - **X19.** Ödeme hatırlatıcısı, vade bildirimi ve uyarı akışı — *neden:* **0003**'ün konusu. 0001 yalnız
   vadeyi toplar ve borç özetinde "vadesi geçti" işaretini gösterir (R19), bildirim üretmez.
-- **X20.** Personel avansı ve çalışan cari hesabı — *neden:* **0004**'ün konusu (kasa, avans ve cari ile
+- **X20.** Personel avansı ve çalışan cari hesabı — *neden:* **0024**'ün (eski 0004) konusu (kasa, avans ve cari ile
   birlikte; spec henüz yazılmadı). 0001'de personel borcu yalnız ödenmemiş kalemden türer.
-- **X21.** Çalışan mesai ve fazla mesai takibi — *neden:* **0005**'in konusu (spec henüz yazılmadı).
+- **X21.** Çalışan mesai ve fazla mesai takibi — *neden:* **0023**'ün (eski 0005) konusu.
   0001 çalışan başına aylık tek maliyet rakamı tutar (X5 ile aynı ilke).
 
 ---

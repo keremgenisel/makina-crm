@@ -93,7 +93,7 @@ Bu plan spec'i karşılamak için hangi dosyaya hangi sırayla dokunulacağını
 personel dalında, karanlıkta beyaz kalıyor ve metni `#3b0764` (karanlık zeminde okunmaz hâle gelecek).
 *Öneri:* dahil et; metin için **`pur900`** (aydınlık `#3b0764`), zemin `purBg`, kenarlık `purBr`.
 *Gerekçe:* R4 "gider formu"nu gözle doğrulanacak yerler arasında sayıyor; kutulardan birini bırakmak ekranı yarım düzeltir.
-Hariç tutulursa 0031'e yazılır.
+Hariç tutulursa 0025'e (eski 0031) yazılır.
 
 **B4. Karanlık değerler.** *Öneri (başlangıç):* `purBg2` `#2d2140`, `purBg3` `#1f1729`, `purBr` `#4c3a6b`,
 `pur700` `#c9a9ff`, `pur900` `#e4d6fc` (mevcut `purBg` `#241a33`, `purTx` `#b794f6` ailesiyle). Kesin değerler kontrast
@@ -220,7 +220,7 @@ dinamik ad testi kırar (sessiz atlama yok, R3).
 - **Renk:** koruma testi önce kırmızı görüldü (tam beş ad). Temaya beş ad eklendi (`purBg2`, `purBg3`, `purBr`, `pur700`,
   `pur900`), iki ad eşlendi (`n050 → n100`, `acc → brand`). Karanlık değerler B4'teki başlangıç değerleridir; hepsi kontrast
   bloğunu geçti (metin 6–12, kenarlık aydınlıktaki kadar ya da daha iyi). `GiderForm.jsx:187`'deki `#fde7d4` bu işin dışında
-  (0031).
+  (0025, eski 0031).
 - **Etiket:** `satisPartisi` (saf) + `onPrintTahsisEtiket(satisId)`. Tahsis olayları yalnız canlı satışlardan üretildiği için
   "satış bulunamadı" durumu pratikte oluşmaz; yine de yardımcı boş dizi döndürür ve yazdırma yapılmaz.
 - **Tablo:** eski kodda 1280'de tablo 904 px istiyordu (694 px yer). Başlık sarması, birleşik dönem sütunu, "n ay", 6 px
