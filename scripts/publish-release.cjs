@@ -100,7 +100,7 @@ async function getReleaseByTag(token) {
 // HEAD commit'i remote'ta varsa tag'i ona sabitleriz (doğru commit'e); yoksa GitHub varsayılan
 // dala göre tag üretir (main push edilmemişse böyle olur — yayını engellemez).
 async function resolveTargetCommitish(token) {
-  let sha = "";
+  let sha;
   try { sha = require("child_process").execSync("git rev-parse HEAD", { cwd: path.join(__dirname, "..") }).toString().trim(); } catch { return null; }
   if (!sha) return null;
   const r = await ghRequest({ method: "GET", host: "api.github.com", path: `/repos/${OWNER}/${REPO}/commits/${sha}`, token });

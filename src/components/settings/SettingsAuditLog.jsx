@@ -203,7 +203,7 @@ export function SettingsAuditLog({ serverPermissions, geriAl = null, flash = () 
   const exportCsv = async () => {
     if (exporting) return;
     setExporting(true);
-    let tum = [];
+    let tum;
     try {
       const result = await sorgula({ limit: EXPORT_LIMIT, offset: 0, ...filtreReq(activeFilters) });
       if (result.error) { flash("Dışa aktarılamadı: " + result.error); return; }
