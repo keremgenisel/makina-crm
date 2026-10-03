@@ -15,7 +15,7 @@ export const kayitSirasiOlustur = ({ save, getVersion, versionRef }) => {
   return (data) => {
     const p = zincir.then(async () => {
       const veri = { ...data, __dataVersion: versionRef.current };
-      let ok = false;
+      let ok;
       // save() reject ederse (örn. yerel modda DB yazması patlarsa) sessizce yutulmasın
       try { ok = await save(veri); } catch (err) { console.error("Kayıt hatası:", err); ok = false; }
       if (ok) {

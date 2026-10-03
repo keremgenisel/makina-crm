@@ -47,7 +47,7 @@ let cachedSecret = null;
 function jwtSecretFile() { return path.join(electronApp.getPath("userData"), "jwt-secret.enc"); }
 function getSecret() {
   if (cachedSecret) return cachedSecret;
-  let canEncrypt = false;
+  let canEncrypt;
   try { canEncrypt = !!safeStorage?.isEncryptionAvailable?.(); } catch { canEncrypt = false; }
   let fileSecret = null;
   try { const p = jwtSecretFile(); if (canEncrypt && fs.existsSync(p)) fileSecret = safeStorage.decryptString(fs.readFileSync(p)); } catch { /* bozuk dosya → yeniden üret */ }
@@ -133,7 +133,7 @@ function verify2fa(user, code) {
     return true;
   }
   // Kurtarma kodu (telefon yoksa)
-  let hashes = [];
+  let hashes;
   try { hashes = JSON.parse(user.totp_recovery || "[]"); } catch { hashes = []; }
   const matched = totp.matchRecovery(c, hashes);
   if (matched) {
@@ -728,7 +728,7 @@ function buildApp() {
     const name = req.params.name;
     if (!gecerliDepoAd(name)) return res.status(400).json({ error: "Geçersiz dosya adı" });
     const u = db?.getUserByUsername?.(req.user?.username);
-    let kunye = null;
+    let kunye;
     try { kunye = (db?.readBlobFromDb?.()?.dosyalar || []).find(d => d.dosyaAdi === name) || null; }
     catch { kunye = null; }
     if (!dosyaSilmeYetkisi(u?.permissions, req.user?.role, kunye)) {

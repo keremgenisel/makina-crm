@@ -365,7 +365,7 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     const httpsBase = base.replace(/^http:\/\//i, "https://");
 
     // Sunucunun TLS sertifikasını al (varsa). Aynı port hem http hem https dinliyor (hibrit).
-    let cert = null;
+    let cert;
     try { cert = await sertifikaParmakIziAl(httpsBase); } catch { cert = null; }
 
     let dispatcher = undefined;

@@ -40,7 +40,7 @@ let cachedDbKey; // undefined: hesaplanmadı, null: şifreleme yok, string: anah
 function getDbKey() {
   if (cachedDbKey !== undefined) return cachedDbKey;
   if (!dbEncryptable) return (cachedDbKey = null);
-  let canEncrypt = false;
+  let canEncrypt;
   try { canEncrypt = !!safeStorage?.isEncryptionAvailable?.(); } catch { canEncrypt = false; }
   if (!canEncrypt) return (cachedDbKey = null);
   const p = getDbKeyPath();
@@ -67,7 +67,7 @@ function ensureEncrypted(dbPath) {
   const key = getDbKey();
   if (!key) return; // şifreleme kapalı → düz kalır (eski davranış)
   const conn = new Database(dbPath);
-  let plaintext = false;
+  let plaintext;
   try { conn.prepare("SELECT count(*) FROM sqlite_master").get(); plaintext = true; } // anahtarsız okunabiliyorsa düz
   catch { plaintext = false; } // okunamadı → zaten şifreli (ya da bozuk; açılış aşaması ele alır)
   try {
@@ -1229,7 +1229,7 @@ function close() { try { db?.close(); } catch { /* zaten kapalı */ } db = null;
 // encrypted: bu oturumda DB gerçekten şifreli açıldı mı. canEncrypt: ortam şifrelemeye elverişli mi
 // (şifreli-yetenekli build + güvenli anahtar deposu). safeStorage yoksa şifreleme kullanılamaz.
 function dbEncryptionStatus() {
-  let safe = false;
+  let safe;
   try { safe = !!safeStorage?.isEncryptionAvailable?.(); } catch { safe = false; }
   return {
     encrypted: !!(active && dbEncryptable && getDbKey()),

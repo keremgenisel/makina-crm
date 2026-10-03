@@ -337,7 +337,6 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   gG = await gUst(gidTok);
   check("gider: gider sekmesi verilen kullanıcı elle kalem ekler → 200",
     (await postData({ ...gG, dataVersion: undefined, giderler: [...(gG.giderler || []), { id: 9003, tarih: "2026-09-01", turId: 1, tutar: 100, kdvOrani: 20, odendi: false, modelSatirlari: [] }] }, gG.dataVersion, gidTok)).status === 200);
-  gG = await gUst(gidTok);
   const uretTok = (await login("uretici", "uret123")).body.token;
   let gU = await gUst(uretTok);
   check("gider (bulgu 7): yalnız üretim izni, olmayan tanıma bağlı sahte kalem ekleyemez → 403",
@@ -358,7 +357,6 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: true } : k) }, gG.dataVersion, gidTok)).status === 200);
   gG = await gUst(gidTok);
   await postData({ ...gG, dataVersion: undefined, giderler: gG.giderler.map(k => k.id === 9003 ? { ...k, odendi: false } : k) }, gG.dataVersion, gidTok);
-  gG = await gUst(gidTok);
   const odemeTok = (await login("odemeci", "odeme123")).body.token;
   const gO = await gUst(odemeTok);
   const gO2 = (d) => ({ ...d, dataVersion: undefined });
@@ -924,7 +922,7 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   let dışYapildi = false, dışReddedildi = false;
   for (const ip of server.getLocalIps().filter((ip) => ip !== "127.0.0.1")) {
     server.setTlsOnly(false);
-    let acik = false;
+    let acik;
     try { acik = (await dışFetch(`http://${ip}:${port}/health`)).ok; } catch { acik = false; }
     if (!acik) continue; // bu IP sandbox/firewall'da erişilemiyor → atla
     server.setTlsOnly(true);
