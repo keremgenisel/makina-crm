@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (dal `feat/0069-electron-44`) |
+| **Durum** | Tamamlandı (commit `fccc0ca` denetim düzeltmeleri, `251c545` yükseltme; dal `feat/0069-electron-44`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Electron kabuğu, yerel (native) SQLite sürücüleri, bütün Electron testleri, kurulum paketi ve otomatik güncelleme |
@@ -211,7 +211,8 @@ açıldı, **şifreli sürücünün gerçekten yüklendiği kanıtlandı**, geri
 - **AC-23.** Sürüm notu metni hazırlanmıştır.
 - **AC-24.** Hiçbir ekran, hesap, alan ya da izin değişmemiştir. **Revizyon 2 (TY kabulü):** Chromium dar açılır
   listelerde ok işareti için yer ayırır; uzun seçenek metni okla çakışmak yerine 2–4 harf önce kesilir (gider formu ve
-  ödeme penceresinin yöntem/çek seçicileri); metin kutusu tutamağı 1–2 piksel kaydı. Sürüm notuna yazılır.
+  ödeme penceresinin yöntem/çek seçicileri). Sürüm notuna yazılır. İlk karşılaştırmada metin kutusu tutamağında görülen 1–2
+  piksel fark kapanışta yeniden çekimle çürütüldü: tutamak kararsız çiziliyor, yeni çekimler Electron 42 ile 0 piksel.
 - **AC-25.** (Revizyon 1) 12 ile şifrelenmiş uygulama veritabanı 13 ile, 13 ile yazılan 12 ile açılır ve veri aynen
   okunur (R17).
 
@@ -219,17 +220,17 @@ açıldı, **şifreli sürücünün gerçekten yüklendiği kanıtlandı**, geri
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → kanıt eşlemesi tabloyla gösterildi (test çıktısı ya da
+- [x] Tüm kabul kriterleri karşılandı; kriter → kanıt eşlemesi tabloyla gösterildi (test çıktısı ya da
       elle deneme notu).
-- [ ] Şifreli sürücünün yüklendiği kanıtı rapora eklendi (AC-4, AC-5).
-- [ ] `npm test` yeşil ve `VITEST_ELECTRON=only` ile on bir Electron testi yeşil (ikisinin de çıktısı).
-- [ ] `npm run lint` hata sayısı sıfır, `npm run typecheck` temiz.
-- [ ] Kurulum paketi üretildi, kuruldu ve açıldı; ekran görüntüsü ya da not eklendi.
-- [ ] Geri dönüş yolu ve sürüm notu metni yazıldı.
-- [ ] `CLAUDE.md` güncellendi: yeni Electron ve sürücü sürümleri, şifreli sürücünün sessiz düşüş
+- [x] Şifreli sürücünün yüklendiği kanıtı rapora eklendi (AC-4, AC-5).
+- [x] `npm test` yeşil ve `VITEST_ELECTRON=only` ile on bir Electron testi yeşil (ikisinin de çıktısı).
+- [x] `npm run lint` hata sayısı sıfır, `npm run typecheck` temiz.
+- [x] Kurulum paketi üretildi, kuruldu ve açıldı; ekran görüntüsü ya da not eklendi.
+- [x] Geri dönüş yolu ve sürüm notu metni yazıldı.
+- [x] `CLAUDE.md` güncellendi: yeni Electron ve sürücü sürümleri, şifreli sürücünün sessiz düşüş
       davranışı ve bundan sonraki yükseltmelerde bunun kanıtlanması gerektiği.
-- [ ] Takım Yöneticisi onayladı. Commit, birleştirme ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit, birleştirme ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -237,10 +238,23 @@ açıldı, **şifreli sürücünün gerçekten yüklendiği kanıtlandı**, geri
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | Revizyon 1: denetim betiği, R2 kararı, node-abi, veri uyumu. Revizyon 2: açılır liste kabulü, görüntü aracı, paketleme (`npmRebuild`, ikili dışlama), yerel güncelleme denemesi. |
+| **Düzeltme turu sayısı** | 0 | Gözden geçirme turu olmadı; üç DUR noktası (denetim betiği, görsel fark, paketleme) TY kararıyla çözüldü. |
+| **Bulgu gerçek/gürültü oranı** | 6 / 1 | Gerçek: denetim betiği hiç kanıt üretmiyordu; node-abi Electron 44'ü tanımıyordu; görüntü aracı sahte fark üretiyordu; Mac'ten Windows derlemesi düşüyordu; açılır liste kısalması; `win.files` dışlaması bütün depoyu pakete koydu (kendi hatam, ölçülünce yakalandı). Gürültü: metin kutusu tutamağı farkı (kapanışta yeniden çekimle çürütüldü). |
+| **Regresyon sayısı** | 0 | 540 görüntünün 516'sı 0 piksel; 293 + 11 test dosyası yeşil; veritabanı 12 ↔ 13 iki yönde açıldı. |
+| **Kaçan hata** | 0 | Henüz yayınlanmadı (C5). |
+
+**Takım Yöneticisi onayı:** kararlar 2026-10-03 (denetim düzeltmesi, açılır liste kabulü, görüntü aracı, `npmRebuild: false`, ikili dışlama, yerel güncelleme denemesi); Windows'ta kurulum, açılış, şifreli veritabanı, elle denemeler ve otomatik güncelleme TY tarafından denendi; kapanış talimatı 2026-10-03.
 
 **Bu spec'ten çıkarılan ders:**
+- "Var olan araç kanıt üretiyor" varsayımı sınanmalı: `ensure-native` şifreli sürücüyü yıllarca sağlıksız sayıp yeniden derliyor
+  ve "başarısız" yazıp yine 0 ile çıkıyordu; kimse fark etmemişti. Bir denetim ancak bozuk durumda kırmızı olduğu gösterilince
+  kanıttır (ikiliyi gizleyerek, paketi kaldırarak denendi).
+- Sessiz düşüşün yeri sanıldığı yer değildi: ikili bozukken `require` başarılı olur, düşüş uyarısı yalnız paket yokken çıkar.
+  Denetim yüklenen yerel ikiliye (`.node`) bakmalı; yolu gerçek yol (realpath) ile karşılaştırmalı.
+- Çerçeve yükseltmesinde ölçüm aracı da yükseltilir: Electron 43'ün `toBitmap()` değişikliği görüntü aracını milyonlarca sahte
+  piksel farkına sürükledi. Büyük farkı görünce önce ölçümün kendisi sınanmalı (iki görüntüyü aynı yoldan okuyarak).
+- Tek bir çekimdeki küçük fark değişiklik sayılmaz: tutamak farkı ikinci çekimde Electron 42 ile aynı çıktı. Fark kapanıştan
+  önce yeniden çekimle doğrulanmalı.
+- Paket boyutu ölçülmeden yapılandırma değişikliği bırakılmamalı: yalnız dışlama içeren platform `files` listesi bütün depoyu
+  pakete koydu (426 MB) ve ancak boyut ölçülünce görüldü.

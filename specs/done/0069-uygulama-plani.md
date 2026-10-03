@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0069-electron-ve-sqlite-surum-yukseltmesi.md` (revizyon 2) |
+| **Bağlı spec** | `specs/done/0069-electron-ve-sqlite-surum-yukseltmesi.md` (revizyon 2) |
 | **Dal** | `feat/0069-electron-44` (`main` `4238ef5` üstünde) |
 | **Onay** | Takım Yöneticisi, 2026-10-03: denetim betiği düzeltmesi; açılır liste kısalması kabul; görüntü aracı düzeltmesi; otomatik güncelleme yerel sunucuyla; `npmRebuild: false`; kullanılmayan platform ikilileri dışarıda |
 
@@ -53,7 +53,7 @@
 | AC-21 | Electron 43/44 kırıcı değişiklik listesi taraması (§2); `clipboard`, `net`, sertifika olayı, `isUnityRunning` kullanılmıyor |
 | AC-22 | §6 |
 | AC-23 | §7 |
-| AC-24 | `docs/evidence/0069-piksel-raporu.json`: 540 görüntünün 516'sı 0 piksel; 22'si açılır liste ve metin kutusu tutamağı (kabul), 2'si gözle görünmeyen ton |
+| AC-24 | `docs/evidence/0069-piksel-raporu.json`: 540 görüntünün 516'sı 0 piksel; 18'i açılır liste kısalması (TY kabulü), 4'ü metin kutusu tutamağı ve 2'si gözle görünmeyen ton farkı. Tutamak farkı kapanış tabanında çürütüldü: aynı kodla iki çekim birbirinin ve Electron 42'nin aynısı (`0069-taban-piksel-raporu.json`, kararsız çizim) |
 | AC-25 | 12 ile şifrelenmiş uygulama veritabanını 13 açtı, 13'ün yazdığını 12 açtı (uygulamanın `db.cjs`'i ile, veri aynı, dosya şifreli) |
 
 ## 4. Denetim çıktıları
