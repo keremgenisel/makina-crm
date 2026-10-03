@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (dal `feat/0026-genel-arama`) |
+| **Durum** | Tamamlandı (commit `b7275b8`, dal `feat/0026-genel-arama`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Genel arama kutusu |
@@ -311,34 +311,45 @@ Bilinen tuzaklar:
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Yeni kriterler
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Yeni kriterler
       `tests/ui/genel-arama-0026.test.jsx`'e yazıldı (K-23).
-- [ ] Yetki kontrolü mevcut tek kaynaktan yapılıyor; aramaya özel ikinci mantık yazılmadı (C2, C9).
-- [ ] Perde inikken gider sonuçlarının çıkmadığı testle gösterildi (AC-11, perde `vi.mock` ile inik).
-- [ ] Personel gizliliğinin aramada da korunduğu testle gösterildi (AC-6, AC-19, AC-20).
-- [ ] Kasa yetkisi ayrımı testle gösterildi (AC-27) ve Ayarlar hedefli sonucun `settings` şartı (AC-28).
-- [ ] Mevcut arama davranışının değişmediği, `tests/ui/global-search.test.jsx` **dokunulmadan** yeşil
+- [x] Yetki kontrolü mevcut tek kaynaktan yapılıyor; aramaya özel ikinci mantık yazılmadı (C2, C9).
+- [x] Perde inikken gider sonuçlarının çıkmadığı testle gösterildi (AC-11, perde `vi.mock` ile inik).
+- [x] Personel gizliliğinin aramada da korunduğu testle gösterildi (AC-6, AC-19, AC-20).
+- [x] Kasa yetkisi ayrımı testle gösterildi (AC-27) ve Ayarlar hedefli sonucun `settings` şartı (AC-28).
+- [x] Mevcut arama davranışının değişmediği, `tests/ui/global-search.test.jsx` **dokunulmadan** yeşil
       kalarak gösterildi (AC-13).
-- [ ] Kategori tablosu tek kaynak; anahtar kümesi eşitliği testi yazıldı (AC-35) ve `odemeleriUygula`
+- [x] Kategori tablosu tek kaynak; anahtar kümesi eşitliği testi yazıldı (AC-35) ve `odemeleriUygula`
       kaynak taraması eklendi (AC-36).
-- [ ] Görsel kanıt: `docs/evidence/0026-taban-piksel-raporu.json` ve `0026-piksel-raporu.json`, boş durum,
+- [x] Görsel kanıt: `docs/evidence/0026-taban-piksel-raporu.json` ve `0026-piksel-raporu.json`, boş durum,
       "Sonuç bulunamadı" durumu ve gider sonuçları dâhil. Palet `tasarim.jsx` kullanmadığı için
       `kanit-eslemesi.json` kaydı yok (0052 ve 0066 emsali, K-22).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` aramanın kapsamıyla güncellendi; yeni kayıt türü eklerken aramaya da eklenmesi gerektiği
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` aramanın kapsamıyla güncellendi; yeni kayıt türü eklerken aramaya da eklenmesi gerektiği
       ve ekran içi gider süzgeciyle **birleştirilmemesi** gerektiği (C7) yazıldı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | Revizyon 2 plan onayı (U1–U11: süzgeç ön doldurma, tarih biçimi, standart gider grubu); revizyon 3 triyaj (tarih adayı, yürürlük öncesi kalem); revizyon 4 TY kararı (kapsam listesi kaldırıldı). |
+| **Düzeltme turu sayısı** | 2 | Triyaj turu (dört bulgu) ve kapsam listesinin kaldırılması. |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Kısmi tarih ters sırayla eşleşiyordu; görsel kanıt dosyaları eksikti (plan "çekildi" diyordu, çekim sürüyordu); yürürlük öncesi kalem bulunup tıklanınca görünmüyordu; kalem eşleşmesi gereksiz hesap yapıyordu. |
+| **Regresyon sayısı** | 0 | 270 ekran × 2 tema önce/sonra: ilgisiz bütün ekranlar 0 piksel; `global-search.test.jsx` dokunulmadan yeşil. İki kaynak taraması (sözlük satır atfı, KalemListesi prop listesi) yer değiştiği için güncellendi. |
+| **Kaçan hata** | 1 | Boş durumdaki "Aranan kayıtlar" listesi gerçek uygulamada paletin içinde sağa doğru uzuyordu; TY kararıyla kaldırıldı. |
+
+**Takım Yöneticisi onayı:** görsel değişiklik (6 `arama-*` görüntüsü) ve kapanış, 2026-10-03 kapanış talimatıyla.
 
 **Bu spec'ten çıkarılan ders:**
+- İki biçimde aynı alanı "içerme" ile aramak, parçaların sırası ters olduğunda yanlış eşleşme üretir ("10.03" ISO'da 3 Ekim'i
+  bulur). Tam tarih testi bunu yakalamaz; kısmi sorgu ayrıca sınanmalı ve aday sorgunun biçimine göre tek seçilmeli.
+- Bir sonuca tıklayınca açılan ekranın süzgeci, aramanın bulduğu alanlara bakmıyorsa sorguyla doldurmak boş liste açar;
+  süzgeç kaydın kendi metniyle doldurulmalı. Aynı mantık "bulunur ama hedef ekranda görünmez" kayıtlara da uygulanır
+  (yürürlük öncesi kalem).
+- Kanıt planda "çekildi" diye yazılmadan önce dosyalar depoda olmalı; uzun çekim sürerken belge yazmak triyajda eksik
+  bulgusu üretir. Çekim sırasında test takımı paralel koşmamalı (ilgisiz ekranlarda 31–249 piksellik sahte fark).
+- Kâğıt üzerinde makul görünen bir görsel öğe (kapsam listesi) gerçek pencerede denenmeden spec'e yazıldı; yeni görsel
+  öğe spec aşamasında bir taslak görüntüyle sınanmalı.

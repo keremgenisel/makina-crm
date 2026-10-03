@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0026-genel-arama-kapsami.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0026-genel-arama-kapsami.md` (revizyon 4; plan onayı, triyaj, TY kararı) |
 | **Dal** | `feat/0026-genel-arama` (`feat/0068-cop-kutusu` kapanışı ve iki yerleşim düzeltmesinden sonra) |
 | **Onay** | Takım Yöneticisi, 2026-10-03: bütün öneriler (U1–U11) kabul |
 
