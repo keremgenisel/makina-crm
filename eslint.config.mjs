@@ -3,7 +3,6 @@
 // asgari kural seti. Çalıştırma: npm run lint
 import js from "@eslint/js";
 import globals from "globals";
-import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
@@ -12,7 +11,7 @@ export default [
   // Renderer (React)
   {
     files: ["src/**/*.{js,jsx}"],
-    plugins: { react, "react-hooks": reactHooks },
+    plugins: { "react-hooks": reactHooks },
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "module",
@@ -21,7 +20,8 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      "react/jsx-uses-vars": "error", // JSX'te kullanılan bileşenler "unused" sayılmasın
+      // ESLint 10 JSX başvurularını çekirdekte izler: JSX'te kullanılan bileşen "unused" sayılmaz. Eskiden bunu
+      // eslint-plugin-react'ın "react/jsx-uses-vars" kuralı yapıyordu; kural ve eklenti (ESLint 10'u desteklemiyor) kaldırıldı.
       "react-hooks/rules-of-hooks": "error",
       // Mevcut kod bilinçli bağımlılık dışlamaları kullanıyor (eslint-disable yorumlarıyla) —
       // uyarı seviyesinde kalsın, hata olmasın
