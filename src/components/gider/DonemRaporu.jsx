@@ -232,9 +232,10 @@ const YontemOzeti = ({ y, vade }) => {
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
 export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
-  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, donemAnahtari = "" }) => {
+  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, donemAnahtari = "", baslangicFiltre = null }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
-  const [yerelFiltre, setYerelFiltre] = useState({ tur: "", ted: "", odeme: "", ara: "" });
+  // Spec 0026 R18: genel aramadan gelinirse ilk değer (açıklama/tedarikçi metni ya da tür); süzgecin kuralı aynı (C7).
+  const [yerelFiltre, setYerelFiltre] = useState(() => ({ tur: "", ted: "", odeme: "", ara: "", ...(baslangicFiltre || {}) }));
   const filtre = odemeFiltre === undefined ? yerelFiltre : { ...yerelFiltre, odeme: odemeFiltre };
   const setFiltre = (fn) => {
     const yeni = fn(filtre);

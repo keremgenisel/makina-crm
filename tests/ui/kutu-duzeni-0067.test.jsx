@@ -71,11 +71,12 @@ describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
     expect(screen.queryByTestId("borc-ozeti")).toBeNull();
   });
   it("AC-5 / AC-28: KalemListesi'ne geçen props değişmedi (yalnız konumu); kart rakamları aynı", () => {
+    // Spec 0026 R18 ile güncellendi: genel aramadan gelen ilk süzgeç için `baslangicFiltre` eklendi (diğer props aynı).
     const g = oku("src/components/Giderler.jsx");
     expect(g).toContain(`<KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />`);
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} baslangicFiltre={baslangicKalemFiltresi} />`);
     render(<GiderH />);
     expect(screen.getByText("Toplam gider (KDV hariç)").parentElement.textContent).toMatch(/1\.000 ₺/);
     expect(within(screen.getByTestId("borc-ozeti")).getByText("Demir Bant")).toBeTruthy();

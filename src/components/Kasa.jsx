@@ -158,10 +158,12 @@ export const Kasa = ({
   kasaKapsamDisi = BOS_KAPSAM, setKasaKapsamDisi = null,
   // Spec 0056: hesap taşımada makina tahsilatlarının hesap bağı da değişir.
   setPayments = null,
+  // Spec 0026 R3: genel aramadan gelinirse görünüm, seçili hesap ve çek portföyünün yönü (vurgu/odak yok, X8).
+  baslangicGorunum = "hesaplar", baslangicHesapId = null, baslangicCekYon = null,
 }) => {
-  const [gorunum, setGorunum] = useState("hesaplar");
+  const [gorunum, setGorunum] = useState(baslangicGorunum || "hesaplar");
   const canDo = makeCanDo(serverPermissions, "giderActions");
-  const [secili, setSecili] = useState(null);
+  const [secili, setSecili] = useState(baslangicHesapId);
   const [hesapFormu, setHesapFormu] = useState(null); // null | {hesap}
   const [virmanAcik, setVirmanAcik] = useState(false);
   const [silinecek, setSilinecek] = useState(null);
@@ -407,7 +409,8 @@ export const Kasa = ({
       {gorunum === "cek" ? (
         <CekPortfoyu cekler={cekler} setCekler={setCekler} payments={payments} customers={customers} giderler={giderler} giderTurleri={giderTurleri}
           tedarikciler={tedarikciler} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
-          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} aktifKullanici={aktifKullanici} />
+          giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} aktifKullanici={aktifKullanici}
+          baslangicYon={baslangicCekYon} />
       ) : (<>
       {/* Spec 0056 R3 (AC-2, AC-31): deneme dönemi geçici bir hâldir; bitiş ayardan. */}
       {deneme && <UyariSeridi aile="uyari" testId="deneme-donemi">{denemeDonemiMetni(denemeBitis)}</UyariSeridi>}

@@ -35,6 +35,7 @@ import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRa
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
 import App from "../../src/App";
 import { UserManager } from "../../src/components/settings/UserManager";
+import { GlobalSearch } from "../../src/components/GlobalSearch";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -487,6 +488,27 @@ const COP_PARTI = [{ id: 903, ad: "2026-0", baslangicAy: "2026-03", bitisAy: "20
 const CEK68 = [{ id: 6801, yon: "alinan", paymentId: null, no: "0445566", banka: "Vakıfbank", kesideci: "Kaya Ltd.", tur: "hamiline", durum: "portfoy", tutar: 12500, currency: "TRY",
   vadeTarihi: "2026-11-30", tarih: "2026-09-12", kimden: "Kaya Ltd.", gecmis: [] }];
 
+// Spec 0026: genel arama paleti; gider modülü kayıtları, kapsam listesi (boş kutu ve sonuç yok), yetki süzmesi.
+const ARAMA_VERI = {
+  customers: [{ id: 1, name: "Yıldız Kafe", model: "AK100", serialNo: "2026-101" }],
+  giderTurleri: [{ id: 1, ad: "Hammadde", davranis: "normal" }, { id: 2, ad: "Kira", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" }],
+  tedarikciler: [{ id: 11, ad: "Yıldız Döküm", yetkili: "Ayşe Kaya", telefon: "0532 111 22 33", vergiNo: "1234567890" }],
+  giderler: [
+    { id: 101, turId: 1, aciklama: "Bant alımı", tedarikciId: 11, tarih: "2026-03-15", tutar: 20000, kdvOrani: 20, taksitler: [] },
+    { id: 103, turId: 2, aciklama: "Depo kirası", tarih: "2026-05-01", tutar: 30000, kdvOrani: 0, stopajOrani: 0, girisYonu: "brut",
+      taksitler: [{ id: "t1", hedef: "ana", sira: 1, vade: "2026-06-10", tutar: 15000 }, { id: "t2", hedef: "ana", sira: 2, vade: "2026-07-10", tutar: 15000 }] },
+    { id: 104, turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 31337, tarih: "2026-03-20", taksitler: [] },
+  ],
+  giderTanimlari: [{ id: 201, turId: 1, ad: "Yıldız aylık bakım", tedarikciId: 11, baslangicAy: "2026-01" }, { id: 202, turId: 1, ad: "Eski servis", baslangicAy: "2025-01", bitisAy: "2026-02", kapatildi: true }],
+  standartGiderler: [{ id: 301, grupId: 301, ad: "Elektrik", tutar: 2000, baslangicAy: "2026-05", bitisAy: null }],
+  uretimPartileri: [{ id: 401, ad: "Yaz Partisi", baslangicAy: "2026-07", bitisAy: "2026-08", aciklama: "AK100 serisi" }],
+  kasaHesaplari: [{ id: 501, ad: "Ziraat Vadesiz", tur: "banka", paraBirimi: "TRY" }, { id: 502, ad: "Eski Kasa", tur: "kasa", paraBirimi: "TRY", kapali: true }],
+  cekler: [{ id: 601, yon: "alinan", no: "CK-778899", banka: "Vakıfbank", kesideci: "Yıldız Ticaret", durum: "portfoy" },
+    { id: 603, yon: "verilen", no: "VR-1002", banka: "Ziraat", alacakliTur: "tedarikci", alacakliAd: "Yıldız Döküm", durum: "yazildi" }],
+};
+const aramaEkrani = (ek = {}) => <GlobalSearch {...ARAMA_VERI} giderYetki kasaYetki onOpenCustomer={bos} onGoGider={bos} onGoGiderTanim={bos} onGoKasa={bos} {...ek} />;
+const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
+
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
@@ -825,6 +847,13 @@ const EKRANLAR = {
   "kilit-geri-yukleme": [ayarlar("backup"), ["dugme:Yedekten Geri Yükle", "dugme:Evet, Geri Yükle"]],
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
+  // Spec 0026: genel arama paleti (boş kutu, sonuç yok, gider sonuçları, taksit vadesi, kasasız ve gider yetkisiz kullanıcı).
+  "arama-bos": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)"]],
+  "arama-sonuc-yok": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=zzzz`]],
+  "arama-gider": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=Yıldız`]],
+  "arama-gider-vade": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=10.06.2026`]],
+  "arama-kasasiz": [aramaEkrani({ kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=Yıldız`]],
+  "arama-gidersiz": [aramaEkrani({ giderYetki: false, kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=zzzz`]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

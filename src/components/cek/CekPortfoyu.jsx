@@ -162,9 +162,12 @@ export const CekPortfoyu = ({
   cekler = [], setCekler, payments = [], customers = [], giderler = [], giderTurleri = [], tedarikciler = [], calisanlar = [],
   hesapHareketleri = [], setHesapHareketleri = null, giderAyarlari = {}, serverPermissions = null, showToast = () => {}, hesaplar = [],
   aktifKullanici,
+  // Spec 0026 R3: genel aramadan gelinirse çekin yönü ve "Tümü" süzgeci (varsayılan süzgeçler tahsil edilmiş, ciro
+  // edilmiş ve ödenmiş çeki gizlerdi).
+  baslangicYon = null,
 }) => {
-  const [yon, setYon] = useState("alinan");
-  const [vSuzgec, setVSuzgec] = useState("yazildi");
+  const [yon, setYon] = useState(baslangicYon || "alinan");
+  const [vSuzgec, setVSuzgec] = useState(baslangicYon ? "tumu" : "yazildi");
   const [yaz, setYaz] = useState(false);
   const [vDurum, setVDurum] = useState(null);
   const [vGecmis, setVGecmis] = useState(null);
@@ -176,7 +179,7 @@ export const CekPortfoyu = ({
   const satirIzni = (s) => (s.bilgi?.bagli ? izin : { ...izin, durum: izin.bagsiz });
   const [ekle, setEkle] = useState(false);
   const [silinecek, setSilinecek] = useState(null);
-  const [suzgec, setSuzgec] = useState("elde");
+  const [suzgec, setSuzgec] = useState(baslangicYon ? "tumu" : "elde");
   const [tur, setTur] = useState("");
   const [ciroSatiri, setCiroSatiri] = useState(null);
   const [durumSatiri, setDurumSatiri] = useState(null);

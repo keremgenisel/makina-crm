@@ -48,6 +48,8 @@ export const Giderler = ({
   makinaMaliyet = null,
   // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
   baslangicOdemeFiltresi = "",
+  // Spec 0026 R3, R18: genel aramadan gelinirse görünüm, dönem ayı ve kalem süzgecinin ilk değeri (vurgu/odak yok, X8).
+  baslangicGorunum = "rapor", baslangicAy = null, baslangicKalemFiltresi = null,
   // Spec 0024: ödeme bir harekettir; kalemin durumu burada hareketlerden türetilir (odemeleriUygula), yazma ham
   // diziye yapılır. hesapHareketleri verilmezse (dizi değil) saklı durum okunur. Hesap seçimi yalnız kasa yetkisiyle (C6).
   hesapHareketleri = null, setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
@@ -61,10 +63,10 @@ export const Giderler = ({
   const canDo = makeCanDo(serverPermissions, "giderActions");
   // Canlı yerel gün (spec 0003 C3, H1): hatırlatma kapsamı Anasayfa kartıyla aynı "bugün"e bakmalı (AC-14).
   const bugun = useBugun();
-  const [gorunum, setGorunum] = useState("rapor");
+  const [gorunum, setGorunum] = useState(baslangicGorunum || "rapor");
   const [odemeFiltre, setOdemeFiltre] = useState(baslangicOdemeFiltresi || "");
   const [mod, setMod] = useState("ay");
-  const [ay, setAy] = useState(ayOf(bugun));
+  const [ay, setAy] = useState(baslangicAy || ayOf(bugun));
   const [aralik, setAralik] = useState({ bas: `${ayOf(bugun)}-01`, bit: bugun });
   const [form, setForm] = useState(null);       // null | {kalem}
   const [silinecek, setSilinecek] = useState(null);
@@ -338,7 +340,7 @@ export const Giderler = ({
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} baslangicFiltre={baslangicKalemFiltresi} />
                 <BorcOzeti ozet={borc} />
                 <KovaKarti rapor={rapor} />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
