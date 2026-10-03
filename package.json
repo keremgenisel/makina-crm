@@ -40,7 +40,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "selfsigned": "^5.5.0",
-    "undici": "^8.10.2",
+    "undici": "^8.11.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
@@ -66,9 +66,9 @@
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^2.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
+    "vite": "^8.3.1",
     "vitest": "^4.1.10",
-    "wait-on": "^9.1.0",
+    "wait-on": "^9.5.1",
     "world-atlas": "^2.0.2"
   },
   "overrides": {
