@@ -1,0 +1,164 @@
+[
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 249,
+    "not": "sonra görüntüsünde metin kutusu tutamağı bir kezlik farklı çizilmişti; iki taban çekimi birbirinin ve Electron 42 görüntüsünün aynısı (0 piksel). Electron 44 değişikliği değil, kararsız çizim."
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 249,
+    "not": "sonra görüntüsünde metin kutusu tutamağı bir kezlik farklı çizilmişti; iki taban çekimi birbirinin ve Electron 42 görüntüsünün aynısı (0 piksel). Electron 44 değişikliği değil, kararsız çizim."
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 83,
+    "not": "sonra görüntüsünde metin kutusu tutamağı bir kezlik farklı çizilmişti; iki taban çekimi birbirinin ve Electron 42 görüntüsünün aynısı (0 piksel). Electron 44 değişikliği değil, kararsız çizim."
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 83,
+    "not": "sonra görüntüsünde metin kutusu tutamağı bir kezlik farklı çizilmişti; iki taban çekimi birbirinin ve Electron 42 görüntüsünün aynısı (0 piksel). Electron 44 değişikliği değil, kararsız çizim."
+  },
+  {
+    "ad": "giderler-coklu-odeme-aydinlik.png",
+    "boyut": "2880x4448",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-karanlik.png",
+    "boyut": "2880x4448",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-hata-aydinlik.png",
+    "boyut": "2880x4448",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-coklu-odeme-hata-karanlik.png",
+    "boyut": "2880x4448",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-iki-satir-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-iki-satir-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-personel-elden-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-personel-elden-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-duzenle-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 37.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-duzenle-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 37.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0057-taksit-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0057-taksit-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0057-cek-dagitim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0057-cek-dagitim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-0053-cek-aydinlik.png",
+    "boyut": "2880x4418",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek tutarı kapatılan borçlardan 38.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-odeme-0053-cek-karanlik.png",
+    "boyut": "2880x4418",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): ",
+      "Çek tutarı kapatılan borçlardan 38.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  }
+]

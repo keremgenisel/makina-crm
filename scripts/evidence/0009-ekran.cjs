@@ -60,7 +60,9 @@ app.whenReady().then(async () => {
         if (karsi) {
           const eskiYol = path.join(karsi, ad);
           if (!fs.existsSync(eskiYol)) satir.fark = "önce görüntüsü yok";
-          else Object.assign(satir, farkSay(nativeImage.createFromPath(eskiYol), img));
+          // Spec 0069: Electron 43'ten beri toBitmap() renkleri sRGB'ye normalleştirir; canlı görüntü ile dosyadan okunan
+          // görüntü farklı dönüşümden geçip sahte milyonlarca piksel fark üretiyordu. İkisi de PNG'den okunarak karşılaştırılır.
+          else Object.assign(satir, farkSay(nativeImage.createFromPath(eskiYol), nativeImage.createFromBuffer(img.toPNG())));
         }
         rapor.push(satir);
         console.log(JSON.stringify(satir));

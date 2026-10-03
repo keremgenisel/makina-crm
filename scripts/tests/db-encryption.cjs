@@ -39,11 +39,27 @@ const freshDb = () => { delete require.cache[require.resolve(dbCjs)]; return req
 
 const dataDb = path.join(tmpDir, "data.db");
 
+// ── Faz 0 + 1 (spec 0069 R4): veritabanı katmanı ŞİFRELİ sürücünün yerel ikilisiyle açılır, şifresiz yedeğe düşmez ──
+// db.cjs şifreli sürücü paketi yoksa yalnız bir konsol uyarısıyla düz better-sqlite3'e geçer; ikili bozuksa require yine
+// başarılı olur (sürücü ikiliyi veritabanı açılırken yükler) ve hata açılışta gelir. "Açıldı" kanıt değildir: açılıştan
+// sonra hangi yerel ikilinin (.node) yüklendiği, düşüş uyarısı ve şifre yeteneği denetlenir.
+const uyarilar = [];
+const origWarn = console.warn;
+console.warn = (...a) => { uyarilar.push(a.map(String).join(" ")); origWarn(...a); };
 // ── Faz 1: safeStorage yok → düz DB, marker düz metin ────────────────────────
 safeStorageMock = undefined;
 let dbmod = freshDb();
 dbmod.migrateFromJsonIfNeeded(); // temiz kurulum (branch 2)
+console.warn = origWarn;
 check("faz1: sqlite aktif (şifrelemesiz)", dbmod.isActive());
+const yuklenen = Object.keys(require.cache);
+// Node modülleri gerçek yollarıyla önbelleğe alır; node_modules sembolik bağlantıysa (çalışma ağacı vb.) kök yolu tutmaz.
+const gercekYol = (ad) => { const p = path.join(root, "node_modules", ad); try { return fs.realpathSync(p) + path.sep; } catch { return p + path.sep; } };
+const sifreliYol = gercekYol("better-sqlite3-multiple-ciphers");
+const duzYol = gercekYol("better-sqlite3");
+check("faz0: veritabanı ŞİFRELİ sürücünün yerel ikilisiyle açıldı (multiple-ciphers .node yüklü)", yuklenen.some(f => f.startsWith(sifreliYol) && f.endsWith(".node")));
+check("faz0: düz better-sqlite3 hiç yüklenmedi (ne JS ne ikili; yedeğe düşülmedi)", !yuklenen.some(f => f.startsWith(duzYol)));
+check("faz0: 'şifrelemesiz better-sqlite3' düşüş uyarısı yazılmadı", !uyarilar.some(u => u.includes("şifrelemesiz")));
 dbmod.setMetaValue("marker", MARKER);
 check("faz1: dbEncryptionStatus.encrypted=false (şifreleme kapalı)", dbmod.dbEncryptionStatus().encrypted === false);
 dbmod.close();
@@ -82,6 +98,7 @@ check("faz3: yeniden açılışta aktif", dbmod.isActive());
 check("faz3: saklı anahtarla veri okunur", dbmod.getMetaValue("marker") === MARKER);
 check("faz3: dosya hâlâ şifreli (marker sızmaz)", !dbVeWalIcerir(dataDb, MARKER));
 check("faz3: dbEncryptionStatus.encrypted=true", dbmod.dbEncryptionStatus().encrypted === true);
+check("faz3: dbEncryptionStatus.canEncrypt=true (şifreli build + anahtar deposu; spec 0069)", dbmod.dbEncryptionStatus().canEncrypt === true);
 dbmod.close();
 
 // ── jsonStore: istemci veri önbelleği at-rest şifreleme ──────────────────────
