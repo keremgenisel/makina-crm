@@ -95,7 +95,13 @@ const bolumBasligiDeseni = (ad) => new RegExp(`<BolumBasligi[^>]*>\\s*${regexKac
 
 describe("başlık deseni düz metni birebir arar (CodeQL alert #44)", () => {
   it("nokta ya da parantez içeren başlık yalnız kendisiyle eşleşir; eski yalnız-'/' kaçışı yanlış eşleşiyordu", () => {
-    const eski = (ad) => new RegExp(`<BolumBasligi[^>]*>\\s*${ad.replace(/[/]/g, "\\/")}`);
+    // Eski yalnız-"/" kaçışının ürettiği desenler, kaçış çağrısı yazılmadan düz metin olarak (CodeQL alert #45: eksik
+    // kaçış kalıbı testte bile kaynakta durmasın).
+    const ESKI = {
+      "İlk Ödeme (Kapora/Ödeme)": /<BolumBasligi[^>]*>\s*İlk Ödeme (Kapora\/Ödeme)/,
+      "Altuntas A.S.": /<BolumBasligi[^>]*>\s*Altuntas A.S./,
+    };
+    const eski = (ad) => ESKI[ad];
     // Parantez: eski desende grup olur, parantezsiz metni de bulur (yanlış geçer).
     expect("<BolumBasligi>İlk Ödeme Kapora/Ödeme").toMatch(eski("İlk Ödeme (Kapora/Ödeme)"));
     expect("<BolumBasligi>İlk Ödeme Kapora/Ödeme").not.toMatch(bolumBasligiDeseni("İlk Ödeme (Kapora/Ödeme)"));
