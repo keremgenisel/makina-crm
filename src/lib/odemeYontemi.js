@@ -133,7 +133,8 @@ export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits
 const ad = (yonelme, yalin = yonelme) => ({ yonelme, yalin });
 export const HEDEF_ADLARI = {
   genel: { [HEDEF.ANA]: ad("Tedarikçiye", "Tedarikçi"), [HEDEF.ELDEN]: ad("Elden"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"),
-    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
+    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.SGK]: ad("SGK'ya", "SGK"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
+  // Spec 0070 R9: SGK genel tabloda; personel tablosuna yazılsaydı yalnız SGK'lı kalemde "Çalışana" çıkardı.
   kira: { [HEDEF.ANA]: ad("Kiraya verene", "Kiraya veren") },
   // Spec 0054 R8, R16 (0042 R15'i genişletir): birden çok hedefli personelde ayırt edici adlar, tek hedefli personelde "Çalışan".
   personel: { [HEDEF.ANA]: ad("Maaş (resmi)"), [HEDEF.ELDEN]: ad("Maaş (elden)"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"), [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)") },

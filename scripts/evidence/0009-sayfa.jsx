@@ -16,6 +16,7 @@ import { Stock } from "../../src/components/Stock";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
 import { MailComposeModal } from "../../src/components/MailCompose";
+import { CalisanManager } from "../../src/components/CalisanManager";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Dashboard } from "../../src/components/Dashboard";
 import { ServisPanosu } from "../../src/components/ServisPanosu";
@@ -118,6 +119,15 @@ const MUSTERILER = [
   { id: 501, name: "Ege Köfte", model: "AK100", serialNo: "S-2", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 180000, installDate: "2026-09-05", uretimTarihi: "2026-08-20", kalanBorc: 20000 },
 ];
 const k = (id, o) => ({ id, tarih: "2026-09-10", turId: 4, tutar: 10000, kdvOrani: 20, odendi: false, ...o });
+// Spec 0070: SGK ve yol parası girilmiş iki çalışan (kart) ve iki personel kalemi (yeni kodun kaydettiği gibi satırlı; SGK tek satır).
+// Tarih görüntü aracının sabit bugününden (2026-09-23) önce: gelecek tarihli kalem borç kapsamına girmez.
+const CAL_0070 = [{ id: 21, ad: "Hasan Çelik", resmiMaliyet: 30000, sgkMaliyet: 9000, eldenMaliyet: 10000, yolParasiMaliyet: 1000 }, { id: 22, ad: "Zeynep Arslan", resmiMaliyet: 25000, sgkMaliyet: 7000, eldenMaliyet: 5000 }];
+const SGK_0070 = [
+  { id: 701, tarih: "2026-09-15", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, sgkTutar: 9000, eldenTutar: 10000, yolParasi: 1000, tutar: null, kdvOrani: 0, sonOdemeTarihi: "2026-10-05", ekOdemeler: [],
+    taksitler: [{ id: 7011, hedef: "ana", sira: 1, vade: "2026-10-05", tutar: 30000, odendi: false }, { id: 7012, hedef: "elden", sira: 1, vade: "2026-10-05", tutar: 11000, odendi: false }, { id: 7013, hedef: "sgk", sira: 1, vade: "2026-10-15", tutar: 9000, odendi: false }] },
+  { id: 702, tarih: "2026-09-15", turId: 3, calisanId: 22, calisanAd: "Zeynep Arslan", resmiTutar: 25000, sgkTutar: 7000, eldenTutar: 5000, tutar: null, kdvOrani: 0, sonOdemeTarihi: "2026-10-05", ekOdemeler: [],
+    taksitler: [{ id: 7021, hedef: "ana", sira: 1, vade: "2026-10-05", tutar: 25000, odendi: false }, { id: 7022, hedef: "elden", sira: 1, vade: "2026-10-05", tutar: 5000, odendi: false }, { id: 7023, hedef: "sgk", sira: 1, vade: "2026-10-15", tutar: 7000, odendi: false }] },
+];
 const GIDERLER = [
   k(1, { tedarikciId: 12, aciklama: "Eylül elektrik", sonOdemeTarihi: "2026-09-28" }),
   k(2, { turId: 5, tutar: 42000, tedarikciId: 11, aciklama: "Sac levha", atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", tutar: 42000 }], odendi: true, odemeTarihi: "2026-09-12" }),
@@ -868,6 +878,14 @@ const EKRANLAR = {
   "ayarlar-gidertanim-0071-form": [ayarlar("gidertanim"), ["baslik:Düzenle", "KDV dâhil"]],
   "giderler-0071-tutar-girilmedi": [<GiderEkrani g0={[...GIDERLER, k(8, { tutar: 0, tedarikciId: 12, aciklama: "Eylül su", tanimId: 72, donem: "2026-09" })]} />, []],
   "giderler-0071-tutarsiz-suzgec": [<GiderEkrani g0={[...GIDERLER, k(8, { tutar: 0, tedarikciId: 12, aciklama: "Eylül su", tanimId: 72, donem: "2026-09" })]} />, ["sec:Ödeme filtresi=tutarsiz"]],
+  // Spec 0070: çalışan kartında SGK ve yol parası, personel formu (SGK vadesi, SGK hedefi, yol parası ipucu), borç özetinde SGK
+  // kurum satırı ve toplu ödeme penceresi, personel ayrıntısının yeni sütunları.
+  "ayarlar-calisanlar-0070": [<CalisanManager calisanlar={CAL_0070} setCalisanlar={bos} giderYetki maliyetDuzenleyebilir showToast={bos} />, []],
+  "gider-formu-0070-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-30", resmiTutar: "30000", sgkTutar: "9000", eldenTutar: "10000", yolParasi: "1000", sonOdemeTarihi: "2026-10-05", sgkVade: "2026-10-15" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL_0070} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ödeme"]],
+  "giderler-0070-borc-sgk": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} h0={[]} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
+  "giderler-0070-sgk-odeme": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} h0={[]} />, ["SGK'yı Öde"]],
+  "giderler-0070-personel-ayrinti": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} h0={[]} />, ["~▸ Aç"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

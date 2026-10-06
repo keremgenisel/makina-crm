@@ -28,6 +28,7 @@ import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { UretimPartileri } from "./gider/UretimPartileri";
+import { SgkToplamOdeme } from "./gider/SgkToplamOdeme";
 
 // Giderler üst sekmesi (spec 0001, C14). Yalnız gider yetkisi olan kullanıcıya görünür (C6 kural 3).
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
@@ -189,6 +190,17 @@ export const Giderler = ({
   const odemeGirisi = !!setHesapHareketleri;
   const odendiDegistir = (k) => setOdemeHedefi({ kalemId: k.id, hedef: null });
   const [planKalemId, setPlanKalemId] = useState(null);
+  // Spec 0070 R15 (Q4): SGK toplu ödeme penceresi; borç özetinin SGK satırından açılır.
+  const [sgkOdemeAcik, setSgkOdemeAcik] = useState(false);
+  const sgkOde = canDo("gider_odeme") && setHesapHareketleri ? () => setSgkOdemeAcik(true) : null;
+  const sgkKaydet = (hareketler, ayKaydi) => {
+    const yeni = hareketler.map(h => ({ ...h, id: uid() }));
+    setHesapHareketleri(p => [...(p || []), ...yeni]);
+    // 0058 emsali: toplu işlem tek satır; çalışan adı yazılmaz (R13).
+    logAction({ serverPermissions, action: "odendi", entity: "gider", entityName: `SGK · ${ayKaydi.ay}`, detail: { adet: yeni.length, tutar: yeni.reduce((a, h) => a + (Number(h.tutar) || 0), 0) } });
+    setSgkOdemeAcik(false);
+    showToast(`SGK ödendi: ${yeni.length} kalem.`);
+  };
   const planKalemi = planKalemId == null ? null : giderler.find(k => k.id === planKalemId) || null;
   const satirIsaretle = (k, r) => { setPlanKalemId(null); setOdemeHedefi({ kalemId: k.id, hedef: { taksitId: r.id } }); };
   // Spec 0064 R1, R25: gider formu, ödeme penceresi ve ödeme planı (ödendi ve hedef anahtarları pencere açar) aynı kalemin
@@ -313,14 +325,14 @@ export const Giderler = ({
             metin="Dönem filtresi devre dışı: yürürlük ayından bugüne kadarki bütün ödenmemiş kalemler, ödeme hedefi başına. Yaş gider tarihinden sayılır; vade ayrı sütundadır." />
           <AcikKalemler giderler={giderler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} yururlukAy={yururlukAy} bugun={bugun} canDo={canDo}
             onHedefOde={odemeGirisi ? (kalemId, hedef) => setOdemeHedefi({ kalemId, hedef: { hedef } }) : null} />
-          <BorcOzeti ozet={borc} />
+          <BorcOzeti ozet={borc} onSgkOde={sgkOde} />
         </>
       )}
       {gorunum === "rapor" && rapor && !donemsizKip && (
         rapor.yururlukOncesi ? (
           <>
             <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Gider takibi ${yururlukAy ? ayAdi(yururlukAy) : "yürürlük ayından"} itibaren geçerli. Seçili dönem (${donemEtiketi}) için rakam üretilmez.`} />
-            <BorcOzeti ozet={borc} />
+            <BorcOzeti ozet={borc} onSgkOde={sgkOde} />
           </>
         ) : (
           <>
@@ -341,7 +353,7 @@ export const Giderler = ({
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} baslangicFiltre={baslangicKalemFiltresi} />
-                <BorcOzeti ozet={borc} />
+                <BorcOzeti ozet={borc} onSgkOde={sgkOde} />
                 <KovaKarti rapor={rapor} />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
                   <TurKirilimi rapor={rapor} />
@@ -353,7 +365,7 @@ export const Giderler = ({
                 </div>
               </>
             )}
-            {rapor.bos && <BorcOzeti ozet={borc} />}
+            {rapor.bos && <BorcOzeti ozet={borc} onSgkOde={sgkOde} />}
           </>
         )
       )}
@@ -398,6 +410,10 @@ export const Giderler = ({
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
           odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler} tedarikciler={tedarikciler} />
+      )}
+      {sgkOdemeAcik && (
+        <SgkToplamOdeme giderler={giderler} turMap={turMap} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} hareketler={hesapHareketleri || []}
+          varsayilanAy={mod === "ay" ? ay : null} yururlukAy={yururlukAy} bugun={bugun} aktifKullanici={aktifKullanici} onKaydet={sgkKaydet} onClose={() => setSgkOdemeAcik(false)} />
       )}
       {silinecek && (
         <ConfirmDialog title="Gider silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli “${silinecek.aciklama || silinecek.calisanAd || "gider"}” kalemi Çöp Kutusu'na taşınacak. 30 gün içinde geri alınabilir.${silinecek.tanimId != null ? " Tekrarlayan tanımdan geldiği için o ay yeniden üretilmez." : ""}`}

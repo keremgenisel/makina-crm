@@ -130,6 +130,10 @@ dbmod.writeBlobToDb({
         { id: 9022, hedef: "elden", sira: 1, vade: "2026-08-28", tutar: 20000, odendi: false, odemeTarihi: null },
         { id: 9023, hedef: "ekResmi", sira: 1, vade: "2026-08-31", tutar: 5000, odendi: false, odemeTarihi: null },
         { id: 9024, hedef: "ekElden", sira: 1, vade: "2026-08-31", tutar: 4500, odendi: false, odemeTarihi: null }] },
+    // Spec 0070 R20 (Q2): SGK ve yol parası sütunları; SGK hedefi satırı vadesiyle (sgkVade sütunu yok).
+    { id: 86, tarih: "2026-09-01", turId: 42, calisanId: 71, calisanAd: "Ahmet Yılmaz", resmiTutar: 30000, eldenTutar: null, sgkTutar: 9000.5, yolParasi: 1500, tutar: null, kdvOrani: 0, odendi: false, atamaTur: "", modelSatirlari: [],
+      taksitler: [{ id: 9031, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 31500, odendi: false, odemeTarihi: null },
+        { id: 9025, hedef: "sgk", sira: 1, vade: "2026-09-15", tutar: 9000.5, odendi: false, odemeTarihi: null }] },
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
   ],
   // Spec 0024 A: kasa hesapları ve hareketler.
@@ -309,6 +313,11 @@ check("spec 0023: ek ödemesiz kalem boş dizi döner", ((blob.giderler || []).f
 check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
 check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = (blob.giderler || []).find(x => x.id === 83); return p?.resmiTutar === 39223.13 && p.eldenTutar === 15000 && p.calisanAd === "Ahmet Yılmaz" && p.deletedAt === "2026-07-20T10:00:00.000Z"; })());
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
+check("spec 0070 AC-5: sgkTutar ve yolParasi roundtrip eder, SGK satırı (hedef sgk) vadesiyle korunur; alanı olmayan kalemde alan yazılmaz", (() => {
+  const k = (blob.giderler || []).find(x => x.id === 86), e = (blob.giderler || []).find(x => x.id === 83);
+  const sgk = (k?.taksitler || []).find(x => x.hedef === "sgk");
+  return k?.sgkTutar === 9000.5 && k.yolParasi === 1500 && sgk?.id === 9025 && sgk.vade === "2026-09-15" && sgk.tutar === 9000.5 && e && !("sgkTutar" in e) && !("yolParasi" in e);
+})());
 check("spec 0071 AC-16: kdvYonu iki tabloda roundtrip eder, kira girisYonu ile yan yana durur; boş alan blob'a yazılmaz (R27)", (() => {
   const k = (blob.giderler || []).find(x => x.id === 81), kira = (blob.giderler || []).find(x => x.id === 82);
   const t = (blob.giderTanimlari || []).find(x => x.id === 61), p = (blob.giderTanimlari || []).find(x => x.id === 62);
@@ -400,7 +409,7 @@ const reopen = dbmod.readBlobFromDb();
 check("reopen: yedek parça satışları KAYBOLMADI", (reopen.yedekParcaSatislar || []).length === 3);
 check("reopen: yedek parça alanları + tahsis korundu", (() => { const s = (reopen.yedekParcaSatislar || []).find(x => x.id === 650); return s?.miktar === 5 && s?.kargoSorumlusu === "Ahmet Yılmaz" && s?.olusturmaZamani === "2026-07-15T10:20:30" && (s?.tahsisler || []).length === 2; })());
 check("reopen: servisler korundu", (reopen.services || []).find(x => x.id === 2)?.durum === "Yapılıyor");
-check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 5 && /* spec 0054 kalemi 85 ile 5 */  (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
+check("reopen: gider kalemleri ve model satırları korundu", (() => { const g = reopen.giderler || []; return g.length === 6 && /* spec 0054 kalemi 85 ile 5, spec 0070 kalemi 86 ile 6 */  (g.find(x => x.id === 81)?.modelSatirlari || []).length === 2; })());
 check("reopen: ek ödeme satırları kalıcı (spec 0023 AC-13)", ((reopen.giderler || []).find(x => x.id === 83)?.ekOdemeler || []).length === 3);
 check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
 check("spec 0068 AC-21: yeniden açılışta çöpteki tedarikçi ve parti çöpte kalır", (reopen.tedarikciler || [])[0]?.deletedAt === "2026-10-01T09:00:00.000Z" && (reopen.uretimPartileri || []).find(x => x.id === 96)?.deletedAt === "2026-10-01T09:00:00.000Z");

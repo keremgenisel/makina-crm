@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS giderler (
   calisanId INTEGER, calisanAd TEXT, resmiTutar REAL, eldenTutar REAL,
   tanimId INTEGER, donem TEXT,
   atamaTur TEXT, makinaTur TEXT, makinaId INTEGER,
-  deletedAt TEXT, kdvYonu TEXT
+  deletedAt TEXT, kdvYonu TEXT, sgkTutar REAL, yolParasi REAL
 );
 CREATE TABLE IF NOT EXISTS gider_model_satirlari (
   id INTEGER PRIMARY KEY,
@@ -518,6 +518,9 @@ const APP_SETTINGS_GIDER_COLUMN = [["giderAyarlari", "TEXT"]];
 // Spec 0071 R17: tutarın KDV hariç mi dâhil mi girildiği ("haric" | "dahil"; personelde null). Kira brüt/net için
 // kullanılan girisYonu'ndan AYRI sütun (iki seçim kirada birlikte durur). Boş değer "hariç" sayılır (R27), göç yok.
 const GIDER_KDV_YONU_COLUMN = [["kdvYonu", "TEXT"]];
+// Spec 0070 R20 (Q2): personel kaleminin SGK ve yol parası bileşenleri (SGK vadesi sütun değil, gider_taksitleri'ndeki
+// hedef "sgk" satırının vadesidir).
+const GIDER_SGK_YOL_COLUMNS = [["sgkTutar", "REAL"], ["yolParasi", "REAL"]];
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -842,9 +845,9 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM giderler`).run();
     const stmt = conn.prepare(`
       INSERT INTO giderler (id, tarih, turId, aciklama, tedarikciId, tutar, kdvOrani, odemeYontemi, sonOdemeTarihi, odendi, odemeTarihi,
-        stopajOrani, girisYonu, netTutar, calisanId, calisanAd, resmiTutar, eldenTutar, tanimId, donem, atamaTur, makinaTur, makinaId, deletedAt, kdvYonu)
+        stopajOrani, girisYonu, netTutar, calisanId, calisanAd, resmiTutar, eldenTutar, tanimId, donem, atamaTur, makinaTur, makinaId, deletedAt, kdvYonu, sgkTutar, yolParasi)
       VALUES (@id, @tarih, @turId, @aciklama, @tedarikciId, @tutar, @kdvOrani, @odemeYontemi, @sonOdemeTarihi, @odendi, @odemeTarihi,
-        @stopajOrani, @girisYonu, @netTutar, @calisanId, @calisanAd, @resmiTutar, @eldenTutar, @tanimId, @donem, @atamaTur, @makinaTur, @makinaId, @deletedAt, @kdvYonu)
+        @stopajOrani, @girisYonu, @netTutar, @calisanId, @calisanAd, @resmiTutar, @eldenTutar, @tanimId, @donem, @atamaTur, @makinaTur, @makinaId, @deletedAt, @kdvYonu, @sgkTutar, @yolParasi)
     `);
     // Alt satıra id verilmez (yedek_parca_tahsis dersi: rowid çakışması tüm kaydı geri alıyordu).
     const mStmt = conn.prepare(`INSERT INTO gider_model_satirlari (gider_id, modelAd, birimMaliyet, adet, sort_order) VALUES (?, ?, ?, ?, ?)`);
@@ -859,7 +862,7 @@ function populateAll(conn, data, skip = new Set()) {
         calisanId: g.calisanId ?? null, calisanAd: g.calisanAd ?? null, resmiTutar: g.resmiTutar ?? null, eldenTutar: g.eldenTutar ?? null,
         tanimId: g.tanimId ?? null, donem: g.donem ?? null,
         atamaTur: g.atamaTur ?? null, makinaTur: g.makinaTur ?? null, makinaId: g.makinaId ?? null, deletedAt: g.deletedAt ?? null,
-        kdvYonu: g.kdvYonu ?? null,
+        kdvYonu: g.kdvYonu ?? null, sgkTutar: g.sgkTutar ?? null, yolParasi: g.yolParasi ?? null,
       });
       (g.modelSatirlari || []).forEach((m, idx) => mStmt.run(g.id, m.modelAd ?? null, m.birimMaliyet ?? null, m.adet ?? null, idx));
       (g.ekOdemeler || []).forEach((e, idx) => ekStmt.run(g.id, e.tur ?? null, e.aciklama ?? null, e.resmiTutar ?? null, e.eldenTutar ?? null, idx));
@@ -1046,6 +1049,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "app_settings", APP_SETTINGS_ANALIZ_MODEL_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_GIDER_COLUMN);
   ensureColumns(conn, "giderler", GIDER_KDV_YONU_COLUMN);
+  ensureColumns(conn, "giderler", GIDER_SGK_YOL_COLUMNS);
   ensureColumns(conn, "gider_tanimlari", GIDER_KDV_YONU_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
@@ -1437,8 +1441,10 @@ function readBlobFromDb() {
   }
   // Spec 0071 R27: boş kdvYonu blob'a yazılmaz (alanı tanımayan istemcinin blob'u sunucu karşılaştırmasında değişmiş görünmesin).
   const kdvYonuAlani = (v) => (v == null ? {} : { kdvYonu: v });
-  const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, kdvYonu, ...rest }) => ({
-    ...rest, ...kdvYonuAlani(kdvYonu), odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
+  // Spec 0070: boş SGK / yol parası da blob'a yazılmaz (alanı tanımayan istemcinin blob'u değişmiş görünmesin).
+  const bosOlmayan = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
+  const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, kdvYonu, sgkTutar, yolParasi, ...rest }) => ({
+    ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ sgkTutar, yolParasi }), odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
     ekOdemeler: ekByGider.get(rest.id) || [],
   }));
   const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, kdvYonu, ...rest }) => ({

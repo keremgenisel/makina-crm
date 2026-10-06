@@ -3,7 +3,7 @@
 // (gider.borcKapsamindaMi) ve vade şartı yoktur; ödeme hatırlatıcısından tek ayrımı budur. Satır ödeme HEDEFİ başınadır;
 // kovalar ve çapraz sayılar KALEM sayar, toplam hedef kalanlarının toplamıdır. Yaş gider tarihinden `gunFarki` ile sayılır.
 // Bu dosya `gider.js`'te değil, çünkü `gunFarki` odemeHatirlatma.js'tedir ve o dosya gider.js'i içe alır (R27).
-import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, borcKapsamindaMi, kalemGorunenAd, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
+import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, borcKapsamindaMi, kalemGorunenAd, DAVRANIS, HEDEF, VERGI_DAIRESI, SGK } from "./gider";
 import { gunFarki } from "./odemeHatirlatma";
 import { YAS_KOVALARI, yasKovaAdi } from "./yaslandirma";
 
@@ -42,13 +42,15 @@ export const acikKalemler = (giderler = [], { turler = [], tedarikciler = [], yu
     const cokHedef = hedefler.filter(x => x.toplamK > 0).length > 1;
     for (const h of hedefler) {
       if (!(h.kalanK > 0)) continue;
-      const personel = dav === DAVRANIS.PERSONEL;
+      // Spec 0070 R13: SGK hedefi kurum satırına gider; çalışan grubuna girmez, kişi bilgisi taşımaz.
+      const sgkHedef = h.hedef === HEDEF.SGK;
+      const personel = dav === DAVRANIS.PERSONEL && !sgkHedef;
       const ted = k.tedarikciId != null ? tedMap.get(String(k.tedarikciId)) : null;
-      const tarafTur = h.hedef === HEDEF.STOPAJ ? "vergiDairesi" : personel ? "calisanlar" : ted ? "tedarikci" : "secilmemis";
+      const tarafTur = h.hedef === HEDEF.STOPAJ ? "vergiDairesi" : sgkHedef ? "sgk" : personel ? "calisanlar" : ted ? "tedarikci" : "secilmemis";
       satirlar.push({
         kalemId: k.id, hedef: h.hedef, davranis: dav, cokHedef, tarafTur,
         tarafId: tarafTur === "tedarikci" ? ted.id : null,
-        tarafAd: tarafTur === "tedarikci" ? ted.ad : tarafTur === "vergiDairesi" ? VERGI_DAIRESI : tarafTur === "calisanlar" ? CALISANLAR_AD : SECILMEMIS_AD,
+        tarafAd: tarafTur === "tedarikci" ? ted.ad : tarafTur === "vergiDairesi" ? VERGI_DAIRESI : tarafTur === "sgk" ? SGK : tarafTur === "calisanlar" ? CALISANLAR_AD : SECILMEMIS_AD,
         calisanId: personel ? k.calisanId : null, calisanAd: personel ? (k.calisanAd || "") : "", personel,
         turAd: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
         tarih: k.tarih, vade: h.vade || null, yas, kova, kalanK: h.kalanK,

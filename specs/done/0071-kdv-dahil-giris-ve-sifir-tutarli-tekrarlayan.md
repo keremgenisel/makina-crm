@@ -98,7 +98,8 @@ Başarı şu demek: faturadaki rakam olduğu gibi yazılabiliyor, her ay değiş
 - **R10.** Sıfır tutarlı tanımdan üretilen kalem de sıfır tutarla doğar ve kaydedilebilir. Tutar **0
   olarak saklanır, null değil** (Ö-15): null "bu davranışta tutar alanı kullanılmıyor" anlamını taşıyor
   ve personel kaleminde o anlamda kullanılıyor (`gider.js:474`).
-- **R11.** İşaretin ölçütü **ödenecek tutarı sıfır olan kalemdir** (Ö-11), tanım bağı değil; böylece eski
+- **R11.** *(Spec 0070 R27 ile değişti: ölçüt artık **kalem tutarının sıfır olması**; personelde ödenecek
+  tutar toplam − SGK olduğu için yalnız SGK'lı kalem yanlışlıkla işaretlenirdi.)* İşaretin ölçütü **ödenecek tutarı sıfır olan kalemdir** (Ö-11), tanım bağı değil; böylece eski
   ve içe aktarılmış sıfır kalemler de yakalanır. Rozet kalem listesi satırında, kira `girisYonu`
   rozetinin yanında (`DonemRaporu.jsx:371` emsali), metni "Tutar girilmedi". Sıfır kalemin türetilmiş
   ödeme durumunun (`odemeleriUygula`, kalanı sıfır) "Ödenmiş" mi "Ödenmemiş" mi saydığı **iddia

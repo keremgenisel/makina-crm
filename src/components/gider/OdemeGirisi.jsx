@@ -36,7 +36,7 @@ export const OdemeGirisi = ({
   kapsam = "pencere", kalem, hedefler = [], davranis, turMap, giris, setGiris, hatalar = null, uyari = null,
   hesaplar = [], hesapSecimi = false, ciroYetkisi = false, cekSatirlari = [], alacakliSerbest = false,
   varsayilanYontem = "", varsayilanHesap = "", odemeYetkisi = true,
-  mahsupVar = false, avansK = 0, hareketler = [], kayitliGoster = true, onSil = null, silinenler = null, onSilGeriAl = null,
+  mahsupVar = false, avansK = 0, yolParasiVar = null, hareketler = [], kayitliGoster = true, onSil = null, silinenler = null, onSilGeriAl = null,
   durum = null, bolunmezNotu = false,
 }) => {
   const form = kapsam === "form";
@@ -76,6 +76,9 @@ export const OdemeGirisi = ({
   const hedefAc = (h, acik) => setGiris(g => ({ ...g, satirlar: acik ? [...g.satirlar, yeniSatir(h)] : g.satirlar.filter(r => r.hedef !== h.hedef) }));
   const hepsi = () => setGiris(g => ({ ...g, satirlar: hepsiniOde(g.satirlar, hedefler, { yontem: varsayilanYontem, hesapId: varsayilanHesap, yeniAnahtar }) }));
   const cizilebilir = hedefler.filter(h => !h.pasif);
+  // Spec 0070 R8: yol parası hangi hedefin içinde (elden ayrı hedefse orada, değilse ANA'da).
+  const yolVar = yolParasiVar ?? Number(kalem?.yolParasi) > 0; // yeni kalemde kalem yok; form bildirir
+  const yolHedefi = hedefler.some(h => h.hedef === HEDEF.ELDEN) ? HEDEF.ELDEN : HEDEF.ANA;
   // Spec 0057 triyaj: hedef taksitliye döndüğünde sırası boş ya da kapanmış taksite bakan satır en yakın açık taksite eşlenir
   // (seçicinin gösterdiği ile kaydın bağlandığı taksit aynı olsun).
   useEffect(() => {
@@ -217,6 +220,8 @@ export const OdemeGirisi = ({
             {durum && h.asimK > 0 && <HataMetni>{`Ödenen ${para(h.kayitliOdenenK)}, yeni toplam ${para(h.toplamK)}; ödenen yeni toplamı aşıyor.`}</HataMetni>}
           </div>
         )}
+        {/* Spec 0070 R8 (AC-28): yol parası elden hedefinin içindedir (eldeni ayrı hedef değilse ANA'nın); ad değişmez. */}
+        {yolVar && h.hedef === yolHedefi && <div data-testid="yol-parasi-ipucu"><Ipucu>Yol parası bu tutarın içindedir.</Ipucu></div>}
         {h.pasif ? <Ipucu>{h.neden}</Ipucu> : !acilabilir ? null : (
           <>
             {form && (
@@ -245,7 +250,8 @@ export const OdemeGirisi = ({
 
   // ── Mahsup (R27): tek satır ──
   const mahsup = giris.mahsup || {};
-  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0);
+  // Spec 0070 R28 (AC-42): SGK kuruma ödenir; avanstan mahsup SGK hedefine yapılamaz.
+  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0 && h.hedef !== HEDEF.SGK);
   const mahsupYerleri = mahsupHedefleri.flatMap(h => (h.taksitli ? h.acikTaksitler.map(t => ({ deger: `${h.hedef}:${t.sira}`, hedef: h.hedef, sira: t.sira, ad: `${adOf(h.hedef)} ${t.sira}/${h.satirSayisi}. taksit · vade ${t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan ${para(t.kalanK)}` }))
     : [{ deger: `${h.hedef}:`, hedef: h.hedef, sira: null, ad: `${adOf(h.hedef)} · kalan ${para(h.kalanK)}` }]));
   const mh = hatalar?.mahsup || {};

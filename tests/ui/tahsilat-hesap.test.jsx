@@ -291,7 +291,8 @@ describe("Spec 0063: tek seçici (kaynak taraması)", async () => {
     const hesapTurAlan = bilesenler.filter(f => /import\s*\{[^}]*\bHESAP_TUR_AD\b[^}]*\}\s*from/.test(readFileSync(f, "utf-8")));
     // Plan notu (R17 ölçüsü): gider tarafının ödeme, avans ve hesap silme seçicileri ile Kasa'nın hesap listesi tahsilat
     // seçicisi değildir; ad eşlemesini onlar da kullanır. Tahsilat giriş noktalarının hiçbiri onu içe almaz.
-    const TAHSILAT_DISI = ["Kasa.jsx", "gider/OdemeGirisi.jsx", "kasa/CalisanAvanslari.jsx", "kasa/HesapSilPenceresi.jsx"].map(f => path.join("src", "components", f));
+    // Spec 0070: SGK toplu ödeme penceresi de gider tarafının ödeme seçicisidir.
+    const TAHSILAT_DISI = ["Kasa.jsx", "gider/OdemeGirisi.jsx", "gider/SgkToplamOdeme.jsx", "kasa/CalisanAvanslari.jsx", "kasa/HesapSilPenceresi.jsx"].map(f => path.join("src", "components", f));
     expect(hesapTurAlan.filter(f => !TAHSILAT_DISI.includes(f)).sort()).toEqual([TEK]);
     const ariaYazan = bilesenler.filter(f => readFileSync(f, "utf-8").includes('aria-label="Tahsilat hesabı"'));
     expect(ariaYazan).toEqual([TEK]);

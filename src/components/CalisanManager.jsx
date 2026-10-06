@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { uid, today } from "../lib/utils";
 import { tutarCoz, tanimKapat, acikTanimMi, ayOf, tl } from "../lib/gider";
 import { avansBorcuK } from "../lib/kasa";
@@ -18,13 +18,15 @@ import { HataMetni, Ipucu } from "./tasarim";
 // varsayılan resmi maliyet gider yetkisi olmayan kullanıcıya hiç çizilmez (AC-55); düzenleme
 // "tanım yönetimi" iznine bağlıdır. Açık tanımı olan çalışan silinince tanım silinmez, son üretilen
 // ayda kapatılır (AC-65).
+// Spec 0070 R1, R24: dört bileşen (sıra resmi, SGK, elden, yol parası); normalize kapıları dördünü de sayar.
+export const MALIYET_ALANLARI = ["resmiMaliyet", "sgkMaliyet", "eldenMaliyet", "yolParasiMaliyet"];
 const maliyetNormalize = (c) => {
-  const r = tutarCoz(c.resmiMaliyet), e = tutarCoz(c.eldenMaliyet);
   const out = { ...c };
-  if ("resmiMaliyet" in c) out.resmiMaliyet = r.bos || r.gecersiz ? null : r.deger;
-  if ("eldenMaliyet" in c) out.eldenMaliyet = e.bos || e.gecersiz ? null : e.deger;
+  for (const a of MALIYET_ALANLARI) if (a in c) { const t = tutarCoz(c[a]); out[a] = t.bos || t.gecersiz ? null : t.deger; }
   return out;
 };
+const maliyetVar = (c) => MALIYET_ALANLARI.some(a => a in c);
+const YOL_PARASI_IPUCU = "Yol parası çalışana elden tutarla birlikte ödenir. Bordroda gösteriyorsanız tutarı resmi alanına yazın ve bu alanı boş bırakın.";
 const maliyetHatasi = (v) => { const t = tutarCoz(v); return t.gecersiz ? "Tutar sayıya çevrilemedi." : (!t.bos && t.deger < 0 ? "Tutar negatif olamaz." : ""); };
 
 export const CalisanManager = ({
@@ -36,14 +38,14 @@ export const CalisanManager = ({
 }) => {
   const varsayilanResmi = appSettings?.giderAyarlari?.varsayilanResmiMaliyet;
   const maliyetAcik = giderYetki && maliyetDuzenleyebilir;
-  const emptyForm = maliyetAcik ? { ad: "", resmiMaliyet: tutarMetni(varsayilanResmi), eldenMaliyet: "" } : { ad: "" };
+  const emptyForm = maliyetAcik ? { ad: "", resmiMaliyet: tutarMetni(varsayilanResmi), sgkMaliyet: "", eldenMaliyet: "", yolParasiMaliyet: "" } : { ad: "" };
   const [varsayilanMetin, setVarsayilanMetin] = useState(tutarMetni(varsayilanResmi));
   const [formHata, setFormHata] = useState("");
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: calisanlar,
       // Maliyet alanları formda ham metindir; kayıtta sayıya çevrilir.
-      setItems: (fn) => setCalisanlar(p => (typeof fn === "function" ? fn(p) : fn).map(c => (c && ("resmiMaliyet" in c || "eldenMaliyet" in c) ? maliyetNormalize(c) : c))),
+      setItems: (fn) => setCalisanlar(p => (typeof fn === "function" ? fn(p) : fn).map(c => (c && maliyetVar(c) ? maliyetNormalize(c) : c))),
       genId: () => uid(),
       showToast,
       emptyForm,
@@ -55,7 +57,7 @@ export const CalisanManager = ({
 
   const submitAdd = () => {
     if (maliyetAcik) {
-      const h = maliyetHatasi(form.resmiMaliyet) || maliyetHatasi(form.eldenMaliyet);
+      const h = MALIYET_ALANLARI.map(a => maliyetHatasi(form[a])).find(Boolean);
       if (h) { setFormHata(h); return; }
     }
     setFormHata("");
@@ -63,7 +65,7 @@ export const CalisanManager = ({
   };
   const submitEdit = () => {
     if (maliyetAcik) {
-      const h = maliyetHatasi(editForm.resmiMaliyet) || maliyetHatasi(editForm.eldenMaliyet);
+      const h = MALIYET_ALANLARI.map(a => maliyetHatasi(editForm[a])).find(Boolean);
       if (h) { setFormHata(h); return; }
     }
     setFormHata("");
@@ -72,7 +74,16 @@ export const CalisanManager = ({
   // Spec 0064 R5, R30 (AC-7): panel `ayar` + `calisanlar` kilidini Settings alır; satır düzenlemesi ayrıca çalışanın
   // `calisan` kilidini alır (Kasa'da aynı çalışana avans girilirken adı değişmesin).
   const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = useLock("calisan", editId);
-  const editAc = (c) => { setFormHata(""); startEdit(maliyetAcik ? { ...c, resmiMaliyet: tutarMetni(c.resmiMaliyet), eldenMaliyet: tutarMetni(c.eldenMaliyet) } : c); };
+  const editAc = (c) => { setFormHata(""); startEdit(maliyetAcik ? { ...c, ...Object.fromEntries(MALIYET_ALANLARI.map(a => [a, tutarMetni(c[a])])) } : c); };
+  // R24 (TY kararı): dar genişlikte SGK ve yol parası ayrı sütun yerine resmi ve elden hücrelerinin alt satırında.
+  const tabloRef = useRef(null);
+  const [dar, setDar] = useState(false);
+  useEffect(() => {
+    if (!tabloRef.current || typeof ResizeObserver === "undefined") return undefined;
+    const g = new ResizeObserver(([e]) => setDar(e.contentRect.width < 640));
+    g.observe(tabloRef.current);
+    return () => g.disconnect();
+  }, []);
 
   const varsayilanKaydet = () => {
     const h = maliyetHatasi(varsayilanMetin);
@@ -119,15 +130,17 @@ export const CalisanManager = ({
             onKeyDown={e => { if (e.key === "Enter") submitAdd(); }} placeholder="Ad Soyad" />
         </div>
         {maliyetAcik && <>
-          <div style={{ width: 160 }}><TutarInput ariaLabel="Resmi işveren maliyeti" placeholder="Resmi" value={form.resmiMaliyet} onChange={v => setForm(p => ({ ...p, resmiMaliyet: v }))} /></div>
-          <div style={{ width: 140 }}><TutarInput ariaLabel="Elden ödenen" placeholder="Elden" value={form.eldenMaliyet} onChange={v => setForm(p => ({ ...p, eldenMaliyet: v }))} /></div>
+          <div style={{ width: 150 }}><TutarInput ariaLabel="Resmi işveren maliyeti" placeholder="Resmi" value={form.resmiMaliyet} onChange={v => setForm(p => ({ ...p, resmiMaliyet: v }))} /></div>
+          <div style={{ width: 120 }}><TutarInput ariaLabel="SGK" placeholder="SGK" value={form.sgkMaliyet} onChange={v => setForm(p => ({ ...p, sgkMaliyet: v }))} /></div>
+          <div style={{ width: 130 }}><TutarInput ariaLabel="Elden ödenen" placeholder="Elden" value={form.eldenMaliyet} onChange={v => setForm(p => ({ ...p, eldenMaliyet: v }))} /></div>
+          <div style={{ width: 120 }}><TutarInput ariaLabel="Yol parası" placeholder="Yol parası" value={form.yolParasiMaliyet} onChange={v => setForm(p => ({ ...p, yolParasiMaliyet: v }))} /></div>
         </>}
         <Btn onClick={submitAdd}><Icon name="plus" size={14} /> Ekle</Btn>
       </div>
       <HataMetni>{editId === null ? formHata : ""}</HataMetni>
       <div style={{ height: 8 }} />
 
-      <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "hidden" }}>
+      <div ref={tabloRef} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "hidden" }}>
         {calisanlar.length === 0 ? (
           <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
             Henüz çalışan eklenmedi. Üstteki kutuya ad soyad yazıp "Ekle" deyin.
@@ -137,12 +150,16 @@ export const CalisanManager = ({
             {giderYetki && (
               <thead><tr style={{ background: "var(--n100, #f8fafc)", textAlign: "left", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
                 <th style={{ padding: "8px 14px" }}>Çalışan</th><th style={{ padding: "8px 14px", textAlign: "right" }}>Resmi işveren maliyeti</th>
-                <th style={{ padding: "8px 14px", textAlign: "right" }}>Elden ödenen</th><th style={{ padding: "8px 14px", textAlign: "right" }}>Aylık toplam</th><th />
+                {!dar && <th style={{ padding: "8px 14px", textAlign: "right" }}>SGK</th>}
+                <th style={{ padding: "8px 14px", textAlign: "right" }}>Elden ödenen</th>
+                {!dar && <th style={{ padding: "8px 14px", textAlign: "right" }}>Yol parası</th>}
+                <th style={{ padding: "8px 14px", textAlign: "right" }}>Aylık toplam</th><th />
               </tr></thead>
             )}
             <tbody>
               {calisanlar.map(c => {
-                const r = tutarCoz(c.resmiMaliyet), e = tutarCoz(c.eldenMaliyet);
+                const r = tutarCoz(c.resmiMaliyet), sg = tutarCoz(c.sgkMaliyet), e = tutarCoz(c.eldenMaliyet), yp = tutarCoz(c.yolParasiMaliyet);
+                const altSatir = (etiket, t) => (dar && !t.bos ? <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", fontWeight: 400 }}>{etiket} {tl2(t.deger)}</div> : null);
                 const tanimsiz = <span style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}>tanımlı değil</span>;
                 return (
                   <tr key={c.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
@@ -150,9 +167,11 @@ export const CalisanManager = ({
                       {c.ad}
                     </td>
                     {giderYetki && <>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.bos ? tanimsiz : tl2(r.deger)}</td>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{e.bos ? tanimsiz : tl2(e.deger)}</td>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontWeight: 700 }}>{r.bos && e.bos ? "—" : tl2(r.deger + e.deger)}</td>
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.bos ? tanimsiz : tl2(r.deger)}{altSatir("SGK", sg)}</td>
+                      {!dar && <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{sg.bos ? tanimsiz : tl2(sg.deger)}</td>}
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{e.bos ? tanimsiz : tl2(e.deger)}{altSatir("Yol", yp)}</td>
+                      {!dar && <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{yp.bos ? tanimsiz : tl2(yp.deger)}</td>}
+                      <td data-testid="calisan-aylik-toplam" style={{ padding: "11px 14px", textAlign: "right", fontWeight: 700 }}>{r.bos && sg.bos && e.bos && yp.bos ? "—" : tl2(r.deger + sg.deger + e.deger + yp.deger)}</td>
                     </>}
                     <td style={{ padding: "8px 14px", textAlign: "right" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -167,7 +186,7 @@ export const CalisanManager = ({
           </table>
         )}
       </div>
-      {giderYetki && <Ipucu>Gider tutarı = resmi + elden. Maliyet değişince geçmiş ayların kalemleri değişmez; yeni tutar bir sonraki üretimde kullanılır.</Ipucu>}
+      {giderYetki && <Ipucu>Gider tutarı = resmi + SGK + elden + yol parası. Maliyet değişince geçmiş ayların kalemleri değişmez; yeni tutar bir sonraki üretimde kullanılır.</Ipucu>}
 
       {confirmDel && (
         <ConfirmDialog
@@ -196,11 +215,20 @@ export const CalisanManager = ({
             <HataMetni>{!(editForm.ad || "").trim() ? "Ad girilmedi" : ""}</HataMetni>
           </Field>
           {maliyetAcik && <>
-            <Field label="Resmi işveren maliyeti (SGK dahil)">
-              <TutarInput value={editForm.resmiMaliyet} onChange={v => setEditForm(p => ({ ...p, resmiMaliyet: v }))} />
+            {/* Spec 0070 R1, R23 (AC-4): SGK kendi kutusunda; resmi etiketi artık SGK'yı kapsadığını söylemez. */}
+            <Field label="Resmi işveren maliyeti">
+              <TutarInput ariaLabel="Resmi işveren maliyeti" value={editForm.resmiMaliyet} onChange={v => setEditForm(p => ({ ...p, resmiMaliyet: v }))} />
+            </Field>
+            <Field label="SGK">
+              <TutarInput ariaLabel="SGK" value={editForm.sgkMaliyet} onChange={v => setEditForm(p => ({ ...p, sgkMaliyet: v }))} />
+              <Ipucu>Kuruma ödenen SGK tutarı. Personel kaleminde ayrı ödeme hedefidir; ayrı gider kalemi açmayın.</Ipucu>
             </Field>
             <Field label="Elden ödenen">
-              <TutarInput value={editForm.eldenMaliyet} onChange={v => setEditForm(p => ({ ...p, eldenMaliyet: v }))} />
+              <TutarInput ariaLabel="Elden ödenen" value={editForm.eldenMaliyet} onChange={v => setEditForm(p => ({ ...p, eldenMaliyet: v }))} />
+            </Field>
+            <Field label="Yol parası">
+              <TutarInput ariaLabel="Yol parası" value={editForm.yolParasiMaliyet} onChange={v => setEditForm(p => ({ ...p, yolParasiMaliyet: v }))} />
+              <Ipucu>{YOL_PARASI_IPUCU}</Ipucu>
             </Field>
             <Ipucu>Boş bırakılan bileşen sıfır sayılır. Tutar yalnız tekrarlayan personel tanımının girdisidir; kaydedilmiş kalemler değişmez.</Ipucu>
             <HataMetni>{formHata}</HataMetni>

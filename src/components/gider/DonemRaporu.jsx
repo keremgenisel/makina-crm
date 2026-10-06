@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
-import { kurus, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
+import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -62,7 +62,7 @@ export const KovaKarti = ({ rapor }) => {
 };
 
 // Tür kırılımı (R8, AC-12). Personel satırı kapalı; açılınca çalışan başına resmi/elden (AC-51).
-const PERSONEL_IZGARA = "minmax(0, 1fr) 90px 90px 90px 100px";
+const PERSONEL_IZGARA = "minmax(0, 1fr) 90px 80px 90px 80px 90px 100px"; // spec 0070 R29: + SGK, yol parası
 export const TurKirilimi = ({ rapor }) => {
   const [acik, setAcik] = useState(false);
   const top = rapor.toplam || 0;
@@ -85,17 +85,19 @@ export const TurKirilimi = ({ rapor }) => {
               <div style={{ margin: "8px 0 4px 12px", fontSize: 12.5 }} data-testid="personel-ayrinti">
                 {/* Spec 0023 R7 (P2): Resmi ve Elden yalnız maaş; ek ödemeler ayrı sütun ve çalışanın altında satır satır. */}
                 <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
-                  <span>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Ek ödeme</span><span style={{ textAlign: "right" }}>Toplam</span>
+                  {/* Spec 0070 R29 (AC-43): SGK ve yol parası ayrı sütun; satır toplamı sütunların toplamıdır. */}
+                  <span>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>SGK</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Yol parası</span><span style={{ textAlign: "right" }}>Ek ödeme</span><span style={{ textAlign: "right" }}>Toplam</span>
                 </div>
                 {t.calisanlar.map(c => (
                   <div key={String(c.calisanId)} style={{ padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }} data-testid="personel-ayrinti-calisan">
                     <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8 }}>
-                      <span style={{ fontWeight: 600 }}>{c.ad}</span><span style={{ textAlign: "right" }}>{tl2(c.resmi)}</span><span style={{ textAlign: "right" }}>{tl2(c.elden)}</span>
+                      <span style={{ fontWeight: 600 }}>{c.ad}</span><span style={{ textAlign: "right" }}>{tl2(c.resmi)}</span><span style={{ textAlign: "right" }}>{c.sgk ? tl2(c.sgk) : "—"}</span>
+                      <span style={{ textAlign: "right" }}>{tl2(c.elden)}</span><span style={{ textAlign: "right" }}>{c.yol ? tl2(c.yol) : "—"}</span>
                       <span style={{ textAlign: "right" }}>{c.ek ? tl2(c.ek) : "—"}</span><b style={{ textAlign: "right" }}>{tl2(c.toplam)}</b>
                     </div>
                     {(c.ekSatirlari || []).map((e, i) => (
                       <div key={i} data-testid="personel-ek-odeme" style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 12, color: "var(--n600, #475569)", paddingTop: 3 }}>
-                        <span style={{ paddingLeft: 12 }}>{EK_ODEME_TUR_AD[e.tur] || e.tur}{e.aciklama ? ` · ${e.aciklama}` : ""}</span><span /><span />
+                        <span style={{ paddingLeft: 12 }}>{EK_ODEME_TUR_AD[e.tur] || e.tur}{e.aciklama ? ` · ${e.aciklama}` : ""}</span><span /><span /><span /><span />
                         <span style={{ textAlign: "right" }}>{tl2(e.tutar)}</span><span />
                       </div>
                     ))}
@@ -149,7 +151,8 @@ export const TedarikciKirilimi = ({ rapor }) => {
 
 // Kime ne kadar borçluyuz (R19, K30, AC-72/73/86). Dönemden bağımsız; çalışanlar tek satırda, kapalı. Spec 0067 R21: hiçbir
 // yerde satır içinde değil; flex tabanı yok, içeriği kadar ve tam genişlik çizilir.
-export const BorcOzeti = ({ ozet }) => {
+// Spec 0070 R13, R15 (Q4): SGK kurum satırı ("Kurum" rozeti); gider_odeme ile "SGK'yı Öde" (onSgkOde verilirse).
+export const BorcOzeti = ({ ozet, onSgkOde = null }) => {
   const [acik, setAcik] = useState(false);
   return (
     <KartBolum varyant="kart" baslikStili="baslik" title="Kime Ne Kadar Borçluyuz" altBaslik="Seçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemler" style={{ minWidth: 0 }} testId="borc-ozeti">
@@ -159,11 +162,12 @@ export const BorcOzeti = ({ ozet }) => {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : s.tur === "vergiDairesi" ? "mavi" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : s.tur === "vergiDairesi" ? "Kira stopajı" : "Tedarikçi"}</Rozet>
+                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : s.tur === "vergiDairesi" || s.tur === "sgk" ? "mavi" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : s.tur === "vergiDairesi" ? "Kira stopajı" : s.tur === "sgk" ? "Kurum" : "Tedarikçi"}</Rozet>
                 {s.vadesiGecti && <Rozet renk="kirmizi">Vadesi geçti</Rozet>}
               </div>
               {s.tur === "calisanlar" && <div style={{ marginTop: 3 }}><AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Adları gizle" : "Adları göster"}</AcKapa></div>}
               {s.tur !== "calisanlar" && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 2 }}>{s.kalemler.length} kalem</div>}
+              {s.tur === "sgk" && onSgkOde && <div style={{ marginTop: 4 }}><Btn small onClick={onSgkOde} aria-label="SGK'yı Öde">SGK'yı Öde</Btn></div>}
             </div>
             <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{tl2(s.tutar)}</b>
           </div>
@@ -249,7 +253,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const dav = (k) => davranisOf(k, turMap);
   // Spec 0071 R11, R12: ölçüt ödenecek tutarın sıfır olmasıdır (tanım bağı değil; eski ve içe aktarılmış sıfır kalem de).
-  const tutarsiz = (k) => kurus(odenecekTutar(k, dav(k))) === 0;
+  // Spec 0070 R27 (0071 R11): ölçüt kalem tutarının sıfır olması; yalnız SGK'lı personel kaleminin ödenecek tutarı sıfırdır.
+  const tutarsiz = (k) => tutarGirilmediMi(k, dav(k));
   const tutarsizSayi = kalemler.filter(tutarsiz).length;
   const suz = kalemler.filter(k => {
     if (filtre.tur && String(k.turId) !== filtre.tur) return false;
@@ -370,7 +375,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <td style={td}>
           <div style={{ fontWeight: 600 }}>{d === DAVRANIS.PERSONEL ? k.calisanAd : (k.aciklama || <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}>Açıklama yok</span>)}</div>
           {d !== DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: ted ? "var(--n700, #334155)" : "var(--n500, #64748b)", marginTop: 2 }}>{ted ? ted.ad : "Tedarikçi seçilmemiş"}</div>}
-          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)} · Elden {tl2(k.eldenTutar)}{ekOdemeKurus(k) > 0 ? ` · Ek ödeme ${tl2(ekOdemeKurus(k) / 100)}` : ""}
+          {d === DAVRANIS.PERSONEL && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>Resmi {tl2(k.resmiTutar)}{Number(k.sgkTutar) > 0 ? ` · SGK ${tl2(k.sgkTutar)}` : ""} · Elden {tl2(k.eldenTutar)}{Number(k.yolParasi) > 0 ? ` · Yol parası ${tl2(k.yolParasi)}` : ""}{ekOdemeKurus(k) > 0 ? ` · Ek ödeme ${tl2(ekOdemeKurus(k) / 100)}` : ""}
             {/* Spec 0060 R6 (AC-8): ek ödemeler türüyle ve tutarıyla; satır yalnız personel grubu açıkken çizilir (K21, AC-36). */}
             {ekOdemeKurus(k) > 0 && <span data-testid="ek-odeme-tur-kirilimi"> ({ekOdemeTurToplamlari([k]).map(t => `${t.ad} ${tl2(t.toplamK / 100)}`).join(", ")})</span>}</div>}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>

@@ -112,7 +112,8 @@ describe("Dönem raporu: personel ayrıntısı (R7, R8)", () => {
     const a = within(tk).getByTestId("personel-ayrinti");
     expect(within(a).getByText("Ek ödeme")).toBeTruthy();
     const c = within(a).getByTestId("personel-ayrinti-calisan");
-    expect(c.textContent).toMatch(/Hasan Çelik30\.000 ₺20\.000 ₺1\.500 ₺51\.500 ₺/);
+    // Spec 0070 R29 ile güncellendi: SGK ve yol parası sütunları (bu kalemde boş, "—").
+    expect(c.textContent).toMatch(/Hasan Çelik30\.000 ₺—20\.000 ₺—1\.500 ₺51\.500 ₺/);
     expect(within(c).getAllByTestId("personel-ek-odeme").map(x => x.textContent)).toEqual(["Prim · Teslim primi1.000 ₺", "Prim · Kalite primi500 ₺"]);
   });
   it("P7: kalem listesinin personel satırı ek ödeme tutarını yazar (personel grubu açılınca)", () => {

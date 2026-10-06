@@ -8,7 +8,8 @@ import path from "node:path";
 const root = path.join(__dirname, "..");
 const oku = (p) => readFileSync(path.join(root, p), "utf-8");
 // Spec 0023: çalışan ek ödemeleri (alan, tablo ve tür kodu) de listede; listeye eklenmeyen ad testi yeşil bırakıp sızabilirdi.
-const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma/;
+// Spec 0070 R32, C7 (AC-45): SGK ve yol parasının kalem ve çalışan kartı alan adları da listede.
+const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma|sgkTutar|yolParasi|sgkMaliyet|yolParasiMaliyet/;
 
 // Spec 0060 R28: Aylık Gider ve Kasa Raporu'nun tür bazında ek ödeme kutusu (yorum işaretleriyle sınırlı) ve onun dışı.
 const EK_KUTU = /<!--ek-odeme-->[\s\S]*?<!--\/ek-odeme-->/;
@@ -246,5 +247,35 @@ describe("Spec 0068: çek dışa aktarması gizlilik sınırını aşmaz", () =>
     expect(satirlar[0][11]).toBe("Demir Bant");
     const metin = satirlar.map(s => s.join("|")).join("\n");
     for (const yasak of [/Zümrüt|Kaplanoğlu|Çalışan/, /31111|31\.111|17777|17\.777/, /2026-09-10|2026-10-17|2026-08-03|2026-09-29/, /A-9|C-7/]) expect(metin).not.toMatch(yasak);
+  });
+});
+
+// Spec 0070 R17, R18, C7 (AC-21, AC-22, AC-37, AC-45): SGK kutusu `<!--sgk-->` ile sınırlı; kutunun dışında eski yasaklar
+// aynen, içinde çalışan adı ve kişi bazlı tutar yok. Ayırt edici tutarlar: iki çalışanın SGK'sı 4.111 ve 5.222 (kutuda yalnız
+// toplam 9.333), yol parası 777 kişi bazında hiçbir yerde (toplamların içinde, ör. "₺60.777", geçebilir; "₺777" tek başına geçmez).
+describe("Spec 0070: SGK ve yol parası çıktıya kişi bazında girmez", () => {
+  const SGK_KUTU = /<!--sgk-->[\s\S]*?<!--\/sgk-->/;
+  it("AC-45: dört alan adı yasaklı listede; yazdırma, ortak sunum ve rapor kurucusu bunları okumaz", async () => {
+    for (const ad of ["sgkTutar", "yolParasi", "sgkMaliyet", "yolParasiMaliyet"]) expect(ad).toMatch(YASAKLI);
+    for (const f of ["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/giderRaporu.js", "src/components/settings/SettingsExport.jsx"]) {
+      expect(oku(f).split("\n").filter(l => !l.trim().startsWith("//")).join("\n"), f).not.toMatch(/sgkTutar|yolParasi|sgkMaliyet|yolParasiMaliyet/);
+    }
+  });
+  it("AC-21, AC-22: kutu toplamı basar; kutunun içinde ve dışında çalışan adı ile kişi bazlı SGK / yol parası yok", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi } = await import("../src/lib/gider");
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 70;
+    const k = (o) => giderKalemDogrula({ tarih: "2026-09-30", turId: 3, eldenTutar: "", sonOdemeTarihi: "2026-10-05", ...o }, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    const g = [k({ id: 1, calisanId: 7, calisanAd: "Seyfettin Kırgız", resmiTutar: "31000", sgkTutar: "4111", yolParasi: "777" }),
+      k({ id: 2, calisanId: 8, calisanAd: "Nurhan Elbistan", resmiTutar: "29000", sgkTutar: "5222" })];
+    const h = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: g, hareketler: [], turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
+    const kutu = (h.match(SGK_KUTU) || [""])[0];
+    expect(kutu).toContain("GİDER · SGK");
+    expect(kutu).toContain("₺9.333");
+    for (const yasak of ["Seyfettin", "Nurhan", "₺4.111", "₺5.222", "₺777"]) {
+      expect(h, yasak).not.toContain(yasak);
+    }
+    expect(h.replace(SGK_KUTU, "")).not.toMatch(YASAKLI);
   });
 });

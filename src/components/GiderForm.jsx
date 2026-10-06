@@ -22,23 +22,25 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     const tarih = today();
     return { id: null, tarih, turId: "", aciklama: "", tedarikciId: "", tutar: "", netTutar: "", girisYonu: "brut",
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
-      calisanId: "", resmiTutar: "", eldenTutar: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
+      calisanId: "", resmiTutar: "", eldenTutar: "", sgkTutar: "", yolParasi: "", sgkVade: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
       atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
       taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [] };
   }
   // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
   const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
-  const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ), eld = hedefSat(HEDEF.ELDEN);
+  const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ), eld = hedefSat(HEDEF.ELDEN), sgk = hedefSat(HEDEF.SGK);
   // Spec 0071 R5, R27: dâhil girilmiş kalemde tutar alanı hariç tutar + KDV ile yeniden kurulur (dâhil tutar saklanmaz);
   // alanı olmayan eski kalem hariç açılır.
   const dahil = kdvYonuOf(k) === KDV_YONU.DAHIL;
   return { ...k, turId: idMetni(k.turId), tedarikciId: idMetni(k.tedarikciId), calisanId: idMetni(k.calisanId), kdvYonu: kdvYonuOf(k),
     tutar: dahil ? tutarMetni(tl(kurus(k.tutar) + kurus(kalemKdv(k)))) : tutarMetni(k.tutar), netTutar: tutarMetni(k.netTutar), kdvOrani: tutarMetni(k.kdvOrani),
     stopajOrani: tutarMetni(k.stopajOrani ?? giderAyarlari?.stopajOrani ?? 20), resmiTutar: tutarMetni(k.resmiTutar), eldenTutar: tutarMetni(k.eldenTutar),
+    sgkTutar: tutarMetni(k.sgkTutar), yolParasi: tutarMetni(k.yolParasi),
     sonOdemeTarihi: (ana.length ? ana[0].vade : k.sonOdemeTarihi) || "", odemeTarihi: k.odemeTarihi || "", odemeYontemi: k.odemeYontemi || "", girisYonu: k.girisYonu || "brut",
     modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
     ekOdemeler: (k.ekOdemeler || []).map(e => ({ ...e, aciklama: e.aciklama || "", resmiTutar: tutarMetni(e.resmiTutar), eldenTutar: tutarMetni(e.eldenTutar) })),
-    taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "", eldenVade: eld[0]?.vade || "" };
+    taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "", eldenVade: eld[0]?.vade || "",
+    sgkVade: sgk[0]?.vade || "" }; // spec 0070 Q2: SGK vadesi SGK satırının vadesidir
 };
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
@@ -83,12 +85,16 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
       calisanId,
       resmiTutar: form.resmiTutar !== "" ? form.resmiTutar : tutarMetni(c?.resmiMaliyet),
       eldenTutar: form.eldenTutar !== "" ? form.eldenTutar : tutarMetni(c?.eldenMaliyet),
+      // Spec 0070 R5: SGK ve yol parası da çalışan kartından, yalnız boş alana.
+      sgkTutar: form.sgkTutar ? form.sgkTutar : tutarMetni(c?.sgkMaliyet),
+      yolParasi: form.yolParasi ? form.yolParasi : tutarMetni(c?.yolParasiMaliyet),
     });
   };
 
   const mukerrer = dav === DAVRANIS.PERSONEL ? personelMukerrer(giderler, { calisanId: form.calisanId, tarih: form.tarih, id: form.id }) : [];
   const secilenCalisan = calisanlar.find(x => String(x.id) === String(form.calisanId));
-  const calisanMaliyetsiz = secilenCalisan && tutarCoz(secilenCalisan.resmiMaliyet).bos && tutarCoz(secilenCalisan.eldenMaliyet).bos;
+  // Spec 0070 R24: dört alan da boşsa.
+  const calisanMaliyetsiz = secilenCalisan && ["resmiMaliyet", "sgkMaliyet", "eldenMaliyet", "yolParasiMaliyet"].every(a => tutarCoz(secilenCalisan[a]).bos);
 
   // Hesap özeti (kira: R6; normal: AC-3). Ham metinden anlık hesaplanır.
   // Spec 0071 R1, R3, R6, R23: tutar alanı tektir; "KDV dâhil" seçiliyse girilen rakam önce kdvAyir ile ayrılır (motorun aynı
@@ -117,39 +123,40 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   ) : null;
   // Spec 0023 C5: form da motorun tek toplamını gösterir (maaş + ek ödemeler); atama tabanı (0020) aynı rakam.
   const ekToplam = (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.resmiTutar).deger || 0) + (tutarCoz(e.eldenTutar).deger || 0), 0);
-  const personelToplam = tutarCoz(form.resmiTutar).deger + tutarCoz(form.eldenTutar).deger + ekToplam;
+  const sgkForm = tutarCoz(form.sgkTutar).deger || 0, yolForm = tutarCoz(form.yolParasi).deger || 0;
+  const personelToplam = tutarCoz(form.resmiTutar).deger + sgkForm + tutarCoz(form.eldenTutar).deger + yolForm + ekToplam;
 
   // Ödeme planı önizlemesi (spec 0021): kayıttakiyle AYNI motor (odemeSatirlariKur); geçici kimliklerle çizilir.
   const onizleme = useMemo(() => {
     const kalemBenzeri = {
       tutar: dav === DAVRANIS.KIRA ? kira?.brut : normalTutar, kdvOrani: tutarCoz(form.kdvOrani).deger, stopajOrani: tutarCoz(form.stopajOrani).deger,
-      resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger,
+      resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, sgkTutar: sgkForm, yolParasi: yolForm,
       ekOdemeler: (form.ekOdemeler || []).map(e => ({ resmiTutar: tutarCoz(e.resmiTutar).deger || 0, eldenTutar: tutarCoz(e.eldenTutar).deger || 0 })),
     };
     let n = 0;
     const eski = form.taksitler || [];
-    return odemeSatirlariKur(kalemBenzeri, dav, { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null },
+    return odemeSatirlariKur(kalemBenzeri, dav, { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null, sgkVade: form.sgkVade || null },
       { uid: () => `onizleme-${++n}`, eskiSatirlar: eski, eskiOdendi: !eski.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
-  }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.eldenVade, form.taksitler, form.odendi, form.odemeTarihi]);
+  }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.eldenVade, form.taksitler, form.odendi, form.odemeTarihi, sgkForm, yolForm, form.sgkVade]);
   const planli = !!onizleme.hata || (onizleme.satirlar || []).length > 0;
   const stopajVar = dav === DAVRANIS.KIRA && (kira?.stopaj || 0) > 0;
   // Spec 0042 R4, X7, Q4: resmi ve eldeni olan personel iki hedefle ödenir; taksit yalnız resmiye, elden tek satır.
   const personelTutarlari = dav === DAVRANIS.PERSONEL ? { resmi: tutarCoz(form.resmiTutar).deger + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.resmiTutar).deger || 0), 0),
-    elden: tutarCoz(form.eldenTutar).deger + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.eldenTutar).deger || 0), 0) } : null;
+    elden: tutarCoz(form.eldenTutar).deger + yolForm + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.eldenTutar).deger || 0), 0) } : null;
   const personelBolunmez = personelBolunmezMi(form.taksitler, dav);
   // Spec 0054 Q3 (AC-25): "Elden vadesi" yalnız ELDEN MAAŞI olan ve başka bir hedefi de olan kalemde; elden ek ödemenin vadesi
   // kalemin ilk vadesidir (R17). personelIkiHedef motorda anlamı değişmeden kalır (R15).
-  const maasEldenK = tutarCoz(form.eldenTutar).deger;
+  const maasEldenK = tutarCoz(form.eldenTutar).deger + yolForm; // spec 0070 R8: yol parası elden maaşıyla aynı hedefte
   const personelIki = !!personelTutarlari && maasEldenK > 0 && personelTutarlari.resmi + personelTutarlari.elden - maasEldenK > 0 && !personelBolunmez;
 
   // Spec 0046: ödeme satırları kayıttakiyle aynı motorun önizleme kaleminden (R1, R5, R6, R26); düzenlemede canlı kalemden.
   const onizlemeKalem = useMemo(() => ({
     id: "__onizleme__", turId: numId(form.turId), tedarikciId: dav === DAVRANIS.PERSONEL ? null : numId(form.tedarikciId), calisanId: numId(form.calisanId),
     tutar: dav === DAVRANIS.KIRA ? kira?.brut : normalTutar, kdvOrani: tutarCoz(form.kdvOrani).deger, stopajOrani: tutarCoz(form.stopajOrani).deger,
-    resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, girisYonu: form.girisYonu, netTutar: tutarCoz(form.netTutar).deger,
+    resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, sgkTutar: sgkForm, yolParasi: yolForm, girisYonu: form.girisYonu, netTutar: tutarCoz(form.netTutar).deger,
     ekOdemeler: (form.ekOdemeler || []).map(e => ({ resmiTutar: tutarCoz(e.resmiTutar).deger || 0, eldenTutar: tutarCoz(e.eldenTutar).deger || 0 })),
     taksitler: onizleme.hata ? [] : (onizleme.satirlar || []),
-  }), [form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme]);
+  }), [form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme, sgkForm, yolForm]);
   const yeniKalem = form.id == null;
   const odemeHedefListesi = useMemo(() => (form.turId === "" || !yeniKalem ? [] : formOdemeHedefleri(onizlemeKalem, turMap)), [yeniKalem, onizlemeKalem, turMap, form.turId]);
   // Spec 0053 R15, R24: düzenlemede canlı kalem, gerçek kimliğiyle kayıtlı (silinmek üzere işaretlenmemiş) hareketlerden zenginleşir.
@@ -257,7 +264,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
           {/* C19: form açık olduğu sürece görünen, kapatılamayan not (AC-57, AC-58: engel değil) */}
           <div style={{ display: "flex", gap: 10, background: "var(--purBg, #f5f3ff)", border: "1px solid var(--purBr, #ddd6fe)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12.5, lineHeight: 1.5, color: "var(--pur900, #3b0764)" }}>
             <Icon name="warning" size={16} />
-            <div><b>Girilen tutar SGK ve işsizlik primlerini içerir.</b> SGK prim ödemesini ve maaş transferini ayrıca gider olarak girmeyin; aynı para iki kez sayılır.</div>
+            {/* Spec 0070 R23, C2 (AC-26): SGK kendi kutusunda; kuruma ödeme ayrı gider kalemi değil, bu kalemin SGK hedefinden ödenir. */}
+            <div data-testid="personel-sgk-notu"><b>SGK'yı kendi kutusuna yazın.</b> SGK ödemesi ayrı bir gider kalemi değildir; bu kalemin SGK hedefinden ödenir. Maaş transferini de ayrıca gider olarak girmeyin; aynı para iki kez sayılır. SGK alanı olmayan eski kalemlerde resmi tutar SGK'yı içerir.</div>
           </div>
           <Field label="Çalışan *">
             <Select value={form.calisanId} onChange={e => calisanSec(e.target.value)}>
@@ -272,9 +280,15 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
               <b style={{ color: "var(--amb700, #b45309)" }}>{secilenCalisan?.ad} için {ayOf(form.tarih)} ayında zaten {mukerrer.length} personel kalemi var.</b> Yine de kaydedebilirsiniz.
             </div>
           )}
+          {/* Spec 0070 R1, R5: dört bileşen, sıra resmi, SGK, elden, yol parası. */}
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><Field label="Resmi işveren maliyeti"><TutarInput ariaLabel="Resmi işveren maliyeti" value={form.resmiTutar} onChange={v => set({ resmiTutar: v })} invalid={!!hata("resmiTutar")} /><HataMetni>{hata("resmiTutar")}</HataMetni></Field></div>
+            <div style={{ flex: 1 }}><Field label="SGK"><TutarInput ariaLabel="SGK" value={form.sgkTutar} onChange={v => set({ sgkTutar: v })} invalid={!!hata("sgkTutar")} /><HataMetni>{hata("sgkTutar")}</HataMetni></Field></div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}><Field label="Elden ödenen"><TutarInput ariaLabel="Elden ödenen" value={form.eldenTutar} onChange={v => set({ eldenTutar: v })} invalid={!!hata("eldenTutar")} /><HataMetni>{hata("eldenTutar")}</HataMetni></Field></div>
+            <div style={{ flex: 1 }}><Field label="Yol parası"><TutarInput ariaLabel="Yol parası" value={form.yolParasi} onChange={v => set({ yolParasi: v })} invalid={!!hata("yolParasi")} /><HataMetni>{hata("yolParasi")}</HataMetni>
+              <Ipucu>Çalışana elden tutarla birlikte ödenir. Bordroda gösteriyorsanız tutarı resmi alanına yazın, bu alanı boş bırakın.</Ipucu></Field></div>
           </div>
           {/* Spec 0023 R1, R9, C8: o ayın fazla mesai, prim ve ikramiyesi; maaşla aynı ödeme (ayrı vade yok). */}
           <Field label="Ek ödemeler (bu ay)">
@@ -282,7 +296,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             <Ipucu>Fazla mesai, prim ve ikramiye tutar olarak girilir; her ay elle girilir, ertesi aya taşınmaz. Maaşla aynı ödemedir, ayrı vadesi yoktur; başka gün ödenecekse ayrı personel kalemi açın.</Ipucu>
           </Field>
           <div style={{ display: "flex", justifyContent: "space-between", background: "var(--purBg3, #faf7ff)", border: "1px solid var(--purBg2, #ede9fe)", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, color: "var(--n600, #475569)", fontWeight: 600 }}>{ekToplam > 0 ? "Kalem tutarı (maaş + ek ödemeler)" : "Kalem tutarı (resmi + elden)"}</span><b style={{ fontSize: 16 }} data-testid="personel-toplam">{tl2(personelToplam)}</b>
+            <span style={{ fontSize: 13, color: "var(--n600, #475569)", fontWeight: 600 }}>{ekToplam > 0 ? "Kalem tutarı (maaş + ek ödemeler)" : sgkForm || yolForm ? "Kalem tutarı (resmi + SGK + elden + yol parası)" : "Kalem tutarı (resmi + elden)"}</span><b style={{ fontSize: 16 }} data-testid="personel-toplam">{tl2(personelToplam)}</b>
           </div>
           <Ipucu>Personel kaleminde KDV oranı ve tedarikçi alanı yoktur. Boş bileşen sıfır sayılır.</Ipucu>
         </>
@@ -366,6 +380,16 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         {bolunmezNotu && (
           <div style={{ flexBasis: "100%" }}><Ipucu>{PERSONEL_BOLUNMEZ_NEDENI}</Ipucu></div>
         )}
+        {dav === DAVRANIS.PERSONEL && sgkForm > 0 && (
+          <div style={{ flex: "1 1 170px" }}>
+            {/* Spec 0070 R10, R14 (Q2): SGK tek satır, taksitlenmez; vadesi satırın vadesidir. */}
+            <Field label="SGK vadesi">
+              <Input aria-label="SGK vadesi" type="date" value={form.sgkVade} onChange={e => set({ sgkVade: e.target.value })} />
+              <HataMetni>{hata("sgkVade")}</HataMetni>
+              <Ipucu>Boşsa kalemin vadesi kullanılır. SGK taksitlendirilmez; kuruma ayrı ödenir.</Ipucu>
+            </Field>
+          </div>
+        )}
         {personelIki && (
           <div style={{ flex: "1 1 170px" }}>
             <Field label="Elden vadesi">
@@ -410,7 +434,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             mahsupVar={mahsupVar} avansK={avansK} hareketler={hareketler} kayitliGoster={!yeniKalem}
             onSil={odemeDegistirebilir && !yeniKalem ? (h) => setSilinenler(s0 => new Set([...s0, String(h.id)])) : null}
             silinenler={silinenler} onSilGeriAl={(h) => setSilinenler(s0 => { const n = new Set(s0); n.delete(String(h.id)); return n; })}
-            durum={yeniKalem ? null : duzenlemeDurumu} bolunmezNotu={!yeniKalem && bolunmezNotu} />
+            durum={yeniKalem ? null : duzenlemeDurumu} bolunmezNotu={!yeniKalem && bolunmezNotu} yolParasiVar={dav === DAVRANIS.PERSONEL && yolForm > 0} />
         </div>
       )}
 

@@ -17,7 +17,9 @@ export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle 
   [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
   // Spec 0054 R22: ek ödeme hedefleri ANA değildir (0053 R12).
   [HEDEF.EK_RESMI]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir.",
-  [HEDEF.EK_ELDEN]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir." };
+  [HEDEF.EK_ELDEN]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir.",
+  // Spec 0070 R11: SGK kuruma ödenir; ANA değildir.
+  [HEDEF.SGK]: "SGK'ya çekle ödeme yapılmaz; çek yalnız ana alacaklıya verilir." };
 export const KENDI_CEK_YALNIZ_ANA_NEDENI = "Kendi çekimiz yalnız ana alacaklıya verilir.";
 export const CEK_YOK_NOTU = "Portföyde ciro edilebilecek (TL, portföyde duran) çek yok; başka bir yöntem seçin.";
 
