@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0070-calisan-yol-parasi-ve-sgk.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0070-calisan-yol-parasi-ve-sgk.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0070-sgk-yol` (`feat/0071-kdv-dahil` `cf2ca23` üstünde, R26) |
 | **Onay** | Takım Yöneticisi, 2026-10-06: bütün öneriler (Q1–Q10) kabul |
 

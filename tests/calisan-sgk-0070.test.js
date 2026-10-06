@@ -221,7 +221,7 @@ describe("spec 0070 (triyaj): satırsız SGK kalemi", () => {
     expect(odemeHedefleri(z, DAVRANIS.PERSONEL).find(x => x.hedef === HEDEF.SGK).kalanK).toBe(900000);
   });
   it("karışık sürüm sürüm notu planda ve CLAUDE.md'de: önce sunucu, sonra istemciler; o süre SGK ve yol parası girilmez", () => {
-    const plan = ["specs/0070-uygulama-plani.md", "specs/done/0070-uygulama-plani.md"].map(f => { try { return readFileSync(path.join(kok, f), "utf-8"); } catch { return ""; } }).join("");
+    const plan = readFileSync(path.join(kok, "specs/done/0070-uygulama-plani.md"), "utf-8");
     const not = plan.slice(plan.indexOf("## 7. Sürüm notu metni"));
     expect(not).toMatch(/önce sunucu bilgisayarı, sonra bütün istemciler güncellenmelidir/);
     expect(not).toMatch(/güncelleme\s+bitene kadar SGK ve yol parası girmeyin/);

@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-06) |
+| **Durum** | Tamamlandı (commit `14b74b4`, dal `feat/0070-sgk-yol`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar > Firma > Firma Çalışanları, personel gider kalemi, ödeme hedefleri, borç özeti ve hatırlatıcı, tekrarlayan üretim |
 | **Bağımlı spec'ler** | 0001 (personel kalemi) · 0021 (stopaj hedefi, emsal) · 0042 (resmi/elden hedefleri) · 0054 (ek ödeme hedefleri) · 0020 (personel atanabilir) · 0024 (hareket ve ekstre) · 0053 (tek ödeme editörü) · 0061 (açık kalemler) · 0062 (sayfalama) · 0064 (kayıt kilidi) · 0047 ve 0060 (gizlilik) |
-| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q10 işlendi (R14, R15, R20, R23, R26–R32, AC-5, AC-33, AC-40, AC-41–AC-45); plan `specs/0070-uygulama-plani.md` |
+| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q10 işlendi (R14, R15, R20, R23, R26–R32, AC-5, AC-33, AC-40, AC-41–AC-45); plan `specs/done/0070-uygulama-plani.md` |
 | **Önceki revizyon** | 1 · 2026-10-06 QA turu: B-1..B-8, Ö-9..Ö-23, K-24..K-26 işlendi (Takım Yöneticisi onayı) |
 
 ---
@@ -378,42 +378,43 @@ alacaklı olarak izleniyor ve ayın bütün SGK borcu tek yerden ödenebiliyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
       `tests/calisan-sgk-0070.test.js`, bileşen `tests/ui/calisan-sgk-0070.test.jsx`, ek bloklar
       `gider-gizlilik` (yeni adlar ve SGK kutusu), `gider-kasa-raporu-0070.test.js` (rapor kutusu ve SGK ödemeleri
       satırı), ad tablosu ve ekstre dışlaması `calisan-sgk-0070.test.js`'te (triyaj), `db-roundtrip.cjs` ve
       `db-clean-install.cjs` (iki sütun ve `hedef` yeni değeri; revizyon 2); `merge` dokunulmaz.
-- [ ] Eski kalemlerin değişmediği çapraz testle gösterildi (AC-9, AC-38).
-- [ ] Çift sayım yasağı testle sabitlendi: SGK ödemesi gider toplamını artırmaz ve SGK yalnız kendi
+- [x] Eski kalemlerin değişmediği çapraz testle gösterildi (AC-9, AC-38).
+- [x] Çift sayım yasağı testle sabitlendi: SGK ödemesi gider toplamını artırmaz ve SGK yalnız kendi
       hedefinde görünür (AC-7, AC-36).
-- [ ] Ödeme doğrulamasının üç imzasının değişmediği kaynak taramasıyla ve mevcut testlerin
+- [x] Ödeme doğrulamasının üç imzasının değişmediği kaynak taramasıyla ve mevcut testlerin
       dokunulmadan yeşil kalmasıyla gösterildi (AC-35).
-- [ ] Toplu ödemenin kilit denetimi testle gösterildi (AC-34).
-- [ ] Gizlilik testleri yeni alanları kapsıyor ve rapor kutusu işaretlerle sınırlı (AC-21, AC-22,
+- [x] Toplu ödemenin kilit denetimi testle gösterildi (AC-34).
+- [x] Gizlilik testleri yeni alanları kapsıyor ve rapor kutusu işaretlerle sınırlı (AC-21, AC-22,
       AC-37).
-- [ ] Görsel kanıt: `docs/evidence/0070-taban-piksel-raporu.json` ve `0070-piksel-raporu.json`;
+- [x] Görsel kanıt: `docs/evidence/0070-taban-piksel-raporu.json` ve `0070-piksel-raporu.json`;
       ekranlar çalışan kartı (satır içi ve pencere), gider formunun personel dalı, kalem listesi, borç
       özetindeki SGK satırı, SGK toplu ödeme penceresi. `CalisanManager`, `GiderForm` ve `DonemRaporu`
       tasarım sözlüğünü kullandığı için `docs/evidence/kanit-eslemesi.json` kayıtları
-      `beklenen: "degisti"` artı onay satırı taşır; spec `done`'a taşınırken `ayni`ye çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: dört bileşen ve toplamdan SGK'nın düşülmesi, SGK'nın ayrı hedef olduğu ve
+      `beklenen: "degisti"` artı onay satırı taşıdı ve `done`'a taşınırken `0070-taban-piksel-raporu.json` (18 görüntü,
+      hepsi 0 piksel) ile `ayni`ye çevrildi.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: dört bileşen ve toplamdan SGK'nın düşülmesi, SGK'nın ayrı hedef olduğu ve
       adının `HEDEF_ADLARI.genel`'de durduğu (`PERSONEL_HEDEFLERI`'nde DEĞİL), yol parasının elden
       hedefine katıldığı, eski kayıtların neden göçmediği, toplu ödemenin sarmalayıcı olduğu ve iki yeni
       kalem sütunu.
-- [ ] ~~Kullanıcı rehberi güncellendi (AC-40).~~ *(Revizyon 2, Q7: kapsam dışı.)*
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] ~~Kullanıcı rehberi güncellendi (AC-40).~~ *(Revizyon 2, Q7: kapsam dışı.)*
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (Q1–Q10: iki sütun, ay seçicili toplu ödeme, rozet ölçütü, mahsup, personel ayrıntı sütunları, rehber kapsam dışı, alan adları); uygulamada hatırlatıcıda SGK toplu satırı (R17 gereği). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: satırsız SGK kaleminde toplu ödeme ve mahsup çalışan hedefine düşüyordu; karışık sürüm sürüm notu; AC-44 testi ve plan tablosu; kanıt (çekim sürüyordu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dördü gerçek; kanıt bulgusu çekim sürerken verildi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Güncellenen yedi eski test bilinçli değişiklik (spec atfıyla); Electron dahil bütün testler yeşil. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Yeni bir ödeme hedefi eklemek yalnız hedef listesine bir değer eklemek değildir; hedefi okuyan her yer (borç özeti, açık kalemler, hatırlatıcının bölüm satırları, ekstre, mahsup, rapor) tek tek gözden geçirilmeli. Hatırlatıcının bölüm satırı kurum hedeflerini kalem kalem çiziyordu ve SGK oraya girseydi kişi bazlı SGK tutarı rapora düşerdi; bunu çıktı temelli gizlilik testi yakaladı. İkincisi: "yeni kod hep satırlı doğurur" varsayımı eski sürümden gelen satırsız kalemi unutturur; satırsız dağıtımın hedef sırası yeni bir hedefin parasını başka hedefe yazabilir, bu yol ayrıca sınanmalı. Üçüncüsü: görüntü aracının sabit "bugün"ü fikstür tarihlerini de bağlar; gelecek tarihli fikstür ekranı sessizce boş çizer, kanıt ekranları gözle de doğrulanmalı.
