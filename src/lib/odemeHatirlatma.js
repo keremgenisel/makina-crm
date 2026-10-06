@@ -5,7 +5,7 @@
 // "Vadesi geçmiş" kuralı YENİDEN YAZILMAZ: 0001'in vadesiGectiMi'si çağrılır (C2). Bu dosya yalnız "yaklaşan"
 // (bugün ≤ vade ≤ bugün + eşik) kavramını ekler. Anasayfa kartı, liste penceresi ve Giderler süzgeci aynı
 // fonksiyonu aynı `bugun` ve eşikle kullanır, sayılar bu yüzden ayrışamaz (AC-14).
-import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, borcKapsamindaMi, DAVRANIS, HEDEF, VERGI_DAIRESI, SGK } from "./gider";
+import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, borcKapsamindaMi, kurumTarafAdi, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
 
 export const HATIRLATMA_ESIK_VARSAYILAN = 7;
 export const HATIRLATMA_ESIK_MAX = 365;
@@ -55,13 +55,8 @@ const bolumSatirlari = (ogeler) => {
     b.hedefler.push({ hedef: o.hedef, odenecek: o.odenecek, vade: o.vade });
   }
   const personel = [...birlesik.values()];
-  // Spec 0070 R13, R17: SGK kurum borcudur; bölüm başına tek toplu satır (kişi bazlı SGK tutarı satır satır görünmez).
-  const sgk = ogeler.filter(o => o.sgk);
-  const satirlar = ogeler.filter(o => !o.personel && !o.sgk).map(o => ({ tur: "kalem", ...o }));
-  if (sgk.length) {
-    satirlar.push({ tur: "sgk", vade: sgk[0].vade, gunFarki: sgk[0].gunFarki, taraf: SGK, adet: new Set(sgk.map(o => String(o.id))).size,
-      odenecekK: sgk.reduce((a, o) => a + o.odenecekK, 0), odenecek: sgk.reduce((a, o) => a + o.odenecekK, 0) / 100 });
-  }
+  // Spec 0074 R20: SGK ayda tek kalemdir ve normal kalem satırı olarak görünür (0070'in toplu satırı kalktı).
+  const satirlar = ogeler.filter(o => !o.personel).map(o => ({ tur: "kalem", ...o }));
   if (personel.length) {
     const ilk = personel[0];
     satirlar.push({
@@ -72,8 +67,7 @@ const bolumSatirlari = (ogeler) => {
   // ogeler zaten `sirala` ile sıralı gelir (vade, ödenecek, id). Array.prototype.sort kararlıdır: burada yalnız
   // personel satırını vadesinin yerine yerleştiriyoruz; aynı vadeli kalemler (tur === tur → 0) önceki sırayı korur,
   // eşit vadede personel satırı kalemlerden sonra gelir.
-  const sira = { kalem: 0, sgk: 1, personel: 2 };
-  return satirlar.sort((a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1) : sira[a.tur] - sira[b.tur]));
+  return satirlar.sort((a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1) : a.tur === b.tur ? 0 : a.tur === "personel" ? 1 : -1));
 };
 
 const kalemSayilari = (gecmis, yaklasan) => {
@@ -99,21 +93,18 @@ export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler =
     const acikHedefler = odemeHedefleri(k, dav).filter(h => !h.odendi && h.kalanK > 0 && h.vade);
     // Spec 0042 R12, AC-9 (triyaj): personel kalemi bölünmez; en acil gruba bütün olarak girer (bir hedefi gecikmişse
     // bütün açık hedefleri vadesi geçmiş grubunda). Tutar iki hedefin açık toplamı, vade en erken açık vade olur.
-    // Spec 0070 R13, R14: SGK hedefi kurum satırıdır; personel grubuna girmez, kendi vadesiyle (stopaj gibi) sınıflanır.
-    const calisanHedefleri = acikHedefler.filter(h => h.hedef !== HEDEF.SGK);
-    const personelGrup = personel ? (calisanHedefleri.some(h => hedefGecti(h, bugun)) ? "gecmis" : calisanHedefleri.some(h => h.vade <= sinir) ? "yaklasan" : null) : null;
+    const personelGrup = personel ? (acikHedefler.some(h => hedefGecti(h, bugun)) ? "gecmis" : acikHedefler.some(h => h.vade <= sinir) ? "yaklasan" : null) : null;
     for (const h of acikHedefler) {
-      const sgkHedef = h.hedef === HEDEF.SGK;
-      const calisan = personel && !sgkHedef;
-      const gecti = calisan ? personelGrup === "gecmis" : hedefGecti(h, bugun);
-      if (calisan ? !personelGrup : (!gecti && h.vade > sinir)) continue;
+      const gecti = personel ? personelGrup === "gecmis" : hedefGecti(h, bugun);
+      if (personel ? !personelGrup : (!gecti && h.vade > sinir)) continue;
       const stopaj = h.hedef === HEDEF.STOPAJ;
-      const taraf = stopaj ? VERGI_DAIRESI : sgkHedef ? SGK : personel ? (k.calisanAd || "Çalışan")
-        : (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";
+      // Spec 0074 R20: SGK kaleminin tarafı kurum adıdır (kurumTarafAdi), "Tedarikçi seçilmemiş" değil.
+      const taraf = stopaj ? VERGI_DAIRESI : personel ? (k.calisanAd || "Çalışan")
+        : kurumTarafAdi(dav) || (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";
       const oge = {
         kalem: k, id: k.id, hedef: h.hedef, anahtar: `${k.id}:${h.hedef}`, vade: h.vade,
-        vadeEtiketi: h.taksitli ? "Taksit vadesi" : stopaj ? "Stopaj vadesi" : sgkHedef ? "SGK vadesi" : vadeEtiketi(k), gunFarki: gunFarki(bugun, h.vade),
-        odenecekK: h.kalanK, odenecek: h.kalanK / 100, taraf, personel: calisan && !stopaj, sgk: sgkHedef, gecti,
+        vadeEtiketi: h.taksitli ? "Taksit vadesi" : stopaj ? "Stopaj vadesi" : vadeEtiketi(k), gunFarki: gunFarki(bugun, h.vade),
+        odenecekK: h.kalanK, odenecek: h.kalanK / 100, taraf, personel: personel && !stopaj, gecti,
         taksit: satirliMi(k) && h.taksitli ? { odenen: h.odenenAdet, toplam: h.toplamAdet } : null,
       };
       (gecti ? gecmis : yaklasan).push(oge);

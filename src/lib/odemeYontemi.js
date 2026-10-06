@@ -1,6 +1,6 @@
 // Spec 0041: gider ödemesinin yöntemi ödemenin alanıdır (C2). Kalemin `odemeYontemi` alanı yalnız yeni ödemenin
 // varsayılanıdır (R2); kalemin "nasıl ödendiği" burada ödemelerden türetilir ve saklanmaz. Saf motor, React'sız.
-import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, tl, DAVRANIS, HEDEF, HEDEF_SIRASI, KALEM_KAPATAN_TURLER } from "./gider";
+import { kurus, davranisOf, odemeleriUygula, odemeHedefleri, tl, DAVRANIS, HEDEF, HEDEF_SIRASI, KALEM_KAPATAN_TURLER, sgkDavranisiMi } from "./gider";
 
 export const YONTEM_MAHSUP = "Avanstan mahsup"; // R15: bir yöntem değil kapatma biçimi, kırılımda ayrı satır
 export const YONTEM_BELIRSIZ = "Belirtilmemiş";  // R11: yöntemi boş ödeme (göçten gelen taksit hareketi dahil)
@@ -133,9 +133,10 @@ export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits
 const ad = (yonelme, yalin = yonelme) => ({ yonelme, yalin });
 export const HEDEF_ADLARI = {
   genel: { [HEDEF.ANA]: ad("Tedarikçiye", "Tedarikçi"), [HEDEF.ELDEN]: ad("Elden"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"),
-    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.SGK]: ad("SGK'ya", "SGK"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
-  // Spec 0070 R9: SGK genel tabloda; personel tablosuna yazılsaydı yalnız SGK'lı kalemde "Çalışana" çıkardı.
+    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
   kira: { [HEDEF.ANA]: ad("Kiraya verene", "Kiraya veren") },
+  // Spec 0074 R11: SGK davranışlı kalemin tek (ANA) hedefi; kira deseni. Dal yazılmazsa ad genel[ANA]'ya ("Tedarikçiye") düşerdi.
+  sgk: { [HEDEF.ANA]: ad("SGK'ya", "SGK") },
   // Spec 0054 R8, R16 (0042 R15'i genişletir): birden çok hedefli personelde ayırt edici adlar, tek hedefli personelde "Çalışan".
   personel: { [HEDEF.ANA]: ad("Maaş (resmi)"), [HEDEF.ELDEN]: ad("Maaş (elden)"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"), [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)") },
   personelTek: ad("Çalışana", "Çalışan"),
@@ -143,6 +144,7 @@ export const HEDEF_ADLARI = {
 // Geriye dönük: genel tablonun yönelme hâli (eski HEDEF_AD).
 export const HEDEF_AD = Object.fromEntries(Object.entries(HEDEF_ADLARI.genel).map(([k, v]) => [k, v.yonelme]));
 const hedefAdKaydi = (hedef, davranis, cokHedef) => (hedef === HEDEF.ANA && davranis === DAVRANIS.KIRA ? HEDEF_ADLARI.kira[HEDEF.ANA]
+  : hedef === HEDEF.ANA && sgkDavranisiMi(davranis) ? HEDEF_ADLARI.sgk[HEDEF.ANA]
   : davranis === DAVRANIS.PERSONEL && HEDEF_ADLARI.personel[hedef] ? (cokHedef ? HEDEF_ADLARI.personel[hedef] : HEDEF_ADLARI.personelTek)
   : HEDEF_ADLARI.genel[hedef]);
 // cokHedef: kalemin birden çok ödeme hedefi var mı (cokHedefliMi ya da cokHedefliSatirlar).

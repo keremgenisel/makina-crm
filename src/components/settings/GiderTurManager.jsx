@@ -14,6 +14,8 @@ const VARSAYILAN_TURLER = [
   ["Kira", "kira"], ["Personel", "personel"], ["Elektrik", "normal"], ["Doğalgaz", "normal"], ["Su", "normal"],
   ["İnternet ve telefon", "normal"], ["Muhasebe", "normal"], ["Hammadde", "normal"], ["Nakliye", "normal"],
   ["Bakım ve onarım", "normal"], ["Sosyal güvenlik (Bağkur)", "normal"],
+  // Spec 0074 R3: çalışan SGK'sı kendi davranışında; Bağkur (şirket sahibinin primi) normal kalır, adı değişmez (K-22).
+  ["SGK", "sgk"],
 ];
 
 export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler = [], setGiderler, giderTanimlari = [], setGiderTanimlari, showToast = () => {}, canDo = () => true, serverPermissions }) => {

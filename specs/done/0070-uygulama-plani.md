@@ -97,6 +97,8 @@ Q7 → R23, AC-40, DoD · Q8 → R30 · Q9 → R31, AC-44 · Q10 → R32, AC-45.
 
 ## 7. Sürüm notu metni
 
+> **Spec 0074 ile değişti:** bu metnin SGK kısmı yayınlanmadı (0070 hiçbir sürümde çıkmadı); yerini `specs/0074-uygulama-plani.md` §7 aldı. Yol parası cümlesi geçerlidir.
+
 "Çalışan kartına ve personel giderine SGK ve yol parası alanları eklendi. SGK artık personel giderinin içinde ayrı bir ödeme
 olarak izlenir; ayın bütün SGK borcunu Giderler'deki borç özetinden 'SGK'yı Öde' ile tek işlemde ödeyebilirsiniz. Yol parası
 çalışana elden tutarla birlikte ödenir. ÖNEMLİ: önce sunucu bilgisayarı, sonra bütün istemciler güncellenmelidir; güncelleme

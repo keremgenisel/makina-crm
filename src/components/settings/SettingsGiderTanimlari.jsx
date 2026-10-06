@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { uid, today, getKdvRateForDate } from "../../lib/utils";
-import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi } from "../../lib/gider";
+import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -62,9 +62,10 @@ export const SettingsGiderTanimlari = ({
       else tutar = t.deger;
     }
     // R7, R6 (Q1): tanım girilen tutarı saklar; dâhil yalnız normal ve brüt kirada.
-    const kdvYonu = dav === DAVRANIS.PERSONEL ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC);
+    // Spec 0074 R6, R33: KDV ve tedarikçi tek kapılardan (personel ve SGK'da yok).
+    const kdvYonu = !kdvliMi(dav) ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC);
     const k = tutarCoz(form.kdvOrani);
-    if (dav !== DAVRANIS.PERSONEL && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
+    if (kdvliMi(dav) && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
     // Bilinçli: tanımda atama yalnız normal davranışta (spec 0020 X5). Personel tanımına atama açılırsa her ayın maaşı
     // aynı makinaya yüklenirdi; kalem formundaki atanabilirMi kapısı buraya taşınmaz (AC-16).
     const atamaVar = dav === DAVRANIS.NORMAL;
@@ -87,11 +88,11 @@ export const SettingsGiderTanimlari = ({
     const kayit = {
       id: form.id ?? uid(), turId: numId(form.turId), ad: String(form.ad || "").trim() || calisan?.ad || "",
       tutar: dav === DAVRANIS.PERSONEL ? null : tutar,
-      kdvOrani: dav === DAVRANIS.PERSONEL || k.bos ? null : k.deger,
+      kdvOrani: !kdvliMi(dav) || k.bos ? null : k.deger,
       girisYonu: dav === DAVRANIS.KIRA ? form.girisYonu : null,
       kdvYonu,
       calisanId: dav === DAVRANIS.PERSONEL ? numId(form.calisanId) : null,
-      tedarikciId: dav === DAVRANIS.PERSONEL ? null : numId(form.tedarikciId),
+      tedarikciId: tedarikciSecilirMi(dav) ? numId(form.tedarikciId) : null,
       odemeYontemi: form.odemeYontemi || "",
       baslangicAy: form.baslangicAy, bitisAy: form.bitisAy || null,
       atamaTur: atamaVar ? (form.atamaTur || "") : "",
@@ -129,8 +130,9 @@ export const SettingsGiderTanimlari = ({
     const dav = davOf(t.turId);
     if (dav === DAVRANIS.PERSONEL) return <span style={{ color: "var(--n500, #64748b)" }}>çalışan kaydından<br /><span style={{ fontSize: 11 }}>resmi + elden</span></span>;
     // Spec 0071 R7, AC-10: kira satırının "Brüt girildi" emsali; alanı olmayan eski tanım hariç girilmiştir (R27).
-    return <><b style={{ whiteSpace: "nowrap" }}>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div>
-      <div data-testid="tanim-kdv-yonu" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kdvYonuOf(t) === KDV_YONU.DAHIL ? "KDV dâhil girildi" : "KDV hariç girildi"}</div></>;
+    return <><b style={{ whiteSpace: "nowrap" }}>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (!kdvliMi(dav) ? "KDV yok" : t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div>
+      {/* Spec 0074 R6: KDV'siz davranışta (SGK) yön yoktur; "KDV yok" ile çelişen "KDV hariç girildi" yazılmaz. */}
+      {kdvliMi(dav) && <div data-testid="tanim-kdv-yonu" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kdvYonuOf(t) === KDV_YONU.DAHIL ? "KDV dâhil girildi" : "KDV hariç girildi"}</div>}</>;
   };
   const atamaHucre = (t) => {
     if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
@@ -174,7 +176,7 @@ export const SettingsGiderTanimlari = ({
                       {!t.kapatildi && t.baslangicAy > buAy && <div style={{ fontSize: 11, color: "var(--blu600, #2563eb)", marginTop: 3 }}>{t.baslangicAy} ayında başlar</div>}
                     </td>
                     <td style={{ padding: "10px 6px" }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{turMap.get(String(t.turId))?.ad || "(türsüz)"}<DavranisRozeti davranis={d} /></div></td>
-                    <td style={{ padding: "10px 6px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
+                    <td style={{ padding: "10px 6px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (kurumTarafAdi(d) || tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
                     <td style={{ padding: "10px 6px", textAlign: "right" }}>{tutarHucre(t)}</td>
                     <td style={{ padding: "10px 6px", whiteSpace: "nowrap" }}>{t.baslangicAy}<div style={{ color: "var(--n500, #64748b)" }}>– {t.bitisAy || "—"}</div></td>
                     <td style={{ padding: "10px 6px" }}>{atamaHucre(t)}</td>
@@ -233,19 +235,19 @@ export const SettingsGiderTanimlari = ({
                   <Segment ariaLabel="KDV yönü" options={[{ value: KDV_YONU.HARIC, label: "KDV hariç" }, { value: KDV_YONU.DAHIL, label: "KDV dâhil" }]} value={kdvYonuOf(form)} onChange={v => set({ kdvYonu: v })} />
                   <Ipucu>Dâhil girilen tutar her ay o ayın KDV oranıyla ayrılarak kaleme yazılır.{tutarCoz(form.kdvOrani).deger === 0 && !tutarCoz(form.kdvOrani).bos ? " KDV oranı sıfır olduğu için dâhil ve hariç aynı tutarı verir." : ""}</Ipucu>
                 </Field>
-              ) : <Ipucu>Net ödenen kira KDV hariç girilir; KDV dâhil seçimi yalnız brüt kira girişinde vardır.</Ipucu>}
+              ) : dav === DAVRANIS.KIRA ? <Ipucu>Net ödenen kira KDV hariç girilir; KDV dâhil seçimi yalnız brüt kira girişinde vardır.</Ipucu> : null}
               <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}><Field label={`Tutar (KDV ${kdvYonuSecilebilirMi(dav, form.girisYonu) && kdvYonuOf(form) === KDV_YONU.DAHIL ? "dâhil" : "hariç"})${dav === DAVRANIS.KIRA ? " *" : ""}`}><TutarInput ariaLabel="Tutar" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /><HataMetni>{hatalar.tutar}</HataMetni>
-                  {sifirTutarSerbestMi(dav) && <Ipucu>Her ay değişen giderde (elektrik, su) boş ya da sıfır bırakın; tutar fatura gelince kalemde girilir.</Ipucu>}</Field></div>
-                <div style={{ width: 150 }}><Field label="KDV oranı"><TutarInput sym="%" ariaLabel="KDV oranı" placeholder="tarihe göre" value={form.kdvOrani} onChange={v => set({ kdvOrani: v })} /><HataMetni>{hatalar.kdvOrani}</HataMetni></Field></div>
+                <div style={{ flex: 1 }}><Field label={!kdvliMi(dav) ? "Tutar" : `Tutar (KDV ${kdvYonuSecilebilirMi(dav, form.girisYonu) && kdvYonuOf(form) === KDV_YONU.DAHIL ? "dâhil" : "hariç"})${dav === DAVRANIS.KIRA ? " *" : ""}`}><TutarInput ariaLabel="Tutar" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /><HataMetni>{hatalar.tutar}</HataMetni>
+                  {sifirTutarSerbestMi(dav) && <Ipucu>Her ay değişen giderde (elektrik, su, SGK) boş ya da sıfır bırakın; tutar fatura ya da bildirge gelince kalemde girilir.</Ipucu>}</Field></div>
+                {kdvliMi(dav) && <div style={{ width: 150 }}><Field label="KDV oranı"><TutarInput sym="%" ariaLabel="KDV oranı" placeholder="tarihe göre" value={form.kdvOrani} onChange={v => set({ kdvOrani: v })} /><HataMetni>{hatalar.kdvOrani}</HataMetni></Field></div>}
               </div>
-              <Field label="Tedarikçi">
+              {tedarikciSecilirMi(dav) && <Field label="Tedarikçi">
                 <Select value={form.tedarikciId} onChange={e => set({ tedarikciId: e.target.value })}>
                   <option value="">Seçilmemiş</option>
                   {tedarikciler.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
                 </Select>
                 <Ipucu>Üretilen her kaleme kopyalanır. Tedarikçiler Giderler sekmesinde yönetilir.</Ipucu>
-              </Field>
+              </Field>}
             </>
           )}
           {/* Spec 0053 R1, R26: "Varsayılan ödeme yöntemi" kalktı; tanımın eski değeri kayıtta korunur, üretimde kopyalanmaz. */}

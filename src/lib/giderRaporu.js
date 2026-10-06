@@ -9,7 +9,7 @@
 //
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
-import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, sgkOzeti, HEDEF, SGK } from "./gider";
+import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, sgkOzeti, kurumTarafAdi } from "./gider";
 import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
@@ -90,14 +90,14 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     const genel = genelKalemler.map(k => {
         const dav = davranisOf(k, turMap);
         return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
-          tedarikci: tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] };
+          tedarikci: kurumTarafAdi(dav) || tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] }; // spec 0074 R19
       });
     const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
     // Spec 0060 R11, R12, R16, R28, R31, C2: tür bazında ek ödeme toplamı ve stopaj özeti saf motordan (bu dosya kişi bazlı
     // alan okumaz; tür toplamı resmi + elden tek tutardır, çalışan ve açıklama taşımaz).
     const ekOdemeTurleri = ekOdemeTurToplamlari(personel).map(t => ({ ad: t.ad, tutar: tl(t.toplamK) }));
     const so = stopajOzeti(gr.kalemler, turMap);
-    // Spec 0070 R18, R30: ayın personel kalemlerinin SGK toplamı (kurum borcu; kişi kırılımı yok).
+    // Spec 0074 R23: ayın SGK davranışlı kalemlerinin toplamı (kurum borcu; tür bazında toplam, kişi kırılımı yok).
     const sgo = sgkOzeti(gr.kalemler, turMap);
     // Spec 0061 R13, R14, R16, R32 (AC-19, AC-20): açık kalemlerin yaşlandırması, ay sonu itibarıyla (ödeme durumu ay sonu,
     // yaş ay sonundan). Taraf kırılımında çalışanlar motorun tek "Çalışanlar" satırıdır; kişi kırılımı (ayrinti) okunmaz.
@@ -117,8 +117,6 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     // hiçbir taraf adı taşımaz. Gün ay sonuna göredir (dönem kilidi).
     const vadeSatirlari = (satirlar) => satirlar.map(v => {
       if (v.tur === "personel") return { personel: true, tarih: null, tur: PERSONEL_ETIKETI, tedarikci: "", adet: v.adet, kalanK: kurus(v.odenecek), vade: v.vade, gun: gunFarki(son, v.vade) };
-      // Spec 0070 R17: SGK toplu satırı (kurum); kişi bazlı tutar basılmaz.
-      if (v.tur === "sgk") return { toplu: true, tarih: null, tur: SGK, tedarikci: "", adet: v.adet, kalanK: v.odenecekK, vade: v.vade, gun: gunFarki(son, v.vade) };
       const kk = giderAySonuById.get(String(v.id));
       return { tarih: kk?.tarih || null, tur: turMap.get(String(kk?.turId))?.ad || "(türsüz)", tedarikci: v.taraf, kalanK: v.odenecekK, vade: v.vade, gun: v.gunFarki };
     });
@@ -212,7 +210,6 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
   };
   const odemeler = [];
   const personelTop = { adet: 0, tutarK: 0 };
-  const sgkTop = { adet: 0, tutarK: 0 }; // spec 0070 R31: SGK ödemeleri kendi toplu satırında (kuruma giden para)
   // Triyaj: kalemi kalıcı silinmiş ödeme kimin ödemesi olduğu bilinemediği için (personel olabilir) tarihli satır olarak
   // basılmaz; "Silinmiş kalem ödemeleri" toplu satırına iner (R15, AC-17).
   const silinmisTop = { adet: 0, tutarK: 0 };
@@ -220,7 +217,6 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     const k = giderById.get(String(m.giderId));
     if (!k) { silinmisTop.adet++; silinmisTop.tutarK += kurus(m.tutar); continue; }
     const dav = davranisOf(k, turMap);
-    if (dav === DAVRANIS.PERSONEL && (k.taksitler || []).some(t => String(t.id) === String(m.taksitId) && t.hedef === HEDEF.SGK)) { sgkTop.adet++; sgkTop.tutarK += kurus(m.tutar); continue; }
     if (dav === DAVRANIS.PERSONEL) { personelTop.adet++; personelTop.tutarK += kurus(m.tutar); continue; }
     // R36: hesapsız çek hareketinde hesap sütunu yöntemin kendisidir ("Çek (ciro)" / "Çek (kendi)").
     odemeler.push({ tarih: m.tarih, hesap: m.hesapId != null ? hesapAd(m.hesapId) : m.cekId != null ? (String(m.yontem || "").trim() || "Çek") : "Hesapsız", yontem: String(m.yontem || "").trim() || YONTEM_BELIRSIZ,
@@ -228,7 +224,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       tutarK: kurus(m.tutar), ...(m.tamKapatir && (m.tutar == null || m.tutar === "") ? { tamami: true } : {}) });
   }
   const toplu = (etiket, l) => (l.adet ? [{ tarih: null, toplu: true, kalem: `${etiket} · ${l.adet} adet`, tutarK: l.tutarK }] : []);
-  if (detay) odemeler.push(...toplu("Personel ödemeleri", personelTop), ...toplu("SGK ödemeleri", sgkTop), ...toplu("Silinmiş kalem ödemeleri", silinmisTop), ...toplu("Çalışan avansları", ozetL.avans), ...toplu("Avanstan mahsup", ozetL.mahsup));
+  if (detay) odemeler.push(...toplu("Personel ödemeleri", personelTop), ...toplu("Silinmiş kalem ödemeleri", silinmisTop), ...toplu("Çalışan avansları", ozetL.avans), ...toplu("Avanstan mahsup", ozetL.mahsup));
   const virmanlar = (ozetL.virman.liste || []).map(m => ({ tarih: m.tarih, kaynak: hesapAd(m.hesapId), hedef: hesapAd(m.karsiHesapId), tutarK: kurus(m.tutar),
     paraBirimi: hesapById.get(String(m.hesapId))?.paraBirimi || "TRY" }));
   const tahsilatlar = (ozetL.tahsilat.liste || []).map(t => ({ tarih: t.tarih, hesap: t.hesapAd, kaynak: t.kaynak === "makina" ? "Makina tahsilatı" : SATIS_KAYNAK_AD[t.kaynak] || t.turAdi || t.kaynak,
@@ -334,7 +330,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
     // Spec 0060 R12, R15, R31 (AC-14, AC-17, AC-41): ayın kira stopajı; kesilen = ödenen + açık. Stopaj yoksa basılmaz.
     const stopajKutu = G.stopaj ? bolum("GİDER · STOPAJ", `kesilen ${donem}, ödeme durumu ${itibariyla}`, stTablo([st("Kesilen stopaj", tlp(G.stopaj.kesilen)),
       st("Ödenen", tlp(G.stopaj.odenen)), st("Ay sonunda açık", tlp(G.stopaj.acik))])) : "";
-    // Spec 0070 R18, AC-22: SGK tek toplam kutu (ödenen ve açık); boşsa basılmaz. `<!--sgk-->` ile sınırlı (gizlilik testleri
+    // Spec 0070 R18, AC-22 (0074 R23: kaynak SGK davranışlı kalemler): SGK tek toplam kutu (ödenen ve açık); boşsa basılmaz. `<!--sgk-->` ile sınırlı (gizlilik testleri
     // kutunun dışına eski yasakları aynen, içine çalışan adı ve kişi bazlı tutar yasağını uygular).
     const sgkKutu = G.sgk ? `<!--sgk--><div data-bolum="sgk">${bolum("GİDER · SGK", `${donem}, ödeme durumu ${itibariyla}`, stTablo([st("SGK toplamı", tlp(G.sgk.toplam)),
       st("Ödenen", tlp(G.sgk.odenen)), st("Ay sonunda açık", tlp(G.sgk.acik))]))}</div><!--/sgk-->` : "";

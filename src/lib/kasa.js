@@ -8,9 +8,9 @@ import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, DAVRANIS, HEDEF } from "./gider";
-// Spec 0070 R28: SGK hedefine avans mahsubu yapılamaz (tek metin; ödeme girişi de bunu gösterir).
-export const SGK_MAHSUP_HATASI = "SGK hedefine avans mahsubu yapılamaz; SGK kuruma ödenir.";
+import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF } from "./gider";
+// Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
+export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
 export const HESAP_TURLERI = [{ value: "kasa", label: "Kasa" }, { value: "banka", label: "Banka" }, { value: "kart", label: "Kredi kartı" }];
 export const HESAP_TUR_AD = Object.fromEntries(HESAP_TURLERI.map(t => [t.value, t.label]));
@@ -599,18 +599,16 @@ export const mahsupKapsamda = (kalem, { bugun = null, yururlukAy = null } = {}) 
 export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null } = {}) => {
   const hatalar = {};
   if (!kalem) return { hatalar: { hedef: "Mahsup edilecek kalem bulunamadı." }, kayit: null };
+  // Spec 0074 R22 (S6): kural davranışa bakar ve personel denetiminden ÖNCE durur (yoksa SGK metni hiç görünmezdi).
+  if (sgkDavranisiMi(davranisOf(kalem, turMap))) return { hatalar: { hedef: SGK_MAHSUP_HATASI }, kayit: null };
   if (davranisOf(kalem, turMap) !== DAVRANIS.PERSONEL || kalem.calisanId == null) return { hatalar: { hedef: "Avans yalnız personel kalemine mahsup edilir." }, kayit: null };
   if (!mahsupKapsamda(kalem, { bugun, yururlukAy })) return { hatalar: { hedef: "Gelecek tarihli ya da yürürlük öncesi maaş kalemine mahsup yapılamaz." }, kayit: null };
   const satirli = satirliMi(kalem);
   if (satirli && form?.taksitId == null) hatalar.hedef = "Taksitli kalemde mahsup bir taksite bağlanır.";
-  // Spec 0070 R28: avans çalışanın borcudur, SGK kurumun alacağı; SGK hedefine mahsup yapılamaz.
-  else if (satirli && (kalem.taksitler || []).some(r => String(r.id) === String(form.taksitId) && r.hedef === HEDEF.SGK)) hatalar.hedef = SGK_MAHSUP_HATASI;
   if (!form?.tarih) hatalar.tarih = "Tarih girilmedi.";
   const t = tutarOku(form?.tutar);
-  // Spec 0070 R28 (triyaj): satırsız kalemde mahsup hedef sırasıyla dağılır ve SGK en sondadır; sınır SGK'nın kalanı çıkarılarak
-  // çalışan hedeflerine indirilir (mahsup SGK'ya taşmasın).
-  const sgkKalanK = satirli ? 0 : (odemeHedefleri(kalem, DAVRANIS.PERSONEL).find(h => h.hedef === HEDEF.SGK)?.kalanK || 0);
-  const kalanK = odemeHedefKalaniK(kalem, DAVRANIS.PERSONEL, satirli ? form?.taksitId : null) - sgkKalanK;
+  // Spec 0074 R22, AC-43: SGK personel kaleminde değil; mahsup sınırı 0070 öncesine döndü (SGK kalanı çıkarılmaz).
+  const kalanK = odemeHedefKalaniK(kalem, DAVRANIS.PERSONEL, satirli ? form?.taksitId : null);
   const borcK = avansBorcuK(kalem.calisanId, hareketler, giderler);
   if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi.";
   else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
@@ -667,8 +665,8 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
     if (!kapsamda(k, esik, bugun) || !idEsit(k.calisanId, calisanId) || davranisOf(k, turMap) !== DAVRANIS.PERSONEL) continue;
     // Spec 0042 R6, AC-10: çalışanın alacağı kalemin bütün hedefleridir (resmi ve elden); her ödeme hangi hedefi
     // kapattığını taşır (satırlı kalemde bağlı satırın hedefi).
-    // Spec 0070 R22: SGK çalışana ödenmez; hedefi ve ona yapılan ödemeler ekstreye girmez.
-    const toplamK = odemeHedefleri(k, DAVRANIS.PERSONEL).filter(h => h.hedef !== HEDEF.SGK).reduce((a, h) => a + h.toplamK, 0);
+    // Spec 0074 R21: SGK personel kaleminin hedefi değildir; ekstre 0070 öncesindeki sade hâlinde.
+    const toplamK = odemeHedefleri(k, DAVRANIS.PERSONEL).reduce((a, h) => a + h.toplamK, 0);
     satirlar.push({ tarih: k.tarih, sira: 0, tur: "maas", kalem: k, etkiK: toplamK, tutarK: toplamK,
       kirilim: { resmiK: kurus(k.resmiTutar), eldenK: kurus(k.eldenTutar), ekK: ekOdemeKurus(k), maasK: maasKurus(k) } });
     const hedefMap = hareketHedefPaylari(k, hareketler, turMap);
@@ -676,14 +674,9 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
       const mahsup = p.hareket.tur === "mahsup";
       const hedef = (k.taksitler || []).find(r => idEsit(r.id, p.hareket.taksitId))?.hedef || null;
       // Spec 0051 R8, R10 (Q1): hedef payları (satırsız kalemde de; bölünmüş hareket iki hedef taşır).
-      const hedefPaylari = (hedefMap.get(String(p.hareket.id)) || []).filter(x => x.hedef !== HEDEF.SGK);
-      if (hedef === HEDEF.SGK) continue;
-      // Kaleme bağlı (taksitsiz) hareketin SGK'ya düşen payı çalışan ekstresinden ayıklanır.
-      const sgkPayK = (hedefMap.get(String(p.hareket.id)) || []).filter(x => x.hedef === HEDEF.SGK).reduce((a, x) => a + x.payK, 0);
-      const payK = p.payK - sgkPayK;
-      if (payK <= 0) continue;
+      const hedefPaylari = hedefMap.get(String(p.hareket.id)) || [];
       satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: mahsup ? "mahsup" : "odeme", kalem: k, hareket: p.hareket, hedef, hedefPaylari,
-        etkiK: mahsup ? 0 : -payK, tutarK: payK, goc: p.hareket.kaynak === "goc" });
+        etkiK: mahsup ? 0 : -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc" });
     }
   }
   for (const m of hareketler || []) if (m && m.tur === "avans" && idEsit(m.calisanId, calisanId)) {

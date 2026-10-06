@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:287`
+**Örnek:** `src/components/Giderler.jsx:276`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:482` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
@@ -166,7 +166,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:348`
+**Örnek:** `src/components/Giderler.jsx:337`
 **Örnek:** `src/components/Customers.jsx:516` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -188,7 +188,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:314`
+**Örnek:** `src/components/Giderler.jsx:303`
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -221,7 +221,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Ekran düzeyindeki durumlar: `UyariSeridi`.
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
-**Örnek:** `src/components/CalisanManager.jsx:215`
+**Örnek:** `src/components/CalisanManager.jsx:219`
 **Örnek:** `src/components/customers/CustomerAddEditForm.jsx:107` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
@@ -234,7 +234,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uzun açıklama için: bölümün açıklama paragrafı.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
-**Örnek:** `src/components/CalisanManager.jsx:233`
+**Örnek:** `src/components/CalisanManager.jsx:237`
 **Örnek:** `src/components/PartSaleForm.jsx:368` (seçimin sonucunu anlatan cümle)
 
 ---
@@ -263,7 +263,7 @@ Form pencereleri düğmelerini `Modal`'ın `footer` yuvasına verir. **Düğmele
   sarmalayıcıları zararsızdır (kabın tek çocuğu olduğu için boşluk ikiye katlanmaz) ama yeni formda gerekmez.
 - Tek düğmeli pencerede kabın boşluğu görünmez.
 
-**Örnek:** `src/components/GiderForm.jsx:136` (sarmalayıcısız iki düğme)
+**Örnek:** `src/components/GiderForm.jsx:138` (sarmalayıcısız iki düğme)
 
 ## Pencere boyutu (spec 0050)
 

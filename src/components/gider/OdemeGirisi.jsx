@@ -253,8 +253,8 @@ export const OdemeGirisi = ({
 
   // ── Mahsup (R27): tek satır ──
   const mahsup = giris.mahsup || {};
-  // Spec 0070 R28 (AC-42): SGK kuruma ödenir; avanstan mahsup SGK hedefine yapılamaz.
-  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0 && h.hedef !== HEDEF.SGK);
+  // Spec 0074 R22: SGK personel kaleminin hedefi değildir (kendi kalemi; mahsup kipi orada çizilmez).
+  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0);
   const mahsupYerleri = mahsupHedefleri.flatMap(h => (h.taksitli ? h.acikTaksitler.map(t => ({ deger: `${h.hedef}:${t.sira}`, hedef: h.hedef, sira: t.sira, ad: `${adOf(h.hedef)} ${t.sira}/${h.satirSayisi}. taksit · vade ${t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan ${para(t.kalanK)}` }))
     : [{ deger: `${h.hedef}:`, hedef: h.hedef, sira: null, ad: `${adOf(h.hedef)} · kalan ${para(h.kalanK)}` }]));
   const mh = hatalar?.mahsup || {};

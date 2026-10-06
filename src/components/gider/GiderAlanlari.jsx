@@ -197,9 +197,10 @@ export const ODEME_SECENEKLERI = [
   { value: "", label: "Belirtilmemiş" }, { value: "Nakit", label: "Nakit" }, { value: "Havale", label: "Havale" },
   { value: "Çek", label: "Çek" }, { value: "Kredi Kartı", label: "Kredi Kartı" },
 ];
-export const DAVRANIS_AD = { normal: "Normal", kira: "Kira", personel: "Personel" };
+export const DAVRANIS_AD = { normal: "Normal", kira: "Kira", personel: "Personel", sgk: "SGK" }; // spec 0074 R2
 export const DavranisRozeti = ({ davranis }) => {
-  const r = { kira: ["var(--orTx, #c2410c)", "var(--ambBg3, #fff7ed)", "var(--ambBr3, #fed7aa)"], personel: ["var(--pur700, #6d28d9)", "var(--purBg, #f5f3ff)", "var(--purBr, #ddd6fe)"], normal: ["var(--n600, #475569)", "var(--n150, #f1f5f9)", "var(--n200, #e2e8f0)"] }[davranis] || [];
+  const r = { kira: ["var(--orTx, #c2410c)", "var(--ambBg3, #fff7ed)", "var(--ambBr3, #fed7aa)"], personel: ["var(--pur700, #6d28d9)", "var(--purBg, #f5f3ff)", "var(--purBr, #ddd6fe)"],
+    sgk: ["var(--blu700, #1d4ed8)", "var(--bluBg, #eff6ff)", "var(--bluBr, #bfdbfe)"], normal: ["var(--n600, #475569)", "var(--n150, #f1f5f9)", "var(--n200, #e2e8f0)"] }[davranis] || [];
   return <span style={{ display: "inline-flex", fontSize: 11, fontWeight: 700, color: r[0], background: r[1], border: `1px solid ${r[2]}`, borderRadius: 999, padding: "1px 8px", whiteSpace: "nowrap" }}>{DAVRANIS_AD[davranis] || "Normal"}</span>;
 };
 export const fmtTL = (n) => fmtCur(n, "TRY");

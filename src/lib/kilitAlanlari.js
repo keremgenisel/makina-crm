@@ -23,9 +23,7 @@ export const KILIT_ALANLARI = {
   // çöpe taşıma onayı (triyaj). Kasa (kapsam dışı) ve Çek Portföyü (ciro / Çek Yaz kaydı, R36) kalemin kilidine anlık bakar.
   gider: { etiket: "Gider kalemi", pencereler: ["src/components/Giderler.jsx", "src/components/Dashboard.jsx", "src/components/GiderForm.jsx",
     "src/components/gider/OdemeKayitPenceresi.jsx", "src/components/gider/OdemePlaniPenceresi.jsx", "src/components/gider/OdemeGirisi.jsx", "src/components/Kasa.jsx",
-    "src/components/cek/CekPortfoyu.jsx",
-    // Spec 0070 R25: SGK toplu ödemesi kilit tutmaz, kayıt anında kapsamdaki her kalemin `gider` kilidine bakar.
-    "src/components/gider/SgkToplamOdeme.jsx"] },
+    "src/components/cek/CekPortfoyu.jsx"] }, // spec 0074 R18: SGK toplu ödeme penceresi kalktı
   // R2, R25: ciro, kendi çekimiz, çek durumu ve geçmişi (verilen çek dahil). CiroPenceresi yalnız ÇEKİN kilidini paylaşır; ödediği
   // gider kalemlerini korumaz, onlar kayıt anında Çek Portföyü'nün `gider` denetiminden geçer (R36).
   cek: { etiket: "Çek", pencereler: ["src/components/cek/CekPortfoyu.jsx", "src/components/cek/CiroPenceresi.jsx"] },

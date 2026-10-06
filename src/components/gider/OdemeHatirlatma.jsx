@@ -76,14 +76,7 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
             <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.kalemler[0].gunFarki)}</span><span />
           </div>
         ); })()
-          : x.o.tur === "sgk" ? (
-            // Spec 0070 R13, R17: SGK tek kurum satırı; ödeme Giderler'deki borç özetinin "SGK'yı Öde" düğmesindendir.
-            <div key="sgk" data-testid="hatirlatma-sgk" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
-              <b>{x.o.taraf} · {x.o.adet} kalem</b>
-              <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(x.o.odenecek)}</b>
-              <span>{fmtTR(x.o.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(x.o.gunFarki)}</span><span />
-            </div>
-          )
+          // Spec 0074 R20: SGK kalemi normal kalem satırıdır (0070'in toplu kurum satırı kalktı).
           : <KalemSatiri key={x.o.anahtar || x.o.id} o={x.o} bolum={bolum} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} girinti={x.tip === "cocuk"} />)}
       </div>
       <div style={{ background: "var(--surface, #ffffff)" }}><Pagination total={cizim.length} page={page} setPage={setPage} perPage={perPage} /></div>

@@ -20,6 +20,9 @@ import { HataMetni, Ipucu } from "./tasarim";
 // ayda kapatılır (AC-65).
 // Spec 0070 R1, R24: dört bileşen (sıra resmi, SGK, elden, yol parası); normalize kapıları dördünü de sayar.
 export const MALIYET_ALANLARI = ["resmiMaliyet", "sgkMaliyet", "eldenMaliyet", "yolParasiMaliyet"];
+// Spec 0074 R15, R24: SGK ayrı gider türüdür; karttaki SGK yalnız aylık SGK kaleminin önerisidir (hiçbir toplamın parçası değil).
+export const CALISAN_MALIYET_IPUCU = "Dört bileşenin toplamı işverene toplam maliyettir. Personel gider kalemi resmi + elden + yol parasıdır; SGK personel kalemine girmez, aylık SGK kendi gider kalemiyle (SGK türü) ödenir. Maliyet değişince geçmiş ayların kalemleri değişmez.";
+export const CALISAN_SGK_IPUCU = "Kuruma ödenen SGK tutarı. Personel kalemine girmez; aylık SGK kaleminde \"Çalışanların SGK toplamını kullan\" ile önerilir.";
 const maliyetNormalize = (c) => {
   const out = { ...c };
   for (const a of MALIYET_ALANLARI) if (a in c) { const t = tutarCoz(c[a]); out[a] = t.bos || t.gecersiz ? null : t.deger; }
@@ -186,7 +189,8 @@ export const CalisanManager = ({
           </table>
         )}
       </div>
-      {giderYetki && <Ipucu>Gider tutarı = resmi + SGK + elden + yol parası. Maliyet değişince geçmiş ayların kalemleri değişmez; yeni tutar bir sonraki üretimde kullanılır.</Ipucu>}
+      {/* Spec 0074 R15 (Ö-16), C2: toplam işverene toplam maliyettir; SGK personel kalemine girmez, kendi gider kalemiyle ödenir. */}
+      {giderYetki && <div data-testid="calisan-maliyet-ipucu"><Ipucu>{CALISAN_MALIYET_IPUCU}</Ipucu></div>}
 
       {confirmDel && (
         <ConfirmDialog
@@ -221,7 +225,7 @@ export const CalisanManager = ({
             </Field>
             <Field label="SGK">
               <TutarInput ariaLabel="SGK" value={editForm.sgkMaliyet} onChange={v => setEditForm(p => ({ ...p, sgkMaliyet: v }))} />
-              <Ipucu>Kuruma ödenen SGK tutarı. Personel kaleminde ayrı ödeme hedefidir; ayrı gider kalemi açmayın.</Ipucu>
+              <Ipucu>{CALISAN_SGK_IPUCU}</Ipucu>
             </Field>
             <Field label="Elden ödenen">
               <TutarInput ariaLabel="Elden ödenen" value={editForm.eldenMaliyet} onChange={v => setEditForm(p => ({ ...p, eldenMaliyet: v }))} />

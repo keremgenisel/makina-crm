@@ -251,8 +251,11 @@ describe("Spec 0068: çek dışa aktarması gizlilik sınırını aşmaz", () =>
 });
 
 // Spec 0070 R17, R18, C7 (AC-21, AC-22, AC-37, AC-45): SGK kutusu `<!--sgk-->` ile sınırlı; kutunun dışında eski yasaklar
-// aynen, içinde çalışan adı ve kişi bazlı tutar yok. Ayırt edici tutarlar: iki çalışanın SGK'sı 4.111 ve 5.222 (kutuda yalnız
-// toplam 9.333), yol parası 777 kişi bazında hiçbir yerde (toplamların içinde, ör. "₺60.777", geçebilir; "₺777" tek başına geçmez).
+// aynen, içinde çalışan adı ve kişi bazlı tutar yok. Yol parası 777 kişi bazında hiçbir yerde (toplamların içinde, ör.
+// "₺31.777", geçebilir; "₺777" tek başına geçmez).
+// Spec 0074 R23, R31 (AC-44) ile güncellendi: SGK artık kendi davranışlı tek kalemdir (aylık bildirge toplamı 9.333); kutu bu
+// kalemlerden kurulur. Personel kalemine verilen eski `sgkTutar` (4.111, 5.222) yok sayılır ve hiçbir yerde basılmaz. YASAKLI
+// listesi gevşetilmedi.
 describe("Spec 0070: SGK ve yol parası çıktıya kişi bazında girmez", () => {
   const SGK_KUTU = /<!--sgk-->[\s\S]*?<!--\/sgk-->/;
   it("AC-45: dört alan adı yasaklı listede; yazdırma, ortak sunum ve rapor kurucusu bunları okumaz", async () => {
@@ -264,11 +267,12 @@ describe("Spec 0070: SGK ve yol parası çıktıya kişi bazında girmez", () =>
   it("AC-21, AC-22: kutu toplamı basar; kutunun içinde ve dışında çalışan adı ile kişi bazlı SGK / yol parası yok", async () => {
     const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
     const { giderKalemDogrula, turHaritasi } = await import("../src/lib/gider");
-    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }];
+    const turler = [{ id: 3, ad: "Maaşlar", davranis: "personel" }, { id: 5, ad: "SGK", davranis: "sgk" }];
     let n = 70;
     const k = (o) => giderKalemDogrula({ tarih: "2026-09-30", turId: 3, eldenTutar: "", sonOdemeTarihi: "2026-10-05", ...o }, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
     const g = [k({ id: 1, calisanId: 7, calisanAd: "Seyfettin Kırgız", resmiTutar: "31000", sgkTutar: "4111", yolParasi: "777" }),
-      k({ id: 2, calisanId: 8, calisanAd: "Nurhan Elbistan", resmiTutar: "29000", sgkTutar: "5222" })];
+      k({ id: 2, calisanId: 8, calisanAd: "Nurhan Elbistan", resmiTutar: "29000", sgkTutar: "5222" }),
+      k({ id: 3, turId: 5, tutar: "9333", aciklama: "Eylül SGK" })];
     const h = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: g, hareketler: [], turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
     const kutu = (h.match(SGK_KUTU) || [""])[0];
     expect(kutu).toContain("GİDER · SGK");

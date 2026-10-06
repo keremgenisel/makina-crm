@@ -105,7 +105,7 @@ describe.each([
     menu("Ayarlar");
     ayar("Firma", "Firma Çalışanları");
     await waitFor(() => expect(screen.getByText("Hasan Usta")).toBeTruthy());
-    gorunur(screen.queryByText(/Gider tutarı = resmi \+ SGK \+ elden \+ yol parası/)); // spec 0070 R24 ile güncellendi
+    gorunur(screen.queryByText(/Dört bileşenin toplamı işverene toplam maliyettir/)); // spec 0070 R24, 0074 R15 ile güncellendi
     gorunur(screen.queryByLabelText("Resmi işveren maliyeti"));
   });
 

@@ -51,8 +51,8 @@ describe("GiderForm: personel (R5, C19, K14, K29)", () => {
   it("AC-57 / AC-60 / AC-64: SGK notu görünür; KDV ve tedarikçi alanı yok", () => {
     ac();
     tur(3);
-    // Spec 0070 R23 ile güncellendi: not artık SGK'nın kendi kutusuna yazıldığını ve ayrı gider kalemi olmadığını söyler.
-    expect(screen.getByText(/SGK'yı kendi kutusuna yazın/)).toBeTruthy();
+    // Spec 0074 R24 ile güncellendi: not SGK'nın bu kaleme girmediğini, SGK türünde ayrı kalemle girildiğini söyler.
+    expect(screen.getByText(/SGK bu kaleme girmez/)).toBeTruthy();
     expect(screen.queryByLabelText("KDV oranı")).toBeNull();
     expect(screen.queryByText("Tedarikçi")).toBeNull();
   });
