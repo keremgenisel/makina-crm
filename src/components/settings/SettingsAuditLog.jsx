@@ -13,7 +13,7 @@ const ENTITY_LABELS = {
   standart_gider: "Standart Genel Gider",
   uretim_partisi: "Üretim Partisi", // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
   // Kasa (spec 0024)
-  kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
+  kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", kasa_hareketi: "Kasa Hareketi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
 };
 const ACTION_LABELS = {
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",

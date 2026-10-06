@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { uid, fmtTR, fmtCur, today } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
-import { logAction, snapshotOnceki } from "../lib/audit";
-import { tl, turHaritasi, davranisOf } from "../lib/gider";
+import { logAction, snapshotOnceki, hareketDuzenlemeKaydi } from "../lib/audit";
+import { tl, turHaritasi, davranisOf, DAVRANIS } from "../lib/gider";
+import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani } from "../lib/kasa";
+import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi } from "../lib/kasa";
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
@@ -15,7 +16,8 @@ import { useKilitListesi } from "../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi, taksitAdi } from "./gider/GiderAlanlari";
-import { CalisanAvanslari } from "./kasa/CalisanAvanslari";
+import { CalisanAvanslari, AvansFormu } from "./kasa/CalisanAvanslari";
+import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
 import { KALICI_SILME_NOTU } from "../lib/copKutusu";
@@ -84,13 +86,21 @@ const HesapFormu = ({ hesap, hesaplar, hareketVar, onKaydet, onClose }) => {
   );
 };
 
-const VirmanFormu = ({ hesaplar, onKaydet, onClose }) => {
-  const acik = hesaplar.filter(h => !h.kapali);
-  const [form, setForm] = useState({ hesapId: acik[0]?.id ?? "", karsiHesapId: "", tarih: today(), tutar: "", aciklama: "" });
+// Spec 0073 C1, R2 (AC-2): aynı form düzenleme kipinde (`hareket` verilir) açılır; iki hesap da düzenlenir, kimlik korunur.
+const VirmanFormu = ({ hesaplar, onKaydet, onClose, hareket = null }) => {
+  const duzenle = !!hareket;
+  // Düzenlemede hareketin kapalı hesapları da listede görünür (seçili değer boş kalmasın); doğrulama onları reddeder (R27).
+  const acik = hesaplar.filter(h => !h.kapali || (duzenle && [hareket.hesapId, hareket.karsiHesapId].some(id => String(id) === String(h.id))));
+  const [form, setForm] = useState(() => (duzenle
+    ? { hesapId: hareket.hesapId ?? "", karsiHesapId: hareket.karsiHesapId ?? "", tarih: hareket.tarih || "", tutar: hareket.tutar == null ? "" : String(hareket.tutar).replace(".", ","), aciklama: hareket.aciklama || "" }
+    : { hesapId: acik[0]?.id ?? "", karsiHesapId: "", tarih: today(), tutar: "", aciklama: "" }));
   const [hatalar, setHatalar] = useState({});
+  const kapaliHesap = duzenle && hesaplar.some(h => h.kapali && [hareket.hesapId, hareket.karsiHesapId].some(id => String(id) === String(h.id)));
   // Spec 0064 R6, R26 (AC-8, AC-27): yalnız KAYNAK hesap kilitlenir; kimlik formda seçildiği için kilit burada, seçim
-  // değişince yenisi alınır. Hedef hesap kilitlenmez.
-  const { lockConflict: kaynakKilidi, forceAcquire: kaynakKilidiDevral } = useLock("kasa_hesap", form.hesapId === "" || form.hesapId == null ? null : form.hesapId);
+  // değişince yenisi alınır. Hedef hesap kilitlenmez. Spec 0073 R14 (Q7, AC-45): düzenlemede pencere boyunca ESKİ kaynak
+  // hesabın kilidi tutulur; yeni kaynak hesap kayıt anında anlık denetimle sınanır (Kasa.virmanDuzenle).
+  const kilitId = duzenle ? hareket.hesapId : form.hesapId;
+  const { lockConflict: kaynakKilidi, forceAcquire: kaynakKilidiDevral } = useLock("kasa_hesap", kilitId === "" || kilitId == null ? null : kilitId);
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   const cikan = acik.find(h => String(h.id) === String(form.hesapId));
   const girenler = cikan ? secilebilirHesaplar(acik, cikan.paraBirimi).filter(h => String(h.id) !== String(cikan.id)) : [];
@@ -99,12 +109,13 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose }) => {
     if (kaynakKilidi) return;
     const r = virmanDogrula(form, hesaplar);
     if (!r.kayit) { setHatalar(r.hatalar); return; }
-    onKaydet(r.kayit);
+    onKaydet(duzenle ? { ...hareket, ...r.kayit, id: hareket.id } : r.kayit);
   };
   return (
-    <Modal title="Virman" onClose={onClose} wide
-      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!kaynakKilidi}><Icon name="check" size={14} /> Virmanı Kaydet</Btn></div>}>
+    <Modal title={duzenle ? "Virmanı Düzenle" : "Virman"} onClose={onClose} wide
+      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!kaynakKilidi}><Icon name="check" size={14} /> {duzenle ? "Değişiklikleri Kaydet" : "Virmanı Kaydet"}</Btn></div>}>
       {kaynakKilidi && <LockConflict lockedBy={kaynakKilidi.lockedBy} lockedAt={kaynakKilidi.lockedAt} onForce={kaynakKilidiDevral} onCancel={onClose} />}
+      {kapaliHesap && <div style={{ marginBottom: 12 }}><UyariSeridi aile="uyari" testId="kapali-hesap-notu" metin={KAPALI_HESAP_NEDENI} /></div>}
       <div data-testid="virman-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>
           <Field label="Çıkan hesap">
@@ -355,9 +366,75 @@ export const Kasa = ({
   };
   const virmanSil = (m) => {
     if (kilitliMi("kasa_hesap", m.hesapId)) return; // spec 0064 R14: kaynak hesap başkasındaysa silinmez
-    setHesapHareketleri(p => p.filter(x => x.id !== m.id));
+    odemeGirisiYaz({ silinenler: [m.id] }, { setHesapHareketleri, setCekler, uid }); // spec 0073 R20: ortak yazma yolu
     logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar } });
     showToast("Virman silindi.");
+  };
+  // ── Spec 0073: hareketlerin düzenlenmesi ve silinmesi (R1, R2, R10–R15, R20–R22) ──
+  // R13: dört türün bugünkü izni (mahsup ödemeyle aynı); Kasa ekranının kendisi sekme ve önkoşul kapısıdır (App).
+  const hareketYetkisi = (m) => !!setHesapHareketleri && (m.tur === "virman" ? canDo("virman") : m.tur === "avans" ? canDo("avans") : canDo("gider_odeme"));
+  // R14: anlık silmenin kilit alanı (pencerenin aldığı kilitle aynı kayıt).
+  const hareketKilidi = (m) => (m.tur === "virman" ? ["kasa_hesap", m.hesapId] : m.tur === "avans" ? ["calisan", m.calisanId] : ["gider", m.giderId]);
+  const hareketDurumu = (m) => hareketDuzenlemeDurumu(m, { giderVar: (id) => giderById.has(String(id)) });
+  const [duzenlenecek, setDuzenlenecek] = useState(null); // düzenleme penceresi açık hareket
+  const [silinecekHareket, setSilinecekHareket] = useState(null); // onay bekleyen ödeme / avans
+  // R14: ödeme ve mahsup penceresi açıkken kalemin `gider` kilidi (Giderler'in ödeme penceresiyle aynı alan).
+  const duzenKalemi = duzenlenecek && (duzenlenecek.tur === "odeme" || duzenlenecek.tur === "mahsup") ? giderById.get(String(duzenlenecek.giderId)) || null : null;
+  const { lockConflict: odemeKilidi, forceAcquire: odemeKilidiDevral } = useLock("gider", duzenKalemi?.id ?? null);
+  const hareketAdi = (m) => (m.tur === "virman" ? `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`
+    : m.tur === "avans" ? calisanlar.find(c => String(c.id) === String(m.calisanId))?.ad || ""
+      : (() => { const k = giderById.get(String(m.giderId)); return k ? k.aciklama || k.calisanAd || "" : ""; })());
+  // R21: hesabı (virmanda kaynak hesabı) değişen satır seçili listeden çıkar; bildirim nereye gittiğini söyler.
+  const duzenlemeBildirimi = (g, onceki) => {
+    const temel = g.tur === "virman" ? "Virman güncellendi." : g.tur === "avans" ? "Avans güncellendi." : g.tur === "mahsup" ? "Mahsup güncellendi." : "Ödeme güncellendi.";
+    if (String(g.hesapId ?? "") === String(onceki.hesapId ?? "")) return temel;
+    return g.hesapId == null ? `${temel} Hareket hesapsız kaldı.` : `${temel} Hareket “${hesapById.get(String(g.hesapId))?.ad || ""}” hesabına taşındı.`;
+  };
+  const hareketGuncelle = (g, onceki) => {
+    // R14 (Q7, AC-45): virmanın yeni kaynak hesabı başkasının kilidindeyse kayıt reddedilir (eski kaynak pencerede kilitli).
+    if (g.tur === "virman" && String(g.hesapId) !== String(onceki.hesapId) && kilitliMi("kasa_hesap", g.hesapId)) return;
+    odemeGirisiYaz({ guncellenenler: [g] }, { setHesapHareketleri, setCekler, uid });
+    hareketDuzenlemeKaydi({ serverPermissions, guncellenen: g, onceki, ad: hareketAdi(g) });
+    setDuzenlenecek(null);
+    showToast(duzenlemeBildirimi(g, onceki));
+  };
+  // R20: Kasa listesinden silme, bugünkü kapılarla aynı ortak yazma yolu ve aynı işlem geçmişi kaydı.
+  const hareketSil = (m) => {
+    setSilinecekHareket(null);
+    if (!m || !hareketYetkisi(m) || !hareketDurumu(m).silinebilir) return;
+    if (m.tur === "virman") { virmanSil(m); return; }
+    if (kilitliMi(...hareketKilidi(m))) return;
+    if (m.tur === "avans") {
+      const d = avansSilinebilirMi(m, hesapHareketleri, giderler);
+      if (!d.ok) { showToast("Bu avansa mahsup yapılmış; önce mahsupları silin.", "err"); return; }
+    }
+    odemeGirisiYaz({ silinenler: [m.id] }, { setHesapHareketleri, setCekler, uid });
+    const k = m.tur === "avans" ? null : giderById.get(String(m.giderId));
+    if (m.tur === "avans") logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: hareketAdi(m), detail: { tutar: m.tutar } });
+    else if (k) logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: m.tutar ?? null, tarih: m.tarih } });
+    else logAction({ serverPermissions, action: "silindi", entity: "kasa_hareketi", entityId: m.id, entityName: "Silinmiş gider", detail: { tutar: m.tutar ?? null, tarih: m.tarih } });
+    showToast(m.tur === "avans" ? "Avans silindi." : "Ödeme silindi.");
+  };
+  // R1, R10–R12, R22: satırın eylemleri; virman silme bugünkü anlık işlem, ödeme ve avans silme onaylı.
+  const hareketEylemleri = (m) => {
+    if (!m || !hareketYetkisi(m)) return null;
+    const d = hareketDurumu(m);
+    const ad = hareketAdi(m);
+    return (
+      <span style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
+        {!d.duzenlenebilir && d.neden && <span data-testid="hareket-duzenlenemez" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{d.neden}</span>}
+        {d.duzenlenebilir && <Btn small variant="ghost" onClick={() => setDuzenlenecek(m)} title="Düzenle" aria-label={`Hareketi düzenle: ${ad}`}><Icon name="edit" size={12} /></Btn>}
+        {d.silinebilir && (m.tur === "virman"
+          ? <Btn small variant="danger" onClick={() => virmanSil(m)} title="Virmanı sil"><Icon name="trash" size={12} /></Btn>
+          : <Btn small variant="danger" onClick={() => setSilinecekHareket(m)} title="Sil" aria-label={`Hareketi sil: ${ad}`}><Icon name="trash" size={12} /></Btn>)}
+      </span>
+    );
+  };
+  // R11, X8: tahsilat ve verilen çek satırı hareket değildir; kendi ekranını adıyla söyleyen, tıklanamayan ibare.
+  const satirEylemleri = (s) => {
+    if (s.tahsilat) return <span data-testid="hareket-ibaresi" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{tahsilatSatiriIbaresi(s)}</span>;
+    if (s.cek) return <span data-testid="hareket-ibaresi" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{VERILEN_CEK_IBARESI}</span>;
+    return hareketEylemleri(s.hareket);
   };
 
   const bakiyeMetni = (b) => (b.hesap.tur === "kart"
@@ -368,6 +445,8 @@ export const Kasa = ({
   const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px 70px 150px 230px", gap: 10, alignItems: "center" };
   const tIzgara = { display: "grid", gridTemplateColumns: "90px 150px minmax(0, 1.6fr) 120px 200px 130px", gap: 10, alignItems: "center" };
   const oIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px", gap: 10, alignItems: "center" };
+  // Spec 0073 R1 (b): hesapsız ödeme ve avans listesinde düzenle / sil sütunu.
+  const hoIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px 170px", gap: 10, alignItems: "center" };
   const odemeSatirlari = [...(hesapsiz.liste || [])];
   const odemeTutari = (m) => (m.tutar == null ? "Tam kapatma (aktarılan)" : para(m.tutar, "TRY"));
   // Spec 0062 R1, R2, R19, R24, R29, R34: dört liste ayrı sayfa durumu (10). Hareketler en yeni üstte: motor sırasının tam
@@ -389,7 +468,8 @@ export const Kasa = ({
       Listedeki {satirlar.length} kaydı kapsam dışı bırak
     </Btn>
   ) : null);
-  const hIzgara = { display: "grid", gridTemplateColumns: "90px 120px minmax(0, 1.6fr) 120px 120px 130px 40px", gap: 10, alignItems: "center" };
+  // Spec 0073 R1, R11: işlem sütunu düzenle / sil düğmelerine ve tahsilat ibaresine yer açar.
+  const hIzgara = { display: "grid", gridTemplateColumns: "90px 120px minmax(0, 1.6fr) 120px 120px 130px 150px", gap: 10, alignItems: "center" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -466,20 +546,21 @@ export const Kasa = ({
               <div style={{ marginTop: 8 }}>{topluDugme("odeme", [])}</div>
             </div>
           ) : (
-          <div style={{ minWidth: 640 }}>
+          <div style={{ minWidth: 820 }}>
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 14px 0" }}>{topluDugme("odeme", odemeSatirlari)}</div>
-            <div style={{ ...oIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-              <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span />
+            <div style={{ ...hoIzgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+              <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Tutar</span><span /><span />
             </div>
             {odemeSayfasi.paged.map(m => {
               const a = satirAciklamasi({ hareket: m, tur: m.tur });
               return (
-                <div key={m.id} data-testid="hesapsiz-odeme" style={{ ...oIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                <div key={m.id} data-testid="hesapsiz-odeme" style={{ ...hoIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{m.tarih ? fmtTR(m.tarih) : "Tarihsiz"}</span>
                   <span>{a.tur}</span>
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>
                   <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{odemeTutari(m)}</span>
                   <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([m])} aria-label={`Kapsam dışı bırak: ${a.metin}`}>Kapsam dışı bırak</Btn>}</span>
+                  {hareketEylemleri(m) || <span />}
                 </div>
               );
             })}
@@ -591,7 +672,7 @@ export const Kasa = ({
               {seciliBakiye.satirlar.length === 0 ? (
                 <BosDurum testId="bos-hesap-hareketi" baslik="Bu hesapta hareket yok" />
               ) : (
-                <div style={{ minWidth: 760 }}>
+                <div style={{ minWidth: 870 }}>
                   <div style={{ ...hIzgara, padding: "8px 0", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
                     <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Giren</span><span style={{ textAlign: "right" }}>Çıkan</span><span style={{ textAlign: "right" }}>{seciliHesap.tur === "kart" ? "Bakiye (borç −)" : "Bakiye"}</span><span />
                   </div>
@@ -605,7 +686,7 @@ export const Kasa = ({
                         <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--grn700, #15803d)" }}>{s.girenK ? para(tl(s.girenK), seciliHesap.paraBirimi) : ""}</span>
                         <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--red700, #b91c1c)" }}>{s.cikanK ? para(tl(s.cikanK), seciliHesap.paraBirimi) : ""}</span>
                         <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(tl(s.bakiyeK), seciliHesap.paraBirimi)}</b>
-                        <span style={{ textAlign: "right" }}>{s.tur === "virman" && canDo("virman") && setHesapHareketleri && <Btn small variant="danger" onClick={() => virmanSil(s.hareket)} title="Virmanı sil"><Icon name="trash" size={12} /></Btn>}</span>
+                        <span style={{ textAlign: "right" }}>{satirEylemleri(s)}</span>
                       </div>
                     );
                   })}
@@ -631,6 +712,26 @@ export const Kasa = ({
           onKaydet={hesapKaydet} onClose={() => setHesapFormu(null)} />
       )}
       {virmanAcik && <VirmanFormu hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}
+      {/* Spec 0073 C1: düzenleme, o türü ekleyen pencerenin kendisidir (yeni kipi). */}
+      {duzenlenecek?.tur === "virman" && <VirmanFormu hesaplar={kasaHesaplari} hareket={duzenlenecek} onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
+      {duzenlenecek?.tur === "avans" && <AvansFormu calisanlar={calisanlar} hesaplar={kasaHesaplari} hareket={duzenlenecek} hareketler={hesapHareketleri} giderler={giderler}
+        onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
+      {duzenKalemi && odemeKilidi && (
+        <Modal title="Ödemeyi Düzenle" onClose={() => setDuzenlenecek(null)}>
+          <LockConflict lockedBy={odemeKilidi.lockedBy} lockedAt={odemeKilidi.lockedAt} onForce={odemeKilidiDevral} onCancel={() => setDuzenlenecek(null)} />
+        </Modal>
+      )}
+      {duzenKalemi && !odemeKilidi && (
+        <OdemeKayitPenceresi kalem={duzenKalemi} davranis={turMap.get(String(duzenKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(duzenKalemi.turId))?.ad || "Gider"}
+          turMap={turMap} hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun}
+          giderler={giderler} yururlukAy={yururlukAy} cekler={cekler} payments={payments} tedarikciler={tedarikciler}
+          duzenlenen={duzenlenecek} onDuzenle={hareketGuncelle} onKaydet={() => {}} onSil={() => {}} onClose={() => setDuzenlenecek(null)} />
+      )}
+      {silinecekHareket && (
+        <ConfirmDialog title={silinecekHareket.tur === "avans" ? "Avans silinsin mi?" : "Ödeme silinsin mi?"}
+          message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${silinecekHareket.tutar == null ? "tutarsız (aktarılan)" : para(silinecekHareket.tutar, "TRY")} ${silinecekHareket.tur === "avans" ? "avans" : "ödeme"} kalıcı silinecek; ${silinecekHareket.tur === "avans" ? "çalışanın açık avansı" : "kalemin kalanı"} buna göre yeniden hesaplanır.`}
+          confirmLabel="Sil" onConfirm={() => hareketSil(silinecekHareket)} onCancel={() => setSilinecekHareket(null)} />
+      )}
       {tasinacak && tasimaPlani && !hesapKilidi && (
         <HesapSilPenceresi hesap={tasinacak} plan={tasimaPlani} onTasi={tasiVeSil} onHesapsiz={() => tasiVeSil(null)} onClose={() => setTasinacak(null)} />
       )}

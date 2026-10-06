@@ -38,6 +38,9 @@ export const OdemeGirisi = ({
   varsayilanYontem = "", varsayilanHesap = "", odemeYetkisi = true,
   mahsupVar = false, avansK = 0, yolParasiVar = null, hareketler = [], kayitliGoster = true, onSil = null, silinenler = null, onSilGeriAl = null,
   durum = null, bolunmezNotu = false,
+  // Spec 0073 C1: düzenleme kipi aynı editördür (tek satır, tür ve bağ değişmez, çek yöntemi yok, satır eklenmez); notlar
+  // pencereden (göç hareketi, satırsız kalemin hedefi, kapalı hesap). onDuzenle: "Kayıtlı ödemeler" listesinde Düzenle (Q3).
+  duzenleKipi = false, duzenlemeNotlari = [], onDuzenle = null,
 }) => {
   const form = kapsam === "form";
   const anahtarNo = useRef(1);
@@ -103,7 +106,7 @@ export const OdemeGirisi = ({
     const e = satirHata(r);
     const ciro = r.yontem === CIRO_YONTEMI;
     const kendi = r.yontem === KENDI_CEK_YONTEMI;
-    const cekOlur = h.hedef === HEDEF.ANA && ciroYetkisi;
+    const cekOlur = h.hedef === HEDEF.ANA && ciroYetkisi && !duzenleKipi; // spec 0073 R25: düzenlemede çek yöntemi yok
     const secenekler = [...ODEME_SECENEKLERI, ...(cekOlur ? [{ value: CIRO_YONTEMI, label: CIRO_YONTEMI }, { value: KENDI_CEK_YONTEMI, label: KENDI_CEK_YONTEMI }] : [])];
     const cekSatiri = ciro ? cekSatirlari.find(x => String(x.cek.id) === String(r.cekId)) : null;
     // Spec 0057 R8, R19: çek satırı taksit seçmez; tutar hedefin açık taksitlerine en eski vadeden dağıtılır (motor), yani
@@ -268,7 +271,8 @@ export const OdemeGirisi = ({
       {bolunmezNotu && <div data-testid="form-odeme-bolunmez"><Ipucu>{PERSONEL_BOLUNMEZ_NEDENI}</Ipucu></div>}
       {/* Spec 0054 R10, R21: ödenmiş maaş satırı ek ödemeyi içerdiği için ayrılamayan taraf. */}
       {durum?.ekBolunmez && <div data-testid="form-odeme-ek-bolunmez"><Ipucu>{PERSONEL_EK_BOLUNMEZ_NEDENI}</Ipucu></div>}
-      {mahsupVar && odemeYetkisi && (
+      {duzenleKipi && duzenlemeNotlari.map((n, i) => <div key={i} style={{ marginBottom: 8 }}><UyariSeridi aile={n.aile || "bilgi"} testId={n.testId}>{n.metin}</UyariSeridi></div>)}
+      {mahsupVar && odemeYetkisi && !duzenleKipi && (
         <div style={{ marginBottom: 12, maxWidth: 360 }}>
           <Segment ariaLabel="Kayıt türü" kip="dugme" options={[{ value: "odeme", label: "Ödeme" }, { value: "mahsup", label: "Avanstan mahsup" }]} value={giris.kip || "odeme"}
             onChange={kipSec} />
@@ -322,7 +326,7 @@ export const OdemeGirisi = ({
           {hedefler.map(h => (form || hedefler.length > 1 ? hedefCiz(h) : (
             <div key={h.hedef} data-hedef={h.hedef}>
               {h.pasif ? <Ipucu>{h.neden}</Ipucu> : satirlar.filter(r => r.hedef === h.hedef).map((r, i) => satirCiz(h, r, i + 1))}
-              {!h.pasif && h.kalanK > 0 && (
+              {!h.pasif && h.kalanK > 0 && !duzenleKipi && (
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
                   <Btn small variant="ghost" onClick={() => satirEkle(h)} disabled={satirlar.filter(r => r.hedef === h.hedef).length >= COKLU_ODEME_MAX_SATIR}><Icon name="plus" size={12} /> Başka yöntemle satır ekle</Btn>
                   <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
@@ -372,6 +376,8 @@ export const OdemeGirisi = ({
                       </span>
                       <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? (paylar.has(String(h.id)) ? para(paylar.get(String(h.id))) : "Tamamı") : tl2(h.tutar)}</b>
                       <span style={{ textAlign: "right" }}>
+                        {/* Spec 0073 R1 (Q3): ödeme ve mahsup bu listeden de düzenlenir (mahsubun tek düzenleme yolu). */}
+                        {onDuzenle && h.cekId == null && !silinecekMi && <Btn small variant="ghost" onClick={() => onDuzenle(h)} title={h.tur === "mahsup" ? "Mahsubu düzenle" : "Ödemeyi düzenle"} aria-label={h.tur === "mahsup" ? "Mahsubu düzenle" : "Ödemeyi düzenle"}><Icon name="edit" size={12} /></Btn>}
                         {onSil && h.cekId == null && (silinecekMi
                           ? <Btn small variant="ghost" onClick={() => onSilGeriAl?.(h)} title="Silmeyi geri al">Geri al</Btn>
                           : <Btn small variant="danger" onClick={() => (silinenler ? onSil(h) : setSilinecek(h))} title={h.tur === "mahsup" ? "Mahsubu sil" : "Ödemeyi sil"}><Icon name="trash" size={12} /></Btn>)}
@@ -396,6 +402,17 @@ export const OdemeGirisi = ({
       {govde}
     </KartBolum>
   );
+};
+
+// Spec 0073: düzenlenen hareketin girişi (tek satır; satırlı kalemde taksidin hedefi ve sırası, satırsızda pencerenin ilk hedefi).
+// Göç hareketinin tutarı boş gelir (R12). kalem: hareket hariç zenginleştirilmiş kalem.
+export const duzenlemeGirisi = (h, kalem, hedefler) => {
+  const t = h.taksitId != null ? (kalem?.taksitler || []).find(x => String(x.id) === String(h.taksitId)) : null;
+  const hedef = t?.hedef || hedefler[0]?.hedef || HEDEF.ANA;
+  const tutar = h.tamKapatir ? "" : tutarMetni(h.tutar);
+  return { tarih: h.tarih || "", kip: h.tur === "mahsup" ? "mahsup" : "odeme",
+    satirlar: [{ anahtar: "s0", hedef, sira: t?.sira ?? null, tutar, yontem: h.yontem || "", hesapId: h.hesapId ?? "", aciklama: h.aciklama || "" }],
+    mahsup: { hedef, sira: t?.sira ?? null, tutar, aciklama: h.aciklama || "" }, alacakliAd: "", _kalemId: kalem?.id ?? null };
 };
 
 // Pencerenin ilk girişi: hedef verildiyse o hedefe, yoksa ilk açık hedefe tam kalanla bir satır (0024 R17: tutar = kalan).

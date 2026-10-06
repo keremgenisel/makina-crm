@@ -54,3 +54,12 @@ export const snapshotOnceki = (kayit) => {
     return JSON.parse(json);
   } catch { return undefined; }
 };
+
+// Spec 0073 R15, C7 (B-4): kasa hareketi düzenlemesinin işlem geçmişi kaydı, önceki değerlerle. Ödeme ve mahsup yeni
+// `kasa_hareketi` entity'sinde ("odeme" müşteri tahsilatı demektir ve geri al haritasında payments ile eşleşir), virman ve
+// avans bugünkü entity'lerinde. Üçü de geriAl haritasında YOKTUR (geri al düğmesi çıkmaz, X9). Ad, bugünkü ekleme/silme
+// kayıtlarıyla aynı alanlardan gelir (çağıran verir).
+export const HAREKET_ENTITY = { odeme: "kasa_hareketi", mahsup: "kasa_hareketi", virman: "virman", avans: "avans" };
+export const hareketDuzenlemeKaydi = ({ serverPermissions, guncellenen, onceki, ad = "" }) =>
+  logAction({ serverPermissions, action: "duzenlendi", entity: HAREKET_ENTITY[guncellenen?.tur] || "kasa_hareketi", entityId: guncellenen?.id, entityName: ad,
+    detail: { onceki: snapshotOnceki(onceki), tutar: guncellenen?.tutar ?? null, tarih: guncellenen?.tarih ?? null } });

@@ -6,7 +6,7 @@
 import { cokluOdemeDogrula, mahsupDogrula, COKLU_ODEME_MAX_SATIR } from "./kasa";
 import { ciroAdaylari, ciroPlani, ciroVarsayilanDagitim, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
 import { parseMoney } from "./utils";
-import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, personelEkBolunmezMi, kalemPersonelAyrimi, odemeHedefKalaniK, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
+import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, personelEkBolunmezMi, kalemPersonelAyrimi, odemeHedefKalaniK, odemeleriUygula, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
 // Spec 0057 R7, R9, R20: taksitli hedef yalnız bu düzenlemede taksit sayısı değiştiyse pasiftir (satırlar kayıtta yeniden
 // kurulur); tek neden metni. 0046'nın "bütün ödemeler taksitli" notu ve 0053'ün TAKSIT_PLANI_DEGISTI_NEDENI'si kalktı.
@@ -163,11 +163,13 @@ export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId 
 export const odemeGirisiHazirla = (kalem, {
   turMap, tarih, kip = "odeme", satirlar = [], mahsup = null, hesaplar = [], cekler = [], payments = [], hareketler = [], giderler = [],
   bugun = null, yururlukAy = null, alacakliAd = "", yeniCekId = "__yeni_cek__", bosAtla = false, hedefAdi = (h) => h,
+  duzenlenen = null,
 } = {}) => {
   const hatalar = { satirlar: {}, hedefler: [], genel: [], mahsup: {} };
   const bos = { hatalar, hareketler: [], cek: null, uyari: null };
   const hataVar = () => hatalar.genel.length || hatalar.hedefler.length || Object.keys(hatalar.satirlar).length || Object.keys(hatalar.mahsup).length;
   if (!kalem) return { ...bos, hatalar: { ...hatalar, genel: ["Ödenecek kalem bulunamadı."] }, hareketler: null };
+  if (kip === "duzenle") return hareketDuzenlemeHazirla(kalem, { turMap, tarih, satirlar, mahsup, hesaplar, hareketler, giderler, bugun, yururlukAy, hedefAdi, duzenlenen });
   // R27: mahsup tek satırlık kip.
   if (kip === "mahsup") {
     if (!mahsup) return bos;
@@ -253,16 +255,69 @@ export const odemeGirisiHazirla = (kalem, {
   return hataVar() ? { hatalar, hareketler: null, cek: null, uyari } : { hatalar, hareketler: [...hareketlerN, ...hareketlerC], cek, uyari };
 };
 
+// ── Spec 0073: var olan hareketin düzenlenmesi (C1 tek editör, C2 tek doğrulama) ───────────────────────────────────
+export const GOC_DUZENLEME_NOTU = "Bu hareket eski ödeme işaretinden üretildi ve tutarsızdır; tutar girince normal ödeme olur.";
+export const GOC_TUTAR_HATASI = "Tutar girilmedi; eski ödeme işaretinden üretilen hareket ancak tutar girilerek düzenlenir.";
+export const CEK_YONTEMI_DUZENLEME_HATASI = "Çekli yöntem düzenlemede seçilemez; çekle ödemek için hareketi silip çekle yeniden girin.";
+// R7, R8 (B-5): "bu hareket hariç" kuralı çağırana aittir ve burada kurulur: kalem, hareketler eksi düzenlenen hareketle
+// YENİDEN zenginleştirilir (ödeme kolu kalanı _odenen'den okur), mahsup koluna aynı küme doğrudan geçer. Doğrulayıcıların
+// imzası değişmez. Dönüş { hatalar, hareketler: null, guncellenen } (yeni hareket doğmaz, C5).
+const hareketDuzenlemeHazirla = (kalem, { turMap, tarih, satirlar = [], mahsup = null, hesaplar = [], hareketler = [], giderler = [], bugun = null,
+  yururlukAy = null, hedefAdi = (h) => h, duzenlenen = null }) => {
+  const hatalar = { satirlar: {}, hedefler: [], genel: [], mahsup: {} };
+  const sonuc = (guncellenen) => ({ hatalar, hareketler: null, cek: null, uyari: null, guncellenen });
+  if (!duzenlenen) { hatalar.genel.push("Düzenlenecek hareket bulunamadı."); return sonuc(null); }
+  if (duzenlenen.cekId != null) { hatalar.genel.push("Çeke bağlı hareket düzenlenemez."); return sonuc(null); }
+  const haric = (hareketler || []).filter(h => String(h.id) !== String(duzenlenen.id));
+  const zengin = odemeleriUygula([kalem], haric, turMap)[0];
+  if (duzenlenen.tur === "mahsup") {
+    const m = mahsup || {};
+    const r = mahsupDogrula({ tarih, tutar: m.tutar, aciklama: m.aciklama, taksitId: satirTaksitId(zengin, m.hedef || HEDEF.ANA, m.sira) },
+      { kalem: zengin, turMap, hareketler: haric, giderler, bugun, yururlukAy });
+    if (!r.kayit) { hatalar.mahsup = r.hatalar; return sonuc(null); }
+    return sonuc({ ...duzenlenen, ...r.kayit, id: duzenlenen.id });
+  }
+  const sat = satirlar[0] || {};
+  if (!tarih) hatalar.genel.push("Ödeme tarihi girilmedi.");
+  if (CEK_YONTEMLERI.has(sat.yontem)) { hatalar.satirlar[sat.anahtar] = { yontem: CEK_YONTEMI_DUZENLEME_HATASI }; return sonuc(null); }
+  // R12: göç hareketi tutar girilerek normale döner; boş tutarla kaydedilemez.
+  if (duzenlenen.tamKapatir && bosMu(sat.tutar)) { hatalar.satirlar[sat.anahtar] = { tutar: GOC_TUTAR_HATASI }; return sonuc(null); }
+  const hedef = sat.hedef || HEDEF.ANA;
+  const taksitId = satirliMi(zengin) ? satirTaksitId(zengin, hedef, sat.sira) : null;
+  const yerAdi = (id) => {
+    const l = satirliMi(zengin) ? zengin.taksitler.filter(x => (x.hedef || HEDEF.ANA) === hedef) : [];
+    const t = l.find(x => String(x.id) === String(id));
+    return `${hedefAdi(hedef)}${t && l.length > 1 ? ` ${t.sira}/${l.length}. taksit` : ""}`;
+  };
+  const v = cokluOdemeDogrula({ tarih: tarih || "2000-01-01", satirlar: [{ taksitId, tutar: bosMu(sat.tutar) ? "0" : sat.tutar, yontem: sat.yontem || "", hesapId: sat.hesapId ?? "", aciklama: sat.aciklama || "" }] },
+    { kalem: zengin, turMap, hesaplar, hedefAdi: yerAdi });
+  if (!v.kayitlar) {
+    if (v.hatalar.satirlar?.[0]) hatalar.satirlar[sat.anahtar] = v.hatalar.satirlar[0];
+    hatalar.hedefler.push(...(v.hatalar.hedefler || []));
+    if (v.hatalar.genel) hatalar.genel.push(v.hatalar.genel);
+    return sonuc(null);
+  }
+  if (hatalar.genel.length) return sonuc(null);
+  // R5, R12, AC-36: kimlik, tür, bağ (gider kalemi), kaynak ve gocKaynak izi korunur; tamKapatir düşer.
+  const k = v.kayitlar[0];
+  return sonuc({ ...duzenlenen, tarih, tutar: k.tutar, yontem: k.yontem, hesapId: k.hesapId, taksitId: k.taksitId, aciklama: k.aciklama, tamKapatir: false, id: duzenlenen.id });
+};
+
 // Ciro satırının salt okunur tutarı (0046 Q5, 0053 Q3): çek tutarı ile (hedef kalanı − aynı hedefteki diğer satırlar)
 // arasındaki küçük değer.
 export const ciroTutariK = (cekSatiri, kalanK) => (cekSatiri ? Math.max(0, Math.min(cekSatiri.tutarK, kalanK)) : 0);
 
 // Plan Q8: form ve pencere sonucunu tek yerde yazar (C3: hareketler ve çek aynı işleyicide). silinenler: yazılmadan
 // önce düşülecek kayıtlı hareket kimlikleri (formda silme Kaydet'e kadar bekler, Q4). Dönüş yazılan hareketler.
-export const odemeGirisiYaz = ({ hareketler = [], cek = null, silinenler = [] }, { setHesapHareketleri, setCekler, uid }) => {
+// Spec 0073 R5, R20 (Q8): bütün hareket yazımlarının TEK kapısı. guncellenenler: kimliği korunarak yerinde değişen hareketler
+// (düzenleme); ödeme ve mahsup penceresi, avans ve virman pencereleri, Kasa listeleri ve çalışan ekstresi buradan yazar.
+export const odemeGirisiYaz = ({ hareketler = [], cek = null, silinenler = [], guncellenenler = [] }, { setHesapHareketleri, setCekler, uid }) => {
   const yeni = hareketler.map(h => ({ ...h, id: uid() }));
   const sil = new Set(silinenler.map(String));
-  if (yeni.length || sil.size) setHesapHareketleri(p => [...(p || []).filter(h => !sil.has(String(h.id))), ...yeni]);
+  const gun = new Map(guncellenenler.map(h => [String(h.id), h]));
+  if (yeni.length || sil.size || gun.size) {
+    setHesapHareketleri(p => [...(p || []).filter(h => !sil.has(String(h.id))).map(h => gun.get(String(h.id)) || h), ...yeni]);
+  }
   if (cek && setCekler) setCekler(p => (cek.yon === "verilen" ? [...(p || []), cek] : (p || []).map(c => (c.id === cek.id ? cek : c))));
   return yeni;
 };

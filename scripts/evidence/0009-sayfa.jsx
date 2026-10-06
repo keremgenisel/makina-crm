@@ -745,6 +745,12 @@ const EKRANLAR = {
   "kasa-0058-listeler": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:Listeyi göster", "kaydir:Kapsam dışı bırakmak"]],
   "kasa-0058-kapsam-disi": [<KasaKapsamEkrani k0={KAPSAM_K0} />, ["dugme:Göster", "kaydir:Kapsam dışı bırakılanlar"]],
   "kasa-0058-toplu-onay": [<KasaKapsamEkrani />, ["dugme:Ödemeleri göster", "dugme:kaydı kapsam dışı bırak"]], // spec 0062 R17: etiket "Listedeki"; adım iki metinde de bulur
+  // Spec 0073: hareketlerin düzenlenmesi (ödeme, virman, avans, göç hareketi; hesapsız liste işlem sütunu).
+  "kasa-0073-odeme-duzenle": [kasaEkrani(), ["etiket:Hareketi düzenle: Eylül elektrik"]],
+  "kasa-0073-virman-duzenle": [kasaEkrani(), ["etiket:Hareketi düzenle: Ziraat Bankası → Merkez Kasa"]],
+  "kasa-0073-avans-duzenle": [kasaB(), ["~Merkez Kasa", "etiket:Hareketi düzenle: Hasan Çelik"]],
+  "kasa-0073-hesapsiz-liste": [kasaB(), ["dugme:Ödemeleri göster", "kaydir:Hesabı belirtilmemiş ödemeler"]],
+  "kasa-0073-goc-duzenle": [kasaEkrani(), ["dugme:Ödemeleri göster", "etiket:Hareketi düzenle: Sac levha"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],

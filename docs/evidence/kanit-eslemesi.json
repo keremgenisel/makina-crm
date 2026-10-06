@@ -2720,6 +2720,96 @@
         "rapor": "docs/evidence/0062-piksel-raporu.json",
         "ekran": "kasa-hesapsiz-tahsilatlar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-hesaplar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-hesap-hareketleri-kart",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-tahsilat-hareketleri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-hareket-hedef",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0062-hareketler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0062-hareketler-sayfa2",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0062-hesapsiz-odemeler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0062-hesapsiz-odemeler-sayfa2",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0058-listeler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0058-toplu-onay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-odeme-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-virman-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-avans-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-hesapsiz-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-goc-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -2822,6 +2912,54 @@
         "rapor": "docs/evidence/0054-taban-piksel-raporu.json",
         "ekran": "giderler-mahsup",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit-taksit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-0054-ek-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-0053-cek",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-odeme-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-goc-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
       }
     ],
     "src/components/kasa/CalisanAvanslari.jsx": [
@@ -2879,6 +3017,12 @@
         "rapor": "docs/evidence/0064-piksel-raporu.json",
         "ekran": "kasa-calisan-avanslari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-avans-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
       }
     ],
     "src/components/gider/EkstrePenceresi.jsx": [
@@ -3259,6 +3403,54 @@
         "rapor": "docs/evidence/0060-piksel-raporu.json",
         "ekran": "gider-formu-0053-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-kayit-taksit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-0054-ek-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-odeme-0053-cek",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-dugmesi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "giderler-kendi-cek-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-odeme-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0073-piksel-raporu.json",
+        "ekran": "kasa-0073-goc-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-06 · spec 0073 DoD"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [

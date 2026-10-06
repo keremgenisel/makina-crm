@@ -62,6 +62,9 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null } =
       if (!existing) { adds[key].push(rec); continue; }
       if (JSON.stringify(existing) === JSON.stringify(rec)) continue;
       if (key === "partStockLog" && hareketOzu(existing) === hareketOzu(rec)) continue;
+      // Spec 0073 triyaj (bulgu 1): kasa hareketi düzenlenebilir; aynı kimlikli kayıt bu oturumda üretilmiş olsa da yeni kimlikle
+      // eklenmez (aynı ödeme iki kez yazılıp bakiye iki kez düşerdi). Düzenleme R24'teki gibi sunucu kopyasına yenilir.
+      if (key === "hesapHareketleri") continue;
       if (!wasMintedHere(rec.id)) continue;
       const nid = uid();
       maps[key].set(rec.id, nid);

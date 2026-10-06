@@ -3,7 +3,7 @@ import { uid, fmtTR, withDeleted } from "../lib/utils";
 import { useBugun } from "../hooks/useBugun";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { makeCanDo } from "../lib/permissions";
-import { logAction, snapshotOnceki } from "../lib/audit";
+import { logAction, snapshotOnceki, hareketDuzenlemeKaydi } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
   ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
@@ -213,6 +213,13 @@ export const Giderler = ({
   const kilitKalemId = odemeHedefi?.kalemId ?? form?.kalemId ?? planKalemId ?? silinecek?.id ?? null;
   const { lockConflict: giderKilidi, forceAcquire: giderKilidiDevral } = useLock("gider", kilitKalemId);
   const kilitKapat = () => { setOdemeHedefi(null); setForm(null); setPlanKalemId(null); setSilinecek(null); };
+  // Spec 0073 R5, R20: düzenleme ortak yazma kapısından (kimlik korunur) ve işlem geçmişine önceki değerle.
+  const odemeDuzenle = (k) => (guncellenen, onceki) => {
+    odemeGirisiYaz({ guncellenenler: [guncellenen] }, { setHesapHareketleri, setCekler, uid });
+    hareketDuzenlemeKaydi({ serverPermissions, guncellenen, onceki, ad: k.aciklama || k.calisanAd || "" });
+    setOdemeHedefi(null);
+    showToast(guncellenen.tur === "mahsup" ? "Mahsup güncellendi." : "Ödeme güncellendi.");
+  };
   const odemeKaydet = (sonuc) => {
     const yazilan = odemeleriYaz(odemeKalemi, sonuc);
     showToast(yazilan[0]?.tur === "mahsup" ? "Avans mahsup edildi." : sonuc.cek ? (sonuc.cek.yon === "verilen" ? "Çek yazıldı; borç kapandı." : "Çek ciro edildi.") : yazilan.length > 1 ? `${yazilan.length} ödeme kaydedildi.` : "Ödeme kaydedildi.");
@@ -220,7 +227,7 @@ export const Giderler = ({
   };
   const odemeSil = (h) => {
     const k = odemeKalemi;
-    setHesapHareketleri?.(p => p.filter(x => x.id !== h.id));
+    if (setHesapHareketleri) odemeGirisiYaz({ silinenler: [h.id] }, { setHesapHareketleri, setCekler, uid }); // spec 0073 R20
     logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih } });
     showToast("Ödeme silindi.");
   };
@@ -409,6 +416,7 @@ export const Giderler = ({
         <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
           odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
+          onDuzenle={odemeDuzenle(odemeKalemi)}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler} tedarikciler={tedarikciler} />
       )}
       {sgkOdemeAcik && (

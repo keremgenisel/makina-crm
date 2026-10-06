@@ -125,10 +125,11 @@ describe("Spec 0058: rapor ve merge (R7, R14, R15, AC-9, AC-22, AC-23)", () => {
     const benim = { services: [sv(sid, "2026-05-05")], hesapHareketleri: [od(hid, "2026-05-10", { tutar: 999 })],
       kasaKapsamDisi: [giris("tahsilat", "servis", 11, 801), giris("hareket", null, hid, gid1), giris("tahsilat", "servis", sid, gid2)] };
     const plan = buildMergePlan(benim, sunucu);
-    const yeniH = plan.adds.hesapHareketleri.find(h => h.tutar === 999).id;
+    // Spec 0073 triyaj (bulgu 1) ile güncellendi: aynı kimlikli hareket artık yeni kimlikle eklenmez (çift ödeme doğardı);
+    // düzenleme sunucu kopyasına yenilir ve hareketin kapsam dışı girişi aynı kimliği izler. Servis (başka bölüm) bugünkü gibi.
+    expect(plan.adds.hesapHareketleri).toEqual([]);
     const yeniS = plan.adds.services[0].id;
-    expect(yeniH).not.toBe(hid);
     expect(yeniS).not.toBe(sid);
-    expect(plan.adds.kasaKapsamDisi.map(g => [g.tur, g.kayitId])).toEqual([["hareket", yeniH], ["tahsilat", yeniS]]); // 801 sunucuda zaten var
+    expect(plan.adds.kasaKapsamDisi.map(g => [g.tur, g.kayitId])).toEqual([["hareket", hid], ["tahsilat", yeniS]]); // 801 sunucuda zaten var
   });
 });

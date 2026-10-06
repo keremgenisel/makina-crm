@@ -58,7 +58,8 @@ describe("Spec 0062: Kasa hesap hareketleri (R1, R18, R19, R34)", () => {
     const ozet = hesapSatiri("Akbank").textContent;
     expect(ozet).toMatch(/9\.100/);
     sonraki(hareketKabi());
-    const ilk = hareketSatirlari()[0].textContent;
+    // Spec 0073 ile güncellendi: satırın son sütunu işlem sütunu (tahsilat ibaresi); bakiye onun önündeki <b> hücresindedir.
+    const ilk = hareketSatirlari()[0].querySelector("b").textContent;
     // Sayfa 1'in son satırı 04/09 (motorda indeks 3); bir önceki hareket 03/09 (indeks 2), bakiyesi 600.
     expect(motor[2].bakiyeK).toBe(60000);
     expect(ilk).toMatch(/600,00$|600$/);

@@ -546,6 +546,34 @@ export const avansSilinebilirMi = (avans, hareketler = [], giderler = []) => {
   return { ok: eksikK <= 0, eksikK: Math.max(0, eksikK), mahsuplar };
 };
 
+// Spec 0073 R6, R28 (Q6): avans düzenlemesinin tutar sınırı, silme kuralının tutar duyarlı karşılığı. Yeni tutarla çalışanın
+// avans toplamı mahsup toplamının altına düşemez (silme, yeni tutarın sıfır olduğu özel durumdur; aynı kapsam).
+// Dönüş: { ok, eksikK, enAzK, mahsupK }.
+export const avansDuzenlenebilirMi = (avans, yeniTutar, hareketler = [], giderler = []) => {
+  const b = avansBorclari(hareketler, giderler).get(String(avans?.calisanId)) || { verilenK: 0, mahsupK: 0 };
+  const digerK = b.verilenK - kurus(avans?.tutar);
+  const enAzK = Math.max(0, b.mahsupK - digerK);
+  const eksikK = enAzK - kurus(yeniTutar);
+  return { ok: eksikK <= 0, eksikK: Math.max(0, eksikK), enAzK, mahsupK: b.mahsupK };
+};
+export const avansEnAzMetni = (d) => `Bu avans en az ${paraMetni(d.enAzK)} ₺ olmalı; ${paraMetni(d.mahsupK)} ₺ tutarında mahsup edilmiş.`;
+
+// Spec 0073 R10, R12, R22, R27: bir hareketin düzenleme ve silme durumu (tek kural; listeler ve pencere bunu okur).
+// giderVar: ödeme/mahsup hareketinin kalemi canlı ya da çöpte duruyor mu (kalıcı silinmişse düzenlenemez, silinebilir).
+export const CEK_HAREKETI_NEDENI = "Çeke bağlı hareket buradan değiştirilemez; çek işleminden (ciro iptali, çek iptali) değiştirin.";
+export const SILINMIS_KALEM_NEDENI = "Kalemi kalıcı silinmiş ödeme düzenlenemez, yalnız silinebilir (kalan hesaplanamaz).";
+export const KAPALI_HESAP_NEDENI = "Hesap kapalı; düzeltmek için hesabı geçici olarak açın.";
+// R11, X8: hareket olmayan satırların (tahsilat, verilen çek) kendi ekranı; ibare tıklanabilir değildir. Makina tahsilatı,
+// servis ve Extra Kalıp müşteri detayında, yedek parça Stok'ta.
+export const tahsilatSatiriIbaresi = (satir) => (satir?.kaynak === SATIS_KAYNAK.YEDEK ? "Stok › Yedek Parça Satışı'ndan değiştirilir" : "Müşteri detayından değiştirilir");
+export const VERILEN_CEK_IBARESI = "Kasa › Çek Portföyü'nden değiştirilir";
+export const hareketDuzenlemeDurumu = (m, { giderVar = () => true } = {}) => {
+  if (!m) return { duzenlenebilir: false, silinebilir: false, neden: null };
+  if (m.cekId != null) return { duzenlenebilir: false, silinebilir: false, neden: CEK_HAREKETI_NEDENI };
+  if ((m.tur === "odeme" || m.tur === "mahsup") && !giderVar(m.giderId)) return { duzenlenebilir: false, silinebilir: true, neden: SILINMIS_KALEM_NEDENI };
+  return { duzenlenebilir: true, silinebilir: true, neden: null, goc: !!m.tamKapatir };
+};
+
 // R9, B4: avans bir çalışana verilir; hesap isteğe bağlı (verilirse açık ve TL). Gider üretmez (R11, C3).
 export const avansDogrula = (form, { calisanlar = [], hesaplar = [] } = {}) => {
   const hatalar = {};

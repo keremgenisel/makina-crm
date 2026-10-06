@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { uid, today, fmtTR } from "../../lib/utils";
 import { tl } from "../../lib/gider";
-import { avansDogrula, avansBorclari, avansSilinebilirMi, calisanEkstresi, secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
-import { logAction } from "../../lib/audit";
+import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, secilebilirHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
+import { odemeGirisiYaz } from "../../lib/formOdemesi";
+import { logAction, hareketDuzenlemeKaydi } from "../../lib/audit";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
-import { KartBolum, BosDurum, HataMetni, Ipucu } from "../tasarim";
+import { KartBolum, BosDurum, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { TutarInput, tl2, ODEME_SECENEKLERI } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
 import { EkstrePenceresi } from "../gider/EkstrePenceresi";
@@ -15,10 +16,17 @@ import { EkstrePenceresi } from "../gider/EkstrePenceresi";
 // Kasa › Çalışan avansları (spec 0024 B; R9, R11, R13, C8, B4, B8, B11). Avans bir hesaptan (isteğe bağlı) çıkan ve
 // çalışandan alacağa geçen harekettir; gider değildir. Mahsup personel kaleminin ödeme penceresinden girilir. Silinmiş
 // çalışanın hareketleri durur, "silinmiş" rozetiyle görünür. Avans verme ve silme `avans` izni ister.
-const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
+// Spec 0073 C1, R2, R4, R6, R28: aynı form düzenleme kipinde (`hareket` verilir) açılır; çalışan değişmez, kayıt kimliği korunur.
+// Tutar sınırı avansDuzenlenebilirMi (yeni tutarla avans toplamı mahsupların altına düşemez); hareketler/giderler bunun içindir.
+const hamTutar = (t) => (t == null || t === "" ? "" : String(t).replace(".", ","));
+export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = null, hareketler = [], giderler = [] }) => {
+  const duzenle = !!hareket;
   const canli = calisanlar.filter(c => !c.deletedAt);
   const uygun = secilebilirHesaplar(hesaplar, "TRY");
-  const [form, setForm] = useState({ calisanId: "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" });
+  const [form, setForm] = useState(() => (duzenle
+    ? { calisanId: hareket.calisanId, tarih: hareket.tarih || "", tutar: hamTutar(hareket.tutar), hesapId: hareket.hesapId ?? "", yontem: hareket.yontem || "", aciklama: hareket.aciklama || "" }
+    : { calisanId: "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" }));
+  const kapaliHesap = duzenle && hareket.hesapId != null && hesaplar.find(h => String(h.id) === String(hareket.hesapId))?.kapali;
   const [hatalar, setHatalar] = useState({});
   const set = (p) => setForm(f => ({ ...f, ...p }));
   // Spec 0064 R5, C7 (AC-25, AC-37): kilit SEÇİLEN çalışana bağlanır; seçim değişince eskisi bırakılır, yenisi alınır.
@@ -27,18 +35,31 @@ const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
   const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = useLock("calisan", form.calisanId === "" || form.calisanId == null ? null : form.calisanId);
   const kaydet = () => {
     if (calisanKilidi) return;
-    const r = avansDogrula(form, { calisanlar, hesaplar });
+    // Spec 0073 triyaj (bulgu 3): düzenlemede çalışan değişmez; silinmiş çalışanın duran avansı da düzeltilebilsin diye
+    // silinmişlik denetimi o çalışan için atlanır (avansDogrula'nın imzası aynı; yeni avans kuralı değişmedi).
+    const dogrulamaCalisanlari = duzenle
+      ? [...calisanlar.filter(c => String(c.id) !== String(hareket.calisanId)), { ...(calisanlar.find(c => String(c.id) === String(hareket.calisanId)) || { id: hareket.calisanId }), deletedAt: null }]
+      : calisanlar;
+    const r = avansDogrula(form, { calisanlar: dogrulamaCalisanlari, hesaplar });
     if (!r.kayit) { setHatalar(r.hatalar); return; }
+    if (duzenle) {
+      const d = avansDuzenlenebilirMi(hareket, r.kayit.tutar, hareketler, giderler);
+      if (!d.ok) { setHatalar({ tutar: avansEnAzMetni(d) }); return; }
+      onKaydet({ ...hareket, ...r.kayit, id: hareket.id, calisanId: hareket.calisanId });
+      return;
+    }
     onKaydet(r.kayit);
   };
   return (
-    <Modal title="Avans Ver" onClose={onClose} wide
-      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!calisanKilidi}><Icon name="check" size={14} /> Avansı Kaydet</Btn></div>}>
+    <Modal title={duzenle ? "Avansı Düzenle" : "Avans Ver"} onClose={onClose} wide
+      footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!calisanKilidi}><Icon name="check" size={14} /> {duzenle ? "Değişiklikleri Kaydet" : "Avansı Kaydet"}</Btn></div>}>
       {calisanKilidi && <LockConflict lockedBy={calisanKilidi.lockedBy} lockedAt={calisanKilidi.lockedAt} onForce={calisanKilidiDevral} onCancel={onClose} />}
+      {kapaliHesap && <div style={{ marginBottom: 12 }}><UyariSeridi aile="uyari" testId="kapali-hesap-notu" metin={KAPALI_HESAP_NEDENI} /></div>}
       <div data-testid="avans-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>
           <Field label="Çalışan">
-            <Select value={form.calisanId} onChange={e => set({ calisanId: canli.find(c => String(c.id) === e.target.value)?.id ?? "" })}>
+            <Select value={form.calisanId} disabled={duzenle} onChange={e => set({ calisanId: canli.find(c => String(c.id) === e.target.value)?.id ?? "" })}>
+              {duzenle && !canli.some(c => String(c.id) === String(form.calisanId)) && <option value={form.calisanId}>{calisanlar.find(c => String(c.id) === String(form.calisanId))?.ad || "Silinmiş çalışan"}</option>}
               <option value="">Çalışan seçin</option>
               {canli.map(c => <option key={c.id} value={c.id}>{c.ad}</option>)}
             </Select>
@@ -71,7 +92,7 @@ const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose }) => {
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <Field label="Açıklama"><Input value={form.aciklama} onChange={e => set({ aciklama: e.target.value })} placeholder="İsteğe bağlı" /></Field>
-          <Ipucu>Avans gider değildir; maaş kalemi doğduğunda o kalemin ödeme penceresinden mahsup edilir.</Ipucu>
+          <Ipucu>{duzenle ? "Çalışan değiştirilemez; başka çalışana verilmişse avansı silip yeniden girin." : "Avans gider değildir; maaş kalemi doğduğunda o kalemin ödeme penceresinden mahsup edilir."}</Ipucu>
         </div>
       </div>
     </Modal>
@@ -105,7 +126,7 @@ export const CalisanAvanslari = ({
     const m = silinecek;
     const kilit = baskasiKilitli("calisan", m.calisanId);
     if (kilit) { setSilinecek(null); showToast(kilitRedMesaji(kilit), "err"); return; }
-    setHesapHareketleri(p => p.filter(x => x.id !== m.id));
+    odemeGirisiYaz({ silinenler: [m.id] }, { setHesapHareketleri });
     logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: calisanById.get(String(m.calisanId))?.ad || "", detail: { tutar: m.tutar } });
     setSilinecek(null);
     showToast("Avans silindi.");
