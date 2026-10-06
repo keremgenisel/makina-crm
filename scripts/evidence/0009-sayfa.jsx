@@ -854,6 +854,20 @@ const EKRANLAR = {
   "arama-gider-vade": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=10.06.2026`]],
   "arama-kasasiz": [aramaEkrani({ kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=Yıldız`]],
   "arama-gidersiz": [aramaEkrani({ giderYetki: false, kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=zzzz`]],
+  // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.
+  "gider-formu-0071-kdv-dahil": [<GiderForm kalem={{ id: 901, tarih: "2026-09-15", turId: 4, tutar: 983.33, kdvOrani: 20, kdvYonu: "dahil", tedarikciId: 12, aciklama: "Eylül elektrik faturası" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "gider-formu-0071-yuvarlama": [<GiderForm kalem={{ tarih: "2026-09-15", turId: 4, kdvOrani: 20, tedarikciId: 12, aciklama: "Küçük fatura" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["KDV dâhil", "doldur:Tutar=0,03"]],
+  "gider-formu-0071-kira-dahil": [<GiderForm kalem={{ id: 902, tarih: "2026-09-01", turId: 1, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 20, kdvYonu: "dahil", tedarikciId: 11, aciklama: "Eylül kira" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "gider-formu-0071-kira-net": [<GiderForm kalem={{ id: 903, tarih: "2026-09-01", turId: 1, girisYonu: "net", tutar: 20000, netTutar: 16000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Eylül kira" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "gider-formu-0071-sifir": [<GiderForm kalem={{ id: 904, tarih: "2026-09-01", turId: 4, tutar: 0, kdvOrani: 20, tedarikciId: 12, aciklama: "Eylül su", tanimId: 72, donem: "2026-09" }}
+    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "ayarlar-gidertanim-0071-form": [ayarlar("gidertanim"), ["baslik:Düzenle", "KDV dâhil"]],
+  "giderler-0071-tutar-girilmedi": [<GiderEkrani g0={[...GIDERLER, k(8, { tutar: 0, tedarikciId: 12, aciklama: "Eylül su", tanimId: 72, donem: "2026-09" })]} />, []],
+  "giderler-0071-tutarsiz-suzgec": [<GiderEkrani g0={[...GIDERLER, k(8, { tutar: 0, tedarikciId: 12, aciklama: "Eylül su", tanimId: 72, donem: "2026-09" })]} />, ["sec:Ödeme filtresi=tutarsiz"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

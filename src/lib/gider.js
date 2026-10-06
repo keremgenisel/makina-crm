@@ -139,6 +139,26 @@ export const personelIkiHedef = (k, dav) => {
   return p.resmiK > 0 && p.eldenK > 0;
 };
 const kdvKurus = (k, dav) => (dav === DAVRANIS.PERSONEL ? 0 : Math.round(kurus(k.tutar) * (Number(k.kdvOrani) || 0) / 100));
+// Spec 0071 R3, C1: kdvKurus'un TERSİ (KDV dâhil tutardan hariç tutar ve KDV). Tek ayırma yeri; utils.extractKDV
+// gider yolunda kullanılmaz (oranı satış tablosundan okur, float döner). KDV ileri formülle hesaplanır, yani ekranda
+// gösterilen KDV motorun kaydedeceğinin aynısıdır; yuvarlama sapması farkK'dır (R2: gizlenmez, yazılır).
+export const kdvAyir = (dahilTutar, kdvOrani) => {
+  const dahilK = kurus(dahilTutar);
+  const oran = Number(kdvOrani) || 0;
+  const tutarK = Math.round(dahilK * 100 / (100 + oran));
+  const kdvK = kdvKurus({ tutar: tl(tutarK), kdvOrani: oran }, DAVRANIS.NORMAL);
+  return { tutarK, kdvK, farkK: dahilK - tutarK - kdvK };
+};
+// R17, R27: giriş yönü; alanı olmayan eski kayıt hariç sayılır.
+export const KDV_YONU = { HARIC: "haric", DAHIL: "dahil" };
+export const kdvYonuOf = (k) => (k?.kdvYonu === KDV_YONU.DAHIL ? KDV_YONU.DAHIL : KDV_YONU.HARIC);
+// R6 (plan Q1): kirada KDV dâhil seçimi yalnız brüt girişte vardır; net girişte yön her zaman hariç.
+export const kdvYonuSecilebilirMi = (dav, girisYonu) => dav === DAVRANIS.NORMAL || (dav === DAVRANIS.KIRA && girisYonu !== "net");
+// Formun ve tanımın ortak çözümü: girilen tutar (yön "dahil" ise KDV dâhil) → KDV hariç tutar (TL).
+// R9, R14 (B-6): sıfır tutarın serbest olduğu TEK davranış (tanım ve tanımdan üretilmiş kalem); kira, personel ve
+// standart gider "sıfırdan büyük" kuralını korur.
+export const sifirTutarSerbestMi = (dav) => dav === DAVRANIS.NORMAL;
+export const girilenHaric = (deger, kdvYonu, kdvOrani) => (kdvYonu === KDV_YONU.DAHIL ? tl(kdvAyir(deger, kdvOrani).tutarK) : deger);
 const stopajKurus = (k, dav) => (dav === DAVRANIS.KIRA ? Math.round(kurus(k.tutar) * (Number(k.stopajOrani) || 0) / 100) : 0);
 
 // Gider toplamlarına giren tutar (KDV hariç; kira brüt; personel resmi + elden) — K19.
@@ -443,6 +463,14 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   const dav = tur?.davranis || DAVRANIS.NORMAL;
   const kayit = { ...form };
   delete kayit._manual;
+  // Spec 0071 R1, R17, R18: giriş yönü. Personelde null; kirada net girişte hariç (R6 Q1). Dâhil tutar ayrılır (R3, R4);
+  // oran geçersizse ayırma yapılmaz (hata zaten kdvOrani alanında).
+  const kdvYonu = dav === DAVRANIS.PERSONEL ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC);
+  kayit.kdvYonu = kdvYonu;
+  const oranCoz = tutarCoz(form.kdvOrani);
+  const haricOf = (deger) => (kdvYonu === KDV_YONU.DAHIL && !oranCoz.gecersiz ? girilenHaric(deger, kdvYonu, oranCoz.deger) : deger);
+  // R14, R24: sıfır (ve boş) tutar yalnız tekrarlayan tanımdan üretilmiş NORMAL kalemde serbest; giriş kolaylığıdır, sınır değil (C6).
+  const tanimKalemi = form?.tanimId != null && form.tanimId !== "";
 
   if (dav === DAVRANIS.PERSONEL) {
     if (!form.calisanId) hata("calisanId", "Çalışan seçilmedi.");
@@ -484,7 +512,9 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
     const s = tutarCoz(form.stopajOrani);
     if (s.gecersiz || s.deger < 0 || s.deger >= 100) hata("stopajOrani", "Stopaj oranı 0 ile 100 arasında olmalı.");
     if (!raw.gecersiz && raw.deger > 0 && !s.gecersiz && s.deger >= 0 && s.deger < 100) {
-      const h = kiraHesapla({ girisYonu: yon, tutar: raw.deger, netTutar: raw.deger, stopajOrani: s.deger });
+      // R6: önce KDV ayrılır (yalnız brüt girişte), sonra bugünkü kiraHesapla hariç tutarla brüt/net dönüşümünü yapar.
+      const girdi = yon === "net" ? raw.deger : haricOf(raw.deger);
+      const h = kiraHesapla({ girisYonu: yon, tutar: girdi, netTutar: girdi, stopajOrani: s.deger });
       kayit.tutar = h.brut; kayit.netTutar = h.net;
     }
     kayit.girisYonu = yon;
@@ -493,8 +523,9 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   } else {
     const t = tutarCoz(form.tutar);
     if (t.gecersiz) hata("tutar", "Tutar sayıya çevrilemedi. Örnek: 14.800,00");
+    else if (tanimKalemi && sifirTutarSerbestMi(dav) && (t.bos || t.deger === 0)) kayit.tutar = 0; // R10: 0 saklanır, null değil
     else if (t.bos || t.deger <= 0) hata("tutar", "Tutar sıfırdan büyük olmalı.");
-    else kayit.tutar = t.deger;
+    else kayit.tutar = haricOf(t.deger);
     kayit.stopajOrani = null; kayit.girisYonu = null; kayit.netTutar = null;
     kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.calisanId = null; kayit.calisanAd = null; kayit.ekOdemeler = [];
   }
@@ -677,14 +708,21 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       if (!c) { atlanan.push({ tanim: t, neden: "Çalışan bulunamadı." }); guncelTanimlar.push(t); continue; }
       if (kurus(r.deger) + kurus(e.deger) <= 0) { atlanan.push({ tanim: t, neden: `${c.ad} için aylık maliyet girilmemiş.` }); guncelTanimlar.push(t); continue; }
       // Spec 0023 R4: ek ödemeler her ay elle girilir; üretim boş başlatır, önceki ayın tutarı taşınmaz.
-      Object.assign(kalem, { calisanId: c.id, calisanAd: c.ad, aciklama: t.ad || c.ad, resmiTutar: r.bos ? null : r.deger, eldenTutar: e.bos ? null : e.deger, tutar: null, kdvOrani: 0, ekOdemeler: [] });
+      Object.assign(kalem, { calisanId: c.id, calisanAd: c.ad, aciklama: t.ad || c.ad, resmiTutar: r.bos ? null : r.deger, eldenTutar: e.bos ? null : e.deger, tutar: null, kdvOrani: 0, kdvYonu: null, ekOdemeler: [] });
     } else if (dav === DAVRANIS.KIRA) {
       const stopaj = Number(giderAyarlari?.stopajOrani) || 0;
       const yon = t.girisYonu === "net" ? "net" : "brut";
-      const h = kiraHesapla({ girisYonu: yon, tutar: t.tutar, netTutar: t.tutar, stopajOrani: stopaj });
-      Object.assign(kalem, { girisYonu: yon, tutar: h.brut, netTutar: h.net, stopajOrani: stopaj, kdvOrani: t.kdvOrani ?? getKdvRateForDate(tarih, kdvRates) });
+      // Spec 0071 R6, R7: dâhil tanım (yalnız brüt) üretim ayının oranıyla önce KDV'den ayrılır, sonra brüt/net.
+      const oran = t.kdvOrani ?? getKdvRateForDate(tarih, kdvRates);
+      const kdvYonu = yon === "net" ? KDV_YONU.HARIC : kdvYonuOf(t);
+      const girdi = yon === "net" ? t.tutar : girilenHaric(Number(t.tutar) || 0, kdvYonu, oran);
+      const h = kiraHesapla({ girisYonu: yon, tutar: girdi, netTutar: girdi, stopajOrani: stopaj });
+      Object.assign(kalem, { girisYonu: yon, tutar: h.brut, netTutar: h.net, stopajOrani: stopaj, kdvOrani: oran, kdvYonu });
     } else {
-      Object.assign(kalem, { tutar: Number(t.tutar) || 0, kdvOrani: t.kdvOrani ?? getKdvRateForDate(tarih, kdvRates) });
+      // Spec 0071 R7, R10: tanım dâhil tutarı saklar, ayırma burada (oran "tarihe göre" olabilir); sıfır tanım 0 tutarla doğar.
+      const oran = t.kdvOrani ?? getKdvRateForDate(tarih, kdvRates);
+      const kdvYonu = kdvYonuOf(t);
+      Object.assign(kalem, { tutar: girilenHaric(Number(t.tutar) || 0, kdvYonu, oran), kdvOrani: oran, kdvYonu });
       if (t.atamaTur === ATAMA.MAKINA) Object.assign(kalem, { atamaTur: t.atamaTur, makinaTur: t.makinaTur, makinaId: t.makinaId });
       else if (t.atamaTur === ATAMA.DAGITMA) kalem.atamaTur = t.atamaTur;
       else if (t.atamaTur === ATAMA.MODEL) Object.assign(kalem, { atamaTur: t.atamaTur, modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s })) });
@@ -781,7 +819,8 @@ export const hesaplaGiderRaporu = (
     const dav = davranisOf(k, turMap);
     const tut = kalemKurus(k, dav);
     toplam += tut;
-    if (k.odendi) odenen += tut; else { odenmeyen += tut; odenmeyenAdet++; }
+    // Spec 0071 R20, AC-29: tutarı girilmemiş (sıfır) kalem "ödenmemiş gider" kartında sayılmaz; tutarlı kalemde değişiklik yok.
+    if (k.odendi) odenen += tut; else if (tut > 0) { odenmeyen += tut; odenmeyenAdet++; }
     indKdv += kdvKurus(k, dav);
     if (dav === DAVRANIS.KIRA) {
       const s = stopajKurus(k, dav);

@@ -105,14 +105,14 @@ dbmod.writeBlobToDb({
   giderTurleri: [{ id: 41, ad: "Fabrika kirası", davranis: "kira" }, { id: 42, ad: "Personel", davranis: "personel" }, { id: 43, ad: "Hammadde", davranis: "normal" }],
   tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
   giderTanimlari: [
-    { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
+    { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, kdvYonu: "dahil", baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false },
     { id: 62, turId: 42, ad: "Murat", calisanId: 72, baslangicAy: "2026-06", bitisAy: "2026-08", uretilenAylar: ["2026-06"], kapatildi: true },
   ],
   giderler: [
-    { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
+    { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, kdvYonu: "dahil", odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
-    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
+    { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", kdvYonu: "haric", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
       // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
       taksitler: [{ id: 9001, hedef: "ana", sira: 1, vade: "2026-07-05", tutar: 20000, odendi: true, odemeTarihi: "2026-07-05" },
         { id: 9002, hedef: "stopaj", sira: 1, vade: "2026-08-26", tutar: 2000, odendi: true, odemeTarihi: "2026-08-20" },
@@ -309,6 +309,11 @@ check("spec 0023: ek ödemesiz kalem boş dizi döner", ((blob.giderler || []).f
 check("gider: satırsız kalem boş dizi döner", ((blob.giderler || []).find(x => x.id === 82)?.modelSatirlari || null)?.length === 0);
 check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = (blob.giderler || []).find(x => x.id === 83); return p?.resmiTutar === 39223.13 && p.eldenTutar === 15000 && p.calisanAd === "Ahmet Yılmaz" && p.deletedAt === "2026-07-20T10:00:00.000Z"; })());
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
+check("spec 0071 AC-16: kdvYonu iki tabloda roundtrip eder, kira girisYonu ile yan yana durur; boş alan blob'a yazılmaz (R27)", (() => {
+  const k = (blob.giderler || []).find(x => x.id === 81), kira = (blob.giderler || []).find(x => x.id === 82);
+  const t = (blob.giderTanimlari || []).find(x => x.id === 61), p = (blob.giderTanimlari || []).find(x => x.id === 62);
+  return k?.kdvYonu === "dahil" && kira?.kdvYonu === "haric" && kira.girisYonu === "net" && t?.kdvYonu === "dahil" && p && !("kdvYonu" in p);
+})());
 check("gider: tanım modelSatirlari/uretilenAylar (JSON) + kapatildi roundtrip", (() => { const t = (blob.giderTanimlari || []).find(x => x.id === 61); const k = (blob.giderTanimlari || []).find(x => x.id === 62); return t?.modelSatirlari?.[0]?.adet === 20 && t.uretilenAylar.join(",") === "2026-06,2026-07" && t.tedarikciId === 51 && t.kapatildi === false && k?.kapatildi === true && k.bitisAy === "2026-08"; })());
 check("gider: standart genel gider sürümleri roundtrip", (() => { const s2 = blob.standartGiderler || []; return s2.length === 2 && s2.find(x => x.id === 92)?.grupId === 91 && s2.find(x => x.id === 91)?.bitisAy === "2026-06" && s2.find(x => x.id === 92)?.bitisAy == null; })());
 check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());

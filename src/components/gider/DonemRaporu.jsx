@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
-import { davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
+import { kurus, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -248,6 +248,9 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const tedMap = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const dav = (k) => davranisOf(k, turMap);
+  // Spec 0071 R11, R12: ölçüt ödenecek tutarın sıfır olmasıdır (tanım bağı değil; eski ve içe aktarılmış sıfır kalem de).
+  const tutarsiz = (k) => kurus(odenecekTutar(k, dav(k))) === 0;
+  const tutarsizSayi = kalemler.filter(tutarsiz).length;
   const suz = kalemler.filter(k => {
     if (filtre.tur && String(k.turId) !== filtre.tur) return false;
     if (filtre.ted === "_yok" ? k.tedarikciId != null : (filtre.ted && String(k.tedarikciId) !== filtre.ted)) return false;
@@ -255,6 +258,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     if (filtre.odeme === "odendi" && !k.odendi) return false;
     if (filtre.odeme === "gecti" && !vadesiGectiMi(k, bugun)) return false;
     if (filtre.odeme === "hatirlatma" && !hatDurum(k)) return false;
+    if (filtre.odeme === "tutarsiz" && !tutarsiz(k)) return false;
     if (filtre.ara && !trLower(`${k.aciklama || ""} ${k.calisanAd || ""} ${tedMap.get(String(k.tedarikciId))?.ad || ""}`).includes(trLower(filtre.ara))) return false;
     return true;
   }).sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)));
@@ -326,6 +330,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   // Spec 0024 R3/AC-4: taksitsiz kalemde durum hareketlerden gelir; kısmen ödenmişte ödenen ve kalan yazar.
   // Rozet ödeme penceresini açar (ödeme kaydet, kayıtlı ödemeleri gör/sil).
   const odemeHucre = (k) => {
+    // Spec 0071 R26 (Q6): tutarı girilmemiş kalemde ödeme durumu yazılmaz (türetilmiş "ödendi" yanıltırdı); işi rozet yapar.
+    if (tutarsiz(k)) return <span data-testid="odeme-hucre-tutarsiz" style={{ color: "var(--n500, #64748b)" }}>—</span>;
     if (satirliMi(k)) return planliHucre(k);
     const hedefler = odemeHedefleri(k, dav(k));
     const toplamK = hedefler.reduce((a, h) => a + h.toplamK, 0), kalanK = hedefler.reduce((a, h) => a + h.kalanK, 0);
@@ -371,6 +377,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
             {d === DAVRANIS.KIRA && <Rozet renk={k.girisYonu === "net" ? "mavi" : "turuncu"}>{k.girisYonu === "net" ? "Net girildi" : "Brüt girildi"}</Rozet>}
             {d === DAVRANIS.KIRA && <span style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>Stopaj %{k.stopajOrani ?? 0}: {tl2(kalemStopaj(k, d))} · Net {tl2(k.netTutar ?? (kalemTutari(k, d) - kalemStopaj(k, d)))}</span>}
             {k.tanimId != null && <Rozet>Tekrarlayan</Rozet>}
+            {tutarsiz(k) && <span data-testid="tutar-girilmedi"><Rozet renk="turuncu" title="Fatura gelince kalemi düzenleyip tutarı girin">Tutar girilmedi</Rozet></span>}
           </div>
         </td>
         <td style={td}>{atamaHucre(k)}</td>
@@ -390,7 +397,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <select aria-label="Tür filtresi" {...sec} value={filtre.tur} onChange={e => setFiltre(f => ({ ...f, tur: e.target.value }))}><option value="">Tüm türler</option>{giderTurleri.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}</select>
           <select aria-label="Tedarikçi filtresi" {...sec} value={filtre.ted} onChange={e => setFiltre(f => ({ ...f, ted: e.target.value }))}><option value="">Tüm tedarikçiler</option><option value="_yok">Tedarikçi seçilmemiş</option>{tedarikciler.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}</select>
-          <select aria-label="Ödeme filtresi" {...sec} value={filtre.odeme} onChange={e => setFiltre(f => ({ ...f, odeme: e.target.value }))}><option value="">Tüm ödemeler</option><option value="odenmedi">Ödenmemiş</option><option value="odendi">Ödenmiş</option><option value="gecti">Vadesi geçmiş</option>{hatirlatma && <option value="hatirlatma">Hatırlatma kapsamı</option>}</select>
+          <select aria-label="Ödeme filtresi" {...sec} value={filtre.odeme} onChange={e => setFiltre(f => ({ ...f, odeme: e.target.value }))}><option value="">Tüm ödemeler</option><option value="odenmedi">Ödenmemiş</option><option value="odendi">Ödenmiş</option><option value="gecti">Vadesi geçmiş</option><option value="tutarsiz">Tutar girilmedi ({tutarsizSayi})</option>{hatirlatma && <option value="hatirlatma">Hatırlatma kapsamı</option>}</select>
           <input aria-label="Açıklama ara" className="input" style={{ width: 200 }} placeholder="Açıklama, çalışan, tedarikçi ara" value={filtre.ara} onChange={e => setFiltre(f => ({ ...f, ara: e.target.value }))} />
         </div>
       </div>

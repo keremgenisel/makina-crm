@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
-import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula } from "../lib/gider";
+import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
+  kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
@@ -22,14 +23,17 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     return { id: null, tarih, turId: "", aciklama: "", tedarikciId: "", tutar: "", netTutar: "", girisYonu: "brut",
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
-      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false,
+      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
       taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [] };
   }
   // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
   const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
   const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ), eld = hedefSat(HEDEF.ELDEN);
-  return { ...k, turId: idMetni(k.turId), tedarikciId: idMetni(k.tedarikciId), calisanId: idMetni(k.calisanId),
-    tutar: tutarMetni(k.tutar), netTutar: tutarMetni(k.netTutar), kdvOrani: tutarMetni(k.kdvOrani),
+  // Spec 0071 R5, R27: dâhil girilmiş kalemde tutar alanı hariç tutar + KDV ile yeniden kurulur (dâhil tutar saklanmaz);
+  // alanı olmayan eski kalem hariç açılır.
+  const dahil = kdvYonuOf(k) === KDV_YONU.DAHIL;
+  return { ...k, turId: idMetni(k.turId), tedarikciId: idMetni(k.tedarikciId), calisanId: idMetni(k.calisanId), kdvYonu: kdvYonuOf(k),
+    tutar: dahil ? tutarMetni(tl(kurus(k.tutar) + kurus(kalemKdv(k)))) : tutarMetni(k.tutar), netTutar: tutarMetni(k.netTutar), kdvOrani: tutarMetni(k.kdvOrani),
     stopajOrani: tutarMetni(k.stopajOrani ?? giderAyarlari?.stopajOrani ?? 20), resmiTutar: tutarMetni(k.resmiTutar), eldenTutar: tutarMetni(k.eldenTutar),
     sonOdemeTarihi: (ana.length ? ana[0].vade : k.sonOdemeTarihi) || "", odemeTarihi: k.odemeTarihi || "", odemeYontemi: k.odemeYontemi || "", girisYonu: k.girisYonu || "brut",
     modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
@@ -87,12 +91,30 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const calisanMaliyetsiz = secilenCalisan && tutarCoz(secilenCalisan.resmiMaliyet).bos && tutarCoz(secilenCalisan.eldenMaliyet).bos;
 
   // Hesap özeti (kira: R6; normal: AC-3). Ham metinden anlık hesaplanır.
+  // Spec 0071 R1, R3, R6, R23: tutar alanı tektir; "KDV dâhil" seçiliyse girilen rakam önce kdvAyir ile ayrılır (motorun aynı
+  // fonksiyonu). Kirada seçim yalnız brüt girişte (Q1). KDV ileri yönde de motordan (kalemKdv, C8); yerel formül yok.
+  const kdvOran = tutarCoz(form.kdvOrani).deger || 0;
+  const yonSecilebilir = kdvYonuSecilebilirMi(dav, form.girisYonu);
+  const kdvYonu = yonSecilebilir ? kdvYonuOf(form) : KDV_YONU.HARIC;
+  const girilenTutar = tutarCoz(form.tutar).deger;
+  const ayrim = kdvYonu === KDV_YONU.DAHIL ? kdvAyir(girilenTutar, kdvOran) : null;
   const kira = dav === DAVRANIS.KIRA ? kiraHesapla({
-    girisYonu: form.girisYonu, tutar: tutarCoz(form.tutar).deger, netTutar: tutarCoz(form.netTutar).deger,
-    stopajOrani: tutarCoz(form.stopajOrani).deger, kdvOrani: tutarCoz(form.kdvOrani).deger,
+    girisYonu: form.girisYonu, tutar: girilenHaric(girilenTutar, kdvYonu, kdvOran), netTutar: tutarCoz(form.netTutar).deger,
+    stopajOrani: tutarCoz(form.stopajOrani).deger, kdvOrani: kdvOran,
   }) : null;
-  const normalTutar = tutarCoz(form.tutar).deger;
-  const normalKdv = Math.round(normalTutar * (tutarCoz(form.kdvOrani).deger || 0)) / 100;
+  const normalTutar = girilenHaric(girilenTutar, kdvYonu, kdvOran);
+  const kdvOnizleme = kalemKdv({ tutar: normalTutar, kdvOrani: kdvOran });
+  const normalOdenecek = tl(kurus(normalTutar) + kurus(kdvOnizleme));
+  // R2, AC-5: yuvarlama yüzünden ödenecek girilen tutardan saparsa fark yazılır (motorun üretmeyeceği rakam gösterilmez).
+  const farkSatiri = (farkK) => (farkK ? <div data-testid="kdv-yuvarlama-farki" style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 6 }}>
+    Kuruş yuvarlaması: KDV hariç tutar ile KDV toplamı, girilen {tl2(girilenTutar)} tutarından {tl2(Math.abs(farkK) / 100)} {farkK > 0 ? "az" : "fazla"}.</div> : null);
+  // R1, R6, R18: seçici normal ve brüt kirada; personelde ve net kirada çizilmez.
+  const kdvYonuAlani = yonSecilebilir ? (
+    <Field label="Tutar KDV hariç mi, dâhil mi?">
+      <Segment ariaLabel="KDV yönü" options={[{ value: KDV_YONU.HARIC, label: "KDV hariç" }, { value: KDV_YONU.DAHIL, label: "KDV dâhil" }]} value={kdvYonu} onChange={v => set({ kdvYonu: v })} />
+      {dav === DAVRANIS.KIRA && <Ipucu>Brüt/net seçimi stopaj içindir, KDV hariç/dâhil seçimi KDV içindir. KDV dâhil girilen brütten önce KDV ayrılır; stopaj ayrılan brüt üzerinden hesaplanır.</Ipucu>}
+    </Field>
+  ) : null;
   // Spec 0023 C5: form da motorun tek toplamını gösterir (maaş + ek ödemeler); atama tabanı (0020) aynı rakam.
   const ekToplam = (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.resmiTutar).deger || 0) + (tutarCoz(e.eldenTutar).deger || 0), 0);
   const personelToplam = tutarCoz(form.resmiTutar).deger + tutarCoz(form.eldenTutar).deger + ekToplam;
@@ -278,22 +300,26 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
                 <Segment ariaLabel="Giriş yönü" options={[{ value: "brut", label: "Brüt kira" }, { value: "net", label: "Net ödenen kira" }]} value={form.girisYonu} onChange={v => set({ girisYonu: v })} />
                 <Ipucu>Seçim kayıtta saklanır, listede “{form.girisYonu === "net" ? "Net" : "Brüt"} girildi” rozetiyle görünür.</Ipucu>
               </Field>
+              {kdvYonuAlani}
               {form.girisYonu === "net"
-                ? <Field label="Net ödenen kira *"><TutarInput ariaLabel="Net ödenen kira" value={form.netTutar} onChange={v => set({ netTutar: v })} invalid={!!hata("netTutar")} /><HataMetni>{hata("netTutar")}</HataMetni></Field>
-                : <Field label="Brüt kira (KDV hariç) *"><TutarInput ariaLabel="Brüt kira" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hata("tutar")} /><HataMetni>{hata("tutar")}</HataMetni></Field>}
+                ? <Field label="Net ödenen kira *"><TutarInput ariaLabel="Net ödenen kira" value={form.netTutar} onChange={v => set({ netTutar: v })} invalid={!!hata("netTutar")} /><HataMetni>{hata("netTutar")}</HataMetni>
+                  <Ipucu>Net ödenen kira KDV hariç girilir; KDV dâhil seçimi yalnız brüt kira girişinde vardır.</Ipucu></Field>
+                : <Field label={kdvYonu === KDV_YONU.DAHIL ? "Brüt kira (KDV dâhil) *" : "Brüt kira (KDV hariç) *"}><TutarInput ariaLabel="Brüt kira" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hata("tutar")} /><HataMetni>{hata("tutar")}</HataMetni></Field>}
               <div style={{ display: "flex", gap: 12 }}>
                 <div style={{ flex: 1 }}><Field label="Stopaj oranı"><TutarInput sym="%" ariaLabel="Stopaj oranı" value={form.stopajOrani} onChange={v => set({ stopajOrani: v })} /><HataMetni>{hata("stopajOrani")}</HataMetni></Field></div>
                 <div style={{ flex: 1 }}><Field label="KDV oranı"><TutarInput sym="%" ariaLabel="KDV oranı" value={form.kdvOrani} onChange={v => set({ kdvOrani: v, _kdvElle: true })} /><HataMetni>{hata("kdvOrani")}</HataMetni></Field></div>
               </div>
             </>
           )}
+          {dav === DAVRANIS.NORMAL && kdvYonuAlani}
           {dav === DAVRANIS.NORMAL && (
             <div style={{ display: "flex", gap: 12 }}>
-              <div style={{ flex: 1 }}><Field label="Tutar (KDV hariç) *"><TutarInput ariaLabel="Tutar" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hata("tutar")} /><HataMetni>{hata("tutar")}</HataMetni></Field></div>
+              <div style={{ flex: 1 }}><Field label={kdvYonu === KDV_YONU.DAHIL ? "Tutar (KDV dâhil) *" : "Tutar (KDV hariç) *"}><TutarInput ariaLabel="Tutar" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hata("tutar")} /><HataMetni>{hata("tutar")}</HataMetni></Field></div>
               <div style={{ width: 130 }}><Field label="KDV oranı"><TutarInput sym="%" ariaLabel="KDV oranı" value={form.kdvOrani} onChange={v => set({ kdvOrani: v, _kdvElle: true })} /><HataMetni>{hata("kdvOrani")}</HataMetni></Field></div>
             </div>
           )}
           {dav !== DAVRANIS.PERSONEL && <Ipucu>KDV oranı gider tarihine göre ön doldurulur, değiştirilebilir.</Ipucu>}
+          {yonSecilebilir && tutarCoz(form.kdvOrani).deger === 0 && !tutarCoz(form.kdvOrani).gecersiz && <Ipucu>KDV oranı sıfır olduğu için dâhil ve hariç aynı tutarı verir.</Ipucu>}
         </div>
         {dav === DAVRANIS.KIRA && kira && (
           <div style={{ flex: "0 0 300px", background: "var(--ambBg3, #fffaf5)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 12, padding: "14px 16px" }} data-testid="kira-ozet">
@@ -305,12 +331,16 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, padding: "8px 0", borderBottom: "1px solid #fde7d4" }}><span>{hedefAdi(HEDEF.ANA, DAVRANIS.KIRA)} ödenecek <span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>net + KDV</span></span><b>{tl2(kira.nakit)}</b></div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0" }}><span>{hedefAdi(HEDEF.STOPAJ, DAVRANIS.KIRA)}</span><b style={{ color: "var(--amb700, #b45309)" }}>{tl2(kira.stopaj)}</b></div>
             <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Gider toplamına giren: <b>{tl2(kira.brut)}</b> (brüt)</div>
+            {ayrim && form.girisYonu !== "net" && farkSatiri(ayrim.farkK)}
           </div>
         )}
         {dav === DAVRANIS.NORMAL && normalTutar > 0 && (
           <div style={{ flex: "0 0 220px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "12px 14px", fontSize: 13 }} data-testid="normal-ozet">
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV</span><b>{tl2(normalKdv)}</b></div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>Ödenecek</span><b>{tl2(normalTutar + normalKdv)}</b></div>
+            {/* Spec 0071 R2: dâhil girişte kaydedilecek üç rakam (hariç, KDV, ödenecek) ve varsa yuvarlama farkı. */}
+            {ayrim && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV hariç</span><b data-testid="ozet-kdv-haric">{tl2(normalTutar)}</b></div>}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV</span><b data-testid="ozet-kdv">{tl2(kdvOnizleme)}</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>Ödenecek</span><b data-testid="ozet-odenecek">{tl2(normalOdenecek)}</b></div>
+            {ayrim && farkSatiri(ayrim.farkK)}
             <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Gider toplamına {tl2(normalTutar)} girer.</div>
           </div>
         )}
@@ -386,8 +416,9 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
 
       {atanabilirMi(dav) && (
         <Field label="Makina maliyeti ataması">
+          {/* Spec 0071 R25 (triyaj): önizlemenin sınırı KDV hariç tutar (normalTutar), kayıt doğrulamasıyla aynı. */}
           <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller}
-            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : form.tutar} davranis={dav} />
+            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : normalTutar} davranis={dav} />
           <HataMetni>{hatalar.filter(h => h.alan === "modelSatirlari" || h.alan === "makinaId").map(h => h.mesaj).find(Boolean)}</HataMetni>
         </Field>
       )}

@@ -56,9 +56,10 @@ describe("Spec 0061 A: kip", () => {
     expect(screen.queryByTestId("acik-kalemler")).toBeNull();
     expect(screen.getByText("Toplam gider (KDV hariç)")).toBeTruthy();
   });
-  it("AC-24 / AC-41: ödeme süzgecinin beş değeri aynı; kip hatırlatma kipiyle birbirini dışlar", () => {
+  // Spec 0071 R12 ile güncellendi: süzgecin altıncı değeri "tutarsiz" (Tutar girilmedi); açık kalemler yine süzgeç değeri değil, kip.
+  it("AC-24 / AC-41: ödeme süzgecinin değerleri (0071 ile altı) ve kip hatırlatma kipiyle birbirini dışlar", () => {
     render(<H />);
-    expect([...screen.getByLabelText("Ödeme filtresi").querySelectorAll("option")].map(o => o.value)).toEqual(["", "odenmedi", "odendi", "gecti", "hatirlatma"]);
+    expect([...screen.getByLabelText("Ödeme filtresi").querySelectorAll("option")].map(o => o.value)).toEqual(["", "odenmedi", "odendi", "gecti", "tutarsiz", "hatirlatma"]);
     fireEvent.click(screen.getByTestId("hatirlatma-dugmesi"));
     expect(screen.getByTestId("hatirlatma-modu")).toBeTruthy();
     ac();

@@ -300,7 +300,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
       {giderYetki && settingsTab === "gidertanim" && (
         <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}
           tedarikciler={withoutDeleted(tedarikciler)} calisanlar={calisanlar} stock={stock} customers={customers} modeller={[...standardModels, ...customModels]}
-          showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
+          showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} kdvRates={appSettings?.kdvRates} />
       )}
       {giderYetki && settingsTab === "giderayar" && (
         <SettingsGider appSettings={appSettings} setAppSettings={setAppSettings} giderler={rawGiderler} flash={flash} canDo={giderCanDo} />

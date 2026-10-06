@@ -140,11 +140,13 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     // Spec 0030 R10 (C4 istisnası, B6): sütun sayıya indi; tam liste ipucunda, aynı sıkılıkla.
     expect(screen.getByText("3 ay").getAttribute("title")).toBe("2026-06, 2026-07, 2026-08");
   });
-  it("tanım formu: tutar sıfır ve bitiş < başlangıç reddedilir", () => {
+  // Spec 0071 R9 ile güncellendi: normal davranışlı tanımda sıfır artık serbest (tutarı sonra girilen tekrarlayan kalem); sıfır
+  // kuralı kira tanımında sınanır (AC-18).
+  it("tanım formu: kira tanımında tutar sıfır ve bitiş < başlangıç reddedilir", () => {
     let st;
     render(<TanimHarness onState={s => { st = s; }} />);
     fireEvent.click(screen.getByText("Yeni Tanım"));
-    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
+    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "1" } });
     fireEvent.change(screen.getByPlaceholderText("Örn. Fabrika binası kirası"), { target: { value: "İnternet" } });
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "0" } });
     fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-09" } });
@@ -211,5 +213,90 @@ describe("Spec 0051: hesapsız kayıt başlangıç tarihi (Gider Ayarları)", ()
     ac({ hesapsizBaslangic: "2026-06-01", __canDo: () => false });
     expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").disabled).toBe(true);
     expect(screen.queryByText("Kaydet")).toBeNull();
+  });
+});
+
+describe("Spec 0071: tekrarlayan tanımda KDV dâhil giriş ve sıfır tutar", () => {
+  function TanimHarness({ t0 = [], onState }) {
+    const [giderTanimlari, setGiderTanimlari] = useState(t0);
+    onState?.(giderTanimlari);
+    return <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={TURLER} calisanlar={[{ id: 7, ad: "Ali" }]}
+      modeller={[{ model: "AK100_DS" }]} kdvRates={[{ from: "2026-01-01", rate: 20 }]} showToast={vi.fn()} />;
+  }
+  const yeni = (turId, ad = "Elektrik") => {
+    fireEvent.click(screen.getByText("Yeni Tanım"));
+    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: String(turId) } });
+    fireEvent.change(screen.getByPlaceholderText("Örn. Fabrika binası kirası"), { target: { value: ad } });
+    fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-10" } });
+  };
+  const yon = () => screen.queryByRole("radiogroup", { name: "KDV yönü" });
+  it("AC-17, AC-40: normal tanıma sıfır ya da boş tutar girilebilir, 0 olarak kaydedilir", () => {
+    let st;
+    render(<TanimHarness onState={s => { st = s; }} />);
+    yeni(4);
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st).toHaveLength(1);
+    expect(st[0]).toMatchObject({ tutar: 0, kdvYonu: "haric" });
+    yeni(5, "Su");
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "0" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st.find(t => t.ad === "Su").tutar).toBe(0);
+  });
+  it("AC-18: kira ve personel tanımında sıfır hâlâ reddedilir", () => {
+    let st;
+    render(<TanimHarness onState={s => { st = s; }} />);
+    yeni(1, "Kira");
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "0" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(screen.getByText("Tutar sıfırdan büyük olmalı.")).toBeTruthy();
+    expect(st).toEqual([]);
+    // Personel tanımı tutar almaz (çalışan kaydından); dört bileşeni sıfır personel kalemi motorda reddedilir (AC-26).
+    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "3" } });
+    expect(screen.queryByLabelText("Tutar")).toBeNull();
+  });
+  it("AC-8, AC-10: dâhil tanım girilen tutarı saklar ve listede 'KDV dâhil girildi' yazar; eski tanım 'KDV hariç girildi' (AC-43)", () => {
+    let st;
+    render(<TanimHarness t0={[{ id: 91, turId: 5, ad: "Sigorta", tutar: 1250, kdvOrani: 20, baslangicAy: "2026-01", uretilenAylar: [] }]} onState={s => { st = s; }} />);
+    expect(screen.getByTestId("tanim-kdv-yonu").textContent).toBe("KDV hariç girildi");
+    yeni(4);
+    fireEvent.click(within(yon()).getByRole("radio", { name: "KDV dâhil" }));
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1180" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st.find(t => t.ad === "Elektrik")).toMatchObject({ tutar: 1180, kdvYonu: "dahil", kdvOrani: null });
+    expect(screen.getAllByTestId("tanim-kdv-yonu").map(e => e.textContent)).toContain("KDV dâhil girildi");
+  });
+  it("AC-44: kira tanımında net girişte KDV yönü seçicisi yok, kayıt hariç", () => {
+    let st;
+    render(<TanimHarness onState={s => { st = s; }} />);
+    yeni(1, "Kira");
+    expect(yon()).toBeTruthy();
+    fireEvent.click(within(yon()).getByRole("radio", { name: "KDV dâhil" }));
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Giriş yönü" })).getByRole("radio", { name: "Net ödenen kira" }));
+    expect(yon()).toBeNull();
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "16000" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st[0]).toMatchObject({ girisYonu: "net", kdvYonu: "haric" });
+  });
+  it("AC-41: dâhil tanımda model satırları KDV hariç tutarla sınanır; sıfır tanımda model dağılımı reddedilir", () => {
+    let st;
+    render(<TanimHarness onState={s => { st = s; }} />);
+    yeni(4, "Sac");
+    fireEvent.click(within(yon()).getByRole("radio", { name: "KDV dâhil" }));
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1200" } });
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Makina maliyeti ataması" })).getByRole("radio", { name: "Model" }));
+    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK100_DS" } });
+    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "1100" } });
+    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "1" } });
+    // Triyaj: önizleme kayıtla aynı sınırı (KDV hariç 1.000) kullanır; kaydetmeden önce aşım görünür.
+    expect(screen.getByText("Kalem tutarı").nextSibling.textContent).toBe("1.000 ₺");
+    expect(screen.getByText("Aşım").nextSibling.textContent).toBe("100 ₺");
+    fireEvent.click(screen.getByText("Kaydet"));
+    // 1.200 dâhil → 1.000 hariç (bugünün oranı %20); 1.100 aşar.
+    expect(screen.getAllByText(/Satır toplamı kalem tutarını 100 ₺ aşıyor/).length).toBeGreaterThan(0);
+    expect(st).toEqual([]);
+    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(screen.getByText("Tutarı sonra girilecek tanımda model dağılımı yapılamaz.")).toBeTruthy();
+    expect(st).toEqual([]);
   });
 });

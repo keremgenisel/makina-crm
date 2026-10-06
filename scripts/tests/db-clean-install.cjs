@@ -48,8 +48,8 @@ try {
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }],
     tedarikciler: [{ id: 31, ad: "Tedarikçi A" }, { id: 39, ad: "Çöpteki", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b
-    giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [] }],
-    giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
+    giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, kdvYonu: "dahil", baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [] }],
+    giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, kdvYonu: "dahil", odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
       ekOdemeler: [{ tur: "ikramiye", aciklama: "Bayram", resmiTutar: 500, eldenTutar: null }],
       taksitler: [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-07-15", tutar: 600, odendi: true, odemeTarihi: "2026-07-15" }, { id: 7002, hedef: "ana", sira: 2, vade: "2026-08-15", tutar: 600, odendi: false, odemeTarihi: null }] },
       // Spec 0054 AC-21: ek ödeme hedefleri temiz kurulumda da yazılır.
@@ -115,6 +115,7 @@ check("temiz kurulumda yedek parça satışı + tahsis tabloları oluştu", (() 
 check("temiz kurulumda yedek parça ödeme yöntemi sütunu oluştu", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.yontem === "Kredi Kartı"; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (yedek parça)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 54; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (payment, blokaj)", (() => { const p = (blob.payments || []).find(x => x.id === 10); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31"; })());
+check("spec 0071 AC-16: temiz kurulumda kdvYonu sütunu iki tabloda var", (blob.giderler || []).find(x => x.id === 33)?.kdvYonu === "dahil" && (blob.giderTanimlari || []).find(x => x.id === 32)?.kdvYonu === "dahil");
 check("temiz kurulumda gider ek ödeme tablosu oluştu (spec 0023)", ((blob.giderler || []).find(x => x.id === 33)?.ekOdemeler || []).length === 1);
 check("spec 0054 AC-21: temiz kurulumda ek ödeme hedef satırları (ekResmi, ekElden) yazıldı", ((blob.giderler || []).find(x => x.id === 37)?.taksitler || []).map(x => x.hedef).join() === "ana,elden,ekResmi,ekElden");
 check("spec 0058 AC-14: temiz kurulumda kasa_kapsam_disi tablosu oluştu ve giriş yazıldı", (blob.kasaKapsamDisi || []).map(x => `${x.id}:${x.tur}:${x.kayitId}`).join() === "39:hareket:38");

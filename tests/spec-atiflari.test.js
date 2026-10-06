@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
 const KOK = path.join(__dirname, "..");
-const TASINACAK = [];
+const TASINACAK = ["0071-uygulama-plani.md", "0071-kdv-dahil-giris-ve-sifir-tutarli-tekrarlayan.md"];
 
 const gez = (d) => readdirSync(path.join(KOK, d)).flatMap(ad => {
   const f = path.join(d, ad);
