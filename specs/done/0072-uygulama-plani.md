@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0072-pesin-giderin-aylara-dagitilmasi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0072-pesin-giderin-aylara-dagitilmasi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0072-gider-dagitim` (`feat/0073-hareket-duzenleme` `ef4f18a` üstünde, R27) |
 | **Onay** | Takım Yöneticisi, 2026-10-06: bütün öneriler (S1–S10) kabul |
 

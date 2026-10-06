@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-06) |
+| **Durum** | Tamamlandı (commit `e0fc33a`, dal `feat/0072-gider-dagitim`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi (yeni alan), makina maliyeti motoru, Giderler > Makina ve Model, maliyet notları |
 | **Bağımlı spec'ler** | 0001 (kova dağılımı) · 0002 (makina maliyeti, ortak gider payı) · 0020 (personel atanabilir, kalem adı) · 0021 (taksit, ters emsal) · 0022 (üretim partisi) · 0062 (sayfalama, rozetin durduğu liste) · 0067 (Dönem Raporu kutu düzeni) |
-| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: S1–S10 işlendi (R13, R14, R16, R17, R19, R20, R25–R30, AC-22, AC-29, AC-35–AC-38); plan `specs/0072-uygulama-plani.md` |
+| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: S1–S10 işlendi (R13, R14, R16, R17, R19, R20, R25–R30, AC-22, AC-29, AC-35–AC-38); plan `specs/done/0072-uygulama-plani.md` |
 | **Önceki revizyon** | 1 · 2026-10-06 QA turu: B-1..B-7, Ö-8..Ö-20, K-21..K-24 işlendi (Takım Yöneticisi onayı) |
 
 ---
@@ -331,43 +331,43 @@ maliyetinde o ayın payı görünüyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
       `tests/gider-dagitim-0072.test.js` (paylar, yuvarlama, yalnız ortak kova, standart kaynak
       etkisizliği, gelecek ay sınırı, yürürlük savunması), bileşen
       `tests/ui/gider-dagitim-0072.test.jsx` (form alanı ve pasif durumu, rozet, maliyet detay satırı,
       not, Makina ve Model kutusu); ek bloklar `makina-maliyeti.test.js` (dokunulmadan yeşil, AC-14),
       `gider.test.js` (doğrulama, AC-6), `gider-gizlilik.test.js` (AC-31, AC-32), `db-roundtrip.cjs` ve
       `db-clean-install.cjs` (AC-23); `merge` ile `server-authz` dokunulmaz.
-- [ ] Dağıtımsız veride motor çıktısının değişmediği, mevcut testin dokunulmadan yeşil kalmasıyla
+- [x] Dağıtımsız veride motor çıktısının değişmediği, mevcut testin dokunulmadan yeşil kalmasıyla
       gösterildi (AC-14) ve süre eşiği korundu (AC-29).
-- [ ] Payların toplamının tutara eşit olduğu ve artığın son aya gittiği testle sabitlendi (AC-3, AC-4).
-- [ ] Dağıtımın yalnız `ortak` kovasına uygulandığı testle sabitlendi (AC-24) ve standart kaynakta
+- [x] Payların toplamının tutara eşit olduğu ve artığın son aya gittiği testle sabitlendi (AC-3, AC-4).
+- [x] Dağıtımın yalnız `ortak` kovasına uygulandığı testle sabitlendi (AC-24) ve standart kaynakta
       etkisiz olduğu gösterildi (AC-25).
-- [ ] Gelecek ay sınırının "dağıtılmamış ortak gider"i şişirmediği testle gösterildi (AC-26).
-- [ ] Dönem raporu ve KDV'nin etkilenmediği testle gösterildi (AC-9, AC-10).
-- [ ] Görsel kanıt: `docs/evidence/0072-taban-piksel-raporu.json` ve `0072-piksel-raporu.json`;
+- [x] Gelecek ay sınırının "dağıtılmamış ortak gider"i şişirmediği testle gösterildi (AC-26).
+- [x] Dönem raporu ve KDV'nin etkilenmediği testle gösterildi (AC-9, AC-10).
+- [x] Görsel kanıt: `docs/evidence/0072-taban-piksel-raporu.json` ve `0072-piksel-raporu.json`;
       ekranlar gider formunun dağıtım alanı (etkin ve pasif), kalem listesi rozeti, maliyet detayındaki
       aylık pay satırı, maliyet notları, Makina ve Model kutusu. `GiderForm`, `DonemRaporu`,
       `MakinaMaliyetDetay` ve `MakinaModelGorunumu` tasarım sözlüğünü kullandığı için
       `docs/evidence/kanit-eslemesi.json` kayıtları `beklenen: "degisti"` artı onay satırı taşır; spec
       `done`'a taşınırken `ayni`ye çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: dağıtımın yalnız makina maliyetinin **ortak** payını etkilediği (model
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: dağıtımın yalnız makina maliyetinin **ortak** payını etkilediği (model
       havuzu ve doğrudan atama kapsam dışı), standart kaynakta etkisiz olduğu, gelecek ayların o ay
       gelince girdiği, raporun ve KDV'nin faturanın ayında kaldığı, artığın son aya gittiği ve taksitle
       farkı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (S1–S10: dal, Makina ve Model'de kova kartları yerine yeni kutu, kira dahil bağımsız alan, null saklama, imza ve tek giriş, detay satırı, rozet yeri, sürüm notu, süre testi, süzgeç yardımcısı); uygulamada R20/AC-37'nin "makina atamasında boş" cümlesi düşen atamayı bozacağı için "ortak kovası sıfırsa boş" olarak kesinleştirildi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: görsel kanıt (çekim sürüyordu) ve maliyet memosunun UTC/tarihsiz "bugün"ü (ay dönümünde yeni ayın payı girmiyordu). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | İkisi gerçek; ay dönümü bulgusu 0003'ten kalan bir desenin bu spec'le görünür maliyet farkına dönüşmesiydi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | `makina-maliyeti.test.js` dokunulmadan yeşil; 0020'nin tanım formu kapı taraması uygulamada yakalandı ve kapı çoğaltılmadan çözüldü. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir hesabı zamana yaymak, o hesabın "bugün"ünü görünür hâle getirir: dağıtım gelmeden önce maliyet motorunun hangi günü bugün saydığı neredeyse hiçbir şeyi değiştirmiyordu, dağıtımla birlikte ayın ilk saatleri ve uzun açık kalan uygulama gerçek bir maliyet farkı oldu. Zamana bağlı yeni kural yazılırken onu besleyen tarihin kaynağı (UTC mı yerel mi) ve memonun o tarihe bağlı olup olmadığı birlikte gözden geçirilmeli. İkincisi: spec'in tarif ettiği ekran parçası (Makina ve Model'in "ham kalem listesi") kodda yoksa, var olanı bükmek yerine yeni ve ayrı bir kutu açmak hem kuralı (kova = dönem toplamı) korur hem de isteği karşılar. Üçüncüsü: "boş liste döner" gibi bir savunma kuralı, kuralın bugün başka bir yolu (düşen makina ataması) taşıdığını unutturabilir; savunma, var olan çıktıyı değiştirmeyecek biçimde yazılmalı ve bunu dokunulmamış eski test kanıtlamalı.
