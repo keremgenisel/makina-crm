@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-06) |
+| **Durum** | Tamamlandı (commit `222b831`, dal `feat/0073-hareket-duzenleme`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa > Hesaplar (hareket listesi), ödeme penceresi, çalışan ekstresi, kasa doğrulama motoru, işlem geçmişi |
 | **Bağımlı spec'ler** | 0024 (ödeme bir harekettir, virman, avans, mahsup) · 0040 ve 0049 (çek hareketleri) · 0044 ve 0058 (tahsilat satırları, kapsam dışı) · 0051 (hedef payları) · 0053 (tek ödeme editörü) · 0056 (hesap taşıma, `hesapId` yazımı) · 0059 (silinmiş kalem ödemeleri) · 0062 (sayfalama, en yeni üstte) · 0064 (kilitler) · 0068 (işlem geçmişi etiket kapsamı) |
-| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q9 işlendi (R1, R2, R6, R14, R20, R25–R29, AC-41–AC-45); plan `specs/0073-uygulama-plani.md` |
+| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q9 işlendi (R1, R2, R6, R14, R20, R25–R29, AC-41–AC-45); plan `specs/done/0073-uygulama-plani.md` |
 | **Önceki revizyon** | 1 · 2026-10-06 QA turu: B-1..B-8, Ö-9..Ö-22, K-23..K-26 işlendi (Takım Yöneticisi onayı) |
 
 ---
@@ -371,8 +371,8 @@ listeden çıkmadan tarihi, tutarı, yöntemi ya da hesabı düzeltiyor; düzelt
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
       `tests/hareket-duzenleme-0073.test.js` (dört türün düzenleme doğrulaması, "kendi tutarı hariç" iki
       kol, avans sınırı, göç hareketi), bileşen `tests/ui/hareket-duzenleme-0073.test.jsx` (iki liste,
       dört pencere, çek ve tahsilat ibareleri, kilit reddi), gerçek App `tests/ui/hareket-duzenleme-0073-app.test.jsx`
@@ -380,35 +380,35 @@ listeden çıkmadan tarihi, tutarı, yöntemi ya da hesabı düzeltiyor; düzelt
       *(Triyaj: `kasa.test.js` ve `ui/kasa` değişmedi; `islem-gecmisi-etiketleri` ve `kilit-alanlari` yeni entity'yi ve
       pencereleri kaynak taramasıyla kendiliğinden kapsar ve yeşildir; `server-authz` ile `merge.test.js` dokunulmadı,
       birleştirme düzeltmesinin testi AC-40 bloğunda.)*
-- [ ] "Kendi tutarı sınır sanılmaz" kuralı iki kolda ayrı ayrı sabitlendi (AC-9, AC-10) ve doğrulayıcı
+- [x] "Kendi tutarı sınır sanılmaz" kuralı iki kolda ayrı ayrı sabitlendi (AC-9, AC-10) ve doğrulayıcı
       imzalarının değişmediği gösterildi (AC-31).
-- [ ] Çek, tahsilat, verilen çek, kapsam dışı ve silinmiş kalem sınırları testlerle sabitlendi
+- [x] Çek, tahsilat, verilen çek, kapsam dışı ve silinmiş kalem sınırları testlerle sabitlendi
       (AC-13, AC-14, AC-33, AC-34, AC-35).
-- [ ] Göç hareketinin `gocKaynak` izinin korunduğu testle gösterildi (AC-36).
-- [ ] İşlem geçmişi kaydı yeni entity ile yazılıyor, etiket haritasında ve `geriAl`'ın dışında
+- [x] Göç hareketinin `gocKaynak` izinin korunduğu testle gösterildi (AC-36).
+- [x] İşlem geçmişi kaydı yeni entity ile yazılıyor, etiket haritasında ve `geriAl`'ın dışında
       (AC-19, AC-39).
-- [ ] Kilit kapsam listesi güncellendi ve `kilit-alanlari` testi yeşil (AC-38).
-- [ ] Görsel kanıt: `docs/evidence/0073-taban-piksel-raporu.json` ve `0073-piksel-raporu.json`;
+- [x] Kilit kapsam listesi güncellendi ve `kilit-alanlari` testi yeşil (AC-38).
+- [x] Görsel kanıt: `docs/evidence/0073-taban-piksel-raporu.json` ve `0073-piksel-raporu.json`;
       ekranlar hareket listesinin işlem sütunu, hesapsız liste satırı, dört düzenleme penceresi, çek ve
       tahsilat ibareleri, göç hareketinin uyarısı. `Kasa.jsx`, `OdemeGirisi.jsx` ve
       `CalisanAvanslari.jsx` tasarım sözlüğünü kullandığı için `docs/evidence/kanit-eslemesi.json`
       kayıtları `beklenen: "degisti"` artı onay satırı taşır; spec `done`'a taşınırken `ayni`ye
       çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: hareketin iki listeden düzenlenebildiği, türün ve bağın değişmediği,
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: hareketin iki listeden düzenlenebildiği, türün ve bağın değişmediği,
       taksit seçiminin yalnız satırlı kalemde olduğu, çek ve tahsilat sınırları, "kendi tutarı hariç"
       kuralının iki kolu, yeni `kasa_hareketi` entity'si ve çakışma birleştirmesinin bilinen sınırı.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (Q1–Q9: dal, çekli yöntem yok, "Kayıtlı ödemeler"den mahsup düzenlemesi, satırsız ipucu, kapalı hesap, avans sınırı, virman kilidi, tek yazma yolu, birleştirme testi); triyajda R24'ün ötesindeki çift kayıt sınıfı `merge.js` düzeltmesiyle kapatıldı (plan "merge.js değişmez" maddesi geçersiz). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: birleştirmede bu oturumda üretilip düzenlenen hareketin çift yazılması, görsel kanıtın eksikliği (çekim sürüyordu), silinmiş çalışanın avansı, kapalı hesabın seçicide görünmemesi, AC-37 testi ve DoD listesi. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Beşi gerçek; birleştirme bulgusu planın §6'sında not edilmişti ama CLAUDE.md'de yanlış anlatılmıştı. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Güncellenen dört eski test bilinçli değişiklik (spec atfıyla: sayfalama işlem sütunu, pencere başlığı ifadesi, 0058 AC-23 birleştirme beklentisi, tasarım sözlüğü satır atıfları); Electron dahil bütün testler yeşil. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kaydı düzenlenebilir yapmak, o kaydın birleştirme davranışını da değiştirir: düzenleme yokken "aynı kimlik, farklı içerik" yalnız nadir bir durumdu ve birleştirme onu yeni kayıt sayıyordu; düzenleme gelince bu dal sıradan hâle gelir ve para hareketinde çift ödeme demektir. Düzenleme açılan her bölüm için birleştirme planı (özellikle bu oturumda üretilmiş kimlik dalı) ayrıca sınanmalı. İkincisi: bilinen bir sınır plana not edilince iş bitmiş sayılmamalı; belgeye geçen cümle (CLAUDE.md) sınırı doğru anlatmıyorsa okuyan onu kabul edilmiş sanır. Üçüncüsü: düzenleme kipi, ekleme kipinin doğrulamasını aynen çağırdığında ekleme için doğru olan bir kural (silinmiş çalışana avans verilmez, kapalı hesap seçilmez) düzenlemede yanlış ya da kafa karıştırıcı olabilir; "kayıtla değişmeyen alan" için kural çağıranda gevşetilmeli, doğrulayıcı imzası değiştirilmeden.

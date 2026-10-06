@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0073-kasa-hareketlerinin-duzenlenmesi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0073-kasa-hareketlerinin-duzenlenmesi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0073-hareket-duzenleme` (`feat/0070-sgk-yol` `b7161c3` üstünde, R29) |
 | **Onay** | Takım Yöneticisi, 2026-10-06: bütün öneriler (Q1–Q9) kabul |
 
