@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0071-kdv-dahil-giris-ve-sifir-tutarli-tekrarlayan.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0071-kdv-dahil-giris-ve-sifir-tutarli-tekrarlayan.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0071-kdv-dahil` (main `d4f1a7e` üstünde) |
 | **Onay** | Takım Yöneticisi, 2026-10-06: bütün öneriler (Q1–Q7) kabul |
 

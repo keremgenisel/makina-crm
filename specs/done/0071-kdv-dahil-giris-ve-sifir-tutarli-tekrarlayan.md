@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-06) |
+| **Durum** | Tamamlandı (commit `bcba891`, dal `feat/0071-kdv-dahil`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider formu (yeni ve düzenleme), tekrarlayan gider tanımı, gider kalemi doğrulaması, kalem listesi |
 | **Bağımlı spec'ler** | 0001 (kalem ve tanım doğrulaması, kira brüt/net emsali) · 0003 (borç kapsamı) · 0021, 0024 (ödeme hedefleri ve kalan) · 0048, 0053 (form ödeme kutusu) · 0061 (açık kalemler) · 0062 (sayfa sıfırlama anahtarı) · 0026 (genel arama) |
-| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q7 işlendi (R6, R23–R28, AC-13, AC-39–AC-44, DoD); plan `specs/0071-uygulama-plani.md` |
+| **Revizyon** | 2 · 2026-10-06 uygulama planı onayı: Q1–Q7 işlendi (R6, R23–R28, AC-13, AC-39–AC-44, DoD); plan `specs/done/0071-uygulama-plani.md` |
 | **Önceki revizyon** | 1 · 2026-10-06 QA turu: B-1..B-7, Ö-8..Ö-20, K-21..K-25 işlendi (Takım Yöneticisi onayı) |
 
 ---
@@ -335,40 +335,41 @@ Başarı şu demek: faturadaki rakam olduğu gibi yazılabiliyor, her ay değiş
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar: motor
       `tests/kdv-dahil-0071.test.js`, bileşen `tests/ui/kdv-dahil-0071.test.jsx`, ek bloklar
       `kdv-dahil-0071.test.js` (AC-25, AC-26; R28: `gider.test.js` dokunulmaz), `ui/gider-settings`
       (AC-17, AC-18, AC-10),
       `db-roundtrip.cjs` ve `db-clean-install.cjs` (AC-16); `merge` dokunulmaz (yeni bölüm yok).
-- [ ] Ayırmanın `kdvKurus`'un tersi olduğu ve sınır durumda farkın yazıldığı testle gösterildi
+- [x] Ayırmanın `kdvKurus`'un tersi olduğu ve sınır durumda farkın yazıldığı testle gösterildi
       (AC-4, AC-5).
-- [ ] Kirada hesap sırasının "önce KDV, sonra brüt/net" olduğu ve net girişte seçicinin çizilmediği testle
+- [x] Kirada hesap sırasının "önce KDV, sonra brüt/net" olduğu ve net girişte seçicinin çizilmediği testle
       gösterildi (AC-13, AC-44).
-- [ ] Sıfır tutarlı kalemin borç zincirine girmediği testle sabitlendi (AC-27).
-- [ ] Motorların değişmediği, mevcut üç test dosyası dokunulmadan yeşil kalarak gösterildi (AC-35).
-- [ ] Tek kaynak kaynak taraması yazıldı: formda yerel KDV formülü yok, gider yolunda `extractKDV`
+- [x] Sıfır tutarlı kalemin borç zincirine girmediği testle sabitlendi (AC-27).
+- [x] Motorların değişmediği, mevcut üç test dosyası dokunulmadan yeşil kalarak gösterildi (AC-35).
+- [x] Tek kaynak kaynak taraması yazıldı: formda yerel KDV formülü yok, gider yolunda `extractKDV`
       çağrısı yok (AC-15).
-- [ ] Görsel kanıt: `docs/evidence/0071-taban-piksel-raporu.json` ve `0071-piksel-raporu.json`;
+- [x] Görsel kanıt: `docs/evidence/0071-taban-piksel-raporu.json` ve `0071-piksel-raporu.json`;
       ekranlar gider formu (normal ve kira, KDV dâhil seçimi ve ayrılan tutarlar), tanım formu ve
       listesi, kalem listesi rozeti, ödeme süzgeci. `GiderForm` ve `DonemRaporu` tasarım sözlüğünü
       kullandığı için `docs/evidence/kanit-eslemesi.json` kayıtları `beklenen: "degisti"` artı onay
-      satırı taşır; spec `done`'a taşınırken `ayni`ye çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: `kdvYonu` sütununun iki tabloda olduğu, ayırmanın `kdvAyir` ile tek
+      satırı taşıdı ve `done`'a taşınırken `0071-taban-piksel-raporu.json` (22 görüntü, hepsi 0 piksel) ile
+      `ayni`ye çevrildi.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: `kdvYonu` sütununun iki tabloda olduğu, ayırmanın `kdvAyir` ile tek
       yerden yapıldığı ve `extractKDV`'nin bu yolda kullanılmadığı, kirada hesap sırası, sıfır tutarın
       yalnız normal davranışlı tanım yolunda serbest olduğu ve rozetin ölçütünün ödenecek tutar olduğu.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (Q1–Q7: kirada dâhil yalnız brüt, tek tutar alanı, boş = 0, model sınırı, "—" hücresi, eski kayıt hariç, AC-35/DoD çelişkisi). Uygulamada R20 notu (ölçülen durum "ödenmemiş", ödenmemiş sayımı); triyajda Durum ve C2 istisnaları. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: model önizlemesi dâhil rakamla sınanıyordu, karışık sürüm sürüm notu, görsel kanıt, spec metni. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dördü de gerçek; görsel kanıt bulgusu çekim sürerken verildi (kanıt o anda henüz üretilmemişti). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | Güncellenen dört eski test bilinçli değişiklik (spec atfıyla); Electron dahil bütün testler yeşil. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in istediği hesap sırası matematiksel olarak doğrulanmalı: "önce KDV ayır, sonra neti brüte çevir" kurala benziyordu ama KDV brüt üzerinden hesaplandığı için net girişte girilen rakamla tutmayan bir ödenecek üretiyordu; plan aşamasında bir örnekle hesaplanınca ortaya çıktı. İkincisi: bir alanın anlamını değiştiren her iş (burada tutar alanı dâhil/hariç) o alanı okuyan bütün önizlemeleri de taramalı; kayıt doğru, ekran yanlış kalan model önizlemesi testsizdi. Üçüncüsü: görsel kanıt çekilirken başka hiçbir iş (lint dahil) koşulmamalı; tabanda üç ekran kararsız çizildi.

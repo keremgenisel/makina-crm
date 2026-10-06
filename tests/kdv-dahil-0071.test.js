@@ -217,7 +217,7 @@ describe("spec 0071 B: sıfır kalem borç ve rapor zincirinde (R15, R20; ölç�
 
 describe("spec 0071 (triyaj): karışık sürüm sürüm notu", () => {
   it("planın sürüm notu ve CLAUDE.md önce sunucu, sonra istemcilerin güncellenmesini ve o süre dâhil seçilmemesini yazar", () => {
-    const plan = ["specs/0071-uygulama-plani.md", "specs/done/0071-uygulama-plani.md"].map(f => { try { return readFileSync(path.join(kok, f), "utf-8"); } catch { return ""; } }).join("");
+    const plan = readFileSync(path.join(kok, "specs/done/0071-uygulama-plani.md"), "utf-8");
     const not = plan.slice(plan.indexOf("## 7. Sürüm notu metni"));
     expect(not).toMatch(/önce sunucu bilgisayarı, sonra bütün istemciler güncellenmelidir/);
     expect(not).toMatch(/güncelleme bitene kadar tekrarlayan tanımda "KDV dâhil" seçmeyin/);
