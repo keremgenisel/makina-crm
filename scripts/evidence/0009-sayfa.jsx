@@ -517,6 +517,10 @@ const ARAMA_VERI = {
     { id: 603, yon: "verilen", no: "VR-1002", banka: "Ziraat", alacakliTur: "tedarikci", alacakliAd: "Yıldız Döküm", durum: "yazildi" }],
 };
 const aramaEkrani = (ek = {}) => <GlobalSearch {...ARAMA_VERI} giderYetki kasaYetki onOpenCustomer={bos} onGoGider={bos} onGoGiderTanim={bos} onGoKasa={bos} {...ek} />;
+// Spec 0072: 12 aya dağıtılmış peşin internet aboneliği (Eylül 2026, görüntü aracının bugününden önce) ve peşin yıllık kira.
+const G_0072 = [...GIDERLER,
+  k(41, { tedarikciId: 12, aciklama: "İnternet aboneliği", tutar: 12000, tarih: "2026-09-02", dagitimAy: 12 }),
+  k(42, { turId: 1, tutar: 60000, kdvOrani: 0, tedarikciId: 11, aciklama: "Depo kirası (yıllık peşin)", tarih: "2026-08-01", dagitimAy: 12 })];
 const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
 
 const EKRANLAR = {
@@ -751,6 +755,15 @@ const EKRANLAR = {
   "kasa-0073-avans-duzenle": [kasaB(), ["~Merkez Kasa", "etiket:Hareketi düzenle: Hasan Çelik"]],
   "kasa-0073-hesapsiz-liste": [kasaB(), ["dugme:Ödemeleri göster", "kaydir:Hesabı belirtilmemiş ödemeler"]],
   "kasa-0073-goc-duzenle": [kasaEkrani(), ["dugme:Ödemeleri göster", "etiket:Hareketi düzenle: Sac levha"]],
+  // Spec 0072: maliyete dağıtım (form alanı etkin/pasif/kira, tanım, kalem rozeti, Makina ve Model kutusu, kârlılık notu ve detay).
+  "gider-formu-0072": [<GiderEkrani />, ["Yeni Gider", "doldur:Maliyete dağıtım (ay)=12", "kaydir:Maliyete dağıtım"]],
+  "gider-formu-0072-makina": [<GiderEkrani />, ["Yeni Gider", "Makina", "kaydir:Maliyete dağıtım"]],
+  "gider-formu-0072-kira": [<GiderEkrani />, ["Yeni Gider", "sec:Gider türü *=1", "kaydir:Maliyete dağıtım"]],
+  "ayarlar-gidertanim-0072": [ayarlar("gidertanim"), ["dugme:Yeni Tanım", "doldur:Maliyete dağıtım (ay)=12", "kaydir:Maliyete dağıtım"]],
+  "giderler-0072-liste": [<GiderEkrani g0={G_0072} />, ["kaydir:İnternet aboneliği"]],
+  "giderler-0072-model": [<GiderEkrani g0={G_0072} />, ["Makina ve Model", "kaydir:Bu dönemde makina maliyetine"]],
+  "giderler-0072-karlilik": [<GiderEkrani g0={G_0072} />, ["Makina Kârlılığı", "kaydir:Ortak gider kaynağı"]],
+  "giderler-0072-detay": [<GiderEkrani g0={G_0072} />, ["Makina Kârlılığı", "~Ege Köfte", "kaydir:Ortak gidere aylık"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],

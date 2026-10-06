@@ -110,7 +110,7 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
               m.payAlamamis > 0 ? `Malzeme payı alamamış makina sayısı: ${m.payAlamamis}` : null, `model-${m.model}`)}</div>)}
           </div>
         )}
-        <MaliyetNotlari kaynak={oz.kaynak} yaklasik={oz.yaklasikVar} />
+        <MaliyetNotlari kaynak={oz.kaynak} yaklasik={oz.yaklasikVar} dagitimVar={oz.dagitimVar} />
       </KartBolum>
 
       <FiyatOnerisi sonuc={sonuc} bugun={bugun} modeller={modeller} />

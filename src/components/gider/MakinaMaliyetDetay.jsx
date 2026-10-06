@@ -1,7 +1,7 @@
 import { fmtTR, fmtCur } from "../../lib/utils";
 import { ayOf } from "../../lib/gider";
 import {
-  URETIM_KAYNAK, ORTAK_KAYNAK_ETIKET, MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, marjBicim, carpanBicim,
+  URETIM_KAYNAK, ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET, MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, DAGITIM_NOTU, DAGITIM_STANDART_NOTU, marjBicim, carpanBicim,
 } from "../../lib/makinaMaliyeti";
 import { tl2 } from "./GiderAlanlari";
 import { Rozet } from "./DonemRaporu";
@@ -12,11 +12,13 @@ import { Rozet } from "./DonemRaporu";
 // personelin model dağılımını da taşır, etiketi bu yüzden işçiliği kapsar (spec 0020 R11).
 const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };
 
-export const MaliyetNotlari = ({ kaynak, yaklasik = false }) => (
+// Spec 0072 R15, R18: dağıtım satırı yalnız hesapta dağıtılmış kalem varken; standart kaynakta etkisizliği söyler.
+export const MaliyetNotlari = ({ kaynak, yaklasik = false, dagitimVar = false }) => (
   <div data-testid="maliyet-notlari" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", lineHeight: 1.55, marginTop: 8 }}>
     <div><b>{MALZEME_HARIC_NOTU}</b> Gider olarak girilen malzeme alımları dahildir.</div>
     <div>Ortak gider kaynağı: <b>{ORTAK_KAYNAK_ETIKET[kaynak] || ORTAK_KAYNAK_ETIKET.gercek}</b>.</div>
     {yaklasik && <div>Kuru kayıtlı olmayan satışlar güncel kurla <b>yaklaşık</b> hesaplandı.</div>}
+    {dagitimVar && <div data-testid="dagitim-notu">{kaynak === ORTAK_KAYNAK.STANDART ? DAGITIM_STANDART_NOTU : DAGITIM_NOTU}</div>}
     <div>{BUGUNKU_VERI_NOTU}</div>
   </div>
 );
@@ -41,7 +43,7 @@ export const MakinaMaliyetDetay = ({ detay }) => {
       {d.satildi && d.satisTarihi && <span>· Satış: <b>{fmtTR(d.satisTarihi)}</b></span>}
     </div>
   );
-  if (d.bilinmiyor) return <div data-testid="maliyet-detay">{ust}<div style={{ fontSize: 13 }}>Üretim tarihi bulunamadığı için maliyet hesaplanamıyor. Makina düzenleme formundan üretim tarihini girin.</div><MaliyetNotlari kaynak={d.kaynak} /></div>;
+  if (d.bilinmiyor) return <div data-testid="maliyet-detay">{ust}<div style={{ fontSize: 13 }}>Üretim tarihi bulunamadığı için maliyet hesaplanamıyor. Makina düzenleme formundan üretim tarihini girin.</div><MaliyetNotlari kaynak={d.kaynak} dagitimVar={d.dagitimVar} /></div>;
   if (d.veriYok) return (
     <div data-testid="maliyet-detay">{ust}
       <div style={{ fontSize: 13, background: "var(--n100, #f8fafc)", border: "1px dashed var(--n300, #cbd5e1)", borderRadius: 8, padding: "10px 12px" }}>
@@ -61,6 +63,12 @@ export const MakinaMaliyetDetay = ({ detay }) => {
       <Satir etiket="Ortak gider payı" alt={d.parti
         ? `Parti ${d.parti.ad}: ${ayAdi(d.parti.baslangicAy)} – ${d.parti.acik ? "sürüyor" : ayAdi(d.parti.bitisAy)}, ${d.parti.adet} makina`
         : `${ayAdi(ayOf(d.uretimTarihi))} üretim ayının payı`} deger={tl2(d.ortakPay)} />
+      {/* Spec 0072 R14, R24 (S6): ortak payın aylık paylı dağıtılmış kalemleri; ad kalemGorunenAd'dan (personel "Personel gideri"). */}
+      {(d.dagitimlar || []).length > 0 && (
+        <div data-testid="dagitim-paylari" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", padding: "0 0 6px" }}>
+          Ortak gidere aylık payıyla girenler: {d.dagitimlar.map(x => `${x.aciklama || "Gider"} · ${x.aySayisi} aya dağıtılmış, aylık ${tl2(x.pay)}`).join("; ")}
+        </div>
+      )}
       {d.partiBaslamadi && <div data-testid="parti-baslamadi" style={{ fontSize: 12.5, color: "var(--n600, #475569)", padding: "4px 0" }}><b>Parti henüz başlamadı</b> ({ayAdi(d.parti?.baslangicAy)}): ortak gider payı partinin başladığı aydan itibaren hesaplanır.</div>}
       {d.gecici && <div data-testid="maliyet-gecici" style={{ fontSize: 12.5, color: "var(--orTx, #c2410c)", padding: "4px 0" }}><b>Geçici:</b> parti kapanınca bu ibare kalkar. Rakam dondurulmaz; ayların gideri değişirse yeniden hesaplanır.</div>}
       <Satir etiket="Üretim maliyeti" deger={tl2(d.uretimMaliyeti)} kalin />
@@ -79,7 +87,7 @@ export const MakinaMaliyetDetay = ({ detay }) => {
         {d.kurDurum === "yaklasik" && <div style={{ marginTop: 6 }}><Rozet renk="turuncu" title="Satış kuru kayıtlı değil; güncel kurla hesaplandı">Yaklaşık (güncel kur)</Rozet></div>}
       </>}
       {!d.satildi && <div style={{ fontSize: 12.5, color: "var(--n600, #475569)", padding: "6px 0" }}>Makina stokta: maliyeti satışa kadar stokta bekler.</div>}
-      <MaliyetNotlari kaynak={d.kaynak} />
+      <MaliyetNotlari kaynak={d.kaynak} dagitimVar={d.dagitimVar} />
     </div>
   );
 };

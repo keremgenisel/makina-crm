@@ -378,7 +378,8 @@ export const Giderler = ({
       )}
       {gorunum === "makina" && rapor && (rapor.yururlukOncesi
         ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
-        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari={donemAnahtari} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)} />)}
+        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari={donemAnahtari} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)}
+          makinaMaliyet={makinaMaliyet} giderler={giderler} baslangic={baslangic} bitis={bitis} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}

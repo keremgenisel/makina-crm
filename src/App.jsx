@@ -43,6 +43,7 @@ import { Harita } from "./components/Harita";
 import { Settings } from "./components/Settings";
 import { Documents } from "./components/Documents";
 import { GlobalSearch } from "./components/GlobalSearch";
+import { useBugun } from "./hooks/useBugun";
 
 const TABS = [
   { id: "dashboard", label: "Anasayfa",     icon: "dashboard" },
@@ -827,10 +828,14 @@ export default function App() {
   useEffect(() => { if (tab !== "gider" && giderAcilis) setGiderAcilis(null); }, [tab, giderAcilis]);
   useEffect(() => { if (tab !== "kasa" && kasaAcilis) setKasaAcilis(null); }, [tab, kasaAcilis]);
   const copMusteriler = useMemo(() => customers.filter(c => c.deletedAt), [customers]);
+  // Spec 0072 triyaj (bulgu 2): motorun "bugün"ü yerel gündür ve memoya bağlıdır. today() UTC'dir (ayın 1'inde 00:00–03:00
+  // arası önceki ayı verir) ve memo tarihe bağlı değildi; uygulama ay dönümünde açık kalınca yeni ayın dağıtım payı (ve açık
+  // partinin yeni ayı) bir veri değişene kadar girmiyordu. useBugun gün değişince yeniden çizer, memo günde bir yeniden hesaplar.
+  const maliyetBugun = useBugun();
   const makinaMaliyet = useMemo(() => (giderYetki ? hesaplaMakinaMaliyetleri({
     customers, stock, partStockLog, giderler, giderTurleri, standartGiderler, standardModels, customModels, uretimPartileri,
     giderAyarlari: appSettings.giderAyarlari,
-  }, { bugun: today() }) : null), [giderYetki, customers, stock, partStockLog, giderler, giderTurleri, standartGiderler, standardModels, customModels, uretimPartileri, appSettings.giderAyarlari]);
+  }, { bugun: maliyetBugun }) : null), [giderYetki, customers, stock, partStockLog, giderler, giderTurleri, standartGiderler, standardModels, customModels, uretimPartileri, appSettings.giderAyarlari, maliyetBugun]);
 
   // ── Uygulama geneli yeni-servis bildirimi ──────────────────────────────────
   // Servis ve Kargo Panosu DIŞINDAki bir sekmedeyken, uzaktan (başka bilgisayardan) yeni bir

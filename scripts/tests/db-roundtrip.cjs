@@ -105,12 +105,12 @@ dbmod.writeBlobToDb({
   giderTurleri: [{ id: 41, ad: "Fabrika kirası", davranis: "kira" }, { id: 42, ad: "Personel", davranis: "personel" }, { id: 43, ad: "Hammadde", davranis: "normal" }],
   tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
   giderTanimlari: [
-    { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, kdvYonu: "dahil", baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
+    { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false },
     { id: 62, turId: 42, ad: "Murat", calisanId: 72, baslangicAy: "2026-06", bitisAy: "2026-08", uretilenAylar: ["2026-06"], kapatildi: true },
   ],
   giderler: [
-    { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, kdvYonu: "dahil", odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
+    { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
     { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", kdvYonu: "haric", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
       // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
@@ -317,6 +317,10 @@ check("spec 0070 AC-5: sgkTutar ve yolParasi roundtrip eder, SGK satırı (hedef
   const k = (blob.giderler || []).find(x => x.id === 86), e = (blob.giderler || []).find(x => x.id === 83);
   const sgk = (k?.taksitler || []).find(x => x.hedef === "sgk");
   return k?.sgkTutar === 9000.5 && k.yolParasi === 1500 && sgk?.id === 9025 && sgk.vade === "2026-09-15" && sgk.tutar === 9000.5 && e && !("sgkTutar" in e) && !("yolParasi" in e);
+})());
+check("spec 0072 AC-23: dagitimAy iki tabloda roundtrip eder; alanı olmayan kalemde blob'a yazılmaz (R19)", (() => {
+  const k = (blob.giderler || []).find(x => x.id === 81), kira = (blob.giderler || []).find(x => x.id === 82), t = (blob.giderTanimlari || []).find(x => x.id === 61);
+  return k?.dagitimAy === 12 && t?.dagitimAy === 12 && kira && !("dagitimAy" in kira);
 })());
 check("spec 0071 AC-16: kdvYonu iki tabloda roundtrip eder, kira girisYonu ile yan yana durur; boş alan blob'a yazılmaz (R27)", (() => {
   const k = (blob.giderler || []).find(x => x.id === 81), kira = (blob.giderler || []).find(x => x.id === 82);

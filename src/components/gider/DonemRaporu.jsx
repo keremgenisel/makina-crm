@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
-import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari } from "../../lib/gider";
+import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -277,7 +277,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const cizim = [...(personel.length ? [{ tip: "grup" }] : []), ...(personelAcik ? personel : []).map(k => ({ tip: "kalem", k })), ...diger.map(k => ({ tip: "kalem", k }))];
   const { page, setPage, paged, perPage } = usePagination(cizim, 10, `${donemAnahtari}|${filtre.tur}|${filtre.ted}|${filtre.odeme}|${filtre.ara}`);
 
-  const atamaHucre = (k) => {
+  const atamaIcerik = (k) => {
     if (!atanabilirMi(dav(k)) || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
     if (k.atamaTur === ATAMA.DAGITMA) return <Rozet renk="camgobegi">Dağıtılmasın</Rozet>;
     if (k.atamaTur === ATAMA.MODEL) {
@@ -289,6 +289,11 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
     const cz = makinaGideriCoz(k, { stock, customers });
     if (!cz) return <div><span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span><div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Atandığı makina silinmiş veya takip edilemiyor</div></div>;
     return <div><div style={{ fontWeight: 600 }}>{[cz.model, cz.seri].filter(Boolean).join(" · ")}</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{cz.tur === "stok" ? "Makina Stoğu" : `${cz.ad}${cz.stoktanTakip ? " (stoktan satıldı)" : ""}`}</div></div>;
+  };
+  // Spec 0072 R13 (S7): dağıtılmış kalemin rozeti atama hücresinde, dönemden bağımsız kapsam aralığıyla; tutar sütunu tam tutar.
+  const atamaHucre = (k) => {
+    const r = dagitimRozetMetni(k);
+    return r ? <div>{atamaIcerik(k)}<div data-testid="dagitim-rozeti" style={{ marginTop: 4 }}><Rozet renk="mor">{r}</Rozet></div></div> : atamaIcerik(k);
   };
   // Spec 0021: ödeme satırı olan kalemde durum satırlardan gelir (AC-6). Spec 0060 R1, R2 (AC-1, AC-4, AC-24): birden çok
   // ödeme hedefi olan kalemde (stopajlı kira, çok hedefli personel) taksitli olsa da hedef başına rozet çizilir; ölçüt

@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { uid, today, getKdvRateForDate } from "../../lib/utils";
-import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi } from "../../lib/gider";
+import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
-import { TutarInput, AyInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { TutarInput, AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
 // silinse bile o ay listede kalır ve yeniden üretilmez. Tanım silme kalıcıdır (R12).
-const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [] });
+const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "" });
 
 export const SettingsGiderTanimlari = ({
   giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], calisanlar = [],
@@ -76,6 +76,10 @@ export const SettingsGiderTanimlari = ({
       else if (!form.modelSatirlari.length) h.atama = "En az bir model satırı girin.";
       else if (d.hatalar.length) h.atama = d.hatalar[0].mesaj;
     }
+    // Spec 0072 R4, R5, R17: dağıtım ay sayısı (taksit emsali); makina ve "dağıtılmasın" atamasında saklanmaz.
+    const atamaSon = atamaVar ? (form.atamaTur || "") : "";
+    const dg = dagitimAySayisiCoz(form.dagitimAy);
+    if (dg.hata && dagitimSecilebilirMi(atamaSon)) h.dagitimAy = dg.hata;
     setHatalar(h);
     if (Object.keys(h).length) return;
     const calisan = calisanlar.find(c => String(c.id) === String(form.calisanId));
@@ -96,6 +100,7 @@ export const SettingsGiderTanimlari = ({
       modelSatirlari: atamaVar && form.atamaTur === ATAMA.MODEL ? form.modelSatirlari.map(s => ({ modelAd: s.modelAd, birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) })) : [],
       uretilenAylar: form.uretilenAylar || [], kapatildi: form.kapatildi && !!form.bitisAy,
     };
+    if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(atamaSon)) kayit.dagitimAy = dg.deger; // R19 (S4): 1 ya da boş saklanmaz
     const yeni = form.id == null;
     setGiderTanimlari(p => (yeni ? [...p, kayit] : p.map(t => (t.id === kayit.id ? kayit : t))));
     logAction({ serverPermissions, action: yeni ? "olusturuldu" : "duzenlendi", entity: "gider_tanim", entityId: kayit.id, entityName: kayit.ad });
@@ -193,7 +198,9 @@ export const SettingsGiderTanimlari = ({
         <Modal title={form.id == null ? "Yeni Tekrarlayan Tanım" : "Tekrarlayan Tanımı Düzenle"} onClose={() => setForm(null)} maxWidth={640}
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           <Field label="Gider türü *">
-            <Select value={form.turId} onChange={e => set({ turId: e.target.value })}>
+            <Select value={form.turId} onChange={e => set({ turId: e.target.value,
+              // Spec 0072 (S3): atama yalnız normal davranışta kaydedilir; tür değişince eski atama dağıtım alanını yanlışlıkla pasif bırakmasın.
+              ...(davOf(e.target.value) !== DAVRANIS.NORMAL ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) })}>
               <option value="">Tür seçin</option>
               {giderTurleri.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
             </Select>
@@ -253,6 +260,7 @@ export const SettingsGiderTanimlari = ({
               <HataMetni>{hatalar.atama}</HataMetni>
             </Field>
           )}
+          <DagitimAlani value={form.dagitimAy} onChange={v => set({ dagitimAy: v })} atamaTur={form.atamaTur || ""} hata={hatalar.dagitimAy} tanim />
           {(form.uretilenAylar || []).length > 0 && <Ipucu>Bu tanımdan üretilen aylar: {form.uretilenAylar.join(", ")}. Tanımı değiştirmek üretilmiş kalemleri değiştirmez.</Ipucu>}
         </Modal>
       )}

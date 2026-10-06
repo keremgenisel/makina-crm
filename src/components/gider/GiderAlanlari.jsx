@@ -1,7 +1,8 @@
 import { useState, useRef, useLayoutEffect } from "react";
-import { Icon, Select } from "../ui";
+import { Icon, Select, Field, Input } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl } from "../../lib/gider";
+import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl,
+  dagitimSecilebilirMi, dagitimAySayisiCoz, dagitimRozetMetni, DAGITIM_AY_MAX, DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
@@ -165,6 +166,30 @@ export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar,
         </div>
       )}
     </div>
+  );
+};
+
+// Spec 0072 R1, R17, R25 (S3): maliyete dağıtım alanı. Atama bölümünden bağımsızdır (kirada atama bölümü yok) ve
+// bütün davranışlarda çizilir; makina ve "dağıtılmasın" atamasında pasif, nedeniyle. Gider formu ve tekrarlayan tanım
+// formu aynı alanı kullanır (tanımda R4 ipucu). Önizleme metni rozetle aynı yardımcıdan (dagitimRozetMetni).
+export const DagitimAlani = ({ value, onChange, atamaTur = "", tarih = null, hata = null, tanim = false }) => {
+  const secilebilir = dagitimSecilebilirMi(atamaTur);
+  const coz = dagitimAySayisiCoz(value);
+  const onizleme = secilebilir && !coz.hata && tarih ? dagitimRozetMetni({ dagitimAy: coz.deger, tarih, atamaTur }) : "";
+  return (
+    <Field label="Maliyete dağıtım (ay)">
+      <div data-testid="dagitim-alani">
+        <Input aria-label="Maliyete dağıtım (ay)" type="number" min="1" max={String(DAGITIM_AY_MAX)} placeholder="1" disabled={!secilebilir}
+          value={secilebilir ? (value ?? "") : ""} onChange={e => onChange(e.target.value)} />
+        <HataMetni>{hata}</HataMetni>
+        {!secilebilir
+          ? <div data-testid="dagitim-pasif-neden"><Ipucu>{atamaTur === ATAMA.MAKINA ? DAGITIM_MAKINA_NEDENI : DAGITIM_DAGITMA_NEDENI}</Ipucu></div>
+          : <Ipucu>Peşin ödenen giderin makina maliyetine aylık payı girer (boş ya da 1: dağıtım yok). Ödeme, dönem raporu ve KDV değişmez.</Ipucu>}
+        {secilebilir && atamaTur === ATAMA.MODEL && <div data-testid="dagitim-model-ipucu"><Ipucu>{DAGITIM_MODEL_IPUCU}</Ipucu></div>}
+        {secilebilir && tanim && !coz.hata && coz.deger > 1 && <div data-testid="dagitim-tanim-ipucu"><Ipucu>{DAGITIM_TANIM_IPUCU}</Ipucu></div>}
+        {onizleme && <div data-testid="dagitim-onizleme" style={{ fontSize: 12, color: "var(--n700)", marginTop: 4 }}>{onizleme}</div>}
+      </div>
+    </Field>
   );
 };
 

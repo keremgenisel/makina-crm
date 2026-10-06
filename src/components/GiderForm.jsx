@@ -7,7 +7,7 @@ import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorc
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -24,7 +24,7 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", sgkTutar: "", yolParasi: "", sgkVade: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
       atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
-      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [] };
+      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [], dagitimAy: "" };
   }
   // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
   const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
@@ -40,7 +40,8 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
     ekOdemeler: (k.ekOdemeler || []).map(e => ({ ...e, aciklama: e.aciklama || "", resmiTutar: tutarMetni(e.resmiTutar), eldenTutar: tutarMetni(e.eldenTutar) })),
     taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "", eldenVade: eld[0]?.vade || "",
-    sgkVade: sgk[0]?.vade || "" }; // spec 0070 Q2: SGK vadesi SGK satırının vadesidir
+    sgkVade: sgk[0]?.vade || "", // spec 0070 Q2: SGK vadesi SGK satırının vadesidir
+    dagitimAy: k.dagitimAy ? String(k.dagitimAy) : "" }; // spec 0072 R19
 };
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
@@ -446,6 +447,9 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
           <HataMetni>{hatalar.filter(h => h.alan === "modelSatirlari" || h.alan === "makinaId").map(h => h.mesaj).find(Boolean)}</HataMetni>
         </Field>
       )}
+      {/* Spec 0072 R25 (S3): atama bölümünden bağımsız, bütün davranışlarda (kira dahil). */}
+      <DagitimAlani value={form.dagitimAy} onChange={v => set({ dagitimAy: v })} atamaTur={atanabilirMi(dav) ? form.atamaTur : ""} tarih={form.tarih}
+        hata={hatalar.find(h => h.alan === "dagitimAy")?.mesaj} />
     </Modal>
   );
 };

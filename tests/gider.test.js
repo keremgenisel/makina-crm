@@ -469,3 +469,17 @@ describe("triyaj düzeltmeleri", () => {
     expect(r.tedarikciKirilimi.toplamBorc).toBe(18000);
   });
 });
+
+// Spec 0072 AC-6: dağıtım ay sayısının doğrulaması taksit emsalini birebir izler (tek hata metni).
+import { dagitimAySayisiCoz, taksitSayisiCoz, DAGITIM_AY_HATASI, giderKalemDogrula as dogrula0072, turHaritasi as turHaritasi0072 } from "../src/lib/gider";
+describe("Spec 0072: dağıtım ay sayısı doğrulaması", () => {
+  it("AC-6: 60'ın üstü, sıfır, negatif ve tam sayı olmayan değer tek metinle reddedilir; taksit çözücüsüyle aynı sınırlar", () => {
+    for (const v of ["", "1", "12", "60", "61", "0", "-3", "2.5"]) {
+      expect(!!dagitimAySayisiCoz(v).hata).toBe(!!taksitSayisiCoz(v).hata);
+      if (dagitimAySayisiCoz(v).hata) expect(dagitimAySayisiCoz(v).hata).toBe(DAGITIM_AY_HATASI);
+    }
+    const r = dogrula0072({ tarih: "2026-03-01", turId: 1, tutar: "100", kdvOrani: "20", dagitimAy: "61" }, { turMap: turHaritasi0072([{ id: 1, ad: "G", davranis: "normal" }]) });
+    expect(r.kayit).toBeNull();
+    expect(r.hatalar).toContainEqual({ alan: "dagitimAy", mesaj: DAGITIM_AY_HATASI });
+  });
+});

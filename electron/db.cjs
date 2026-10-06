@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS giderler (
   calisanId INTEGER, calisanAd TEXT, resmiTutar REAL, eldenTutar REAL,
   tanimId INTEGER, donem TEXT,
   atamaTur TEXT, makinaTur TEXT, makinaId INTEGER,
-  deletedAt TEXT, kdvYonu TEXT, sgkTutar REAL, yolParasi REAL
+  deletedAt TEXT, kdvYonu TEXT, sgkTutar REAL, yolParasi REAL, dagitimAy INTEGER
 );
 CREATE TABLE IF NOT EXISTS gider_model_satirlari (
   id INTEGER PRIMARY KEY,
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
   turId INTEGER, ad TEXT, tutar REAL, kdvOrani REAL, baslangicAy TEXT, bitisAy TEXT,
   calisanId INTEGER, girisYonu TEXT, tedarikciId INTEGER, odemeYontemi TEXT,
   atamaTur TEXT, makinaTur TEXT, makinaId INTEGER, modelSatirlari TEXT,
-  uretilenAylar TEXT, kapatildi INTEGER, kdvYonu TEXT
+  uretilenAylar TEXT, kapatildi INTEGER, kdvYonu TEXT, dagitimAy INTEGER
 );
 -- Üretim partileri (spec 0022): maliyet dağıtımının tabanı; kalıcı silme (tedarikçi deseni). Makina bağı
 -- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
@@ -521,6 +521,10 @@ const GIDER_KDV_YONU_COLUMN = [["kdvYonu", "TEXT"]];
 // Spec 0070 R20 (Q2): personel kaleminin SGK ve yol parası bileşenleri (SGK vadesi sütun değil, gider_taksitleri'ndeki
 // hedef "sgk" satırının vadesidir).
 const GIDER_SGK_YOL_COLUMNS = [["sgkTutar", "REAL"], ["yolParasi", "REAL"]];
+// Spec 0072 R19: maliyete dağıtım ay sayısı (giderler ve gider_tanimlari). 1 ya da boş değer saklanmaz (null) ve
+// okumada blob'a yazılmaz (eski kaydın görünümü ve sunucu karşılaştırması değişmez).
+const GIDER_DAGITIM_COLUMN = [["dagitimAy", "INTEGER"]];
+const dagitimAyYaz = (v) => { const n = Number(v); return Number.isInteger(n) && n > 1 ? n : null; };
 const USERS_PERMISSIONS_COLUMN = [["permissions", "TEXT"]];
 // Şifre her değiştiğinde artar ve JWT'deki tv alanıyla karşılaştırılır — böylece admin bir
 // kullanıcının şifresini değiştirince o kullanıcının eski oturumu (token süresi dolmadan) düşer.
@@ -845,9 +849,9 @@ function populateAll(conn, data, skip = new Set()) {
     conn.prepare(`DELETE FROM giderler`).run();
     const stmt = conn.prepare(`
       INSERT INTO giderler (id, tarih, turId, aciklama, tedarikciId, tutar, kdvOrani, odemeYontemi, sonOdemeTarihi, odendi, odemeTarihi,
-        stopajOrani, girisYonu, netTutar, calisanId, calisanAd, resmiTutar, eldenTutar, tanimId, donem, atamaTur, makinaTur, makinaId, deletedAt, kdvYonu, sgkTutar, yolParasi)
+        stopajOrani, girisYonu, netTutar, calisanId, calisanAd, resmiTutar, eldenTutar, tanimId, donem, atamaTur, makinaTur, makinaId, deletedAt, kdvYonu, sgkTutar, yolParasi, dagitimAy)
       VALUES (@id, @tarih, @turId, @aciklama, @tedarikciId, @tutar, @kdvOrani, @odemeYontemi, @sonOdemeTarihi, @odendi, @odemeTarihi,
-        @stopajOrani, @girisYonu, @netTutar, @calisanId, @calisanAd, @resmiTutar, @eldenTutar, @tanimId, @donem, @atamaTur, @makinaTur, @makinaId, @deletedAt, @kdvYonu, @sgkTutar, @yolParasi)
+        @stopajOrani, @girisYonu, @netTutar, @calisanId, @calisanAd, @resmiTutar, @eldenTutar, @tanimId, @donem, @atamaTur, @makinaTur, @makinaId, @deletedAt, @kdvYonu, @sgkTutar, @yolParasi, @dagitimAy)
     `);
     // Alt satıra id verilmez (yedek_parca_tahsis dersi: rowid çakışması tüm kaydı geri alıyordu).
     const mStmt = conn.prepare(`INSERT INTO gider_model_satirlari (gider_id, modelAd, birimMaliyet, adet, sort_order) VALUES (?, ?, ?, ?, ?)`);
@@ -862,7 +866,7 @@ function populateAll(conn, data, skip = new Set()) {
         calisanId: g.calisanId ?? null, calisanAd: g.calisanAd ?? null, resmiTutar: g.resmiTutar ?? null, eldenTutar: g.eldenTutar ?? null,
         tanimId: g.tanimId ?? null, donem: g.donem ?? null,
         atamaTur: g.atamaTur ?? null, makinaTur: g.makinaTur ?? null, makinaId: g.makinaId ?? null, deletedAt: g.deletedAt ?? null,
-        kdvYonu: g.kdvYonu ?? null, sgkTutar: g.sgkTutar ?? null, yolParasi: g.yolParasi ?? null,
+        kdvYonu: g.kdvYonu ?? null, sgkTutar: g.sgkTutar ?? null, yolParasi: g.yolParasi ?? null, dagitimAy: dagitimAyYaz(g.dagitimAy),
       });
       (g.modelSatirlari || []).forEach((m, idx) => mStmt.run(g.id, m.modelAd ?? null, m.birimMaliyet ?? null, m.adet ?? null, idx));
       (g.ekOdemeler || []).forEach((e, idx) => ekStmt.run(g.id, e.tur ?? null, e.aciklama ?? null, e.resmiTutar ?? null, e.eldenTutar ?? null, idx));
@@ -871,9 +875,9 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.giderTanimlari) && !skip.has("giderTanimlari")) {
     conn.prepare(`DELETE FROM gider_tanimlari`).run();
-    const stmt = conn.prepare(`INSERT INTO gider_tanimlari (id, turId, ad, tutar, kdvOrani, baslangicAy, bitisAy, calisanId, girisYonu, tedarikciId, odemeYontemi, atamaTur, makinaTur, makinaId, modelSatirlari, uretilenAylar, kapatildi, kdvYonu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO gider_tanimlari (id, turId, ad, tutar, kdvOrani, baslangicAy, bitisAy, calisanId, girisYonu, tedarikciId, odemeYontemi, atamaTur, makinaTur, makinaId, modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const t of data.giderTanimlari) {
-      stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi), t.kdvYonu ?? null);
+      stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi), t.kdvYonu ?? null, dagitimAyYaz(t.dagitimAy));
     }
   }
   if (Array.isArray(data.kasaHesaplari) && !skip.has("kasaHesaplari")) {
@@ -1051,6 +1055,8 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "giderler", GIDER_KDV_YONU_COLUMN);
   ensureColumns(conn, "giderler", GIDER_SGK_YOL_COLUMNS);
   ensureColumns(conn, "gider_tanimlari", GIDER_KDV_YONU_COLUMN);
+  ensureColumns(conn, "giderler", GIDER_DAGITIM_COLUMN);
+  ensureColumns(conn, "gider_tanimlari", GIDER_DAGITIM_COLUMN);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_URETIM_COLUMN);
@@ -1443,12 +1449,12 @@ function readBlobFromDb() {
   const kdvYonuAlani = (v) => (v == null ? {} : { kdvYonu: v });
   // Spec 0070: boş SGK / yol parası da blob'a yazılmaz (alanı tanımayan istemcinin blob'u değişmiş görünmesin).
   const bosOlmayan = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
-  const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, kdvYonu, sgkTutar, yolParasi, ...rest }) => ({
-    ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ sgkTutar, yolParasi }), odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
+  const giderler = db.prepare(`SELECT * FROM giderler`).all().map(({ odendi, kdvYonu, sgkTutar, yolParasi, dagitimAy, ...rest }) => ({
+    ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ sgkTutar, yolParasi, dagitimAy }), odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
     ekOdemeler: ekByGider.get(rest.id) || [],
   }));
-  const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, kdvYonu, ...rest }) => ({
-    ...rest, ...kdvYonuAlani(kdvYonu), modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),
+  const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy, ...rest }) => ({
+    ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ dagitimAy }), modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),
   }));
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
   const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();

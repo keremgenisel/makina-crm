@@ -279,3 +279,25 @@ describe("Spec 0070: SGK ve yol parası çıktıya kişi bazında girmez", () =>
     expect(h.replace(SGK_KUTU, "")).not.toMatch(YASAKLI);
   });
 });
+
+// Spec 0072 AC-31, AC-32, R24: dağıtım yalnız ekranın ve makina maliyetinin bilgisidir; yazdırma, e-posta ve dışa aktarma
+// dağıtım alanını hiç okumaz, 0020'nin MALIYET taraması gevşetilmedi (yukarıdaki blok aynen).
+describe("Spec 0072: maliyete dağıtım çıktılara girmez", () => {
+  const DAGITIM = /dagitimAy|dagitimPaylari|dagitimAraligi|dagitimRozetMetni|dagitimlar|dagitimVar/;
+  it.each(["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/giderRaporu.js", "src/lib/aylikRapor.js", "src/lib/mailTemplates.js",
+    "src/components/settings/SettingsExport.jsx", "src/components/settings/csvUtils.js", "src/components/Finance.jsx"])(
+    "AC-32: %s dağıtım alanını okumaz", (f) => {
+      expect(oku(f)).not.toMatch(DAGITIM);
+    });
+  it("AC-31: personel davranışlı dağıtılmış kalemin maliyet satırı adı 'Personel gideri'; çalışan adı geçmez", async () => {
+    const { hesaplaMakinaMaliyetleri, makinaKarlilik } = await import("../src/lib/makinaMaliyeti");
+    const s = hesaplaMakinaMaliyetleri({
+      customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S1", installDate: "2026-04-10", uretimTarihi: "2026-04-10", currency: "TRY" }],
+      giderler: [{ id: 5, tarih: "2026-03-01", turId: 3, calisanId: 7, calisanAd: "Seyfettin Kırgız", aciklama: "Seyfettin Kırgız", resmiTutar: 1200, eldenTutar: 0, dagitimAy: 12 }],
+      giderTurleri: [{ id: 3, ad: "Maaşlar", davranis: "personel" }], standardModels: [{ model: "AK100" }], giderAyarlari: { yururlukAy: "2026-01" },
+    }, { bugun: "2026-09-24" });
+    const d = makinaKarlilik(s, "musteri:1");
+    expect(d.dagitimlar.map(x => x.aciklama)).toEqual(["Personel gideri"]);
+    expect(JSON.stringify(d)).not.toMatch(/Seyfettin/);
+  });
+});

@@ -633,6 +633,12 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
       kayit.modelSatirlari = satirlar.map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
     }
   }
+  // Spec 0072 R5, R17, R19 (S4): dağıtım ay sayısı. Bir ya da boş değer saklanmaz (okumada da blob'a yazılmaz); makina ve
+  // "dağıtılmasın" atamasında alan temizlenir.
+  const dg = dagitimAySayisiCoz(form.dagitimAy);
+  if (dg.hata && dagitimSecilebilirMi(kayit.atamaTur)) hata("dagitimAy", dg.hata);
+  if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(kayit.atamaTur)) kayit.dagitimAy = dg.deger;
+  else delete kayit.dagitimAy;
   return { hatalar, uyarilar, kayit: hatalar.length ? null : kayit };
 };
 
@@ -701,6 +707,53 @@ export const kalemKovalariKurus = (k, { davranis = DAVRANIS.NORMAL, makinaCoz, c
   const makina = atanabilirMi(davranis) && k.atamaTur === ATAMA.MAKINA && makinaCoz ? makinaCoz(k) : null;
   return { ...kovaKurus(k, davranis, !!makina, canliModeller), makinaCozum: makina };
 };
+// ── Maliyete dağıtım (spec 0072) ─────────────────────────────────────────────
+// Peşin ödenen giderin ORTAK kovası makina maliyetine aylara bölünerek girer (R6, R10). Taksitin tersidir: ödeme ve
+// dönem raporu bölünmez, yalnız maliyet payı bölünür. Ay sayısı taksit emsaliyle çözülür (R5); 1 ya da boş = dağıtım yok.
+export const DAGITIM_AY_MAX = 60;
+export const DAGITIM_AY_HATASI = `Dağıtım ay sayısı 1 ile ${DAGITIM_AY_MAX} arasında tam sayı olmalı.`;
+export const dagitimAySayisiCoz = (v) => {
+  const t = String(v ?? "").trim();
+  if (t === "") return { deger: 1 };
+  const n = Number(t);
+  if (!Number.isInteger(n) || n < 1 || n > DAGITIM_AY_MAX) return { hata: DAGITIM_AY_HATASI };
+  return { deger: n };
+};
+// R17 (S3): makinaya atanmış ve "dağıtılmasın" kalem dağıtılmaz (etkisi yok ya da anlamsız).
+export const dagitimSecilebilirMi = (atamaTur) => atamaTur !== ATAMA.MAKINA && atamaTur !== ATAMA.DAGITMA;
+export const DAGITIM_MAKINA_NEDENI = "Tek bir makinaya atanmış gider o makinanın maliyetine bir kez girer; aylara dağıtılmaz.";
+export const DAGITIM_DAGITMA_NEDENI = "Makina maliyetine girmeyen kalem aylara dağıtılmaz.";
+export const DAGITIM_MODEL_IPUCU = "Yalnız modellere dağıtılmayan kısım aylara bölünür.";
+export const DAGITIM_TANIM_IPUCU = "Bu tanım her ay kalem üretir; dağıtım genelde yılda bir girilen kalemler içindir.";
+// Saklı değerin geçerli ay sayısı (bozuk ya da seçilemez değer 1 sayılır).
+export const dagitimAyOf = (k) => {
+  const n = Number(k?.dagitimAy);
+  return Number.isInteger(n) && n > 1 && n <= DAGITIM_AY_MAX && dagitimSecilebilirMi(k?.atamaTur) ? n : 1;
+};
+export const dagitimliMi = (k) => dagitimAyOf(k) > 1;
+// Kapsam aralığı (R13): dönemden bağımsız, "kaçıncı ay" yok.
+export const dagitimAraligi = (k) => {
+  const n = dagitimAyOf(k);
+  if (n <= 1 || !k?.tarih) return null;
+  const ilkAy = ayOf(k.tarih);
+  return { aySayisi: n, ilkAy, sonAy: ayEkle(ilkAy, n - 1) };
+};
+const ayNokta = (ay) => `${ay.slice(5, 7)}.${ay.slice(0, 4)}`;
+export const dagitimRozetMetni = (k) => {
+  const a = dagitimAraligi(k);
+  return a ? `${a.aySayisi} aya dağıtılmış · ${ayNokta(a.ilkAy)} – ${ayNokta(a.sonAy)}` : "";
+};
+// R20 (S5), C1, C2: aylık payların TEK kaynağı. Yalnız ortak kova bölünür (kova kuralı 0001'den okunur); bölme esitBol
+// ile, artık kuruş son aya. Dağıtımsız kalemde tek giriş (kalemin ayı, ortak kova); ortak kovası sıfır olan kalemde
+// (çözülen makina ataması, "dağıtılmasın", tam model dağılımı) boş liste. Dönen: [{ ay, payK }].
+export const dagitimPaylari = (k, davranis = DAVRANIS.NORMAL, { makinaCoz, canliModeller = new Set() } = {}) => {
+  if (!k?.tarih) return [];
+  const { ortak } = kalemKovalariKurus(k, { davranis, makinaCoz, canliModeller });
+  if (!(ortak > 0)) return [];
+  const ilkAy = ayOf(k.tarih);
+  return esitBol(ortak, dagitimAyOf(k)).map((payK, i) => ({ ay: ayEkle(ilkAy, i), payK }));
+};
+
 export const kovaDagilimi = (k, { davranis = DAVRANIS.NORMAL, stock = [], customers = [], canliModeller = new Set() } = {}) => {
   const cozuldu = atanabilirMi(davranis) && k.atamaTur === ATAMA.MAKINA && !!makinaGideriCoz(k, { stock, customers });
   const r = kovaKurus(k, davranis, cozuldu, canliModeller);
@@ -777,6 +830,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       else if (t.atamaTur === ATAMA.DAGITMA) kalem.atamaTur = t.atamaTur;
       else if (t.atamaTur === ATAMA.MODEL) Object.assign(kalem, { atamaTur: t.atamaTur, modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s })) });
     }
+    // Spec 0072 R4: tanımdaki dağıtım üretilen kaleme taşınır (makina ve "dağıtılmasın" atamasında taşınmaz, R17).
+    if (dagitimAyOf({ dagitimAy: t.dagitimAy, atamaTur: kalem.atamaTur }) > 1) kalem.dagitimAy = Number(t.dagitimAy);
     // Stopajlı kira iki ödeme hedefiyle doğar (spec 0021 R6); satırlar kalemle birlikte kurulur.
     const odeme = odemeSatirlariKur(kalem, dav, {}, uid ? { uid } : {});
     kalem.taksitler = odeme.satirlar || [];

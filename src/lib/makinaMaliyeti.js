@@ -9,9 +9,9 @@
 // karlilikOzeti / makinaKarlilik / fiyatOnerisi onun üstünde ucuz türetimlerdir.
 import {
   ayOf, ayEkle, ayinSonGunu, tamAylar, turHaritasi, davranisOf, makinaCozucuOlustur,
-  canliModelSeti, kalemKovalariKurus, kalemGorunenAd, kurus, tl, standartGiderAyi,
+  canliModelSeti, kalemKovalariKurus, kalemGorunenAd, kurus, tl, standartGiderAyi, dagitimPaylari, dagitimAraligi,
 } from "./gider";
-import { trLower, parseMoney, gercekSatisBedeli } from "./utils";
+import { trLower, parseMoney, gercekSatisBedeli, yerelBugun } from "./utils";
 import { CURRENCIES } from "./constants";
 import { GERI_DONEN_STOK_NOTU } from "./musteriKaskad";
 import { partiAylari, canliPartiler } from "./uretimPartisi";
@@ -20,6 +20,15 @@ export const ORTAK_KAYNAK = { GERCEK: "gercek", STANDART: "standart" };
 export const ORTAK_KAYNAK_ETIKET = { gercek: "Gerçekleşen gider kayıtları", standart: "Aylık standart genel giderler" };
 export const MALZEME_HARIC_NOTU = "Stoktan çekilen parçaların maliyeti hariç.";
 export const BUGUNKU_VERI_NOTU = "Bugünkü veriye göre hesaplanmıştır; geçmiş aylara gider eklenirse rakam değişir.";
+// Spec 0072 R15, R18: maliyet notlarının dağıtım satırı (yalnız hesapta dağıtılmış kalem varken).
+export const DAGITIM_NOTU = "Aylara dağıtılmış kalemlerin her aya yalnız o aya düşen payı ortak gidere girer; gelecek ayların payı o ay gelince eklenir.";
+export const DAGITIM_STANDART_NOTU = "Ortak gider kaynağı standart olduğu için aylara dağıtılmış kalemlerin makina maliyetine etkisi yoktur.";
+
+// Spec 0072 R11, R12, R26 (S10): dağıtım paylarının ay süzgeci, tek saf yardımcı. Kalemin kendi ayı (ilk pay) her zaman
+// kalır (dağıtımsız kalemin bugünkü davranışı, C3); sonraki aylar yalnız içinde bulunulan aya kadar girer. Yürürlük öncesi
+// ay hiçbir hesaba girmez (savunma kuralı; kalemler zaten yürürlük eşiğiyle süzülür ve dağıtım ileriye başlar).
+export const dagitimPayKapsami = (paylar = [], { buAy = null, yururlukAy = null } = {}) =>
+  paylar.filter((p, i) => (i === 0 || !buAy || p.ay <= buAy) && (!yururlukAy || p.ay >= yururlukAy));
 
 // Üretim tarihinin nereden geldiği (R1b). TAHMIN ve BILINMIYOR ekranda etiketlenir.
 export const URETIM_KAYNAK = {
@@ -141,7 +150,8 @@ export const hesaplaMakinaMaliyetleri = ({
   const tarihli = makinalar.filter(m => m.uretimTarihi).sort(makinaSirasi);
 
   // Üretim partileri (spec 0022). Bağ okuma anında çözülür (R11): parti bulunamazsa makina aylık kurala düşer.
-  const buAy = ayOf(bugun || new Date().toISOString().slice(0, 10));
+  // Spec 0072 triyaj (bulgu 2): yedek "bugün" de yerel gündür (UTC değil).
+  const buAy = ayOf(bugun || yerelBugun());
   const partiMap = new Map(canliPartiler(uretimPartileri).map(p => [String(p.id), p]));
   const partiUyeleri = new Map();
   const tarihsizSona = (a, b) => (!!a.uretimTarihi !== !!b.uretimTarihi ? (a.uretimTarihi ? -1 : 1) : makinaSirasi(a, b));
@@ -165,6 +175,8 @@ export const hesaplaMakinaMaliyetleri = ({
   const esik = yurAy ? `${yurAy}-01` : "";
   const kalemler = giderler.filter(k => !k.deletedAt && k.tarih && (!esik || k.tarih >= esik));
   const ortakGercek = new Map();
+  const dagitimAy = new Map(); // spec 0072 R14, R16: ayın ortak giderine pay veren dağıtılmış kalemler
+  let dagitimVar = false;
   const sinifAy = new Map();
   const havuzlar = [];
   for (const k of kalemler) {
@@ -174,7 +186,18 @@ export const hesaplaMakinaMaliyetleri = ({
     if (!sinifAy.has(ay)) sinifAy.set(ay, bosSinif());
     const sa = sinifAy.get(ay);
     for (const key of ["makina", "model", "dagitma", "ortak"]) sa[key] += kv[key];
-    ortakGercek.set(ay, (ortakGercek.get(ay) || 0) + kv.ortak);
+    // Spec 0072 R2, R6, R10, R12, R20: ortak kova aylık paylarla aylara girer (tek kaynak gider.dagitimPaylari). Kalemin kendi
+    // ayı tabloda her zaman yer alır (sıfır olsa da), dağıtımsız kalemde çıktı bugünküyle birebir aynıdır (C3).
+    if (!ortakGercek.has(ay)) ortakGercek.set(ay, 0);
+    const aralik = dagitimAraligi(k);
+    for (const p of dagitimPayKapsami(dagitimPaylari(k, dav, { makinaCoz, canliModeller }), { buAy, yururlukAy: yurAy })) {
+      ortakGercek.set(p.ay, (ortakGercek.get(p.ay) || 0) + p.payK);
+      if (aralik) {
+        dagitimVar = true;
+        if (!dagitimAy.has(p.ay)) dagitimAy.set(p.ay, []);
+        dagitimAy.get(p.ay).push({ kalemId: k.id, aciklama: kalemGorunenAd(k, dav), aySayisi: aralik.aySayisi, ilkAy: aralik.ilkAy, sonAy: aralik.sonAy, pay: tl(p.payK) });
+      }
+    }
     if (kv.makina > 0) {
       // R19: doğrudan atama kalem tarihinden bağımsız olarak makinanın üretim maliyetine girer.
       const m = makinaMap.get(`${kv.makinaCozum.tur}:${kv.makinaCozum.id}`);
@@ -281,7 +304,7 @@ export const hesaplaMakinaMaliyetleri = ({
           }
         });
       } else dagitilmamis = ortak;
-      aylar.set(ay, { ay, uretimAdedi: uretilen.length, ortakGercek: gercek, ortakStandart: standart, ortak, pay, dagitilmamis, standartEksik, siniflar: sinifAy.get(ay) || bosSinif(), partiPaylari });
+      aylar.set(ay, { ay, uretimAdedi: uretilen.length, ortakGercek: gercek, ortakStandart: standart, ortak, pay, dagitilmamis, standartEksik, siniflar: sinifAy.get(ay) || bosSinif(), partiPaylari, dagitimlar: dagitimAy.get(ay) || [] });
     }
   }
   // R3: parti havuzu makinalarına eşit bölünür; kuruş artığı ilk üretilen makinaya.
@@ -305,7 +328,7 @@ export const hesaplaMakinaMaliyetleri = ({
   }
   partiler.sort((a, b) => (a.baslangicAy !== b.baslangicAy ? (a.baslangicAy < b.baslangicAy ? -1 : 1) : String(a.ad).localeCompare(String(b.ad), "tr")));
   for (const m of makinalar) m.uretimMaliyeti = m.dogrudan + m.malzeme + m.ortakPay;
-  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy, partiler };
+  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy, partiler, dagitimVar };
 };
 
 // ── Satış tarafı ──────────────────────────────────────────────────────────────
@@ -326,6 +349,15 @@ export const satisKurBilgisi = (c, rates) => {
 // (triyaj bulgu 1). Model havuzu payı ayrıca üretim tarihine bakmaya devam eder.
 const ozetTarihi = (m) => m.uretimTarihi || (m.parti?.baslangicAy ? `${m.parti.baslangicAy}-01` : "");
 const partiOzeti = (sonuc, id) => (sonuc.partiler || []).find(p => String(p.id) === String(id)) || null;
+// Spec 0072 R14 (S6): makinanın ortak payının geldiği aylarda (üretim ayı; partili makinada partinin ayları) payı olan
+// dağıtılmış kalemler, kalem başına bir satır. Makinaya düşen kuruş ayrıca hesaplanmaz (C2). Standart kaynakta etkisizdir.
+const makinaDagitimlari = (sonuc, m) => {
+  if (!sonuc.dagitimVar || sonuc.kaynak === ORTAK_KAYNAK.STANDART) return [];
+  const aylar = m.parti ? (partiOzeti(sonuc, m.parti.id)?.aylar || []) : (m.uretimTarihi ? [ayOf(m.uretimTarihi)] : []);
+  const gorulen = new Map();
+  for (const ay of aylar) for (const d of sonuc.aylar.get(ay)?.dagitimlar || []) if (!gorulen.has(String(d.kalemId))) gorulen.set(String(d.kalemId), d);
+  return [...gorulen.values()];
+};
 // Tek makinanın maliyet ve kâr kırılımı (R6, AC-8). Tutarlar TL; iç toplamlar için kuruş değerleri ayrı
 // döner, dışarı açılmaz.
 const karlilikIc = (sonuc, anahtar, rates) => {
@@ -338,6 +370,7 @@ const karlilikIc = (sonuc, anahtar, rates) => {
     dogrudanKalemler: m.dogrudanKalemler, malzemePaylari: m.malzemePaylari, malzemePayiAlamadi: !!m.malzemePayiAlamadi,
     // Spec 0022 R7, R10: makinanın partisi; açık partide maliyet geçicidir (etiket, rakam dondurulmaz).
     parti: m.parti ? partiOzeti(sonuc, m.parti.id) : null, gecici: !!m.parti && !m.parti.bitisAy,
+    dagitimlar: makinaDagitimlari(sonuc, m), dagitimVar: !!sonuc.dagitimVar,
   };
   if (!m.satildi) return { detay: { ...temel, satildi: false }, k: { uretim: m.uretimMaliyeti } };
   const c = m.kayit;
@@ -435,7 +468,7 @@ export const karlilikOzeti = (sonuc, { baslangic, bitis, rates } = {}) => {
     bedelsiz: { adet: bedelsiz.length, maliyet: tl(bedelsizMaliyet), makinalar: bedelsiz },
     kursuz: { adet: kursuz.length, makinalar: kursuz },
     stokta: { adet: stokAdet, maliyet: tl(stokT), tarih: bitis, partiler: stokPartileri },
-    dagitilmamis, standartFark, standartEksik, modeller, tamAy: !!aylar,
+    dagitilmamis, standartFark, standartEksik, modeller, tamAy: !!aylar, dagitimVar: !!sonuc.dagitimVar,
   };
 };
 

@@ -1,5 +1,6 @@
 import { fmtTR } from "../../lib/utils";
-import { kalemTutari, kalemGorunenAd } from "../../lib/gider";
+import { kalemTutari, kalemGorunenAd, ayOf, ayEkle, dagitimRozetMetni, tl } from "../../lib/gider";
+import { ORTAK_KAYNAK, DAGITIM_STANDART_NOTU } from "../../lib/makinaMaliyeti";
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
 import { Pagination } from "../ui";
@@ -12,7 +13,44 @@ import { StatKart, Rozet } from "./DonemRaporu";
 // (spec 0020 R8, AC-9, AC-15).
 const satirStil = { display: "grid", gridTemplateColumns: "100px minmax(0, 1fr) 120px", gap: 12, padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13, alignItems: "center" };
 
-export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [], donemAnahtari }) => {
+// Spec 0072 R16, AC-18, AC-30, AC-38 (S2): dört kova kartı dönem raporunun kovalarıdır ve değişmez. Dönemin bir ayına payı
+// düşen dağıtılmış kalem varsa ayrı bir kutu, maliyet motorunun ay tablosundaki ortak gideri (paylar dahil) ve dağıtılmış
+// kalemlerin tam tutarlı listesini gösterir. Rakamlar motordan; bölme yeniden yapılmaz (C2).
+export const DAGITIM_KUTU_IBARESI = "Dağıtılmış kalemlerin bu aylara düşen payı dahildir; kalemin kendisi gider tarihinin ayında tam tutarıyla durur.";
+const donemAylari = (baslangic, bitis) => {
+  const r = [];
+  if (!baslangic || !bitis) return r;
+  for (let ay = ayOf(baslangic); ay <= ayOf(bitis); ay = ayEkle(ay, 1)) r.push(ay);
+  return r;
+};
+const DagitimKutusu = ({ makinaMaliyet, giderler, baslangic, bitis, ad, tutar }) => {
+  if (!makinaMaliyet?.dagitimVar) return null;
+  const aylar = donemAylari(baslangic, bitis);
+  const ids = new Set(aylar.flatMap(ay => (makinaMaliyet.aylar.get(ay)?.dagitimlar || []).map(d => String(d.kalemId))));
+  if (!ids.size) return null;
+  const kalemler = giderler.filter(k => ids.has(String(k.id))).sort((a, b) => (a.tarih < b.tarih ? -1 : a.tarih > b.tarih ? 1 : 0));
+  const standart = makinaMaliyet.kaynak === ORTAK_KAYNAK.STANDART;
+  const toplamK = aylar.reduce((a, ay) => a + (makinaMaliyet.aylar.get(ay)?.ortakGercek || 0), 0);
+  return (
+    <KartBolum varyant="kart" baslikStili="baslik" title="Bu dönemde makina maliyetine giren ortak gider" testId="dagitim-kutusu" baslikBosluk={10} baslikRengi="inherit">
+      {standart ? <div style={{ fontSize: 13 }}>{DAGITIM_STANDART_NOTU}</div> : (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><span>Ortak gider (aylık paylarla)</span><b data-testid="dagitim-kutusu-toplam">{tl2(tl(toplamK))}</b></div>
+          <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{DAGITIM_KUTU_IBARESI}</div>
+        </>
+      )}
+      {kalemler.map(x => (
+        <div key={x.id} data-testid="dagitim-kutusu-kalem" style={satirStil}>
+          <span style={{ color: "var(--n600, #475569)" }}>{fmtTR(x.tarih)}</span>
+          <span>{ad(x) || "—"} <Rozet renk="mor">{dagitimRozetMetni(x)}</Rozet></span>
+          <b style={{ textAlign: "right" }}>{tl2(tutar(x))}</b>
+        </div>
+      ))}
+    </KartBolum>
+  );
+};
+
+export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [], donemAnahtari, makinaMaliyet = null, giderler = [], baslangic = null, bitis = null }) => {
   // Spec 0062 R6, R13: makina listesi sayfalanır, dönem değişince 1. sayfa; kova kartları bütün rapordan (R16).
   const { page, setPage, paged, perPage } = usePagination(rapor.makinaBazli, 10, donemAnahtari);
   const k = rapor.kovalar;
@@ -28,6 +66,7 @@ export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [], done
         <StatKart etiket="Ortak gider" deger={tl2(k.ortak)} alt="Kira ve atanmamış personel dahil" renk="#94a3b8" />
       </div>
       <div style={{ fontSize: 12.5, color: "var(--n600, #475569)" }}>Dört kovanın toplamı = dönem toplamı <b>{tl2(rapor.toplam)}</b>. Hiçbir tutar iki kovada sayılmaz.</div>
+      <DagitimKutusu makinaMaliyet={makinaMaliyet} giderler={(giderler || []).filter(k => !k.deletedAt)} baslangic={baslangic} bitis={bitis} ad={ad} tutar={tutar} />
 
       <KartBolum varyant="kart" baslikStili="baslik" title="Makinaya atanmış giderler" altBaslik="Stoktaki makinaya yapılan atama, makina stoktan seçilerek satılınca o satışa takip edilir." baslikBosluk={10} baslikRengi="inherit">
         {rapor.makinaBazli.length === 0 && <div style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Bu dönemde makinaya atanmış gider yok.</div>}
