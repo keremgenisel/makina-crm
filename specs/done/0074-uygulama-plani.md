@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0074-sgk-kendi-gider-turu.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0074-sgk-kendi-gider-turu.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0074-sgk-turu` (`feat/0072-gider-dagitim` `17f8256` üstünde, R32) |
 | **Onay** | Takım Yöneticisi, 2026-10-07: bütün öneriler (S1–S12) kabul |
 

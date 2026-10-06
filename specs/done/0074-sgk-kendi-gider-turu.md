@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-07) |
+| **Durum** | Tamamlandı (commit `43e8529`, dal `feat/0074-sgk-turu`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider türleri (yeni kilitli davranış), tekrarlayan gider tanımı, gider kalemi formu, borç özeti, açık kalemler, ödeme hatırlatıcısı, 0047 raporu, çalışan kartı, kasa mahsup kuralı |
 | **Bağımlı spec'ler** | **0070 (revize edilen)** · 0001 (davranışlar, kova, borç özeti) · 0011 (kanıt eşlemesi) · 0020 (atanabilirlik) · 0021 (ödeme hedefleri) · 0024 (ödeme hareketi, ekstre) · 0047 (rapor kutusu) · 0059 (altın rapor dosyaları) · 0060 (hedef adları, gizlilik sınırı) · 0067 (BorcOzeti'nin dört dalı) · 0071 (sıfır tutarlı kalem) |
-| **Revizyon** | Bu spec, 0070'in **SGK yarısını** değiştirir; 0070'in yol parası yarısı aynen kalır. · 2 · 2026-10-07 uygulama planı onayı: S1–S12 işlendi (R2, R14, R18, R19, R22, R25, R32–R36, AC-28, AC-45, AC-47, AC-48); plan `specs/0074-uygulama-plani.md` |
+| **Revizyon** | Bu spec, 0070'in **SGK yarısını** değiştirir; 0070'in yol parası yarısı aynen kalır. · 2 · 2026-10-07 uygulama planı onayı: S1–S12 işlendi (R2, R14, R18, R19, R22, R25, R32–R36, AC-28, AC-45, AC-47, AC-48); plan `specs/done/0074-uygulama-plani.md` |
 | **Önceki revizyon** | 1 · 2026-10-06 QA turu: B-1..B-7, Ö-8..Ö-21, K-22..K-26 işlendi (Takım Yöneticisi onayı) |
 
 ---
@@ -454,55 +454,57 @@ o kalemi gösteriyor ve ödeme bugünkü ödeme penceresinden yapılıyor. SGK'y
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Yeni dosyalar (Ö-21): motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Yeni dosyalar (Ö-21): motor
       `tests/sgk-turu-0074.test.js` (davranış kapıları, borç özeti satırı, açık kalemler tarafı,
       `sgkOzeti`, mahsup yasağı, personel toplamının geri dönüşü), bileşen
       `tests/ui/sgk-turu-0074.test.jsx` (tür yöneticisi, kalem formu, borç kutusu, tanım,
       "SGK toplamını kullan"), rapor `tests/gider-kasa-raporu-0074.test.js`.
-- [ ] **SGK'ya atıf yapan bütün test dosyaları gözden geçirildi** (Ö-19): 0070'in üç SGK dosyası
+- [x] **SGK'ya atıf yapan bütün test dosyaları gözden geçirildi** (Ö-19): 0070'in üç SGK dosyası
       (`calisan-sgk-0070.test.js`, `ui/calisan-sgk-0070.test.jsx`, `gider-kasa-raporu-0070.test.js`)
       yeni modele göre yeniden yazıldı ya da silindi, **yol parası blokları değişmeden yeşil kaldı**;
       ayrıca `ek-odeme-hedefi.test.js`, `gider-kasa-raporu-0059.test.js`, `gider-gizlilik.test.js`,
       `ui/gider-ek-odeme.test.jsx`, `ui/gider-form.test.jsx`, `ui/gider-perdesi.test.jsx`,
       `ui/tahsilat-hesap.test.jsx`, `db-roundtrip.cjs` ve `db-clean-install.cjs` denetlendi.
-- [ ] `sgkOzeti` değiştiği için 0059'un altın dosyaları (`tests/fixtures/0059-gider-rapor-once.json`,
+- [x] `sgkOzeti` değiştiği için 0059'un altın dosyaları (`tests/fixtures/0059-gider-rapor-once.json`,
       `tests/fixtures/0059-aylik-faaliyet.html`) denetlendi; faaliyet raporunun çıktısı değişmedi.
-- [ ] Personel kaleminin toplamı ve ödenecek tutarının 0070 öncesine döndüğü çapraz testle gösterildi
+- [x] Personel kaleminin toplamı ve ödenecek tutarının 0070 öncesine döndüğü çapraz testle gösterildi
       (AC-17, AC-18) ve mahsup sınırının da döndüğü (AC-43).
-- [ ] Hedef adı zinciri testle sabitlendi: SGK kaleminin hedefi "SGK'ya" der, "Tedarikçiye" demez
+- [x] Hedef adı zinciri testle sabitlendi: SGK kaleminin hedefi "SGK'ya" der, "Tedarikçiye" demez
       (AC-16, AC-37).
-- [ ] `gider-gizlilik.test.js` güncellendi: `YASAKLI` listesi gevşetilmedi, kutu fikstürü SGK
+- [x] `gider-gizlilik.test.js` güncellendi: `YASAKLI` listesi gevşetilmedi, kutu fikstürü SGK
       davranışlı kalemlere çevrildi (AC-29, AC-44).
-- [ ] **Kanıt zinciri kapatıldı** (B-6): `kanit-eslemesi.json`'dan `SgkToplamOdeme.jsx` kaydı ve
+- [x] **Kanıt zinciri kapatıldı** (B-6): `kanit-eslemesi.json`'dan `SgkToplamOdeme.jsx` kaydı ve
       `giderler-0070-sgk-odeme` atıfları silindi, görüntü aracındaki üç 0070 SGK ekranı yeni modele
       göre kuruldu, `tasarim-kaynak`, `kanit-eslemesi` ve `kilit-alanlari` testleri yeşil
       (AC-40, AC-41).
-- [ ] İşe başlamadan önce "0070 yayınlanmadı" dayanağı doğrulandı ve sonucu plana yazıldı (R25).
-- [ ] Görsel kanıt: `docs/evidence/0074-taban-piksel-raporu.json` ve `0074-piksel-raporu.json`;
+- [x] İşe başlamadan önce "0070 yayınlanmadı" dayanağı doğrulandı ve sonucu plana yazıldı (R25).
+- [x] Görsel kanıt: `docs/evidence/0074-taban-piksel-raporu.json` ve `0074-piksel-raporu.json`;
       ekranlar davranış seçicisi, SGK kalemi formu, borç kutusundaki SGK satırı (düğmesiz), tekrarlayan
       SGK tanımı, raporun SGK kutusu ve **değişen 0070 ekranları** (personel formu, personel ızgarası).
+      (Raporun SGK kutusu basılı HTML olduğu için görüntü aracında değil, `gider-kasa-raporu-0074` ve
+      `gider-gizlilik` çıktı testlerinde.)
       `kanit-eslemesi.json` kayıtları `beklenen: "degisti"` artı onay satırı taşır; spec `done`'a
       taşınırken `ayni`ye çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0070 bölümü güncellendi: SGK artık kilitli bir davranış, personel kaleminin
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0070 bölümü güncellendi: SGK artık kilitli bir davranış, personel kaleminin
       hedefi değil; `sgkVade`'nin sütun olmadığı; yol parası bölümü aynen kalır.
-- [ ] Kullanıcı rehberinde (`docs/rehber/gider-kasa-kurulum.html`) değişmesi gereken yerler plan §6'da
+- [x] Kullanıcı rehberinde (`docs/rehber/gider-kasa-kurulum.html`) değişmesi gereken yerler plan §6'da
       yazılı (R35: rehber analistin dosyasıdır, güncellemeyi analist yapar; uygulayıcı dokunmaz).
-- [ ] ~~Sürüm notunda deneme verisi uyarısı var: 0070 denemesinde girilmiş SGK tutarları sayılmaz, o
+- [x] ~~Sürüm notunda deneme verisi uyarısı var: 0070 denemesinde girilmiş SGK tutarları sayılmaz, o
       aylar için SGK kalemi açılmalı.~~ **Geçersiz (R36):** 0070 hiçbir sürümde yayınlanmadı (R25); sürüm
       notu (plan §7) yalnız yeni modeli anlatır, uyarının muhatabı kullanıcı değildir.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (S1–S12: dal, R25 dayanağının ölçümü, KDV/tedarikçi kapıları R33, tedarikçi kırılımı R19, tekrarlayan üretim R34, mahsup denetim sırası R22, rehber R35, sürüm notu R36, 0070 testleri R18, öneri düğmesi R14). Uygulamada spec metni değişmedi; triyajda DoD'nin iki maddesi R35/R36'ya hizalandı (kural değil, belge düzeltmesi). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 2 | Triyaj (görsel kanıt + AC-40 testi, DoD maddeleri) ve kanıt incelemesinde görülen tanım listesi satırı ("KDV yok" ile "KDV hariç girildi" birlikte). İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Triyajın iki bulgusu gerçek; üçüncüsü kanıt incelemesinde uygulayıcının bulduğu satır çelişkisi. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | 0070'in yol parası blokları ve 0059 altın dosyaları dokunulmadan yeşil; tekrarlayan üretimde atanamayan davranışa eski atamanın taşınması uygulama sırasında yakalandı (R8, test eklendi). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Yayınlanmamış bir modeli geri almak, yayınlanmış olanı değiştirmekten çok daha ucuzdur; ama bunun dayanağı ("0070 hiç kullanıcıya gitmedi") varsayım olarak değil ölçüm olarak plana yazılmalıydı, çünkü göç yazmama, sürüm notu ve DoD maddeleri hep ona bağlıydı. İkincisi: yeni bir davranış eklemek, eski davranışların "personel değilse" diye yazılmış örtük kapılarından sessizce geçer (KDV, tedarikçi, tedarikçi kırılımı, tekrarlayan üretimdeki atama); kapılar adlandırılmış yardımcılara (`kdvliMi`, `tedarikciSecilirMi`, `atanabilirMi`) toplanınca yeni davranış tek yerde tanımlanır ve kaynak taraması literalin dağılmasını engeller. Üçüncüsü: görüntü aracına eklenen ekran çekilmeden "kanıt" sayılmaz; ilk çekim hem yanlış tıklama adımını hem de testlerin göremediği bir satır çelişkisini gösterdi.
