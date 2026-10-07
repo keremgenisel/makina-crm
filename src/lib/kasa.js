@@ -8,7 +8,7 @@ import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF } from "./gider";
+import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula } from "./gider";
 // Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
 export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
@@ -173,13 +173,18 @@ export const kapsamGirisi = (satir) => (satir?.kaynak && satir?.kayit
   ? { tur: KAPSAM_TUR.TAHSILAT, kaynak: satir.kaynak, kayitId: satir.kayit.id } : { tur: KAPSAM_TUR.HAREKET, kaynak: null, kayitId: satir?.id });
 const kapsamKumesi = (kapsamDisi) => (Array.isArray(kapsamDisi) ? new Set(kapsamDisi.map(kapsamGirisAnahtari)) : null);
 // R15: kapsamDisi verilmezse (null) bugünkü çıktı birebir; verilirse kapsam dışı satırlar listeden ve sayılardan düşer.
-export const hesapsizOdemeler = (hareketler = [], aralik = null, kapsamDisi = null) => {
+// Spec 0078 R13, AC-18: hesaplar (canlı) verilince hesabı bulunamayan (çöpteki ya da silinmiş hesaba bağlı) ödeme ve avans da
+// listelenir; o hareket hiçbir bakiyeye girmiyor. Kayıt nesnesi değişmez (hesapId'si dolu olan satır "hesabı silinmiş"tir,
+// ekran `hesabiSilinmisMi` ile yazar). Parametresiz çağrı birebir eski çıktı.
+export const hesabiSilinmisMi = (m, hesaplar) => !!m && m.hesapId != null && Array.isArray(hesaplar) && !hesaplar.some(h => h && String(h.id) === String(m.hesapId));
+export const hesapsizOdemeler = (hareketler = [], aralik = null, kapsamDisi = null, hesaplar = null) => {
   const kd = kapsamKumesi(kapsamDisi);
   const kapsamda = (m) => !kd || !kd.has(kapsamAnahtari(m));
+  const hesapsiz = (m) => m.hesapId == null || hesabiSilinmisMi(m, hesaplar);
   // Spec 0040 R18: ciro hareketleri kasıtlı olarak hesapsızdır (çek portföyden çıkar); eksik veri listesine girmez.
-  const l = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId == null && m.cekId == null && aralikta(m.tarih, aralik) && kapsamda(m));
+  const l = hareketler.filter(m => m && m.tur === "odeme" && hesapsiz(m) && m.cekId == null && aralikta(m.tarih, aralik) && kapsamda(m));
   // Spec 0024 B4: hesapsız avans da hiçbir bakiyeye girmez ve ayrıca sayılır.
-  const av = hareketler.filter(m => m && m.tur === "avans" && m.hesapId == null && aralikta(m.tarih, aralik) && kapsamda(m));
+  const av = hareketler.filter(m => m && m.tur === "avans" && hesapsiz(m) && aralikta(m.tarih, aralik) && kapsamda(m));
   const r = { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet: av.length };
   return aralik ? { ...r, liste: [...l, ...av].sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "")) } : r;
 };
@@ -260,7 +265,12 @@ export const hesapTasimaPlani = (hesap, hareketler = [], veri = {}, hesaplar = [
       hesapHareketleri: (p) => (p || []).map(m => {
         if (!m) return m;
         const a = es(m.hesapId), b = es(m.karsiHesapId);
-        return a || b ? { ...m, ...(a ? { hesapId: yeni } : {}), ...(b ? { karsiHesapId: yeni } : {}) } : m;
+        if (!a && !b) return m;
+        const n = { ...m, ...(a ? { hesapId: yeni } : {}), ...(b ? { karsiHesapId: yeni } : {}) };
+        // Spec 0078 triyaj (bulgu 4): hedef seçimi yalnız canlı virmanların karşı bacağını dışlar; çöpteki virman taşımada
+        // kendine virmana (B↔B) dönecekse yerinde bırakılır ("hesabı silinmiş" olarak geri alınır, R20).
+        if (m.deletedAt && m.tur === "virman" && n.hesapId != null && String(n.hesapId) === String(n.karsiHesapId)) return m;
+        return n;
       }),
       payments: (p) => (p || []).map(hesapAlani),
       services: (p) => (p || []).map(hesapAlani),
@@ -306,8 +316,8 @@ const HEPSI = { baslangic: "", tarihsizDahil: true };
 // kapsamDisi verilmezse çıktı birebir 0051'deki gibidir (AC-20).
 export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik = null, kapsamDisi = null) => {
   const aralik = esik ? { baslangic: esik, tarihsizDahil: true } : HEPSI;
-  const hepsiO = hesapsizOdemeler(hareketler, HEPSI, kapsamDisi), hepsiT = hesapsizTahsilatlar(veri, hesaplar, HEPSI, kapsamDisi);
-  const odeme = esik ? hesapsizOdemeler(hareketler, aralik, kapsamDisi) : hepsiO;
+  const hepsiO = hesapsizOdemeler(hareketler, HEPSI, kapsamDisi, hesaplar), hepsiT = hesapsizTahsilatlar(veri, hesaplar, HEPSI, kapsamDisi);
+  const odeme = esik ? hesapsizOdemeler(hareketler, aralik, kapsamDisi, hesaplar) : hepsiO;
   const tahsilat = esik ? hesapsizTahsilatlar(veri, hesaplar, aralik, kapsamDisi) : hepsiT;
   const nedenSay = (l) => l.reduce((a, k) => ({ ...a, [k.neden]: (a[k.neden] || 0) + 1 }), { hesapsiz: 0, hesapYok: 0, paraBirimi: 0 });
   const tH = nedenSay(hepsiT.liste), tS = nedenSay(tahsilat.liste);
@@ -317,7 +327,7 @@ export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik 
   const tarihsiz = odeme.liste.filter(m => !m.tarih).length + tahsilat.liste.filter(k => !k.tarih).length;
   if (!Array.isArray(kapsamDisi)) return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz };
   const kd = kapsamKumesi(kapsamDisi);
-  const tumO = hesapsizOdemeler(hareketler, HEPSI).liste.filter(m => kd.has(kapsamAnahtari(m)));
+  const tumO = hesapsizOdemeler(hareketler, HEPSI, null, hesaplar).liste.filter(m => kd.has(kapsamAnahtari(m)));
   const tumT = hesapsizTahsilatlar(veri, hesaplar, HEPSI).liste.filter(k => kd.has(kapsamAnahtari(k)));
   const kapsamDisiOzet = { odeme: tumO.filter(m => m.tur === "odeme").length, avans: tumO.filter(m => m.tur === "avans").length, tahsilat: tumT.length,
     odemeListe: tumO, tahsilatListe: tumT };
@@ -617,6 +627,24 @@ export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler =
   if (Object.keys(hatalar).length) return { hatalar, kayit: null };
   return { hatalar, kayit: { tur: "mahsup", tarih: form.tarih, tutar: t, calisanId: kalem.calisanId, giderId: kalem.id, taksitId: satirli ? form.taksitId : null,
     hesapId: null, aciklama: String(form.aciklama || "").trim() } };
+};
+
+// Spec 0078 triyaj (bulgu 1): çöpten geri alınan ödeme ve mahsup, bugünkü CANLI hareketlerle aynı doğrulayıcılardan geçer
+// (odemeDogrula, mahsupDogrula). Silinen ödeme yeniden girildiyse çöpteki kopyası geri alınınca kalem iki kez ödenmiş, hesap
+// iki kez düşmüş görünürdü; mahsupta avans borcu eksiye düşerdi. Ebeveyn (hesap, çek) denetlenmez (R20): hesap alanı
+// doğrulamaya verilmez. Kalemi bulunmayan (kalıcı silinmiş) ya da tutarsız göç hareketi engellenmez. Dönüş: neden ya da null.
+export const copHareketGeriAlmaNedeni = (h, { giderler = [], hareketler = [], turMap = new Map(), bugun = null, yururlukAy = null } = {}) => {
+  if (!h || (h.tur !== "odeme" && h.tur !== "mahsup") || h.tutar == null) return null;
+  const kalem = (giderler || []).find(k => k && String(k.id) === String(h.giderId));
+  if (!kalem) return null;
+  const canli = (hareketler || []).filter(m => m && !m.deletedAt && String(m.id) !== String(h.id));
+  const zengin = odemeleriUygula([kalem], canli, turMap)[0];
+  const form = { tutar: h.tutar, tarih: h.tarih, taksitId: h.taksitId, yontem: h.cekId != null ? "" : h.yontem };
+  const r = h.tur === "mahsup"
+    ? mahsupDogrula(form, { kalem: zengin, turMap, hareketler: canli, giderler, bugun, yururlukAy })
+    : odemeDogrula(form, { kalem: zengin, turMap });
+  const ilk = Object.values(r.hatalar || {})[0];
+  return ilk ? `Geri alınamadı: ${ilk}` : null;
 };
 
 // B6: ekstre borç özetiyle aynı kapsam: canlı, tarihli, yürürlük ayından sonra ve bugünden önce doğan kalemler.

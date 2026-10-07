@@ -1278,7 +1278,10 @@ export const standartAdDegistir = (liste = [], grupId, ad) => {
   if (!a) return { hata: "Ad boş olamaz." };
   return { liste: liste.map(s => (String(s.grupId) === String(grupId) ? { ...s, ad: a } : s)) };
 };
-export const standartGrupSil = (liste = [], grupId) => ({ liste: liste.filter(s => String(s.grupId) !== String(grupId)) });
+// Spec 0078 R38: grup silinince bütün canlı sürümleri AYNI damgayı alır (çöp kutusu; Çöp Kutusu'nda grup başına tek satır,
+// geri alma o damgalı sürümleri döndürür). "Son sürümü geri al" bir geri alma eylemidir ve kalıcı kalır.
+export const standartGrupSil = (liste = [], grupId, zaman = new Date().toISOString()) =>
+  ({ liste: liste.map(s => (String(s.grupId) === String(grupId) && !s.deletedAt ? { ...s, deletedAt: zaman } : s)) });
 export const standartGruplar = (liste = [], buAy) => {
   const g = new Map();
   for (const s of liste) { if (!g.has(String(s.grupId))) g.set(String(s.grupId), []); g.get(String(s.grupId)).push(s); }

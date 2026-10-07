@@ -37,7 +37,6 @@ import { SettingsGiderTanimlari } from "./settings/SettingsGiderTanimlari";
 import { useLock } from "../hooks/useLock";
 import { AYAR_KILITLI, AYAR_SALT_OKUNUR } from "../lib/kilitAlanlari";
 import { SettingsGider } from "./settings/SettingsGider";
-import { KALICI_SILME_NOTU } from "../lib/copKutusu";
 
 // Sol menü grupları gen-crm yapısı örnek alınarak düzenlendi: Sunucu artık Güvenlik'ten ayrı kendi
 // grubunda (server + kullanıcı/işlem geçmişi); Güvenlik yalnız şifre + güvenlik durumu; firma
@@ -286,19 +285,19 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           <CalisanManager calisanlar={calisanlar} setCalisanlar={setCalisanlar} setServices={setServices} showToast={showToast}
             giderYetki={giderYetki} maliyetDuzenleyebilir={giderCanDo("gider_tanim")} appSettings={appSettings} setAppSettings={setAppSettings}
             giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} serverPermissions={serverPermissions}
-            hesapHareketleri={hesapHareketleri} giderler={rawGiderler} />
+            hesapHareketleri={withoutDeleted(hesapHareketleri)} giderler={rawGiderler} /> {/* spec 0078 R37: açık avans canlı hareketlerden */}
         </KartBolum>
       )}
 
       {giderYetki && settingsTab === "gidertur" && (
         <KartBolum title="Gider Türleri" icon="gider">
-          <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır. Tür silindiğinde: {KALICI_SILME_NOTU}</div>
+          <div className="section-desc">Gider kalemleri türe kimlikle bağlanır; ad değişikliği tüm kalemlere yansır.</div>
           <GiderTurManager giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} giderler={rawGiderler} setGiderler={setGiderler}
             giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} />
         </KartBolum>
       )}
       {giderYetki && settingsTab === "gidertanim" && (
-        <SettingsGiderTanimlari giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}
+        <SettingsGiderTanimlari giderTanimlari={withoutDeleted(giderTanimlari)} setGiderTanimlari={setGiderTanimlari} giderTurleri={giderTurleri}
           tedarikciler={withoutDeleted(tedarikciler)} calisanlar={calisanlar} stock={stock} customers={customers} modeller={[...standardModels, ...customModels]}
           showToast={showToast} canDo={giderCanDo} serverPermissions={serverPermissions} kdvRates={appSettings?.kdvRates} />
       )}
@@ -327,7 +326,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
          gorusmeler={rawGorusmeler} calisanlar={calisanlar} yedekParcaSatislar={yedekParcaSatislar} serverPermissions={serverPermissions}
-         cekler={kasaVeriYetki && giderYetki ? cekler : null} />
+         cekler={kasaVeriYetki && giderYetki ? withoutDeleted(cekler) : null} />
       )}
 
       {settingsTab === "import" && (
@@ -370,7 +369,10 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
          rawCalisanlar={rawCalisanlar} setCalisanlar={setCalisanlar}
          rawYedekParcaSatislar={rawYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
          rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}
-         rawTedarikciler={tedarikciler} setTedarikciler={setTedarikciler} rawUretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
+         rawTedarikciler={tedarikciler} setTedarikciler={setTedarikciler} rawUretimPartileri={uretimPartileri}
+         rawHesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} rawGiderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
+         setGiderTurleri={setGiderTurleri} rawStandartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
+         rawKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} kasaVeriYetki={kasaVeriYetki} setUretimPartileri={setUretimPartileri}
          serverPermissions={serverPermissions}/>
       )}
       </>)}

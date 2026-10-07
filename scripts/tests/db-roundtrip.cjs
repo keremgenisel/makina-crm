@@ -487,6 +487,27 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   return d.some(x => x.id === 8000) && d.some(x => x.id === 8002) && !d.some(x => x.id === 8001);
 })());
 
+// ── Spec 0078 AC-28, AC-49: altı kasa/gider bölümü çöp kutusunda. Beş tabloda deletedAt sütunu tam tur yapar, giderTurleri
+// (meta JSON) alanı kayıtla taşır; canlı kayıtta boş deletedAt blob'a hiç yazılmaz (sunucu karşılaştırması null/yokluk ayırır).
+{
+  const ZAMAN78 = "2026-10-07T09:00:00.000Z";
+  const BOLUM78 = ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "standartGiderler", "kasaHesaplari"];
+  const sil78 = structuredClone(reopen3);
+  for (const k of BOLUM78) {
+    if (!Array.isArray(sil78[k]) || !sil78[k].length) { check(`spec 0078: ${k} örnek veride var`, false); continue; }
+    sil78[k][0] = { ...sil78[k][0], deletedAt: ZAMAN78 };
+  }
+  dbmod.writeBlobToDb(sil78);
+  dbmod.close();
+  dbmod.migrateFromJsonIfNeeded();
+  const r78 = dbmod.readBlobFromDb();
+  for (const k of BOLUM78) {
+    const l = r78[k] || [];
+    check(`spec 0078 AC-28: ${k} deletedAt tam turu`, l[0]?.deletedAt === ZAMAN78 && l.length === (sil78[k] || []).length);
+    check(`spec 0078 AC-49: ${k} canlı kayıtta boş deletedAt blob'a yazılmaz`, l.slice(1).every(x => !("deletedAt" in x)));
+  }
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

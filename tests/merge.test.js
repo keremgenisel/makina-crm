@@ -498,3 +498,33 @@ describe("Spec 0077 triyaj (bulgu 1): sunucunun diziden çıkardığı kayıt bi
     expect(buildMergePlan(my, blob({})).adds.dealers.map(d => d.id)).toEqual([21]);
   });
 });
+
+describe("Spec 0078 AC-30, AC-31: çöp kutusuna giren kasa/gider bölümlerinde silme ve geri alma birleştirmede korunur", () => {
+  const Z = "2026-10-07T09:00:00.000Z";
+  const BOLUMLER = {
+    hesapHareketleri: { id: 71, tur: "odeme", tarih: "2026-09-05", tutar: 400, hesapId: 51, giderId: 5 },
+    cekler: { id: 30, paymentId: null, yon: "alinan", no: "1", banka: "Z", durum: "portfoy", gecmis: [] },
+    giderTanimlari: { id: 81, turId: 9, ad: "İnternet", baslangicAy: "2026-01" },
+    giderTurleri: { id: 9, ad: "Elektrik", davranis: "normal" },
+    standartGiderler: { id: 91, grupId: 91, ad: "Kira", tutar: 1, baslangicAy: "2026-01" },
+    kasaHesaplari: { id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY" },
+  };
+  it("AC-30: bu PC'nin çöpe attığı kayıt (taban canlı, sunucu canlı) birleştirmeden sonra çöpte kalır", () => {
+    for (const [k, r] of Object.entries(BOLUMLER)) {
+      const taban = birlesmeTabaniKur(blob({ [k]: [r] }));
+      const plan = buildMergePlan(blob({ [k]: [{ ...r, deletedAt: Z }] }), blob({ [k]: [r, { ...r, id: 999, ad: "başka" }] }), { taban });
+      expect(plan.silmeler[k]?.get(r.id), k).toBe(Z);
+      expect(plan.adds[k], k).toEqual([]);
+    }
+  });
+  it("AC-31: bu PC'nin çöpten geri aldığı kayıt (taban ve sunucu çöpte) birleştirmeden sonra geri alınmış kalır; tabansız eski davranış", () => {
+    for (const [k, r] of Object.entries(BOLUMLER)) {
+      const copte = { ...r, deletedAt: Z };
+      const taban = birlesmeTabaniKur(blob({ [k]: [copte] }));
+      const plan = buildMergePlan(blob({ [k]: [r] }), blob({ [k]: [copte] }), { taban });
+      expect(plan.silmeler[k]?.has(r.id), k).toBe(true);
+      expect(plan.silmeler[k].get(r.id), k).toBeNull();
+      expect(buildMergePlan(blob({ [k]: [r] }), blob({ [k]: [copte] })).silmeler[k], k).toBeUndefined();
+    }
+  });
+});

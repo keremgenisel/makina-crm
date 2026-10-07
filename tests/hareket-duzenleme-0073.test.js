@@ -198,7 +198,9 @@ describe("Spec 0073 E: türev etkiler ve ortak yazma yolu", () => {
     }
     let durum = [{ id: 1, tur: "avans" }, { id: 2, tur: "virman" }];
     odemeGirisiYaz({ silinenler: [1] }, { setHesapHareketleri: (f) => { durum = f(durum); }, uid });
-    expect(durum.map(m => m.id)).toEqual([2]);
+    // Spec 0078 R2 ile güncellendi: silinen hareket çöp kutusuna gider (damga), canlı listeden çıkar.
+    expect(durum.filter(m => !m.deletedAt).map(m => m.id)).toEqual([2]);
+    expect(durum.find(m => m.id === 1).deletedAt).toBeTruthy();
   });
 });
 

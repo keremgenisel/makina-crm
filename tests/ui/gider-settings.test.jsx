@@ -37,7 +37,7 @@ describe("Gider Türleri (R2, K12, K13)", () => {
     expect(secenekler).toEqual(["Fabrika kirası"]);
     expect(screen.getByText(/2 gider kalemi/)).toBeTruthy();
     fireEvent.click(screen.getByText("Taşı ve Sil"));
-    expect(st.giderTurleri.some(t => t.id === 2)).toBe(false);
+    expect(st.giderTurleri.some(t => t.id === 2 && !t.deletedAt)).toBe(false); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
     expect(st.giderler.every(k => k.turId === 1)).toBe(true);        // çöpteki kalem de taşındı (AC-20)
     expect(st.giderTanimlari[0].turId).toBe(1);
   });
@@ -65,7 +65,7 @@ describe("Gider Türleri (R2, K12, K13)", () => {
     render(<TurHarness onState={s => { st = s; }} />);
     fireEvent.click(within(satir("Sigorta")).getByTitle("Sil"));
     fireEvent.click(screen.getByText("Sil"));
-    expect(st.giderTurleri.find(t => t.id === 5)).toBeUndefined();
+    expect(st.giderTurleri.find(t => t.id === 5 && !t.deletedAt)).toBeUndefined(); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
   });
 });
 
@@ -132,7 +132,7 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     render(<TanimHarness t0={[{ id: 91, turId: 4, ad: "İnternet", tutar: 1250, baslangicAy: "2026-01", uretilenAylar: ["2026-02"] }]} onState={s => { st = s; }} />);
     fireEvent.click(screen.getByTitle("Sil"));
     fireEvent.click(screen.getByText("Evet, Sil"));
-    expect(st).toEqual([]);
+    expect(st.filter(t => !t.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
   });
   it("K28: kapatılmış tanım 'Kapatıldı' ile listelenir; üretilen aylar salt görünür", () => {
     render(<TanimHarness t0={[{ id: 92, turId: 3, ad: "Murat", calisanId: 9, baslangicAy: "2026-06", bitisAy: "2026-08", kapatildi: true, uretilenAylar: ["2026-06", "2026-07", "2026-08"] }]} />);

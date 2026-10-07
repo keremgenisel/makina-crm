@@ -48,7 +48,9 @@ export const kimlikOf = (key, x) => x?.[KIMLIK_ALANI[key] || "id"];
 
 // Spec 0077 R14, R16, X1: deletedAt'i birleştirmede korunan bölümler = MERGE_KEYS'ten kalıcı silinen bölümler ve stok
 // hareketi (yalnız büyür) çıkınca kalanlar. Kalıcı silinen bölümlerde silme diziden çıkarmaktır, iki blobla ayırt edilemez.
-export const KALICI_SILINEN = new Set(["hesapHareketleri", "giderTanimlari", "giderTurleri", "standartGiderler", "kasaHesaplari", "cekler", "kasaKapsamDisi", "partStockLog"]);
+// Spec 0078 R30 (S2): hareketler, çekler, tanımlar, türler, standart giderler ve kasa hesapları çöp kutusuna girdi ve bu
+// kümeden çıktı; geriye silmesi zaten geri alma olan kapsam dışı girişleri (0078 X1) ve yalnız büyüyen stok hareketi kalır.
+export const KALICI_SILINEN = new Set(["kasaKapsamDisi", "partStockLog"]);
 export const SILME_KORUNAN = MERGE_KEYS.filter(k => !KALICI_SILINEN.has(k));
 // Spec 0077 R14 (S2), R33 (S8): birleştirmenin TABANI. Son yükleme ya da son başarılı kayıt anındaki sunucu hâli: bölüm başına
 // kimlik → deletedAt (yoksa null) ve firma bilgisinin JSON'u. Yerel değer ancak TABANDAN farklıysa (bu PC değiştirdiyse) kazanır;

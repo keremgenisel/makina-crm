@@ -317,7 +317,11 @@ export const odemeGirisiYaz = ({ hareketler = [], cek = null, silinenler = [], g
   const sil = new Set(silinenler.map(String));
   const gun = new Map(guncellenenler.map(h => [String(h.id), h]));
   if (yeni.length || sil.size || gun.size) {
-    setHesapHareketleri(p => [...(p || []).filter(h => !sil.has(String(h.id))).map(h => gun.get(String(h.id)) || h), ...yeni]);
+    // Spec 0078 R2, R34: silinen hareket çöp kutusuna gider (deletedAt damgası, kimlik ve bağlar yerinde); çeke bağlı hareket
+    // çöp kutusuna girmez ve kalıcı çıkar (çek durumunun türevidir; 0073 zaten kullanıcıya sildirmiyor).
+    const zaman = new Date().toISOString();
+    setHesapHareketleri(p => [...(p || []).filter(h => !(sil.has(String(h.id)) && h.cekId != null))
+      .map(h => (sil.has(String(h.id)) ? { ...h, deletedAt: zaman } : gun.get(String(h.id)) || h)), ...yeni]);
   }
   if (cek && setCekler) setCekler(p => (cek.yon === "verilen" ? [...(p || []), cek] : (p || []).map(c => (c.id === cek.id ? cek : c))));
   return yeni;

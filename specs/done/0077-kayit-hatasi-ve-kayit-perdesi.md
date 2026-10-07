@@ -299,6 +299,10 @@ mesajı çıkmıyor, ve kullanıcı her kaydın bittiğini görüyor.
   `bilinenLogIdleri` taban kümesinin bütün bölümlere genellenmesi gerekir ve o kendi başına bir
   spec'tir. **C ve E birlikte, çöp kutusuna giren bütün bölümleri kapsar;** dışarıda kalan yalnız bu
   yedi bölümdür.
+  **Güncelleme (spec 0078 ile, 2026-10-07):** yedi bölümden altısı (`hesapHareketleri`, `giderTanimlari`,
+  `giderTurleri`, `standartGiderler`, `kasaHesaplari`, `cekler`) çöp kutusuna alındı ve `KALICI_SILINEN`
+  kümesinden çıktı; C ile R35a artık onları da kapsar. Geriye silmesi zaten geri alma eylemi olan
+  `kasaKapsamDisi` ile yalnız büyüyen `partStockLog` kaldı.
 - **X2.** **Alan düzeyinde genel birleştirme** (üç yollu merge): bugün `deletedAt` dışındaki her
   düzenleme sunucu kopyasına yeniliyor — *neden:* taban sürümün tutulmasını ve her bölüm için alan
   bazlı çakışma kuralını gerektirir; çok büyük bir iş.

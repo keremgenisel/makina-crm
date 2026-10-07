@@ -382,14 +382,15 @@ const KAPSAM_KAYNAK_BOLUM = { servis: "services", kalip: "partSales", yedekParca
 function kapsamGirisiGecersizMi(g, blob) {
   if (g?.tur === "hareket") {
     const h = (Array.isArray(blob?.hesapHareketleri) ? blob.hesapHareketleri : []).find(m => m && String(m.id) === String(g.kayitId));
-    return !h || h.hesapId != null || h.cekId != null;
+    // Spec 0078 R14: çöpteki hareket silinmiş sayılır (soft-delete ile kayıt dizide kalır).
+    return !h || !!h.deletedAt || h.hesapId != null || h.cekId != null;
   }
   const bolum = KAPSAM_KAYNAK_BOLUM[g?.kaynak];
   if (!bolum) return true;
   const r = (Array.isArray(blob?.[bolum]) ? blob[bolum] : []).find(x => x && String(x.id) === String(g.kayitId));
   if (!r) return true;
   if (r.deletedAt || r.hesapId == null) return false;
-  return (Array.isArray(blob?.kasaHesaplari) ? blob.kasaHesaplari : []).some(h => String(h.id) === String(r.hesapId));
+  return (Array.isArray(blob?.kasaHesaplari) ? blob.kasaHesaplari : []).some(h => String(h.id) === String(r.hesapId) && !h.deletedAt); // spec 0078 R14: canlı hesap
 }
 // Yalnız silme olan (eklenen ya da değişen giriş yok) ve silinen her girişi geçersiz olan yazım: hesap atayan ama kasa_hesap
 // izni ya da Kasa sekmesi olmayan kullanıcının kaydı bu temizlik yüzünden 403 almasın.
@@ -420,10 +421,12 @@ function hesapTasimaYazimiMi(oldBlob, newBlob, bugun = yerelBugunSunucu()) {
   if (!denemeDonemiAcikSunucu(oldBlob?.appSettings?.giderAyarlari, bugun)) return false;
   const eskiH = Array.isArray(oldBlob?.kasaHesaplari) ? oldBlob.kasaHesaplari : [], yeniH = Array.isArray(newBlob?.kasaHesaplari) ? newBlob.kasaHesaplari : null;
   if (!yeniH) return false;
-  const yeniIdler = new Set(yeniH.map(h => String(h.id)));
-  const silinen = new Set(eskiH.filter(h => !yeniIdler.has(String(h.id))).map(h => String(h.id)));
+  // Spec 0078 R26: silinen hesap kimlik yokluğundan YA DA bu yazımda yeni dolan deletedAt'ten bulunur (çöp kutusu kimliği
+  // dizide bırakır); hedef hesap canlı ve açık olmalıdır.
+  const yeniById = new Map(yeniH.map(h => [String(h.id), h]));
+  const silinen = new Set(eskiH.filter(h => !h.deletedAt && (!yeniById.has(String(h.id)) || yeniById.get(String(h.id)).deletedAt)).map(h => String(h.id)));
   if (!silinen.size) return false;
-  const acik = new Set(yeniH.filter(h => !h.kapali).map(h => String(h.id)));
+  const acik = new Set(yeniH.filter(h => !h.kapali && !h.deletedAt).map(h => String(h.id)));
   let degisen = 0;
   for (const bolum of TASIMA_BOLUMLERI) {
     const yeni = Array.isArray(newBlob?.[bolum]) ? newBlob[bolum] : null;

@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import { uid, today } from "../../lib/utils";
+import { uid, today, copuKoru } from "../../lib/utils";
 import { standartYeni, standartTutarDegistir, standartSonSurumuGeriAl, standartSonaErdir, standartAdDegistir, standartGrupSil, standartGruplar, standartGiderAyi, ayOf, ayEkle } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
@@ -8,7 +8,6 @@ import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { TutarInput, AyInput, tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
-import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Giderler › Standart Genel Giderler (spec 0001 R22, AC-92…AC-96; plan K37). Bütçe/varsayım listesi:
 // dönem gider raporunun HİÇBİR toplamına girmez (hesaplaGiderRaporu bu listeyi almaz); yalnız makina
@@ -33,7 +32,7 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
 
   const uygula = (r, basari, audit) => {
     if (r.hata) { setIslem(i => (i ? { ...i, hata: r.hata } : i)); setHata(r.hata); return false; }
-    setStandartGiderler(() => r.liste);
+    setStandartGiderler(p => copuKoru(r.liste, p)); // spec 0078 R9: sürümler canlı gelir, çöptekiler korunur
     if (audit) logAction({ serverPermissions, entity: "standart_gider", ...audit });
     showToast(basari); setHata(""); setIslem(null);
     return true;
@@ -127,8 +126,8 @@ export const StandartGiderler = ({ standartGiderler = [], setStandartGiderler, c
           <HataMetni>{islem.hata}</HataMetni>
         </Modal>
       )}
-      {silinecek && !kilitli && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) silinecek. ${KALICI_SILME_NOTU}`}
-        onConfirm={() => { uygula(standartGrupSil(standartGiderler, silinecek.grupId), "Silindi.", { action: "silindi", entityId: silinecek.grupId, entityName: silinecek.ad }); setSilinecek(null); }}
+      {silinecek && !kilitli && <ConfirmDialog title="Standart gider silinsin mi?" message={`“${silinecek.ad}” ve tüm sürümleri (${silinecek.surumler.length}) silinecek.`}
+        onConfirm={() => { uygula(standartGrupSil(standartGiderler, silinecek.grupId), "Çöp kutusuna taşındı.", { action: "silindi", entityId: silinecek.grupId, entityName: silinecek.ad }); setSilinecek(null); }}
         onCancel={() => setSilinecek(null)} />}
     </div>
   );

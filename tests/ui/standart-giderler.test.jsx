@@ -39,7 +39,7 @@ describe("Standart Genel Giderler (R22)", () => {
     expect(st[0].bitisAy).toBeNull();
     fireEvent.click(screen.getByTitle("Sil"));
     fireEvent.click(screen.getByText("Evet, Sil"));
-    expect(st).toEqual([]);
+    expect(st.filter(s => !s.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
   });
   it("AC-96: yeni geçerlilik ayı açık sürümün başlangıcından önce olamaz", () => {
     let st;

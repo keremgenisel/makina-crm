@@ -10,8 +10,6 @@ import { SettingsImport } from "../../src/components/settings/SettingsImport";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { Tedarikciler } from "../../src/components/gider/Tedarikciler";
 import { Kasa } from "../../src/components/Kasa";
-import { KALICI_SILME_NOTU } from "../../src/lib/copKutusu";
-import { regexKacis } from "../yardimci/regexKacis.js";
 
 afterEach(() => { cleanup(); delete window.auditLog; });
 const noop = () => {};
@@ -72,12 +70,11 @@ describe("Spec 0068 C: Çöp Kutusu'nda tedarikçi ve üretim partisi", () => {
     expect(within(satir("Demir Bant")).queryByText("Kalıcı Sil")).toBeNull();
     expect(within(satir("Yaz · 2026-07 (açık)")).queryByText("Geri Al")).toBeNull();
   });
-  it("AC-17: Çöp Kutusu'nda kalıcı silinen bölümleri söyleyen tek bilgi satırı, aynı sabitle", () => {
+  // Spec 0078 R3, AC-35 ile TERS ÇEVRİLDİ: bilgi satırı kalktı.
+  it("AC-17 (spec 0078 ile ters çevrildi): Çöp Kutusu'nda kalıcı silme bilgi satırı yok", () => {
     render(<TrashH t0={[]} p0={[]} />);
-    const n = screen.getAllByTestId("kalici-silme-notu");
-    expect(n).toHaveLength(1);
-    expect(n[0].textContent).toContain(KALICI_SILME_NOTU);
-    expect(n[0].textContent).toMatch(/Tekrarlayan gider tanımı, gider türü, standart genel gider, kasa hesabı, çek, ödeme hareketi ve kapsam dışı kaydı/);
+    expect(screen.queryByTestId("kalici-silme-notu")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/çöp kutusuna gitmez/);
   });
   it("AC-11: geri alınan tedarikçi listede ekstre düğmesiyle görünür; çöpteyken görünmez", () => {
     const ciz = (t) => render(<Tedarikciler tedarikciler={t} setTedarikciler={noop} giderler={[]} giderTanimlari={[]} rapor={null} hesapHareketleri={[]} />);
@@ -101,12 +98,14 @@ describe("Spec 0068 A, B: işlem geçmişi, içe aktarma, kalıcı silme pencere
     render(<SettingsImport customers={[]} setCustomers={noop} setServices={noop} flash={noop} parts={[]} setParts={noop} partTypeDefs={[]} setPartTypeDefs={noop} />);
     expect(screen.getByTestId("ice-aktarma-kapsam").textContent).toMatch(/yalnız müşteri \(makina\) ve servis kayıtlarını.*ekler; gider, kasa, çek, stok, belgeler ve diğer hiçbir bölüme dokunmaz, var olan kayıtları silmez/);
   });
-  it("AC-16: kalıcı silme penceresi sabit metni gösterir (kasa hesabı örneği)", () => {
+  // Spec 0078 R3, AC-35 ile TERS ÇEVRİLDİ: hesap silme penceresi kalıcılık söylemez (hesap çöp kutusuna gider).
+  it("AC-16 (spec 0078 ile ters çevrildi): hesap silme penceresi kalıcılık metni göstermez", () => {
     const hesap = { id: 1, ad: "Eski Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-09-01", kapali: false };
     render(<Kasa kasaHesaplari={[hesap]} setKasaHesaplari={noop} hesapHareketleri={[]} setHesapHareketleri={noop} payments={[]} customers={[]} giderler={[]} giderTurleri={[]}
       tedarikciler={[]} showToast={noop} giderAyarlari={{ denemeDonemiBitis: "" }} />);
     fireEvent.click(within(screen.getAllByTestId("hesap-satiri")[0]).getByTitle("Sil"));
-    expect(screen.getByText(new RegExp(regexKacis(KALICI_SILME_NOTU)))).toBeTruthy();
+    expect(screen.getByText("Hesap silinsin mi?")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/kalıcı silinir|çöp kutusuna gitmez/);
   });
   it("AC-5 / AC-41: çek raporu yalnız cekler verildiğinde (kasa yetkisi) listelenir", () => {
     const ortak = { customers: [], services: [], dealers: [], stock: [], partSales: [], payments: [], notes: [], parts: [], appSettings: {}, flash: noop };

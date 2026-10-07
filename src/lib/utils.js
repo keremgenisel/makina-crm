@@ -832,6 +832,9 @@ export const stokKirparakDus = (partStock, kalemler) => {
 // lib/stokHareketi.js'e taşındı: netGeriEklenmis.
 
 export const withoutDeleted = arr => (arr || []).filter(x => !x.deletedAt);
+// Spec 0078 R9: canlı listeden hesaplanmış bütün bir sonucu tam diziye yazarken çöptekileri korur. Bileşen canlı dizi
+// alır; hesaplanan liste onları içermez ve doğrudan yazılsa çöpteki kayıtlar sessizce kalıcı silinirdi.
+export const copuKoru = (canliSonuc, tam) => [...(canliSonuc || []), ...(tam || []).filter(x => x?.deletedAt)];
 
 // Dosya arşivi: servise bağlı bir dosya, servisin göründüğü HER iki yerde de listelenmeli —
 // müşteri detayında (servis müşterinindir) ve anlaşmalı servis detayında (servisi o firma yaptı).

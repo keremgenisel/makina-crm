@@ -73,7 +73,8 @@ describe("Spec 0024 B: Kasa › Çalışan avansları (R9, R11, C8)", () => {
     expect(within(e).getByTestId("ekstre-ozet").textContent).toMatch(/Çalışana borcumuz.*42\.000.*Açık avans.*8\.000/);
     fireEvent.click(within(e).getByTitle("Avansı sil"));
     fireEvent.click(screen.getByText("Avansı Sil"));
-    expect(h).toEqual([]);
+    expect(h.filter(m => !m.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: çöp kutusuna gider
+    expect(h.every(m => m.deletedAt)).toBe(true);
   });
   it("B3: avans izni olmayan kullanıcı avans veremez; ekstreyi görür", () => {
     const perms = { role: "user", permissions: JSON.stringify({ tabs: ["gider", "finance"], giderActions: ["gider_odeme"] }) };

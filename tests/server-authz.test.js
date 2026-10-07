@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
-  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu,
+  GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -1367,4 +1367,77 @@ describe("Spec 0068: tedarikçi ve üretim partisinde çöpe atma, geri alma ve 
     expect(eylemDenetimi({ tedarikciler: [{ id: 5, ad: "A", deletedAt: ZAMAN }] }, { tedarikciler: [] }, p, "user").ok).toBe(true);
     expect(eylemDenetimi({ uretimPartileri: [{ id: 6, deletedAt: ZAMAN }] }, { uretimPartileri: [] }, p, "user").ok).toBe(true);
 });
+});
+
+describe("Spec 0078: kasa ve gider kayıtları çöp kutusunda", () => {
+  const Z = "2026-10-07T09:00:00.000Z";
+  const p = (giderActions, tabs = ["gider", "finance", "kasa"], customerActions = []) => JSON.stringify({ tabs, giderActions, customerActions });
+  const yetki = (perm, e, y) => {
+    const b = degisenBolumler(e, y);
+    return yazmaYetkisiVar(perm, "user", b, e, y).ok && eylemDenetimi(e, y, perm, "user").ok && !giderAynaEngeli(perm, "user", b, e, y);
+  };
+  const sil = (bolum, kayit) => [{ [bolum]: [kayit] }, { [bolum]: [{ ...kayit, deletedAt: Z }] }];
+  it("AC-24: hareketin çöpe atılması türünün iznini ister (ödeme ve mahsup gider_odeme, virman virman, avans avans)", () => {
+    const H = { odeme: { id: 1, tur: "odeme", tutar: 10, hesapId: 51, giderId: 5 }, mahsup: { id: 2, tur: "mahsup", tutar: 5, calisanId: 7, giderId: 5 },
+      virman: { id: 3, tur: "virman", tutar: 3, hesapId: 51, karsiHesapId: 52 }, avans: { id: 4, tur: "avans", tutar: 4, hesapId: 51, calisanId: 7 } };
+    const IZIN = { odeme: "gider_odeme", mahsup: "gider_odeme", virman: "virman", avans: "avans" };
+    for (const [tur, h] of Object.entries(H)) {
+      const [e, y] = sil("hesapHareketleri", h);
+      expect(yetki(p([IZIN[tur]]), e, y), tur).toBe(true);
+      expect(eylemDenetimi(e, y, p(["gider_add"]), "user").ok, tur).toBe(false);
+    }
+  });
+  it("AC-25: virman ve avansın çöpe atılması ayrıca Kasa sekmesi ister; ödeme istemez", () => {
+    const kasasiz = (g) => p(g, ["gider", "finance"]);
+    const [ev, yv] = sil("hesapHareketleri", { id: 3, tur: "virman", tutar: 3, hesapId: 51, karsiHesapId: 52 });
+    expect(eylemDenetimi(ev, yv, kasasiz(["virman"]), "user").ok).toBe(false);
+    const [ea, ya] = sil("hesapHareketleri", { id: 4, tur: "avans", tutar: 4, hesapId: 51, calisanId: 7 });
+    expect(eylemDenetimi(ea, ya, kasasiz(["avans"]), "user").ok).toBe(false);
+    const [eo, yo] = sil("hesapHareketleri", { id: 1, tur: "odeme", tutar: 10, hesapId: 51, giderId: 5 });
+    expect(yetki(kasasiz(["gider_odeme"]), eo, yo)).toBe(true);
+  });
+  it("AC-24, AC-27: tanım, tür, standart gider, kasa hesabı ve bağsız çekin çöpe atılması bugünkü silme iznini ister (yeni kural yok)", () => {
+    const vakalar = [
+      ["giderTanimlari", { id: 9, turId: 1, ad: "İnternet", baslangicAy: "2026-01" }, "gider_tanim"],
+      ["giderTurleri", { id: 1, ad: "Elektrik", davranis: "normal" }, "gider_tanim"],
+      ["standartGiderler", { id: 91, grupId: 91, ad: "Kira", tutar: 1, baslangicAy: "2026-01" }, "gider_tanim"],
+      ["kasaHesaplari", { id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY" }, "kasa_hesap"],
+      ["cekler", { id: 30, yon: "alinan", paymentId: null, no: "1", banka: "Z", tutar: 5, durum: "portfoy", gecmis: [] }, "gider_odeme"],
+    ];
+    for (const [b, k, izin] of vakalar) {
+      const [e, y] = sil(b, k);
+      expect(yetki(p([izin], ["gider", "finance", "kasa", "settings"]), e, y), b).toBe(true);
+      expect(eylemDenetimi(e, y, p(["gider_add"], ["gider", "finance", "kasa", "settings"]), "user").ok, b).toBe(false);
+    }
+  });
+  it("AC-19: çöpteki tanımdan üretilmiş kalem sunucuda reddedilmez (tanimliUretimMi ham listeden okur)", () => {
+    const tanim = { id: 9, turId: 1, ad: "İnternet", baslangicAy: "2026-01", deletedAt: Z };
+    const e = { giderTanimlari: [tanim], giderler: [] };
+    const y = { giderTanimlari: [tanim], giderler: [{ id: 700, turId: 1, tanimId: 9, donem: "2026-09", tarih: "2026-09-01", tutar: 0 }] };
+    expect(eylemDenetimi(e, y, p(["gider_tekrar_uret"]), "user").ok).toBe(true);
+  });
+  it("AC-41: kaydına hesap atanmış ya da hareketi çöpe atılmış kapsam dışı girişin temizliği kasa_hesap istemez (kapsamGirisiGecersizMi)", () => {
+    const g = { id: 801, tur: "hareket", kaynak: null, kayitId: 1, zaman: Z };
+    const h = { id: 1, tur: "odeme", tutar: 10, hesapId: null, giderId: 5 };
+    expect(kapsamGirisiGecersizMi(g, { hesapHareketleri: [h] })).toBe(false);
+    expect(kapsamGirisiGecersizMi(g, { hesapHareketleri: [{ ...h, deletedAt: Z }] })).toBe(true);
+    const e = { kasaKapsamDisi: [g], hesapHareketleri: [h] }, y = { kasaKapsamDisi: [], hesapHareketleri: [{ ...h, deletedAt: Z }] };
+    expect(kapsamDisiTemizlikMi(e, y)).toBe(true);
+    // Hesabı çöpte olan tahsilat hâlâ hesapsızdır: giriş geçerli kalır (canlı hesap ölçütü).
+    const gt = { id: 802, tur: "tahsilat", kaynak: "servis", kayitId: 11, zaman: Z };
+    const blob = { services: [{ id: 11, customerId: 1, odendi: true, hesapId: 51 }], kasaHesaplari: [{ id: 51, ad: "Z", deletedAt: Z }] };
+    expect(kapsamGirisiGecersizMi(gt, blob)).toBe(false);
+    expect(kapsamGirisiGecersizMi(gt, { ...blob, kasaHesaplari: [{ id: 51, ad: "Z" }] })).toBe(true);
+  });
+  it("AC-47: deneme döneminde hesabı ÇÖPE atıp hareketlerini taşıyan yazım taşıma sayılır; yalnız kasa_hesap + Kasa ile 403 yok", () => {
+    const H = (id, o = {}) => ({ id, ad: `H${id}`, tur: "banka", paraBirimi: "TRY", kapali: false, ...o });
+    const e = { appSettings: { giderAyarlari: { denemeDonemiBitis: "2099-01-01" } }, kasaHesaplari: [H(51), H(52)],
+      hesapHareketleri: [{ id: 1, tur: "odeme", tutar: 10, hesapId: 51, giderId: 5 }, { id: 2, tur: "avans", tutar: 5, hesapId: 51, calisanId: 7, deletedAt: Z }] };
+    const y = { ...e, kasaHesaplari: [H(51, { deletedAt: Z }), H(52)], hesapHareketleri: e.hesapHareketleri.map(m => ({ ...m, hesapId: 52 })) };
+    expect(hesapTasimaYazimiMi(e, y)).toBe(true);
+    expect(yetki(p(["kasa_hesap"]), e, y)).toBe(true);
+    // Hedef çöpteki hesap olamaz; hesap zaten çöpteyse bu yazım taşıma değildir.
+    expect(hesapTasimaYazimiMi(e, { ...y, kasaHesaplari: [H(51, { deletedAt: Z }), H(52, { deletedAt: Z })] })).toBe(false);
+    expect(hesapTasimaYazimiMi({ ...e, kasaHesaplari: [H(51, { deletedAt: Z }), H(52)] }, y)).toBe(false);
+  });
 });

@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
   calisanId INTEGER, girisYonu TEXT, tedarikciId INTEGER, odemeYontemi TEXT,
   atamaTur TEXT, makinaTur TEXT, makinaId INTEGER, modelSatirlari TEXT,
   uretilenAylar TEXT, kapatildi INTEGER, kdvYonu TEXT, dagitimAy INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, deletedAt TEXT
 );
 -- Üretim partileri (spec 0022): maliyet dağıtımının tabanı; kalıcı silme (tedarikçi deseni). Makina bağı
 -- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
@@ -273,16 +273,16 @@ CREATE TABLE IF NOT EXISTS cekler (
   id INTEGER PRIMARY KEY,
   paymentId INTEGER, no TEXT, banka TEXT, kesideci TEXT, tur TEXT, durum TEXT, gecmis TEXT,
   yon TEXT, tutar REAL, currency TEXT, vadeTarihi TEXT, tarih TEXT, kimden TEXT, customerId INTEGER,
-  alacakliTur TEXT, alacakliId INTEGER, alacakliAd TEXT, hesapId INTEGER, aciklama TEXT
+  alacakliTur TEXT, alacakliId INTEGER, alacakliAd TEXT, hesapId INTEGER, aciklama TEXT, deletedAt TEXT
 );
 CREATE TABLE IF NOT EXISTS kasa_hesaplari (
   id INTEGER PRIMARY KEY,
-  ad TEXT, tur TEXT, paraBirimi TEXT, acilisBakiyesi REAL, acilisTarihi TEXT, kapali INTEGER
+  ad TEXT, tur TEXT, paraBirimi TEXT, acilisBakiyesi REAL, acilisTarihi TEXT, kapali INTEGER, deletedAt TEXT
 );
 CREATE TABLE IF NOT EXISTS hesap_hareketleri (
   id INTEGER PRIMARY KEY,
   tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
-  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER
+  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER, deletedAt TEXT
 );
 -- Spec 0058 R11, C2: kasa iş listesinden kapsam dışı bırakılan kayıtlar; tek liste, kayda kimlikle bağlı.
 CREATE TABLE IF NOT EXISTS kasa_kapsam_disi (
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS tedarikciler (
 );
 CREATE TABLE IF NOT EXISTS standart_giderler (
   id INTEGER PRIMARY KEY,
-  grupId INTEGER, ad TEXT, tutar REAL, baslangicAy TEXT, bitisAy TEXT
+  grupId INTEGER, ad TEXT, tutar REAL, baslangicAy TEXT, bitisAy TEXT, deletedAt TEXT
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -548,7 +548,9 @@ const FACTORY_NEW_COLUMNS = [["bankaAdi", "TEXT"], ["hesapAdi", "TEXT"], ["swift
 // uygulama yeniden açıldığında silinen kayıtlar kendi bölümlerine geri dönüyordu.
 const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
 // Spec 0068 R8, R9, R9b: tedarikçi ve üretim partisi de çöp kutusuna gider (önceden kalıcı siliniyordu).
-const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis", "tedarikciler", "uretim_partileri"];
+const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis", "tedarikciler", "uretim_partileri",
+  // Spec 0078 R1, R5: kasa ve gider kayıtları çöp kutusuna (giderTurleri meta JSON, alan kayıtla taşınır).
+  "hesap_hareketleri", "cekler", "gider_tanimlari", "standart_giderler", "kasa_hesaplari"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -886,22 +888,22 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.giderTanimlari) && !skip.has("giderTanimlari")) {
     conn.prepare(`DELETE FROM gider_tanimlari`).run();
-    const stmt = conn.prepare(`INSERT INTO gider_tanimlari (id, turId, ad, tutar, kdvOrani, baslangicAy, bitisAy, calisanId, girisYonu, tedarikciId, odemeYontemi, atamaTur, makinaTur, makinaId, modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy, tevkifatli, tevkifatPay, tevkifatPayda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO gider_tanimlari (id, turId, ad, tutar, kdvOrani, baslangicAy, bitisAy, calisanId, girisYonu, tedarikciId, odemeYontemi, atamaTur, makinaTur, makinaId, modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy, tevkifatli, tevkifatPay, tevkifatPayda, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const t of data.giderTanimlari) {
-      stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi), t.kdvYonu ?? null, dagitimAyYaz(t.dagitimAy), ...Object.values(tevkifatYaz(t)));
+      stmt.run(t.id, t.turId ?? null, t.ad ?? null, t.tutar ?? null, t.kdvOrani ?? null, t.baslangicAy ?? null, t.bitisAy ?? null, t.calisanId ?? null, t.girisYonu ?? null, t.tedarikciId ?? null, t.odemeYontemi ?? null, t.atamaTur ?? null, t.makinaTur ?? null, t.makinaId ?? null, json(t.modelSatirlari ?? []), json(t.uretilenAylar ?? []), toInt(t.kapatildi), t.kdvYonu ?? null, dagitimAyYaz(t.dagitimAy), ...Object.values(tevkifatYaz(t)), t.deletedAt ?? null);
     }
   }
   if (Array.isArray(data.kasaHesaplari) && !skip.has("kasaHesaplari")) {
     conn.prepare(`DELETE FROM kasa_hesaplari`).run();
-    const stmt = conn.prepare(`INSERT INTO kasa_hesaplari (id, ad, tur, paraBirimi, acilisBakiyesi, acilisTarihi, kapali) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    for (const h of data.kasaHesaplari) stmt.run(h.id, h.ad ?? null, h.tur ?? null, h.paraBirimi ?? null, h.acilisBakiyesi ?? null, h.acilisTarihi ?? null, toInt(h.kapali));
+    const stmt = conn.prepare(`INSERT INTO kasa_hesaplari (id, ad, tur, paraBirimi, acilisBakiyesi, acilisTarihi, kapali, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const h of data.kasaHesaplari) stmt.run(h.id, h.ad ?? null, h.tur ?? null, h.paraBirimi ?? null, h.acilisBakiyesi ?? null, h.acilisTarihi ?? null, toInt(h.kapali), h.deletedAt ?? null);
   }
   if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
     conn.prepare(`DELETE FROM hesap_hareketleri`).run();
-    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId, deletedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
-      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null);
+      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null, m.deletedAt ?? null);
   }
   if (Array.isArray(data.kasaKapsamDisi) && !skip.has("kasaKapsamDisi")) {
     conn.prepare(`DELETE FROM kasa_kapsam_disi`).run();
@@ -911,10 +913,10 @@ function populateAll(conn, data, skip = new Set()) {
   // Spec 0040: çek kaydı yalnız kendi alanlarını taşır (Q2); geçmiş kimliksiz alt satırlar, tek JSON sütunu (R12).
   if (Array.isArray(data.cekler) && !skip.has("cekler")) {
     conn.prepare(`DELETE FROM cekler`).run();
-    const stmt = conn.prepare(`INSERT INTO cekler (id, paymentId, no, banka, kesideci, tur, durum, gecmis, yon, tutar, currency, vadeTarihi, tarih, kimden, customerId, alacakliTur, alacakliId, alacakliAd, hesapId, aciklama) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO cekler (id, paymentId, no, banka, kesideci, tur, durum, gecmis, yon, tutar, currency, vadeTarihi, tarih, kimden, customerId, alacakliTur, alacakliId, alacakliAd, hesapId, aciklama, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const c of data.cekler) stmt.run(c.id, c.paymentId ?? null, c.no ?? null, c.banka ?? null, c.kesideci ?? null, c.tur ?? null, c.durum ?? null, json(Array.isArray(c.gecmis) ? c.gecmis : []),
       c.yon ?? null, c.tutar ?? null, c.currency ?? null, c.vadeTarihi ?? null, c.tarih ?? null, c.kimden ?? null, c.customerId ?? null,
-      c.alacakliTur ?? null, c.alacakliId ?? null, c.alacakliAd ?? null, c.hesapId ?? null, c.aciklama ?? null);
+      c.alacakliTur ?? null, c.alacakliId ?? null, c.alacakliAd ?? null, c.hesapId ?? null, c.aciklama ?? null, c.deletedAt ?? null);
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
@@ -928,8 +930,8 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.standartGiderler) && !skip.has("standartGiderler")) {
     conn.prepare(`DELETE FROM standart_giderler`).run();
-    const stmt = conn.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy, bitisAy) VALUES (?, ?, ?, ?, ?, ?)`);
-    for (const s of data.standartGiderler) stmt.run(s.id, s.grupId ?? s.id, s.ad ?? null, s.tutar ?? null, s.baslangicAy ?? null, s.bitisAy ?? null);
+    const stmt = conn.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy, bitisAy, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of data.standartGiderler) stmt.run(s.id, s.grupId ?? s.id, s.ad ?? null, s.tutar ?? null, s.baslangicAy ?? null, s.bitisAy ?? null, s.deletedAt ?? null);
   }
 
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
@@ -1466,17 +1468,18 @@ function readBlobFromDb() {
     ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ sgkTutar, yolParasi, dagitimAy }), ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), odendi: toBool(odendi), modelSatirlari: modelSatirByGider.get(rest.id) || [], taksitler: taksitByGider.get(rest.id) || [],
     ekOdemeler: ekByGider.get(rest.id) || [],
   }));
-  const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy, tevkifatli, tevkifatPay, tevkifatPayda, ...rest }) => ({
-    ...rest, ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ dagitimAy }), ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),
+  const giderTanimlari = db.prepare(`SELECT * FROM gider_tanimlari`).all().map(({ modelSatirlari, uretilenAylar, kapatildi, kdvYonu, dagitimAy, tevkifatli, tevkifatPay, tevkifatPayda, deletedAt, ...rest }) => ({
+    ...rest, ...bosOlmayan({ deletedAt }), ...kdvYonuAlani(kdvYonu), ...bosOlmayan({ dagitimAy }), ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), modelSatirlari: parseJsonCol(modelSatirlari, []), uretilenAylar: parseJsonCol(uretilenAylar, []), kapatildi: toBool(kapatildi),
   }));
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
-  const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all();
-  const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, ...rest }) => ({ ...rest, kapali: toBool(kapali) }));
-  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir) }));
+  // Spec 0078 C4: boş deletedAt blob'a yazılmaz (sunucu karşılaştırması null ile yokluğu ayırır).
+  const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all().map(({ deletedAt, ...rest }) => ({ ...rest, ...bosOlmayan({ deletedAt }) }));
+  const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, deletedAt, ...rest }) => ({ ...rest, kapali: toBool(kapali), ...bosOlmayan({ deletedAt }) }));
+  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt }) }));
   const kasaKapsamDisi = db.prepare(`SELECT * FROM kasa_kapsam_disi`).all();
   // Spec 0049: boş kalan yeni alanlar blob'a hiç yazılmaz; eski (bağlı) çek kaydı okununca 0040'taki şekliyle aynı kalır
   // (sunucunun kayıt karşılaştırması null ile yokluğu ayırır).
-  const cek0049 = new Set(CEKLER_0049_COLUMNS.map(([ad]) => ad));
+  const cek0049 = new Set([...CEKLER_0049_COLUMNS.map(([ad]) => ad), "deletedAt"]); // spec 0078 C4
   const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({
     ...Object.fromEntries(Object.entries(rest).filter(([k, v]) => v != null || !cek0049.has(k))), gecmis: parseJsonCol(gecmis, []) }));
   const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));

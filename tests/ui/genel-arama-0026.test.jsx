@@ -466,3 +466,15 @@ describe("Spec 0026: gerçek App", () => {
     expect(grup("Çekler").length).toBeGreaterThan(0);
   });
 });
+
+describe("Spec 0078 AC-38: çöpteki personel türü arama gizliliğini delmez", () => {
+  it("AC-38: personel türü çöpteyken de kalemi personel sayılır ve aramada çıkmaz (harita ham listeden)", () => {
+    const copteTurler = TURLER.map(t => (t.id === 3 ? { ...t, deletedAt: "2026-10-07T09:00:00.000Z" } : t));
+    const turMap = turHaritasi(copteTurler);
+    const kalem = { id: 104, turId: 3, aciklama: "Hasan Çelik", resmiTutar: 31337, tarih: "2026-03-20", taksitler: [] };
+    expect(personelMi(kalem, turMap)).toBe(true);
+    expect(kalemEslesmesi(kalem, aramaSorgusu("Hasan"), { turMap, tedMap: new Map() })).toBeNull();
+    // App türleri GlobalSearch'e ham verir; GlobalSearch haritayı süzmeden kurar.
+    expect(readFileSync("src/components/GlobalSearch.jsx", "utf8")).toMatch(/turHaritasi\(v\.giderTurleri \|\| \[\]\)/);
+  });
+});

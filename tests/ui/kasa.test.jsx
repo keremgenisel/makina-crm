@@ -65,7 +65,7 @@ describe("Kasa: hesaplar (R1, C5)", () => {
     expect(within(satirOf("Ziraat")).getByText("Kapalı")).toBeTruthy();
     fireEvent.click(within(satirOf("Boş Hesap")).getByTitle("Sil"));
     fireEvent.click(screen.getByText("Hesabı Sil"));
-    expect(st.kasaHesaplari.map(h => h.id)).toEqual([1]);
+    expect(st.kasaHesaplari.filter(h => !h.deletedAt).map(h => h.id)).toEqual([1]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
   });
   it("C5: hareketi olan hesabın para birimi değiştirilemez", () => {
     render(<Harness h0={[hesap(1, "Ziraat")]} m0={[{ id: 51, tur: "odeme", tarih: "2026-09-10", tutar: 100, hesapId: 1, giderId: 7 }]} />);

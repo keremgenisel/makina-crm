@@ -94,7 +94,7 @@ describe("Spec 0049 A: portföye elle çek ekleme", () => {
     expect(st.cekler.map(c => c.id)).toEqual([400, 401]);
     fireEvent.click(within(satir("555")).getByText("Sil"));
     fireEvent.click(screen.getAllByText("Sil").filter(e => e.closest("button")).pop());
-    expect(st.cekler.map(c => c.id)).toEqual([401]);
+    expect(st.cekler.filter(c => !c.deletedAt).map(c => c.id)).toEqual([401]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
   });
   it("AC-8: elle eklenen çek tahsil edildi işaretlenir; pencere bakiyeye girmediğini yazar", () => {
     let st;

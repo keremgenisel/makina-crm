@@ -183,7 +183,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     });
   const ozet = hareketOzeti(g.hareketler, aralik, bakiyeler);
   const giderById = new Map(g.giderler.map(k => [String(k.id), k]));
-  const hsz = hesapsizOdemeler(g.hareketler, aralik, g.kasaKapsamDisi);
+  const hsz = hesapsizOdemeler(g.hareketler, aralik, g.kasaKapsamDisi, g.hesaplar); // spec 0078 triyaj (bulgu 2): ekranla aynı küme ("hesabı silinmiş" dahil)
   // Triyaj (R31 istisnası, R18/R19/R21): personel ödemeleri ve avanslar satır satır yazılmaz; tek bir çalışanın elden
   // tutarı ya da avansı tarihiyle kâğıda düşerdi. İkisi birer toplu satırdır (adet + toplam), ayrıntı ekrandadır.
   const hesapsizListe = [];

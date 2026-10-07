@@ -607,6 +607,17 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   const tTs2 = await gUst(tasiTok);
   check("spec 0056 R25: taşıma yazımı dışında avansın tutarını değiştirmek → 403",
     (await postData({ ...tTs2, dataVersion: undefined, hesapHareketleri: tTs2.hesapHareketleri.map(m => (m.id === 9804 ? { ...m, tutar: 1 } : m)) }, tTs2.dataVersion, tasiTok)).status === 403);
+  // ── Spec 0078 AC-47: deneme döneminde hesabı ÇÖPE atan (deletedAt) ve hareketlerini taşıyan yazım; yalnız kasa_hesap + Kasa ──
+  let copA = await gUst(adminTok);
+  await postData({ ...copA, dataVersion: undefined, appSettings: { ...copA.appSettings, giderAyarlari: { ...(copA.appSettings?.giderAyarlari || {}), denemeDonemiBitis: "2099-01-01" } },
+    kasaHesaplari: [...copA.kasaHesaplari, { id: 9807, ad: "Çöpe Gidecek", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, kapali: false }],
+    hesapHareketleri: [...copA.hesapHareketleri, { id: 9808, tur: "avans", tarih: "2026-09-13", tutar: 20, calisanId: 1, hesapId: 9807 }] }, copA.dataVersion, adminTok);
+  const copT = await gUst(tasiTok);
+  const copZaman = "2026-10-07T09:00:00.000Z";
+  check("spec 0078 AC-47: hesabı çöpe atıp avansını taşıyan yazım (yalnız kasa_hesap + Kasa) → 200; hesap çöpte, avans yeni hesapta",
+    (await postData({ ...copT, dataVersion: undefined, kasaHesaplari: copT.kasaHesaplari.map(h => (h.id === 9807 ? { ...h, deletedAt: copZaman } : h)),
+      hesapHareketleri: copT.hesapHareketleri.map(m => (m.hesapId === 9807 ? { ...m, hesapId: 9802 } : m)) }, copT.dataVersion, tasiTok)).status === 200
+    && await (async () => { const a = await gUst(adminTok); return a.kasaHesaplari.find(h => h.id === 9807)?.deletedAt === copZaman && a.hesapHareketleri.find(m => m.id === 9808)?.hesapId === 9802; })());
   const tK2 = await gUst(ciroTok);
   check("spec 0044 Q5: hesapla birlikte ücret değiştirmek → 403",
     (await postData({ ...tK2, dataVersion: undefined, services: tK2.services.map(x => x.id === 9700 ? { ...x, hesapId: 98, servisUcreti: 1 } : x) }, tK2.dataVersion, ciroTok)).status === 403);
@@ -642,6 +653,11 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...fD2, dataVersion: undefined, giderler: fD2.giderler.map(k => k.id === 9810 ? { ...k, aciklama: "silme ile" } : k),
       hesapHareketleri: fD2.hesapHareketleri.filter(h => h.id !== 9813) }, fD2.dataVersion, formTok)).status === 200
     && !(await gUst(adminTok)).hesapHareketleri.some(h => h.id === 9813));
+  // Spec 0078 AC-24: ödemeyi çöpe atmak (deletedAt) gider_odeme ile geçer ve kayıttan damgalı okunur.
+  const fD3 = await gUst(formTok);
+  check("spec 0078 AC-24: ödeme hareketini çöpe atmak (gider_odeme) → 200; kayıtta damgalı kalır",
+    (await postData({ ...fD3, dataVersion: undefined, hesapHareketleri: fD3.hesapHareketleri.map(h => (h.id === 9812 ? { ...h, deletedAt: "2026-10-07T09:00:00.000Z" } : h)) }, fD3.dataVersion, formTok)).status === 200
+    && (await gUst(adminTok)).hesapHareketleri.find(h => h.id === 9812)?.deletedAt === "2026-10-07T09:00:00.000Z");
 
   // ── Spec 0006 AC-33: yalnız Evrak sekmeli kullanıcının "CRM'e Kaydet" yazımı ─────────
   let eA = await gUst(adminTok);

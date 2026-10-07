@@ -92,3 +92,17 @@ describe("Spec 0058: kapsam dışı kayıtlarının yedeği", () => {
     expect(readFileSync("src/App.jsx", "utf-8")).toMatch(/setKasaKapsamDisi=\{kasaSekmesi \? setKasaKapsamDisi : null\}/);
   });
 });
+
+describe("Spec 0078 AC-48: Kasa'sı olmayan kullanıcının kısmi geri yüklemesi çöpteki kasa kayıtlarını bugünkü hâliyle korur", () => {
+  it("AC-48: çöpteki virman, avans ve verilen çek korunacak kümede (deletedAt'e bakılmaz); yedekten gelenle değişmez", () => {
+    const Z = "2026-10-07T09:00:00.000Z";
+    const mevcut = [{ id: 1, tur: "virman", tutar: 5, deletedAt: Z }, { id: 2, tur: "avans", tutar: 7, deletedAt: Z }, { id: 3, tur: "odeme", tutar: 9 }];
+    const yedek = [{ id: 1, tur: "virman", tutar: 999 }, { id: 4, tur: "odeme", tutar: 11 }];
+    const sonuc = kasaKayitlariniKoru(mevcut, yedek, kasaHareketiMi);
+    expect(sonuc.filter(kasaHareketiMi)).toEqual(mevcut.filter(kasaHareketiMi));
+    expect(sonuc.map(h => h.id)).toEqual([1, 2, 4]);
+    const cekler = [{ id: 30, yon: "verilen", deletedAt: Z }];
+    expect(kasaKayitlariniKoru(cekler, [{ id: 30, yon: "verilen" }], kasaCekiMi)).toEqual(cekler);
+    expect(readFileSync("src/lib/yedekKasa.js", "utf8")).not.toMatch(/deletedAt/);
+  });
+});

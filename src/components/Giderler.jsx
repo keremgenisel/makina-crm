@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { uid, fmtTR, withDeleted } from "../lib/utils";
+import { uid, fmtTR, withDeleted, copuKoru } from "../lib/utils";
 import { useBugun } from "../hooks/useBugun";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { makeCanDo } from "../lib/permissions";
@@ -130,7 +130,7 @@ export const Giderler = ({
   const uret = () => {
     const u = tekrarlayanUret(giderTanimlari, giderler, uretimAyi, { turMap, calisanlar, giderAyarlari, kdvRates, uid });
     if (u.yeniKalemler.length) setGiderler(p => [...p, ...u.yeniKalemler]);
-    setGiderTanimlari(() => u.guncelTanimlar);
+    setGiderTanimlari(p => copuKoru(u.guncelTanimlar, p)); // spec 0078 R9: tanımlar canlı gelir
     logAction({ serverPermissions, action: "tekrar_uretildi", entity: "gider", entityName: uretimAyi, detail: { ay: uretimAyi, eklenen: u.eklenen, zatenVardi: u.zatenVardi } });
     setUretimSonucu({ ay: uretimAyi, ...u });
     showToast(`${ayAdi(uretimAyi)}: ${u.eklenen} kalem eklendi, ${u.zatenVardi} kalem zaten vardı.`);

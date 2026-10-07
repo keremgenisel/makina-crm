@@ -5,10 +5,9 @@ import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal } from "../ui";
 import { DavranisRozeti, DAVRANIS_AD } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
-import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Gider türleri (spec 0001 R2, plan K12/K13). Davranış (normal / kira / personel) tür oluşturulurken
-// seçilir; tür kullanıma girince davranışı kilitlenir (ad serbest). Silme kalıcıdır (R12): kullanımdaki
+// seçilir; tür kullanıma girince davranışı kilitlenir (ad serbest). Silinen tür çöp kutusuna gider (spec 0078): kullanımdaki
 // tür yalnız AYNI davranıştaki bir türe taşınarak silinir; böyle bir tür yoksa silme engellenir.
 const VARSAYILAN_TURLER = [
   ["Kira", "kira"], ["Personel", "personel"], ["Elektrik", "normal"], ["Doğalgaz", "normal"], ["Su", "normal"],
@@ -18,7 +17,9 @@ const VARSAYILAN_TURLER = [
   ["SGK", "sgk"],
 ];
 
-export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler = [], setGiderler, giderTanimlari = [], setGiderTanimlari, showToast = () => {}, canDo = () => true, serverPermissions }) => {
+export const GiderTurManager = ({ giderTurleri: tumTurler = [], setGiderTurleri, giderler = [], setGiderler, giderTanimlari = [], setGiderTanimlari, showToast = () => {}, canDo = () => true, serverPermissions }) => {
+  // Spec 0078 R11: liste, taşıma hedefleri ve ad denetimi canlı türlerle; çöpteki tür yalnız Çöp Kutusu'nda görünür.
+  const giderTurleri = tumTurler.filter(t => !t.deletedAt);
   const [yeni, setYeni] = useState({ ad: "", davranis: "normal" });
   const [hata, setHata] = useState("");
   const [duzenle, setDuzenle] = useState(null); // {id, ad, davranis, kullanimda}
@@ -74,10 +75,11 @@ export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler =
       setGiderTanimlari?.(p => p.map(k => (String(k.turId) === String(tur.id) ? { ...k, turId: hedef.id } : k)));
       logAction({ serverPermissions, action: "tur_tasindi", entity: "gider_tur", entityId: tur.id, entityName: tur.ad, detail: { hedef: hedef.ad, kalem: kullanim.kalem, tanim: kullanim.tanim } });
     }
-    setGiderTurleri(p => p.filter(x => x.id !== tur.id));
+    const zaman = new Date().toISOString(); // spec 0078 R2: tür çöp kutusuna gider (davranış çözümü ham listeden, R11)
+    setGiderTurleri(p => p.map(x => (x.id === tur.id ? { ...x, deletedAt: zaman } : x)));
     logAction({ serverPermissions, action: "silindi", entity: "gider_tur", entityId: tur.id, entityName: tur.ad });
     setSil(null);
-    showToast(kullanimda ? "Kayıtlar taşındı, tür silindi." : "Gider türü silindi.");
+    showToast(kullanimda ? "Kayıtlar taşındı, tür çöp kutusuna taşındı." : "Gider türü çöp kutusuna taşındı.");
   };
 
   const siraliTurler = [...giderTurleri].sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
@@ -160,7 +162,7 @@ export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler =
             footer={engelli
               ? <Btn onClick={() => setSil(null)}>Tamam</Btn>
               : <><Btn variant="ghost" onClick={() => setSil(null)}>İptal</Btn><Btn variant="danger" onClick={silOnayla}><Icon name="trash" size={14} /> {kullanimda ? "Taşı ve Sil" : "Sil"}</Btn></>}>
-            {!kullanimda && <div style={{ fontSize: 13 }}>Bu tür hiçbir kalemde veya tanımda kullanılmıyor. {KALICI_SILME_NOTU}</div>}
+            {!kullanimda && <div style={{ fontSize: 13 }}>Bu tür hiçbir kalemde veya tanımda kullanılmıyor.</div>}
             {kullanimda && (
               <div style={{ fontSize: 13, lineHeight: 1.6 }}>
                 Bu türe bağlı <b>{sil.kullanim.kalem} gider kalemi</b>{sil.kullanim.cop ? ` (${sil.kullanim.cop}’i çöpte)` : ""}{sil.kullanim.tanim ? <> ve <b>{sil.kullanim.tanim} tekrarlayan tanım</b></> : null} var. Hiçbir kalem türsüz kalamaz.
@@ -175,7 +177,7 @@ export const GiderTurManager = ({ giderTurleri = [], setGiderTurleri, giderler =
                         {sil.hedefler.map(h => <option key={h.id} value={h.id}>{h.ad}</option>)}
                       </Select>
                     </Field>
-                    <Ipucu>Listede yalnız {DAVRANIS_AD[sil.tur.davranis]} davranışlı türler var ({sil.hedefler.length}). {KALICI_SILME_NOTU}</Ipucu>
+                    <Ipucu>Listede yalnız {DAVRANIS_AD[sil.tur.davranis]} davranışlı türler var ({sil.hedefler.length}).</Ipucu>
                   </div>
                 )}
               </div>

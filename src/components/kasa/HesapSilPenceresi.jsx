@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Modal, Btn, Field, Select, Icon } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "../tasarim";
 import { HESAP_TUR_AD } from "../../lib/kasa";
-import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Spec 0056 B (R6–R11, R17–R27): deneme döneminde hareketi olan kasa hesabının silinmesi. Bağlı kayıtlar türüyle sayılır;
 // iki yol: başka hesaba taşı (varsayılan) ya da hesapsız bırak. Kurallar ve güncelleyiciler saf kasa.hesapTasimaPlani'dan;
@@ -32,7 +31,7 @@ export const HesapSilPenceresi = ({ hesap, plan, onTasi, onHesapsiz, onClose }) 
       </>}>
       <div data-testid="hesap-sil-penceresi">
         {toplam === 0 ? (
-          <p style={{ fontSize: 13 }}>“{hesap.ad}” hesabının hiç hareketi yok. {KALICI_SILME_NOTU}</p>
+          <p style={{ fontSize: 13 }}>“{hesap.ad}” hesabının hiç hareketi yok.</p>
         ) : (<>
           <BolumBasligi>Bu hesaba bağlı kayıtlar</BolumBasligi>
           <ul data-testid="hesap-sil-sayim" style={{ margin: "6px 0 12px", paddingLeft: 18, fontSize: 13 }}>

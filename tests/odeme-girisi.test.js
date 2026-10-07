@@ -207,7 +207,9 @@ describe("Spec 0053 D/E: düzenleme, mahsup, yazım", () => {
     let i = 100;
     const yazilan = odemeGirisiYaz({ hareketler: [{ tur: "odeme", tutar: 5 }], cek: { id: 200, durum: "ciro" }, silinenler: [1] }, { setHesapHareketleri, setCekler, uid: () => ++i });
     expect(setHesapHareketleri).toHaveBeenCalledTimes(1);
-    expect(h.map(x => x.id)).toEqual([2, 101]);
+    // Spec 0078 R2 ile güncellendi: silinen hareket damgalanır, canlı listeden çıkar.
+    expect(h.filter(x => !x.deletedAt).map(x => x.id)).toEqual([2, 101]);
+    expect(h.find(x => x.id === 1).deletedAt).toBeTruthy();
     expect(yazilan).toEqual([{ tur: "odeme", tutar: 5, id: 101 }]);
     expect(c).toEqual([{ id: 200, durum: "ciro" }]);
   });

@@ -190,7 +190,8 @@ describe("Spec 0073 C: dokunulmayanlar ve ibareler", () => {
     expect(within(r).getByTestId("hareket-duzenlenemez").textContent).toBe(SILINMIS_KALEM_NEDENI);
     fireEvent.click(within(r).getByTitle("Sil"));
     fireEvent.click(screen.getByText("Sil", { selector: "button" }));
-    expect(st.hesapHareketleri).toEqual([]);
+    expect(st.hesapHareketleri.filter(h => !h.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: çöp kutusuna gider
+    expect(st.hesapHareketleri.every(h => h.deletedAt)).toBe(true);
   });
   it("AC-35: kapsam dışı bırakılmış satırda düzenleme yok, yalnız 'Kapsama al'", () => {
     const kapsam0 = [{ id: 5, tur: "hareket", kaynak: null, kayitId: 900, zaman: "2026-09-20T00:00:00Z" }];
@@ -232,7 +233,8 @@ describe("Spec 0073 C: dokunulmayanlar ve ibareler", () => {
     fireEvent.click(screen.getByText("Vazgeç"));
     fireEvent.click(within(satir("Eylül faturası")).getByTitle("Sil"));
     fireEvent.click(screen.getByText("Sil", { selector: "button" }));
-    expect(st.hesapHareketleri).toEqual([]);
+    expect(st.hesapHareketleri.filter(h => !h.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: çöp kutusuna gider
+    expect(st.hesapHareketleri.every(h => h.deletedAt)).toBe(true);
   });
 });
 

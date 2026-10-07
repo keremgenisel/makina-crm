@@ -52,7 +52,8 @@ export const cekDogrula = (form, { cekler = [], tutar = null } = {}) => {
   if (tutar != null && (String(tutar).trim().startsWith("-") || !(parseMoney(tutar) > 0))) hatalar.tutar = "Çek tutarı sıfırdan büyük olmalı.";
   const tur = CEK_TUR_AD[form?.tur] ? form.tur : "hamiline";
   // Spec 0049: yinelenen çek uyarısı yalnız aynı yöndeki çekler arasında (kendi çekimizin numarası alınanla çakışabilir).
-  const ayni = no && banka && cekler.find(c => !idEsit(c.id, form?.id) && yonOf(c) === yonOf(form) && trLower(String(c.banka || "").trim()) === trLower(banka) && String(c.no || "").trim() === no);
+  // Spec 0078 R36: çöpteki çek yinelenen uyarısına girmez.
+  const ayni = no && banka && cekler.find(c => !c?.deletedAt && !idEsit(c.id, form?.id) && yonOf(c) === yonOf(form) && trLower(String(c.banka || "").trim()) === trLower(banka) && String(c.no || "").trim() === no);
   const uyari = ayni ? `Aynı banka ve numaralı bir çek zaten kayıtlı (${banka} · ${no}). Banka numaraları müşteriler arasında tekrar edebildiği için kayıt engellenmez.` : null;
   if (Object.keys(hatalar).length) return { hatalar, uyari, kayit: null };
   return { hatalar, uyari, kayit: { no, banka, kesideci: String(form?.kesideci || "").trim(), tur } };
@@ -87,8 +88,23 @@ export const cekBilgisi = (c, pById) => {
   return { bagli: false, odeme: null, tutarK: kurus(Number(c.tutar) || 0), currency: c.currency || "TRY", vade: c.vadeTarihi || "", tarih: c.tarih || "",
     customerId: c.customerId ?? null, kimden: c.kimden || "" };
 };
-// R5, AC-7: bağsız çek silinebilir; ciro edilmişse önce ciro iptali.
-export const bagsizCekSilinebilirMi = (c) => !!c && c.paymentId == null && c.durum !== CEK_DURUM.CIRO;
+// Spec 0078 R21, R35: çeke bağlı (cekId'li) CANLI hareketi olan çeklerin kimlikleri. Bu çek ne çöpe atılır ne kalıcı silinir
+// (Çöp Kutusu'nun Kalıcı Sil düğmesi, "çöpü boşalt" ve 30 günlük temizlik aynı yardımcıyı okur); yoksa hareketler kaydı
+// olmayan çeke bağlı yetim kalırdı (0040). Çöpteki hareket sayılmaz.
+export const bagliHareketiOlanCekler = (hareketler = []) =>
+  new Set((hareketler || []).filter(h => h && h.cekId != null && !h.deletedAt).map(h => String(h.cekId)));
+export const BAGLI_HAREKETLI_CEK_NEDENI = "Bu çeke bağlı ödeme hareketi var; önce ciroyu ya da çeki iptal edin.";
+// R5, AC-7: bağsız çek silinebilir; ciro edilmişse önce ciro iptali. Spec 0078 R35: çeke bağlı canlı hareket varsa
+// (ödenmiş ya da yazılmış verilen çek) silinemez; ikinci parametre verilmezse eski davranış.
+export const bagsizCekSilinebilirMi = (c, hareketler = null) => !!c && c.paymentId == null && c.durum !== CEK_DURUM.CIRO
+  && !(hareketler && bagliHareketiOlanCekler(hareketler).has(String(c.id)));
+// Spec 0078 R33, R34: çek işlemlerinin (karşılıksız, ciro iptali, verilen çeki kapatma) sildiği çeke bağlı hareketler TAM
+// diziden kalıcı olarak çıkarılır (çöp kutusuna girmez; çek durumunun türevidir). Ekranın canlı listesi geri yazılmaz,
+// yoksa çöpteki hareketler sessizce kalıcı silinirdi.
+export const hareketleriKaldir = (tum, silinen = []) => {
+  const ids = new Set((silinen || []).map(h => String(h?.id)));
+  return ids.size ? (tum || []).filter(h => !ids.has(String(h?.id))) : tum;
+};
 export const yeniCek = (alanlar, paymentId, tarih, id) => ({
   id, paymentId, ...alanlar, durum: CEK_DURUM.PORTFOY, gecmis: [{ tarih, durum: CEK_DURUM.PORTFOY, not: "Alındı" }],
 });
@@ -150,10 +166,12 @@ export const cekKarsiliksiz = (cek, hareketler = [], tarih) => {
 // R15, AC-27: ciro iptali. Hareketler silinir, çek portföye döner, geçmişe iz düşer.
 export const ciroIptal = (cek, hareketler = [], tarih) => {
   if (!cek || cek.durum !== CEK_DURUM.CIRO) return { hata: "Yalnız ciro edilmiş çekin cirosu iptal edilir." };
-  const silinenIdler = new Set(ciroHareketleri(cek.id, hareketler).map(h => String(h.id)));
+  const silinen = ciroHareketleri(cek.id, hareketler);
+  const silinenIdler = new Set(silinen.map(h => String(h.id)));
   return {
     cek: { ...cek, durum: CEK_DURUM.PORTFOY, gecmis: [...(cek.gecmis || []), { tarih, durum: CEK_DURUM.PORTFOY, not: "Ciro iptal edildi" }] },
     hareketler: hareketler.filter(h => !silinenIdler.has(String(h?.id))),
+    silinen, // spec 0078 R33: ekran tam diziden bu kimlikleri çıkarır
   };
 };
 
@@ -288,6 +306,7 @@ export const verilenCekSatirlari = (cekler = [], { durumlar = null, bugun = null
   const sinir = vadeSiniri(bugun, esikGun);
   const satirlar = [];
   for (const c of cekler) {
+    if (c?.deletedAt) continue; // spec 0078 R36: çöpteki çek listelenmez (gösterim noktası)
     if (!c || yonOf(c) !== CEK_YON.VERILEN) continue;
     if (durumlar ? !durumlar.has(c.durum) : c.durum !== VERILEN_DURUM.YAZILDI) continue;
     const vade = c.vadeTarihi || "", bekliyor = c.durum === VERILEN_DURUM.YAZILDI;
@@ -311,6 +330,7 @@ export const portfoySatirlari = (cekler = [], payments = [], { durumlar = null, 
   const sinir = vadeSiniri(bugun, esikGun);
   const satirlar = [];
   for (const c of cekler) {
+    if (c?.deletedAt) continue; // spec 0078 R36: çöpteki çek listelenmez (gösterim noktası)
     if (!c || yonOf(c) !== CEK_YON.ALINAN) continue;
     const b = cekBilgisi(c, pById);
     if (!b) continue;

@@ -36,6 +36,7 @@ import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRa
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
 import App from "../../src/App";
 import { KayitPerdesi } from "../../src/components/KayitPerdesi";
+import { SettingsTrash } from "../../src/components/settings/SettingsTrash";
 import LOGO from "../../src/assets/logo.avif?inline";
 import { UserManager } from "../../src/components/settings/UserManager";
 import { GlobalSearch } from "../../src/components/GlobalSearch";
@@ -887,6 +888,20 @@ const EKRANLAR = {
   "kilit-gider-formu": [<GiderEkrani />, ["baslik:Düzenle"]],
   // Spec 0077 D: kayıt perdesi açık bir form penceresinin (Modal 1000) üstünde.
   "kayit-perdesi": [<><GiderEkrani /><KayitPerdesi acik logo={LOGO} durum="yolda" /></>, ["baslik:Düzenle"]],
+  // Spec 0078: Çöp Kutusu'nda altı yeni satır türü (ödeme, avans, çek, tanım, tür, standart gider, kasa hesabı); çeke bağlı
+  // canlı hareketi olan çekte Kalıcı Sil yok ve neden yazılı.
+  "cop-kutusu-0078": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
+    rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos}
+    setNotes={bos} setKalipDefs={bos} setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} appSettings={{}} showToast={bos} giderYetki kasaVeriYetki
+    giderTurleri={[{ id: 1, ad: "Personel", davranis: "personel" }, { id: 9, ad: "Elektrik", davranis: "normal" }, { id: 3, ad: "Sigorta", davranis: "normal", deletedAt: "2026-09-20T09:00:00.000Z" }]}
+    setGiderTurleri={bos} rawGiderler={[]} setGiderler={bos} rawTedarikciler={[]} setTedarikciler={bos} rawUretimPartileri={[]} setUretimPartileri={bos}
+    rawHesapHareketleri={[{ id: 71, tur: "odeme", tarih: "2026-09-05", tutar: 4000, hesapId: 51, giderId: 5, deletedAt: "2026-09-21T09:00:00.000Z" },
+      { id: 72, tur: "virman", tarih: "2026-09-06", tutar: 15000, hesapId: 51, karsiHesapId: 52, deletedAt: "2026-09-21T10:00:00.000Z" },
+      { id: 73, tur: "odeme", tarih: "2026-09-07", tutar: 500, giderId: 5, cekId: 30 }]} setHesapHareketleri={bos}
+    cekler={[{ id: 30, paymentId: null, yon: "alinan", no: "1234567", banka: "Ziraat", tutar: 500, durum: "portfoy", gecmis: [], deletedAt: "2026-09-22T09:00:00.000Z" }]} setCekler={bos}
+    rawGiderTanimlari={[{ id: 81, turId: 9, ad: "İnternet", baslangicAy: "2026-01", deletedAt: "2026-09-19T09:00:00.000Z" }]} setGiderTanimlari={bos}
+    rawStandartGiderler={[{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", deletedAt: "2026-09-18T09:00:00.000Z" }]} setStandartGiderler={bos}
+    rawKasaHesaplari={[{ id: 52, ad: "Eski Kasa", tur: "kasa", paraBirimi: "TRY", deletedAt: "2026-09-17T09:00:00.000Z" }]} setKasaHesaplari={bos} />, []],
   "kilit-odeme-penceresi": [<GiderEkrani />, ["baslik:Ödeme kaydet"]],
   "kilit-katalog-paneli": [ayarlar("models"), []],
   "kilit-cop-kutusu": [ayarlar("trash"), []],

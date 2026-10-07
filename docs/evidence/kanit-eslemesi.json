@@ -1093,6 +1093,12 @@
         "rapor": "docs/evidence/0068-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -1757,6 +1763,11 @@
         "rapor": "docs/evidence/0064-piksel-raporu.json",
         "ekran": "giderler-standart",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "giderler-standart",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/Tedarikciler.jsx": [
@@ -1824,6 +1835,24 @@
         "rapor": "docs/evidence/0074-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-0074",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-gidertur-0074",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
       }
     ],
     "src/components/settings/SettingsApp.jsx": [
@@ -1996,6 +2025,11 @@
         "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-gidertanim",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsImport.jsx": [
@@ -2120,6 +2154,24 @@
         "rapor": "docs/evidence/0068-taban-piksel-raporu.json",
         "ekran": "ayarlar-0068-trash",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "ayarlar-0068-trash",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "cop-kutusu-0078",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -3255,6 +3307,11 @@
         "rapor": "docs/evidence/0073-taban-piksel-raporu.json",
         "ekran": "kasa-0073-goc-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -3623,6 +3680,11 @@
         "rapor": "docs/evidence/0062-piksel-raporu.json",
         "ekran": "kasa-cek-tumu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "kasa-cek-portfoyu",
+        "beklenen": "ayni"
       }
     ],
     "src/components/cek/CiroPenceresi.jsx": [
@@ -3912,6 +3974,11 @@
       {
         "rapor": "docs/evidence/0056-taban-piksel-raporu.json",
         "ekran": "kasa-0056-sil-engel",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "ekran": "kasa-0056-sil-tasi",
         "beklenen": "ayni"
       }
     ],

@@ -7,7 +7,8 @@ import { withoutDeleted } from "../src/lib/utils";
 import { borcOzeti, hesaplaGiderRaporu } from "../src/lib/gider";
 import { tedarikciEkstresi } from "../src/lib/kasa";
 import { hesaplaMakinaMaliyetleri } from "../src/lib/makinaMaliyeti";
-import { KALICI_SILME_NOTU, geriAlmaAdCakismasi } from "../src/lib/copKutusu";
+import * as copKutusu from "../src/lib/copKutusu";
+const { geriAlmaAdCakismasi } = copKutusu;
 import { cekExportRow, CEK_EXPORT_HEAD } from "../src/components/settings/SettingsExport";
 import { tahsilatHaritasi } from "../src/lib/cek";
 
@@ -62,9 +63,13 @@ describe("Spec 0068 R20: geri almada ad çakışması", () => {
 describe("Spec 0068 R12, R13, R22: kalıcı silme metni tek sabit", () => {
   const BES = ["src/components/settings/SettingsGiderTanimlari.jsx", "src/components/settings/GiderTurManager.jsx", "src/components/gider/StandartGiderler.jsx",
     "src/components/Kasa.jsx", "src/components/cek/CekPortfoyu.jsx"];
-  it("AC-16: beş kalıcı silme penceresi sabiti kullanır; AC-17: Çöp Kutusu da", () => {
-    for (const f of [...BES, "src/components/settings/SettingsTrash.jsx"]) expect(oku(f), f).toMatch(/\bKALICI_SILME_NOTU\b/);
-    expect(KALICI_SILME_NOTU).toBe("Bu kayıt çöp kutusuna gitmez, kalıcı silinir.");
+  // Spec 0078 R3, AC-35 ile TERS ÇEVRİLDİ: altı bölüm çöp kutusuna girdi; kalıcılık metni ve iki sabit kalktı.
+  it("AC-16 / AC-17 (spec 0078 ile ters çevrildi): beş pencere ve Çöp Kutusu kalıcılık metni içermez; sabitler yok", () => {
+    for (const f of [...BES, "src/components/settings/SettingsTrash.jsx", "src/components/Settings.jsx", "src/components/kasa/HesapSilPenceresi.jsx"]) {
+      expect(oku(f), f).not.toMatch(/KALICI_SILME_NOTU|KALICI_SILINEN_BOLUMLER|kalici-silme-notu|çöp kutusuna gitmez/);
+    }
+    expect(copKutusu.KALICI_SILME_NOTU).toBeUndefined();
+    expect(copKutusu.KALICI_SILINEN_BOLUMLER).toBeUndefined();
   });
   it("AC-39 / AC-32: 'çöp kutusuna düşmez / çöpe düşmez' serbest metni kaynakta yok; ödeme hareketi ve kapsam dışı için ayrı ibare yok", () => {
     const dosyalar = [...BES, "src/components/Settings.jsx", "src/components/kasa/HesapSilPenceresi.jsx", "src/components/gider/OdemeGirisi.jsx", "src/lib/copKutusu.js"];

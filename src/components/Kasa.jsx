@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { uid, fmtTR, fmtCur, today } from "../lib/utils";
+import { uid, fmtTR, fmtCur, today, withoutDeleted } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki, hareketDuzenlemeKaydi } from "../lib/audit";
 import { tl, turHaritasi, davranisOf, DAVRANIS } from "../lib/gider";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi } from "../lib/kasa";
+import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi } from "../lib/kasa";
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
@@ -20,7 +20,6 @@ import { CalisanAvanslari, AvansFormu } from "./kasa/CalisanAvanslari";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
-import { KALICI_SILME_NOTU } from "../lib/copKutusu";
 
 // Kasa üst sekmesi (spec 0024 A; R1, R7, R8, R15, R16; C1, C5, C6). Hesaplar (kasa, banka, kredi kartı), yürüyen
 // bakiyeli hareket listesi ve virman. Bakiye saklanmaz, hareketlerden türer (lib/kasa.js). Yalnız gider yetkisi +
@@ -180,7 +179,8 @@ export const Kasa = ({
   const [silinecek, setSilinecek] = useState(null);
   const bugun = useBugun();
   // Spec 0044 R15: motorun tek veri nesnesi (ad çözümü motorda, R10).
-  const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler }),
+  // Spec 0078 R36: bakiye ve hesap kullanımı canlı çekleri sayar (çöpteki verilen çek R35 yüzünden canlı hareket taşımaz).
+  const veri = useMemo(() => ({ payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler: withoutDeleted(cekler) }),
     [payments, services, partSales, yedekParcaSatislar, customers, dealers, factory, kdvRates, bugun, cekler]);
   const bakiyeler = useMemo(() => hesapBakiyeleri(kasaHesaplari, hesapHareketleri, veri), [kasaHesaplari, hesapHareketleri, veri]);
   // Spec 0051 A (R1–R7): hesapsız iş listesi başlangıç tarihinden (Gider Ayarları) sonrasını gösterir; tarihsiz kayıt her
@@ -280,11 +280,12 @@ export const Kasa = ({
   const sil = () => {
     const h = silinecek;
     if (kilitliMi("kasa_hesap", h.id)) { setSilinecek(null); return; }
-    setKasaHesaplari(p => p.filter(x => x.id !== h.id));
+    const zaman = new Date().toISOString(); // spec 0078 R2: hesap çöp kutusuna gider
+    setKasaHesaplari(p => p.map(x => (x.id === h.id ? { ...x, deletedAt: zaman } : x)));
     logAction({ serverPermissions, action: "silindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad });
     setSilinecek(null);
     if (String(secili) === String(h.id)) setSecili(null);
-    showToast("Hesap silindi.");
+    showToast("Hesap çöp kutusuna taşındı.");
   };
   // ── Spec 0056: deneme döneminde hareketi olan hesabın silinmesi (R1–R11, R16–R27) ──
   const denemeBitis = denemeDonemiBitisi(giderAyarlari);
@@ -307,14 +308,15 @@ export const Kasa = ({
     const g = plan.guncelle(hedefId);
     setHesapHareketleri?.(g.hesapHareketleri); setPayments?.(g.payments); setServices?.(g.services); setPartSales?.(g.partSales);
     setYedekParcaSatislar?.(g.yedekParcaSatislar); setCekler?.(g.cekler);
-    setKasaHesaplari(p => p.filter(x => x.id !== h.id));
+    const zaman = new Date().toISOString(); // spec 0078 R2, R26: taşınan hesap çöp kutusuna gider
+    setKasaHesaplari(p => p.map(x => (x.id === h.id ? { ...x, deletedAt: zaman } : x)));
     const hedefAd = hedefId == null ? null : hesapById.get(String(hedefId))?.ad || null;
     logAction({ serverPermissions, action: "hareket_tasindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad,
       detail: { kaynak: h.ad, hedef: hedefAd || "Hesapsız", adet: d.toplam } });
     logAction({ serverPermissions, action: "silindi", entity: "kasa_hesap", entityId: h.id, entityName: h.ad });
     setTasinacak(null);
     if (String(secili) === String(h.id)) setSecili(null);
-    showToast(hedefAd ? `Hesap silindi; ${d.toplam} kayıt “${hedefAd}” hesabına taşındı.` : `Hesap silindi; ${d.toplam} kayıt hesapsız bırakıldı.`);
+    showToast(hedefAd ? `Hesap çöp kutusuna taşındı; ${d.toplam} kayıt “${hedefAd}” hesabına taşındı.` : `Hesap çöp kutusuna taşındı; ${d.toplam} kayıt hesapsız bırakıldı.`);
   };
   const virmanKaydet = (kayit) => {
     const yeni = { ...kayit, id: uid() };
@@ -557,7 +559,7 @@ export const Kasa = ({
                 <div key={m.id} data-testid="hesapsiz-odeme" style={{ ...hoIzgara, padding: "8px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                   <span>{m.tarih ? fmtTR(m.tarih) : "Tarihsiz"}</span>
                   <span>{a.tur}</span>
-                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}{hesabiSilinmisMi(m, kasaHesaplari) ? " · hesabı silinmiş" : ""}</span>
                   <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{odemeTutari(m)}</span>
                   <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([m])} aria-label={`Kapsam dışı bırak: ${a.metin}`}>Kapsam dışı bırak</Btn>}</span>
                   {hareketEylemleri(m) || <span />}
@@ -729,14 +731,14 @@ export const Kasa = ({
       )}
       {silinecekHareket && (
         <ConfirmDialog title={silinecekHareket.tur === "avans" ? "Avans silinsin mi?" : "Ödeme silinsin mi?"}
-          message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${silinecekHareket.tutar == null ? "tutarsız (aktarılan)" : para(silinecekHareket.tutar, "TRY")} ${silinecekHareket.tur === "avans" ? "avans" : "ödeme"} kalıcı silinecek; ${silinecekHareket.tur === "avans" ? "çalışanın açık avansı" : "kalemin kalanı"} buna göre yeniden hesaplanır.`}
+          message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${silinecekHareket.tutar == null ? "tutarsız (aktarılan)" : para(silinecekHareket.tutar, "TRY")} ${silinecekHareket.tur === "avans" ? "avans" : "ödeme"} çöp kutusuna taşınacak; ${silinecekHareket.tur === "avans" ? "çalışanın açık avansı" : "kalemin kalanı"} buna göre yeniden hesaplanır.`}
           confirmLabel="Sil" onConfirm={() => hareketSil(silinecekHareket)} onCancel={() => setSilinecekHareket(null)} />
       )}
       {tasinacak && tasimaPlani && !hesapKilidi && (
         <HesapSilPenceresi hesap={tasinacak} plan={tasimaPlani} onTasi={tasiVeSil} onHesapsiz={() => tasiVeSil(null)} onClose={() => setTasinacak(null)} />
       )}
       {silinecek && (
-        <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok. ${KALICI_SILME_NOTU}`}
+        <ConfirmDialog title="Hesap silinsin mi?" message={`“${silinecek.ad}” hesabının hiç hareketi yok.`}
           confirmLabel="Hesabı Sil" onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
       {/* Spec 0058 R4, Q5 (AC-6): toplu işlem listenin tamamını etkiler (sayfayı değil, spec 0062 R17); onay sayıyı ve eşiğin durumunu söyler. */}

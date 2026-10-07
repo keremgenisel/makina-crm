@@ -258,7 +258,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
           <Field label="Gider türü *">
             <Select value={form.turId} onChange={e => turDegis(e.target.value)}>
               <option value="">Tür seçin</option>
-              {giderTurleri.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
+              {/* Spec 0078 R11: çöpteki tür seçicide görünmez (kaydın kendi türü hariç); davranış çözümü ham listeden. */}
+              {giderTurleri.filter(t => !t.deletedAt || String(t.id) === String(form.turId)).map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
             </Select>
             {tur && <div style={{ marginTop: 4 }}><DavranisRozeti davranis={dav} /></div>}
             <HataMetni>{hata("turId")}</HataMetni>

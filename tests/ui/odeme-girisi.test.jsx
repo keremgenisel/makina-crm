@@ -154,7 +154,8 @@ describe("Spec 0053: her şey formda", () => {
     kaydetBtn();
     expect(screen.getAllByText(/Kalandan fazla ödeme kaydedilemez/).length).toBeGreaterThan(0);
     expect(st.giderler[0].tutar).toBe(10000);
-    expect(st.hesapHareketleri).toEqual([]);
+    expect(st.hesapHareketleri.filter(h => !h.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: çöp kutusuna gider
+    expect(st.hesapHareketleri.every(h => h.deletedAt)).toBe(true);
   });
   it("AC-24 / AC-35: düzenlemede ikinci satır farklı yöntem ve hesapla; satır açıklaması kaydedilir ve listede görünür", () => {
     let st;
@@ -189,10 +190,11 @@ describe("Spec 0053: her şey formda", () => {
     degis(L("Açıklama"), "düzeltildi");
     const once = izle.length;
     kaydetBtn();
-    expect(st.hesapHareketleri).toEqual([]);
+    expect(st.hesapHareketleri.filter(h => !h.deletedAt)).toEqual([]); // spec 0078 R2 ile güncellendi: çöp kutusuna gider
+    expect(st.hesapHareketleri.every(h => h.deletedAt)).toBe(true);
     expect(st.giderler[0].aciklama).toBe("düzeltildi");
     // Tek işleyici: kalem ve silme aynı render turunda göründü (ara durumda biri yazılmış öbürü yazılmamış hâl yok).
-    expect(izle.slice(once).some(s => s.giderler[0].aciklama === "düzeltildi" && s.hesapHareketleri.length === 1)).toBe(false);
+    expect(izle.slice(once).some(s => s.giderler[0].aciklama === "düzeltildi" && s.hesapHareketleri.filter(h => !h.deletedAt).length === 1)).toBe(false); // spec 0078: silme damgadır
   });
   it("AC-44: cekId taşıyan kayıtlı hareket formdan silinemez; neden ve yönlendirme yazılır", () => {
     render(<H h0={[od(902, 10000, { cekId: 200, hesapId: null, yontem: "Çek (ciro)" }), od(903, 0.01, { giderId: 99 })]} />);

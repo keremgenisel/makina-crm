@@ -158,7 +158,7 @@ export const hesapMeta = (h) => [HESAP_TUR_AD[h.tur] || h.tur, h.paraBirimi, h.k
 
 // Çek: no, banka, keşideci; alacaklı adı yalnız alacaklı çalışan değilken (R13, AC-26).
 export const cekAlacaklisi = (c) => (c?.alacakliTur === "calisan" ? "" : (c?.alacakliAd || ""));
-export const cekEslesmesi = (c, s) => (!c ? null : ilk([
+export const cekEslesmesi = (c, s) => (!c || c.deletedAt ? null : ilk([ // spec 0078 R36: çöpteki çek aranmaz
   [metinEslesir(c.no, s), null],
   [metinEslesir(c.banka, s), null],
   [metinEslesir(c.kesideci, s), `keşideci: ${c.kesideci}`],

@@ -74,7 +74,7 @@ describe("Spec 0056: silme penceresi ve taşıma (AC-7, AC-8, AC-9, AC-14, AC-19
     expect(within(p).getByTestId("hesap-sil-acilis").textContent).toContain(HESAP_ACILIS_TASINMAZ);
     expect([...within(p).getByLabelText("Taşınacak hesap").querySelectorAll("option")].map(o => o.textContent)).toEqual(["Yeni Banka (Banka, TRY)"]); // USD ve kendisi yok
     fireEvent.click(screen.getByText("Hesabı Sil"));
-    expect(st.kasaHesaplari.map(h => h.id)).toEqual([52, 54]);
+    expect(st.kasaHesaplari.filter(h => !h.deletedAt).map(h => h.id)).toEqual([52, 54]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
     expect(st.hesapHareketleri.map(m => m.hesapId)).toEqual([52, 52]);
     expect(st.payments[0].hesapId).toBe(52);
     expect(st.services[0].hesapId).toBe(52);
@@ -91,7 +91,7 @@ describe("Spec 0056: silme penceresi ve taşıma (AC-7, AC-8, AC-9, AC-14, AC-19
     expect(screen.getByTestId("hesap-sil-engel").textContent).toBe("TRY para biriminde açık başka hesap yok.");
     fireEvent.click(screen.getByText("Hesapsız bırak"));
     fireEvent.click(screen.getByText("Hesabı Sil"));
-    expect(st.kasaHesaplari.map(h => h.id)).toEqual([54]);
+    expect(st.kasaHesaplari.filter(h => !h.deletedAt).map(h => h.id)).toEqual([54]); // spec 0078 R2 ile güncellendi: silinen kayıt çöp kutusuna gider
     expect(st.hesapHareketleri.map(m => m.hesapId)).toEqual([null, null]);
     expect(st.payments[0].hesapId).toBeNull();
     expect(screen.getByTestId("hesapsiz-odeme-satiri").textContent).toMatch(/ödemeler: 1/);
@@ -158,8 +158,10 @@ describe("Spec 0056: gerçek App'te tek kayıt", () => {
     await waitFor(() => expect(satirOf("Eski Banka")).toBeTruthy());
     silAc("Eski Banka");
     fireEvent.click(screen.getByText("Hesabı Sil"));
-    await waitFor(() => expect(kayitlar.some(k => !k.kasaHesaplari.some(h => h.id === 51))).toBe(true), { timeout: 3000 });
-    const ilgili = kayitlar.filter(k => !k.kasaHesaplari.some(h => h.id === 51) || k.payments.some(p => p.hesapId === 52));
-    expect(ilgili.every(k => !k.kasaHesaplari.some(h => h.id === 51) && k.payments[0].hesapId === 52 && k.hesapHareketleri.every(m => m.hesapId === 52))).toBe(true);
+    // Spec 0078 R2 ile güncellendi: silinen hesap çöp kutusuna gider (damgalı kalır), "silindi" = canlı listede yok.
+    const canli51 = (k) => k.kasaHesaplari.some(h => h.id === 51 && !h.deletedAt);
+    await waitFor(() => expect(kayitlar.some(k => !canli51(k))).toBe(true), { timeout: 3000 });
+    const ilgili = kayitlar.filter(k => !canli51(k) || k.payments.some(p => p.hesapId === 52));
+    expect(ilgili.every(k => !canli51(k) && k.payments[0].hesapId === 52 && k.hesapHareketleri.every(m => m.hesapId === 52))).toBe(true);
   });
 });

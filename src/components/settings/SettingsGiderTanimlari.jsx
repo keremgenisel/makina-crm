@@ -7,11 +7,10 @@ import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
 import { TutarInput, AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
-import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
-// silinse bile o ay listede kalır ve yeniden üretilmez. Tanım silme kalıcıdır (R12).
+// silinse bile o ay listede kalır ve yeniden üretilmez. Silinen tanım çöp kutusuna gider (spec 0078).
 const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "", tevkifatli: false, tevkifatPay: "", tevkifatPayda: "" }); // spec 0075 R26
 
 export const SettingsGiderTanimlari = ({
@@ -125,10 +124,11 @@ export const SettingsGiderTanimlari = ({
 
   const sil = () => {
     const t = silinecek;
-    setGiderTanimlari(p => p.filter(x => x.id !== t.id));
+    const zaman = new Date().toISOString(); // spec 0078 R2: tanım çöp kutusuna gider
+    setGiderTanimlari(p => p.map(x => (x.id === t.id ? { ...x, deletedAt: zaman } : x)));
     logAction({ serverPermissions, action: "silindi", entity: "gider_tanim", entityId: t.id, entityName: t.ad });
     setSilinecek(null);
-    showToast("Tanım silindi. Daha önce üretilmiş kalemler silinmedi.");
+    showToast("Tanım çöp kutusuna taşındı. Daha önce üretilmiş kalemler silinmedi.");
   };
 
   const tutarHucre = (t) => {
@@ -211,7 +211,8 @@ export const SettingsGiderTanimlari = ({
               // Spec 0072 (S3): atama yalnız normal davranışta kaydedilir; tür değişince eski atama dağıtım alanını yanlışlıkla pasif bırakmasın.
               ...(davOf(e.target.value) !== DAVRANIS.NORMAL ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) })}>
               <option value="">Tür seçin</option>
-              {giderTurleri.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
+              {/* Spec 0078 R11: çöpteki tür seçicide görünmez (kaydın kendi türü hariç); davranış çözümü ham listeden. */}
+              {giderTurleri.filter(t => !t.deletedAt || String(t.id) === String(form.turId)).map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
             </Select>
             <HataMetni>{hatalar.turId}</HataMetni>
           </Field>
@@ -296,7 +297,7 @@ export const SettingsGiderTanimlari = ({
         </Modal>
       )}
       {silinecek && (
-        <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı silinecek. ${KALICI_SILME_NOTU} Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
+        <ConfirmDialog title="Tanım silinsin mi?" message={`“${silinecek.ad}” tanımı silinecek. Bu tanımdan daha önce üretilmiş kalemler silinmez.`}
           onConfirm={sil} onCancel={() => setSilinecek(null)} />
       )}
     </KartBolum>
