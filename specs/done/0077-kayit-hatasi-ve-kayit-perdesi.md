@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-07) |
-| **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
+| **Durum** | Tamamlandı (commit `65b15fc`, dal `feat/0077-kayit`) |
+| **Sahip** | Analist (spec) · Claude Code (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | `App.jsx` kayıt etkisi ve sürüm yoklamaları, `electron/ipc/data.cjs` (`crm:save`), `src/lib/merge.js`, `electron/server.cjs` yazma sınırı, yeni kayıt perdesi bileşeni |
 | **Bağımlı spec'ler** | 0004 (kayıt kilitleri) · 0009 (tasarım sözlüğü) · 0024 (`hesapHareketleri`'nin null başlangıcı) · 0030 (tema değişkeni kuralı) · 0065 (birleştirmede korunan eklemeler, `bilinenLogIdleri` deseni) · 0073 (`merge.js`'in `hesapHareketleri` istisnası) |
-| **Revizyon** | 1 · 2026-10-07 QA turu: B-1..B-6, Ö-7..Ö-20, K-21..K-25 işlendi (Takım Yöneticisi onayı) · 2 · 2026-10-07 uygulama planı onayı: S1–S14 işlendi (R9, R14, R19, R22, R30, R32, R33, R37–R45, AC-58); plan `specs/0077-uygulama-plani.md` |
+| **Revizyon** | 1 · 2026-10-07 QA turu: B-1..B-6, Ö-7..Ö-20, K-21..K-25 işlendi (Takım Yöneticisi onayı) · 2 · 2026-10-07 uygulama planı onayı: S1–S14 işlendi (R9, R14, R19, R22, R30, R32, R33, R37–R45, AC-58); plan `specs/done/0077-uygulama-plani.md` |
 
 ---
 
@@ -478,58 +478,58 @@ mesajı çıkmıyor, ve kullanıcı her kaydın bittiğini görüyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar (Ö-18): `tests/merge.test.js`
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar (Ö-18): `tests/merge.test.js`
       C ve E blokları (saf plan, `silmeler` çıktısı, yedi bölüm, remap zincirleri),
       `tests/ui/kayit-hatasi-0077.test.jsx` (gerçek App; nedenli mesajlar, yoklamanın susması,
       `useFakeTimers`), `tests/ui/kayit-perdesi-0077.test.jsx` (zamanlama, `zIndex`, tema, kaçış),
       `tests/kayit-sirasi.test.js`'e dönüş şekli bloğu (AC-51),
       `scripts/tests/server-security.cjs`'e `/api/data` sınırı için **ayrı** kontrol;
       `tests/tema-degisken.test.js` ve `tasarim-kontrast` yeni token ile yeşil.
-- [ ] **Gerçek App ile sürücülü test:** peş peşe on silme artı araya giren sunucu sürüm değişikliği
+- [x] **Gerçek App ile sürücülü test:** peş peşe on silme artı araya giren sunucu sürüm değişikliği
       senaryosu, hiçbir kaydın geri gelmediğini gösteriyor (AC-20, AC-21).
-- [ ] 409, 401, 403, 429 ve ağ hatası için ayrı ayrı mesaj testi (AC-1 … AC-4) ve çakışma mesajının tek
+- [x] 409, 401, 403, 429 ve ağ hatası için ayrı ayrı mesaj testi (AC-1 … AC-4) ve çakışma mesajının tek
       sahibinin `onConflict` olduğu (AC-1).
-- [ ] 429'da yeniden denemenin kaydı kurtardığı, deneme sayısı ve beklemelerin sabitlendiği testlendi
+- [x] 429'da yeniden denemenin kaydı kurtardığı, deneme sayısı ve beklemelerin sabitlendiği testlendi
       (AC-6, AC-53); çevrimiçine dönüşteki yeniden denemenin yanlış "kaydedildi" bildirimi vermediği
       (AC-52).
-- [ ] Yoklamanın kayıt yoldayken susmasının ve `pendingSave`'e dokunmamasının birim testi;
+- [x] Yoklamanın kayıt yoldayken susmasının ve `pendingSave`'e dokunmamasının birim testi;
       `useFakeTimers` ile zamanlama sabitlendi (AC-10 … AC-12, AC-54, AC-55).
-- [ ] Perde zamanlaması (600 ms eşik, 10 sn kaçış) ve debounce'un değişmediği test edildi (AC-25,
+- [x] Perde zamanlaması (600 ms eşik, 10 sn kaçış) ve debounce'un değişmediği test edildi (AC-25,
       AC-26, AC-30, AC-33).
-- [ ] `/api/data` sınırının hızlı girişte 429 üretmediği doğrulandı; sınır değiştirilirse yeni değer
+- [x] `/api/data` sınırının hızlı girişte 429 üretmediği doğrulandı; sınır değiştirilirse yeni değer
       `server-security.cjs`'te **genel sınırdan ayrı** bir kontrolle ölçüldü (AC-35).
-- [ ] Birleştirmeye alınan **yedi** bölümün her biri için ekleme ve silme testi var (AC-36 … AC-40,
+- [x] Birleştirmeye alınan **yedi** bölümün her biri için ekleme ve silme testi var (AC-36 … AC-40,
       AC-45); remap zincirleri ayrı ayrı testlendi (AC-41 … AC-44) ve her bölümün `apply` satırı
       denetlendi (AC-60).
-- [ ] `standardModels`'in listeye alınmadığı ve davranışının değişmediği testle sabitlendi (AC-59).
-- [ ] Bugünkü bölümlerin birleştirme davranışının değişmediği `merge.test.js` ile gösterildi (AC-48).
-- [ ] Görsel kanıt: `docs/evidence/0077-taban-piksel-raporu.json` ve `0077-piksel-raporu.json` (K-23);
+- [x] `standardModels`'in listeye alınmadığı ve davranışının değişmediği testle sabitlendi (AC-59).
+- [x] Bugünkü bölümlerin birleştirme davranışının değişmediği `merge.test.js` ile gösterildi (AC-48).
+- [x] Görsel kanıt: `docs/evidence/0077-taban-piksel-raporu.json` ve `0077-piksel-raporu.json` (K-23);
       görüntü aracına iki yeni ekran (perde aydınlık ve karanlık temada, pencere üstünde), mevcut
       ekranlar **0 piksel** beklenir. Perde `tasarim.jsx`'i kullanmazsa `kanit-eslemesi.json` kaydı
       gerekmez (0052 ve 0066 emsali), kullanırsa kayıt açılır.
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: istemci yoklaması **10 saniye** (bugün 30 yazılı, yanlış; aynı hata
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: istemci yoklaması **10 saniye** (bugün 30 yazılı, yanlış; aynı hata
       `server.cjs:305-310` yorumunda da var), yoklamanın kayıt yoldayken sustuğu ve bekleyen kayda
       dokunmadığı, `deletedAt`'in birleştirmede yerelden korunduğu, kalıcı silinen bölümlerin hâlâ
       korunmadığı (X1), kayıt perdesi ve `perdeBg` token'ı. Ayrıca **"bayiler birleştirilmez" notu
       kaldırıldı** (R35), `MERGE_KEYS`'in yeni **yedi** bölümü ile remap zincirleri yazıldı ve
       `standardModels`'in bilinçli olarak dışarıda kaldığı (X7) belirtildi.
-- [ ] Sürüm notu: "kaydedilemedi" uyarısı artık yalnız gerçek hatada çıkıyor, silinen kayıtlar geri
+- [x] Sürüm notu: "kaydedilemedi" uyarısı artık yalnız gerçek hatada çıkıyor, silinen kayıtlar geri
       gelmiyor, kayıt sırasında kısa bir bekleme perdesi görünüyor. Mesaj yolu bütün istemcilerde
       değiştiği için **istemciler güncellenmeli**; `/api/data` sınırı değişmediyse sunucu tarafında ek
       bir koşul yoktur.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | R1 QA turu (B-1..B-6, Ö-7..Ö-20, K-21..K-25), R2 plan onayı (S1–S14: onDataChanged kapısı, taban, customModels kimliği, perde eşiğinin "yolda"dan ölçülmesi, AC-58), triyajda R35 genişletildi ve R35a eklendi (0065 X5 ve 0064 AC-23/36 geri alındı; tabanda olup sunucuda olmayan kayıt eklenmez). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: satılan makinanın birleştirmede stoğa dönmesi, düşen iki eski karar testi, eksik görsel kanıt. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçek; birincisi yüksek önemde bir veri bütünlüğü hatasıydı (her satışta oluşan yol). Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 1 | Stock'un birleştirmeye alınması, triyajda yakalanan "satılan makina stoğa döner" yolunu açtı (yayına çıkmadan düzeltildi). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir bölümü birleştirmeye almak o bölümün bütün silme biçimlerini birleştirmeye almaktır: soft-delete taban kuralıyla çözülmüştü ama diziden çıkarma (makina satışı, çöp boşaltma) iki blobla "yerelde var, sunucuda yok" eklemesine benzer ve tabanın varlık bilgisini de kullanmak gerekir. Bir kararı geri alan spec, geri aldığı kararların testlerini ve gerekçelerini tek tek anmalı; 0065 X5'in gerekçesi tam da bulunan hatanın kendisiydi. İkincisi: gerçek App testleri korudukları kodu çıkarınca da geçebilir (birleştirme sonrası kayıt hiç gitmemişse son gövde eski gövdedir; teklifin eski özel dalı aynı sonucu üretiyordu); her yeni davranış testi en az bir mutasyonla ayırt edici olduğu gösterilmeden yeşil sayılmamalı. Üçüncüsü: kanıt aracında "sonra" çekimi karşılaştırma klasörüyle yapılmazsa birleştirme adımı rapor bulamayıp sessizce takılır; küçük piksel farkları iki ağaçta aynı turda yeniden çekilerek ayıklanmalı.

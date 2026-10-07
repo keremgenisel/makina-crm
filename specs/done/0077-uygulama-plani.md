@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0077-kayit-hatasi-ve-kayit-perdesi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0077-kayit-hatasi-ve-kayit-perdesi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0077-kayit` (`feat/0075-tevkifat` `5b118af` üstünde, R37) |
 | **Onay** | Takım Yöneticisi, 2026-10-07: bütün öneriler (S1–S14) kabul |
 
