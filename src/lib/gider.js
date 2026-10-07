@@ -65,6 +65,13 @@ export const atanabilirMi = (davranis) => davranis !== DAVRANIS.KIRA && davranis
 export const kdvliMi = (dav) => dav !== DAVRANIS.PERSONEL && dav !== DAVRANIS.SGK;
 export const tedarikciSecilirMi = (dav) => dav !== DAVRANIS.PERSONEL && dav !== DAVRANIS.SGK;
 export const sgkDavranisiMi = (dav) => dav === DAVRANIS.SGK;
+// Spec 0075 R9, C1 (Ö-8): KDV tevkifatı yalnız normal davranışta olur (personel ve SGK KDV'siz, kiralama tevkifata tabi
+// değil). Davranış kapısıdır; tutar kapısı tevkifatKurus'tur (sıfırsa hedef doğmaz). İkisi tek ada yüklenmez.
+export const tevkifatliMi = (dav) => dav === DAVRANIS.NORMAL;
+// Spec 0075 R3, R44 (K-23): oran faturadaki kesirdir; liste tek sabit, etiket yalnız kesir (işlem cinsi yazılmaz).
+// Payda veride durur (R32): /10 dışı bir oran eklemek tek satırdır, göç gerekmez.
+export const TEVKIFAT_ORANLARI = [{ pay: 2, payda: 10 }, { pay: 3, payda: 10 }, { pay: 4, payda: 10 }, { pay: 5, payda: 10 }, { pay: 7, payda: 10 }, { pay: 9, payda: 10 }];
+export const tevkifatOranEtiketi = (o) => (o && o.pay && o.payda ? `${o.pay}/${o.payda}` : "");
 // Makina bazlı çıktılarda kalemin görünen adı (spec 0020 R8): personel kaleminin açıklaması çoğunlukla çalışanın
 // adıdır (tekrarlayan üretim `t.ad || c.ad`), bu yüzden her zaman sabit etiket basılır.
 export const PERSONEL_ETIKETI = "Personel gideri";
@@ -160,6 +167,32 @@ export const kdvAyir = (dahilTutar, kdvOrani) => {
   const kdvK = kdvKurus({ tutar: tl(tutarK), kdvOrani: oran }, DAVRANIS.NORMAL);
   return { tutarK, kdvK, farkK: dahilK - tutarK - kdvK };
 };
+// Spec 0075 R5, R6, R7, C5: TEK tevkifat hesabı. Tevkifat = toplam KDV × pay / payda, yuvarlanır; artık kuruş kalan KDV'de
+// (tedarikçi tarafında) kalır, yani tedarikçiye + vergi dairesine = tutar + tam KDV kuruşu kuruşuna. Tevkifatsız,
+// davranışı uymayan ya da oranı bozuk kalemde 0 (hedef doğmaz, R17).
+export const tevkifatKurus = (k, dav) => {
+  if (!tevkifatliMi(dav) || !k?.tevkifatli) return 0;
+  const pay = Number(k.tevkifatPay), payda = Number(k.tevkifatPayda);
+  if (!(pay > 0) || !(payda > 0) || pay > payda) return 0;
+  return Math.round(kdvKurus(k, dav) * pay / payda);
+};
+export const kalemTevkifat = (k, dav = DAVRANIS.NORMAL) => tl(tevkifatKurus(k, dav));
+// Spec 0075 R10, R39 (S5, S6): kalem ve tanım formunun ortak doğrulaması. Dönen: { hatalar, alanlar } ; alanlar null ise
+// kutu kapalıdır (ya da davranış tevkifatsızdır) ve çağıran üç alanı kayıttan SİLER. kdvBosSerbest: tanımda boş KDV oranı
+// "tarihe göre"dir, reddedilmez; yalnız açıkça sıfır yazılmış oran reddedilir.
+export const TEVKIFAT_ALANLARI = ["tevkifatli", "tevkifatPay", "tevkifatPayda"];
+export const TEVKIFAT_KDV_SIFIR_HATASI = "KDV'si olmayan faturada tevkifat olmaz; KDV oranını girin ya da tevkifat kutusunu kapatın.";
+export const tevkifatDogrula = (form, dav, { kdvBosSerbest = false } = {}) => {
+  if (!tevkifatliMi(dav) || !form?.tevkifatli) return { hatalar: [], alanlar: null };
+  const hatalar = [];
+  const pay = Number(form.tevkifatPay), payda = Number(form.tevkifatPayda);
+  const sayi = (v) => v !== "" && v != null && Number.isInteger(Number(v));
+  if (!sayi(form.tevkifatPay) || !sayi(form.tevkifatPayda) || !(payda > 0)) hatalar.push({ alan: "tevkifatPay", mesaj: "Tevkifat oranı seçilmedi." });
+  else if (!(pay > 0) || pay > payda) hatalar.push({ alan: "tevkifatPay", mesaj: "Tevkifat oranı geçersiz: pay sıfırdan büyük, paydadan büyük olmamalı." });
+  const k = tutarCoz(form.kdvOrani);
+  if (!k.gecersiz && k.deger === 0 && !(k.bos && kdvBosSerbest)) hatalar.push({ alan: "kdvOrani", mesaj: TEVKIFAT_KDV_SIFIR_HATASI });
+  return { hatalar, alanlar: { tevkifatli: true, tevkifatPay: pay, tevkifatPayda: payda } };
+};
 // R17, R27: giriş yönü; alanı olmayan eski kayıt hariç sayılır.
 export const KDV_YONU = { HARIC: "haric", DAHIL: "dahil" };
 export const kdvYonuOf = (k) => (k?.kdvYonu === KDV_YONU.DAHIL ? KDV_YONU.DAHIL : KDV_YONU.HARIC);
@@ -178,8 +211,9 @@ export const kalemTutari = (k, dav = DAVRANIS.NORMAL) => tl(kalemKurus(k, dav));
 export const kalemKdv = (k, dav = DAVRANIS.NORMAL) => tl(kdvKurus(k, dav));
 export const kalemStopaj = (k, dav = DAVRANIS.NORMAL) => tl(stopajKurus(k, dav));
 // "Ödenecek tutar" (R14, K18): normal tutar + KDV; kira brüt − stopaj + KDV; personel resmi + elden.
-// Stopaj vergi dairesine gider, tedarikçiye ödenecek tutara hiç girmez.
-const odenecekKurus = (k, dav) => kalemKurus(k, dav) - stopajKurus(k, dav) + kdvKurus(k, dav);
+// Stopaj vergi dairesine gider, tedarikçiye ödenecek tutara hiç girmez. Spec 0075 R8: KDV tevkifatı da öyle (vergi
+// dairesi hedefi); ikisi bağımsız hesaplanır, ANA hedef ve bütün tüketiciler bu satırdan beslenir.
+const odenecekKurus = (k, dav) => kalemKurus(k, dav) - stopajKurus(k, dav) - tevkifatKurus(k, dav) + kdvKurus(k, dav);
 export const odenecekTutar = (k, dav = DAVRANIS.NORMAL) => tl(odenecekKurus(k, dav));
 
 export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && k.sonOdemeTarihi < bugun;
@@ -194,13 +228,22 @@ export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && 
 // sırayla dolar, maaş önce kapanır, sonradan çıkan ek ödeme en sona düşer.
 // Spec 0074 R16, R27: 0070'in SGK hedefi kalktı; hedefi "sgk" olan eski taksit satırı bu listede olmadığı için okuma anında
 // dışarıda kalır ve kalemin ilk kaydında (odemeSatirlariKur) temizlenir.
-export const HEDEF = { ANA: "ana", ELDEN: "elden", EK_RESMI: "ekResmi", EK_ELDEN: "ekElden", STOPAJ: "stopaj" };
-export const HEDEF_SIRASI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN, HEDEF.STOPAJ];
+// Spec 0075 R15 (Ö-18): KDV tevkifatı ayrı hedeftir (stopaj gelir vergisidir, aynı hedefe konsa "stopaj" iki anlama gelirdi);
+// sıra stopajın hemen önü.
+export const HEDEF = { ANA: "ana", ELDEN: "elden", EK_RESMI: "ekResmi", EK_ELDEN: "ekElden", TEVKIFAT: "tevkifat", STOPAJ: "stopaj" };
+export const HEDEF_SIRASI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN, HEDEF.TEVKIFAT, HEDEF.STOPAJ];
 export const PERSONEL_HEDEFLERI = [HEDEF.ANA, HEDEF.ELDEN, HEDEF.EK_RESMI, HEDEF.EK_ELDEN];
 export const VERGI_DAIRESI = "Vergi dairesi";
 // Spec 0070 R13, 0074 R19: borç özetindeki SGK TARAF adı (hedef adı odemeYontemi.HEDEF_ADLARI'ndadır; 0060 R24 ayrımı).
 export const SGK = "SGK";
 // Spec 0074 R19 (S4): kalemin kurum tarafı (tedarikçi hücresinde "Tedarikçi seçilmemiş" yerine). SGK davranışında SGK, değilse null.
+// Spec 0075 triyaj (2026-10-07): borç özetinin vergi dairesi satırının rozeti satırın içeriğinden; eskiden sabit "Kira stopajı"
+// yazıyordu ve yalnız KDV tevkifatı taşıyan satırda yanıltıyordu. İkisi birlikteyse satır tek kalır (R21), rozetler ayrı ayrı
+// yazılır (TY kararı). Alanı olmayan eski satır stopajdır.
+export const vergiRozetleri = (satir) => {
+  const k = satir?.kaynaklar || [HEDEF.STOPAJ];
+  return [k.includes(HEDEF.STOPAJ) && "Kira stopajı", k.includes(HEDEF.TEVKIFAT) && "KDV tevkifatı"].filter(Boolean);
+};
 export const kurumTarafAdi = (dav) => (sgkDavranisiMi(dav) ? SGK : null);
 export const satirliMi = (k) => Array.isArray(k?.taksitler) && k.taksitler.length > 0;
 const gunSayisi = (y, m) => new Date(y, m, 0).getDate();
@@ -224,6 +267,7 @@ export const taksitPlaniOlustur = (toplamKurus, sayi, ilkVade, { hedef = HEDEF.A
 // Spec 0054: personelde çok hedefli kalem hedeflerini personelHedefKirilimi'nden (ayrim ile) okur; tek hedefte hepsi ANA.
 const hedefToplamKurus = (k, dav, hedef, { ayrim = true } = {}) => {
   if (hedef === HEDEF.STOPAJ) return stopajKurus(k, dav);
+  if (hedef === HEDEF.TEVKIFAT) return tevkifatKurus(k, dav); // spec 0075 R18
   if (dav === DAVRANIS.PERSONEL && personelCokHedef(k, dav)) return personelHedefTutarlari(k, ayrim)[hedef] || 0;
   return hedef === HEDEF.ANA ? odenecekKurus(k, dav) : 0;
 };
@@ -312,6 +356,20 @@ export const ekOdemeTurToplamlari = (kalemler, { bilesen = null } = {}) => {
 // (rapor ayın kalemlerini ay sonu ödeme durumuyla verir). Açık, stopaj hedefinin kalanıdır (odemeHedefleri).
 // Spec 0074 R23 (Ö-13), C2: SGK davranışlı kalemlerin toplamı (toplam = ödenen + açık), stopajOzeti'nin emsali; açık,
 // kalemin ödeme hedeflerinin kalanıdır (odemeDurumu ile aynı kaynak). İmza 0070'teki gibi.
+// Spec 0075 R25 (B-6, Ö-16), C2: tevkifatlı kalemlerin KDV tevkifatı; stopajOzeti'nin birebir eşi (kesilen = ödenen + açık,
+// açık tevkifat hedefinin kalanı). 0047 raporu ay sonu ödeme durumuyla verir; Finans ve Giderler KDV kartı kesileni okur.
+export const tevkifatOzeti = (kalemler, turMap) => {
+  let kesilenK = 0, acikK = 0;
+  for (const k of kalemler || []) {
+    const dav = davranisOf(k, turMap);
+    const kes = tevkifatKurus(k, dav);
+    if (!(kes > 0)) continue;
+    kesilenK += kes;
+    const h = odemeHedefleri(k, dav).find(x => x.hedef === HEDEF.TEVKIFAT);
+    acikK += Math.min(kes, h ? h.kalanK : kes);
+  }
+  return { kesilenK, odenenK: kesilenK - acikK, acikK };
+};
 export const sgkOzeti = (kalemler, turMap) => {
   let toplamK = 0, acikK = 0;
   for (const k of kalemler || []) {
@@ -427,6 +485,9 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   const anaSayi = anaCoz.deger;
   const stK = stopajKurus(kayit, dav);
   const kiraIkiHedef = dav === DAVRANIS.KIRA && stK > 0;
+  // Spec 0075 R18 (B-1): tevkifatı sıfırdan büyük kalem HER ZAMAN satırlı doğar (kira emsali); satirsizHedefler'de dal yok.
+  const tvK = tevkifatKurus(kayit, dav);
+  const tevkifatIkiHedef = tvK > 0;
   const eski = Array.isArray(eskiSatirlar) ? eskiSatirlar : [];
   // Spec 0042 R4, Q4 + 0054 R15, R21: çok hedefli personel kalemi maaş resmi (ANA, taksitlenebilir), maaş elden ve iki ek
   // ödeme hedefiyle (üçü tek satır) doğar; taraf başına ayrılamayan bileşen maaş hedefinin içinde kalır (personelAyrimi).
@@ -435,7 +496,8 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   const ayrim = personelCok ? personelAyrimi(kayit, eski, dav) : PERSONEL_TEK;
   const hedefTop = (h) => hedefToplamKurus(kayit, dav, h, { ayrim });
   // R17: ek ödeme hedeflerinin vadesi kalemin ilk vadesidir (ayrı vade alanı yok, X2).
-  const vadeOf = (h) => (h === HEDEF.STOPAJ ? plan.stopajVade : h === HEDEF.ELDEN ? (plan.eldenVade || plan.ilkVade)
+  // Spec 0075 R18 (S3): tevkifat vadesi boşsa ana vadeyi alır; ikisi de boşsa null (ana hedef de null, tutarlı).
+  const vadeOf = (h) => (h === HEDEF.STOPAJ ? plan.stopajVade : h === HEDEF.TEVKIFAT ? (plan.tevkifatVade || plan.ilkVade) : h === HEDEF.ELDEN ? (plan.eldenVade || plan.ilkVade)
     : h === HEDEF.EK_RESMI || h === HEDEF.EK_ELDEN ? plan.ilkVade : plan.ilkVade) || null;
   const eskiHedef = (h) => {
     // Satırsız eski kalem ödenmişse (R13) yeni hedef satırları ödenmiş doğar; vade kalemin eski vadesidir
@@ -446,7 +508,7 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   // Ana hedefte satır gerekir: kira iki hedefliyse, taksit istenmişse ya da daha önce ödenmiş bir ana satırı varsa
   // (triyaj bulgu 2: stopaj sıfıra çekilince kiraya verene yapılmış ödeme kaybolmasın).
   const anaOdenmisVar = eski.some(x => (x.hedef || HEDEF.ANA) === HEDEF.ANA && x.odendi);
-  const anaGerekli = kiraIkiHedef || personelCok || anaSayi >= 2 || anaOdenmisVar;
+  const anaGerekli = kiraIkiHedef || tevkifatIkiHedef || personelCok || anaSayi >= 2 || anaOdenmisVar;
   const satirlar = [];
   if (anaGerekli) {
     const r = planYenidenBol(eskiHedef(HEDEF.ANA), hedefTop(HEDEF.ANA), anaSayi, vadeOf(HEDEF.ANA), { hedef: HEDEF.ANA, uid });
@@ -459,6 +521,15 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
     if (!((personelCok && hedefTop(h) > 0) || eski.some(x => x.hedef === h && odemeAlmis(x)))) continue;
     const r = planYenidenBol(eskiHedef(h), hedefTop(h), 1, vadeOf(h), { hedef: h, uid });
     if (r.hata) return { hata: r.hata, alan: h === HEDEF.ELDEN ? "eldenTutar" : "ekOdemeler" };
+    satirlar.push(...r.satirlar);
+  }
+  // Spec 0075 R18, R40 (S7): tevkifat hedefi taksitlenebilir; ödeme almış satır elden deseniyle korunur. Kutu kapatılır ya
+  // da oran düşürülür ve tutar ödenenin altına inerse planYenidenBol hatası `tevkifatli` alanında görünür.
+  if (tevkifatIkiHedef || eski.some(x => x.hedef === HEDEF.TEVKIFAT && odemeAlmis(x))) {
+    const tvCoz = taksitSayisiCoz(plan.tevkifatTaksitSayisi);
+    if (tvCoz.hata) return { hata: tvCoz.hata, alan: "tevkifatTaksitSayisi" };
+    const r = planYenidenBol(eskiHedef(HEDEF.TEVKIFAT), tvK, tevkifatIkiHedef ? tvCoz.deger : 1, vadeOf(HEDEF.TEVKIFAT), { hedef: HEDEF.TEVKIFAT, uid });
+    if (r.hata) return { hata: r.hata, alan: tevkifatIkiHedef && /Taksit sayısı/.test(r.hata) ? "tevkifatTaksitSayisi" : "tevkifatli" };
     satirlar.push(...r.satirlar);
   }
   if (kiraIkiHedef) {
@@ -597,6 +668,11 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   if (tedarikciSecilirMi(dav)) {
     if (form.tedarikciId && !tedarikciler.some(t => String(t.id) === String(form.tedarikciId))) hata("tedarikciId", "Seçilen tedarikçi bulunamadı.");
   } else kayit.tedarikciId = null;
+  // Spec 0075 R10, R39 (S5, S6): tevkifat alanları tek doğrulayıcıdan; kutu kapalıyken (ya da davranış tevkifatsızken) silinir.
+  const tv = tevkifatDogrula(form, dav);
+  hatalar.push(...tv.hatalar);
+  if (tv.alanlar) Object.assign(kayit, tv.alanlar);
+  else for (const a of TEVKIFAT_ALANLARI) delete kayit[a];
 
   // Vade (R18, AC-71): tek alan; Çek'te etiket değişir.
   if (form.sonOdemeTarihi && form.tarih && form.sonOdemeTarihi < form.tarih) {
@@ -610,13 +686,19 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
 
   // Ödeme planı (spec 0021 R1, R6, R10): form alanları kayda yazılmaz, satırlara çevrilir. Satırı olan kalemde
   // ödeme durumu satırlardan türetilir (R3); formdaki durum yalnız satırsız eski kalemin satırlarını tohumlar (R13).
-  const plan = { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null };
+  const plan = { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null,
+    tevkifatTaksitSayisi: form.tevkifatTaksitSayisi, tevkifatVade: form.tevkifatVade || null }; // spec 0075 R18 (S7)
   delete kayit.taksitSayisi; delete kayit.stopajTaksitSayisi; delete kayit.stopajVade; delete kayit.eldenVade; // spec 0074 R17: SGK vadesi form alanı kalktı
+  delete kayit.tevkifatTaksitSayisi; delete kayit.tevkifatVade; // spec 0075 R18: vade satırın vadesidir, sütun yok
   // Spec 0042 R14: elden vadesi yeni sütun değil, elden satırının vadesidir.
   if (dav === DAVRANIS.PERSONEL && form.eldenVade && form.tarih && form.eldenVade < form.tarih) hata("eldenVade", "Elden vadesi gider tarihinden önce olamaz.");
   if (Number(form.taksitSayisi) >= 2 && !form.sonOdemeTarihi) hata("sonOdemeTarihi", "İlk taksitin vadesi girilmedi.");
   if (dav === DAVRANIS.KIRA && Number(form.stopajTaksitSayisi) >= 2 && !form.stopajVade) hata("stopajVade", "İlk stopaj taksitinin vadesi girilmedi.");
   if (dav === DAVRANIS.KIRA && form.stopajVade && form.tarih && form.stopajVade < form.tarih) hata("stopajVade", "Stopaj vadesi gider tarihinden önce olamaz.");
+  // Spec 0075 R18: tevkifat vadesinin iki doğrulaması (stopaj emsali); boş vade ana vadeye düşer (S3), bu yüzden taksitli
+  // tevkifatta yalnız ikisi de boşsa ilk taksit vadesi sorulur.
+  if (tv.alanlar && Number(form.tevkifatTaksitSayisi) >= 2 && !form.tevkifatVade && !form.sonOdemeTarihi) hata("tevkifatVade", "İlk tevkifat taksitinin vadesi girilmedi.");
+  if (tv.alanlar && form.tevkifatVade && form.tarih && form.tevkifatVade < form.tarih) hata("tevkifatVade", "Tevkifat vadesi gider tarihinden önce olamaz.");
   if (!hatalar.length) {
     const eskiSatirlar = Array.isArray(form.taksitler) ? form.taksitler : [];
     const r = odemeSatirlariKur(kayit, dav, plan, { uid, eskiSatirlar, eskiOdendi: !eskiSatirlar.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
@@ -843,6 +925,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       const oran = kdvli ? (t.kdvOrani ?? getKdvRateForDate(tarih, kdvRates)) : 0;
       const kdvYonu = kdvli ? kdvYonuOf(t) : null;
       Object.assign(kalem, { tutar: girilenHaric(Number(t.tutar) || 0, kdvYonu, oran), kdvOrani: oran, kdvYonu });
+      // Spec 0075 R26 (Ö-14): tevkifat yalnız normal dalda ve kapıdan kopyalanır; başka davranışın tanımında kalmış değer taşınmaz.
+      if (tevkifatliMi(dav) && t.tevkifatli) Object.assign(kalem, { tevkifatli: true, tevkifatPay: Number(t.tevkifatPay), tevkifatPayda: Number(t.tevkifatPayda) });
       // Spec 0074 R8: atanamayan davranışın (SGK) tanımındaki eski atama kaleme taşınmaz.
       if (!atanabilirMi(dav)) { /* atama yok, kova ortak */ }
       else if (t.atamaTur === ATAMA.MAKINA) Object.assign(kalem, { atamaTur: t.atamaTur, makinaTur: t.makinaTur, makinaId: t.makinaId });
@@ -1064,7 +1148,7 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
   const ted = new Map();
   const cal = new Map();
   const secilmemis = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
-  const vergi = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
+  const vergi = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [], kaynaklar: [] };
   const sgk = { tutar: 0, adet: 0, vadesiGecti: false, kalemler: [] };
   for (const k of giderler) {
     if (!borcKapsamindaMi(k, { esik, bugun })) continue;
@@ -1074,7 +1158,9 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
       const o = h.kalanK;
       if (o <= 0) continue;
       const gecti = bugun ? hedefGecti(h, bugun) : false;
-      if (h.hedef === HEDEF.STOPAJ) { vergi.tutar += o; vergi.adet++; vergi.vadesiGecti = vergi.vadesiGecti || gecti; vergi.kalemler.push(k); continue; }
+      if (h.hedef === HEDEF.STOPAJ || h.hedef === HEDEF.TEVKIFAT) { vergi.tutar += o; // spec 0075 R21 (B-4): aynı vergi dairesi satırı
+        if (!vergi.kaynaklar.includes(h.hedef)) vergi.kaynaklar.push(h.hedef); // triyaj: rozet satırın içeriğini söyler
+        vergi.adet++; vergi.vadesiGecti = vergi.vadesiGecti || gecti; vergi.kalemler.push(k); continue; }
       // Spec 0074 R19: SGK davranışlı kalemin açık hedefi tek kurum satırına gider (sentetik; tedarikçi kartına girmez).
       if (sgkDavranisiMi(dav)) { sgk.tutar += o; sgk.adet++; sgk.vadesiGecti = sgk.vadesiGecti || gecti; sgk.kalemler.push(k); continue; }
       if (dav === DAVRANIS.PERSONEL) {
@@ -1108,14 +1194,19 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
 // ── KDV karşılaştırması (R9, C10, K1) ─────────────────────────────────────────
 // hesaplananKdvObj: aylık rapor motorunun toplamKdv'si ({TRY, USD, EUR}); satış KDV'si burada YENİDEN
 // HESAPLANMAZ. Yalnız TL karşılaştırılır, diğer para birimleri ayrıca listelenir (AC-15).
-export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0) => {
+// Spec 0075 R27, R28 (B-5): üçüncü parametre (dönemin kesilen KDV tevkifatı, TL) yalnız BİLGİ alanı `tevkifatKdv2` üretir;
+// farka, ödeneceğe ve devredene girmez (alıcı KDV'nin tamamını indirir, tevkifat kalemin vergi dairesi hedefinden ödenir).
+// Parametresiz çağrı birebir eski çıktıdır (0047 raporu geçirmez).
+export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifatTL) => {
   const hesaplanan = kurus(hesaplananKdvObj?.TRY);
   const ind = kurus(indirilecekTL);
   const fark = hesaplanan - ind;
   const haricTutarlar = Object.entries(hesaplananKdvObj || {})
     .filter(([cur, v]) => cur !== "TRY" && Math.abs(Number(v) || 0) > 0.004)
     .map(([cur, v]) => ({ para: cur, tutar: Math.round((Number(v) || 0) * 100) / 100 }));
-  return { hesaplananTL: tl(hesaplanan), indirilecek: tl(ind), fark: tl(fark), odenecek: tl(Math.max(0, fark)), devreden: tl(Math.max(0, -fark)), haricTutarlar };
+  const sonuc = { hesaplananTL: tl(hesaplanan), indirilecek: tl(ind), fark: tl(fark), odenecek: tl(Math.max(0, fark)), devreden: tl(Math.max(0, -fark)), haricTutarlar };
+  if (tevkifatTL !== undefined) sonuc.tevkifatKdv2 = tl(kurus(tevkifatTL));
+  return sonuc;
 };
 export const kdvObjTopla = (...objs) => {
   const r = {};

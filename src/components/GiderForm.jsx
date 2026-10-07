@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
-  kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI } from "../lib/gider";
+  kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
+  tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -26,11 +27,12 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", yolParasi: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
       atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
-      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [], dagitimAy: "" };
+      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [], dagitimAy: "",
+      tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "" }; // spec 0075 R1
   }
   // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
   const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
-  const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ), eld = hedefSat(HEDEF.ELDEN);
+  const ana = hedefSat(HEDEF.ANA), stp = hedefSat(HEDEF.STOPAJ), eld = hedefSat(HEDEF.ELDEN), tvs = hedefSat(HEDEF.TEVKIFAT);
   // Spec 0071 R5, R27: dâhil girilmiş kalemde tutar alanı hariç tutar + KDV ile yeniden kurulur (dâhil tutar saklanmaz);
   // alanı olmayan eski kalem hariç açılır.
   const dahil = kdvYonuOf(k) === KDV_YONU.DAHIL;
@@ -42,7 +44,10 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
     ekOdemeler: (k.ekOdemeler || []).map(e => ({ ...e, aciklama: e.aciklama || "", resmiTutar: tutarMetni(e.resmiTutar), eldenTutar: tutarMetni(e.eldenTutar) })),
     taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "", eldenVade: eld[0]?.vade || "",
-    dagitimAy: k.dagitimAy ? String(k.dagitimAy) : "" }; // spec 0072 R19
+    dagitimAy: k.dagitimAy ? String(k.dagitimAy) : "", // spec 0072 R19
+    // Spec 0075 R18 (B-2, AC-45): tevkifat taksit sayısı ve vadesi kendi satırlarından geri kurulur (sütun yok).
+    tevkifatli: !!k.tevkifatli, tevkifatPay: k.tevkifatli ? k.tevkifatPay : "", tevkifatPayda: k.tevkifatli ? k.tevkifatPayda : "",
+    tevkifatTaksitSayisi: String(tvs.length || 1), tevkifatVade: tvs[0]?.vade || "" };
 };
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
@@ -118,9 +123,12 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const farkSatiri = (farkK) => (farkK ? <div data-testid="kdv-yuvarlama-farki" style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 6 }}>
     Kuruş yuvarlaması: KDV hariç tutar ile KDV toplamı, girilen {tl2(girilenTutar)} tutarından {tl2(Math.abs(farkK) / 100)} {farkK > 0 ? "az" : "fazla"}.</div> : null);
   // R1, R6, R18: seçici normal ve brüt kirada; personelde ve net kirada çizilmez.
+  // Spec 0075 R1, R9: kutu yalnız normal davranışta (tevkifatliMi); kapalıyken önizleme kalemi tevkifat taşımaz (C3).
+  const tevkifatAcik = tevkifatliMi(dav) && !!form.tevkifatli;
   const kdvYonuAlani = yonSecilebilir ? (
     <Field label="Tutar KDV hariç mi, dâhil mi?">
       <Segment ariaLabel="KDV yönü" options={[{ value: KDV_YONU.HARIC, label: "KDV hariç" }, { value: KDV_YONU.DAHIL, label: "KDV dâhil" }]} value={kdvYonu} onChange={v => set({ kdvYonu: v })} />
+      {tevkifatAcik && <Ipucu>{TEVKIFAT_KDV_DAHIL_NOTU}</Ipucu>}
       {dav === DAVRANIS.KIRA && <Ipucu>Brüt/net seçimi stopaj içindir, KDV hariç/dâhil seçimi KDV içindir. KDV dâhil girilen brütten önce KDV ayrılır; stopaj ayrılan brüt üzerinden hesaplanır.</Ipucu>}
     </Field>
   ) : null;
@@ -129,18 +137,22 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const yolForm = tutarCoz(form.yolParasi).deger || 0;
   const personelToplam = tutarCoz(form.resmiTutar).deger + tutarCoz(form.eldenTutar).deger + yolForm + ekToplam;
 
+  const tevkifatAlanlari = useMemo(() => (tevkifatAcik ? { tevkifatli: true, tevkifatPay: Number(form.tevkifatPay) || 0, tevkifatPayda: Number(form.tevkifatPayda) || 0 } : {}),
+    [tevkifatAcik, form.tevkifatPay, form.tevkifatPayda]);
   // Ödeme planı önizlemesi (spec 0021): kayıttakiyle AYNI motor (odemeSatirlariKur); geçici kimliklerle çizilir.
   const onizleme = useMemo(() => {
     const kalemBenzeri = {
       tutar: dav === DAVRANIS.KIRA ? kira?.brut : normalTutar, kdvOrani: tutarCoz(form.kdvOrani).deger, stopajOrani: tutarCoz(form.stopajOrani).deger,
       resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, yolParasi: yolForm,
       ekOdemeler: (form.ekOdemeler || []).map(e => ({ resmiTutar: tutarCoz(e.resmiTutar).deger || 0, eldenTutar: tutarCoz(e.eldenTutar).deger || 0 })),
+      ...tevkifatAlanlari,
     };
     let n = 0;
     const eski = form.taksitler || [];
-    return odemeSatirlariKur(kalemBenzeri, dav, { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null },
+    return odemeSatirlariKur(kalemBenzeri, dav, { taksitSayisi: form.taksitSayisi, ilkVade: form.sonOdemeTarihi || null, stopajTaksitSayisi: form.stopajTaksitSayisi, stopajVade: form.stopajVade || null, eldenVade: form.eldenVade || null,
+      tevkifatTaksitSayisi: form.tevkifatTaksitSayisi, tevkifatVade: form.tevkifatVade || null },
       { uid: () => `onizleme-${++n}`, eskiSatirlar: eski, eskiOdendi: !eski.length && !!form.odendi, eskiOdemeTarihi: form.odemeTarihi || null });
-  }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.eldenVade, form.taksitler, form.odendi, form.odemeTarihi, yolForm]);
+  }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.eldenVade, form.taksitler, form.odendi, form.odemeTarihi, yolForm, tevkifatAlanlari, form.tevkifatTaksitSayisi, form.tevkifatVade]);
   const planli = !!onizleme.hata || (onizleme.satirlar || []).length > 0;
   const stopajVar = dav === DAVRANIS.KIRA && (kira?.stopaj || 0) > 0;
   // Spec 0042 R4, X7, Q4: resmi ve eldeni olan personel iki hedefle ödenir; taksit yalnız resmiye, elden tek satır.
@@ -159,7 +171,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, yolParasi: yolForm, girisYonu: form.girisYonu, netTutar: tutarCoz(form.netTutar).deger,
     ekOdemeler: (form.ekOdemeler || []).map(e => ({ resmiTutar: tutarCoz(e.resmiTutar).deger || 0, eldenTutar: tutarCoz(e.eldenTutar).deger || 0 })),
     taksitler: onizleme.hata ? [] : (onizleme.satirlar || []),
-  }), [form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme, yolForm]);
+    ...tevkifatAlanlari,
+  }), [tevkifatAlanlari, form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme, yolForm]);
   const yeniKalem = form.id == null;
   const odemeHedefListesi = useMemo(() => (form.turId === "" || !yeniKalem ? [] : formOdemeHedefleri(onizlemeKalem, turMap)), [yeniKalem, onizlemeKalem, turMap, form.turId]);
   // Spec 0053 R15, R24: düzenlemede canlı kalem, gerçek kimliğiyle kayıtlı (silinmek üzere işaretlenmemiş) hareketlerden zenginleşir.
@@ -225,7 +238,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
 
   const taksitli = Number(form.taksitSayisi) >= 2;
   // Spec 0053 R4: vade kalemin borç vadesidir; ödeme yönteminden türemez ("Çek vade tarihi" dalı kalktı).
-  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? `${hedefAdi(HEDEF.ANA, DAVRANIS.KIRA)} son ödeme` : "Son ödeme tarihi"; // spec 0060 R30: ad tablodan
+  // Spec 0075 R37 (Ö-12, AC-42): tevkifatlı kalemde iki vade alanı aynı metni taşımaz; ana vade "Tedarikçiye son ödeme".
+  const tevkifatVar = kalemTevkifat(onizlemeKalem, dav) > 0;
+  const vadeEtiket = taksitli ? "İlk taksitin vadesi" : dav === DAVRANIS.KIRA && stopajVar ? `${hedefAdi(HEDEF.ANA, DAVRANIS.KIRA)} son ödeme`
+    : tevkifatVar ? `${hedefAdi(HEDEF.ANA, dav)} son ödeme` : "Son ödeme tarihi"; // spec 0060 R30: ad tablodan
   const sayac = new Set(hatalar.map(h => h.alan)).size;
   return (
     <Modal title={form.id == null ? "Yeni Gider" : "Gider Düzenle"} onClose={onCancel} wide
@@ -344,6 +360,32 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             </div>
           )}
           {kdvliMi(dav) && <Ipucu>KDV oranı gider tarihine göre ön doldurulur, değiştirilebilir.</Ipucu>}
+          {/* Spec 0075 R1–R4, R13: nadir olduğu için alanlar onay kutusunun arkasında (teslimatFarkli deseni); kapalıyken form aynı. */}
+          {tevkifatliMi(dav) && (
+            <div data-testid="tevkifat-alani" style={{ borderTop: "1px dashed var(--n300, #cbd5e1)", paddingTop: 10, marginBottom: 10 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input type="checkbox" aria-label="Bu fatura tevkifatlı" checked={!!form.tevkifatli}
+                  onChange={e => set(e.target.checked ? { tevkifatli: true } : { tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "" })}
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)" }} />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Bu fatura tevkifatlı</span>
+              </label>
+              <HataMetni>{hata("tevkifatli")}</HataMetni>
+              {tevkifatAcik && (
+                <div style={{ marginTop: 8 }}>
+                  <Field label="Tevkifat oranı *">
+                    <Select aria-label="Tevkifat oranı" value={form.tevkifatPay && form.tevkifatPayda ? `${form.tevkifatPay}/${form.tevkifatPayda}` : ""}
+                      onChange={e => { const [p, d] = e.target.value.split("/"); set({ tevkifatPay: p ? Number(p) : "", tevkifatPayda: d ? Number(d) : "" }); }}>
+                      <option value="">Faturadaki oranı seçin</option>
+                      {TEVKIFAT_ORANLARI.map(o => <option key={tevkifatOranEtiketi(o)} value={tevkifatOranEtiketi(o)}>{tevkifatOranEtiketi(o)}</option>)}
+                    </Select>
+                    <HataMetni>{hata("tevkifatPay")}</HataMetni>
+                  </Field>
+                  <Ipucu>{TEVKIFAT_ALT_SINIR_NOTU}</Ipucu>
+                  <Ipucu>{TEVKIFAT_AYRI_KALEM_NOTU}</Ipucu>
+                </div>
+              )}
+            </div>
+          )}
           {yonSecilebilir && tutarCoz(form.kdvOrani).deger === 0 && !tutarCoz(form.kdvOrani).gecersiz && <Ipucu>KDV oranı sıfır olduğu için dâhil ve hariç aynı tutarı verir.</Ipucu>}
         </div>
         {dav === DAVRANIS.KIRA && kira && (
@@ -359,7 +401,23 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             {ayrim && form.girisYonu !== "net" && farkSatiri(ayrim.farkK)}
           </div>
         )}
-        {dav === DAVRANIS.NORMAL && normalTutar > 0 && (
+        {/* Spec 0075 R12 (S2, AC-14, AC-41): tevkifat özeti kira kutusunun yerinde ve biçiminde; rakamlar önizleme kaleminden
+            motorla (kalemTevkifat, odenecekTutar), formda ikinci çarpım yok. Kutu kapalıyken normal-ozet aynen. */}
+        {tevkifatAcik && normalTutar > 0 && (
+          <div style={{ flex: "0 0 300px", background: "var(--ambBg3, #fffaf5)", border: "1px solid var(--ambBr3, #fed7aa)", borderRadius: 12, padding: "14px 16px" }} data-testid="tevkifat-ozet">
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--orTx, #c2410c)", marginBottom: 4 }}>Tevkifat Özeti</div>
+            <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginBottom: 6 }}>Tevkifat toplam KDV üzerinden hesaplanır.</div>
+            {[["Matrah", tl2(normalTutar), "ozet-matrah"], ["Toplam KDV", tl2(kdvOnizleme), "ozet-toplam-kdv"], ["Tevkifat", `− ${tl2(kalemTevkifat(onizlemeKalem, dav))}`, "ozet-tevkifat"],
+              ["Kalan KDV", tl2(tl(kurus(kdvOnizleme) - kurus(kalemTevkifat(onizlemeKalem, dav)))), "ozet-kalan-kdv"]].map(([a, b, id]) => (
+              <div key={a} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid var(--ambBr3, #fde7d4)" }}><span>{a}</span><b data-testid={id}>{b}</b></div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, padding: "8px 0", borderBottom: "1px solid var(--ambBr3, #fde7d4)" }}><span>{hedefAdi(HEDEF.ANA, dav)} ödenecek</span><b data-testid="ozet-tedarikciye">{tl2(odenecekTutar(onizlemeKalem, dav))}</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0" }}><span>{hedefAdi(HEDEF.TEVKIFAT, dav)}</span><b data-testid="ozet-vergi-dairesine" style={{ color: "var(--amb700, #b45309)" }}>{tl2(kalemTevkifat(onizlemeKalem, dav))}</b></div>
+            <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Gider toplamına giren: <b>{tl2(normalTutar)}</b> (matrah)</div>
+            {ayrim && farkSatiri(ayrim.farkK)}
+          </div>
+        )}
+        {dav === DAVRANIS.NORMAL && normalTutar > 0 && !tevkifatAcik && (
           <div style={{ flex: "0 0 220px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "12px 14px", fontSize: 13 }} data-testid="normal-ozet">
             {/* Spec 0071 R2: dâhil girişte kaydedilecek üç rakam (hariç, KDV, ödenecek) ve varsa yuvarlama farkı. */}
             {ayrim && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV hariç</span><b data-testid="ozet-kdv-haric">{tl2(normalTutar)}</b></div>}
@@ -419,6 +477,23 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         </KartBolum>
       )}
       {stopajVar && tutarCoz(form.kdvOrani).deger > 0 && <div style={{ marginBottom: 12 }}><UyariSeridi aile="bilgi" testId="stopaj-kdv-notu">{STOPAJ_KDV_NOTU}</UyariSeridi></div>}
+      {/* Spec 0075 R2, R18: vergi dairesi (tevkifat) bölümü, stopaj bölümünün eşi; vade boşsa ana vade (S3). */}
+      {tevkifatAcik && (
+        <KartBolum varyant="kart" baslikStili="baslik" title={hedefBasligi(HEDEF.TEVKIFAT, dav)} altBaslik={`Kesilen KDV tevkifatı ${tl2(kalemTevkifat(onizlemeKalem, dav))} tedarikçiye değil vergi dairesine ödenir; ayrı izlenir.`} testId="tevkifat-bolumu" style={{ marginBottom: 12, padding: 14 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ width: 130 }}>
+              <Field label="Tevkifat taksit sayısı"><Input aria-label="Tevkifat taksit sayısı" type="number" min="1" max="60" value={form.tevkifatTaksitSayisi} onChange={e => set({ tevkifatTaksitSayisi: e.target.value })} /><HataMetni>{hata("tevkifatTaksitSayisi")}</HataMetni></Field>
+            </div>
+            <div style={{ flex: "1 1 170px" }}>
+              <Field label={Number(form.tevkifatTaksitSayisi) >= 2 ? "İlk tevkifat taksitinin vadesi" : "Tevkifat vadesi"}>
+                <Input aria-label="Tevkifat vadesi" type="date" value={form.tevkifatVade} onChange={e => set({ tevkifatVade: e.target.value })} />
+                <HataMetni>{hata("tevkifatVade")}</HataMetni>
+                <Ipucu>Boşsa tedarikçiye son ödeme tarihi kullanılır.</Ipucu>
+              </Field>
+            </div>
+          </div>
+        </KartBolum>
+      )}
       {dav === DAVRANIS.NORMAL && <Ipucu>{STOPAJ_AYRI_KALEM_NOTU}</Ipucu>}
       {planli && (
         <Field label="Ödeme planı">

@@ -17,12 +17,13 @@ const kod = (f) => oku(f).split("\n").filter(l => !l.trim().startsWith("//") && 
 describe("Spec 0060 R3, R29: tek tablo, iki hâl", () => {
   it("AC-27: hedefAdi (yönelme) bugünkü çıktısını korur, hedefBasligi (yalın) aynı tablodan türer", () => {
     const { NORMAL, KIRA, PERSONEL } = DAVRANIS;
-    expect([hedefAdi(HEDEF.ANA, NORMAL), hedefAdi(HEDEF.ANA, KIRA), hedefAdi(HEDEF.STOPAJ, KIRA), hedefAdi(HEDEF.ELDEN, NORMAL),
+    // Spec 0075 R16 ile güncellendi: stopajın hemen arkasına KDV tevkifatı hedefinin adları.
+    expect([hedefAdi(HEDEF.ANA, NORMAL), hedefAdi(HEDEF.ANA, KIRA), hedefAdi(HEDEF.STOPAJ, KIRA), hedefAdi(HEDEF.TEVKIFAT, NORMAL), hedefAdi(HEDEF.ELDEN, NORMAL),
       hedefAdi(HEDEF.ANA, PERSONEL, true), hedefAdi(HEDEF.ELDEN, PERSONEL, true), hedefAdi(HEDEF.EK_RESMI, PERSONEL, true), hedefAdi(HEDEF.EK_ELDEN, PERSONEL, true),
       hedefAdi(HEDEF.ANA, PERSONEL, false)])
-      .toEqual(["Tedarikçiye", "Kiraya verene", "Vergi dairesine (stopaj)", "Elden", "Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)", "Çalışana"]);
-    expect([hedefBasligi(HEDEF.ANA, NORMAL), hedefBasligi(HEDEF.ANA, KIRA), hedefBasligi(HEDEF.STOPAJ, KIRA), hedefBasligi(HEDEF.ANA, PERSONEL, true), hedefBasligi(HEDEF.ANA, PERSONEL, false)])
-      .toEqual(["Tedarikçi", "Kiraya veren", "Vergi dairesi", "Maaş (resmi)", "Çalışan"]);
+      .toEqual(["Tedarikçiye", "Kiraya verene", "Vergi dairesine (stopaj)", "Vergi dairesine (KDV tevkifatı)", "Elden", "Maaş (resmi)", "Maaş (elden)", "Ek ödeme (resmi)", "Ek ödeme (elden)", "Çalışana"]);
+    expect([hedefBasligi(HEDEF.ANA, NORMAL), hedefBasligi(HEDEF.ANA, KIRA), hedefBasligi(HEDEF.STOPAJ, KIRA), hedefBasligi(HEDEF.TEVKIFAT, NORMAL), hedefBasligi(HEDEF.ANA, PERSONEL, true), hedefBasligi(HEDEF.ANA, PERSONEL, false)])
+      .toEqual(["Tedarikçi", "Kiraya veren", "Vergi dairesi", "Vergi dairesi (tevkifat)", "Maaş (resmi)", "Çalışan"]);
     expect(HEDEF_AD).toEqual(Object.fromEntries(Object.entries(HEDEF_ADLARI.genel).map(([k, v]) => [k, v.yonelme])));
   });
   it("AC-27: ad tablosu tek yerde; odemeYontemi.js dışında hedef adı tablosu tanımlanmaz", () => {

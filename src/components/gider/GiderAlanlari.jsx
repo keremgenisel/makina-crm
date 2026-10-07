@@ -209,6 +209,10 @@ export const fmtTL = (n) => fmtCur(n, "TRY");
 // R11: kiraya veren şahıssa stopaj olur KDV olmaz, şirketse tersi; ikisi birlikte istisnadır (engel değil).
 export const STOPAJ_KDV_NOTU = "Stopaj ve KDV birlikte girildi. Kiraya veren şahıssa stopaj olur, KDV olmaz; şirketse KDV olur, stopaj olmaz. İkisi birlikte istisnai bir durumdur; doğruysa kaydedebilirsiniz.";
 // AC-14, R15: kalıcı bilgi satırı; sistem tespit yapmaz.
+// Spec 0075 R13 (AC-15): tevkifatlı faturanın üç kalıcı notu, her biri tek sabit.
+export const TEVKIFAT_AYRI_KALEM_NOTU = "KDV tevkifatını ayrı gider kalemi olarak girmeyin: matrah ve tam KDV bu kalemdedir, vergi dairesine giden tevkifat bu kalemin vergi dairesi bölümünden ödenir.";
+export const TEVKIFAT_KDV_DAHIL_NOTU = "Tevkifatlı faturada \u201cKDV dâhil\u201d seçilirse girilen rakam matrah artı TAM KDV'dir (faturanın ödenecek genel toplamı değildir); uygulama tevkifatı ayrılan matrahtan hesaplar.";
+export const TEVKIFAT_ALT_SINIR_NOTU = "Tevkifat alt sınırı (2026'da fatura başına KDV dâhil 12.000 TL) satıcının sorumluluğundadır; uygulama tutarı denetlemez, faturadaki oranı girin.";
 export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olarak girmeyin: brüt kira zaten gider toplamındadır, vergi dairesine ödenen stopaj kira kaleminin vergi dairesi bölümünde izlenir.";
 // Ödeme satırları tablosu (form önizlemesi ve Ödeme Planı penceresi aynı tabloyu kullanır). onIsaretle verilirse
 // satırın durum hücresi düğmedir (gider_odeme).

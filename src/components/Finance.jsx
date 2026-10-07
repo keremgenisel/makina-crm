@@ -10,7 +10,7 @@ import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf, gercekSatisBedeli } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
-import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu } from "../lib/gider";
+import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu, tevkifatOzeti, turHaritasi } from "../lib/gider";
 import { hesaplananKdvAylar } from "../lib/giderKdv";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
@@ -64,7 +64,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     const gr = hesaplaGiderRaporu({ giderler, turler: giderTurleri, yururlukAy: giderYururlukAy }, aralik);
     const veri = { customers, services: servicesHam, partSales: partSalesHam, payments: paymentsHam, teklifler, dealers, yedekParcaSatislar: yedekParcaHam };
     const hesaplanan = hesaplananKdvAylar(veri, [raporAy], { factoryName, kdvRates, factory, rates });
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, gr.indirilecekKdv) };
+    // Spec 0075 R28 (B-5, S9): KDV2 yalnız bilgi satırıdır; değer motordan, Giderler'deki kartla aynı kaynak.
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, gr.indirilecekKdv, tevkifatOzeti(gr.kalemler, turHaritasi(giderTurleri)).kesilenK / 100) };
   }, [giderYetki, raporAy, giderler, giderTurleri, giderYururlukAy, customers, servicesHam, partSalesHam, paymentsHam, teklifler, dealers, yedekParcaHam, factoryName, kdvRates, factory, rates]);
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,

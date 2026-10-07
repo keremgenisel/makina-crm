@@ -133,7 +133,11 @@ export const tl2 = (n) => new Intl.NumberFormat("tr-TR", { minimumFractionDigits
 const ad = (yonelme, yalin = yonelme) => ({ yonelme, yalin });
 export const HEDEF_ADLARI = {
   genel: { [HEDEF.ANA]: ad("Tedarikçiye", "Tedarikçi"), [HEDEF.ELDEN]: ad("Elden"), [HEDEF.EK_RESMI]: ad("Ek ödeme (resmi)"),
-    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"), [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
+    [HEDEF.EK_ELDEN]: ad("Ek ödeme (elden)"),
+    // Spec 0075 R16 (B-7): tevkifat davranış değildir, genel tablodadır; hedefAdKaydi'na dal yazılmaz (else dalı alır).
+    // Yalın hâl stopajdan ayrıdır: rozet ve başlık hangi vergi olduğunu söyler.
+    [HEDEF.TEVKIFAT]: ad("Vergi dairesine (KDV tevkifatı)", "Vergi dairesi (tevkifat)"),
+    [HEDEF.STOPAJ]: ad("Vergi dairesine (stopaj)", "Vergi dairesi") },
   kira: { [HEDEF.ANA]: ad("Kiraya verene", "Kiraya veren") },
   // Spec 0074 R11: SGK davranışlı kalemin tek (ANA) hedefi; kira deseni. Dal yazılmazsa ad genel[ANA]'ya ("Tedarikçiye") düşerdi.
   sgk: { [HEDEF.ANA]: ad("SGK'ya", "SGK") },

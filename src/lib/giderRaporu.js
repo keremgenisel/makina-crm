@@ -9,7 +9,7 @@
 //
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
-import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, sgkOzeti, kurumTarafAdi } from "./gider";
+import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, tevkifatOzeti, sgkOzeti, kurumTarafAdi } from "./gider";
 import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
@@ -97,6 +97,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     // alan okumaz; tür toplamı resmi + elden tek tutardır, çalışan ve açıklama taşımaz).
     const ekOdemeTurleri = ekOdemeTurToplamlari(personel).map(t => ({ ad: t.ad, tutar: tl(t.toplamK) }));
     const so = stopajOzeti(gr.kalemler, turMap);
+    const tvo = tevkifatOzeti(gr.kalemler, turMap); // spec 0075 R25: stopajın birebir eşi, aynı dönem kilidi
     // Spec 0074 R23: ayın SGK davranışlı kalemlerinin toplamı (kurum borcu; tür bazında toplam, kişi kırılımı yok).
     const sgo = sgkOzeti(gr.kalemler, turMap);
     // Spec 0061 R13, R14, R16, R32 (AC-19, AC-20): açık kalemlerin yaşlandırması, ay sonu itibarıyla (ödeme durumu ay sonu,
@@ -152,6 +153,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       ekOdemeTurleri,
       yaslandirma,
       stopaj: so.kesilenK > 0 ? { kesilen: tl(so.kesilenK), odenen: tl(so.odenenK), acik: tl(so.acikK) } : null,
+      tevkifat: tvo.kesilenK > 0 ? { kesilen: tl(tvo.kesilenK), odenen: tl(tvo.odenenK), acik: tl(tvo.acikK) } : null,
       sgk: sgo.toplamK > 0 ? { toplam: tl(sgo.toplamK), odenen: tl(sgo.odenenK), acik: tl(sgo.acikK) } : null,
       kalemler,
       vadeler: detay ? { gecmis: vadeSatirlari(h.gecmisSatirlar), yaklasan: vadeSatirlari(h.yaklasanSatirlar) } : { gecmis: [], yaklasan: [] },
@@ -330,6 +332,10 @@ export const buildGiderKasaRaporuHtml = (r) => {
     // Spec 0060 R12, R15, R31 (AC-14, AC-17, AC-41): ayın kira stopajı; kesilen = ödenen + açık. Stopaj yoksa basılmaz.
     const stopajKutu = G.stopaj ? bolum("GİDER · STOPAJ", `kesilen ${donem}, ödeme durumu ${itibariyla}`, stTablo([st("Kesilen stopaj", tlp(G.stopaj.kesilen)),
       st("Ödenen", tlp(G.stopaj.odenen)), st("Ay sonunda açık", tlp(G.stopaj.acik))])) : "";
+    // Spec 0075 R25 (B-6, AC-27): ayın KDV tevkifatı, stopaj kutusunun eşi; tevkifatsız ayda basılmaz. Özet kutusuna satır
+    // girmez (AC-48: 0059 altın dosyası değişmez).
+    const tevkifatKutu = G.tevkifat ? bolum("GİDER · TEVKİFAT", `kesilen ${donem}, ödeme durumu ${itibariyla}`, stTablo([st("Kesilen KDV tevkifatı", tlp(G.tevkifat.kesilen)),
+      st("Ödenen", tlp(G.tevkifat.odenen)), st("Ay sonunda açık", tlp(G.tevkifat.acik))])) : "";
     // Spec 0070 R18, AC-22 (0074 R23: kaynak SGK davranışlı kalemler): SGK tek toplam kutu (ödenen ve açık); boşsa basılmaz. `<!--sgk-->` ile sınırlı (gizlilik testleri
     // kutunun dışına eski yasakları aynen, içine çalışan adı ve kişi bazlı tutar yasağını uygular).
     const sgkKutu = G.sgk ? `<!--sgk--><div data-bolum="sgk">${bolum("GİDER · SGK", `${donem}, ödeme durumu ${itibariyla}`, stTablo([st("SGK toplamı", tlp(G.sgk.toplam)),
@@ -339,7 +345,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
         [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
-    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, sgkKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
+    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, tevkifatKutu, sgkKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
 
   // ── Kasa ──

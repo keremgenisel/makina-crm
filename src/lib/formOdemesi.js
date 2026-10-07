@@ -14,6 +14,8 @@ export const PASIF_TAKSIT_NEDENI = "Bu bölümün taksit planı bu düzenlemede 
 // Spec 0057 R8, R19: çek satırı taksit seçmez; tutar ANA'nın açık taksitlerine en eski vadeden dağıtılır.
 export const CEK_DAGITIM_NOTU = "Çek tutarı bu bölümün açık taksitlerine en eski vadeden dağıtılır.";
 export const CIRO_YALNIZ_ANA_NEDENI = { [HEDEF.STOPAJ]: "Vergi dairesine çekle ödeme yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
+  // Spec 0075 R19 (Ö-13): engel bugün de var (yalnız ANA); eksik olan tevkifatın kendi nedeniydi.
+  [HEDEF.TEVKIFAT]: "KDV tevkifatı vergi dairesine çekle ödenmez; çek yalnız tedarikçiye ciro edilir.",
   [HEDEF.ELDEN]: "Elden ödeme çekle yapılmaz; çek yalnız ana alacaklıya ciro edilir.",
   // Spec 0054 R22: ek ödeme hedefleri ANA değildir (0053 R12).
   [HEDEF.EK_RESMI]: "Ek ödeme çekle yapılmaz; çek yalnız ana alacaklıya verilir.",

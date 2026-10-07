@@ -1,6 +1,9 @@
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
 
+// Spec 0075 R28 (AC-31): KDV2 bilgi satırının açıklaması; farka eklenmediği ve nereden ödendiği yazılı (çift sayım okunmasın).
+export const TEVKIFAT_KDV2_NOTU = "Bilgi: farka eklenmez. Bu tutar tevkifatlı gider kalemlerinin vergi dairesi bölümünden ödenir.";
+
 // KDV Karşılaştırması kartı (spec 0001 R9, AC-14/15/29/38, plan K1/K10/K15). Sunumdan ibarettir:
 // rakamlar kdvKarsilastir'dan gelir. Kart yalnız gider yetkisiyle çizilir (AC-30); tam ay olmayan
 // aralıkta GİZLENMEZ, nedenini aralığı anarak yazar (AC-38). Mevcut "Ödenmesi Muhtemel KDV" kartı
@@ -35,6 +38,12 @@ export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: devreden ? "var(--grn700, #15803d)" : "var(--orTx, #c2410c)" }}>{devreden ? "Sonraki döneme devreden KDV" : "Ödenecek KDV farkı"}</div>
         <div style={{ fontSize: 24, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "var(--n900, #0f172a)" }}>{para(devreden ? sonuc.devreden : sonuc.odenecek)}</div>
       </div>
+      {sonuc.tevkifatKdv2 > 0 && (
+        <div data-testid="kdv2-bilgi" style={{ marginTop: 10 }}>
+          {satir("Tevkifatla beyan edilecek KDV (KDV2)", para(sonuc.tevkifatKdv2))}
+          <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{TEVKIFAT_KDV2_NOTU}</div>
+        </div>
+      )}
       {sonuc.haricTutarlar.length > 0 && (
         <div style={{ marginTop: 10, fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px dashed var(--n300, #cbd5e1)", borderRadius: 8, padding: "8px 10px" }}>
           Karşılaştırmaya dahil edilmeyen hesaplanan KDV: <b>{gizle ? "———" : sonuc.haricTutarlar.map(h => `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(h.tutar)} ${h.para}`).join(", ")}</b>

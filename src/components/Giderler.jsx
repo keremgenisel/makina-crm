@@ -7,6 +7,7 @@ import { logAction, snapshotOnceki, hareketDuzenlemeKaydi } from "../lib/audit";
 import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
   ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
+  tevkifatOzeti,
 } from "../lib/gider";
 import { odemeGirisiHazirla, odemeGirisiYaz } from "../lib/formOdemesi";
 import { hedefAdi as hedefAdiOf, cokHedefliMi } from "./gider/GiderAlanlari";
@@ -121,8 +122,9 @@ export const Giderler = ({
   const kdv = useMemo(() => {
     if (!rapor || !kdvAylar) return null;
     if (kdvAylar.durum !== "tamam") return { durum: kdvAylar.durum };
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv, rapor.indirilecekKdv) };
-  }, [rapor, kdvAylar, hesaplananKdv]);
+    // Spec 0075 R28 (S9): KDV2 bilgi satırı; Finans kartıyla aynı kaynak (dönem kalemlerinin kesilen tevkifatı).
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv, rapor.indirilecekKdv, tevkifatOzeti(rapor.kalemler, turMap).kesilenK / 100) };
+  }, [rapor, kdvAylar, hesaplananKdv, turMap]);
 
   const uretimAyi = mod === "ay" ? ay : ayOf(bugun);
   const uret = () => {

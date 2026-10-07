@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
-import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi } from "../../lib/gider";
+import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -163,7 +163,8 @@ export const BorcOzeti = ({ ozet }) => {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : s.tur === "vergiDairesi" || s.tur === "sgk" ? "mavi" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : s.tur === "vergiDairesi" ? "Kira stopajı" : s.tur === "sgk" ? "Kurum" : "Tedarikçi"}</Rozet>
+                {s.ad} <Rozet renk={s.tur === "calisanlar" ? "mor" : s.tur === "vergiDairesi" || s.tur === "sgk" ? "mavi" : "gri"}>{s.tur === "calisanlar" ? "Çalışan" : s.tur === "vergiDairesi" ? vergiRozetleri(s)[0] : s.tur === "sgk" ? "Kurum" : "Tedarikçi"}</Rozet>
+                {s.tur === "vergiDairesi" && vergiRozetleri(s).slice(1).map(r => <span key={r} style={{ marginLeft: 4 }}><Rozet renk="mavi">{r}</Rozet></span>)}
                 {s.vadesiGecti && <Rozet renk="kirmizi">Vadesi geçti</Rozet>}
               </div>
               {s.tur === "calisanlar" && <div style={{ marginTop: 3 }}><AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Adları gizle" : "Adları göster"}</AcKapa></div>}
@@ -394,7 +395,9 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
         <td style={td}>{atamaHucre(k)}</td>
         <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemTutari(k, d))}</td>
         <td style={tdR}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : <>{tl2(kalemKdv(k, d))}<div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>%{k.kdvOrani ?? 0}</div></>}</td>
-        <td style={tdR}>{tl2(odenecekTutar(k, d))}</td>
+        <td style={tdR}>{tl2(odenecekTutar(k, d))}
+          {/* Spec 0075 R41 (S8): tevkifatlı satırda hücre tedarikçi kısmıdır; dipnot değişmez (C3). */}
+          {kalemTevkifat(k, d) > 0 && <div data-testid="tevkifat-haric" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>tevkifat hariç</div>}</td>
         <td style={td}>{odemeHucre(k)}</td>
         <td style={td}>{islem(k)}</td>
       </tr>

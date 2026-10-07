@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { uid, today, getKdvRateForDate } from "../../lib/utils";
-import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi } from "../../lib/gider";
+import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi,
+  tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -11,7 +12,7 @@ import { KALICI_SILME_NOTU } from "../../lib/copKutusu";
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
 // silinse bile o ay listede kalır ve yeniden üretilmez. Tanım silme kalıcıdır (R12).
-const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "" });
+const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "", tevkifatli: false, tevkifatPay: "", tevkifatPayda: "" }); // spec 0075 R26
 
 export const SettingsGiderTanimlari = ({
   giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], calisanlar = [],
@@ -81,6 +82,9 @@ export const SettingsGiderTanimlari = ({
     const atamaSon = atamaVar ? (form.atamaTur || "") : "";
     const dg = dagitimAySayisiCoz(form.dagitimAy);
     if (dg.hata && dagitimSecilebilirMi(atamaSon)) h.dagitimAy = dg.hata;
+    // Spec 0075 R26, R39 (S4, S5): tanımda yalnız kutu ve oran; kural kalemle aynı saf fonksiyon. Boş KDV oranı "tarihe göre"dir.
+    const tv = tevkifatDogrula(form, dav, { kdvBosSerbest: true });
+    for (const x of tv.hatalar) if (!h[x.alan]) h[x.alan] = x.mesaj;
     setHatalar(h);
     if (Object.keys(h).length) return;
     const calisan = calisanlar.find(c => String(c.id) === String(form.calisanId));
@@ -102,6 +106,7 @@ export const SettingsGiderTanimlari = ({
       uretilenAylar: form.uretilenAylar || [], kapatildi: form.kapatildi && !!form.bitisAy,
     };
     if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(atamaSon)) kayit.dagitimAy = dg.deger; // R19 (S4): 1 ya da boş saklanmaz
+    if (tv.alanlar) Object.assign(kayit, tv.alanlar); // spec 0075 R10 (S6): kapalıyken alan hiç yazılmaz
     const yeni = form.id == null;
     setGiderTanimlari(p => (yeni ? [...p, kayit] : p.map(t => (t.id === kayit.id ? kayit : t))));
     logAction({ serverPermissions, action: yeni ? "olusturuldu" : "duzenlendi", entity: "gider_tanim", entityId: kayit.id, entityName: kayit.ad });
@@ -132,7 +137,9 @@ export const SettingsGiderTanimlari = ({
     // Spec 0071 R7, AC-10: kira satırının "Brüt girildi" emsali; alanı olmayan eski tanım hariç girilmiştir (R27).
     return <><b style={{ whiteSpace: "nowrap" }}>{tl2(t.tutar)}</b><div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dav === DAVRANIS.KIRA ? (t.girisYonu === "net" ? "Net girildi" : "Brüt girildi") : (!kdvliMi(dav) ? "KDV yok" : t.kdvOrani == null ? "KDV tarihe göre" : `KDV %${t.kdvOrani}`)}</div>
       {/* Spec 0074 R6: KDV'siz davranışta (SGK) yön yoktur; "KDV yok" ile çelişen "KDV hariç girildi" yazılmaz. */}
-      {kdvliMi(dav) && <div data-testid="tanim-kdv-yonu" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kdvYonuOf(t) === KDV_YONU.DAHIL ? "KDV dâhil girildi" : "KDV hariç girildi"}</div>}</>;
+      {kdvliMi(dav) && <div data-testid="tanim-kdv-yonu" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kdvYonuOf(t) === KDV_YONU.DAHIL ? "KDV dâhil girildi" : "KDV hariç girildi"}</div>}
+      {/* Spec 0075 R43 (S12): tevkifatlı tanım listede görünür (yoksa hiçbir yerde görünmezdi). */}
+      {tevkifatliMi(dav) && t.tevkifatli && <div data-testid="tanim-tevkifat" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>Tevkifat {tevkifatOranEtiketi({ pay: t.tevkifatPay, payda: t.tevkifatPayda })}</div>}</>;
   };
   const atamaHucre = (t) => {
     if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
@@ -241,6 +248,28 @@ export const SettingsGiderTanimlari = ({
                   {sifirTutarSerbestMi(dav) && <Ipucu>Her ay değişen giderde (elektrik, su, SGK) boş ya da sıfır bırakın; tutar fatura ya da bildirge gelince kalemde girilir.</Ipucu>}</Field></div>
                 {kdvliMi(dav) && <div style={{ width: 150 }}><Field label="KDV oranı"><TutarInput sym="%" ariaLabel="KDV oranı" placeholder="tarihe göre" value={form.kdvOrani} onChange={v => set({ kdvOrani: v })} /><HataMetni>{hatalar.kdvOrani}</HataMetni></Field></div>}
               </div>
+              {/* Spec 0075 R26 (S4): tanımda yalnız onay kutusu ve oran; taksit ve vade üretilen kalemde girilir. */}
+              {tevkifatliMi(dav) && (
+                <div data-testid="tanim-tevkifat-alani" style={{ marginBottom: 10 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input type="checkbox" aria-label="Bu fatura tevkifatlı" checked={!!form.tevkifatli}
+                      onChange={e => set(e.target.checked ? { tevkifatli: true } : { tevkifatli: false, tevkifatPay: "", tevkifatPayda: "" })}
+                      style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>Bu fatura tevkifatlı</span>
+                  </label>
+                  {form.tevkifatli && (
+                    <Field label="Tevkifat oranı *">
+                      <Select aria-label="Tevkifat oranı" value={form.tevkifatPay && form.tevkifatPayda ? `${form.tevkifatPay}/${form.tevkifatPayda}` : ""}
+                        onChange={e => { const [p, d] = e.target.value.split("/"); set({ tevkifatPay: p ? Number(p) : "", tevkifatPayda: d ? Number(d) : "" }); }}>
+                        <option value="">Faturadaki oranı seçin</option>
+                        {TEVKIFAT_ORANLARI.map(o => <option key={tevkifatOranEtiketi(o)} value={tevkifatOranEtiketi(o)}>{tevkifatOranEtiketi(o)}</option>)}
+                      </Select>
+                      <HataMetni>{hatalar.tevkifatPay}</HataMetni>
+                      <Ipucu>Üretilen her kaleme kopyalanır; tevkifatın vadesini kalemde girin.</Ipucu>
+                    </Field>
+                  )}
+                </div>
+              )}
               {tedarikciSecilirMi(dav) && <Field label="Tedarikçi">
                 <Select value={form.tedarikciId} onChange={e => set({ tedarikciId: e.target.value })}>
                   <option value="">Seçilmemiş</option>

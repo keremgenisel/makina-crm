@@ -28,6 +28,21 @@ describe("Finans — KDV Karşılaştırması", () => {
     expect(within(kart).getByText("38.000 ₺")).toBeTruthy();
     expect(kart.textContent).toMatch(/Karşılaştırmaya dahil edilmeyen hesaplanan KDV: 1\.200 USD/);
   });
+  // Spec 0075 R28 (AC-31): tevkifatlı kalemde KDV2 yalnız bilgi satırıdır; fark tam KDV ile hesaplanır (38.000 aynen), nereden
+  // ödendiği yazılı. Tevkifatsız ayda satır çizilmez.
+  it("AC-31 (0075): 'Tevkifatla beyan edilecek KDV (KDV2)' bilgi satırı farka eklenmez ve nereden ödendiği yazılı", () => {
+    ciz({ giderYetki: true, giderler: [{ id: 1, tarih: "2026-08-15", turId: 4, tutar: 60000, kdvOrani: 20, odendi: false, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10 }] });
+    fireEvent.click(screen.getByText("Göster"));
+    const kart = screen.getByTestId("kdv-karsilastirma");
+    expect(within(kart).getByText("38.000 ₺")).toBeTruthy();
+    const bilgi = within(kart).getByTestId("kdv2-bilgi");
+    expect(bilgi.textContent).toMatch(/Tevkifatla beyan edilecek KDV \(KDV2\)6\.000 ₺/);
+    expect(bilgi.textContent).toMatch(/farka eklenmez.*vergi dairesi bölümünden ödenir/);
+    cleanup();
+    ciz({ giderYetki: true, giderler: [{ id: 1, tarih: "2026-08-15", turId: 4, tutar: 60000, kdvOrani: 20, odendi: false }] });
+    fireEvent.click(screen.getByText("Göster"));
+    expect(within(screen.getByTestId("kdv-karsilastirma")).queryByTestId("kdv2-bilgi")).toBeNull();
+  });
   it("AC-29: indirilecek büyükse 'sonraki döneme devreden KDV' pozitif tutar", () => {
     ciz({ giderYetki: true, giderler: [{ id: 1, tarih: "2026-08-15", turId: 4, tutar: 300000, kdvOrani: 20, odendi: false }] });
     fireEvent.click(screen.getByText("Göster"));

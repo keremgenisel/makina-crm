@@ -97,13 +97,15 @@ export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler =
     for (const h of acikHedefler) {
       const gecti = personel ? personelGrup === "gecmis" : hedefGecti(h, bugun);
       if (personel ? !personelGrup : (!gecti && h.vade > sinir)) continue;
-      const stopaj = h.hedef === HEDEF.STOPAJ;
+      // Spec 0075 R23 (Ö-17): KDV tevkifatı da vergi dairesine gider; vade etiketi kendi adıyla.
+      const tevkifat = h.hedef === HEDEF.TEVKIFAT;
+      const stopaj = h.hedef === HEDEF.STOPAJ || tevkifat;
       // Spec 0074 R20: SGK kaleminin tarafı kurum adıdır (kurumTarafAdi), "Tedarikçi seçilmemiş" değil.
       const taraf = stopaj ? VERGI_DAIRESI : personel ? (k.calisanAd || "Çalışan")
         : kurumTarafAdi(dav) || (k.tedarikciId != null && tedMap.get(String(k.tedarikciId))?.ad) || "Tedarikçi seçilmemiş";
       const oge = {
         kalem: k, id: k.id, hedef: h.hedef, anahtar: `${k.id}:${h.hedef}`, vade: h.vade,
-        vadeEtiketi: h.taksitli ? "Taksit vadesi" : stopaj ? "Stopaj vadesi" : vadeEtiketi(k), gunFarki: gunFarki(bugun, h.vade),
+        vadeEtiketi: h.taksitli ? "Taksit vadesi" : tevkifat ? "Tevkifat vadesi" : stopaj ? "Stopaj vadesi" : vadeEtiketi(k), gunFarki: gunFarki(bugun, h.vade),
         odenecekK: h.kalanK, odenecek: h.kalanK / 100, taraf, personel: personel && !stopaj, gecti,
         taksit: satirliMi(k) && h.taksitli ? { odenen: h.odenenAdet, toplam: h.toplamAdet } : null,
       };

@@ -142,6 +142,14 @@ const GIDERLER = [
   k(6, { turId: 4, tutar: 8000, tarih: "2026-08-10", tedarikciId: 12, aciklama: "Ağustos elektrik", odendi: true }),
   k(7, { turId: 5, tutar: 15000, tarih: "2026-08-12", atamaTur: "makina", makinaTur: "musteri", makinaId: 500, aciklama: "Özel parça" }),
 ];
+// Spec 0075: tevkifatlı kalem (matrah 20.000, %20, 5/10; kayıttaki gibi satırlı: tedarikçiye 22.000, vergi dairesine 2.000),
+// Finans KDV kartı için Ağustos'ta bir eşi ve tevkifatlı tanım.
+const tvKalem = (id, tarih, vade, tvVade, o = {}) => ({ id, tarih, turId: 4, tutar: 20000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, aciklama: "Nakliye (tevkifatlı)",
+  sonOdemeTarihi: vade, odendi: false, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, ekOdemeler: [], modelSatirlari: [], atamaTur: "",
+  taksitler: [{ id: id * 10 + 1, hedef: "ana", sira: 1, vade, tutar: 22000, odendi: false, odemeTarihi: null }, { id: id * 10 + 2, hedef: "tevkifat", sira: 1, vade: tvVade, tutar: 2000, odendi: false, odemeTarihi: null }], ...o });
+const TV_0075 = tvKalem(751, "2026-09-10", "2026-09-30", "2026-10-26");
+const TV_AGU_0075 = tvKalem(752, "2026-08-14", "2026-08-31", "2026-09-26");
+const TANIM_0075 = { id: 75, ad: "Aylık nakliye", turId: 4, tutar: 12000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10 };
 const TANIMLAR = [{ id: 71, ad: "Fabrika kirası", turId: 1, tutar: 25000, kdvOrani: 0, tedarikciId: 11, baslangicAy: "2026-06", uretilenAylar: ["2026-09"] }];
 const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, baslangicAy: "2026-06" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
@@ -212,9 +220,9 @@ const ayarlar = (tab, o = {}) => (
     standartGiderler={STANDART} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} {...o} />
 );
 
-const FINANS = ({ rapor = null }) => (
+const FINANS = ({ rapor = null, g = GIDERLER }) => (
   <Finance customers={MUSTERILER} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
-    payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={GIDERLER} giderTurleri={TURLER} giderYururlukAy="2026-06"
+    payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={g} giderTurleri={TURLER} giderYururlukAy="2026-06"
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />
 );
 
@@ -919,6 +927,23 @@ const EKRANLAR = {
     giderTurleri={TURLER_0074} tedarikciler={TED} calisanlar={CAL_0070} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["dugme:Çalışanların SGK toplamını kullan"]],
   "ayarlar-gidertanim-0074-sgk": [ayarlar("gidertanim", { giderTurleri: TURLER_0074, giderTanimlari: [...TANIMLAR, SGK_TANIM_0074] }), []],
   "giderler-0074-sgk-odeme": [<GiderEkrani g0={[SGK_0074]} turler={TURLER_0074} h0={[]} />, ["baslik:Ödeme kaydet"]],
+  // Spec 0075: tevkifatlı fatura girişi. Kutu açık form (özet sağ sütunda), vergi dairesi (tevkifat) bölümü, kalem listesi
+  // ("tevkifat hariç"), borç özetinde vergi dairesi satırı, tevkifat hedefinin ödeme penceresi, tanım formu ve listesi, Finans KDV2.
+  "gider-formu-0075-tevkifat": [<GiderForm kalem={{ turId: 4, tarih: "2026-09-10", tutar: "20000", kdvOrani: "20", tedarikciId: 12, aciklama: "Eylül nakliye", sonOdemeTarihi: "2026-09-30",
+    tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, tevkifatVade: "2026-10-26" }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "gider-formu-0075-bolum": [<GiderForm kalem={{ turId: 4, tarih: "2026-09-10", tutar: "20000", kdvOrani: "20", tedarikciId: 12, aciklama: "Eylül nakliye", sonOdemeTarihi: "2026-09-30",
+    tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, tevkifatVade: "2026-10-26" }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Vergi dairesi (tevkifat)"]],
+  "giderler-0075-liste": [<GiderEkrani g0={[...GIDERLER, TV_0075]} h0={[]} />, []],
+  "giderler-0075-borc": [<GiderEkrani g0={[...GIDERLER, TV_0075]} h0={[]} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
+  // Triyaj (TY kararı): stopaj ve tevkifat birlikteyken tek "Vergi dairesi" satırında iki ayrı rozet.
+  "giderler-0075-borc-iki": [<GiderEkrani g0={[TV_0075, { id: 753, tarih: "2026-09-05", turId: 1, tutar: 25000, kdvOrani: 0, stopajOrani: 20, girisYonu: "brut", netTutar: 20000, tedarikciId: 11,
+    aciklama: "Eylül kira (stopajlı)", sonOdemeTarihi: "2026-09-30", odendi: false, ekOdemeler: [], modelSatirlari: [], atamaTur: "",
+    taksitler: [{ id: 7531, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 20000, odendi: false, odemeTarihi: null }, { id: 7532, hedef: "stopaj", sira: 1, vade: "2026-10-26", tutar: 5000, odendi: false, odemeTarihi: null }] }]} h0={[]} />,
+    ["kaydir:Kime Ne Kadar Borçluyuz"]],
+  "giderler-0075-odeme": [<GiderEkrani g0={[TV_0075]} h0={[]} />, ["dugme:Ödeme planı", "dugme:Ödeme gir"]],
+  "ayarlar-gidertanim-0075": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0075, ...TANIMLAR] }), []],
+  "ayarlar-gidertanim-0075-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0075, ...TANIMLAR] }), ["baslik:Düzenle"]],
+  "finans-0075-kdv2": [<FINANS g={[...GIDERLER, TV_AGU_0075]} />, ["Göster"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

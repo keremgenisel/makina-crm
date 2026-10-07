@@ -46,7 +46,8 @@ export const acikKalemler = (giderler = [], { turler = [], tedarikciler = [], yu
       const sgkHedef = sgkDavranisiMi(dav);
       const personel = dav === DAVRANIS.PERSONEL;
       const ted = k.tedarikciId != null ? tedMap.get(String(k.tedarikciId)) : null;
-      const tarafTur = h.hedef === HEDEF.STOPAJ ? "vergiDairesi" : sgkHedef ? "sgk" : personel ? "calisanlar" : ted ? "tedarikci" : "secilmemis";
+      // Spec 0075 R22 (B-3): tevkifat vergi dairesinin; dal yazılmazsa tedarikçinin KENDİ satırına düşerdi.
+      const tarafTur = h.hedef === HEDEF.STOPAJ || h.hedef === HEDEF.TEVKIFAT ? "vergiDairesi" : sgkHedef ? "sgk" : personel ? "calisanlar" : ted ? "tedarikci" : "secilmemis";
       satirlar.push({
         kalemId: k.id, hedef: h.hedef, davranis: dav, cokHedef, tarafTur,
         tarafId: tarafTur === "tedarikci" ? ted.id : null,

@@ -66,7 +66,8 @@ describe("Spec 0054: hedefler (R1, R14, R15, R18, AC-1–AC-4, AC-22, AC-24, AC-
   // Spec 0070 R9 ile güncellendi: SGK hedefi ek elden ile stopaj arasına girdi (personel hedeflerinden sonra, kurum hedefi).
   // Spec 0074 R16 ile güncellendi: 0070'in SGK hedefi kalktı (SGK kendi gider türüdür).
   it("AC-22: hedef sırası maaş resmi → maaş elden → ek resmi → ek elden → stopaj", () => {
-    expect(HEDEF_SIRASI).toEqual(["ana", "elden", "ekResmi", "ekElden", "stopaj"]);
+    // Spec 0075 R15 ile güncellendi: KDV tevkifatı hedefi stopajın hemen önünde; personel hedeflerinin sırası değişmedi.
+    expect(HEDEF_SIRASI).toEqual(["ana", "elden", "ekResmi", "ekElden", "tevkifat", "stopaj"]);
   });
   it("AC-30: yalnız ek ödemesi olan (maaşı sıfır) kalem tek hedefli, satırsız", () => {
     const k = kayit(per({ resmiTutar: "", eldenTutar: "", ekOdemeler: [prim(2000)] }));

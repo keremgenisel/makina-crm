@@ -107,7 +107,7 @@ dbmod.writeBlobToDb({
   tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
   giderTanimlari: [
     { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
-      atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false },
+      atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10 }, // spec 0075 AC-34
     { id: 62, turId: 42, ad: "Murat", calisanId: 72, baslangicAy: "2026-06", bitisAy: "2026-08", uretilenAylar: ["2026-06"], kapatildi: true },
   ],
   giderler: [
@@ -137,7 +137,10 @@ dbmod.writeBlobToDb({
         { id: 9025, hedef: "sgk", sira: 1, vade: "2026-09-15", tutar: 9000.5, odendi: false, odemeTarihi: null }] },
     // Spec 0074 AC-33: SGK davranışlı kalem tek tutar, KDV'siz, tedarikçisiz; bugünkü sütunlarla roundtrip eder.
     { id: 87, tarih: "2026-09-30", turId: 44, aciklama: "Eylül SGK", tutar: 9333.25, kdvOrani: 0, kdvYonu: null, tedarikciId: null, odendi: false, atamaTur: "", modelSatirlari: [], sonOdemeTarihi: "2026-10-31" },
-    { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [] },
+    // Spec 0075 AC-34, AC-35: tevkifatlı kalem (üç sütun) ve hedefi "tevkifat" olan taksit satırı.
+    { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [],
+      tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10,
+      taksitler: [{ id: 9041, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 7540, odendi: false, odemeTarihi: null }, { id: 9042, hedef: "tevkifat", sira: 1, vade: "2026-08-26", tutar: 260, odendi: false, odemeTarihi: null }] },
   ],
   // Spec 0024 A: kasa hesapları ve hareketler.
   kasaHesaplari: [{ id: 97, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 100000.5, acilisTarihi: "2026-01-01", kapali: false },
@@ -318,6 +321,14 @@ check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = 
 check("spec 0074 AC-33: SGK türü (davranış sgk) ve SGK kalemi roundtrip eder; kalemde sgkTutar/kdvYonu yazılmaz", (() => {
   const t = (blob.giderTurleri || []).find(x => x.id === 44), k = (blob.giderler || []).find(x => x.id === 87);
   return t?.davranis === "sgk" && k?.turId === 44 && k.tutar === 9333.25 && k.kdvOrani === 0 && k.tedarikciId == null && k.sonOdemeTarihi === "2026-10-31" && !("sgkTutar" in k) && !("kdvYonu" in k);
+})());
+check("spec 0075 AC-34, AC-35: tevkifat üç alanı iki tabloda roundtrip eder; 'tevkifat' hedefli satır vadesiyle korunur; kapalı kalem ve tanımda alan yazılmaz", (() => {
+  const k = (blob.giderler || []).find(x => x.id === 84), e = (blob.giderler || []).find(x => x.id === 83);
+  const t = (blob.giderTanimlari || []).find(x => x.id === 61), t2 = (blob.giderTanimlari || []).find(x => x.id === 62);
+  const tv = (k?.taksitler || []).find(x => x.hedef === "tevkifat");
+  return k?.tevkifatli === true && k.tevkifatPay === 2 && k.tevkifatPayda === 10 && tv?.id === 9042 && tv.vade === "2026-08-26" && tv.tutar === 260
+    && t?.tevkifatli === true && t.tevkifatPay === 2 && t.tevkifatPayda === 10
+    && ["tevkifatli", "tevkifatPay", "tevkifatPayda"].every(a => !(a in e) && !(a in t2));
 })());
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
 check("spec 0070 AC-5: sgkTutar ve yolParasi roundtrip eder, SGK satırı (hedef sgk) vadesiyle korunur; alanı olmayan kalemde alan yazılmaz", (() => {
