@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-07) |
-| **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
+| **Durum** | Tamamlandı (commit `4cb6795`, dal `feat/0078-cop`) |
+| **Sahip** | Analist (spec) · Claude Code (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | `hesapHareketleri`, `cekler`, `giderTanimlari`, `giderTurleri`, `standartGiderler`, `kasaHesaplari` bölümleri; App'in canlı dizi türetmesi; Çöp Kutusu; yedek; 30 günlük temizlik |
 | **Bağımlı spec'ler** | **0068 (çöp kutusu deseni, tedarikçi ve üretim partisi emsali)** · 0077 (C maddesi bu bölümleri kendiliğinden kapsar) · 0024 (hareketler) · 0040/0049 (çekler) · 0001 (gider türü davranışı) · 0011 (kanıt eşlemesi) · 0026 (arama, R11) · 0051 ("hesabı silinmiş" nedeni, R13) · 0052 (`yedekKasa` ayrımı, R28) · 0056 (hesap taşıma, R26) · 0058 (kapsam dışı ve gizlilik, R14 ve R24) · 0065 (`partStockLog` kararı, X6) |
-| **Revizyon** | 0068'in "kalan yedi bölüm kalıcı silinir" kararının altısını geri alır · 1 · 2026-10-07 QA turu (B-1…B-6, Ö-7…Ö-20, K-21…K-25 işlendi) · 2 · 2026-10-07 uygulama planı onayı: S1–S11 işlendi (R12, R13, R22, R25, R26, R29, R30, AC-34, yeni G bölümü R33–R40); plan `specs/0078-uygulama-plani.md` |
+| **Revizyon** | 0068'in "kalan yedi bölüm kalıcı silinir" kararının altısını geri alır · 1 · 2026-10-07 QA turu (B-1…B-6, Ö-7…Ö-20, K-21…K-25 işlendi) · 2 · 2026-10-07 uygulama planı onayı: S1–S11 işlendi (R12, R13, R22, R25, R26, R29, R30, AC-34, yeni G bölümü R33–R40); plan `specs/done/0078-uygulama-plani.md` |
 
 ---
 
@@ -452,8 +452,8 @@ ve kalemin ödeme durumu eski hâline dönüyor, ve bu silme çakışmada da kay
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. **Test dosyaları:**
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. **Test dosyaları:**
       `tests/cop-kutusu-0078.test.js` (saf: `purgeOldTrash` çağrıları, çek koruma yardımcısı,
       `hesapKullanimi`'nın canlı sayımı, `kapsamGirisiGecersizMi` ölçütü, prop sayısı taraması,
       kalıcılık metni taraması), `tests/ui/cop-kutusu-0078.test.jsx` (Çöp Kutusu'nda altı satır,
@@ -464,31 +464,31 @@ ve kalemin ödeme durumu eski hâline dönüyor, ve bu silme çakışmada da kay
       `server-authz.test.js` ve `scripts/tests/server-security.cjs` (AC-47),
       `scripts/tests/db-roundtrip.cjs` ve `db-clean-install.cjs` (AC-28, AC-50); **güncellenen**
       `cop-kutusu-0068.test.js` ve `ui/cop-kutusu-0068.test.jsx` (AC-35).
-- [ ] **Süzme bütünlüğü testi:** çöpe atılmış bir ödeme ile bütün tüketiciler (bakiye, ekstre, ödeme
+- [x] **Süzme bütünlüğü testi:** çöpe atılmış bir ödeme ile bütün tüketiciler (bakiye, ekstre, ödeme
       durumu, yöntem kırılımı, hatırlatıcı, 0047 raporu, arama) ayrı ayrı sınandı (AC-10).
-- [ ] **Çöp koruma testi:** altı bölümün her biri için, bir ekrandan yazım yapıldığında çöptekilerin
+- [x] **Çöp koruma testi:** altı bölümün her biri için, bir ekrandan yazım yapıldığında çöptekilerin
       korunduğu gösterildi (AC-15); `tahsilat-cop-korunur` testinin deseni izlendi.
-- [ ] Gider türü ve çek için "anlamı kaybolmaz" çapraz testleri yazıldı (AC-16, AC-17) ve bu ikisinin
+- [x] Gider türü ve çek için "anlamı kaybolmaz" çapraz testleri yazıldı (AC-16, AC-17) ve bu ikisinin
       ham dizi istisnası kaynakta gerekçesiyle yazılı (AC-14, AC-39); ikisi de sessiz veri bozulması
       riski taşıyor.
-- [ ] 0077 ile kesişim testlendi (AC-30, AC-31) ve 0077'nin X1 metni güncellendi (AC-32).
-- [ ] Görsel kanıt: `0078-taban-piksel-raporu.json` ve `0078-piksel-raporu.json`. **Değişmesi
+- [x] 0077 ile kesişim testlendi (AC-30, AC-31) ve 0077'nin X1 metni güncellendi (AC-32).
+- [x] Görsel kanıt: `0078-taban-piksel-raporu.json` ve `0078-piksel-raporu.json`. **Değişmesi
       beklenen ekranlar:** Çöp Kutusu (altı yeni satır türü, kalkan bilgi satırı) ve kalıcılık metni
       kalkan altı silme penceresi (`SettingsTrash`, `Kasa`, `GiderTurManager`, `StandartGiderler`,
       `CekPortfoyu`, `HesapSilPenceresi`, artı `Settings` tür paneli açıklaması); **diğer bütün
       ekranlarda 0 piksel.** Tasarım sözlüğünü kullanan bu dosyaların
       `docs/evidence/kanit-eslemesi.json` kayıtları `beklenen: "degisti"` artı onay satırı taşır
       (`tests/kanit-eslemesi.test.js` ve `tests/tasarim-kaynak.test.js` bunu denetliyor).
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: altı bölüm çöp kutusunda, dört bölümün canlı dizisinin App'te
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: altı bölüm çöp kutusunda, dört bölümün canlı dizisinin App'te
       türetildiği ve `giderTurleri` ile `cekler`'in bilinçli olarak ham kaldığı, `hesapHareketleri`
       null kapısının korunduğu, davranış ve çek çözümünün ham listeden yapıldığı,
       `KALICI_SILME_NOTU` ile `KALICI_SILINEN_BOLUMLER`'in **kaldırıldığı**, `hesapTasimaYazimiMi`'nin
       neden değiştiği, 0068'in kararının hangi kısmının geri alındığı.
-- [ ] Sürüm notu: yanlışlıkla silinen ödeme, çek, tanım, tür, standart gider ve hesap artık Çöp
+- [x] Sürüm notu: yanlışlıkla silinen ödeme, çek, tanım, tür, standart gider ve hesap artık Çöp
       Kutusu'ndan geri alınabiliyor.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -496,10 +496,10 @@ ve kalemin ödeme durumu eski hâline dönüyor, ve bu silme çakışmada da kay
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 3 | R1 QA turu, R2 plan onayı (S1–S11: sunucuda iki fonksiyon, `KALICI_SILINEN`'den çıkış, CekPortfoyu setter tuzağı, çeke bağlı hareketin çöpe girmemesi, bağsız çek silme şartı, çek tüketici listesi, App iç hesapları, çöpteki hareketin taşınması, standart gider grup satırı), triyajda AC-37 sayısı (14/16) düzeltildi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: geri almada doğrulama, rapor/ekran ayrışması, sürüm notu, taşımada çöpteki virman, birleştirme testleri, görsel kanıt, AC-37. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 7 / 0 | Yedisi de gerçek; birincisi (çöpten geri alınan ödemenin kalemi fazla ödemesi) bu spec'in açtığı yeni bir yoldu. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 1 | Çöpten geri alma doğrulamasız kalmıştı (silme kalıcıyken bu yol yoktu); yayına çıkmadan triyajda düzeltildi. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir kaydı geri alınabilir yapmak, o kaydı **yeniden ekleme** yolu açmaktır ve ekleme yolunun bütün doğrulamaları geri almaya da uygulanmalıdır: silme kalıcıyken "silinen ödemeyi yeniden gir, sonra eskiyi geri al" diye bir dizi yoktu. Spec'in R20'si ebeveyn denetimini bilinçli olarak dışarıda bırakmıştı ama kardeş kayıtla çakışmayı hiç düşünmemişti. İkincisi: canlı dizinin tek yerde türetilmesi motorları korur, ama "canlı listeden hesaplanmış bütün bir sonucu geri yazan" her ekran yeni bir setter tuzağıdır; spec yalnız bir tanesini (çek portföyü) bulmuştu, uygulamada iki tane daha çıktı. Bunlar ancak App gibi tam diziyi tutan düzeneklerle ve mutasyonla yakalanır. Üçüncüsü: motorlara parametre eklenince (hesapsız listedeki hesaplar) aynı motorun bütün çağıranları aynı anda güncellenmeli; ekran güncellenip rapor unutulursa ikisi sessizce ayrışır.

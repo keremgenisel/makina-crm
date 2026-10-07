@@ -1095,10 +1095,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -1837,22 +1836,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-0074",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsApp.jsx": [
@@ -2156,22 +2152,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-trash",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-0068-trash",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0078-piksel-raporu.json",
+        "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "cop-kutusu-0078",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0078 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [

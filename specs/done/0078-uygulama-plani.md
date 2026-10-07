@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0078-kasa-ve-gider-kayitlari-cop-kutusuna.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0078-kasa-ve-gider-kayitlari-cop-kutusuna.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0078-cop` (`feat/0077-kayit` `12db874` üstünde) |
 | **Onay** | Takım Yöneticisi, 2026-10-07: bütün öneriler (S1–S11) kabul |
 
