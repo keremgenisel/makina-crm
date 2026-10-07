@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0075-tevkifatli-fatura-girisi.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0075-tevkifatli-fatura-girisi.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0075-tevkifat` (`feat/0074-sgk-turu` `e660e20` üstünde, R38) |
 | **Onay** | Takım Yöneticisi, 2026-10-07: bütün öneriler (S1–S13) kabul |
 

@@ -464,130 +464,109 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0053-duzenle-ciro",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0053-iki-satir",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0057-cek-dagitim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0057-plan-degisti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0057-taksit-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0071-kdv-dahil",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0071-sifir",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0071-yuvarlama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0072",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0072-makina",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0075-bolum",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0075-tevkifat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-asim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-duzenle-plan-hatasi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-ciro",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-kendi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-odeme-taksitli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-taksit",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-tutar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -1049,22 +1028,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-borc",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-borc-iki",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Settings.jsx": [
@@ -1386,28 +1362,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-borc",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-borc-iki",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/FiyatOnerisi.jsx": [
@@ -1663,10 +1635,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "gider-formu-0075-tevkifat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -1680,16 +1651,14 @@
         "ekran": "finans"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "finans-0075-kdv2",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/MakinaKarliligi.jsx": [
@@ -2009,28 +1978,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0072",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0075",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0075-form",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsImport.jsx": [
@@ -3921,10 +3886,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0075-piksel-raporu.json",
+        "rapor": "docs/evidence/0075-taban-piksel-raporu.json",
         "ekran": "giderler-0075-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-07 · spec 0075 DoD"
+        "beklenen": "ayni"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [

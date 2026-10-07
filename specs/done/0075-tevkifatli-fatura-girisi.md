@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-07) |
+| **Durum** | Tamamlandı (commit `6c106b6`, dal `feat/0075-tevkifat`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu ve motoru, tekrarlayan gider tanımı, ödeme hedefleri, borç özeti, açık kalemler, ödeme hatırlatıcısı, Finans KDV karşılaştırma kartı, 0047 raporu |
 | **Bağımlı spec'ler** | 0001 (KDV, kova, borç özeti) · 0011 (kanıt eşlemesi) · 0021 (ödeme hedefleri, stopaj emsali) · 0047 (rapor kutusu) · 0053 (tek ödeme editörü, hedef blokları) · 0059 (altın rapor dosyaları) · 0060 (hedef adları) · 0062 (sayfalama) · 0071 (KDV dâhil giriş) · 0072 (dört nokta sütun deseni) · 0074 (davranış kapıları) |
-| **Revizyon** | 1 · 2026-10-07 QA turu: B-1..B-7, Ö-8..Ö-21, K-22..K-26 işlendi (Takım Yöneticisi onayı) · 2 · 2026-10-07 uygulama planı onayı: S1–S13 işlendi (R10, R12, R18, R26, R28, R38–R44, AC-41, AC-44; DoD sürüm notu); plan `specs/0075-uygulama-plani.md` |
+| **Revizyon** | 1 · 2026-10-07 QA turu: B-1..B-7, Ö-8..Ö-21, K-22..K-26 işlendi (Takım Yöneticisi onayı) · 2 · 2026-10-07 uygulama planı onayı: S1–S13 işlendi (R10, R12, R18, R26, R28, R38–R44, AC-41, AC-44; DoD sürüm notu); plan `specs/done/0075-uygulama-plani.md` |
 
 ---
 
@@ -468,28 +468,28 @@ açılınca çıkar (uygulamanın "📍 Farklı adrese kargolat" ve "📦 Panoya
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar (Ö-21): motor
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. Dosyalar (Ö-21): motor
       `tests/tevkifat-0075.test.js` (zincir, AC-6 ve AC-7 rakamları, yuvarlama eşitliği, hedef doğma
       kapısı, doğrulama alanları, `tevkifatOzeti`, çapraz testler), bileşen
       `tests/ui/tevkifat-0075.test.jsx` (kutu kapalı ve açık, özet bloğu, üç not, oran listesi, iki
       hedefli ödeme, tanım formu), rapor `tests/gider-kasa-raporu-0075.test.js`; ek bloklar
       `hedef-adlari-0060` (iki altın liste), `ui/finance-gider-kdv` (bilgi satırı), `db-roundtrip.cjs`
       ve `db-clean-install.cjs`.
-- [ ] Context'teki örnek rakamlar (AC-6, AC-7) motor testinde birebir sabitlendi.
-- [ ] Parçaların toplamının bütüne eşitliği yuvarlama gerektiren bir oranla testlendi (AC-8) ve iki
+- [x] Context'teki örnek rakamlar (AC-6, AC-7) motor testinde birebir sabitlendi.
+- [x] Parçaların toplamının bütüne eşitliği yuvarlama gerektiren bir oranla testlendi (AC-8) ve iki
       hedefin toplamının `kalemKurus + kdvKurus`'a eşitliği çapraz testle (AC-39).
-- [ ] Satırlı doğma ve vadenin null olmaması testle sabitlendi (AC-44, AC-45).
-- [ ] Açık kalemlerde tevkifatın tedarikçi satırına girmediği testle gösterildi (AC-24) ve tedarikçi
+- [x] Satırlı doğma ve vadenin null olmaması testle sabitlendi (AC-44, AC-45).
+- [x] Açık kalemlerde tevkifatın tedarikçi satırına girmediği testle gösterildi (AC-24) ve tedarikçi
       ekstresinde hiç geçmediği çapraz testle (AC-26, AC-50).
-- [ ] İndirilecek KDV, KDV karşılaştırması ve makina maliyetinin değişmediği çapraz testlerle
+- [x] İndirilecek KDV, KDV karşılaştırması ve makina maliyetinin değişmediği çapraz testlerle
       gösterildi (AC-29, AC-30, AC-32); `kdvKarsilastir`'ın parametresiz çıktısının birebir aynı kaldığı
       (AC-49).
-- [ ] Tevkifatsız veride motor çıktısının değişmediği, `gider.test.js`, `kdv-dahil-0071.test.js` ve
+- [x] Tevkifatsız veride motor çıktısının değişmediği, `gider.test.js`, `kdv-dahil-0071.test.js` ve
       `makina-maliyeti.test.js` **dokunulmadan** yeşil kalarak gösterildi (AC-32, AC-33).
-- [ ] 0059'un altın dosyalarının (`tests/fixtures/0059-gider-rapor-once.json`,
+- [x] 0059'un altın dosyalarının (`tests/fixtures/0059-gider-rapor-once.json`,
       `0059-aylik-faaliyet.html`) değişmediği doğrulandı (AC-48).
-- [ ] Görsel kanıt: `docs/evidence/0075-taban-piksel-raporu.json` ve `0075-piksel-raporu.json`
+- [x] Görsel kanıt: `docs/evidence/0075-taban-piksel-raporu.json` ve `0075-piksel-raporu.json`
       (K-24). **C3'ün ölçülebilir kanıtı** (triyaj 2026-10-07, plan §6, Takım Yöneticisi onayı): kutunun kendisi
       normal kalemin formuna eklendiği için (R1) normal davranışlı form ekranları kutu satırı kadar değişir; **kutu olmayan
       kira, personel ve SGK formları ile tevkifatsız listeler, raporlar ve KDV kartı 0 piksel** beklenir; değişen
@@ -498,25 +498,25 @@ açılınca çıkar (uygulamanın "📍 Farklı adrese kargolat" ve "📦 Panoya
       `OdemeGirisi` ve `KdvKarsilastirmaKarti` tasarım sözlüğünü kullandığı için
       `docs/evidence/kanit-eslemesi.json` kayıtları değişen ekranlarda `beklenen: "degisti"` artı onay
       satırı taşır; spec `done`'a taşınırken `ayni`ye çevrilir.
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: tevkifatın yalnız gider tarafında olduğu, stopajla farkı (KDV ile gelir
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: tevkifatın yalnız gider tarafında olduğu, stopajla farkı (KDV ile gelir
       vergisi), KDV dâhil girişte hangi rakamın girildiği, alt sınırın denetlenmediği, indirilecek
       KDV'nin değişmediği, tevkifatlı kalemin satırlı doğduğu.
-- [ ] Sürüm notu (plan §7): tevkifatlı fatura artık onay kutusuyla girilebiliyor; **karışık sürüm uyarısı** (revizyon 2,
+- [x] Sürüm notu (plan §7): tevkifatlı fatura artık onay kutusuyla girilebiliyor; **karışık sürüm uyarısı** (revizyon 2,
       S11): önce sunucu bilgisayarı, sonra bütün istemciler; güncelleme bitene kadar tevkifatlı kalem girilmez
       (güncellenmemiş sunucu üç sütunu düşürür, güncellenmemiş istemci "tevkifat" hedefli satırları tanımaz ve kalemi
       düzenlerken temizler).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ## SCORECARD
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R2 plan onayı (S1–S13: dal, özetin yeri, boş vade, tanımda yalnız kutu ve oran, tek doğrulayıcı, kapalı alanların silinmesi, ödenmiş tevkifatın korunması, liste ibaresi, KDV kartı iki ekranda, 0059 ayıklaması, karışık sürüm uyarısı, tanım listesi ibaresi, oran sabiti). Triyajda DoD kanıt ölçütü düzeltildi (kutunun kendisi formu değiştirdiği için "kutu kapalı form 0 piksel" ölçülemezdi; TY onayı) ve vergi dairesi rozetinin ayrı ayrı yazılması TY kararıyla eklendi. Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 2 | Triyaj (görsel kanıt ve testi, CLAUDE.md'nin olmayan dosyalara atfı, DoD ölçütü) ve kanıt incelemesinde görülen sabit "Kira stopajı" rozeti. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Triyajın iki bulgusu gerçek; üçüncüsü kanıt incelemesinde uygulayıcının bulduğu rozet. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 0 | `gider.test.js`, `kdv-dahil-0071`, `makina-maliyeti` ve 0059 altın dosyaları dokunulmadan yeşil; değişen eski testler yalnız sıralı listelerdi (hedef sırası, 0060 adları, 0059 ayıklama satırı). Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Hazır bir emsalin (kira stopajı) ikinci örneğini açmak ucuzdur ama emsalin içine gömülmüş sabitler ikinci örnekte yanlış konuşur: borç özetindeki "Kira stopajı" rozeti stopajın tek vergi dairesi kalemi olduğu günden kalmıştı ve hiçbir test onu yakalamadı, çünkü testler satırın tutarını ve türünü soruyordu, etiketini değil. Yeni bir hedefi mevcut bir satıra katarken o satırın bütün metinleri de içerikten türetilmeli. İkincisi: "kutu kapalıyken ekran aynı" ile "kutu formda bulunur" aynı anda doğru olamaz; ölçülebilir kriter, eklenen denetimin dokunmadığı ekranlardan (kutusuz davranışlar) kurulmalı. Üçüncüsü: kanıt araçları oturumlar arasında kaybolabilen yardımcı betiklere dayanıyorsa, çekime başlamadan betiğin varlığı ve parça boyu (ilk parçanın ekran sayısı) doğrulanmalı.
