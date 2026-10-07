@@ -135,10 +135,12 @@ describe("Spec 0065 A: stok hareketi birleşir", () => {
     expect(plan.adds.partStockLog.map(l => l.referansId)).toEqual([yeniSv, yeniYp, yeniYp]);
     expect(netDusum(plan.adds.partStockLog, yeniSv, "servis", "7")).toBe(2);
   });
-  it("AC-17: makina stoğu ve parça adedi birleştirilen bölümlerde değil; partStockLog birleşir", () => {
+  it("AC-17: parça adedi birleştirilen bölümlerde değil; partStockLog birleşir", () => {
     expect(MERGE_KEYS).toContain("partStockLog");
     expect(MERGE_KEYS).not.toContain("partStock");
-    expect(MERGE_KEYS).not.toContain("stock");
+    // Makina stoğu (0065 X5) spec 0077 R30 ile geri alındı: stock artık birleşir; satılıp sunucudan çıkan satır tabanla
+    // ayırt edilir ve geri eklenmez (merge.test.js "bulgu 1" bloğu).
+    expect(MERGE_KEYS).toContain("stock");
   });
 });
 

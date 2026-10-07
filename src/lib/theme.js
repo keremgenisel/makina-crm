@@ -28,6 +28,9 @@ const TOKENS = [
   ["surface", "#ffffff", "#25201a"],   // yalnız arka plan olan #fff/#ffffff
   ["footerBg", "rgba(248,250,252,.94)", "rgba(38,32,26,.94)"], // formların yapışkan İptal/Kaydet çubuğu
   ["overlayW", "rgba(255,255,255,.06)", "rgba(255,255,255,.05)"], // koyu yüzey üstü hafif katman
+  // Spec 0077 R21 (B-6): kayıt perdesinin yarı saydam zemini. Bileşen yeni olduğu için 0030'un "aydınlık değer bugünkü sabit
+  // renktir" kuralı uygulanamaz; aydınlıkta yarı saydam beyaz, karanlıkta yarı saydam koyu.
+  ["perdeBg", "rgba(255,255,255,.78)", "rgba(26,22,18,.80)"],
   ["slate800", "#1f2937", "#e7dfd5"],
   ["slate700c", "#374151", "#cec4b7"],
   ["slate500c", "#6b7280", "#968a7d"],

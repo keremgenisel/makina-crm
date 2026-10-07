@@ -951,12 +951,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   // "yeni" kullanıcısı temiz sayaçla; gövde {} olduğu için handler 400 döner ama limiter
   // handler'dan ÖNCE sayar. 60 istekten sonra 429 gelmeli. (Login IP sayacına dokunmaz.)
   const yeniTok = (await login("yeni", "abcdef")).body.token;
-  let rl429 = false, rlLast = 0;
-  for (let i = 0; i < 65; i++) {
+  let rl429 = false, rlLast = 0, rlIlk = -1;
+  for (let i = 1; i <= 65; i++) {
     rlLast = (await api("/api/data", { method: "POST", body: "{}" }, yeniTok)).status;
-    if (rlLast === 429) rl429 = true;
+    if (rlLast === 429) { rl429 = true; if (rlIlk === -1) rlIlk = i; }
   }
   check("POST /api/data 60/dk üstü → 429 (yazma hız sınırı)", rl429 && rlLast === 429);
+  // Spec 0077 AC-35: /api/data sınırı genel /api sınırından AYRI ölçülür: tam 61. yazma 429 alır, aynı kullanıcının
+  // okuma istekleri (genel 600/dk) bu sırada etkilenmez.
+  check("spec 0077 AC-35: /api/data sınırı tam 60 (61. yazma ilk 429)", rlIlk === 61);
+  check("spec 0077 AC-35: yazma sınırı dolmuşken genel /api okuması 200", (await api("/api/version", {}, yeniTok)).status === 200);
 
   // ── Kaba kuvvet: kademeli (artan) kilit — en son (IP+kullanıcı sayacını tüketir) ──
   // İlk 2 yanlış serbest (401). 3. yanlış kilidi kurar (yine 401 döner ama bundan sonrası

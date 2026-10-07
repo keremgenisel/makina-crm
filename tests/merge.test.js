@@ -322,3 +322,179 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.giderler.find(g => g.id === 99102).calisanId ?? null).toBeNull();
   });
 });
+
+// ── Spec 0077 C: silme birleştirmede korunur (taban ile, S2) ──────────────────────────────────────────────────
+import { birlesmeTabaniKur, MERGE_KEYS, SILME_KORUNAN, KALICI_SILINEN, kimlikOf } from "../src/lib/merge";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+const kaynak = (f) => readFileSync(path.join(__dirname, "..", f), "utf-8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
+
+describe("Spec 0077 C: deletedAt birleştirmede korunur", () => {
+  const SIL = "2026-10-07T09:00:00.000Z";
+  const g = (id, o = {}) => ({ id, tarih: "2026-09-01", turId: 4, tutar: 100, ...o });
+  it("AC-18, AC-56: yerelde silinmiş (tabanda canlı), sunucuda canlı kayıt silinmiş kalır; ayrı silmeler çıktısı, adds'e girmez", () => {
+    const taban = birlesmeTabaniKur({ giderler: [g(1)] });
+    const plan = buildMergePlan(blob({ giderler: [g(1, { deletedAt: SIL })] }), blob({ giderler: [g(1, { aciklama: "başkası düzenledi" })] }), { taban });
+    expect(plan.silmeler.giderler.get(1)).toBe(SIL);
+    expect(plan.adds.giderler).toEqual([]);
+  });
+  it("AC-19: yerelde çöpten geri alınmış (tabanda silinmiş), sunucuda silinmiş kayıt geri alınmış kalır", () => {
+    const taban = birlesmeTabaniKur({ customers: [{ id: 5, name: "A", deletedAt: SIL }] });
+    const plan = buildMergePlan(blob({ customers: [{ id: 5, name: "A", deletedAt: null }] }), blob({ customers: [{ id: 5, name: "A", deletedAt: SIL }] }), { taban });
+    expect(plan.silmeler.customers.get(5)).toBeNull();
+  });
+  it("S2: başka PC'nin silmesi diriltilmez (yerel değer tabanla aynı = bu PC dokunmadı); tabansızda kural çalışmaz", () => {
+    const taban = birlesmeTabaniKur({ giderler: [g(2)] });
+    const plan = buildMergePlan(blob({ giderler: [g(2)] }), blob({ giderler: [g(2, { deletedAt: SIL })] }), { taban });
+    expect(plan.silmeler.giderler).toBeUndefined();
+    const p2 = buildMergePlan(blob({ giderler: [g(3, { deletedAt: SIL })] }), blob({ giderler: [g(3)] }));
+    expect(p2.silmeler.giderler).toBeUndefined();
+  });
+  it("AC-20, AC-21: peş peşe silinen on gider kalemi ve evrak kayıtları geri gelmez", () => {
+    const on = Array.from({ length: 10 }, (_, i) => g(100 + i));
+    const evrak = [{ id: 201, tur: "teklif" }, { id: 202, tur: "proforma" }];
+    const fatura = [{ id: 301, no: "F1" }];
+    const taban = birlesmeTabaniKur({ giderler: on, teklifler: evrak, faturalar: fatura });
+    const my = blob({ giderler: on.map(x => ({ ...x, deletedAt: SIL })), teklifler: evrak.map(x => ({ ...x, deletedAt: SIL })), faturalar: fatura.map(x => ({ ...x, deletedAt: SIL })) });
+    const sunucu = blob({ giderler: [...on, g(999)], teklifler: evrak, faturalar: fatura }); // başkası araya bir kalem eklemiş
+    const plan = buildMergePlan(my, sunucu, { taban });
+    expect([...plan.silmeler.giderler.keys()].sort()).toEqual(on.map(x => x.id));
+    expect([...plan.silmeler.teklifler.keys()].sort()).toEqual([201, 202]);
+    expect([...plan.silmeler.faturalar.keys()]).toEqual([301]);
+  });
+  it("AC-22: müşteri kaskadının bütün çocukları (servis, tahsilat, kalıp satışı, görüşme, dosya) silinmiş kalır", () => {
+    const tb = { customers: [{ id: 1 }], services: [{ id: 2, customerId: 1 }], payments: [{ id: 3, customerId: 1 }], partSales: [{ id: 4, customerId: 1 }], gorusmeler: [{ id: 5, customerId: 1 }], dosyalar: [{ id: 6, customerId: 1 }] };
+    const sil = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.map(x => ({ ...x, deletedAt: SIL }))]));
+    const plan = buildMergePlan(blob(sil(tb)), blob({ ...tb, customers: [{ id: 1, telefon: "yeni" }] }), { taban: birlesmeTabaniKur(tb) });
+    for (const k of Object.keys(tb)) expect(plan.silmeler[k]?.size, k).toBe(1);
+  });
+  it("AC-23: deletedAt dışındaki alanlarda sunucu kazanır (yerel düzenleme eklenmez, silme çıktısına girmez)", () => {
+    const taban = birlesmeTabaniKur({ giderler: [g(7)] });
+    const plan = buildMergePlan(blob({ giderler: [g(7, { tutar: 555 })] }), blob({ giderler: [g(7, { tutar: 444 })] }), { taban });
+    expect(plan.adds.giderler).toEqual([]);
+    expect(plan.silmeler.giderler).toBeUndefined();
+  });
+  it("AC-24, X1: kural merge.js'te; bileşenlerde deletedAt birleştirme dalı yok; kalıcı silinen bölümler kapsam dışı", () => {
+    expect(kaynak("src/App.jsx")).not.toMatch(/existing\.deletedAt|sunucu\.deletedAt/);
+    expect([...KALICI_SILINEN].every(k => !SILME_KORUNAN.includes(k))).toBe(true);
+    expect(SILME_KORUNAN).toEqual(expect.arrayContaining(["customers", "giderler", "teklifler", "dealers", "notes"]));
+  });
+});
+
+// ── Spec 0077 E: birleştirmeye alınan yedi bölüm ────────────────────────────────────────────────────────────
+describe("Spec 0077 E: yedi bölüm", () => {
+  it("AC-36–AC-40: çakışmada yeni bayi, not, stok satırı, parça, kalıp tanımı, parça türü ve özel model kaybolmaz", () => {
+    const my = blob({ dealers: [{ id: 41, name: "Yeni Bayi" }], notes: [{ id: 1759800000000, content: "not" }], stock: [{ id: 42, model: "AK100", serialNo: "S9" }],
+      parts: [{ id: 43, ad: "Rulman" }], kalipDefs: [{ id: 44, ad: "Burger" }], partTypeDefs: [{ id: "tip_1", ad: "Elektrik" }], customModels: [{ model: "AK999", kapasite: "1" }] });
+    const plan = buildMergePlan(my, blob({ customModels: [{ model: "AK100X" }] }));
+    for (const k of ["dealers", "notes", "stock", "parts", "kalipDefs", "partTypeDefs", "customModels"]) expect(plan.adds[k], k).toHaveLength(1);
+    expect(plan.adds.customModels[0].model).toBe("AK999");
+  });
+  it("AC-40 (S3): özel modelin kimliği adıdır; aynı adlı model eklenmez ve yeniden kimliklendirilmez", () => {
+    const plan = buildMergePlan(blob({ customModels: [{ model: "AK100X", kapasite: "2" }] }), blob({ customModels: [{ model: "AK100X", kapasite: "1" }] }));
+    expect(plan.adds.customModels).toEqual([]);
+    expect(kimlikOf("customModels", { model: "X", id: 3 })).toBe("X");
+  });
+  it("AC-45: bayi ve not silmeleri de korunur (C kuralı yeni bölümleri kapsar)", () => {
+    const SIL = "2026-10-07T09:00:00.000Z";
+    const tb = { dealers: [{ id: 41, name: "B" }], notes: [{ id: 51, content: "n" }] };
+    const plan = buildMergePlan(blob({ dealers: [{ id: 41, name: "B", deletedAt: SIL }], notes: [{ id: 51, content: "n", deletedAt: SIL }] }), blob(tb), { taban: birlesmeTabaniKur(tb) });
+    expect(plan.silmeler.dealers.get(41)).toBe(SIL);
+    expect(plan.silmeler.notes.get(51)).toBe(SIL);
+  });
+  it("AC-41: bayi kimliği yeniden atanınca teklif, dosya ve yedek parça satışı bağı taşınır; ad alanlarına dokunulmaz", () => {
+    const bayi = uid();
+    const my = blob({ dealers: [{ id: bayi, name: "Bizim" }], teklifler: [{ id: uid(), dealerId: bayi }], dosyalar: [{ id: uid(), dealerId: bayi }],
+      yedekParcaSatislar: [{ id: uid(), dealerId: bayi, tahsisler: [] }], partSales: [{ id: uid(), satisFirma: "Bizim" }], services: [{ id: uid(), islemFirma: "Bizim" }] });
+    const plan = buildMergePlan(my, blob({ dealers: [{ id: bayi, name: "Onların" }] }));
+    const yeni = plan.maps.dealers.get(bayi);
+    expect(yeni).toBeTruthy();
+    expect([plan.adds.teklifler[0].dealerId, plan.adds.dosyalar[0].dealerId, plan.adds.yedekParcaSatislar[0].dealerId]).toEqual([yeni, yeni, yeni]);
+    expect(plan.adds.partSales[0].satisFirma).toBe("Bizim");
+    expect(plan.adds.services[0].islemFirma).toBe("Bizim");
+  });
+  it("AC-42: stok kimliği yeniden atanınca müşterinin sourceStockId'si ve makina_uretimi hareketi taşınır", () => {
+    const st = uid();
+    const my = blob({ stock: [{ id: st, model: "A", serialNo: "S1" }], customers: [{ id: uid(), sourceStockId: st, kaliplar: [] }],
+      partStockLog: [{ id: uid(), partId: "7", miktar: -1, tip: "makina_uretimi", referansId: st, tarih: "2026-10-01" }] });
+    const plan = buildMergePlan(my, blob({ stock: [{ id: st, model: "B", serialNo: "S2" }] }));
+    const yeni = plan.maps.stock.get(st);
+    expect(plan.adds.customers[0].sourceStockId).toBe(yeni);
+    expect(plan.adds.partStockLog[0].referansId).toBe(yeni);
+  });
+  it("AC-43, AC-44, AC-47 (S9): parça kimliği yeniden atanınca stok hareketi, satış ve servis alt dizisi taşınır; adet hareketten doğar, satır iki kez gelmez", () => {
+    const p = uid();
+    const my = blob({ parts: [{ id: p, ad: "Bizim parça" }], partStock: [{ id: 1, partId: String(p), miktar: 5 }],
+      partStockLog: [{ id: uid(), partId: String(p), miktar: 5, tip: "stok_girisi", tarih: "2026-10-01" }],
+      yedekParcaSatislar: [{ id: uid(), partId: String(p), tahsisler: [] }], services: [{ id: uid(), degisenParcalar: [{ partId: p, adet: 1 }] }] });
+    const plan = buildMergePlan(my, blob({ parts: [{ id: p, ad: "Onların" }] }));
+    const yeni = plan.maps.parts.get(p);
+    expect(plan.adds.partStockLog[0].partId).toBe(String(yeni));
+    expect(plan.adds.yedekParcaSatislar[0].partId).toBe(String(yeni));
+    expect(plan.adds.services[0].degisenParcalar[0].partId).toBe(yeni);
+    expect(plan.stokEtkisi.get(String(yeni))).toMatchObject({ fark: 5 });
+    expect(plan.parcaStoklari).toEqual([]); // hareketi var: adet etkiden doğar
+    expect(MERGE_KEYS).not.toContain("partStock");
+  });
+  it("AC-44 (S9): hareketi olmayan yeniden kimliklendirilmiş parçanın stok satırı yeni kimlikle eklenir", () => {
+    const p = uid();
+    const plan = buildMergePlan(blob({ parts: [{ id: p, ad: "X" }], partStock: [{ id: 1, partId: String(p), miktar: 3 }] }), blob({ parts: [{ id: p, ad: "Y" }] }));
+    const yeni = plan.maps.parts.get(p);
+    expect(plan.parcaStoklari).toHaveLength(1);
+    expect(plan.parcaStoklari[0]).toMatchObject({ partId: String(yeni), miktar: 3 });
+  });
+  it("AC-46 (S8): firma bilgisi yalnız bu PC'de değiştiyse yeniden yüklenen kopyanın üstüne yazılır", () => {
+    const tb = birlesmeTabaniKur({ factory: { name: "Altuntaş", city: "Konya" } });
+    expect(buildMergePlan(blob({ factory: { name: "Altuntaş", city: "Ankara" } }), blob({ factory: { name: "Altuntaş", city: "Konya" } }), { taban: tb }).firma).toEqual({ name: "Altuntaş", city: "Ankara" });
+    expect(buildMergePlan(blob({ factory: { name: "Altuntaş", city: "Konya" } }), blob({ factory: { name: "Altuntaş", city: "İzmir" } }), { taban: tb }).firma).toBeNull();
+  });
+  it("AC-59, AC-60: standardModels listede yok; yeni yedi bölümün App'te apply ve silme satırı var", () => {
+    expect(MERGE_KEYS).not.toContain("standardModels");
+    const a = kaynak("src/App.jsx");
+    for (const [set, k] of [["setDealers", "dealers"], ["setNotes", "notes"], ["setStock", "stock"], ["setParts", "parts"], ["setKalipDefs", "kalipDefs"], ["setPartTypeDefs", "partTypeDefs"], ["setCustomModels", "customModels"]]) {
+      expect(a, k).toContain(`apply(${set}, "${k}");`);
+      expect(a, k).toContain(`silmeUygula(${set}, "${k}");`);
+    }
+    for (const k of SILME_KORUNAN) expect(a, k).toMatch(new RegExp(`silmeUygula\\(set\\w+, "${k}"\\)`));
+  });
+});
+
+describe("Spec 0077 AC-48: bugünkü bölümlerin birleştirme davranışı değişmedi", () => {
+  it("AC-48: eski bölümlerde ekleme korunur, bu oturumda üretilmemiş kimlik çakışmasında sunucu kopyası kalır, tabansız çağrıda silme kararı yok", () => {
+    const my = blob({
+      customers: [{ id: 501, name: "Yeni Müşteri" }, { id: 7, name: "Yerel düzenleme" }],
+      services: [{ id: 502, customerId: 501, type: "Bakım" }],
+      giderler: [{ id: 503, tutar: 100, deletedAt: "2026-10-07" }],
+    });
+    const sunucu = blob({ customers: [{ id: 7, name: "Sunucu adı" }], giderler: [{ id: 503, tutar: 100 }] });
+    const plan = buildMergePlan(my, sunucu);
+    expect(plan.adds.customers.map(c => c.id)).toEqual([501]);
+    expect(plan.adds.services.map(s => s.customerId)).toEqual([501]);
+    expect(plan.adds.giderler).toEqual([]);          // var olan kayıt: sunucu kopyası kalır (X2)
+    expect(plan.silmeler).toEqual({});               // taban yoksa deletedAt kararı yok (eski çıktı)
+    expect(plan.maps.customers.size).toBe(0);
+  });
+});
+
+describe("Spec 0077 triyaj (bulgu 1): sunucunun diziden çıkardığı kayıt birleştirmede geri eklenmez", () => {
+  it("B makinayı sattı (stok satırı sunucudan çıktı), A eski kopyayla çakıştı: makina stoğa dönmez, A'nın kendi yeni satırı eklenir", () => {
+    const X = { id: 11, model: "AK100", serialNo: "S11" };
+    const taban = birlesmeTabaniKur(blob({ stock: [X] }));
+    const yeniSatir = { id: uid(), model: "AK200", serialNo: "S12" };
+    const my = blob({ stock: [X, yeniSatir], notes: [{ id: uid(), content: "A'nın notu" }] });
+    const sunucu = blob({ stock: [], customers: [{ id: 70, name: "B'nin müşterisi", serialNo: "S11", sourceStockId: 11 }] });
+    const plan = buildMergePlan(my, sunucu, { taban });
+    expect(plan.adds.stock.map(s => s.serialNo)).toEqual(["S12"]);
+    expect([...plan.stockDeductIds]).toEqual([]);
+    expect(plan.adds.notes).toHaveLength(1);
+  });
+  it("çöpü boşaltılmış ya da temizlenmiş kayıt (tabanda var, sunucuda yok) yeni bölümlerde de dirilmez; tabansız çağrı eski davranış", () => {
+    const B = { id: 21, name: "Silinen Bayi", deletedAt: "2026-09-01" };
+    const taban = birlesmeTabaniKur(blob({ dealers: [B], customers: [{ id: 22, name: "Eski", deletedAt: "2026-08-01" }] }));
+    const my = blob({ dealers: [B], customers: [{ id: 22, name: "Eski", deletedAt: "2026-08-01" }] });
+    const plan = buildMergePlan(my, blob({}), { taban });
+    expect(plan.adds.dealers).toEqual([]);
+    expect(plan.adds.customers).toEqual([]);
+    expect(buildMergePlan(my, blob({})).adds.dealers.map(d => d.id)).toEqual([21]);
+  });
+});

@@ -693,24 +693,29 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
           method: "POST",
           body:   JSON.stringify({ data, dataVersion: data?.__dataVersion }),
         });
-        if (res.status === 401) { broadcast("server:sessionExpired"); return false; }
+        // Spec 0077 R1: başarısızlığın NEDENİ döner ({ ok, sebep }); arayüz nedene göre dallanır. Sunucu cevap verdiyse
+        // (403, 429, 5xx) bağlantı kopmamıştır: server:error yayınlanmaz, istemci salt okunur moda düşmez (yalnız ağ hatası).
+        if (res.status === 401) { broadcast("server:sessionExpired"); return { ok: false, sebep: "oturum" }; }
         if (res.status === 409) {
           const body = await res.json();
           broadcast("server:conflict", body.serverVersion);
-          return false;
+          return { ok: false, sebep: "cakisma" };
         }
         if (!res.ok) {
           let errMsg = `HTTP ${res.status}`;
           try { const b = await res.json(); if (b?.error) errMsg = b.error; } catch {}
-          throw new Error(errMsg);
+          console.error("Sunucu kaydı reddetti:", errMsg);
+          if (res.status === 403) return { ok: false, sebep: "yetki" };
+          if (res.status === 429) return { ok: false, sebep: "sinir" };
+          return { ok: false, sebep: "sunucu" };
         }
         const body = await res.json();
         broadcast("server:versionUpdate", body.newVersion);
-        return true;
+        return { ok: true, sebep: null };
       } catch (err) {
         console.error("Sunucuya yazılamadı:", err);
         broadcast("server:error", err.message);
-        return false;
+        return { ok: false, sebep: "baglanti" };
       }
     }
 
@@ -721,18 +726,18 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
         const serverVersion = sqliteDb.getDataVersion();
         if (clientVersion !== serverVersion) {
           broadcast("server:conflict", serverVersion);
-          return false;
+          return { ok: false, sebep: "cakisma" };
         }
       }
       try {
         sqliteDb.writeBlobToDb(data);
         const newVersion = sqliteDb.bumpDataVersion();
         broadcast("server:versionUpdate", newVersion);
-        return true;
-      } catch (err) { console.error("SQLite'a yazılamadı:", err); return false; }
+        return { ok: true, sebep: null };
+      } catch (err) { console.error("SQLite'a yazılamadı:", err); return { ok: false, sebep: "yerel" }; }
     }
 
-    return saveData(app, data);
+    return saveData(app, data) ? { ok: true, sebep: null } : { ok: false, sebep: "yerel" };
   });
 
   // ── Flush save (beforeunload) ─────────────────────────────────────────────

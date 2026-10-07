@@ -100,3 +100,25 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     }
   });
 });
+
+describe("Spec 0077 AC-29: kayıt perdesi iki temada okunur, karanlıkta beyaz değil", () => {
+  // Perde yarı saydamdır; altındaki ekran en kötü durumda en açık (aydınlık) ya da en koyu (karanlık) olabilir.
+  // Zemin, perde rengi alttaki iki uç renk (beyaz ve siyah) üstüne bindirilerek hesaplanır; metin (n900) iki uçta da AA.
+  const rgba = (s) => { const m = s.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/); return m.slice(1).map(Number); };
+  const bindir = ([r, g, b, a], alt) => "#" + [r, g, b].map((c, i) => Math.round(c * a + parseInt(alt.slice(1 + i * 2, 3 + i * 2), 16) * (1 - a))
+    .toString(16).padStart(2, "0")).join("");
+  it.each([["acik"], ["koyu"]])("%s tema: n900 metni perde zemininde WCAG AA", (tema) => {
+    expect(T.perdeBg, "perdeBg TOKENS'ta").toBeTruthy();
+    for (const alt of ["#ffffff", "#000000", T.surface[tema]]) {
+      const zemin = bindir(rgba(T.perdeBg[tema]), alt);
+      expect(oran(T.n900[tema], zemin), `${tema} / ${alt}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it("karanlık temada perde zemini beyaz değil; bileşen token'ı okur", () => {
+    const [r, g, b] = rgba(T.perdeBg.koyu);
+    expect(Math.max(r, g, b)).toBeLessThan(80);
+    const s = readFileSync(path.join(__dirname, "..", "src/components/KayitPerdesi.jsx"), "utf-8");
+    expect(s).toContain("var(--perdeBg,");
+    expect(s).toContain("var(--n900,");
+  });
+});

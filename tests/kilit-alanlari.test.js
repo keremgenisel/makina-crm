@@ -85,7 +85,10 @@ describe("Spec 0064: değişmeyenler (C1, C6, R16, X6)", () => {
     expect(yazan.map(f => f.split(path.sep).join("/"))).toEqual(["src/components/ui.jsx"]);
   });
   it("AC-23 / AC-36: katalog listeleri MERGE_KEYS'te değil; sunucu kilit uç noktası tür beyaz listesi taşımıyor", () => {
-    for (const k of ["standardModels", "customModels", "kalipDefs", "parts", "partTypeDefs"]) expect(MERGE_KEYS, k).not.toContain(k);
+    // customModels, kalipDefs, parts, partTypeDefs spec 0077 R30 ile geri alındı (çakışmada yeni tanım kayboluyordu);
+    // standardModels bilinçli olarak dışarıda (0077 X7).
+    expect(MERGE_KEYS).not.toContain("standardModels");
+    for (const k of ["customModels", "kalipDefs", "parts", "partTypeDefs"]) expect(MERGE_KEYS, k).toContain(k);
     for (const f of ["electron/server.cjs", "electron/serverAuth.cjs", "electron/db.cjs", "src/lib/merge.js"]) expect(oku(f), f).not.toMatch(/kilitAlanlari|KILIT_ALANLARI/);
   });
 });

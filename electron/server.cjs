@@ -303,7 +303,7 @@ function buildApp() {
   app.use("/api/files/upload", express.raw({ type: () => true, limit: "21mb" }));
   app.use(express.json({ limit: "1mb" }));
   // Genel istek hız sınırı (tüm /api uçları, IP başına 600/dk): DoS/aşırı yoklama koruması ve CodeQL
-  // js/missing-rate-limiting kapsaması. Bir istemci 30 sn'de bir yoklar + kayıt yazar (dakikada < 20);
+  // js/missing-rate-limiting kapsaması. Bir istemci 10 sn'de bir yoklar + kayıt yazar (dakikada ~6 yoklama; spec 0077);
   // 600 bol marj. Giriş ucunun kademeli kaba-kuvvet kilidi ve /api/data'nın kullanıcı başına 60/dk
   // yazma sınırı ayrıca ve daha sıkı olarak sürer. Bellek içi sayaç; süreç yeniden başlayınca sıfırlanır.
   const hizSiniri = (limit) => rateLimit({

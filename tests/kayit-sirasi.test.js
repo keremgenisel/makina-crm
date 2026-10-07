@@ -63,3 +63,26 @@ describe("kayitSirasiOlustur", () => {
     expect(versionRef.current).toBe(1);
   });
 });
+
+// Spec 0077 R1 (B-1), R38, AC-51: kaydın NEDENİ zincirden geçer. Köprü { ok, sebep } döner; nesneyi `if (ok)` koşuluna koymak
+// başarısızlık dalını hiç çalıştırmazdı. Eski köprü (boolean) da tanınır; save() reject ederse neden "yerel".
+describe("Spec 0077: kayitSirasi nedeni taşır", () => {
+  const kur = (donus) => kayitSirasiOlustur({ save: vi.fn(async () => donus), getVersion: vi.fn(async () => 5), versionRef: { current: 1 } });
+  it("AC-51: başarısız kayıtta ok yanlış ve sebep dolu; nesne dönüşü başarısızlık dalını atlamaz", async () => {
+    const r = await kur({ ok: false, sebep: "sinir" })({ x: 1 });
+    expect(r).toMatchObject({ ok: false, sebep: "sinir" });
+    expect(r.veri).toMatchObject({ x: 1, __dataVersion: 1 });
+  });
+  it("AC-51: başarılı nesne dönüşü ok doğru, sebep null; sürüm eşitlenir", async () => {
+    const versionRef = { current: 1 };
+    const k = kayitSirasiOlustur({ save: vi.fn(async () => ({ ok: true, sebep: null })), getVersion: vi.fn(async () => 9), versionRef });
+    expect(await k({})).toMatchObject({ ok: true, sebep: null });
+    expect(versionRef.current).toBe(9);
+  });
+  it("AC-51: eski köprü (boolean) ve reject edilen save tanınır", async () => {
+    expect(await kur(false)({})).toMatchObject({ ok: false, sebep: "bilinmiyor" });
+    expect(await kur(true)({})).toMatchObject({ ok: true });
+    const k = kayitSirasiOlustur({ save: vi.fn(async () => { throw new Error("disk"); }), getVersion: vi.fn(), versionRef: { current: 1 } });
+    expect(await k({})).toMatchObject({ ok: false, sebep: "yerel" });
+  });
+});

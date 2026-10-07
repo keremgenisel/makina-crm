@@ -15,7 +15,7 @@ import { teklifUretimPlani, uretilenKalemBirlesimi, bekleyenIsYokkenMakinaKaleml
 import { kargoPlanlandiMi } from "./lib/yedekParcaSatis";
 import { evrakAdimlariniYaz } from "./lib/evrakUygula";
 import { UretimOzeti } from "./components/evrak/UretimOzeti";
-import { buildMergePlan } from "./lib/merge";
+import { buildMergePlan, birlesmeTabaniKur, kimlikOf } from "./lib/merge";
 import { stokEtkisi, stokuUygula } from "./lib/stokHareketi";
 import { kayitSirasiOlustur } from "./lib/kayitSirasi";
 import { yeniBekleyenler, panoDisiBildirimVerilsinMi, servisPlanlandiMi, yeniKargolar } from "./lib/servisAlarm";
@@ -44,6 +44,10 @@ import { Settings } from "./components/Settings";
 import { Documents } from "./components/Documents";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { useBugun } from "./hooks/useBugun";
+import { KayitPerdesi } from "./components/KayitPerdesi";
+import { kayitMesaji, CAKISMA_MESAJI, DENEME_TUKENDI_MESAJI, KAYDEDILDI_MESAJI, KACIS_MESAJI, YENIDEN_BAGLANDI_MESAJI, YENIDEN_BAGLANDI_KAYDEDILDI_MESAJI,
+  YENIDEN_DENEME_BEKLEMELERI, yenidenDenenirMi, govdeSaklanirMi, uyariGosterilsinMi, veriYenilenebilirMi, perdeGorunurMu, PERDE_ESIK_MS, PERDE_KACIS_MS,
+  SEBEP } from "./lib/kayitDurumu";
 
 const TABS = [
   { id: "dashboard", label: "Anasayfa",     icon: "dashboard" },
@@ -107,7 +111,23 @@ export default function App() {
   const [serverOnline, setServerOnline] = useState(true);
   const serverOnlineRef = useRef(true); // polling effect closure'ında stale state'den kaçınmak için
   const failedSaveRef = useRef(null);   // sunucu kpalıyken başarısız olan son save datası
-  const kayitHataUyariRef = useRef(0);  // başarısız kayıt uyarısını en fazla 20 sn'de bir göster
+  // Spec 0077 R7: kayıt uyarısı NEDEN BAŞINA en fazla 20 sn'de bir (çakışma uyarısı bağlantı hatasını bastırmaz).
+  const sonUyarilarRef = useRef({});
+  // Spec 0077 R19 (S4), R23: kayıt durumu ("bos" | "bekliyor" | "yolda") App state'idir; perde yalnız onu okur. Yolda sayacı
+  // zincirdeki kayıtları sayar (biri biterken öteki yoldaysa durum "yolda" kalır).
+  const [kayitDurumu, setKayitDurumu] = useState("bos");
+  const [perdeAcik, setPerdeAcik] = useState(false);
+  const yoldaSayacRef = useRef(0);
+  const yoldaBaslangicRef = useRef(null);
+  const sonBitisRef = useRef(0);
+  const perdeKacildiRef = useRef(false);
+  const perdeZamanlariRef = useRef([]);
+  const kayitSonuRef = useRef(null);
+  const kayitNesilRef = useRef(0);
+  // Spec 0077 R14 (S2), R33 (S8): birleştirmenin tabanı (son yükleme / son başarılı kayıt); yeniden yükleme tazelemeden önce
+  // eski hâli oncekiTabanRef'e alınır ve birleştirme onu kullanır (0065 bilinenLogRef deseni).
+  const tabanRef = useRef(null);
+  const oncekiTabanRef = useRef(null);
 
   // ── Uygulama şifresi (açılış kilidi) — isteğe bağlı, Ayarlar'dan açılır. Veri yüklemesinden
   // bağımsız çalışır, sadece bir UI kapısı. null = durum henüz kontrol edilmedi (kısa an için
@@ -218,7 +238,7 @@ export default function App() {
   // serverData: az önce sunucudan yüklenen blob. Karar mantığı saf ve test edilebilir
   // (src/lib/merge.js buildMergePlan); burada yalnızca plan state'e uygulanır.
   const mergeLocalIntoReloaded = (myData, serverData) => {
-    const plan = buildMergePlan(myData, serverData, { bilinenLogIdleri: oncekiBilinenLogRef.current });
+    const plan = buildMergePlan(myData, serverData, { bilinenLogIdleri: oncekiBilinenLogRef.current, taban: oncekiTabanRef.current });
     if (!plan) return;
     const { adds, maps, stockDeductIds, serialConflicts } = plan;
     for (const sc of serialConflicts) {
@@ -232,10 +252,17 @@ export default function App() {
       if (!adds[key].length) return;
       setter(prev => {
         const onceki = Array.isArray(prev) ? prev : []; // hesapHareketleri eski sunucuda null kalır (0024 triyaj bulgu 2)
-        const ids = new Set(onceki.map(x => x.id));
-        const toAdd = adds[key].filter(x => !ids.has(x.id));
+        // Spec 0077 R30 (S3): kimlik bölümün kimlik alanından (özel modelde ad).
+        const ids = new Set(onceki.map(x => kimlikOf(key, x)));
+        const toAdd = adds[key].filter(x => !ids.has(kimlikOf(key, x)));
         return toAdd.length ? [...onceki, ...toAdd] : prev;
       });
+    };
+    // Spec 0077 R15 (B-4), AC-56: deletedAt kararları adds'ten AYRI geçişle, var olan kayda yazılır (eklenmez).
+    const silmeUygula = (setter, key) => {
+      const m = plan.silmeler?.[key];
+      if (!m?.size) return;
+      setter(prev => (Array.isArray(prev) ? prev.map(x => (m.has(kimlikOf(key, x)) ? { ...x, deletedAt: m.get(kimlikOf(key, x)) } : x)) : prev));
     };
     apply(setCustomers, "customers");
     apply(setTeklifler, "teklifler");
@@ -258,6 +285,40 @@ export default function App() {
     apply(setHesapHareketleri, "hesapHareketleri");
     apply(setCekler, "cekler");
     apply(setKasaKapsamDisi, "kasaKapsamDisi");
+    // Spec 0077 R30: bugüne kadar birleşmeyen yedi bölüm (standardModels bilinçli olarak yok, X7).
+    apply(setDealers, "dealers");
+    apply(setNotes, "notes");
+    apply(setStock, "stock");
+    apply(setParts, "parts");
+    apply(setKalipDefs, "kalipDefs");
+    apply(setPartTypeDefs, "partTypeDefs");
+    apply(setCustomModels, "customModels");
+    // Spec 0077 R14, R16, R17: silme ve çöpten geri alma bu PC'nin kararıysa korunur (kaskad çocukları kayıt bazında).
+    silmeUygula(setCustomers, "customers");
+    silmeUygula(setTeklifler, "teklifler");
+    silmeUygula(setPartSales, "partSales");
+    silmeUygula(setServices, "services");
+    silmeUygula(setPayments, "payments");
+    silmeUygula(setGorusmeler, "gorusmeler");
+    silmeUygula(setDosyalar, "dosyalar");
+    silmeUygula(setUretimFormlari, "uretimFormlari");
+    silmeUygula(setFaturalar, "faturalar");
+    silmeUygula(setCalisanlar, "calisanlar");
+    silmeUygula(setYedekParcaSatislar, "yedekParcaSatislar");
+    silmeUygula(setTedarikciler, "tedarikciler");
+    silmeUygula(setGiderler, "giderler");
+    silmeUygula(setUretimPartileri, "uretimPartileri");
+    silmeUygula(setDealers, "dealers");
+    silmeUygula(setNotes, "notes");
+    silmeUygula(setStock, "stock");
+    silmeUygula(setParts, "parts");
+    silmeUygula(setKalipDefs, "kalipDefs");
+    silmeUygula(setPartTypeDefs, "partTypeDefs");
+    silmeUygula(setCustomModels, "customModels");
+    // Spec 0077 R32 (S9): hiç hareketi olmayan, yeniden kimliklendirilmiş parçanın stok satırı.
+    if (plan.parcaStoklari?.length) setPartStock(prev => [...prev, ...plan.parcaStoklari.filter(x => !prev.some(p => String(p.partId) === String(x.partId)))]);
+    // Spec 0077 R33 (S8): firma bilgisi yalnız bu PC'de değiştiyse.
+    if (plan.firma) setFactory(plan.firma);
     // Spec 0065 R1–R3, R20: stok hareketleri eklenir; adet, YENİDEN YÜKLENMİŞ (sunucu) adede yalnız gerçekten eklenen
     // hareketlerin etkisi uygulanarak bulunur (yerel mutlak adet geri yazılmaz; 0 tabanlı).
     if (adds.partStockLog.length) {
@@ -289,14 +350,14 @@ export default function App() {
       if (!nks.length) return c;
       return { ...c, kaliplar: [...(c.kaliplar || []), ...nks], kalipSayisi: (c.kaliplar || []).length + nks.length };
     }));
-    // satisTamam ve deletedAt tek yönlüdür: yereldeki true/silme işaretini sunucu verisi ezmesin
-    // (deletedAt olmadan, kullanıcının sildiği teklif çakışma sonrası geri geliyordu)
+    // satisTamam tek yönlüdür: yereldeki true işaretini sunucu verisi ezmesin. Silme işareti spec 0077 R14'ten beri genel
+    // taban kuralıyla (silmeUygula) korunur; buradaki tabansız "yerel silme kazanır" dalı başka PC'nin çöpten geri aldığı
+    // teklifi yeniden siliyordu.
     setTeklifler(prev => prev.map(t => {
       const mine = (myData.teklifler || []).find(x => x.id === t.id);
       if (!mine) return t;
       let out = t;
       if (mine.satisTamam && !out.satisTamam) out = { ...out, satisTamam: true };
-      if (mine.deletedAt && !out.deletedAt) out = { ...out, deletedAt: mine.deletedAt };
       // Spec 0006 R10: üretilmiş alt kalem listesi yalnız büyür → iki tarafın birleşimi (AC-35).
       const birlesim = uretilenKalemBirlesimi(out.uretilenKalemler, mine.uretilenKalemler);
       if (birlesim !== out.uretilenKalemler) out = { ...out, uretilenKalemler: birlesim };
@@ -314,7 +375,7 @@ export default function App() {
     if (!window.appServer) return;
     const u1 = window.appServer.onVersionUpdate(v => { dataVersionRef.current = v; });
     const u2 = window.appServer.onConflict(async () => {
-      showToast("Veri çakışması tespit edildi. Birleştiriliyor...", "warn");
+      bildir(CAKISMA_MESAJI, SEBEP.CAKISMA); // spec 0077 R2 (Ö-19): çakışmanın TEK mesajı burada, sonucu söyler
       clearTimeout(saveTimer.current);
       const myData = lastAttemptedSaveRef.current;
       lastAttemptedSaveRef.current = null;
@@ -330,6 +391,7 @@ export default function App() {
       if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
     });
     const u5 = window.appServer.onDataChanged?.(async () => {
+      if (!yenilemeSerbestMi()) return; // spec 0077 R9 (S7): kendi kaydımız beklerken / yoldayken yenileme yok
       clearTimeout(saveTimer.current);
       const myPending = pendingSave.current;
       pendingSave.current = null;
@@ -383,7 +445,8 @@ export default function App() {
       if (!isSvr || suppressSaveRef.current) return;
       try {
         const v = await window.crmStorage.getVersion();
-        if (typeof v === "number" && v !== dataVersionRef.current) {
+        // Spec 0077 R8, R9, R13: veri yenileme tek kapıdan; atlanan turda pendingSave ve saveTimer'a dokunulmaz.
+        if (typeof v === "number" && v !== dataVersionRef.current && yenilemeSerbestMi()) {
           clearTimeout(saveTimer.current);
           const myPending = pendingSave.current;
           pendingSave.current = null;
@@ -428,12 +491,19 @@ export default function App() {
           serverOnlineRef.current = true;
           setServerOnline(true);
           if (failedSaveRef.current) {
+            // Spec 0077 R6 (B-2), AC-52: yeniden deneme beklenir ve sonucu okunur (zincirden, gönderim anı sürümüyle);
+            // başarısızlıkta gövde geri konur ve "kaydedildi" denmez.
             const retry = failedSaveRef.current;
             failedSaveRef.current = null;
-            window.crmStorage.save(retry);
-            showToast("Sunucu bağlantısı yeniden kuruldu — değişiklikler kaydedildi");
+            lastAttemptedSaveRef.current = retry;
+            const sonuc = await kaydetSirali(retry);
+            if (sonuc.ok) { lastAttemptedSaveRef.current = null; tabanRef.current = birlesmeTabaniKur(retry); bildir(YENIDEN_BAGLANDI_KAYDEDILDI_MESAJI, "yeniden_baglandi"); }
+            else {
+              if (govdeSaklanirMi(sonuc.sebep)) failedSaveRef.current = sonuc.veri;
+              bildir(kayitMesaji(sonuc.sebep), sonuc.sebep);
+            }
           } else {
-            showToast("Sunucu bağlantısı yeniden kuruldu");
+            bildir(YENIDEN_BAGLANDI_MESAJI, "yeniden_baglandi");
           }
         }
         // İzinler veya rol değiştiyse güncelle (sekme kısıtları anında yansısın)
@@ -441,8 +511,9 @@ export default function App() {
         if (newRole !== undefined) {
           setServerPermissions(p => (p?.role !== newRole || p?.permissions !== newPerms) ? { role: newRole, permissions: newPerms ?? null } : p);
         }
-        // Veri versiyonu değiştiyse state'i yenile
-        if (typeof sv === "number" && sv !== dataVersionRef.current) {
+        // Veri versiyonu değiştiyse state'i yenile. Spec 0077 R8, R10, R13: tek kapı (bekleyen / yoldaki kayıt, bastırma
+        // penceresi); atlanan turda izin, rol ve çevrimiçi denetimi yukarıda yapılmış olur, pendingSave'e dokunulmaz.
+        if (typeof sv === "number" && sv !== dataVersionRef.current && yenilemeSerbestMi()) {
           clearTimeout(saveTimer.current);
           const myPending = pendingSave.current;
           pendingSave.current = null;
@@ -1104,6 +1175,9 @@ export default function App() {
       });
       if (Array.isArray(data.faturalar)) setFaturalar(data.faturalar);
       if (Array.isArray(data.partStock)) setPartStock(data.partStock);
+      // Spec 0077 R14 (S2): yüklenen sunucu hâli birleştirmenin yeni tabanıdır; eskisi bu yüklemeyi izleyen birleştirmeye kalır.
+      oncekiTabanRef.current = tabanRef.current;
+      tabanRef.current = birlesmeTabaniKur(data);
       if (Array.isArray(data.partStockLog)) {
         oncekiBilinenLogRef.current = bilinenLogRef.current;
         bilinenLogRef.current = new Set(data.partStockLog.map(l => l?.id));
@@ -1134,6 +1208,53 @@ export default function App() {
   }, []);
 
   const pendingSave = useRef(null);
+  // Spec 0077 R8, R11, R13, R45: "şimdi veri yenilenebilir mi" tek kapıdan (iki yoklama ve sunucu PC itmesi bunu çağırır).
+  const yenilemeSerbestMi = () => veriYenilenebilirMi({ bekleyen: pendingSave.current != null, yoldaSayisi: yoldaSayacRef.current,
+    sonBitis: sonBitisRef.current, bastirma: suppressSaveRef.current, simdi: Date.now() });
+  // Spec 0077 R7, R42: nedenli mesaj, neden başına bastırmayla. Mesajsız neden (çakışmanın kayıt yolu, oturum) sessizdir.
+  const bildir = (mesaj, anahtar) => {
+    if (!mesaj) return;
+    const simdi = Date.now();
+    if (!uyariGosterilsinMi(sonUyarilarRef.current, anahtar, simdi)) return;
+    sonUyarilarRef.current = { ...sonUyarilarRef.current, [anahtar]: simdi };
+    showToast(mesaj.metin, mesaj.tur === "ok" ? undefined : mesaj.tur);
+  };
+  // Spec 0077 R19, R22, R23, R25, AC-25–AC-32, AC-57: perde "yolda" başlangıcından 600 ms sonra (tek kapı perdeGorunurMu),
+  // 10 sn'de kaçar; kaçtıktan sonra aynı zincir için ikinci kez açılmaz ve kayıt bitince sonuç söylenir.
+  const yoldaBasla = () => {
+    yoldaSayacRef.current += 1;
+    if (yoldaSayacRef.current !== 1) return;
+    yoldaBaslangicRef.current = Date.now();
+    perdeKacildiRef.current = false;
+    kayitSonuRef.current = null;
+    setKayitDurumu("yolda");
+    perdeZamanlariRef.current.forEach(clearTimeout);
+    perdeZamanlariRef.current = [
+      setTimeout(() => {
+        if (yoldaSayacRef.current > 0 && perdeGorunurMu({ yoldaBaslangic: yoldaBaslangicRef.current, simdi: Date.now(), loaded: true,
+          bastirma: suppressSaveRef.current, cevrimdisi: serverOnlineRef.current === false, kacildi: perdeKacildiRef.current })) setPerdeAcik(true);
+      }, PERDE_ESIK_MS),
+      setTimeout(() => {
+        if (yoldaSayacRef.current <= 0) return;
+        perdeKacildiRef.current = true;
+        setPerdeAcik(false);
+        bildir(KACIS_MESAJI, "kacis");
+      }, PERDE_KACIS_MS),
+    ];
+  };
+  const yoldaBitir = () => {
+    yoldaSayacRef.current = Math.max(0, yoldaSayacRef.current - 1);
+    if (yoldaSayacRef.current > 0) return;
+    perdeZamanlariRef.current.forEach(clearTimeout);
+    perdeZamanlariRef.current = [];
+    sonBitisRef.current = Date.now();
+    yoldaBaslangicRef.current = null;
+    setPerdeAcik(false);
+    setKayitDurumu("bos");
+    // Kaçıştan sonra sessiz kalınmaz (Ö-15): başarıda bilgi; başarısızlığın nedenli mesajı zaten basıldı.
+    if (perdeKacildiRef.current && kayitSonuRef.current?.ok) bildir(KAYDEDILDI_MESAJI, "kaydedildi");
+    perdeKacildiRef.current = false;
+  };
   // Kayıtlar sıralı gider ve sürüm numarası gönderim anında okunur (bkz. lib/kayitSirasi.js):
   // önceki kayıt yoldayken gelen ikinci değişiklik eski sürümle gidip sahte çakışma üretmesin.
   const kaydetSirali = useMemo(() => kayitSirasiOlustur({
@@ -1149,26 +1270,45 @@ export default function App() {
     const data = { customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, ...(Array.isArray(hesapHareketleri) ? { hesapHareketleri } : {}), cekler, kasaKapsamDisi, appSettings, nextId: getIdCounter(), __dataVersion: dataVersionRef.current };
     pendingSave.current = data;
     clearTimeout(saveTimer.current);
+    setKayitDurumu(d => (d === "yolda" ? d : "bekliyor")); // spec 0077 R19
+    // Spec 0077 R24: debounce her hâlde 500 ms (perdeye bağlı değil).
     saveTimer.current = setTimeout(async () => {
       const saveData = pendingSave.current || data;
       pendingSave.current = null;
-      lastAttemptedSaveRef.current = saveData;
-      const { ok, veri } = await kaydetSirali(saveData);
-      // Çakışma birleştirmesi (onConflict) son denenen gövdeyi okur — gönderilen sürümle tutarlı olsun
-      if (lastAttemptedSaveRef.current === saveData) lastAttemptedSaveRef.current = veri;
-      if (ok) {
-        failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
-        clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
-        if (Array.isArray(saveData.partStockLog)) bilinenLogRef.current = new Set(saveData.partStockLog.map(l => l?.id)); // spec 0065 triyaj
-      }
-      else {
-        if (serverMode === "active") { failedSaveRef.current = veri; }
-        // Başarısız kayıtta sessiz kalma: kullanıcıyı uyar (en fazla 20 sn'de bir, spam olmasın)
-        if (Date.now() - kayitHataUyariRef.current > 20000) {
-          kayitHataUyariRef.current = Date.now();
-          showToast("Değişiklikler kaydedilemedi! Uygulamayı kapatıp yeniden açın.", "err");
+      const nesil = ++kayitNesilRef.current;
+      yoldaBasla();
+      try {
+        for (let deneme = 0; ; deneme++) {
+          lastAttemptedSaveRef.current = saveData;
+          const { ok, sebep, veri } = await kaydetSirali(saveData);
+          // Çakışma birleştirmesi (onConflict) son denenen gövdeyi okur — gönderilen sürümle tutarlı olsun
+          if (lastAttemptedSaveRef.current === saveData) lastAttemptedSaveRef.current = veri;
+          if (ok) {
+            failedSaveRef.current = null; lastAttemptedSaveRef.current = null;
+            clearMintedIds(); // bu oturumda üretilen ID'ler artık sunucuda — "yeni kayıt" sayılmasınlar
+            if (Array.isArray(saveData.partStockLog)) bilinenLogRef.current = new Set(saveData.partStockLog.map(l => l?.id)); // spec 0065 triyaj
+            tabanRef.current = birlesmeTabaniKur(saveData); // spec 0077 R14: sunucu artık bu gövdedir
+            kayitSonuRef.current = { ok: true };
+            break;
+          }
+          // Spec 0077 R6, R39 (S6), AC-6, AC-53: yazma sınırı ve geçici sunucu hatası 1 / 4 / 10 sn arayla yeniden denenir; beklerken
+          // daha yeni bir gövde oluştuysa bu gövde düşer (yeni kayıt zaten gidecek).
+          if (yenidenDenenirMi(sebep) && deneme < YENIDEN_DENEME_BEKLEMELERI.length) {
+            bildir(kayitMesaji(sebep), sebep);
+            await new Promise(res => setTimeout(res, YENIDEN_DENEME_BEKLEMELERI[deneme]));
+            if (kayitNesilRef.current !== nesil || pendingSave.current) { kayitSonuRef.current = { ok: true, dustu: true }; break; }
+            continue;
+          }
+          // Spec 0077 R1–R5, R41: kalıcı başarısızlık; mesaj nedene göre (çakışma ve oturumda kayıt yolu mesaj üretmez).
+          if (serverMode === "active" && govdeSaklanirMi(sebep)) failedSaveRef.current = veri;
+          // Tükenme mesajı kendi anahtarıyla: az önceki "yeniden denenecek" uyarısı aynı nedeni 20 sn bastırdığı için
+          // sonuç hiç söylenmezdi.
+          if (yenidenDenenirMi(sebep)) bildir(DENEME_TUKENDI_MESAJI, "tukendi");
+          else bildir(kayitMesaji(sebep), sebep);
+          kayitSonuRef.current = { ok: false, sebep };
+          break;
         }
-      }
+      } finally { yoldaBitir(); }
     }, 500);
     return () => clearTimeout(saveTimer.current);
   }, [customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory, services, notes, parts, partSales, yedekParcaSatislar, payments, gorusmeler, dosyalar, teklifler, faturalar, partStock, partStockLog, uretimFormlari, giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi, appSettings, loaded, saveTrigger]);
@@ -1244,6 +1384,7 @@ export default function App() {
       {toast && (
         <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 99999, background: toast.type === "err" ? "var(--red600, #dc2626)" : "var(--grn600, #16a34a)", color: "#fff", padding: "13px 26px", borderRadius: 10, fontSize: 14, fontWeight: 700, boxShadow: "0 6px 24px rgba(0,0,0,.22)" }}>{toast.text}</div>
       )}
+      <KayitPerdesi acik={perdeAcik} durum={kayitDurumu} logo={LOGO} />
       <ServisPanosu kiosk factory={factory} onKilitle={() => setUnlocked(false)}
         services={liveServices} setServices={setServices} customers={liveCustomers} calisanlar={liveCalisanlar}
         parts={liveParts} dealers={liveDealers} kdvRates={appSettings.kdvRates} geoData={geoData} loadingGeo={loadingGeo}
@@ -1258,6 +1399,8 @@ export default function App() {
     <div style={{ display: "flex", height: "100vh", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "var(--n150, #f1f5f9)" }}>
       {/* Evrak → CRM kayıt özeti (spec 0006 R16): Evrak'tan veya Anasayfa'dan başlatılsın, burada gösterilir. */}
       {evrakOzet && <UretimOzeti ozet={evrakOzet} onClose={() => setEvrakOzet(null)} />}
+      {/* Spec 0077 D: kayıt perdesi (zIndex 2000; bildirimler 99999 ile üstünde kalır). */}
+      <KayitPerdesi acik={perdeAcik} durum={kayitDurumu} logo={LOGO} />
       {/* Global bildirim (toast) */}
       {toast && (
         <div style={{

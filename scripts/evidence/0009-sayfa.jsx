@@ -35,6 +35,8 @@ import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
 import App from "../../src/App";
+import { KayitPerdesi } from "../../src/components/KayitPerdesi";
+import LOGO from "../../src/assets/logo.avif?inline";
 import { UserManager } from "../../src/components/settings/UserManager";
 import { GlobalSearch } from "../../src/components/GlobalSearch";
 
@@ -883,6 +885,8 @@ const EKRANLAR = {
       "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
   // Spec 0064 R34: kilitli gider formu, ödeme penceresi, katalog paneli, Çöp Kutusu ve geri yükleme ön denetimi.
   "kilit-gider-formu": [<GiderEkrani />, ["baslik:Düzenle"]],
+  // Spec 0077 D: kayıt perdesi açık bir form penceresinin (Modal 1000) üstünde.
+  "kayit-perdesi": [<><GiderEkrani /><KayitPerdesi acik logo={LOGO} durum="yolda" /></>, ["baslik:Düzenle"]],
   "kilit-odeme-penceresi": [<GiderEkrani />, ["baslik:Ödeme kaydet"]],
   "kilit-katalog-paneli": [ayarlar("models"), []],
   "kilit-cop-kutusu": [ayarlar("trash"), []],
