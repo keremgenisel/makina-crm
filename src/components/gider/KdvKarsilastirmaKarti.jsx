@@ -1,5 +1,6 @@
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
+import { KKEG_ETIKETI, KKEG_KISA } from "../../lib/gider";
 
 // Spec 0075 R28 (AC-31): KDV2 bilgi satırının açıklaması; farka eklenmediği ve nereden ödendiği yazılı (çift sayım okunmasın).
 export const TEVKIFAT_KDV2_NOTU = "Bilgi: farka eklenmez. Bu tutar tevkifatlı gider kalemlerinin vergi dairesi bölümünden ödenir.";
@@ -8,7 +9,20 @@ export const TEVKIFAT_KDV2_NOTU = "Bilgi: farka eklenmez. Bu tutar tevkifatlı g
 // rakamlar kdvKarsilastir'dan gelir. Kart yalnız gider yetkisiyle çizilir (AC-30); tam ay olmayan
 // aralıkta GİZLENMEZ, nedenini aralığı anarak yazar (AC-38). Mevcut "Ödenmesi Muhtemel KDV" kartı
 // ayrı kalır, anlamı değişmez (K10).
-export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = "", kaynak = "", style, gizle = false }) => {
+// Spec 0076 R24, R25, R28 (plan Q6): kısıtlı (binek araç) kalemlerin bilgi rakamları. Yalnız Giderler `kisitli` verir; Finans
+// vermez. Dönem toplamıdır, aya bağlı değildir: tam ay olmayan aralıkta da çizilir. KKEG gider toplamına eklenmez.
+export const KISIT_KDV_KART_NOTU = "Bilgi: farka ve gider toplamına eklenmez. KKEG muhasebeciye verilir; indirilemeyen KDV gider tutarının içindedir.";
+const KisitBilgi = ({ kisitli, para }) => (
+  <div data-testid="kisit-kdv-bilgi" style={{ marginTop: 10 }}>
+    {[["İndirilemeyen KDV (kısıtlı giderler)", kisitli.indirilemeyenKdv], [`${KKEG_ETIKETI} · matrah`, kisitli.kkegMatrah], [`${KKEG_KISA} · KDV`, kisitli.kkegKdv], [`${KKEG_KISA} · toplam`, kisitli.kkegToplam]].map(([a, b]) => (
+      <div key={a} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "7px 0", borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+        <span style={{ color: "var(--n600, #475569)" }}>{a}</span><b style={{ fontVariantNumeric: "tabular-nums" }}>{para(b)}</b>
+      </div>
+    ))}
+    <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{KISIT_KDV_KART_NOTU}</div>
+  </div>
+);
+export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = "", kaynak = "", style, gizle = false, kisitli = null }) => {
   // Finans ekranı tutarları "Göster"e basılana kadar gizler; kart da aynı kurala uyar.
   const para = (v) => (gizle ? "———" : tl2(v));
   if (durum !== "tamam") {
@@ -21,6 +35,7 @@ export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = 
           <div style={{ fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 4 }}>Bu aralık için karşılaştırma yapılamıyor</div>
           {metin}
         </div>
+        {kisitli && <KisitBilgi kisitli={kisitli} para={para} />}
       </KartBolum>
     );
   }
@@ -44,6 +59,7 @@ export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = 
           <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{TEVKIFAT_KDV2_NOTU}</div>
         </div>
       )}
+      {kisitli && <KisitBilgi kisitli={kisitli} para={para} />}
       {sonuc.haricTutarlar.length > 0 && (
         <div style={{ marginTop: 10, fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px dashed var(--n300, #cbd5e1)", borderRadius: 8, padding: "8px 10px" }}>
           Karşılaştırmaya dahil edilmeyen hesaplanan KDV: <b>{gizle ? "———" : sonuc.haricTutarlar.map(h => `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(h.tutar)} ${h.para}`).join(", ")}</b>

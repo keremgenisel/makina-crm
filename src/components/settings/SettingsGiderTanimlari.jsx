@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { uid, today, getKdvRateForDate } from "../../lib/utils";
 import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi,
-  tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi } from "../../lib/gider";
+  tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kisitliGiderMi, kisitDogrula, varsayilanIndirilebilirOran } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
 import { KartBolum } from "../tasarim";
-import { TutarInput, AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { TutarInput, AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
 // silinse bile o ay listede kalır ve yeniden üretilmez. Silinen tanım çöp kutusuna gider (spec 0078).
-const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "", tevkifatli: false, tevkifatPay: "", tevkifatPayda: "" }); // spec 0075 R26
+const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "", tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", kisitliGider: false, indirilebilirOran: "" }); // spec 0075 R26, 0076 R35
 
 export const SettingsGiderTanimlari = ({
   giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], calisanlar = [],
-  stock = [], customers = [], modeller = [], showToast = () => {}, canDo = () => true, serverPermissions, kdvRates,
+  stock = [], customers = [], modeller = [], showToast = () => {}, canDo = () => true, serverPermissions, kdvRates, giderAyarlari = {},
 }) => {
   const buAy = ayOf(today());
   const [form, setForm] = useState(null);
@@ -31,7 +31,8 @@ export const SettingsGiderTanimlari = ({
   const ac = (t) => {
     setHatalar({});
     setForm(t ? { ...bosForm(buAy), ...t, kdvYonu: kdvYonuOf(t), tutar: tutarMetni(t.tutar), kdvOrani: tutarMetni(t.kdvOrani), turId: String(t.turId ?? ""), calisanId: String(t.calisanId ?? ""), tedarikciId: String(t.tedarikciId ?? ""),
-      modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })) } : bosForm(buAy));
+      modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })),
+      kisitliGider: !!t.kisitliGider, indirilebilirOran: t.kisitliGider && t.indirilebilirOran != null ? String(t.indirilebilirOran) : "" } : bosForm(buAy));
   };
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   // Spec 0071 R25 (Q5, triyaj): model dağılımının sınırı KDV hariç tutardır; kayıt doğrulaması ve atama önizlemesi AYNI değeri
@@ -84,6 +85,9 @@ export const SettingsGiderTanimlari = ({
     // Spec 0075 R26, R39 (S4, S5): tanımda yalnız kutu ve oran; kural kalemle aynı saf fonksiyon. Boş KDV oranı "tarihe göre"dir.
     const tv = tevkifatDogrula(form, dav, { kdvBosSerbest: true });
     for (const x of tv.hatalar) if (!h[x.alan]) h[x.alan] = x.mesaj;
+    // Spec 0076 R35, R8/3: kalemle aynı doğrulayıcı; tanımda boş oran "ayardaki oran"dır, kayda yazılmaz.
+    const ks = kisitDogrula(form, dav, { oranBosSerbest: true });
+    for (const x of ks.hatalar) if (!h[x.alan]) h[x.alan] = x.mesaj;
     setHatalar(h);
     if (Object.keys(h).length) return;
     const calisan = calisanlar.find(c => String(c.id) === String(form.calisanId));
@@ -106,6 +110,7 @@ export const SettingsGiderTanimlari = ({
     };
     if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(atamaSon)) kayit.dagitimAy = dg.deger; // R19 (S4): 1 ya da boş saklanmaz
     if (tv.alanlar) Object.assign(kayit, tv.alanlar); // spec 0075 R10 (S6): kapalıyken alan hiç yazılmaz
+    if (ks.alanlar) Object.assign(kayit, ks.alanlar); // spec 0076 R33: kapalıyken alan hiç yazılmaz
     const yeni = form.id == null;
     setGiderTanimlari(p => (yeni ? [...p, kayit] : p.map(t => (t.id === kayit.id ? kayit : t))));
     logAction({ serverPermissions, action: yeni ? "olusturuldu" : "duzenlendi", entity: "gider_tanim", entityId: kayit.id, entityName: kayit.ad });
@@ -139,7 +144,9 @@ export const SettingsGiderTanimlari = ({
       {/* Spec 0074 R6: KDV'siz davranışta (SGK) yön yoktur; "KDV yok" ile çelişen "KDV hariç girildi" yazılmaz. */}
       {kdvliMi(dav) && <div data-testid="tanim-kdv-yonu" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kdvYonuOf(t) === KDV_YONU.DAHIL ? "KDV dâhil girildi" : "KDV hariç girildi"}</div>}
       {/* Spec 0075 R43 (S12): tevkifatlı tanım listede görünür (yoksa hiçbir yerde görünmezdi). */}
-      {tevkifatliMi(dav) && t.tevkifatli && <div data-testid="tanim-tevkifat" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>Tevkifat {tevkifatOranEtiketi({ pay: t.tevkifatPay, payda: t.tevkifatPayda })}</div>}</>;
+      {tevkifatliMi(dav) && t.tevkifatli && <div data-testid="tanim-tevkifat" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>Tevkifat {tevkifatOranEtiketi({ pay: t.tevkifatPay, payda: t.tevkifatPayda })}</div>}
+      {/* Spec 0076 R35 (AC-34): kısıtlı tanım listede görünür (0075 "Tevkifat 5/10" emsali). */}
+      {kisitliGiderMi(dav) && t.kisitliGider && <div data-testid="tanim-kisitli" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>{t.indirilebilirOran != null ? `Kısıtlı %${t.indirilebilirOran}` : "Kısıtlı (ayardaki oran)"}</div>}</>;
   };
   const atamaHucre = (t) => {
     if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
@@ -271,6 +278,7 @@ export const SettingsGiderTanimlari = ({
                   )}
                 </div>
               )}
+              {kisitliGiderMi(dav) && <KisitAlani tanim acik={!!form.kisitliGider} oran={form.indirilebilirOran} onChange={set} varsayilanOran={varsayilanIndirilebilirOran(giderAyarlari)} hata={hatalar.indirilebilirOran} />}
               {tedarikciSecilirMi(dav) && <Field label="Tedarikçi">
                 <Select value={form.tedarikciId} onChange={e => set({ tedarikciId: e.target.value })}>
                   <option value="">Seçilmemiş</option>

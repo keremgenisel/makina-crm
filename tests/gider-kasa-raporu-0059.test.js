@@ -170,7 +170,7 @@ describe("Spec 0059: detay tabloları (R8–R13, R21)", () => {
       if (y.gider && !y.gider.yururlukOncesi) { delete y.gider.vadeler; delete y.gider.tedarikciKalemleri; }
       delete y.kasa.odemeler; delete y.kasa.virmanlar; delete y.kasa.tahsilatlar;
       // Spec 0060: yeni alanlar (tür bazında ek ödeme, stopaj özeti, ay içi avans) altın çıktıda yok.
-      if (y.gider && !y.gider.yururlukOncesi) { delete y.gider.ekOdemeTurleri; delete y.gider.stopaj; delete y.gider.yaslandirma; delete y.gider.sgk; delete y.gider.tevkifat; } // 0060, 0061, 0070 (SGK kutusu), 0075 R42 (tevkifat kutusu)
+      if (y.gider && !y.gider.yururlukOncesi) { delete y.gider.ekOdemeTurleri; delete y.gider.stopaj; delete y.gider.yaslandirma; delete y.gider.sgk; delete y.gider.tevkifat; delete y.gider.kisitli; } // 0060, 0061, 0070 (SGK kutusu), 0075 R42 (tevkifat kutusu), 0076 R39 (kısıtlı gider bilgi rakamları)
       delete y.kasa.avansAy;
       for (const k of ["elde", "tahsil", "ciro", "karsiliksiz"]) delete y.kasa.cek[k].liste;
       return y;

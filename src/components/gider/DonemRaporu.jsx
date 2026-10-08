@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
-import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri } from "../../lib/gider";
+import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri,
+  kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -109,7 +110,7 @@ export const TurKirilimi = ({ rapor }) => {
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--n200, #e2e8f0)", paddingTop: 10, marginTop: 10, fontSize: 13 }}>
-        <span style={{ color: "var(--n500, #64748b)" }}>Kırılım toplamı = genel toplam (ödenmemiş dahil, KDV hariç)</span><b>{tl2(top)}</b>
+        <span style={{ color: "var(--n500, #64748b)" }}>Kırılım toplamı = genel toplam (ödenmemiş dahil; KDV hariç, kısıtlı kalemlerde indirilemeyen KDV dahil)</span><b>{tl2(top)}</b>
       </div>
     </KartBolum>
   );
@@ -122,7 +123,7 @@ export const TedarikciKirilimi = ({ rapor }) => {
     <KartBolum varyant="kart" baslikStili="baslik" title="Tedarikçi Kırılımı" altBaslik="Harcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez." style={{ flex: "3 1 380px", minWidth: 0 }} testId="tedarikci-kirilimi">
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead><tr style={{ fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
-          <th style={{ padding: "6px 4px" }}>Tedarikçi</th><th style={{ padding: "6px 4px", textAlign: "right" }}>Harcama (KDV hariç)<div style={{ textTransform: "none", fontWeight: 500 }}>seçili dönem</div></th>
+          <th style={{ padding: "6px 4px" }}>Tedarikçi</th><th style={{ padding: "6px 4px", textAlign: "right" }}>Harcama<div style={{ textTransform: "none", fontWeight: 500 }}>seçili dönem</div></th>
           <th style={{ padding: "6px 4px", textAlign: "right" }}>Açık borç (KDV dâhil)<div style={{ textTransform: "none", fontWeight: 500 }}>tüm dönemler, bugüne kadar</div></th>
         </tr></thead>
         <tbody>
@@ -270,8 +271,12 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   }).sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)));
   const personel = suz.filter(k => dav(k) === DAVRANIS.PERSONEL);
   const diger = suz.filter(k => dav(k) !== DAVRANIS.PERSONEL);
-  const toplam = suz.reduce((a, k) => a + kalemTutari(k, dav(k)), 0);
+  // Spec 0076 R19, R20: tutar sütunu ve alt toplamı gider tutarıdır; KDV alt toplamı tam KDV, kısıtlı kalem varsa yanında
+  // indirilebilir KDV (plan Q8: ikinci rakam yalnız iki rakam ayrıştığında).
+  const toplam = suz.reduce((a, k) => a + kalemGiderTutari(k, dav(k)), 0);
   const kdvTop = suz.reduce((a, k) => a + kalemKdv(k, dav(k)), 0);
+  const kisitliVar = suz.some(k => kisitEtkiliMi(k, dav(k)));
+  const indKdvTop = kisitliVar ? suz.reduce((a, k) => a + kalemIndirilebilirKdv(k, dav(k)), 0) : kdvTop;
   // Spec 0062 R4, R13, R20, R26 (a), R32: çizilen satırlar (personel grup satırı, açıksa çalışan satırları, diğer kalemler)
   // sayfalanır; dönem ve süzgeçler değişince 1. sayfa, personel aç/kapa sayfayı korur. Başlıktaki kalem sayısı ve alt toplam
   // bütün süzülmüş kalemlerden (R16).
@@ -393,8 +398,12 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </div>
         </td>
         <td style={td}>{atamaHucre(k)}</td>
-        <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemTutari(k, d))}</td>
-        <td style={tdR}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : <>{tl2(kalemKdv(k, d))}<div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>%{k.kdvOrani ?? 0}</div></>}</td>
+        {/* Spec 0076 R19 (AC-18): tutar hücresi gider tutarı; kısıtlı kalemde altında oran ve indirilemeyen KDV rozeti. */}
+        <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemGiderTutari(k, d))}
+          {kisitEtkiliMi(k, d) && <div data-testid="kisitli-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="turuncu">{kisitliRozetMetni(k, d)}</Rozet></div>}</td>
+        <td style={tdR}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : <>{tl2(kalemKdv(k, d))}<div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>%{k.kdvOrani ?? 0}</div>
+          {/* Spec 0076 R20 (AC-43): tam KDV faturada yazandır; kısıtlı satırda altında indirilebilir tutar (0075 tevkifat hücresi deseni). */}
+          {kisitEtkiliMi(k, d) && <div data-testid="kdv-indirilebilir" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>indirilebilir {tl2(kalemIndirilebilirKdv(k, d))}</div>}</>}</td>
         <td style={tdR}>{tl2(odenecekTutar(k, d))}
           {/* Spec 0075 R41 (S8): tevkifatlı satırda hücre tedarikçi kısmıdır; dipnot değişmez (C3). */}
           {kalemTevkifat(k, d) > 0 && <div data-testid="tevkifat-haric" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>tevkifat hariç</div>}</td>
@@ -418,7 +427,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
           <thead><tr style={{ background: "var(--n100, #f8fafc)", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
-            {["Tarih", "Tür", "Açıklama · Tedarikçi", "Atama", "KDV hariç", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{h}</th>)}
+            {["Tarih", "Tür", "Açıklama · Tedarikçi", "Atama", "Tutar", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{h}</th>)}
           </tr></thead>
           <tbody>
             {paged.map(x => (x.tip === "kalem" ? satir(x.k) : (
@@ -429,7 +438,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
                   <b>Personel · {new Set(personel.map(k => String(k.calisanId))).size} çalışan</b> <Rozet>{personelAcik ? "Ayrıntı açık" : "Ayrıntı kapalı"}</Rozet>
                   <div style={{ marginTop: 4 }}><AcKapa acik={personelAcik} onClick={() => setPersonelAcik(a => !a)}>{personelAcik ? "Çalışanları gizle" : "Çalışanları göster"}</AcKapa></div>
                 </td>
-                <td style={{ ...tdR, fontWeight: 700 }}>{tl2(personel.reduce((a, k) => a + kalemTutari(k, DAVRANIS.PERSONEL), 0))}</td>
+                <td style={{ ...tdR, fontWeight: 700 }}>{tl2(personel.reduce((a, k) => a + kalemGiderTutari(k, DAVRANIS.PERSONEL), 0))}</td>
                 <td style={{ ...tdR, color: "var(--n500, #64748b)" }}>KDV yok</td>
                 <td style={tdR}>{tl2(personel.reduce((a, k) => a + odenecekTutar(k, DAVRANIS.PERSONEL), 0))}</td>
                 <td style={td}>{personel.some(k => !k.odendi) ? <Rozet renk="kirmizi">{personel.filter(k => !k.odendi).length} ödenmemiş</Rozet> : <Rozet renk="yesil">Tümü ödendi</Rozet>}</td>
@@ -440,7 +449,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </tbody>
           <tfoot><tr style={{ background: "var(--n100, #f8fafc)" }}>
             <td colSpan={4} style={{ ...td, fontWeight: 700 }}>Toplam</td>
-            <td style={{ ...tdR, fontWeight: 800 }}>{tl2(toplam)}</td><td style={{ ...tdR, fontWeight: 700 }}>{tl2(kdvTop)}</td>
+            <td style={{ ...tdR, fontWeight: 800 }}>{tl2(toplam)}</td><td style={{ ...tdR, fontWeight: 700 }}>{tl2(kdvTop)}
+              {kisitliVar && <div data-testid="kdv-indirilebilir-toplam" style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)" }}>indirilebilir {tl2(indKdvTop)}</div>}</td>
             <td colSpan={3} style={{ ...td, fontSize: 11.5, color: "var(--n500, #64748b)" }}>“Ödenecek”: normal kalemde tutar + KDV, kirada net + KDV (stopaj hariç), personelde resmi + elden</td>
           </tr></tfoot>
         </table>

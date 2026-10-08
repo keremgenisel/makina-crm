@@ -1,0 +1,1997 @@
+{
+ "raporYil": {
+  "yururlukOncesi": false,
+  "kapsamDisi": null,
+  "bos": false,
+  "kalemler": [
+   {
+    "id": 1,
+    "tarih": "2026-03-10",
+    "turId": 1,
+    "tutar": 12345.67,
+    "kdvOrani": 20,
+    "tedarikciId": 11,
+    "aciklama": "Ortak"
+   },
+   {
+    "id": 2,
+    "tarih": "2026-03-11",
+    "turId": 1,
+    "tutar": 5000,
+    "kdvOrani": 20,
+    "atamaTur": "makina",
+    "makinaTur": "musteri",
+    "makinaId": 601
+   },
+   {
+    "id": 3,
+    "tarih": "2026-03-12",
+    "turId": 1,
+    "tutar": 7000,
+    "kdvOrani": 10,
+    "atamaTur": "model",
+    "modelSatirlari": [
+     {
+      "modelAd": "AK100",
+      "birimMaliyet": 1000,
+      "adet": 4
+     }
+    ]
+   },
+   {
+    "id": 4,
+    "tarih": "2026-03-13",
+    "turId": 1,
+    "tutar": 2500,
+    "kdvOrani": 20,
+    "atamaTur": "dagitma"
+   },
+   {
+    "id": 5,
+    "tarih": "2026-04-01",
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 20000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 12
+   },
+   {
+    "id": 6,
+    "tarih": "2026-04-30",
+    "turId": 3,
+    "calisanId": 21,
+    "calisanAd": "X",
+    "resmiTutar": 30000,
+    "eldenTutar": 5000,
+    "yolParasi": 1000
+   },
+   {
+    "id": 7,
+    "tarih": "2026-04-15",
+    "turId": 4,
+    "tutar": 9000
+   },
+   {
+    "id": 8,
+    "tarih": "2026-04-05",
+    "turId": 1,
+    "tutar": 10000,
+    "kdvOrani": 20,
+    "tevkifatli": true,
+    "tevkifatPay": 5,
+    "tevkifatPayda": 10,
+    "tedarikciId": 11
+   },
+   {
+    "id": 9,
+    "tarih": "2026-05-03",
+    "turId": 1,
+    "tutar": 24000,
+    "kdvOrani": 20,
+    "dagitimAy": 6,
+    "tedarikciId": 11
+   },
+   {
+    "id": 10,
+    "tarih": "2026-05-07",
+    "turId": 1,
+    "tutar": 1000,
+    "kdvOrani": 20,
+    "kdvYonu": "dahil",
+    "atamaTur": "makina",
+    "makinaTur": "stok",
+    "makinaId": 501
+   },
+   {
+    "id": 11,
+    "tarih": "2026-06-07",
+    "turId": 1,
+    "tutar": 333.33,
+    "kdvOrani": 18,
+    "odendi": true
+   }
+  ],
+  "toplam": 127179,
+  "odenen": 333.33,
+  "odenmeyen": 126845.67,
+  "odenmeyenAdet": 10,
+  "stopajToplam": 4000,
+  "stopajSatirlari": [
+   {
+    "kalemId": 5,
+    "tarih": "2026-04-01",
+    "brut": 20000,
+    "stopajOrani": 20,
+    "stopaj": 4000,
+    "girisYonu": "brut"
+   }
+  ],
+  "indirilecekKdv": 11729.13,
+  "kovalar": {
+   "makina": 6000,
+   "model": 4000,
+   "dagitma": 2500,
+   "ortak": 114679
+  },
+  "kovaKatki": {
+   "makina": 2,
+   "model": 1,
+   "dagitma": 1,
+   "ortak": 8
+  },
+  "makinaBazli": [
+   {
+    "anahtar": "musteri:601",
+    "makina": {
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "seri": "S601",
+     "ad": "Firma A"
+    },
+    "toplam": 5000,
+    "kalemler": [
+     {
+      "id": 2,
+      "tarih": "2026-03-11",
+      "turId": 1,
+      "tutar": 5000,
+      "kdvOrani": 20,
+      "atamaTur": "makina",
+      "makinaTur": "musteri",
+      "makinaId": 601
+     }
+    ]
+   },
+   {
+    "anahtar": "stok:501",
+    "makina": {
+     "tur": "stok",
+     "id": 501,
+     "model": "AK100",
+     "seri": "T501",
+     "ad": "Makina Stoğu"
+    },
+    "toplam": 1000,
+    "kalemler": [
+     {
+      "id": 10,
+      "tarih": "2026-05-07",
+      "turId": 1,
+      "tutar": 1000,
+      "kdvOrani": 20,
+      "kdvYonu": "dahil",
+      "atamaTur": "makina",
+      "makinaTur": "stok",
+      "makinaId": 501
+     }
+    ]
+   }
+  ],
+  "modelBazli": [
+   {
+    "model": "AK100",
+    "toplam": 4000,
+    "satirlar": [
+     {
+      "kalemId": 3,
+      "tarih": "2026-03-12",
+      "aciklama": "",
+      "birimMaliyet": 1000,
+      "adet": 4,
+      "tutar": 4000
+     }
+    ]
+   }
+  ],
+  "dagitmaKalemleri": [
+   {
+    "id": 4,
+    "tarih": "2026-03-13",
+    "turId": 1,
+    "tutar": 2500,
+    "kdvOrani": 20,
+    "atamaTur": "dagitma"
+   }
+  ],
+  "kismiOrtak": [
+   {
+    "kalem": {
+     "id": 3,
+     "tarih": "2026-03-12",
+     "turId": 1,
+     "tutar": 7000,
+     "kdvOrani": 10,
+     "atamaTur": "model",
+     "modelSatirlari": [
+      {
+       "modelAd": "AK100",
+       "birimMaliyet": 1000,
+       "adet": 4
+      }
+     ]
+    },
+    "tutar": 3000
+   }
+  ],
+  "dusenAtamalar": [],
+  "turKirilimi": [
+   {
+    "turId": 1,
+    "ad": "Genel",
+    "davranis": "normal",
+    "toplam": 62179,
+    "adet": 8,
+    "calisanlar": null
+   },
+   {
+    "turId": 3,
+    "ad": "Personel",
+    "davranis": "personel",
+    "toplam": 36000,
+    "adet": 1,
+    "calisanlar": [
+     {
+      "calisanId": 21,
+      "ad": "X",
+      "resmi": 30000,
+      "elden": 5000,
+      "yol": 1000,
+      "ek": 0,
+      "toplam": 36000,
+      "ekSatirlari": []
+     }
+    ]
+   },
+   {
+    "turId": 2,
+    "ad": "Kira",
+    "davranis": "kira",
+    "toplam": 20000,
+    "adet": 1,
+    "calisanlar": null
+   },
+   {
+    "turId": 4,
+    "ad": "SGK",
+    "davranis": "sgk",
+    "toplam": 9000,
+    "adet": 1,
+    "calisanlar": null
+   }
+  ],
+  "tedarikciKirilimi": {
+   "satirlar": [
+    {
+     "tedarikciId": "11",
+     "ad": "Akaryakıt A.Ş.",
+     "harcama": 46345.67,
+     "acikBorc": 54614.8,
+     "vadesiGecti": false
+    },
+    {
+     "tedarikciId": "12",
+     "ad": "Gayrimenkul",
+     "harcama": 20000,
+     "acikBorc": 16000,
+     "vadesiGecti": false
+    }
+   ],
+   "secilmemis": {
+    "harcama": 15833.33,
+    "adet": 5,
+    "acikBorc": 17900
+   },
+   "toplamHarcama": 82179,
+   "tedarikciBorcu": 70614.8,
+   "toplamBorc": 88514.8
+  },
+  "mukerrerUyari": []
+ },
+ "raporMart": {
+  "yururlukOncesi": false,
+  "kapsamDisi": null,
+  "bos": false,
+  "kalemler": [
+   {
+    "id": 1,
+    "tarih": "2026-03-10",
+    "turId": 1,
+    "tutar": 12345.67,
+    "kdvOrani": 20,
+    "tedarikciId": 11,
+    "aciklama": "Ortak"
+   },
+   {
+    "id": 2,
+    "tarih": "2026-03-11",
+    "turId": 1,
+    "tutar": 5000,
+    "kdvOrani": 20,
+    "atamaTur": "makina",
+    "makinaTur": "musteri",
+    "makinaId": 601
+   },
+   {
+    "id": 3,
+    "tarih": "2026-03-12",
+    "turId": 1,
+    "tutar": 7000,
+    "kdvOrani": 10,
+    "atamaTur": "model",
+    "modelSatirlari": [
+     {
+      "modelAd": "AK100",
+      "birimMaliyet": 1000,
+      "adet": 4
+     }
+    ]
+   },
+   {
+    "id": 4,
+    "tarih": "2026-03-13",
+    "turId": 1,
+    "tutar": 2500,
+    "kdvOrani": 20,
+    "atamaTur": "dagitma"
+   }
+  ],
+  "toplam": 26845.67,
+  "odenen": 0,
+  "odenmeyen": 26845.67,
+  "odenmeyenAdet": 4,
+  "stopajToplam": 0,
+  "stopajSatirlari": [],
+  "indirilecekKdv": 4669.13,
+  "kovalar": {
+   "makina": 5000,
+   "model": 4000,
+   "dagitma": 2500,
+   "ortak": 15345.67
+  },
+  "kovaKatki": {
+   "makina": 1,
+   "model": 1,
+   "dagitma": 1,
+   "ortak": 2
+  },
+  "makinaBazli": [
+   {
+    "anahtar": "musteri:601",
+    "makina": {
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "seri": "S601",
+     "ad": "Firma A"
+    },
+    "toplam": 5000,
+    "kalemler": [
+     {
+      "id": 2,
+      "tarih": "2026-03-11",
+      "turId": 1,
+      "tutar": 5000,
+      "kdvOrani": 20,
+      "atamaTur": "makina",
+      "makinaTur": "musteri",
+      "makinaId": 601
+     }
+    ]
+   }
+  ],
+  "modelBazli": [
+   {
+    "model": "AK100",
+    "toplam": 4000,
+    "satirlar": [
+     {
+      "kalemId": 3,
+      "tarih": "2026-03-12",
+      "aciklama": "",
+      "birimMaliyet": 1000,
+      "adet": 4,
+      "tutar": 4000
+     }
+    ]
+   }
+  ],
+  "dagitmaKalemleri": [
+   {
+    "id": 4,
+    "tarih": "2026-03-13",
+    "turId": 1,
+    "tutar": 2500,
+    "kdvOrani": 20,
+    "atamaTur": "dagitma"
+   }
+  ],
+  "kismiOrtak": [
+   {
+    "kalem": {
+     "id": 3,
+     "tarih": "2026-03-12",
+     "turId": 1,
+     "tutar": 7000,
+     "kdvOrani": 10,
+     "atamaTur": "model",
+     "modelSatirlari": [
+      {
+       "modelAd": "AK100",
+       "birimMaliyet": 1000,
+       "adet": 4
+      }
+     ]
+    },
+    "tutar": 3000
+   }
+  ],
+  "dusenAtamalar": [],
+  "turKirilimi": [
+   {
+    "turId": 1,
+    "ad": "Genel",
+    "davranis": "normal",
+    "toplam": 26845.67,
+    "adet": 4,
+    "calisanlar": null
+   }
+  ],
+  "tedarikciKirilimi": {
+   "satirlar": [
+    {
+     "tedarikciId": "11",
+     "ad": "Akaryakıt A.Ş.",
+     "harcama": 12345.67,
+     "acikBorc": 54614.8,
+     "vadesiGecti": false
+    },
+    {
+     "tedarikciId": "12",
+     "ad": "Gayrimenkul",
+     "harcama": 0,
+     "acikBorc": 16000,
+     "vadesiGecti": false
+    }
+   ],
+   "secilmemis": {
+    "harcama": 14500,
+    "adet": 3,
+    "acikBorc": 17900
+   },
+   "toplamHarcama": 26845.67,
+   "tedarikciBorcu": 70614.8,
+   "toplamBorc": 88514.8
+  },
+  "mukerrerUyari": []
+ },
+ "kovalar": [
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 12345.67
+  },
+  {
+   "makina": 5000,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 0
+  },
+  {
+   "makina": 0,
+   "model": 4000,
+   "dagitma": 0,
+   "ortak": 3000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 2500,
+   "ortak": 0
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 36000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 9000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 10000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 24000
+  },
+  {
+   "makina": 1000,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 0
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 333.33
+  }
+ ],
+ "maliyetGercek": {
+  "makinalar": [
+   [
+    "musteri:601",
+    {
+     "anahtar": "musteri:601",
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S601",
+     "ad": "Firma A",
+     "uretimTarihi": "2026-03-05",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-03-20",
+     "kayit": {
+      "id": 601,
+      "name": "Firma A",
+      "model": "AK100",
+      "serialNo": "S601",
+      "installDate": "2026-03-20",
+      "fabrikaSatisBedeli": 500000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-03-05"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 500000,
+     "dogrudanKalemler": [
+      {
+       "kalemId": 2,
+       "tarih": "2026-03-11",
+       "aciklama": "",
+       "tutar": 5000
+      }
+     ],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 767284,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 1267284
+    }
+   ],
+   [
+    "musteri:602",
+    {
+     "anahtar": "musteri:602",
+     "tur": "musteri",
+     "id": 602,
+     "model": "AK200",
+     "modelKey": "ak200",
+     "seri": "S602",
+     "ad": "Firma B",
+     "uretimTarihi": "2026-04-10",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-04-20",
+     "kayit": {
+      "id": 602,
+      "name": "Firma B",
+      "model": "AK200",
+      "serialNo": "S602",
+      "installDate": "2026-04-20",
+      "fabrikaSatisBedeli": 650000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-04-10"
+     },
+     "uretimAy": "2026-04",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 7500000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 7500000
+    }
+   ],
+   [
+    "musteri:603",
+    {
+     "anahtar": "musteri:603",
+     "tur": "musteri",
+     "id": 603,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S603",
+     "ad": "Firma C",
+     "uretimTarihi": "2026-05-02",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-05-20",
+     "kayit": {
+      "id": 603,
+      "name": "Firma C",
+      "model": "AK100",
+      "serialNo": "S603",
+      "installDate": "2026-05-20",
+      "fabrikaSatisBedeli": 480000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-05-02",
+      "partiId": 801
+     },
+     "uretimAy": "2026-05",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 100000,
+     "malzemePaylari": [
+      {
+       "kalemId": 3,
+       "tarih": "2026-03-12",
+       "aciklama": "",
+       "pay": 1000
+      }
+     ],
+     "ortakPay": 833333,
+     "parti": {
+      "id": 801,
+      "ad": "Parti 1",
+      "baslangicAy": "2026-05",
+      "bitisAy": "2026-06"
+     },
+     "partiBaslamadi": false,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 933333
+    }
+   ],
+   [
+    "stok:501",
+    {
+     "anahtar": "stok:501",
+     "tur": "stok",
+     "id": 501,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "T501",
+     "ad": "Makina Stoğu",
+     "uretimTarihi": "2026-03-08",
+     "uretimKaynak": "stok",
+     "satildi": false,
+     "satisTarihi": "",
+     "kayit": {
+      "id": 501,
+      "model": "AK100",
+      "serialNo": "T501",
+      "addedDate": "2026-03-08"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 100000,
+     "dogrudanKalemler": [
+      {
+       "kalemId": 10,
+       "tarih": "2026-05-07",
+       "aciklama": "",
+       "tutar": 1000
+      }
+     ],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 767283,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 867283
+    }
+   ]
+  ],
+  "liste": [
+   {
+    "anahtar": "musteri:601",
+    "tur": "musteri",
+    "id": 601,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "S601",
+    "ad": "Firma A",
+    "uretimTarihi": "2026-03-05",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-03-20",
+    "kayit": {
+     "id": 601,
+     "name": "Firma A",
+     "model": "AK100",
+     "serialNo": "S601",
+     "installDate": "2026-03-20",
+     "fabrikaSatisBedeli": 500000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-03-05"
+    },
+    "uretimAy": "2026-03",
+    "veriYok": false,
+    "dogrudan": 500000,
+    "dogrudanKalemler": [
+     {
+      "kalemId": 2,
+      "tarih": "2026-03-11",
+      "aciklama": "",
+      "tutar": 5000
+     }
+    ],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 767284,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 1267284
+   },
+   {
+    "anahtar": "musteri:602",
+    "tur": "musteri",
+    "id": 602,
+    "model": "AK200",
+    "modelKey": "ak200",
+    "seri": "S602",
+    "ad": "Firma B",
+    "uretimTarihi": "2026-04-10",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-04-20",
+    "kayit": {
+     "id": 602,
+     "name": "Firma B",
+     "model": "AK200",
+     "serialNo": "S602",
+     "installDate": "2026-04-20",
+     "fabrikaSatisBedeli": 650000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-04-10"
+    },
+    "uretimAy": "2026-04",
+    "veriYok": false,
+    "dogrudan": 0,
+    "dogrudanKalemler": [],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 7500000,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 7500000
+   },
+   {
+    "anahtar": "musteri:603",
+    "tur": "musteri",
+    "id": 603,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "S603",
+    "ad": "Firma C",
+    "uretimTarihi": "2026-05-02",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-05-20",
+    "kayit": {
+     "id": 603,
+     "name": "Firma C",
+     "model": "AK100",
+     "serialNo": "S603",
+     "installDate": "2026-05-20",
+     "fabrikaSatisBedeli": 480000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-05-02",
+     "partiId": 801
+    },
+    "uretimAy": "2026-05",
+    "veriYok": false,
+    "dogrudan": 0,
+    "dogrudanKalemler": [],
+    "malzeme": 100000,
+    "malzemePaylari": [
+     {
+      "kalemId": 3,
+      "tarih": "2026-03-12",
+      "aciklama": "",
+      "pay": 1000
+     }
+    ],
+    "ortakPay": 833333,
+    "parti": {
+     "id": 801,
+     "ad": "Parti 1",
+     "baslangicAy": "2026-05",
+     "bitisAy": "2026-06"
+    },
+    "partiBaslamadi": false,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 933333
+   },
+   {
+    "anahtar": "stok:501",
+    "tur": "stok",
+    "id": 501,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "T501",
+    "ad": "Makina Stoğu",
+    "uretimTarihi": "2026-03-08",
+    "uretimKaynak": "stok",
+    "satildi": false,
+    "satisTarihi": "",
+    "kayit": {
+     "id": 501,
+     "model": "AK100",
+     "serialNo": "T501",
+     "addedDate": "2026-03-08"
+    },
+    "uretimAy": "2026-03",
+    "veriYok": false,
+    "dogrudan": 100000,
+    "dogrudanKalemler": [
+     {
+      "kalemId": 10,
+      "tarih": "2026-05-07",
+      "aciklama": "",
+      "tutar": 1000
+     }
+    ],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 767283,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 867283
+   }
+  ],
+  "aylar": [
+   [
+    "2026-01",
+    {
+     "ay": "2026-01",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortakStandart": 400000,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-02",
+    {
+     "ay": "2026-02",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortakStandart": 400000,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-03",
+    {
+     "ay": "2026-03",
+     "uretimAdedi": 2,
+     "ortakGercek": 1534567,
+     "ortakStandart": 400000,
+     "ortak": 1534567,
+     "pay": 767283,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 500000,
+      "model": 400000,
+      "dagitma": 250000,
+      "ortak": 1534567
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-04",
+    {
+     "ay": "2026-04",
+     "uretimAdedi": 1,
+     "ortakGercek": 7500000,
+     "ortakStandart": 400000,
+     "ortak": 7500000,
+     "pay": 7500000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 7500000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-05",
+    {
+     "ay": "2026-05",
+     "uretimAdedi": 0,
+     "ortakGercek": 400000,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 400000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 100000,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 2400000
+     },
+     "partiPaylari": [
+      {
+       "partiId": "801",
+       "adet": 1,
+       "pay": 400000
+      }
+     ],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ],
+   [
+    "2026-06",
+    {
+     "ay": "2026-06",
+     "uretimAdedi": 0,
+     "ortakGercek": 433333,
+     "ortakStandart": 400000,
+     "ortak": 433333,
+     "pay": 433333,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 33333
+     },
+     "partiPaylari": [
+      {
+       "partiId": "801",
+       "adet": 1,
+       "pay": 433333
+      }
+     ],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ],
+   [
+    "2026-07",
+    {
+     "ay": "2026-07",
+     "uretimAdedi": 0,
+     "ortakGercek": 400000,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 0,
+     "dagitilmamis": 400000,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ]
+  ],
+  "havuzlar": [
+   {
+    "kalemId": 3,
+    "tarih": "2026-03-12",
+    "aciklama": "",
+    "modelKey": "ak100",
+    "modelAd": "AK100",
+    "birim": 100000,
+    "kapasite": 4,
+    "boyut": 400000,
+    "kalan": 300000,
+    "sira": 0,
+    "paylar": [
+     {
+      "anahtar": "musteri:603",
+      "uretimTarihi": "2026-05-02",
+      "pay": 100000
+     }
+    ]
+   }
+  ],
+  "kaynak": "gercek",
+  "yururlukAy": "2026-01",
+  "partiler": [
+   {
+    "id": 801,
+    "ad": "Parti 1",
+    "baslangicAy": "2026-05",
+    "bitisAy": "2026-06",
+    "acik": false,
+    "aciklama": "",
+    "adet": 1,
+    "havuz": 8333.33,
+    "makinaBasi": 8333.33,
+    "aylar": [
+     "2026-05",
+     "2026-06"
+    ],
+    "degisimler": []
+   }
+  ],
+  "dagitimVar": true
+ },
+ "maliyetStandart": {
+  "makinalar": [
+   [
+    "musteri:601",
+    {
+     "anahtar": "musteri:601",
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S601",
+     "ad": "Firma A",
+     "uretimTarihi": "2026-03-05",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-03-20",
+     "kayit": {
+      "id": 601,
+      "name": "Firma A",
+      "model": "AK100",
+      "serialNo": "S601",
+      "installDate": "2026-03-20",
+      "fabrikaSatisBedeli": 500000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-03-05"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 500000,
+     "dogrudanKalemler": [
+      {
+       "kalemId": 2,
+       "tarih": "2026-03-11",
+       "aciklama": "",
+       "tutar": 5000
+      }
+     ],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 200000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 700000
+    }
+   ],
+   [
+    "musteri:602",
+    {
+     "anahtar": "musteri:602",
+     "tur": "musteri",
+     "id": 602,
+     "model": "AK200",
+     "modelKey": "ak200",
+     "seri": "S602",
+     "ad": "Firma B",
+     "uretimTarihi": "2026-04-10",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-04-20",
+     "kayit": {
+      "id": 602,
+      "name": "Firma B",
+      "model": "AK200",
+      "serialNo": "S602",
+      "installDate": "2026-04-20",
+      "fabrikaSatisBedeli": 650000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-04-10"
+     },
+     "uretimAy": "2026-04",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 400000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 400000
+    }
+   ],
+   [
+    "musteri:603",
+    {
+     "anahtar": "musteri:603",
+     "tur": "musteri",
+     "id": 603,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S603",
+     "ad": "Firma C",
+     "uretimTarihi": "2026-05-02",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-05-20",
+     "kayit": {
+      "id": 603,
+      "name": "Firma C",
+      "model": "AK100",
+      "serialNo": "S603",
+      "installDate": "2026-05-20",
+      "fabrikaSatisBedeli": 480000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-05-02",
+      "partiId": 801
+     },
+     "uretimAy": "2026-05",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 100000,
+     "malzemePaylari": [
+      {
+       "kalemId": 3,
+       "tarih": "2026-03-12",
+       "aciklama": "",
+       "pay": 1000
+      }
+     ],
+     "ortakPay": 800000,
+     "parti": {
+      "id": 801,
+      "ad": "Parti 1",
+      "baslangicAy": "2026-05",
+      "bitisAy": "2026-06"
+     },
+     "partiBaslamadi": false,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 900000
+    }
+   ],
+   [
+    "stok:501",
+    {
+     "anahtar": "stok:501",
+     "tur": "stok",
+     "id": 501,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "T501",
+     "ad": "Makina Stoğu",
+     "uretimTarihi": "2026-03-08",
+     "uretimKaynak": "stok",
+     "satildi": false,
+     "satisTarihi": "",
+     "kayit": {
+      "id": 501,
+      "model": "AK100",
+      "serialNo": "T501",
+      "addedDate": "2026-03-08"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 100000,
+     "dogrudanKalemler": [
+      {
+       "kalemId": 10,
+       "tarih": "2026-05-07",
+       "aciklama": "",
+       "tutar": 1000
+      }
+     ],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 200000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 300000
+    }
+   ]
+  ],
+  "liste": [
+   {
+    "anahtar": "musteri:601",
+    "tur": "musteri",
+    "id": 601,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "S601",
+    "ad": "Firma A",
+    "uretimTarihi": "2026-03-05",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-03-20",
+    "kayit": {
+     "id": 601,
+     "name": "Firma A",
+     "model": "AK100",
+     "serialNo": "S601",
+     "installDate": "2026-03-20",
+     "fabrikaSatisBedeli": 500000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-03-05"
+    },
+    "uretimAy": "2026-03",
+    "veriYok": false,
+    "dogrudan": 500000,
+    "dogrudanKalemler": [
+     {
+      "kalemId": 2,
+      "tarih": "2026-03-11",
+      "aciklama": "",
+      "tutar": 5000
+     }
+    ],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 200000,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 700000
+   },
+   {
+    "anahtar": "musteri:602",
+    "tur": "musteri",
+    "id": 602,
+    "model": "AK200",
+    "modelKey": "ak200",
+    "seri": "S602",
+    "ad": "Firma B",
+    "uretimTarihi": "2026-04-10",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-04-20",
+    "kayit": {
+     "id": 602,
+     "name": "Firma B",
+     "model": "AK200",
+     "serialNo": "S602",
+     "installDate": "2026-04-20",
+     "fabrikaSatisBedeli": 650000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-04-10"
+    },
+    "uretimAy": "2026-04",
+    "veriYok": false,
+    "dogrudan": 0,
+    "dogrudanKalemler": [],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 400000,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 400000
+   },
+   {
+    "anahtar": "musteri:603",
+    "tur": "musteri",
+    "id": 603,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "S603",
+    "ad": "Firma C",
+    "uretimTarihi": "2026-05-02",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-05-20",
+    "kayit": {
+     "id": 603,
+     "name": "Firma C",
+     "model": "AK100",
+     "serialNo": "S603",
+     "installDate": "2026-05-20",
+     "fabrikaSatisBedeli": 480000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-05-02",
+     "partiId": 801
+    },
+    "uretimAy": "2026-05",
+    "veriYok": false,
+    "dogrudan": 0,
+    "dogrudanKalemler": [],
+    "malzeme": 100000,
+    "malzemePaylari": [
+     {
+      "kalemId": 3,
+      "tarih": "2026-03-12",
+      "aciklama": "",
+      "pay": 1000
+     }
+    ],
+    "ortakPay": 800000,
+    "parti": {
+     "id": 801,
+     "ad": "Parti 1",
+     "baslangicAy": "2026-05",
+     "bitisAy": "2026-06"
+    },
+    "partiBaslamadi": false,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 900000
+   },
+   {
+    "anahtar": "stok:501",
+    "tur": "stok",
+    "id": 501,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "T501",
+    "ad": "Makina Stoğu",
+    "uretimTarihi": "2026-03-08",
+    "uretimKaynak": "stok",
+    "satildi": false,
+    "satisTarihi": "",
+    "kayit": {
+     "id": 501,
+     "model": "AK100",
+     "serialNo": "T501",
+     "addedDate": "2026-03-08"
+    },
+    "uretimAy": "2026-03",
+    "veriYok": false,
+    "dogrudan": 100000,
+    "dogrudanKalemler": [
+     {
+      "kalemId": 10,
+      "tarih": "2026-05-07",
+      "aciklama": "",
+      "tutar": 1000
+     }
+    ],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 200000,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 300000
+   }
+  ],
+  "aylar": [
+   [
+    "2026-01",
+    {
+     "ay": "2026-01",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 0,
+     "dagitilmamis": 400000,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-02",
+    {
+     "ay": "2026-02",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 0,
+     "dagitilmamis": 400000,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-03",
+    {
+     "ay": "2026-03",
+     "uretimAdedi": 2,
+     "ortakGercek": 1534567,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 200000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 500000,
+      "model": 400000,
+      "dagitma": 250000,
+      "ortak": 1534567
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-04",
+    {
+     "ay": "2026-04",
+     "uretimAdedi": 1,
+     "ortakGercek": 7500000,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 400000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 7500000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-05",
+    {
+     "ay": "2026-05",
+     "uretimAdedi": 0,
+     "ortakGercek": 400000,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 400000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 100000,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 2400000
+     },
+     "partiPaylari": [
+      {
+       "partiId": "801",
+       "adet": 1,
+       "pay": 400000
+      }
+     ],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ],
+   [
+    "2026-06",
+    {
+     "ay": "2026-06",
+     "uretimAdedi": 0,
+     "ortakGercek": 433333,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 400000,
+     "dagitilmamis": 0,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 33333
+     },
+     "partiPaylari": [
+      {
+       "partiId": "801",
+       "adet": 1,
+       "pay": 400000
+      }
+     ],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ],
+   [
+    "2026-07",
+    {
+     "ay": "2026-07",
+     "uretimAdedi": 0,
+     "ortakGercek": 400000,
+     "ortakStandart": 400000,
+     "ortak": 400000,
+     "pay": 0,
+     "dagitilmamis": 400000,
+     "standartEksik": [],
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": [
+      {
+       "kalemId": 9,
+       "aciklama": "",
+       "aySayisi": 6,
+       "ilkAy": "2026-05",
+       "sonAy": "2026-10",
+       "pay": 4000
+      }
+     ]
+    }
+   ]
+  ],
+  "havuzlar": [
+   {
+    "kalemId": 3,
+    "tarih": "2026-03-12",
+    "aciklama": "",
+    "modelKey": "ak100",
+    "modelAd": "AK100",
+    "birim": 100000,
+    "kapasite": 4,
+    "boyut": 400000,
+    "kalan": 300000,
+    "sira": 0,
+    "paylar": [
+     {
+      "anahtar": "musteri:603",
+      "uretimTarihi": "2026-05-02",
+      "pay": 100000
+     }
+    ]
+   }
+  ],
+  "kaynak": "standart",
+  "yururlukAy": "2026-01",
+  "partiler": [
+   {
+    "id": 801,
+    "ad": "Parti 1",
+    "baslangicAy": "2026-05",
+    "bitisAy": "2026-06",
+    "acik": false,
+    "aciklama": "",
+    "adet": 1,
+    "havuz": 8000,
+    "makinaBasi": 8000,
+    "aylar": [
+     "2026-05",
+     "2026-06"
+    ],
+    "degisimler": []
+   }
+  ],
+  "dagitimVar": true
+ },
+ "karlilik": {
+  "bos": false,
+  "satirlar": [
+   {
+    "anahtar": "musteri:601",
+    "makina": {
+     "anahtar": "musteri:601",
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S601",
+     "ad": "Firma A",
+     "uretimTarihi": "2026-03-05",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-03-20",
+     "kayit": {
+      "id": 601,
+      "name": "Firma A",
+      "model": "AK100",
+      "serialNo": "S601",
+      "installDate": "2026-03-20",
+      "fabrikaSatisBedeli": 500000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-03-05"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 500000,
+     "dogrudanKalemler": [
+      {
+       "kalemId": 2,
+       "tarih": "2026-03-11",
+       "aciklama": "",
+       "tutar": 5000
+      }
+     ],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 767284,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 1267284
+    },
+    "uretimTarihi": "2026-03-05",
+    "uretimKaynak": "kayit",
+    "veriYok": false,
+    "bilinmiyor": false,
+    "kaynak": "gercek",
+    "partiBaslamadi": false,
+    "dogrudan": 5000,
+    "malzeme": 0,
+    "ortakPay": 7672.84,
+    "uretimMaliyeti": 12672.84,
+    "dogrudanKalemler": [
+     {
+      "kalemId": 2,
+      "tarih": "2026-03-11",
+      "aciklama": "",
+      "tutar": 5000
+     }
+    ],
+    "malzemePaylari": [],
+    "malzemePayiAlamadi": false,
+    "parti": null,
+    "gecici": false,
+    "dagitimlar": [],
+    "dagitimVar": true,
+    "satildi": true,
+    "satisTarihi": "2026-03-20",
+    "para": "TRY",
+    "kur": 1,
+    "kurDurum": "tl",
+    "bedelOrijinal": 500000,
+    "komisyonOrijinal": 0,
+    "bedelYok": false,
+    "satisBedeli": 500000,
+    "komisyon": 0,
+    "toplamMaliyet": 12672.84,
+    "kar": 487327.16,
+    "zarar": false,
+    "marj": 97.46543199999999,
+    "carpan": 39.4544553549165
+   },
+   {
+    "anahtar": "musteri:602",
+    "makina": {
+     "anahtar": "musteri:602",
+     "tur": "musteri",
+     "id": 602,
+     "model": "AK200",
+     "modelKey": "ak200",
+     "seri": "S602",
+     "ad": "Firma B",
+     "uretimTarihi": "2026-04-10",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-04-20",
+     "kayit": {
+      "id": 602,
+      "name": "Firma B",
+      "model": "AK200",
+      "serialNo": "S602",
+      "installDate": "2026-04-20",
+      "fabrikaSatisBedeli": 650000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-04-10"
+     },
+     "uretimAy": "2026-04",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 7500000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 7500000
+    },
+    "uretimTarihi": "2026-04-10",
+    "uretimKaynak": "kayit",
+    "veriYok": false,
+    "bilinmiyor": false,
+    "kaynak": "gercek",
+    "partiBaslamadi": false,
+    "dogrudan": 0,
+    "malzeme": 0,
+    "ortakPay": 75000,
+    "uretimMaliyeti": 75000,
+    "dogrudanKalemler": [],
+    "malzemePaylari": [],
+    "malzemePayiAlamadi": false,
+    "parti": null,
+    "gecici": false,
+    "dagitimlar": [],
+    "dagitimVar": true,
+    "satildi": true,
+    "satisTarihi": "2026-04-20",
+    "para": "TRY",
+    "kur": 1,
+    "kurDurum": "tl",
+    "bedelOrijinal": 650000,
+    "komisyonOrijinal": 0,
+    "bedelYok": false,
+    "satisBedeli": 650000,
+    "komisyon": 0,
+    "toplamMaliyet": 75000,
+    "kar": 575000,
+    "zarar": false,
+    "marj": 88.46153846153845,
+    "carpan": 8.666666666666666
+   },
+   {
+    "anahtar": "musteri:603",
+    "makina": {
+     "anahtar": "musteri:603",
+     "tur": "musteri",
+     "id": 603,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S603",
+     "ad": "Firma C",
+     "uretimTarihi": "2026-05-02",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-05-20",
+     "kayit": {
+      "id": 603,
+      "name": "Firma C",
+      "model": "AK100",
+      "serialNo": "S603",
+      "installDate": "2026-05-20",
+      "fabrikaSatisBedeli": 480000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-05-02",
+      "partiId": 801
+     },
+     "uretimAy": "2026-05",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 100000,
+     "malzemePaylari": [
+      {
+       "kalemId": 3,
+       "tarih": "2026-03-12",
+       "aciklama": "",
+       "pay": 1000
+      }
+     ],
+     "ortakPay": 833333,
+     "parti": {
+      "id": 801,
+      "ad": "Parti 1",
+      "baslangicAy": "2026-05",
+      "bitisAy": "2026-06"
+     },
+     "partiBaslamadi": false,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 933333
+    },
+    "uretimTarihi": "2026-05-02",
+    "uretimKaynak": "kayit",
+    "veriYok": false,
+    "bilinmiyor": false,
+    "kaynak": "gercek",
+    "partiBaslamadi": false,
+    "dogrudan": 0,
+    "malzeme": 1000,
+    "ortakPay": 8333.33,
+    "uretimMaliyeti": 9333.33,
+    "dogrudanKalemler": [],
+    "malzemePaylari": [
+     {
+      "kalemId": 3,
+      "tarih": "2026-03-12",
+      "aciklama": "",
+      "pay": 1000
+     }
+    ],
+    "malzemePayiAlamadi": false,
+    "parti": {
+     "id": 801,
+     "ad": "Parti 1",
+     "baslangicAy": "2026-05",
+     "bitisAy": "2026-06",
+     "acik": false,
+     "aciklama": "",
+     "adet": 1,
+     "havuz": 8333.33,
+     "makinaBasi": 8333.33,
+     "aylar": [
+      "2026-05",
+      "2026-06"
+     ],
+     "degisimler": []
+    },
+    "gecici": false,
+    "dagitimlar": [
+     {
+      "kalemId": 9,
+      "aciklama": "",
+      "aySayisi": 6,
+      "ilkAy": "2026-05",
+      "sonAy": "2026-10",
+      "pay": 4000
+     }
+    ],
+    "dagitimVar": true,
+    "satildi": true,
+    "satisTarihi": "2026-05-20",
+    "para": "TRY",
+    "kur": 1,
+    "kurDurum": "tl",
+    "bedelOrijinal": 480000,
+    "komisyonOrijinal": 0,
+    "bedelYok": false,
+    "satisBedeli": 480000,
+    "komisyon": 0,
+    "toplamMaliyet": 9333.33,
+    "kar": 470666.67,
+    "zarar": false,
+    "marj": 98.05555625,
+    "carpan": 51.42858979592493
+   }
+  ],
+  "toplam": {
+   "satisBedeli": 1630000,
+   "toplamMaliyet": 97006.17,
+   "kar": 1532993.83,
+   "marj": 94.04870122699387,
+   "carpan": 16.80305489846677
+  },
+  "yaklasikVar": false,
+  "kaynak": "gercek",
+  "veriYok": {
+   "adet": 0,
+   "makinalar": []
+  },
+  "bilinmiyor": {
+   "adet": 0,
+   "makinalar": []
+  },
+  "bedelsiz": {
+   "adet": 0,
+   "maliyet": 0,
+   "makinalar": []
+  },
+  "kursuz": {
+   "adet": 0,
+   "makinalar": []
+  },
+  "stokta": {
+   "adet": 1,
+   "maliyet": 8672.83,
+   "tarih": "2026-12-31",
+   "partiler": []
+  },
+  "dagitilmamis": {
+   "tutar": 4000,
+   "aylar": [
+    "2026-07"
+   ]
+  },
+  "standartFark": null,
+  "standartEksik": [],
+  "modeller": [
+   {
+    "model": "AK100",
+    "yuklenmemis": 3000,
+    "payAlamamis": 0
+   }
+  ],
+  "tamAy": true,
+  "dagitimVar": true
+ },
+ "fiyat": {
+  "adet": 3,
+  "ortalama": 10226.33,
+  "yontem": "marj",
+  "baslangic": "2026-01-01",
+  "bitis": "2026-12-31",
+  "fiyat": 12783,
+  "uyari": null
+ },
+ "kdv": {
+  "hesaplananTL": 0,
+  "indirilecek": 11729.13,
+  "fark": -11729.13,
+  "odenecek": 0,
+  "devreden": 11729.13,
+  "haricTutarlar": []
+ }
+}

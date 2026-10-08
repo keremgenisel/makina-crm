@@ -9,7 +9,7 @@
 // karlilikOzeti / makinaKarlilik / fiyatOnerisi onun üstünde ucuz türetimlerdir.
 import {
   ayOf, ayEkle, ayinSonGunu, tamAylar, turHaritasi, davranisOf, makinaCozucuOlustur,
-  canliModelSeti, kalemKovalariKurus, kalemGorunenAd, kurus, tl, standartGiderAyi, dagitimPaylari, dagitimAraligi,
+  canliModelSeti, kalemKovalariKurus, kisitEtkiliMi, kalemGorunenAd, kurus, tl, standartGiderAyi, dagitimPaylari, dagitimAraligi,
 } from "./gider";
 import { trLower, parseMoney, gercekSatisBedeli, yerelBugun } from "./utils";
 import { CURRENCIES } from "./constants";
@@ -23,6 +23,9 @@ export const BUGUNKU_VERI_NOTU = "Bugünkü veriye göre hesaplanmıştır; geç
 // Spec 0072 R15, R18: maliyet notlarının dağıtım satırı (yalnız hesapta dağıtılmış kalem varken).
 export const DAGITIM_NOTU = "Aylara dağıtılmış kalemlerin her aya yalnız o aya düşen payı ortak gidere girer; gelecek ayların payı o ay gelince eklenir.";
 export const DAGITIM_STANDART_NOTU = "Ortak gider kaynağı standart olduğu için aylara dağıtılmış kalemlerin makina maliyetine etkisi yoktur.";
+// Spec 0076 R27 (plan Q7): maliyet kısıtlı (binek araç) giderlerin indirilemeyen KDV'sini içerir; not koşulludur (kisitliVar).
+export const KISITLI_NOTU = "Maliyet, kısıtlı (binek araç) giderlerin indirilemeyen KDV'sini içerir.";
+export const KISITLI_STANDART_NOTU = "Maliyet, makinaya ve modele atanmış kısıtlı (binek araç) giderlerin indirilemeyen KDV'sini içerir; ortak gider kaynağı standart olduğu için ortak kovaya düşen kısım maliyete girmez.";
 
 // Spec 0072 R11, R12, R26 (S10): dağıtım paylarının ay süzgeci, tek saf yardımcı. Kalemin kendi ayı (ilk pay) her zaman
 // kalır (dağıtımsız kalemin bugünkü davranışı, C3); sonraki aylar yalnız içinde bulunulan aya kadar girer. Yürürlük öncesi
@@ -177,11 +180,13 @@ export const hesaplaMakinaMaliyetleri = ({
   const ortakGercek = new Map();
   const dagitimAy = new Map(); // spec 0072 R14, R16: ayın ortak giderine pay veren dağıtılmış kalemler
   let dagitimVar = false;
+  let kisitliVar = false; // spec 0076 R27
   const sinifAy = new Map();
   const havuzlar = [];
   for (const k of kalemler) {
     const dav = davranisOf(k, turMap);
     const kv = kalemKovalariKurus(k, { davranis: dav, makinaCoz, canliModeller });
+    if (kisitEtkiliMi(k, dav)) kisitliVar = true;
     const ay = ayOf(k.tarih);
     if (!sinifAy.has(ay)) sinifAy.set(ay, bosSinif());
     const sa = sinifAy.get(ay);
@@ -328,7 +333,8 @@ export const hesaplaMakinaMaliyetleri = ({
   }
   partiler.sort((a, b) => (a.baslangicAy !== b.baslangicAy ? (a.baslangicAy < b.baslangicAy ? -1 : 1) : String(a.ad).localeCompare(String(b.ad), "tr")));
   for (const m of makinalar) m.uretimMaliyeti = m.dogrudan + m.malzeme + m.ortakPay;
-  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy, partiler, dagitimVar };
+  // Spec 0076: işaret yalnız kısıtlı kalem varken eklenir (bayraksız veride çıktı birebir aynı, AC-36).
+  return { makinalar: makinaMap, liste: makinalar, aylar, havuzlar, kaynak, yururlukAy: yurAy, partiler, dagitimVar, ...(kisitliVar ? { kisitliVar } : {}) };
 };
 
 // ── Satış tarafı ──────────────────────────────────────────────────────────────
@@ -370,7 +376,7 @@ const karlilikIc = (sonuc, anahtar, rates) => {
     dogrudanKalemler: m.dogrudanKalemler, malzemePaylari: m.malzemePaylari, malzemePayiAlamadi: !!m.malzemePayiAlamadi,
     // Spec 0022 R7, R10: makinanın partisi; açık partide maliyet geçicidir (etiket, rakam dondurulmaz).
     parti: m.parti ? partiOzeti(sonuc, m.parti.id) : null, gecici: !!m.parti && !m.parti.bitisAy,
-    dagitimlar: makinaDagitimlari(sonuc, m), dagitimVar: !!sonuc.dagitimVar,
+    dagitimlar: makinaDagitimlari(sonuc, m), dagitimVar: !!sonuc.dagitimVar, ...(sonuc.kisitliVar ? { kisitliVar: true } : {}),
   };
   if (!m.satildi) return { detay: { ...temel, satildi: false }, k: { uretim: m.uretimMaliyeti } };
   const c = m.kayit;
@@ -468,7 +474,7 @@ export const karlilikOzeti = (sonuc, { baslangic, bitis, rates } = {}) => {
     bedelsiz: { adet: bedelsiz.length, maliyet: tl(bedelsizMaliyet), makinalar: bedelsiz },
     kursuz: { adet: kursuz.length, makinalar: kursuz },
     stokta: { adet: stokAdet, maliyet: tl(stokT), tarih: bitis, partiler: stokPartileri },
-    dagitilmamis, standartFark, standartEksik, modeller, tamAy: !!aylar, dagitimVar: !!sonuc.dagitimVar,
+    dagitilmamis, standartFark, standartEksik, modeller, tamAy: !!aylar, dagitimVar: !!sonuc.dagitimVar, ...(sonuc.kisitliVar ? { kisitliVar: true } : {}),
   };
 };
 

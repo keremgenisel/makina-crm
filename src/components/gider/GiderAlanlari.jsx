@@ -2,7 +2,7 @@ import { useState, useRef, useLayoutEffect } from "react";
 import { Icon, Select, Field, Input } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl,
-  dagitimSecilebilirMi, dagitimAySayisiCoz, dagitimRozetMetni, DAGITIM_AY_MAX, DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU } from "../../lib/gider";
+  dagitimSecilebilirMi, dagitimAySayisiCoz, dagitimRozetMetni, DAGITIM_AY_MAX, DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU } from "../../lib/gider";
 import { fmtCur, fmtTR, trLower } from "../../lib/utils";
 import { tutarGosterim, tutarGirdisiIsle } from "../../lib/tutarGirdisi";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
@@ -78,7 +78,7 @@ export const MakinaSecici = ({ makinaTur, makinaId, onChange, stock = [], custom
 };
 
 // Çok satırlı model dağılımı (R21, K31, K32): model + birim maliyet + adet; satır toplamı gösterimdir.
-export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar, personel = false }) => {
+export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar, personel = false, kisitli = false }) => {
   const d = modelSatirlariDogrula(tutarCoz(tutar).deger, satirlar);
   const set = (i, patch) => onChange(satirlar.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const hataOf = (i, alan) => d.hatalar.find(h => h.satir === i && h.alan === alan)?.mesaj;
@@ -121,7 +121,9 @@ export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar, 
       </div>
       {personel && <Ipucu>Personel kaleminde birim maliyet, o modelin bir makinasına düşen işçiliktir; adet, kaç makina.</Ipucu>}
       {d.asim > 0 && <HataMetni>Satır toplamı kalem tutarını {tl2(d.asim)} aşıyor. Kayıt yapılamaz.</HataMetni>}
-      {d.asim === 0 && d.fark > 0 && satirlar.length > 0 && <Ipucu>Dağıtılmayan {tl2(d.fark)} ortak gidere yazılır. Bu bir uyarıdır, kaydı engellemez.</Ipucu>}
+      {/* Spec 0076 R15/2: sınır matrahtır; kısıtlı kalemde indirilemeyen KDV de ortak kovaya düşer, ipucu bunu söyler. */}
+      {d.asim === 0 && d.fark > 0 && satirlar.length > 0 && <Ipucu>Dağıtılmayan {tl2(d.fark)}{kisitli ? " ve indirilemeyen KDV" : ""} ortak gidere yazılır. Bu bir uyarıdır, kaydı engellemez.</Ipucu>}
+      {d.asim === 0 && d.fark === 0 && kisitli && satirlar.length > 0 && <Ipucu>İndirilemeyen KDV ortak gidere yazılır.</Ipucu>}
     </div>
   );
 };
@@ -137,7 +139,7 @@ const ATAMA_AD = { makina: "Makina", model: "Model", dagitma: "Dağıtılmasın"
 // Atama seçici (R7, R20, R21, K25): üç seçenek birbirini dışlar. Seçim değişince önceki atama
 // temizlenir ve tek satırlık bilgi gösterilir (AC-76, AC-77). Kira kaleminde çizilmez (K38; spec 0020 R5).
 // Personelde makina seçilince kalemin tamamının o makinaya yükleneceği söylenir, kayıt engellenmez (spec 0020 R3).
-export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar, davranis = DAVRANIS.NORMAL }) => {
+export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar, davranis = DAVRANIS.NORMAL, kisitli = false }) => {
   const [bilgi, setBilgi] = useState("");
   const at = value.atamaTur || "";
   const degistir = (yeni) => {
@@ -162,12 +164,40 @@ export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar,
       )}
       {at === ATAMA.MODEL && (
         <div style={{ marginTop: 10 }}>
-          <ModelSatirlari satirlar={value.modelSatirlari || []} onChange={m => onChange({ modelSatirlari: m })} modeller={modeller} tutar={tutar} personel={davranis === DAVRANIS.PERSONEL} />
+          <ModelSatirlari satirlar={value.modelSatirlari || []} onChange={m => onChange({ modelSatirlari: m })} modeller={modeller} tutar={tutar} personel={davranis === DAVRANIS.PERSONEL} kisitli={kisitli} />
         </div>
       )}
     </div>
   );
 };
+
+// Spec 0076 R1, R2, R6, R30, R35: gider kısıtlaması (binek araç) kutusu ve indirilebilir oran. Kalem formu ve tekrarlayan
+// tanım formu aynı alanı kullanır (tanımda oran boş bırakılabilir: "ayardaki oran", R8/3). Kutu açılınca oran ayardaki
+// varsayılanla dolar (R9'un tek yardımcısı); kapanınca temizlenir. Kapı (kisitliGiderMi) çağıranda.
+export const KISIT_KAPSAM_IPUCU = "Binek otomobilin yakıt, bakım, onarım, sigorta, kasko, otopark ve lastik giderleri. Ruhsatında \"ticari\" yazan kamyonet ve panelvan için işaretlemeyin.";
+export const KisitAlani = ({ acik, oran, onChange, varsayilanOran, hata = null, tanim = false }) => (
+  <div data-testid="kisit-alani" style={{ borderTop: "1px dashed var(--n300, #cbd5e1)", paddingTop: 10, marginBottom: 10 }}>
+    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+      <input type="checkbox" aria-label={KISIT_KUTU_ETIKETI} checked={!!acik}
+        onChange={e => onChange(e.target.checked ? { kisitliGider: true, indirilebilirOran: tanim ? "" : String(varsayilanOran) } : { kisitliGider: false, indirilebilirOran: "" })}
+        style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--brand, #e85d1a)" }} />
+      <span style={{ fontSize: 13, fontWeight: 700 }}>{KISIT_KUTU_ETIKETI}</span>
+    </label>
+    {acik && (
+      <div style={{ marginTop: 8 }}>
+        <div style={{ maxWidth: 200 }}>
+          <Field label={tanim ? "İndirilebilir oran" : "İndirilebilir oran *"}>
+            <TutarInput sym="%" ariaLabel="İndirilebilir oran" value={oran} onChange={v => onChange({ indirilebilirOran: v })} invalid={!!hata} />
+            <HataMetni>{hata}</HataMetni>
+          </Field>
+        </div>
+        {tanim && <Ipucu>Boş bırakılırsa her ay üretilen kaleme Ayarlar'daki oran (şu an %{varsayilanOran}) yazılır.</Ipucu>}
+        <Ipucu>{KISIT_KAPSAM_IPUCU}</Ipucu>
+        <Ipucu>{KISIT_FORM_NOTU}</Ipucu>
+      </div>
+    )}
+  </div>
+);
 
 // Spec 0072 R1, R17, R25 (S3): maliyete dağıtım alanı. Atama bölümünden bağımsızdır (kirada atama bölümü yok) ve
 // bütün davranışlarda çizilir; makina ve "dağıtılmasın" atamasında pasif, nedeniyle. Gider formu ve tekrarlayan tanım

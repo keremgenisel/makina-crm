@@ -79,7 +79,19 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01" }); // 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, indirilebilirOran: 70, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01" }); // 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır; spec 0076 R34: indirilebilir oran varsayılanı (70) yazılır
+  });
+  // Triyaj (spec 0076): oran alanı eklenirken başlangıç tarihi formun ilk durumundan düşmüş, başka bir alan kaydedilince
+  // 0051 eşiği sessizce siliniyordu. Dolu ayarla açılan form yalnız oran değiştirilip kaydedilince bütün alanları korur.
+  it("triyaj 0076: dolu ayarla açılan form yalnız oran değiştirilip kaydedilince diğer bütün alanları (hesapsız başlangıç dahil) korur", () => {
+    const setAppSettings = vi.fn();
+    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 70 };
+    render(<SettingsGider appSettings={{ giderAyarlari: dolu }} setAppSettings={setAppSettings} giderler={[]} />);
+    expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").value).toBe("2026-04-01");
+    fireEvent.change(screen.getByLabelText("Binek araç giderlerinde indirilebilir oran"), { target: { value: "88" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, ...dolu, indirilebilirOran: 88 });
   });
 });
 

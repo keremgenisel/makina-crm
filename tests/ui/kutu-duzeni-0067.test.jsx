@@ -40,7 +40,8 @@ function GiderH({ g0 = EKIM, yururlukAy = "2026-01" }) {
 describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
   it("AC-1 / AC-2 / AC-3 / AC-23: özet kartları → kalem listesi → borç özeti (tam genişlik) → kovalar → kırılım kartları", () => {
     render(<GiderH />);
-    const ozet = screen.getByText("Toplam gider (KDV hariç)"), liste = screen.getByTestId("kalem-listesi"), borc = screen.getByTestId("borc-ozeti");
+    // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
+    const ozet = screen.getByText("Toplam gider"), liste = screen.getByTestId("kalem-listesi"), borc = screen.getByTestId("borc-ozeti");
     const kova = screen.getByText("Makina Maliyeti Kovaları"), tedarikci = screen.getByTestId("tedarikci-kirilimi");
     expect(once(ozet, liste)).toBe(true);
     expect(once(liste, borc)).toBe(true);
@@ -78,7 +79,7 @@ describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} baslangicFiltre={baslangicKalemFiltresi} />`);
     render(<GiderH />);
-    expect(screen.getByText("Toplam gider (KDV hariç)").parentElement.textContent).toMatch(/1\.000 ₺/);
+    expect(screen.getByText("Toplam gider").parentElement.textContent).toMatch(/1\.000 ₺/);
     expect(within(screen.getByTestId("borc-ozeti")).getByText("Demir Bant")).toBeTruthy();
     expect(screen.getByTestId("borc-ozeti").textContent).toMatch(/1\.200 ₺/);
   });

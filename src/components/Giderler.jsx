@@ -8,6 +8,7 @@ import {
   hesaplaGiderRaporu, borcOzeti, tekrarlayanUret, kdvKarsilastir, tamAylar, yururlukKapsami, turHaritasi, canliModelSeti,
   ayOf, ayEkle, ayinSonGunu, odemeleriUygula, DAVRANIS,
   tevkifatOzeti,
+  GIDER_TOPLAMI_CUMLESI, VERGI_MATRAHI_NOTU,
 } from "../lib/gider";
 import { odemeGirisiHazirla, odemeGirisiYaz } from "../lib/formOdemesi";
 import { hedefAdi as hedefAdiOf, cokHedefliMi } from "./gider/GiderAlanlari";
@@ -264,7 +265,7 @@ export const Giderler = ({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--n900, #0f172a)" }}>Giderler</h2>
-          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Tüm tutarlar TL. Gider toplamlarına KDV hariç tutar girer.</div>
+          <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginTop: 2 }}>Tüm tutarlar TL. {GIDER_TOPLAMI_CUMLESI} <span data-testid="vergi-matrahi-notu">{VERGI_MATRAHI_NOTU}</span></div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {/* Spec 0047: rapor düğmesi yalnız başlıkta (boş durum kutusunun eylemlerine girmez). */}
@@ -339,8 +340,8 @@ export const Giderler = ({
             {rapor.bos ? <BosDurum testId="gider-bos-durum" baslik="Bu dönemde gider kaydı yok" metin="Sıfır tutarlı bir tablo yerine bu mesaj gösterilir." eylemler={eylemDugmeleri} /> : (
               <>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <StatKart etiket="Toplam gider (KDV hariç)" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
-                  <StatKart etiket="Ödenmemiş gider (KDV hariç)" deger={tl2(rapor.odenmeyen)} alt={`${rapor.odenmeyenAdet} kalem · seçili dönem`} renk="#dc2626" />
+                  <StatKart etiket="Toplam gider" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
+                  <StatKart etiket="Ödenmemiş gider" deger={tl2(rapor.odenmeyen)} alt={`${rapor.odenmeyenAdet} kalem · seçili dönem`} renk="#dc2626" />
                   <StatKart etiket="Tedarikçilere açık borç (KDV dâhil)" deger={tl2(rapor.tedarikciKirilimi.tedarikciBorcu)} alt="Tüm dönemler, bugüne kadar" renk="#b91c1c" />
                   <StatKart etiket="Kesilen kira stopajı" deger={tl2(rapor.stopajToplam)} alt={`${rapor.stopajSatirlari.length} kira kalemi`} renk="#b45309" />
                   <StatKart etiket="İndirilecek KDV" deger={tl2(rapor.indirilecekKdv)} alt="Ödeme durumundan bağımsız" renk="#16a34a" />
@@ -355,7 +356,7 @@ export const Giderler = ({
                 <KovaKarti rapor={rapor} />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
                   <TurKirilimi rapor={rapor} />
-                  {kdv && <KdvKarsilastirmaKarti durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" style={{ flex: "2 1 300px", minWidth: 0 }} />}
+                  {kdv && <KdvKarsilastirmaKarti durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" kisitli={rapor.kisitli || null} style={{ flex: "2 1 300px", minWidth: 0 }} />}
                 </div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TedarikciKirilimi rapor={rapor} />

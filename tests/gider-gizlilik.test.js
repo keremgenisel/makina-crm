@@ -305,3 +305,20 @@ describe("Spec 0072: maliyete dağıtım çıktılara girmez", () => {
     expect(JSON.stringify(d)).not.toMatch(/Seyfettin/);
   });
 });
+
+// Spec 0076 R24 (AC-25): kısıtlı giderin bilgi rakamları raporda yalnız toplam olarak basılır (motorun tek `kisitli` nesnesi);
+// kalem bazlı kısıtlama listesi ya da kişi bilgisi yok. Rapor kurucusu kalemin kısıtlama alanlarını doğrudan okumaz.
+import { giderKasaRaporu as gkr0076, buildGiderKasaRaporuHtml as html0076 } from "../src/lib/giderRaporu";
+describe("Spec 0076: kısıtlı gider bilgi rakamları çıktıda yalnız toplam", () => {
+  it("AC-25: giderRaporu.js kalemin kisitliGider/indirilebilirOran alanını okumaz; KDV kutusunda kalem adı yok", () => {
+    expect(oku("src/lib/giderRaporu.js")).not.toMatch(/kisitliGider|indirilebilirOran/);
+    const turler = [{ id: 4, ad: "Yakıt", davranis: "normal" }];
+    const r = gkr0076({ giderler: [{ id: 1, tarih: "2026-09-10", turId: 4, tutar: 1000, kdvOrani: 20, aciklama: "Zümrüt'ün binek aracı", kisitliGider: true, indirilebilirOran: 70 }],
+      hareketler: [], turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09");
+    const h = html0076(r);
+    const i = h.indexOf("GİDER · KDV KARŞILAŞTIRMASI");
+    const kutu = h.slice(i, h.indexOf("GİDER · ÖDEME YÖNTEMİ", i));
+    expect(kutu).toContain("KKEG · toplam");
+    expect(kutu).not.toMatch(/Zümrüt/);
+  });
+});

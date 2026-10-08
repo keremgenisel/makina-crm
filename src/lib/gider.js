@@ -1,5 +1,6 @@
 // Gider kaydı ve dönemsel gider takibi: saf hesap motoru (spec 0001, plan K1–K38).
-// React'sız; tüm tutarlar TL (C2), gider toplamlarına KDV hariç tutar girer (C1). Tarihler projenin
+// React'sız; tüm tutarlar TL (C2), gider toplamlarına KDV hariç tutar girer (C1); spec 0076 R14: kısıtlı (binek araç)
+// kalemde indirilemeyen KDV de eklenir (gider tutarı = matrah + indirilemeyen KDV). Tarihler projenin
 // konvansiyonuyla düz string ("YYYY-MM-DD", ay "YYYY-MM") karşılaştırılır, Date'e çevrilmez.
 // Para hesabı kuruş tamsayısıyla yapılır (K32): kayan noktada 3 × 33.333,33 gibi toplamlar sahte
 // "aşım" üretirdi. Dışarı TL (kuruş / 100) döner.
@@ -193,6 +194,66 @@ export const tevkifatDogrula = (form, dav, { kdvBosSerbest = false } = {}) => {
   if (!k.gecersiz && k.deger === 0 && !(k.bos && kdvBosSerbest)) hatalar.push({ alan: "kdvOrani", mesaj: TEVKIFAT_KDV_SIFIR_HATASI });
   return { hatalar, alanlar: { tevkifatli: true, tevkifatPay: pay, tevkifatPayda: payda } };
 };
+// ── Kısmen indirilebilen gider (spec 0076, binek araç) ──────────────────────────
+// R4, R5: kalemin bayrağıdır, tür davranışı değil; yalnız normal davranışta açılır (tek kapı). R8, C1: oran kalemde saklanır
+// ve okuma anında kalemden çözülür; motor ayar okumaz. Bayrak kapalı, davranış uymuyor ya da oran boş/bozuksa %100 sayılır
+// (kısıtlama yok, bütün türev rakamlar bugünkü değerini verir).
+export const KISIT_ORAN_VARSAYILAN = 70;
+export const KISIT_ALANLARI = ["kisitliGider", "indirilebilirOran"];
+export const KISIT_KUTU_ETIKETI = "Gider kısıtlaması uygulanıyor (binek araç)";
+export const KISIT_ORAN_HATASI = "İndirilebilir oran 0 ile 100 arasında tam sayı olmalı.";
+export const KISIT_ORAN_BOS_HATASI = "İndirilebilir oran girilmedi.";
+// R28, C6: kısaltma ilk geçtiği yerde açık adıyla; bütün etiketler bu iki sabitten okur.
+export const KKEG_KISA = "KKEG";
+export const KKEG_ETIKETI = "Kanunen kabul edilmeyen gider (KKEG)";
+// R22/4, R26: Giderler başlığının cümlesi ve tek vergi matrahı notu (ekran ve 0047 aynı sabit).
+export const GIDER_TOPLAMI_CUMLESI = "Gider toplamlarına KDV hariç tutar girer; kısıtlı kalemlerde indirilemeyen KDV de eklenir.";
+export const VERGI_MATRAHI_NOTU = "Uygulamanın gider toplamı vergi matrahı değildir: uygulama harcanan parayı ölçer; kanunen kabul edilmeyen gider (KKEG), amortisman ve benzeri vergi kavramları matrahı ayrıca belirler.";
+// R30: formdaki kalıcı bilgi notu (R26'nın kalem düzeyindeki yüzü).
+export const KISIT_FORM_NOTU = "İndirilemeyen KDV giderin tutarına ve makina maliyetine katılır; vergi açısından ise kanunen kabul edilmeyen giderdir (KKEG). Bu yüzden uygulamanın gider toplamı muhasebenin matrahından farklıdır.";
+export const kisitliGiderMi = (dav) => dav === DAVRANIS.NORMAL;
+const kisitOranGecerli = (v) => v !== "" && v != null && !Number.isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 100;
+// R9: varsayılan oranın TEK okuma yolu; ayar yok, boş ya da bozuksa 70 (boşaltmak 70'e dönmektir, kısıtlamayı kapatmaz).
+export const varsayilanIndirilebilirOran = (giderAyarlari) => {
+  const v = giderAyarlari?.indirilebilirOran;
+  return kisitOranGecerli(v) ? Number(v) : KISIT_ORAN_VARSAYILAN;
+};
+export const kisitOranOf = (k, dav) => (kisitliGiderMi(dav) && k?.kisitliGider && kisitOranGecerli(k.indirilebilirOran) ? Number(k.indirilebilirOran) : 100);
+// R6, AC-39: oran 100 bayraksıza birebir eşittir; rozet ve özet satırları yalnız etkili kısıtlamada çizilir.
+export const kisitEtkiliMi = (k, dav) => kisitOranOf(k, dav) < 100;
+// R10, R11, R12, C4: TEK hesap (kuruş). İndirilebilir KDV ve indirilebilir gider kısmı yuvarlanır (beyan edilen tutar),
+// artık kuruş indirilemeyen ve KKEG tarafında kalır; parçaların toplamı bütüne kuruşu kuruşuna eşittir.
+export const kisitHesabi = (k, dav = DAVRANIS.NORMAL) => {
+  const matrahK = kalemKurus(k, dav), kdvK = kdvKurus(k, dav), oran = kisitOranOf(k, dav);
+  const indirilebilirK = Math.round(kdvK * oran / 100);
+  const indirilemeyenK = kdvK - indirilebilirK;
+  const kkegMatrahK = matrahK - Math.round(matrahK * oran / 100);
+  return { oran, etkili: oran < 100, matrahK, kdvK, indirilebilirK, indirilemeyenK, kkegMatrahK, kkegKdvK: indirilemeyenK, kkegToplamK: kkegMatrahK + indirilemeyenK, giderK: matrahK + indirilemeyenK };
+};
+// R14: kalemin maliyet tarafı (gider tutarı). Bayraksız kalemde kalemKurus'a birebir eşittir (C3).
+const giderKurus = (k, dav) => kisitHesabi(k, dav).giderK;
+const tr2 = (k) => (k / 100).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// R19: kalem listesinin rozeti (0072 dagitimRozetMetni emsali); etkisiz kısıtlamada boş.
+export const kisitliRozetMetni = (k, dav = DAVRANIS.NORMAL) => {
+  const h = kisitHesabi(k, dav);
+  return h.etkili ? `%${h.oran} indirilebilir · indirilemeyen KDV ${tr2(h.indirilemeyenK)}` : "";
+};
+// R6, R35: kalem ve tanım formunun ortak doğrulaması (0075 tevkifatDogrula şekli). alanlar null ise kutu kapalıdır (ya da
+// davranış uymaz) ve çağıran iki alanı kayıttan SİLER. oranBosSerbest: tanımda boş oran "ayardaki oran"dır (R8/3).
+// Oran alanının tek çözümü (kalem, tanım ve Ayarlar): { bos } | { deger } | { hata }.
+export const kisitOranCoz = (v) => {
+  const o = tutarCoz(v);
+  if (o.bos) return { bos: true, deger: null };
+  if (o.gecersiz || !kisitOranGecerli(o.deger)) return { hata: KISIT_ORAN_HATASI };
+  return { deger: o.deger };
+};
+export const kisitDogrula = (form, dav, { oranBosSerbest = false } = {}) => {
+  if (!kisitliGiderMi(dav) || !form?.kisitliGider) return { hatalar: [], alanlar: null };
+  const o = kisitOranCoz(form.indirilebilirOran);
+  if (o.bos) return oranBosSerbest ? { hatalar: [], alanlar: { kisitliGider: true } } : { hatalar: [{ alan: "indirilebilirOran", mesaj: KISIT_ORAN_BOS_HATASI }], alanlar: { kisitliGider: true } };
+  if (o.hata) return { hatalar: [{ alan: "indirilebilirOran", mesaj: o.hata }], alanlar: { kisitliGider: true } };
+  return { hatalar: [], alanlar: { kisitliGider: true, indirilebilirOran: o.deger } };
+};
 // R17, R27: giriş yönü; alanı olmayan eski kayıt hariç sayılır.
 export const KDV_YONU = { HARIC: "haric", DAHIL: "dahil" };
 export const kdvYonuOf = (k) => (k?.kdvYonu === KDV_YONU.DAHIL ? KDV_YONU.DAHIL : KDV_YONU.HARIC);
@@ -206,8 +267,12 @@ export const sifirTutarSerbestMi = (dav) => dav === DAVRANIS.NORMAL || dav === D
 export const girilenHaric = (deger, kdvYonu, kdvOrani) => (kdvYonu === KDV_YONU.DAHIL ? tl(kdvAyir(deger, kdvOrani).tutarK) : deger);
 const stopajKurus = (k, dav) => (dav === DAVRANIS.KIRA ? Math.round(kurus(k.tutar) * (Number(k.stopajOrani) || 0) / 100) : 0);
 
-// Gider toplamlarına giren tutar (KDV hariç; kira brüt; personel resmi + elden) — K19.
+// Matrah / fatura tutarı (KDV hariç; kira brüt; personel resmi + elden) — K19. Spec 0076 R14, R21: fatura tarafı ve genel
+// arama bunu okur; maliyet tarafının tüketicileri kalemGiderTutari'nı okur.
 export const kalemTutari = (k, dav = DAVRANIS.NORMAL) => tl(kalemKurus(k, dav));
+// Spec 0076 R14, R15: gider tutarı = matrah + indirilemeyen KDV (toplam, tür, tedarikçi, kova ve makina maliyeti tabanı).
+export const kalemGiderTutari = (k, dav = DAVRANIS.NORMAL) => tl(giderKurus(k, dav));
+export const kalemIndirilebilirKdv = (k, dav = DAVRANIS.NORMAL) => tl(kisitHesabi(k, dav).indirilebilirK);
 export const kalemKdv = (k, dav = DAVRANIS.NORMAL) => tl(kdvKurus(k, dav));
 export const kalemStopaj = (k, dav = DAVRANIS.NORMAL) => tl(stopajKurus(k, dav));
 // "Ödenecek tutar" (R14, K18): normal tutar + KDV; kira brüt − stopaj + KDV; personel resmi + elden.
@@ -673,6 +738,11 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   hatalar.push(...tv.hatalar);
   if (tv.alanlar) Object.assign(kayit, tv.alanlar);
   else for (const a of TEVKIFAT_ALANLARI) delete kayit[a];
+  // Spec 0076 R6: kısıtlama alanları tek doğrulayıcıdan; kutu kapalıyken (ya da davranış normal değilken) silinir.
+  const ks = kisitDogrula(form, dav);
+  hatalar.push(...ks.hatalar);
+  for (const a of KISIT_ALANLARI) delete kayit[a];
+  if (ks.alanlar && !ks.hatalar.length) Object.assign(kayit, ks.alanlar);
 
   // Vade (R18, AC-71): tek alan; Çek'te etiket değişir.
   if (form.sonOdemeTarihi && form.tarih && form.sonOdemeTarihi < form.tarih) {
@@ -725,7 +795,10 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
       // Dağıtım tabanı kalem tutarıdır; personelde resmi + elden (spec 0020 R2).
       const d = modelSatirlariDogrula(dav === DAVRANIS.PERSONEL ? tl(kalemKurus(kayit, dav)) : (kayit.tutar ?? 0), satirlar);
       d.hatalar.forEach(h => hatalar.push({ alan: "modelSatirlari", satir: h.satir, mesaj: h.mesaj }));
-      if (!d.hatalar.length && d.fark > 0) uyarilar.push({ alan: "modelSatirlari", mesaj: `Dağıtılmayan ${d.fark.toLocaleString("tr-TR")} ₺ ortak gidere yazılacak.` });
+      // Spec 0076 R15/2: kısıtlı kalemde indirilemeyen KDV de ortak kovaya düşer; uyarı ortak kovanın gerçeğini söyler.
+      const kisitli = kisitEtkiliMi(kayit, dav) && kisitHesabi(kayit, dav).indirilemeyenK > 0;
+      if (!d.hatalar.length && d.fark > 0) uyarilar.push({ alan: "modelSatirlari", mesaj: `Dağıtılmayan ${d.fark.toLocaleString("tr-TR")} ₺${kisitli ? " ve indirilemeyen KDV" : ""} ortak gidere yazılacak.` });
+      else if (!d.hatalar.length && kisitli) uyarilar.push({ alan: "modelSatirlari", mesaj: "İndirilemeyen KDV ortak gidere yazılacak." });
       kayit.modelSatirlari = satirlar.map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
     }
   }
@@ -781,8 +854,10 @@ export const canliModelSeti = (standardModels = [], customModels = []) =>
 
 // Tutar bazlı kova bölmesi (K33, AC-82). Dönen değerler TL; toplamları kalem tutarına kuruşu kuruşuna eşittir.
 // İç hesap: kuruş cinsinden kovalar. makinaCozuldu = kalemin makinası çözülebildi mi (çağıran bir kez çözer).
+// Spec 0076 R15, R18: taban gider tutarıdır (toplamla aynı taban, dört kova = genel toplam); indirilemeyen KDV kalemin
+// kovasını izler. Model kovasının üst sınırı MATRAHTIR (plan Q2): model satırları faturadan, fark ortak kovaya düşer.
 const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
-  const top = kalemKurus(k, davranis);
+  const top = giderKurus(k, davranis);
   const r = { makina: 0, model: 0, dagitma: 0, ortak: 0 };
   if (!atanabilirMi(davranis)) r.ortak = top;
   else if (k.atamaTur === ATAMA.DAGITMA) r.dagitma = top;
@@ -792,7 +867,7 @@ const kovaKurus = (k, davranis, makinaCozuldu, canliModeller) => {
     (k.modelSatirlari || []).forEach(s => {
       if (canliModeller.has(trLower(s.modelAd))) m += kurus(s.birimMaliyet) * (Number(s.adet) || 0);
     });
-    r.model = Math.min(m, top);
+    r.model = Math.min(m, kalemKurus(k, davranis));
     r.ortak = top - r.model;
   } else r.ortak = top;
   return r;
@@ -927,6 +1002,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       Object.assign(kalem, { tutar: girilenHaric(Number(t.tutar) || 0, kdvYonu, oran), kdvOrani: oran, kdvYonu });
       // Spec 0075 R26 (Ö-14): tevkifat yalnız normal dalda ve kapıdan kopyalanır; başka davranışın tanımında kalmış değer taşınmaz.
       if (tevkifatliMi(dav) && t.tevkifatli) Object.assign(kalem, { tevkifatli: true, tevkifatPay: Number(t.tevkifatPay), tevkifatPayda: Number(t.tevkifatPayda) });
+      // Spec 0076 R8/3, R35: üretilen kalem SOMUT oran taşır (tanımın oranı, yoksa o anki ayar oranı).
+      if (kisitliGiderMi(dav) && t.kisitliGider) Object.assign(kalem, { kisitliGider: true, indirilebilirOran: kisitOranGecerli(t.indirilebilirOran) ? Number(t.indirilebilirOran) : varsayilanIndirilebilirOran(giderAyarlari) });
       // Spec 0074 R8: atanamayan davranışın (SGK) tanımındaki eski atama kaleme taşınmaz.
       if (!atanabilirMi(dav)) { /* atama yok, kova ortak */ }
       else if (t.atamaTur === ATAMA.MAKINA) Object.assign(kalem, { atamaTur: t.atamaTur, makinaTur: t.makinaTur, makinaId: t.makinaId });
@@ -1011,6 +1088,7 @@ export const hesaplaGiderRaporu = (
 
   const turKir = new Map();
   let toplam = 0, odenen = 0, odenmeyen = 0, odenmeyenAdet = 0, stopaj = 0, indKdv = 0;
+  const kisit = { adet: 0, indirilebilirKdv: 0, indirilemeyenKdv: 0, kkegMatrah: 0, kkegKdv: 0, kkegToplam: 0 }; // spec 0076 R24
   const kova = { makina: 0, model: 0, dagitma: 0, ortak: 0 };
   const kovaKatki = { makina: 0, model: 0, dagitma: 0, ortak: 0 };
   const stopajSatirlari = [];
@@ -1025,15 +1103,21 @@ export const hesaplaGiderRaporu = (
 
   for (const k of kalemler) {
     const dav = davranisOf(k, turMap);
-    const tut = kalemKurus(k, dav);
+    // Spec 0076 R15: toplam, ödenen/ödenmeyen, tür ve tedarikçi gider tutarından; R23: indirilecek KDV oranla.
+    const kh = kisitHesabi(k, dav);
+    const tut = kh.giderK;
     toplam += tut;
     // Spec 0071 R20, AC-29: tutarı girilmemiş (sıfır) kalem "ödenmemiş gider" kartında sayılmaz; tutarlı kalemde değişiklik yok.
     if (k.odendi) odenen += tut; else if (tut > 0) { odenmeyen += tut; odenmeyenAdet++; }
-    indKdv += kdvKurus(k, dav);
+    indKdv += kh.indirilebilirK;
+    if (kh.etkili) {
+      kisit.adet++; kisit.indirilebilirKdv += kh.indirilebilirK; kisit.indirilemeyenKdv += kh.indirilemeyenK;
+      kisit.kkegMatrah += kh.kkegMatrahK; kisit.kkegKdv += kh.kkegKdvK; kisit.kkegToplam += kh.kkegToplamK;
+    }
     if (dav === DAVRANIS.KIRA) {
       const s = stopajKurus(k, dav);
       stopaj += s;
-      stopajSatirlari.push({ kalemId: k.id, tarih: k.tarih, aciklama: k.aciklama, brut: tl(tut), stopajOrani: Number(k.stopajOrani) || 0, stopaj: tl(s), girisYonu: k.girisYonu });
+      stopajSatirlari.push({ kalemId: k.id, tarih: k.tarih, aciklama: k.aciklama, brut: tl(kh.matrahK), stopajOrani: Number(k.stopajOrani) || 0, stopaj: tl(s), girisYonu: k.girisYonu });
     }
     const tur = turMap.get(String(k.turId));
     const tk = String(k.turId);
@@ -1118,6 +1202,8 @@ export const hesaplaGiderRaporu = (
     kalemler,
     toplam: tl(toplam), odenen: tl(odenen), odenmeyen: tl(odenmeyen), odenmeyenAdet,
     stopajToplam: tl(stopaj), stopajSatirlari, indirilecekKdv: tl(indKdv),
+    // Spec 0076 R24/2: tek alan, kısıtlı kalem yoksa hiç eklenmez.
+    ...(kisit.adet ? { kisitli: { adet: kisit.adet, indirilebilirKdv: tl(kisit.indirilebilirKdv), indirilemeyenKdv: tl(kisit.indirilemeyenKdv), kkegMatrah: tl(kisit.kkegMatrah), kkegKdv: tl(kisit.kkegKdv), kkegToplam: tl(kisit.kkegToplam) } } : {}),
     kovalar: { makina: tl(kova.makina), model: tl(kova.model), dagitma: tl(kova.dagitma), ortak: tl(kova.ortak) },
     kovaKatki,
     makinaBazli: [...makinaMap.values()].map(m => ({ ...m, toplam: tl(m.toplam) })).sort((a, b) => b.toplam - a.toplam),

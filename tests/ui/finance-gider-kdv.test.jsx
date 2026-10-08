@@ -43,6 +43,16 @@ describe("Finans — KDV Karşılaştırması", () => {
     fireEvent.click(screen.getByText("Göster"));
     expect(within(screen.getByTestId("kdv-karsilastirma")).queryByTestId("kdv2-bilgi")).toBeNull();
   });
+  // Spec 0076 R23, AC-24 (plan Q6): kısıtlı (binek araç) kalemde indirilecek KDV oranla sayılır, fark ona göre; kartın KKEG
+  // bilgi satırları yalnız Giderler'de (Finans `kisitli` vermez, ekranı başka değişmez).
+  it("AC-24 (0076): kısıtlı kalemde indirilecek 12.000 × %70 = 8.400, fark 41.600; Finans kartında KKEG satırı yok", () => {
+    ciz({ giderYetki: true, giderler: [{ id: 1, tarih: "2026-08-15", turId: 4, tutar: 60000, kdvOrani: 20, odendi: false, kisitliGider: true, indirilebilirOran: 70 }] });
+    fireEvent.click(screen.getByText("Göster"));
+    const kart = screen.getByTestId("kdv-karsilastirma");
+    expect(within(kart).getByText("− 8.400 ₺")).toBeTruthy();
+    expect(within(kart).getByText("41.600 ₺")).toBeTruthy();
+    expect(within(kart).queryByTestId("kisit-kdv-bilgi")).toBeNull();
+  });
   it("AC-29: indirilecek büyükse 'sonraki döneme devreden KDV' pozitif tutar", () => {
     ciz({ giderYetki: true, giderler: [{ id: 1, tarih: "2026-08-15", turId: 4, tutar: 300000, kdvOrani: 20, odendi: false }] });
     fireEvent.click(screen.getByText("Göster"));

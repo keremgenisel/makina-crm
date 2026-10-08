@@ -57,15 +57,16 @@ describe("Giderler sekmesi: dönem raporu", () => {
   });
   it("AC-13: iki ayrı başlık; ödendi işaretlenince ödenmemiş toplamdan ve açık borçtan düşer", () => {
     render(<Harness g0={[k({ tedarikciId: 12 })]} />);
-    expect(screen.getByText("Ödenmemiş gider (KDV hariç)")).toBeTruthy();
+    // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
+    expect(screen.getByText("Ödenmemiş gider")).toBeTruthy();
     expect(screen.getByText("Tedarikçilere açık borç (KDV dâhil)")).toBeTruthy();
     const kart = (e) => screen.getByText(e).parentElement;
-    expect(within(kart("Ödenmemiş gider (KDV hariç)")).getByText("10.000 ₺")).toBeTruthy();
+    expect(within(kart("Ödenmemiş gider")).getByText("10.000 ₺")).toBeTruthy();
     expect(within(kart("Tedarikçilere açık borç (KDV dâhil)")).getByText("12.000 ₺")).toBeTruthy();
     // Spec 0024 R17 (onaylı istisna): anahtar ödeme penceresini açar, kalan tutarla kaydedilir.
     fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödeme kaydet"));
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
-    expect(within(kart("Ödenmemiş gider (KDV hariç)")).getByText("0 ₺")).toBeTruthy();
+    expect(within(kart("Ödenmemiş gider")).getByText("0 ₺")).toBeTruthy();
     expect(within(kart("Tedarikçilere açık borç (KDV dâhil)")).getByText("0 ₺")).toBeTruthy();
   });
   it("triyaj bulgu 10: 'Tedarikçilere açık borç' kartı tedarikçisi seçilmemiş borcu saymaz", () => {

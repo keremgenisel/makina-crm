@@ -48,13 +48,13 @@ try {
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }, { id: 38, ad: "SGK", davranis: "sgk" }], // spec 0074 AC-33
     tedarikciler: [{ id: 31, ad: "Tedarikçi A" }, { id: 39, ad: "Çöpteki", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b
-    giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, kdvYonu: "dahil", dagitimAy: 6, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [], tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10 }], // spec 0075 AC-37
+    giderTanimlari: [{ id: 32, turId: 30, ad: "Sarf", tutar: 100, kdvYonu: "dahil", dagitimAy: 6, baslangicAy: "2026-07", uretilenAylar: [], modelSatirlari: [], tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, kisitliGider: true, indirilebilirOran: 70 }], // spec 0075 AC-37, spec 0076 AC-37
     giderler: [{ id: 33, tarih: "2026-07-10", turId: 30, tutar: 1000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, odendi: false, tedarikciId: 31, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }],
       ekOdemeler: [{ tur: "ikramiye", aciklama: "Bayram", resmiTutar: 500, eldenTutar: null }],
       taksitler: [{ id: 7001, hedef: "ana", sira: 1, vade: "2026-07-15", tutar: 600, odendi: true, odemeTarihi: "2026-07-15" }, { id: 7002, hedef: "ana", sira: 2, vade: "2026-08-15", tutar: 600, odendi: false, odemeTarihi: null }] },
       // Spec 0074 AC-33: SGK davranışlı kalem temiz kurulumda da yazılır.
       // Spec 0075 AC-37: tevkifatlı kalem temiz kurulumda da yazılır.
-      { id: 35, tarih: "2026-07-20", turId: 30, aciklama: "Temizlik", tutar: 1000, kdvOrani: 20, odendi: false, atamaTur: "", modelSatirlari: [], tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10,
+      { id: 35, tarih: "2026-07-20", turId: 30, aciklama: "Temizlik", tutar: 1000, kdvOrani: 20, odendi: false, atamaTur: "", modelSatirlari: [], tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, kisitliGider: true, indirilebilirOran: 70,
         taksitler: [{ id: 7021, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 1020, odendi: false, odemeTarihi: null }, { id: 7022, hedef: "tevkifat", sira: 1, vade: "2026-08-26", tutar: 180, odendi: false, odemeTarihi: null }] },
       { id: 36, tarih: "2026-07-31", turId: 38, aciklama: "Temmuz SGK", tutar: 4200, kdvOrani: 0, tedarikciId: null, odendi: false, atamaTur: "", modelSatirlari: [] },
       // Spec 0054 AC-21: ek ödeme hedefleri temiz kurulumda da yazılır.
@@ -135,6 +135,7 @@ check("temiz kurulumda yedek parça satışı + tahsis tabloları oluştu", (() 
 check("temiz kurulumda yedek parça ödeme yöntemi sütunu oluştu", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.yontem === "Kredi Kartı"; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (yedek parça)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 8); return s?.taksitSayisi === 6 && s?.kartKomisyonu?.oran === 9.34 && s?.kartKomisyonu?.toplamKesinti === 54; })());
 check("temiz kurulumda kredi kartı taksit + komisyon sütunları oluştu (payment, blokaj)", (() => { const p = (blob.payments || []).find(x => x.id === 10); return p?.taksitSayisi === 1 && p?.kartKomisyonu?.blokajGun === 40 && p?.kartKomisyonu?.hesabaGecis === "2026-08-31"; })());
+check("spec 0076 AC-37: temiz kurulumda kısıtlama sütunları iki tabloda var ve yazıldı", (() => { const g = (blob.giderler || []).find(x => x.id === 35); const t = (blob.giderTanimlari || []).find(x => x.id === 32); return g?.kisitliGider === true && g.indirilebilirOran === 70 && t?.kisitliGider === true && t.indirilebilirOran === 70; })());
 check("spec 0075 AC-37: temiz kurulumda tevkifat sütunları iki tabloda var ve 'tevkifat' satırı yazıldı", (() => { const g = (blob.giderler || []).find(x => x.id === 35); const t = (blob.giderTanimlari || []).find(x => x.id === 32); return g?.tevkifatli === true && g.tevkifatPay === 9 && (g.taksitler || []).some(x => x.hedef === "tevkifat" && x.tutar === 180) && t?.tevkifatli === true && t.tevkifatPayda === 10; })());
 check("spec 0074 AC-33: temiz kurulumda SGK türü ve SGK kalemi yazıldı", (() => { const g = (blob.giderler || []).find(x => x.id === 36); return (blob.giderTurleri || []).find(t => t.id === 38)?.davranis === "sgk" && g?.turId === 38 && g.tutar === 4200; })());
 check("spec 0070 AC-5: temiz kurulumda sgkTutar/yolParasi sütunları ve SGK satırı var", (() => { const g = (blob.giderler || []).find(x => x.id === 37); return g?.sgkTutar === 300 && g.yolParasi === 50 && (g.taksitler || []).some(t => t.hedef === "sgk" && t.vade === "2026-08-15"); })());

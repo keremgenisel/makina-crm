@@ -478,3 +478,20 @@ describe("Spec 0078 AC-38: çöpteki personel türü arama gizliliğini delmez",
     expect(readFileSync("src/components/GlobalSearch.jsx", "utf8")).toMatch(/turHaritasi\(v\.giderTurleri \|\| \[\]\)/);
   });
 });
+
+// Spec 0076 R21, AC-22: kısıtlı kalemin aranan tutarları bugünkü iki tutardır (matrah ve ödenecek); gider tutarı (1.060)
+// üçüncü tutar olarak eklenmez ve sonuç satırının gösterdiği tutar matrahtır (aranan rakamla aynı).
+import { aramaSorgusu, kalemEslesmesi, kalemMeta } from "../../src/lib/aramaGider";
+import { turHaritasi } from "../../src/lib/gider";
+describe("Spec 0076: genel arama kısıtlı kalemde (AC-22)", () => {
+  const turMap = turHaritasi([{ id: 1, ad: "Yakıt", davranis: "normal" }]);
+  const k = { id: 1, tarih: "2026-03-10", turId: 1, tutar: 1000, kdvOrani: 20, aciklama: "Binek yakıt", kisitliGider: true, indirilebilirOran: 70 };
+  const ctx = { turMap, tedMap: new Map() };
+  it("AC-22: 1.000 (matrah) ve 1.200 (ödenecek) bulunur, 1.060 (gider tutarı) bulunmaz; satırda matrah yazar", () => {
+    expect(kalemEslesmesi(k, aramaSorgusu("1.000"), ctx)).toBeTruthy();
+    expect(kalemEslesmesi(k, aramaSorgusu("1.200"), ctx)).toBeTruthy();
+    expect(kalemEslesmesi(k, aramaSorgusu("1.060"), ctx)).toBeNull();
+    expect(kalemMeta(k, ctx).join(" ")).toMatch(/1\.000 ₺/);
+    expect(kalemMeta(k, ctx).join(" ")).not.toMatch(/1\.060/);
+  });
+});

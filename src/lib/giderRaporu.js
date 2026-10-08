@@ -9,7 +9,7 @@
 //
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
-import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemTutari, odemeDurumu, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, tevkifatOzeti, sgkOzeti, kurumTarafAdi } from "./gider";
+import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemGiderTutari, odemeDurumu, KKEG_ETIKETI, KKEG_KISA, VERGI_MATRAHI_NOTU, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, tevkifatOzeti, sgkOzeti, kurumTarafAdi } from "./gider";
 import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
@@ -19,6 +19,8 @@ import { acikKalemler } from "./acikKalemler";
 import { YAS_SIRA } from "./yaslandirma";
 import { SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { fmtTR, fmtCur } from "./utils";
+// Spec 0076 R25: KKEG bilgi rakamıdır, toplama eklenmez.
+export const KISIT_RAPOR_NOTU = "Bilgi: KKEG rakamları muhasebeciye verilir; gider toplamına eklenmez (indirilemeyen KDV zaten gider tutarının içindedir).";
 // Triyaj: bölünmüş hedef etiketindeki tutar belgenin para biçimiyle (fmtCur, kuruşsuz); ekranda tl2 kalır.
 const etiketTutari = (payK) => fmtCur(tl(payK));
 import { oncekiAyStr } from "./aylikRapor";
@@ -90,7 +92,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     const genel = genelKalemler.map(k => {
         const dav = davranisOf(k, turMap);
         return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
-          tedarikci: kurumTarafAdi(dav) || tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] }; // spec 0074 R19
+          tedarikci: kurumTarafAdi(dav) || tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemGiderTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] }; // spec 0074 R19
       });
     const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
     // Spec 0060 R11, R12, R16, R28, R31, C2: tür bazında ek ödeme toplamı ve stopaj özeti saf motordan (bu dosya kişi bazlı
@@ -111,7 +113,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       const d = personel.map(odemeDurumu);
       const durum = d.every(x => x === "odendi") ? "odendi" : d.every(x => x === "odenmedi") ? "odenmedi" : "kismen";
       kalemler = [...genel, { tarih: null, tur: PERSONEL_ETIKETI, aciklama: PERSONEL_ETIKETI, tedarikci: "",
-        tutar: personel.reduce((a, k) => a + kurus(kalemTutari(k, DAVRANIS.PERSONEL)), 0) / 100, durum: DURUM_AD[durum], personel: true }];
+        tutar: personel.reduce((a, k) => a + kurus(kalemGiderTutari(k, DAVRANIS.PERSONEL)), 0) / 100, durum: DURUM_AD[durum], personel: true }];
     } else kalemler = genel;
     // Spec 0059 R8, R35 (AC-9, AC-16, AC-31): vadesi geçmiş ve yaklaşan kalemler bölüm satırlarından. Hatırlatıcı satırının
     // kalem nesnesi OKUNMAZ: tarih ve tür kimlikle ay sonu kalem haritasından çözülür; personel satırı zaten toplu gelir ve
@@ -147,6 +149,8 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       odemeDurumu: { gecmisAdet: h.sayilar.gecmis, gecmisTutar: tl(hToplam(h.gecmis)), yaklasanAdet: h.sayilar.yaklasan, yaklasanTutar: tl(hToplam(h.yaklasan)), esikGun: h.esikGun },
       kovalar: gr.kovalar,
       kdv: kdvKarsilastir(kdvHesaplanan, gr.indirilecekKdv),
+      // Spec 0076 R24/2: kısıtlı kalem varsa motorun tek nesnesi aynen; yoksa alan hiç eklenmez.
+      ...(gr.kisitli ? { kisitli: gr.kisitli } : {}),
       // Spec 0060 R3 revizyonu (X8): personel ödemelerinin yöntem kırılımı rapora GİRMEZ; elden genelde nakit ödendiği için
       // kırılım resmi/elden ayrımını ve tek çalışanlı ayda kişinin maaşını açığa çıkarırdı (R16, AC-21). Toplu satır kalır.
       yontem: { satirlar: yontem.satirlar.map(s => ({ ad: s.yontem, tutar: tl(s.tutarK) })), personel: tl(yontem.personelK), toplam: tl(yontem.toplamK) },
@@ -319,8 +323,13 @@ export const buildGiderKasaRaporuHtml = (r) => {
       ${not(esc(NOT_YASLANDIRMA))}`) : "";
     const kovaKutu = bolum("GİDER · MALİYET DAĞILIMI", donem, stTablo([st("Makinaya", tlp(G.kovalar.makina)), st("Modele", tlp(G.kovalar.model)),
       st("Dağıtılmayan", tlp(G.kovalar.dagitma)), st("Ortak", tlp(G.kovalar.ortak)), st("Toplam", tlp(G.ozet.toplam))]));
-    const kdvKutu = bolum("GİDER · KDV KARŞILAŞTIRMASI", donem, stTablo([st("Hesaplanan satış KDV'si", tlp(G.kdv.hesaplananTL)),
-      st("İndirilecek gider KDV'si", tlp(G.kdv.indirilecek)), st("Fark", tlp(G.kdv.fark))]));
+    // Spec 0076 R24, R25, R28 (AC-25): kısıtlı kalemlerin indirilemeyen KDV'si ve KKEG bilgi rakamları KDV kutusunun içinde
+    // (yeni kutu yok); kısıtlı kalem yoksa basılmaz. KKEG gider toplamına eklenmez.
+    const KS = G.kisitli;
+    const kdvKutu = bolum("GİDER · KDV KARŞILAŞTIRMASI", donem, `${stTablo([st("Hesaplanan satış KDV'si", tlp(G.kdv.hesaplananTL)),
+      st("İndirilecek gider KDV'si", tlp(G.kdv.indirilecek)), st("Fark", tlp(G.kdv.fark)),
+      ...(KS ? [st("İndirilemeyen KDV (kısıtlı giderler)", tlp(KS.indirilemeyenKdv)), st(`${KKEG_ETIKETI} · matrah`, tlp(KS.kkegMatrah)),
+        st(`${KKEG_KISA} · KDV`, tlp(KS.kkegKdv)), st(`${KKEG_KISA} · toplam`, tlp(KS.kkegToplam))] : [])])}${KS ? not(esc(KISIT_RAPOR_NOTU)) : ""}`);
     const yontemKutu = bolum("GİDER · ÖDEME YÖNTEMİ KIRILIMI", "ayın kalemlerine yapılan ödemeler",
       G.yontem.satirlar.length || G.yontem.personel ? tablo("YÖNTEMLER", ["Yöntem", "Tutar"], [...G.yontem.satirlar.map(s => [esc(s.ad), tlp(s.tutar)]),
         ...(G.yontem.personel ? [["Personel ödemeleri", tlp(G.yontem.personel)]] : []), ["<b>Toplam</b>", `<b>${tlp(G.yontem.toplam)}</b>`]], [SOL, R]) : bosSatir);
@@ -347,6 +356,8 @@ export const buildGiderKasaRaporuHtml = (r) => {
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
     gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, tevkifatKutu, sgkKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
+  // Spec 0076 R26 (plan Q1): gider bölümünün dipnotu; kısıtlı kalem olmasa da basılır (tek sabit, ekranla aynı).
+  if (!G.yururlukOncesi) gider += not(esc(VERGI_MATRAHI_NOTU));
 
   // ── Kasa ──
   const ozetPb = K.bloklar.map(b => {

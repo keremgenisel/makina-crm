@@ -43,18 +43,19 @@ const tl = (s) => s.replace(/[^\d,]/g, "");
 describe("Spec 0061 A: kip", () => {
   it("AC-1 / AC-2 / AC-25: kip açılıp kapanır; dönem seçici pasif, ibare var, borç kartı kalır, dönem kartları ve KalemListesi yok", () => {
     render(<H />);
-    expect(screen.getByText("Toplam gider (KDV hariç)")).toBeTruthy();
+    // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
+    expect(screen.getByText("Toplam gider")).toBeTruthy();
     ac();
     expect(screen.getByTestId("acik-kalemler-dugmesi").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("group", { name: /açık kalemlerde devre dışı/ }).disabled).toBe(true);
     expect(screen.getByTestId("acik-kalemler-modu")).toBeTruthy();
     expect(screen.getByText("Kime Ne Kadar Borçluyuz")).toBeTruthy();
-    expect(screen.queryByText("Toplam gider (KDV hariç)")).toBeNull();
+    expect(screen.queryByText("Toplam gider")).toBeNull();
     expect(screen.queryByTestId("kalem-listesi")).toBeNull();
     expect(screen.getByTestId("acik-kalem-listesi")).toBeTruthy();
     ac();
     expect(screen.queryByTestId("acik-kalemler")).toBeNull();
-    expect(screen.getByText("Toplam gider (KDV hariç)")).toBeTruthy();
+    expect(screen.getByText("Toplam gider")).toBeTruthy();
   });
   // Spec 0071 R12 ile güncellendi: süzgecin altıncı değeri "tutarsiz" (Tutar girilmedi); açık kalemler yine süzgeç değeri değil, kip.
   it("AC-24 / AC-41: ödeme süzgecinin değerleri (0071 ile altı) ve kip hatırlatma kipiyle birbirini dışlar", () => {

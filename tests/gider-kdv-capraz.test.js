@@ -28,3 +28,21 @@ describe("C10: hesaplanan KDV tek kaynak", () => {
     expect(hesaplananKdvAylar(veri, ["2026-07", "2026-08"], sec)).toEqual(beklenen);
   });
 });
+
+// Spec 0076 R23, AC-24: KDV karşılaştırmasının "giderlerden indirilecek KDV" girdisi dönem raporunun indirilecek KDV'sidir
+// (Finans ve Giderler aynı rapor alanını okur); kısıtlı kalemde oranla, bayraksızda bugünkü gibi tam KDV.
+import { hesaplaGiderRaporu, kdvKarsilastir } from "../src/lib/gider";
+describe("Spec 0076: indirilecek KDV oranla (AC-24)", () => {
+  const turler = [{ id: 1, ad: "Yakıt", davranis: "normal" }];
+  const r = (giderler) => hesaplaGiderRaporu({ giderler, turler }, { baslangic: "2026-08-01", bitis: "2026-08-31" });
+  it("AC-24: kısıtlı kalemle fark ve devreden düzeltilmiş indirilecek KDV'den; bayraksız kalem tam KDV", () => {
+    const hesaplanan = hesaplananKdvAylar(veri, ["2026-08"], sec);
+    const kisitli = r([{ id: 1, tarih: "2026-08-15", turId: 1, tutar: 10000, kdvOrani: 20, kisitliGider: true, indirilebilirOran: 70 }]);
+    const tam = r([{ id: 1, tarih: "2026-08-15", turId: 1, tutar: 10000, kdvOrani: 20 }]);
+    expect(kisitli.indirilecekKdv).toBe(1400);
+    expect(tam.indirilecekKdv).toBe(2000);
+    const a = kdvKarsilastir(hesaplanan, kisitli.indirilecekKdv), b = kdvKarsilastir(hesaplanan, tam.indirilecekKdv);
+    expect(a.indirilecek).toBe(1400);
+    expect(a.odenecek - b.odenecek).toBe(600);
+  });
+});

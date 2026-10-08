@@ -107,12 +107,14 @@ dbmod.writeBlobToDb({
   tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
   giderTanimlari: [
     { id: 61, turId: 43, ad: "Sarf", tutar: 12000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, baslangicAy: "2026-06", bitisAy: null, tedarikciId: 51, odemeYontemi: "Havale",
-      atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10 }, // spec 0075 AC-34
+      atamaTur: "model", modelSatirlari: [{ modelAd: "AK100_DS", birimMaliyet: 600, adet: 20 }], uretilenAylar: ["2026-06", "2026-07"], kapatildi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10,
+      kisitliGider: true }, // spec 0075 AC-34; spec 0076 AC-32: tanımda oran boş ("ayardaki oran")
     { id: 62, turId: 42, ad: "Murat", calisanId: 72, baslangicAy: "2026-06", bitisAy: "2026-08", uretilenAylar: ["2026-06"], kapatildi: true },
   ],
   giderler: [
     { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
-      atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null },
+      atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null,
+      kisitliGider: true, indirilebilirOran: 70 }, // spec 0076 AC-32
     { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", kdvYonu: "haric", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
       // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
       taksitler: [{ id: 9001, hedef: "ana", sira: 1, vade: "2026-07-05", tutar: 20000, odendi: true, odemeTarihi: "2026-07-05" },
@@ -139,7 +141,7 @@ dbmod.writeBlobToDb({
     { id: 87, tarih: "2026-09-30", turId: 44, aciklama: "Eylül SGK", tutar: 9333.25, kdvOrani: 0, kdvYonu: null, tedarikciId: null, odendi: false, atamaTur: "", modelSatirlari: [], sonOdemeTarihi: "2026-10-31" },
     // Spec 0075 AC-34, AC-35: tevkifatlı kalem (üç sütun) ve hedefi "tevkifat" olan taksit satırı.
     { id: 84, tarih: "2026-07-03", turId: 43, aciklama: "Makina nakliye", tutar: 6500, kdvOrani: 20, odendi: false, atamaTur: "makina", makinaTur: "stok", makinaId: 4, modelSatirlari: [],
-      tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10,
+      tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, kisitliGider: true, indirilebilirOran: 0, // spec 0076 AC-39: oran 0 da saklanır
       taksitler: [{ id: 9041, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 7540, odendi: false, odemeTarihi: null }, { id: 9042, hedef: "tevkifat", sira: 1, vade: "2026-08-26", tutar: 260, odendi: false, odemeTarihi: null }] },
   ],
   // Spec 0024 A: kasa hesapları ve hareketler.
@@ -228,7 +230,7 @@ dbmod.writeBlobToDb({
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
     musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     analizGizliModeller: ["AK-100", "AK-160"],
-    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15, hesapsizBaslangic: "2026-06-01" },
+    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15, hesapsizBaslangic: "2026-06-01", indirilebilirOran: 88 },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -330,6 +332,14 @@ check("spec 0075 AC-34, AC-35: tevkifat üç alanı iki tabloda roundtrip eder; 
     && t?.tevkifatli === true && t.tevkifatPay === 2 && t.tevkifatPayda === 10
     && ["tevkifatli", "tevkifatPay", "tevkifatPayda"].every(a => !(a in e) && !(a in t2));
 })());
+check("spec 0076 AC-32: kısıtlama iki alanı iki tabloda roundtrip eder (oran 0 dahil; tanımda boş oran yazılmaz); kapalı kalem ve tanımda alan yazılmaz", (() => {
+  const k = (blob.giderler || []).find(x => x.id === 81), k0 = (blob.giderler || []).find(x => x.id === 84), e = (blob.giderler || []).find(x => x.id === 83);
+  const t = (blob.giderTanimlari || []).find(x => x.id === 61), t2 = (blob.giderTanimlari || []).find(x => x.id === 62);
+  return k?.kisitliGider === true && k.indirilebilirOran === 70 && k0?.kisitliGider === true && k0.indirilebilirOran === 0
+    && t?.kisitliGider === true && !("indirilebilirOran" in t)
+    && ["kisitliGider", "indirilebilirOran"].every(a => !(a in e) && !(a in t2));
+})());
+check("spec 0076 AC-33: giderAyarlari.indirilebilirOran roundtrip (yeni sütun yok)", blob.appSettings?.giderAyarlari?.indirilebilirOran === 88);
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());
 check("spec 0070 AC-5: sgkTutar ve yolParasi roundtrip eder, SGK satırı (hedef sgk) vadesiyle korunur; alanı olmayan kalemde alan yazılmaz", (() => {
   const k = (blob.giderler || []).find(x => x.id === 86), e = (blob.giderler || []).find(x => x.id === 83);

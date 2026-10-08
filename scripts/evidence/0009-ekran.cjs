@@ -41,7 +41,13 @@ app.whenReady().then(async () => {
     await yukle("ekran=giderler-rapor&tema=light");
     // EKRAN_ATLA="a,b": "önce" çekiminde henüz var olmayan (yalnız sonra) ekranları atlamak için.
     const atla = new Set((process.env.EKRAN_ATLA || "").split(",").filter(Boolean));
-    const ekranlar = (await win.webContents.executeJavaScript("window.__EKRANLAR")).filter(e => !atla.has(e));
+    // EKRAN_PARCA="i/n" (spec 0076): bütün ekranlar tek çalıştırmada 10 dakika sınırına takılıyor; liste n parçaya bölünür,
+    // yalnız i. parça (1'den) çekilir. Rapor dosyası parça adıyla yazılır (rapor-i.json), parçalar sonra birleştirilir.
+    // EKRAN_SEC="a,b": yalnız adı verilen ekranlar.
+    const parca = /^(\d+)\/(\d+)$/.exec(process.env.EKRAN_PARCA || "");
+    const sec = new Set((process.env.EKRAN_SEC || "").split(",").filter(Boolean));
+    let ekranlar = (await win.webContents.executeJavaScript("window.__EKRANLAR")).filter(e => !atla.has(e) && (!sec.size || sec.has(e)));
+    if (parca) { const [i, n] = [Number(parca[1]), Number(parca[2])]; const boy = Math.ceil(ekranlar.length / n); ekranlar = ekranlar.slice((i - 1) * boy, i * boy); }
     for (const ekran of ekranlar) {
       for (const tema of ["light", "dark"]) {
         const hash = `ekran=${ekran}&tema=${tema}`;
@@ -69,7 +75,8 @@ app.whenReady().then(async () => {
       }
     }
   } catch (e) { console.error("HATA:", (e && e.stack) || e); app.exit(1); return; }
-  fs.writeFileSync(path.join(cikis, "rapor.json"), JSON.stringify(rapor, null, 2));
+  const parcaAd = /^(\d+)\/(\d+)$/.exec(process.env.EKRAN_PARCA || "");
+  fs.writeFileSync(path.join(cikis, parcaAd ? `rapor-${parcaAd[1]}.json` : "rapor.json"), JSON.stringify(rapor, null, 2));
   if (cizimHatasi) { console.error(`${cizimHatasi} ekran çizilemedi (bkz. rapor.json cizimHatasi)`); app.exit(1); return; }
   console.log("BITTI " + rapor.length);
   app.exit(0);

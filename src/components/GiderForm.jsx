@@ -2,13 +2,14 @@ import { useState, useMemo, useEffect } from "react";
 import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
   kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
-  tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar } from "../lib/gider";
+  tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar,
+  kisitliGiderMi, kisitHesabi, kisitOranCoz, varsayilanIndirilebilirOran, KKEG_ETIKETI } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -28,7 +29,8 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
       calisanId: "", resmiTutar: "", eldenTutar: "", yolParasi: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
       atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
       taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [], dagitimAy: "",
-      tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "" }; // spec 0075 R1
+      tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "", // spec 0075 R1
+      kisitliGider: false, indirilebilirOran: "" }; // spec 0076 R1
   }
   // Spec 0021: plan alanları satırlardan geri kurulur. Satırı olan kalemde vade alanı ilk taksitin vadesidir.
   const hedefSat = (h) => (k.taksitler || []).filter(r => (r.hedef || HEDEF.ANA) === h).sort((a, b) => (a.sira || 0) - (b.sira || 0));
@@ -47,8 +49,20 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     dagitimAy: k.dagitimAy ? String(k.dagitimAy) : "", // spec 0072 R19
     // Spec 0075 R18 (B-2, AC-45): tevkifat taksit sayısı ve vadesi kendi satırlarından geri kurulur (sütun yok).
     tevkifatli: !!k.tevkifatli, tevkifatPay: k.tevkifatli ? k.tevkifatPay : "", tevkifatPayda: k.tevkifatli ? k.tevkifatPayda : "",
-    tevkifatTaksitSayisi: String(tvs.length || 1), tevkifatVade: tvs[0]?.vade || "" };
+    tevkifatTaksitSayisi: String(tvs.length || 1), tevkifatVade: tvs[0]?.vade || "",
+    // Spec 0076 R6: kayıtlı oran olduğu gibi açılır (bozuk dış veride boş açılır, kayıt doğrulaması yeniden ister).
+    kisitliGider: !!k.kisitliGider, indirilebilirOran: k.kisitliGider && k.indirilebilirOran != null ? String(k.indirilebilirOran) : "" };
 };
+
+// Spec 0076 R29: kısıtlamanın dört özet satırı; iki blok (normal ve tevkifat) aynı parçayı çizer, rakamlar motordan (kisitHesabi).
+const KisitOzetSatirlari = ({ kh, cizgi = null }) => (
+  <div data-testid="kisit-ozet">
+    {[[`İndirilebilir KDV (%${kh.oran})`, kh.indirilebilirK, "ozet-indirilebilir-kdv"], ["İndirilemeyen KDV", kh.indirilemeyenK, "ozet-indirilemeyen-kdv"],
+      ["Gider tutarı (maliyete giren)", kh.giderK, "ozet-gider-tutari"], [KKEG_ETIKETI, kh.kkegToplamK, "ozet-kkeg"]].map(([a, k, id]) => (
+      <div key={id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "4px 0", ...(cizgi ? { fontSize: 13, borderBottom: `1px solid ${cizgi}` } : {}) }}><span>{a}</span><b data-testid={id}>{tl2(tl(k))}</b></div>
+    ))}
+  </div>
+);
 
 export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
   giderler = [], giderAyarlari = {}, kdvRates, odemeDegistirebilir = true, onSave, onCancel,
@@ -139,6 +153,10 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
 
   const tevkifatAlanlari = useMemo(() => (tevkifatAcik ? { tevkifatli: true, tevkifatPay: Number(form.tevkifatPay) || 0, tevkifatPayda: Number(form.tevkifatPayda) || 0 } : {}),
     [tevkifatAcik, form.tevkifatPay, form.tevkifatPayda]);
+  // Spec 0076 R1, R5, R29: kutu yalnız normal davranışta (kisitliGiderMi); önizleme kalemi alanları kaydın motoruyla taşır.
+  const kisitAcik = kisitliGiderMi(dav) && !!form.kisitliGider;
+  const kisitAlanlari = useMemo(() => (kisitAcik ? { kisitliGider: true, indirilebilirOran: kisitOranCoz(form.indirilebilirOran).deger ?? null } : {}),
+    [kisitAcik, form.indirilebilirOran]);
   // Ödeme planı önizlemesi (spec 0021): kayıttakiyle AYNI motor (odemeSatirlariKur); geçici kimliklerle çizilir.
   const onizleme = useMemo(() => {
     const kalemBenzeri = {
@@ -171,9 +189,11 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     resmiTutar: tutarCoz(form.resmiTutar).deger, eldenTutar: tutarCoz(form.eldenTutar).deger, yolParasi: yolForm, girisYonu: form.girisYonu, netTutar: tutarCoz(form.netTutar).deger,
     ekOdemeler: (form.ekOdemeler || []).map(e => ({ resmiTutar: tutarCoz(e.resmiTutar).deger || 0, eldenTutar: tutarCoz(e.eldenTutar).deger || 0 })),
     taksitler: onizleme.hata ? [] : (onizleme.satirlar || []),
-    ...tevkifatAlanlari,
-  }), [tevkifatAlanlari, form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme, yolForm]);
+    ...tevkifatAlanlari, ...kisitAlanlari,
+  }), [tevkifatAlanlari, kisitAlanlari, form.turId, form.tedarikciId, form.calisanId, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.girisYonu, form.netTutar, form.ekOdemeler, dav, kira?.brut, normalTutar, onizleme, yolForm]);
   const yeniKalem = form.id == null;
+  // Spec 0076 R10, R29: özet satırları kaydedilecek motorun kendisinden (önizleme = kayıt); etkisiz kısıtlamada satır yok (R6).
+  const kh = kisitHesabi(onizlemeKalem, dav);
   const odemeHedefListesi = useMemo(() => (form.turId === "" || !yeniKalem ? [] : formOdemeHedefleri(onizlemeKalem, turMap)), [yeniKalem, onizlemeKalem, turMap, form.turId]);
   // Spec 0053 R15, R24: düzenlemede canlı kalem, gerçek kimliğiyle kayıtlı (silinmek üzere işaretlenmemiş) hareketlerden zenginleşir.
   const canliKalem = useMemo(() => {
@@ -387,6 +407,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
               )}
             </div>
           )}
+          {/* Spec 0076 R1–R7, R30: kalemin bayrağı (tür davranışı değil); yalnız normal davranışta. Kapalıyken alan çizilmez. */}
+          {kisitliGiderMi(dav) && <KisitAlani acik={kisitAcik} oran={form.indirilebilirOran} onChange={set} varsayilanOran={varsayilanIndirilebilirOran(giderAyarlari)} hata={hata("indirilebilirOran")} />}
           {yonSecilebilir && tutarCoz(form.kdvOrani).deger === 0 && !tutarCoz(form.kdvOrani).gecersiz && <Ipucu>KDV oranı sıfır olduğu için dâhil ve hariç aynı tutarı verir.</Ipucu>}
         </div>
         {dav === DAVRANIS.KIRA && kira && (
@@ -414,18 +436,22 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             ))}
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, padding: "8px 0", borderBottom: "1px solid var(--ambBr3, #fde7d4)" }}><span>{hedefAdi(HEDEF.ANA, dav)} ödenecek</span><b data-testid="ozet-tedarikciye">{tl2(odenecekTutar(onizlemeKalem, dav))}</b></div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0" }}><span>{hedefAdi(HEDEF.TEVKIFAT, dav)}</span><b data-testid="ozet-vergi-dairesine" style={{ color: "var(--amb700, #b45309)" }}>{tl2(kalemTevkifat(onizlemeKalem, dav))}</b></div>
-            <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Gider toplamına giren: <b>{tl2(normalTutar)}</b> (matrah)</div>
+            {kh.etkili && <KisitOzetSatirlari kh={kh} cizgi="var(--ambBr3, #fde7d4)" />}
+            <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 6 }}>Gider toplamına giren: <b>{tl2(tl(kh.giderK))}</b> {kh.etkili ? "(matrah + indirilemeyen KDV)" : "(matrah)"}</div>
             {ayrim && farkSatiri(ayrim.farkK)}
           </div>
         )}
         {dav === DAVRANIS.NORMAL && normalTutar > 0 && !tevkifatAcik && (
-          <div style={{ flex: "0 0 220px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "12px 14px", fontSize: 13 }} data-testid="normal-ozet">
+          <div style={{ flex: kh.etkili ? "0 0 300px" : "0 0 220px", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "12px 14px", fontSize: 13 }} data-testid="normal-ozet">
             {/* Spec 0071 R2: dâhil girişte kaydedilecek üç rakam (hariç, KDV, ödenecek) ve varsa yuvarlama farkı. */}
-            {ayrim && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV hariç</span><b data-testid="ozet-kdv-haric">{tl2(normalTutar)}</b></div>}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>KDV</span><b data-testid="ozet-kdv">{tl2(kdvOnizleme)}</b></div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>Ödenecek</span><b data-testid="ozet-odenecek">{tl2(normalOdenecek)}</b></div>
+            {/* Spec 0076 R29 (AC-29): tek blok; kısıtlama etkiliyse yedi satır (matrah, toplam KDV, indirilebilir, indirilemeyen,
+                gider tutarı, KKEG, tedarikçiye ödenecek). Kapalıyken bugünkü üç satır aynen. */}
+            {(ayrim || kh.etkili) && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>{kh.etkili ? "Matrah" : "KDV hariç"}</span><b data-testid="ozet-kdv-haric">{tl2(normalTutar)}</b></div>}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>{kh.etkili ? "Toplam KDV" : "KDV"}</span><b data-testid="ozet-kdv">{tl2(kdvOnizleme)}</b></div>
+            {kh.etkili && <KisitOzetSatirlari kh={kh} />}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}><span>{kh.etkili ? `${hedefAdi(HEDEF.ANA, dav)} ödenecek` : "Ödenecek"}</span><b data-testid="ozet-odenecek">{tl2(normalOdenecek)}</b></div>
             {ayrim && farkSatiri(ayrim.farkK)}
-            <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Gider toplamına {tl2(normalTutar)} girer.</div>
+            <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>Gider toplamına {tl2(tl(kh.giderK))} girer.</div>
           </div>
         )}
       </div>
@@ -519,7 +545,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         <Field label="Makina maliyeti ataması">
           {/* Spec 0071 R25 (triyaj): önizlemenin sınırı KDV hariç tutar (normalTutar), kayıt doğrulamasıyla aynı. */}
           <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller}
-            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : normalTutar} davranis={dav} />
+            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : normalTutar} davranis={dav} kisitli={kh.etkili && kh.indirilemeyenK > 0} />
           <HataMetni>{hatalar.filter(h => h.alan === "modelSatirlari" || h.alan === "makinaId").map(h => h.mesaj).find(Boolean)}</HataMetni>
         </Field>
       )}

@@ -1,5 +1,5 @@
 import { fmtTR } from "../../lib/utils";
-import { kalemTutari, kalemGorunenAd, ayOf, ayEkle, dagitimRozetMetni, tl } from "../../lib/gider";
+import { kalemGiderTutari, kalemGorunenAd, ayOf, ayEkle, dagitimRozetMetni, tl } from "../../lib/gider";
 import { ORTAK_KAYNAK, DAGITIM_STANDART_NOTU } from "../../lib/makinaMaliyeti";
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
@@ -55,7 +55,7 @@ export const MakinaModelGorunumu = ({ rapor, turMap, partiDegisimleri = [], done
   const { page, setPage, paged, perPage } = usePagination(rapor.makinaBazli, 10, donemAnahtari);
   const k = rapor.kovalar;
   const dav = (x) => turMap.get(String(x.turId))?.davranis;
-  const tutar = (x) => kalemTutari(x, dav(x));
+  const tutar = (x) => kalemGiderTutari(x, dav(x)); // spec 0076 R15/5 (plan Q5): satırlar kova toplamıyla aynı taban
   const ad = (x) => kalemGorunenAd(x, dav(x));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

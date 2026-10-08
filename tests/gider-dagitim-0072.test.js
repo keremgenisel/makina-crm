@@ -250,3 +250,15 @@ describe("Spec 0072 triyaj: ay dönümü yerel gündür (TZ=Europe/Istanbul)", (
     expect(memo).not.toMatch(/today\(\)/);
   });
 });
+
+// Spec 0076 AC-17: 0072 ile dağıtılmış kısıtlı kalemde aylık paylar gider tutarından (matrah + indirilemeyen KDV) bölünür.
+describe("Spec 0076: kısıtlı kalemin dağıtımı (AC-17)", () => {
+  it("AC-17: 12.000 + %20 KDV, oran %70, 12 aya dağıtım → ayda 1.060 (12.720 / 12) ortak paya girer", () => {
+    const k = gid(77, { tarih: "2026-03-01", tutar: 12000, kdvOrani: 20, dagitimAy: 12, kisitliGider: true, indirilebilirOran: 70 });
+    const paylar = dagitimPaylari(k, DAVRANIS.NORMAL);
+    expect(paylar).toHaveLength(12);
+    expect(paylar.map(p => p.payK)).toEqual(Array(12).fill(106000));
+    const s = hesapla({ customers: [mus(1, "2026-04-10")], giderler: [k] });
+    expect(kar(s, 1).ortakPay).toBe(1060);
+  });
+});

@@ -245,10 +245,11 @@ describe("Spec 0062: Gider Kalemleri (R4, R13, R16, R20, R26 a, R32)", () => {
   it("AC-17 / AC-32 / AC-18: alt toplam ve dönem kartları sayfa 1/2'de, personel açık ya da kapalı aynı", () => {
     render(<GiderH />);
     const toplam = altToplam();
-    const kart = screen.getByText("Toplam gider (KDV hariç)").parentElement.textContent;
+    // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
+    const kart = screen.getByText("Toplam gider").parentElement.textContent;
     sonraki(liste());
     expect(altToplam()).toBe(toplam);
-    expect(screen.getByText("Toplam gider (KDV hariç)").parentElement.textContent).toBe(kart);
+    expect(screen.getByText("Toplam gider").parentElement.textContent).toBe(kart);
     fireEvent.click(within(liste()).getByText("1"));
     fireEvent.click(within(liste()).getByText(/Çalışanları göster/));
     sonraki(liste());

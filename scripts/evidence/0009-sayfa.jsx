@@ -153,6 +153,13 @@ const tvKalem = (id, tarih, vade, tvVade, o = {}) => ({ id, tarih, turId: 4, tut
 const TV_0075 = tvKalem(751, "2026-09-10", "2026-09-30", "2026-10-26");
 const TV_AGU_0075 = tvKalem(752, "2026-08-14", "2026-08-31", "2026-09-26");
 const TANIM_0075 = { id: 75, ad: "Aylık nakliye", turId: 4, tutar: 12000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10 };
+// Spec 0076: kısıtlı (binek araç) yakıt kalemi (matrah 1.000, %20, oran %70; 3 aya dağıtılmış: dağıtım ve kısıt rozeti aynı
+// satırda), Ağustos'ta ortak bir kısıtlı kalem (makina maliyeti notu) ve kısıtlı tanım. Yeni sabit içe alınmaz: aynı sayfa
+// "önce" çekiminde eski kodla da çizilir (eski kod alanları yok sayar).
+const KIS_0076 = { id: 761, tarih: "2026-09-08", turId: 4, tutar: 1000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, aciklama: "Binek araç yakıtı", sonOdemeTarihi: "2026-09-30",
+  odendi: false, kisitliGider: true, indirilebilirOran: 70, dagitimAy: 3, ekOdemeler: [], modelSatirlari: [], atamaTur: "", taksitler: [] };
+const KIS_AGU_0076 = { ...KIS_0076, id: 762, tarih: "2026-08-14", tutar: 6000, dagitimAy: undefined, aciklama: "Binek araç bakımı" };
+const TANIM_0076 = { id: 76, ad: "Araç yakıtı (binek)", turId: 4, tutar: 3000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], kisitliGider: true };
 const TANIMLAR = [{ id: 71, ad: "Fabrika kirası", turId: 1, tutar: 25000, kdvOrani: 0, tedarikciId: 11, baslangicAy: "2026-06", uretilenAylar: ["2026-09"] }];
 const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, baslangicAy: "2026-06" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
@@ -315,9 +322,9 @@ const PERSONEL_ATAMALI = [
   per(8, { calisanId: 22, calisanAd: "Zeynep Arslan", aciklama: "Zeynep Arslan", resmiTutar: 28000, eldenTutar: 12000, atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }),
   per(9, { calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "", resmiTutar: 20000, eldenTutar: 10000, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10000, adet: 2 }] }),
 ];
-const maliyetDetayi = () => {
+const maliyetDetayi = (ek = []) => {
   // Model havuzu kalem tarihinden sonra üretilen makinaya pay verir; 501 Ağustos'ta üretildi.
-  const giderler = [...GIDERLER, ...PERSONEL_ATAMALI.map(x => ({ ...x, tarih: "2026-08-01" }))];
+  const giderler = [...GIDERLER, ...PERSONEL_ATAMALI.map(x => ({ ...x, tarih: "2026-08-01" })), ...ek];
   const s = hesaplaMakinaMaliyetleri({ customers: MUSTERILER, stock: [], partStockLog: [], giderler, giderTurleri: TURLER, standartGiderler: STANDART,
     standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari }, { bugun: "2026-09-23" });
   return <div style={{ maxWidth: 620, margin: 24, padding: 18, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
@@ -963,6 +970,18 @@ const EKRANLAR = {
   "ayarlar-gidertanim-0075": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0075, ...TANIMLAR] }), []],
   "ayarlar-gidertanim-0075-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0075, ...TANIMLAR] }), ["baslik:Düzenle"]],
   "finans-0075-kdv2": [<FINANS g={[...GIDERLER, TV_AGU_0075]} />, ["Göster"]],
+  // Spec 0076: kısıtlı gider (binek araç). Kutu açık form (birleşik özet yedi satır), tevkifatla birlikte tek blok, kalem
+  // listesi (gider tutarı, rozet, KDV hücresi, iki alt toplam), KDV kartının bilgi satırları, maliyet notu, tanım formu ve listesi.
+  "gider-formu-0076-kisit": [<GiderForm kalem={{ turId: 4, tarih: "2026-09-08", tutar: "1000", kdvOrani: "20", tedarikciId: 12, aciklama: "Binek araç yakıtı", sonOdemeTarihi: "2026-09-30",
+    kisitliGider: true, indirilebilirOran: 70 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "gider-formu-0076-tevkifat": [<GiderForm kalem={{ turId: 4, tarih: "2026-09-08", tutar: "1000", kdvOrani: "20", tedarikciId: 12, aciklama: "Binek araç bakımı", sonOdemeTarihi: "2026-09-30",
+    kisitliGider: true, indirilebilirOran: 70, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
+  "giderler-0076-liste": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, []],
+  "giderler-0076-kdv": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, ["kaydir:KDV Karşılaştırması"]],
+  "giderler-0076-karlilik": [<GiderEkrani g0={[...GIDERLER, KIS_AGU_0076]} h0={[]} />, ["Makina Kârlılığı"]],
+  "maliyet-detay-0076": [maliyetDetayi([KIS_AGU_0076]), []],
+  "ayarlar-gidertanim-0076": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), []],
+  "ayarlar-gidertanim-0076-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), ["baslik:Düzenle"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

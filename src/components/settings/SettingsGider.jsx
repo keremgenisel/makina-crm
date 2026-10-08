@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Icon, Field, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
-import { esikAltiKalemSayisi, tutarCoz } from "../../lib/gider";
+import { esikAltiKalemSayisi, tutarCoz, kisitOranCoz, varsayilanIndirilebilirOran, KISIT_ORAN_VARSAYILAN } from "../../lib/gider";
 import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu, Segment } from "../tasarim";
 import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
@@ -17,6 +17,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
   const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
     ortakGiderKaynagi: mevcut.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK,
     hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "",
+    indirilebilirOran: String(varsayilanIndirilebilirOran(mevcut)), // spec 0076 R34
     // Spec 0056 R1, R2 (Q5): alan hiç yoksa varsayılan tarih gösterilir ve kaydedilir; boş = deneme dönemi kapalı.
     denemeDonemiBitis: denemeDonemiBitisi(mevcut) || "" });
   const [hata, setHata] = useState("");
@@ -29,6 +30,9 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     // Spec 0003 R5, AC-23: 0–365 tam sayı; geçersizse hiçbir alan kaydedilmez, neden yazılır.
     const e = hatirlatmaEsikDogrula(form.hatirlatmaEsikGun);
     if (e.hata) { setHata(e.hata); return; }
+    // Spec 0076 R34, AC-8, AC-41: 0–100 tam sayı; geçersizse kayıt yok ve neden yazılır. Boş = varsayılana (70) dönüş.
+    const io = kisitOranCoz(form.indirilebilirOran);
+    if (io.hata) { setHata(io.hata); return; }
     // Spec 0051 R14, R15 (AC-9): biçimsiz ya da gelecek tarih kaydedilmez; boş = eşik yok.
     const b = hesapsizBaslangicDogrula(form.hesapsizBaslangic, yerelBugun());
     if (b.hata) { setHata(b.hata); return; }
@@ -36,7 +40,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     const deneme = String(form.denemeDonemiBitis || "").trim();
     if (deneme && !/^\d{4}-\d{2}-\d{2}$/.test(deneme)) { setHata("Deneme dönemi bitiş tarihi geçerli bir tarih değil."); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -48,6 +52,10 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
           <Field label="Varsayılan kira stopaj oranı">
             <TutarInput sym="%" ariaLabel="Varsayılan kira stopaj oranı" value={form.stopajOrani} disabled={!yonetebilir} onChange={v => setForm(p => ({ ...p, stopajOrani: v }))} />
             <Ipucu>Yeni kira kaleminde ön doldurulur; kalem bazında değiştirilebilir. Üretilmiş kalemler bu ayar değişince değişmez.</Ipucu>
+          </Field>
+          <Field label="Binek araç giderlerinde indirilebilir oran">
+            <TutarInput sym="%" ariaLabel="Binek araç giderlerinde indirilebilir oran" value={form.indirilebilirOran} disabled={!yonetebilir} onChange={v => setForm(p => ({ ...p, indirilebilirOran: v }))} />
+            <Ipucu>"Gider kısıtlaması uygulanıyor (binek araç)" işaretlenen kalemde ön doldurulur; kalem bazında değiştirilebilir. 0 ile 100 arası tam sayı; boş bırakılırsa %{KISIT_ORAN_VARSAYILAN} kullanılır.</Ipucu>
           </Field>
           <Field label="Gider takibi yürürlük ayı">
             <AyInput ariaLabel="Gider takibi yürürlük ayı" value={form.yururlukAy} onChange={v => setForm(p => ({ ...p, yururlukAy: v }))} />

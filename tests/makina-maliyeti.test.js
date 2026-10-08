@@ -464,3 +464,29 @@ describe("triyaj düzeltmeleri (0002)", () => {
     expect(hesapla({})).not.toHaveProperty("atanamayanMakinaGideri");
   });
 });
+
+// Spec 0076 (AC-16, R15, R27): kısıtlı (binek araç) kalemin indirilemeyen KDV'si maliyete girer ve kalemin kovasını izler.
+describe("Spec 0076: indirilemeyen KDV maliyete girer (R15, R27)", () => {
+  const kisit = (id, o = {}) => gid(id, { tutar: 1000, kdvOrani: 20, kisitliGider: true, indirilebilirOran: 70, ...o });
+  it("AC-16: ortak kısıtlı kalemin gider tutarı (1.060) ortak paya, makinaya atanmışı doğrudan maliyete girer; kisitliVar işareti", () => {
+    const s = hesapla({ customers: [mus(1), mus(2, { uretimTarihi: "2026-04-05" })], giderler: [kisit(1), kisit(2, { tarih: "2026-04-10", atamaTur: "makina", makinaTur: "musteri", makinaId: 2 })] });
+    expect(kar(s, 1).ortakPay).toBe(1060);
+    expect(kar(s, 2).dogrudan).toBe(1060);
+    expect(s.kisitliVar).toBe(true);
+    expect(kar(s, 1).kisitliVar).toBe(true);
+    expect(ozet(s, ...MART).kisitliVar).toBe(true);
+  });
+  it("AC-16: standart kaynakta ortak kovadan gelen kısım maliyete girmez; makinaya atanmış kısıtlı kalem yine girer", () => {
+    const std = [{ id: 1, grupId: 1, ad: "Kira", tutar: 5000, baslangicAy: "2026-01", bitisAy: null }];
+    const g = { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" };
+    const s = hesapla({ customers: [mus(1), mus(2, { uretimTarihi: "2026-04-05" })], standartGiderler: std, giderAyarlari: g,
+      giderler: [kisit(1), kisit(2, { tarih: "2026-04-10", atamaTur: "makina", makinaTur: "musteri", makinaId: 2 })] });
+    expect(kar(s, 1).ortakPay).toBe(5000);
+    expect(kar(s, 2).dogrudan).toBe(1060);
+    expect(kar(s, 1).kisitliVar).toBe(true);
+  });
+  it("AC-36 (yan): bayraksız ya da oranı 100 olan veride kisitliVar alanı hiç yok", () => {
+    expect("kisitliVar" in hesapla({ customers: [mus(1)], giderler: [gid(1)] })).toBe(false);
+    expect("kisitliVar" in hesapla({ customers: [mus(1)], giderler: [kisit(1, { indirilebilirOran: 100 })] })).toBe(false);
+  });
+});
