@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0076-kisitli-gider-ve-indirilemeyen-kdv.md` (R2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0076-kisitli-gider-ve-indirilemeyen-kdv.md` (R2, plan onayıyla) |
 | **Dal** | `feat/0076-kisitli-gider` (`feat/0078-cop` `8017fb0` üstünde) |
 | **Onay** | Takım Yöneticisi, 2026-10-08: bütün öneriler (Q1–Q11) kabul |
 

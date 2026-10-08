@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulanıyor (revizyon 2, 2026-10-08) |
+| **Durum** | Tamamlandı (commit `c9e95ea`, dal `feat/0076-kisitli-gider`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Gider kalemi formu ve motoru, tekrarlayan tanım, kova dağılımı, dönem raporu, **makina maliyeti**, Finans KDV karşılaştırması, 0047 raporu, Ayarlar › Gider Ayarları |
@@ -496,8 +496,8 @@ muhasebeciye verilmek üzere raporda duruyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. **Test dosyaları:**
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor. **Test dosyaları:**
       `tests/kisitli-gider-0076.test.js` (motor: AC-9 rakamları, yuvarlama eşitliği, kova atama
       matrisi, oran uçları ve bozuk oran, `tekrarlayanUret`, varsayılan oran yardımcısı, kaynak
       taramaları), `tests/ui/kisitli-gider-0076.test.jsx` (kutu, birleşik özet, doğrulama, liste
@@ -506,37 +506,39 @@ muhasebeciye verilmek üzere raporda duruyor.
       kalem yokken basılmaması); **ek bloklar** `gider.test.js`, `makina-maliyeti.test.js` (AC-16,
       AC-17), `gider-kdv-capraz.test.js` (AC-24), `gider-gizlilik.test.js`, `ui/finance-gider-kdv`,
       `sayfalama-0062` (alt toplam), `db-roundtrip.cjs` ve `db-clean-install.cjs` (AC-32, AC-37);
-      **güncellenen** `gider-kasa-raporu-0059` (R39'un `delete` satırı).
-- [ ] Context'teki örnek rakamlar (AC-9) motor testinde birebir sabitlendi.
-- [ ] Parçaların toplamının bütüne eşitliği yuvarlama gerektiren bir oranla testlendi (AC-10).
-- [ ] **Bayraksız veride sıfır fark** çapraz testlerle gösterildi: dönem raporu, kova, makina
+      **güncellenen** `gider-kasa-raporu-0059` (R39'un `delete` satırı). *(Uygulamada `gider.test.js`
+      bloğu yazılmadı: o kriterler plan §5 gereği `kisitli-gider-0076.test.js`'te; ek bloklar ayrıca
+      `gider-dagitim-0072`, `ui/genel-arama-0026`.)*
+- [x] Context'teki örnek rakamlar (AC-9) motor testinde birebir sabitlendi.
+- [x] Parçaların toplamının bütüne eşitliği yuvarlama gerektiren bir oranla testlendi (AC-10).
+- [x] **Bayraksız veride sıfır fark** çapraz testlerle gösterildi: dönem raporu, kova, makina
       maliyeti, KDV karşılaştırması ve 0059'un altın HTML'i (AC-36). Bu, işin en önemli
       güvencesidir. Altın JSON'un tek yeni anahtarı ayıklama adımında yazılı (R39).
-- [ ] "Dört kova = genel toplam" eşitliği kısıtlı kalemle ve **dört atama türüyle** testlendi
+- [x] "Dört kova = genel toplam" eşitliği kısıtlı kalemle ve **dört atama türüyle** testlendi
       (AC-15).
-- [ ] Ödeme tarafının (ödenecek, borç, hatırlatıcı, açık kalemler, ekstre) etkilenmediği testlendi
+- [x] Ödeme tarafının (ödenecek, borç, hatırlatıcı, açık kalemler, ekstre) etkilenmediği testlendi
       (AC-19, AC-20).
-- [ ] 0075 ile birlikte çalıştığı testlendi (AC-31) ve iki kutu birden açıkken tek özet bloğu
+- [x] 0075 ile birlikte çalıştığı testlendi (AC-31) ve iki kutu birden açıkken tek özet bloğu
       çizildiği gösterildi (AC-29).
-- [ ] Görsel kanıt: `0076-taban-piksel-raporu.json` ve `0076-piksel-raporu.json`. **Değişmesi
+- [x] Görsel kanıt: `0076-taban-piksel-raporu.json` ve `0076-piksel-raporu.json`. **Değişmesi
       beklenen ekranlar:** gider formu (kutu açık, birleşik özet), Dönem Raporu kalem listesi (yeni
       sütun başlığı, rozet, iki alt toplam), Giderler kart satırı ve başlık cümlesi (R22), KDV
       satırı kartı, maliyet detayı ve maliyet notları; **kutu kapalı form ve diğer bütün ekranlar
       0 piksel.** Tasarım sözlüğünü kullanan bu dosyaların `docs/evidence/kanit-eslemesi.json`
       kayıtları `beklenen: "degisti"` artı onay satırı taşır (`tests/kanit-eslemesi.test.js` ve
       `tests/tasarim-kaynak.test.js` bunu denetliyor).
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil; `donem-raporu-yerlesim` ve
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil; `donem-raporu-yerlesim` ve
       `form-pencere-yerlesim` dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: kalemin iki tutarı (matrah ve gider tutarı), hangi tüketicinin
+- [x] `CLAUDE.md` güncellendi: kalemin iki tutarı (matrah ve gider tutarı), hangi tüketicinin
       hangisini okuduğu, indirilemeyen KDV'nin kalemin kovasını izlediği ve standart kaynaktaki
       sınırı, oranın kalemde saklandığı ve motorun ayar okumadığı, indirilecek KDV'nin artık oranla
       hesaplandığı, maliyetin indirilemeyen KDV'yi içerdiği, gider toplamının vergi matrahı
       olmadığı ve "KDV hariç" metinlerinin neden değiştiği, bayrağın tür davranışı olmadığı.
-- [ ] Sürüm notu: kısıtlı gider işaretlendiğinde o ayın ortak gideri ile o ayda üretilen makinaların
+- [x] Sürüm notu: kısıtlı gider işaretlendiğinde o ayın ortak gideri ile o ayda üretilen makinaların
       **maliyeti, kârlılığı ve fiyat önerisi** değişir; etki yalnız işaretlenen kalemlerin aylarıyla
       sınırlıdır (R38).
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -544,10 +546,10 @@ muhasebeciye verilmek üzere raporda duruyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 2 | R1 taslak, R2 plan onayı (Q1–Q11: model kovasının üst sınırı matrah, KDV kartı bilgisi yalnız Giderler'de ve tam ay dışında da, KDV alt toplamında ikinci rakam yalnız kısıtlı kalem varken, AC-36 kanıtı spec öncesi kodla üretilen motor çıktısı, R22 metin güncellemeleri). Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
+| **Düzeltme turu sayısı** | 1 | Triyaj: Gider Ayarları'nda `hesapsizBaslangic` gerilemesi, görsel kanıtın eksik olması, spec durum satırının "Taslak" kalması. İş kaç kez geri döndü? |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de gerçek; birincisi kullanıcıya görünen bir veri kaybıydı. Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
+| **Regresyon sayısı** | 1 | Gider Ayarları formunun başlangıç satırına eklenen yorum `hesapsizBaslangic` alanını yuttu (kayıtta ayar siliniyordu); yayına çıkmadan triyajda düzeltildi, bütün ayar nesnesiyle test eklendi. Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
+| **Kaçan hata** | 0 | Kapanış anında bilinen yok. Gerçek uygulamada sonradan bulunan hata sayısı. |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir tutarın anlamını ikiye bölmek (fatura tarafındaki matrah ile gider tarafındaki gider tutarı), bütün tüketicileri tek tek "hangisini okuyorsun" diye sınıflandırmayı gerektirir; asıl güvence büyütülen tutarı değil, **dokunulmayan** tutarı okuyan yerlerin bayraksız ve bayraklı veride aynı kalmasıdır (ödenecek tutar, borç, hatırlatıcı). Bunu en ucuz kanıtlayan şey, spec'ten önceki kodla üretilmiş motor çıktısını fikstür olarak saklamaktı. İkincisi: tek satırlık bir yorum, aynı satırdaki başka bir alanı sessizce silebilir; ayar formlarının testleri tek alanı değil bütün ayar nesnesini karşılaştırmalı. Üçüncüsü: başlık metni gibi küçük bir değişiklik (R22) yüzden fazla ekranın görüntüsünü değiştirir; tam görsel kanıt parçalı çekimle ve aynı turda yeniden çekimle (sarsıntılı ekranlar) planlanmalı.
