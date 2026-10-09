@@ -126,17 +126,18 @@ export const CalisanManager = ({
           </div>
         </div>
       )}
-      {/* Satır içi ekleme */}
+      {/* Satır içi ekleme. Kullanıcı isteği (2026-10-09): beş alan ve "Ekle" 1280 px pencerede de tek sırada kalır (Ayarlar bu
+          bölümde 1200 px'e kadar genişler); dar pencerede satır yine sarar. Ölçü tests/calisan-yerlesim.test.js (Electron). */}
       <div style={{ display: "flex", gap: 8, marginBottom: 6, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <div style={{ flex: "1 1 200px" }}>
+        <div style={{ flex: "1 1 140px" }}>
           <Input value={form.ad} onChange={e => setForm(p => ({ ...p, ad: e.target.value }))}
             onKeyDown={e => { if (e.key === "Enter") submitAdd(); }} placeholder="Ad Soyad" />
         </div>
         {maliyetAcik && <>
-          <div style={{ width: 150 }}><TutarInput ariaLabel="Resmi işveren maliyeti" placeholder="Resmi" value={form.resmiMaliyet} onChange={v => setForm(p => ({ ...p, resmiMaliyet: v }))} /></div>
-          <div style={{ width: 120 }}><TutarInput ariaLabel="SGK" placeholder="SGK" value={form.sgkMaliyet} onChange={v => setForm(p => ({ ...p, sgkMaliyet: v }))} /></div>
-          <div style={{ width: 130 }}><TutarInput ariaLabel="Elden ödenen" placeholder="Elden" value={form.eldenMaliyet} onChange={v => setForm(p => ({ ...p, eldenMaliyet: v }))} /></div>
-          <div style={{ width: 120 }}><TutarInput ariaLabel="Yol parası" placeholder="Yol parası" value={form.yolParasiMaliyet} onChange={v => setForm(p => ({ ...p, yolParasiMaliyet: v }))} /></div>
+          <div style={{ width: 115 }}><TutarInput ariaLabel="Resmi işveren maliyeti" placeholder="Resmi" value={form.resmiMaliyet} onChange={v => setForm(p => ({ ...p, resmiMaliyet: v }))} /></div>
+          <div style={{ width: 95 }}><TutarInput ariaLabel="SGK" placeholder="SGK" value={form.sgkMaliyet} onChange={v => setForm(p => ({ ...p, sgkMaliyet: v }))} /></div>
+          <div style={{ width: 100 }}><TutarInput ariaLabel="Elden ödenen" placeholder="Elden" value={form.eldenMaliyet} onChange={v => setForm(p => ({ ...p, eldenMaliyet: v }))} /></div>
+          <div style={{ width: 110 }}><TutarInput ariaLabel="Yol parası" placeholder="Yol parası" value={form.yolParasiMaliyet} onChange={v => setForm(p => ({ ...p, yolParasiMaliyet: v }))} /></div>
         </>}
         <Btn onClick={submitAdd}><Icon name="plus" size={14} /> Ekle</Btn>
       </div>

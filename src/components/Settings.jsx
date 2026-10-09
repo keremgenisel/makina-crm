@@ -185,7 +185,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
         </div>
 
         {/* SAĞ İÇERİK — İşlem Geçmişi ve Parça/Yedek Parça tabloları geniş, tam görünsün */}
-        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca" || settingsTab === "gidertanim") ? 1200 : 760 }}>
+        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca" || settingsTab === "calisanlar" || settingsTab === "gidertanim") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: msg.type === "ok" ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", color: msg.type === "ok" ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)" }}>
@@ -278,7 +278,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
       )}
 
       {settingsTab === "calisanlar" && (
-        <KartBolum title="Firma Çalışanları" icon="customers">
+        <KartBolum title="Firma Çalışanları" icon="customers" wide>{/* kullanıcı isteği 2026-10-09: ekleme satırı tek sıra, kart 1200'e kadar */}
           <div className="section-desc">
             Servis yapan çalışanların ad soyadını girin. Bu liste <b>Servis Panosu</b> kartlarındaki ve servis formundaki <b>teknisyen</b> seçicisini besler.
           </div>

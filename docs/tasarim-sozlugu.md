@@ -221,7 +221,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Ekran düzeyindeki durumlar: `UyariSeridi`.
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
-**Örnek:** `src/components/CalisanManager.jsx:219`
+**Örnek:** `src/components/CalisanManager.jsx:220`
 **Örnek:** `src/components/customers/CustomerAddEditForm.jsx:112` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
@@ -234,7 +234,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uzun açıklama için: bölümün açıklama paragrafı.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
-**Örnek:** `src/components/CalisanManager.jsx:237`
+**Örnek:** `src/components/CalisanManager.jsx:238`
 **Örnek:** `src/components/PartSaleForm.jsx:379` (seçimin sonucunu anlatan cümle)
 
 ---
